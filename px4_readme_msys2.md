@@ -182,8 +182,8 @@ git submodule update --init --recursive
 # List targets
 make list_config_targets | head -20
 
-# Build your target (e.g., px4_fmu-v5_default)
-make px4_fmu-v5_default
+# Build your target (e.g., ppx4_fmu-v6xrt_default)
+make px4_fmu-v6xrt_default
 ```
 
 

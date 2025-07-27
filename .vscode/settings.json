@@ -83,6 +83,11 @@
       ],
       "icon": "terminal-bash"
     },
+    "WSL": {
+      "path": "C:\\WINDOWS\\System32\\wsl.exe",
+      "args": ["-d", "Ubuntu"],
+      "icon": "terminal-linux"
+    }
   },
   "terminal.integrated.defaultProfile.windows": "MSYS2",
   "terminal.integrated.env.windows": {
