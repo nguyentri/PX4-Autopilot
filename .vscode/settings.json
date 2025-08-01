@@ -79,7 +79,7 @@
       "args": [
         "--login",
         "-c",
-        "${workspaceFolder}\"; exec bash"
+        "cd \"${workspaceFolder}\"; exec bash"
       ],
       "icon": "terminal-bash"
     },

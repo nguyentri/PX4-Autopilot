@@ -1,0 +1,74 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug RA8E1 (Onboard J-Link)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "executable": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/Debug/sci_uart_fpb_ra8e1_ep.elf",
+      "armToolchainPath": "C:/UserSoftware/arm-toolchain/arm-gnu-toolchain-13.2.Rel1/bin",
+      "servertype": "jlink",
+      "serverpath": "C:/Users/tringuyen/SEGGER/JLink_V850/JLinkGDBServerCL.exe",
+      "serverArgs": [
+        "-device",
+        "R7FA8E1AF",
+        "-if",
+        "SWD",
+        "-speed",
+        "4000",
+        "-port",
+        "50000",
+        "-select",
+        "USB",
+        "-singlerun",
+        "-nogui"
+      ],
+      "serialNumber": "1080979173",
+      "device": "R7FA8E1AF",
+      "interface": "swd",
+      "showDevDebugOutput": "parsed",
+      "rttConfig": {
+        "enabled": true,
+        "address": "auto",
+        "decoders": [
+          {
+            "label": "rtt_0",
+            "port": 0,
+            "type": "console"
+          }
+        ]
+      },
+      "liveWatch": {
+        "enabled": true,
+        "samplesPerSecond": 4
+      },
+      "overrideLaunchCommands": [
+        "monitor reset",
+        "monitor halt",
+        "load",
+        "continue"
+      ],
+      "runToEntryPoint": "main"
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": true,
+      "cwd": "d:/00_sst_non_auto/fpb_ra8e1/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/ra_gen",
+      "program": "d:/00_sst_non_auto/fpb_ra8e1/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/ra_gen/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
