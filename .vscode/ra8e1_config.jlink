@@ -1,0 +1,28 @@
+define SetupTarget
+  // Reset and halt
+  r
+  h
+
+  // Configure option bytes
+  w4 0x0300A100, 0xFFFFFFFF
+  w4 0x0300A104, 0xFFFFFFFF
+  w4 0x0300A200, 0xFFF5FFFD
+  w4 0x0300A280, 0x00000000
+
+  // Reset to apply option bytes
+  r
+  h
+
+  // Enable software debug protection
+  w4 0x40001004, 0x0000001F
+  w4 0x40001008, 0x00000003
+  w4 0xE000EDF0, 0xA05F0001
+end
+
+define ResetTarget
+  r
+  // Re-enable debug after reset
+  w4 0x40001004, 0x0000001F
+  w4 0x40001008, 0x00000003
+  w4 0xE000EDF0, 0xA05F0001
+end

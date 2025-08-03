@@ -1,74 +1,86 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug RA8E1 (Onboard J-Link)",
-      "type": "cortex-debug",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "executable": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/Debug/sci_uart_fpb_ra8e1_ep.elf",
-      "armToolchainPath": "C:/UserSoftware/arm-toolchain/arm-gnu-toolchain-13.2.Rel1/bin",
-      "servertype": "jlink",
-      "serverpath": "C:/Users/tringuyen/SEGGER/JLink_V850/JLinkGDBServerCL.exe",
-      "serverArgs": [
-        "-device",
-        "R7FA8E1AF",
-        "-if",
-        "SWD",
-        "-speed",
-        "4000",
-        "-port",
-        "50000",
-        "-select",
-        "USB",
-        "-singlerun",
-        "-nogui"
-      ],
-      "serialNumber": "1080979173",
-      "device": "R7FA8E1AF",
-      "interface": "swd",
-      "showDevDebugOutput": "parsed",
-      "rttConfig": {
-        "enabled": true,
-        "address": "auto",
-        "decoders": [
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug RA8E1 (Onboard J-Link)",
+        "type": "cortex-debug",
+        "request": "launch",
+        "cwd": "${workspaceFolder}",
+        "executable": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/Debug/sci_uart_fpb_ra8e1_ep.elf",
+        "armToolchainPath": "C:/UserSoftware/arm-toolchain/arm-gnu-toolchain-13.2.Rel1/bin",
+        "servertype": "jlink",
+        "serverpath": "C:/Users/tringuyen/SEGGER/JLink_V850/JLinkGDBServerCL.exe",
+        "serverArgs": [
+          "-device", "R7FA8E1AF",
+          "-if", "SWD",
+          "-speed", "4000",
+          "-select", "USB=1080979173",
+          "-singlerun",
+          "-nogui",
+          "-JLinkScriptfile", "d:/scripts/ra8e1_script.jlink",
+          "-log", "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/JLinkLog.log"
+        ],
+        "device": "R7FA8E1AF",
+        "interface": "swd",
+        "showDevDebugOutput": "parsed",
+        "overrideLaunchCommands": [
+            "monitor reset",
+            "monitor halt",
+            "monitor long 0x40001004 = 0x0000001F",
+            "monitor long 0x40001008 = 0x00000003",
+            "monitor long 0xE000EDF0 = 0xA05F0001",
+            "monitor long 0x407A0000 = 0x0000CCCC",
+            "monitor long 0x407A0004 = 0x0000CCCC",
+            "monitor long 0x407A0100 = 0x00000001",
+            "monitor flash erase",
+            "monitor long 0x0300A100 = 0xFFFFFFFF",
+            "monitor long 0x0300A104 = 0xFFFFFFFF",
+            "monitor long 0x0300A200 = 0xFFF5FFFD",
+            "monitor long 0x0300A280 = 0x00000000",
+            "load",
+            "monitor reset",
+            "monitor halt"
+        ],
+        "postStartSessionCommands": [
+          "set mem inaccessible-by-default off",
+          "set remotetimeout 60"
+        ],
+        "runToEntryPoint": "main",
+        "breakAfterReset": true,
+        "rttConfig": {
+          "enabled": true,
+          "address": "auto",
+          "decoders": [
+            {
+              "label": "rtt_0",
+              "port": 0,
+              "type": "console"
+            }
+          ]
+        },
+        "liveWatch": {
+          "enabled": true,
+          "samplesPerSecond": 4
+        }
+      },
+      {
+        "name": "C/C++ Runner: Debug Session",
+        "type": "cppdbg",
+        "request": "launch",
+        "args": [],
+        "stopAtEntry": false,
+        "externalConsole": true,
+        "cwd": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/src",
+        "program": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/src/build/Debug/outDebug",
+        "MIMode": "gdb",
+        "miDebuggerPath": "gdb",
+        "setupCommands": [
           {
-            "label": "rtt_0",
-            "port": 0,
-            "type": "console"
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
           }
         ]
-      },
-      "liveWatch": {
-        "enabled": true,
-        "samplesPerSecond": 4
-      },
-      "overrideLaunchCommands": [
-        "monitor reset",
-        "monitor halt",
-        "load",
-        "continue"
-      ],
-      "runToEntryPoint": "main"
-    },
-    {
-      "name": "C/C++ Runner: Debug Session",
-      "type": "cppdbg",
-      "request": "launch",
-      "args": [],
-      "stopAtEntry": false,
-      "externalConsole": true,
-      "cwd": "d:/00_sst_non_auto/fpb_ra8e1/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/ra_gen",
-      "program": "d:/00_sst_non_auto/fpb_ra8e1/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/ra_gen/build/Debug/outDebug",
-      "MIMode": "gdb",
-      "miDebuggerPath": "gdb",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
-    }
-  ]
-}
+      }
+    ]
+  }
