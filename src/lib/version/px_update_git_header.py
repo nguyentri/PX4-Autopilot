@@ -127,18 +127,40 @@ if (os.path.exists('src/modules/mavlink/mavlink/.git')):
 
 # NuttX
 if (os.path.exists('platforms/nuttx/NuttX/nuttx/.git')):
-    nuttx_git_tags = subprocess.check_output('git -c versionsort.suffix=- tag --sort=v:refname'.split(),
-                                  cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
-    nuttx_git_tag = re.findall(r'nuttx-[0-9]+\.[0-9]+\.[0-9]+', nuttx_git_tags)[-1].replace("nuttx-", "v")
-    nuttx_git_tag = re.sub('-.*', '.0', nuttx_git_tag)
-    nuttx_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
+    try:
+        nuttx_git_tags = subprocess.check_output('git -c versionsort.suffix=- tag --sort=v:refname'.split(),
                                       cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
-    nuttx_git_version_short = nuttx_git_version[0:16]
+        nuttx_version_tags = re.findall(r'nuttx-[0-9]+\.[0-9]+\.[0-9]+', nuttx_git_tags)
 
-    header += f"""
+        if nuttx_version_tags:
+            nuttx_git_tag = nuttx_version_tags[-1].replace("nuttx-", "v")
+            nuttx_git_tag = re.sub('-.*', '.0', nuttx_git_tag)
+        else:
+            # No version tags found, use a default
+            nuttx_git_tag = "v12.0.0"
+
+        nuttx_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
+                                          cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
+        nuttx_git_version_short = nuttx_git_version[0:16]
+
+        header += f"""
 #define NUTTX_GIT_VERSION_STR  "{nuttx_git_version}"
 #define NUTTX_GIT_VERSION_BINARY 0x{nuttx_git_version_short}
 #define NUTTX_GIT_TAG_STR  "{nuttx_git_tag}"
+"""
+    except (subprocess.CalledProcessError, IndexError):
+        # Git command failed or no matching tags found, use defaults
+        header += f"""
+#define NUTTX_GIT_VERSION_STR  "unknown"
+#define NUTTX_GIT_VERSION_BINARY 0x0000000000000000
+#define NUTTX_GIT_TAG_STR  "v12.0.0"
+"""
+else:
+    # NuttX directory doesn't exist, provide default values
+    header += f"""
+#define NUTTX_GIT_VERSION_STR  "unknown"
+#define NUTTX_GIT_VERSION_BINARY 0x0000000000000000
+#define NUTTX_GIT_TAG_STR  "v12.0.0"
 """
 
 

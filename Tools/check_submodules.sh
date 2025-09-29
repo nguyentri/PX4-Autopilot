@@ -66,7 +66,13 @@ if [ "$#" != "0" ]; then
 		exit 0
 	}
 
-	check_git_submodule $1
+	# Check if the submodule is defined in .gitmodules
+	if grep -q "path = $1" .gitmodules; then
+		check_git_submodule $1
+	else
+		echo "Skipping submodule $1 (not in .gitmodules)"
+		exit 0
+	fi
 
 else
 
@@ -76,7 +82,8 @@ else
 		exit 0
 	}
 
-	submodules=$(git submodule status | awk '{ print $2 }')
+	# Only check submodules that are defined in .gitmodules
+	submodules=$(grep "path = " .gitmodules | sed 's/.*path = //')
 	for i in $submodules;
 	do
 		check_git_submodule $i
