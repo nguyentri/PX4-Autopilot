@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Renesas FPB-RA8E1 board sensors init
+#------------------------------------------------------------------------------
+
+# Start ADC driver for battery monitoring (when available)
+# board_adc start
+
+# Start IMU on SPI1 - ICM20948 9-axis sensor
+icm20948 -s -b 1 -c 1 -R 0 start
+
+# Start Barometer on SPI1 - BMP388 pressure sensor  
+bmp388 -s -b 1 -c 2 start
+
+# Try to start magnetometer (part of ICM20948)
+# The ICM20948 includes an AK09916 magnetometer
+ak09916 -I -a 0x0C start
+
+# Start PWM output driver for motor control
+pwm_out start
+
+# Configure PWM outputs for standard ESC operation
+pwm_out mode_pwm
+
+# Enable all 4 PWM channels
+pwm_out arm

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,92 +32,29 @@
  ****************************************************************************/
 
 /**
- * @file px4_manifest.cpp
+ * @file spi.cpp
  *
- * manifest utilites
- *
- * @author David Sidrane <david.sidrane@nscdg.com>
+ * Board-specific SPI functions.
  */
 
-#ifndef MODULE_NAME
-#define MODULE_NAME "PX4_MANIFEST"
-#endif
-
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/px4_manifest.h>
-#include <px4_platform_common/log.h>
 #include <px4_platform_common/board_common.h>
+#include <px4_arch/spi_hw_description.h>
 
-#include <errno.h>
+#include <drivers/drv_sensor.h>
+#include <nuttx/spi/spi.h>
 
-__EXPORT const px4_mft_s *board_get_manifest(void) weak_function;
+#include "board_config.h"
 
-/* This is the default manifest when no MTD driver is installed */
-static const px4_mft_entry_s mtd_mft = {
-	.type = MTD,
+static constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
+	initSPIBus(SPI::Bus::SPI1, {
+		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO_SPI1_CS0_ICM20948}, SPI::DRDY{GPIO_IMU_DRDY}),
+		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO_SPI1_CS1_BMP388}),
+	}),
 };
 
-static const px4_mft_s default_mft = {
-	.nmft = 1,
-	.mfts =  {
-		&mtd_mft
-	}
-};
+static constexpr bool unused = validateSPIConfig(px4_spi_buses);
 
+const px4_spi_bus_t *px4_spi_buses_all_buses = px4_spi_buses;
 
-const px4_mft_s *board_get_manifest(void)
-{
-	return &default_mft;
-}
-
-
-__EXPORT int px4_mft_configure(const px4_mft_s *mft)
-{
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			switch (mft->mfts[m]->type) {
-			case MTD:
-				px4_mtd_config(static_cast<const px4_mtd_manifest_t *>(mft->mfts[m]->pmft));
-				break;
-
-			case MFT:
-			default:
-				break;
-			}
-		}
-	}
-
-	return 0;
-}
-
-__EXPORT int px4_mft_query(const px4_mft_s *mft, px4_manifest_types_e type,
-			   const char *sub, const char *val)
-{
-	int rv = -EINVAL;
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			if (mft->mfts[m]->type == type)
-				switch (type) {
-				case MTD:
-					return px4_mtd_query(sub, val, nullptr);
-					break;
-
-				case MFT:
-					if (mft->mfts[m]->pmft != nullptr) {
-						system_query_func_t query = (system_query_func_t) mft->mfts[m]->pmft;
-						return query(sub, val, nullptr);
-					}
-
-					break;
-
-				default:
-					rv = -ENODATA;
-					break;
-				}
-		}
-	}
-
-	return rv;
-}
+const size_t px4_spi_buses_all_buses_length = sizeof(px4_spi_buses) / sizeof(px4_spi_buses[0]);

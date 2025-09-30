@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# Renesas FPB-RA8E1 board main initialization
+#------------------------------------------------------------------------------
+
+# Load default parameters specific to this board
+if [ -f /etc/init.d/rc.board_defaults ]
+then
+	. /etc/init.d/rc.board_defaults
+fi
+
+# Start the board-specific sensors and drivers
+if [ -f /etc/init.d/rc.board_sensors ]
+then
+	. /etc/init.d/rc.board_sensors
+fi
+
+# Set up I2C bus for expansion (if needed)
+# i2c -b 3 start
+
+# Set up LED driver for status indication
+led_control start
+
+echo "FPB-RA8E1 board initialization complete"

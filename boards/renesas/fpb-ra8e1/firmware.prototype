@@ -1,0 +1,6 @@
+board_id: 88
+magic: 0x5744500A
+description: "Renesas FPB-RA8E1 Development Board"
+image_maxsize: 1048576
+extflash_available: 0
+extflash_maxsize: 0

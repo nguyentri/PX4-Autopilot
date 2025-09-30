@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,92 +32,29 @@
  ****************************************************************************/
 
 /**
- * @file px4_manifest.cpp
+ * @file i2c.cpp
  *
- * manifest utilites
- *
- * @author David Sidrane <david.sidrane@nscdg.com>
+ * Board-specific I2C functions.
  */
 
-#ifndef MODULE_NAME
-#define MODULE_NAME "PX4_MANIFEST"
-#endif
+#include <nuttx/config.h>
+#include <nuttx/arch.h>
+#include <nuttx/i2c/i2c_master.h>
 
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/px4_manifest.h>
-#include <px4_platform_common/log.h>
-#include <px4_platform_common/board_common.h>
+#include <px4_arch/i2c_hw_description.h>
 
-#include <errno.h>
+#include "board_config.h"
 
-__EXPORT const px4_mft_s *board_get_manifest(void) weak_function;
-
-/* This is the default manifest when no MTD driver is installed */
-static const px4_mft_entry_s mtd_mft = {
-	.type = MTD,
+constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
+	initI2CBus(I2C::Bus::I2C3, {
+		initI2CDevice(0x68, I2C::Address::ICM20948), // ICM20948 IMU (if connected via I2C)
+		initI2CDevice(0x76, I2C::Address::BMP388),   // BMP388 Barometer (if connected via I2C)
+	}),
 };
 
-static const px4_mft_s default_mft = {
-	.nmft = 1,
-	.mfts =  {
-		&mtd_mft
-	}
-};
+static constexpr bool unused = validateI2CConfig(px4_i2c_buses);
 
+const px4_i2c_bus_t *px4_i2c_buses_all_buses = px4_i2c_buses;
 
-const px4_mft_s *board_get_manifest(void)
-{
-	return &default_mft;
-}
-
-
-__EXPORT int px4_mft_configure(const px4_mft_s *mft)
-{
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			switch (mft->mfts[m]->type) {
-			case MTD:
-				px4_mtd_config(static_cast<const px4_mtd_manifest_t *>(mft->mfts[m]->pmft));
-				break;
-
-			case MFT:
-			default:
-				break;
-			}
-		}
-	}
-
-	return 0;
-}
-
-__EXPORT int px4_mft_query(const px4_mft_s *mft, px4_manifest_types_e type,
-			   const char *sub, const char *val)
-{
-	int rv = -EINVAL;
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			if (mft->mfts[m]->type == type)
-				switch (type) {
-				case MTD:
-					return px4_mtd_query(sub, val, nullptr);
-					break;
-
-				case MFT:
-					if (mft->mfts[m]->pmft != nullptr) {
-						system_query_func_t query = (system_query_func_t) mft->mfts[m]->pmft;
-						return query(sub, val, nullptr);
-					}
-
-					break;
-
-				default:
-					rv = -ENODATA;
-					break;
-				}
-		}
-	}
-
-	return rv;
-}
+const size_t px4_i2c_buses_all_buses_length = sizeof(px4_i2c_buses) / sizeof(px4_i2c_buses[0]);

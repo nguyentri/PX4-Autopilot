@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,92 +32,83 @@
  ****************************************************************************/
 
 /**
- * @file px4_manifest.cpp
+ * @file led.c
  *
- * manifest utilites
- *
- * @author David Sidrane <david.sidrane@nscdg.com>
+ * LED backend.
  */
 
-#ifndef MODULE_NAME
-#define MODULE_NAME "PX4_MANIFEST"
-#endif
-
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/px4_manifest.h>
-#include <px4_platform_common/log.h>
-#include <px4_platform_common/board_common.h>
 
-#include <errno.h>
+#include <stdbool.h>
 
-__EXPORT const px4_mft_s *board_get_manifest(void) weak_function;
+#include "board_config.h"
 
-/* This is the default manifest when no MTD driver is installed */
-static const px4_mft_entry_s mtd_mft = {
-	.type = MTD,
-};
+#include <nuttx/board.h>
+#include <arch/board/board.h>
 
-static const px4_mft_s default_mft = {
-	.nmft = 1,
-	.mfts =  {
-		&mtd_mft
-	}
-};
+/*
+ * Ideally we'd be able to get these from up_internal.h,
+ * but since we want to be able to disable the NuttX use
+ * of leds for system indication at will and there is no
+ * separate switch, we need to build independent of the
+ * CONFIG_ARCH_LEDS configuration switch.
+ */
+extern void led_init(void);
+extern void led_on(int led);
+extern void led_off(int led);
+extern void led_toggle(int led);
 
+static bool _led_inited = false;
 
-const px4_mft_s *board_get_manifest(void)
+__EXPORT void led_init()
 {
-	return &default_mft;
+	/* Configure LED1 & LED2 GPIOs for output */
+	px4_arch_configgpio(GPIO_nLED_RED);
+	px4_arch_configgpio(GPIO_nLED_GREEN);
+	_led_inited = true;
 }
 
-
-__EXPORT int px4_mft_configure(const px4_mft_s *mft)
+static void phy_set_led(int led, bool state)
 {
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			switch (mft->mfts[m]->type) {
-			case MTD:
-				px4_mtd_config(static_cast<const px4_mtd_manifest_t *>(mft->mfts[m]->pmft));
-				break;
-
-			case MFT:
-			default:
-				break;
-			}
-		}
+	/* Pull LED low to switch on */
+	if (led == 0) {
+		px4_arch_gpiowrite(GPIO_nLED_RED, !state);
 	}
 
-	return 0;
+	if (led == 1) {
+		px4_arch_gpiowrite(GPIO_nLED_GREEN, !state);
+	}
 }
 
-__EXPORT int px4_mft_query(const px4_mft_s *mft, px4_manifest_types_e type,
-			   const char *sub, const char *val)
+__EXPORT void led_on(int led)
 {
-	int rv = -EINVAL;
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			if (mft->mfts[m]->type == type)
-				switch (type) {
-				case MTD:
-					return px4_mtd_query(sub, val, nullptr);
-					break;
-
-				case MFT:
-					if (mft->mfts[m]->pmft != nullptr) {
-						system_query_func_t query = (system_query_func_t) mft->mfts[m]->pmft;
-						return query(sub, val, nullptr);
-					}
-
-					break;
-
-				default:
-					rv = -ENODATA;
-					break;
-				}
-		}
+	if (!_led_inited) {
+		led_init();
 	}
 
-	return rv;
+	phy_set_led(led, true);
+}
+
+__EXPORT void led_off(int led)
+{
+	if (!_led_inited) {
+		led_init();
+	}
+
+	phy_set_led(led, false);
+}
+
+__EXPORT void led_toggle(int led)
+{
+	if (!_led_inited) {
+		led_init();
+	}
+
+	if (led == 0) {
+		phy_set_led(led, !px4_arch_gpioread(GPIO_nLED_RED));
+	}
+
+	if (led == 1) {
+		phy_set_led(led, !px4_arch_gpioread(GPIO_nLED_GREEN));
+	}
 }

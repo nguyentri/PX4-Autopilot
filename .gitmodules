@@ -5,7 +5,7 @@
 
 [submodule "platforms/nuttx/NuttX/nuttx"]
 	path = platforms/nuttx/NuttX/nuttx
-	url = https://github.com/nguyentri/nuttx.git
+	url = https://github.com/nguyentri/NuttX_Px4.git
 	branch = master
 
 [submodule "platforms/nuttx/NuttX/apps"]

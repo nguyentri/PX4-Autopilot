@@ -541,10 +541,10 @@ submodulesupdate:
 	@git fetch --all --tags --recurse-submodules=yes --jobs=4
 
 distclean:
-
 	@git submodule deinit --force $(SRC_DIR)
 	@rm -rf "$(SRC_DIR)/build"
-	@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"
+
+#@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"
 
 # Help / Error / Misc
 # --------------------------------------------------------------------

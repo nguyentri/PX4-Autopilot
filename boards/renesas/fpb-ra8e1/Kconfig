@@ -1,0 +1,36 @@
+# Renesas FPB-RA8E1 board configuration
+
+config BOARD_RENESAS_FPB_RA8E1
+	bool "Renesas FPB-RA8E1"
+	depends on ARCH_CHIP_R7FA8E1AFDCFB
+	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	select ARCH_HAVE_PWM
+	select MODULE_SENSORS
+	select DRIVERS_IMU_INVENSENSE_ICM20948
+	select DRIVERS_BAROMETER_BMP388
+	---help---
+		Enable support for the Renesas FPB-RA8E1 development board.
+
+if BOARD_RENESAS_FPB_RA8E1
+
+config FPB_RA8E1_HAVE_IMU
+	bool "Enable ICM20948 IMU"
+	default y
+	---help---
+		Enable the ICM20948 9-axis IMU on the GY-912 module.
+
+config FPB_RA8E1_HAVE_BARO
+	bool "Enable BMP388 Barometer"  
+	default y
+	---help---
+		Enable the BMP388 barometer on the GY-912 module.
+
+config FPB_RA8E1_HAVE_MAG
+	bool "Enable AK09916 Magnetometer"
+	default y
+	depends on FPB_RA8E1_HAVE_IMU
+	---help---
+		Enable the AK09916 magnetometer (part of ICM20948).
+
+endif # BOARD_RENESAS_FPB_RA8E1

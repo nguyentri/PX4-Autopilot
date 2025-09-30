@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,92 +32,61 @@
  ****************************************************************************/
 
 /**
- * @file px4_manifest.cpp
+ * @file board_hw_rev_ver.c
  *
- * manifest utilites
- *
- * @author David Sidrane <david.sidrane@nscdg.com>
+ * Board hardware revision/version for Renesas RA8
  */
 
-#ifndef MODULE_NAME
-#define MODULE_NAME "PX4_MANIFEST"
-#endif
+/* Simple board hardware info implementation for Renesas RA8 */
 
-#include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/px4_manifest.h>
-#include <px4_platform_common/log.h>
-#include <px4_platform_common/board_common.h>
+#define __EXPORT
 
-#include <errno.h>
+static const char hw_type_name[] = "FPB-RA8E1";
 
-__EXPORT const px4_mft_s *board_get_manifest(void) weak_function;
+/************************************************************************************
+ * Name: board_get_hw_type_name
+ *
+ * Description:
+ *   Returns the board hardware type name
+ *
+ * Returned Value:
+ *   A pointer to a string containing the hardware type name
+ *
+ ************************************************************************************/
 
-/* This is the default manifest when no MTD driver is installed */
-static const px4_mft_entry_s mtd_mft = {
-	.type = MTD,
-};
-
-static const px4_mft_s default_mft = {
-	.nmft = 1,
-	.mfts =  {
-		&mtd_mft
-	}
-};
-
-
-const px4_mft_s *board_get_manifest(void)
+__EXPORT const char *board_get_hw_type_name(void)
 {
-	return &default_mft;
+	return hw_type_name;
 }
 
+/************************************************************************************
+ * Name: board_get_hw_version
+ *
+ * Description:
+ *   Returns the board hardware version
+ *
+ * Returned Value:
+ *   The hardware version as an integer (V1.0 = 1)
+ *
+ ************************************************************************************/
 
-__EXPORT int px4_mft_configure(const px4_mft_s *mft)
+__EXPORT int board_get_hw_version(void)
 {
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			switch (mft->mfts[m]->type) {
-			case MTD:
-				px4_mtd_config(static_cast<const px4_mtd_manifest_t *>(mft->mfts[m]->pmft));
-				break;
-
-			case MFT:
-			default:
-				break;
-			}
-		}
-	}
-
-	return 0;
+	return 1; /* Version 1.0 */
 }
 
-__EXPORT int px4_mft_query(const px4_mft_s *mft, px4_manifest_types_e type,
-			   const char *sub, const char *val)
+/************************************************************************************
+ * Name: board_get_hw_revision
+ *
+ * Description:
+ *   Returns the board hardware revision
+ *
+ * Returned Value:
+ *   The hardware revision as an integer
+ *
+ ************************************************************************************/
+
+__EXPORT int board_get_hw_revision(void)
 {
-	int rv = -EINVAL;
-
-	if (mft != nullptr) {
-		for (uint32_t m = 0; m < mft->nmft; m++) {
-			if (mft->mfts[m]->type == type)
-				switch (type) {
-				case MTD:
-					return px4_mtd_query(sub, val, nullptr);
-					break;
-
-				case MFT:
-					if (mft->mfts[m]->pmft != nullptr) {
-						system_query_func_t query = (system_query_func_t) mft->mfts[m]->pmft;
-						return query(sub, val, nullptr);
-					}
-
-					break;
-
-				default:
-					rv = -ENODATA;
-					break;
-				}
-		}
-	}
-
-	return rv;
+	return 0; /* Revision 0 */
 }
