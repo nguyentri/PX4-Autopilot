@@ -46,7 +46,7 @@
 
 #include "board_config.h"
 
-static constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
+constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 	initSPIBus(SPI::Bus::SPI1, {
 		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO_SPI1_CS0_ICM20948}, SPI::DRDY{GPIO_IMU_DRDY}),
 		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO_SPI1_CS1_BMP388}),

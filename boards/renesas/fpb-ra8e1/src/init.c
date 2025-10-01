@@ -228,3 +228,7 @@ __EXPORT const char *board_get_hw_type_name()
 {
 	return (const char *) hw_type;
 }
+
+__EXPORT void board_gpio_init(void){
+	fpb_ra8e1_gpio_initialize();
+}

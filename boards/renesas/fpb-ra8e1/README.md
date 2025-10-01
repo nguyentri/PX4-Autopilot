@@ -116,6 +116,10 @@ The FPB-RA8E1 is a development board from Renesas featuring:
    ```bash
    make renesas_fpb-ra8e1_default
    ```
+   - force to use custom repo:
+   ```bash
+    echo "y" | make renesas_fpb-ra8e1_default
+   ```
 
 4. **Build output**: The firmware will be generated as:
    ```

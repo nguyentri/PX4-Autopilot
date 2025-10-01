@@ -34,27 +34,33 @@
 /**
  * @file timer_config.cpp
  *
- * Configuration data for the RA8E1 GPT timers.
+ * NuttX HAL-based configuration for RA8E1 GPT timers.
  */
 
 #include <px4_arch/io_timer_hw_description.h>
+#include <px4_arch/hw_description.h>
 
 #include "board_config.h"
 
-/* Configuration for RA8E1 GPT timers for PWM output */
+/* NuttX HAL-based Configuration for RA8E1 GPT timers for PWM output
+ *
+ * This configuration uses NuttX PWM HAL through ra_gpt driver instead of
+ * direct hardware register access. The GPT timers are initialized using
+ * ra_gpt_initialize() which returns pwm_lowerhalf_s structures.
+ */
 
-constexpr io_timers_t io_timers[MAX_IO_TIMERS] = {
-	initIOTimer(Timer::GPT0, DMA{DMA::Invalid}),
-	initIOTimer(Timer::GPT2, DMA{DMA::Invalid}),
-	initIOTimer(Timer::GPT3, DMA{DMA::Invalid}),
-	initIOTimer(Timer::GPT4, DMA{DMA::Invalid}),
+constexpr ::io_timers_t io_timers[MAX_IO_TIMERS] = {
+	initIOTimer(Timer::Timer0, DMA{DMA::Invalid}),  // GPT0 for Motor 2
+	initIOTimer(Timer::Timer2, DMA{DMA::Invalid}),  // GPT2 for Motor 3
+	initIOTimer(Timer::Timer3, DMA{DMA::Invalid}),  // GPT3 for Motor 1
+	initIOTimer(Timer::Timer4, DMA{DMA::Invalid}),  // GPT4 for Motor 4
 };
 
-constexpr timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-	initIOTimerChannel(io_timers, {Timer::GPT3, Timer::Channel1}, {GPIO_GPT3_A}),  // Motor 1
-	initIOTimerChannel(io_timers, {Timer::GPT0, Timer::Channel1}, {GPIO_GPT0_A}),  // Motor 2  
-	initIOTimerChannel(io_timers, {Timer::GPT2, Timer::Channel1}, {GPIO_GPT2_A}),  // Motor 3
-	initIOTimerChannel(io_timers, {Timer::GPT4, Timer::Channel1}, {GPIO_GPT4_A}),  // Motor 4
+constexpr ::timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
+	initIOTimerChannel(io_timers, {Timer::Timer3, Timer::Channel1}, {BOARD_ESC_1}),  // Motor 1 -> Channel 0
+	initIOTimerChannel(io_timers, {Timer::Timer0, Timer::Channel1}, {BOARD_ESC_2}),  // Motor 2 -> Channel 1
+	initIOTimerChannel(io_timers, {Timer::Timer2, Timer::Channel1}, {BOARD_ESC_3}),  // Motor 3 -> Channel 2
+	initIOTimerChannel(io_timers, {Timer::Timer4, Timer::Channel1}, {BOARD_ESC_4}),  // Motor 4 -> Channel 3
 };
 
 constexpr io_timers_channel_mapping_t io_timers_channel_mapping = initIOTimerChannelMapping(io_timers, timer_io_channels);

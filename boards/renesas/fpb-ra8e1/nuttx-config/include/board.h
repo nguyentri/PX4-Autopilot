@@ -27,6 +27,10 @@
 
 #include <nuttx/config.h>
 
+#ifndef __ASSEMBLY__
+# include "hardware/ra_pinmap.h"
+#endif
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -70,6 +74,10 @@
 #define GPIO_SPI1_CS0   GPIO_P408_OUTPUT_HIGH    /* P408 - ICM20948 CS */
 #define GPIO_SPI1_CS1   GPIO_P407_OUTPUT_HIGH    /* P407 - BMP388 CS */
 
+/* SPI Slave Select aliases (for compatibility) */
+#define GPIO_SPI1_SS0   GPIO_SPI1_CS0            /* P408 - ICM20948 CS */
+#define GPIO_SPI1_SS1   GPIO_SPI1_CS1            /* P407 - BMP388 CS */
+
 /* PWM/GPT Timer Pin Definitions for Motor Control */
 #define GPIO_GPT0_A     GPIO_GTIOC0A_3         /* P415 - Motor 2 */
 #define GPIO_GPT2_A     GPIO_GTIOC2A_2         /* P113 - Motor 3 */
@@ -81,8 +89,8 @@
 #define GPIO_I2C3_SCL   GPIO_SCL3_MISO3_RXD3_A /* P512 - Expansion I2C */
 
 /* LED Pin Definitions */
-#define GPIO_LED1       GPIO_P404_OUTPUT_HIGH  /* P404 - LED1 */
-#define GPIO_LED2       GPIO_P405_OUTPUT_HIGH  /* P405 - LED2 */
+#define GPIO_nLED_RED       GPIO_LED1  /* P404 - LED1 */
+#define GPIO_nLED_GREEN     GPIO_LED2  /* P405 - LED2 */
 
 /* Button Pin Definitions */
 #define GPIO_SW1        GPIO_IRQ13_P009        /* P009 - User Button */

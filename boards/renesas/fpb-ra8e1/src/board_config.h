@@ -76,28 +76,23 @@
 #define PX4_SPI_BUS_SENSORS     1       /* SPI1 for sensors */
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
-/* Use GPIO definitions from NuttX board.h to avoid conflicts */
-/* Chip Select Configuration - use NuttX definitions */
-#define GPIO_SPI1_CS0_ICM20948  GPIO_SPI1_CS0  /* Already defined in board.h */
-#define GPIO_SPI1_CS1_BMP388    GPIO_SPI1_CS1  /* Already defined in board.h */
+/* Chip Select Configuration - map to PX4 RA8 GPIO format */
+#define GPIO_SPI1_CS0_ICM20948  GPIO_SPI1_SS0  /* P408 - ICM20948 CS */
+#define GPIO_SPI1_CS1_BMP388    GPIO_SPI1_SS1  /* P407 - BMP388 CS */
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
 #define BOARD_SPI_BUS_MAX_DEVICES 2
 
-/* LED Configuration - map to NuttX LED definitions */
-#define GPIO_nLED_RED           GPIO_LED1      /* P404 - LED1 from board.h */
-#define GPIO_nLED_GREEN         GPIO_LED2      /* P405 - LED2 from board.h */
-
-/* PWM GPIO pins are already defined in nuttx-config/include/board.h */
-/* GPIO_GPT0_A, GPIO_GPT2_A, GPIO_GPT3_A, GPIO_GPT4_A */
-
-/* IMU Data Ready - use NuttX definition */
-/* GPIO_IMU_DRDY is already defined in board.h */
+/* PWM/GPT Timer Pin Definitions for ESC Control */
+#define BOARD_ESC_1     GPIO_GPT3_A
+#define BOARD_ESC_2     GPIO_GPT0_A
+#define BOARD_ESC_3     GPIO_GPT2_A
+#define BOARD_ESC_4     GPIO_GPT4_A
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS      1
-#define BOARD_OVERLOAD_LED     LED_RED
-#define BOARD_ARMED_STATE_LED  LED_GREEN
+#define BOARD_OVERLOAD_LED     		   0
+#define BOARD_ARMED_STATE_LED  		   1
 
 /* Safety Switch Configuration - use NuttX GPIO definition */
 #define GPIO_BTN_SAFETY         GPIO_SW1       /* P009 - User Button from board.h */
@@ -165,6 +160,41 @@
 #define BOARD_HAS_SENSOR_MAG    1
 #define BOARD_HAS_SENSOR_BARO   1
 
+/* Board ADC Configuration **************************************************/
+
+#define BOARD_ADC_VREF              3300
+#define BOARD_ADC_RESOLUTION        4096
+
+/* ADC Channel Definitions for FPB-RA8E1 */
+
+#define ADC_BATTERY_VOLTAGE_CHANNEL   0   /* AN000 - P004 (Arduino A0) */
+#define ADC_BATTERY_CURRENT_CHANNEL   104 /* AN104 - P003 (Arduino A1) */
+
+/* Number of ADC channels used for battery monitoring */
+
+#define BOARD_ADC_CHANNELS           2
+
+/* Battery monitoring constants */
+
+#define BATTERY_VOLTAGE_DIVIDER_RATIO  5.7f  /* 5.7:1 voltage divider */
+#define CURRENT_SENSOR_SENSITIVITY    185   /* ACS712-05B: 185mV/A */
+#define ADC_VREF_MV                   3300  /* 3.3V reference voltage */
+#define ADC_RESOLUTION_BITS          12    /* 12-bit ADC */
+#define ADC_MAX_VALUE                ((1 << ADC_RESOLUTION_BITS) - 1)
+
+/* Battery voltage thresholds (in mV) */
+
+#define BATTERY_VOLTAGE_MAX          4200  /* 4.2V fully charged */
+#define BATTERY_VOLTAGE_MIN          3200  /* 3.2V discharged */
+
+/* GPIO pin definitions for ADC channels */
+
+#define GPIO_ADC_BATTERY_VOLTAGE     GPIO_P004_AN000  /* P004 as AN000 */
+#define GPIO_ADC_BATTERY_CURRENT     GPIO_P003_AN104  /* P003 as AN104 */
+
+/* Hardfault logging path */
+#define HARDFAULT_ULOG_PATH      "/fs/microsd/fault.log"
+
 /* Default Sensor Orientation */
 #define BOARD_ROTATION_DEFAULT  ROTATION_NONE
 
@@ -173,6 +203,8 @@
 #define PX4_CPU_UUID_WORD32_LENGTH (PX4_CPU_UUID_BYTE_LENGTH/sizeof(uint32_t))
 #define PX4_CPU_MFGUID_BYTE_LENGTH PX4_CPU_UUID_BYTE_LENGTH
 #endif
+
+#define BOARD_ENABLE_CONSOLE_BUFFER
 
 #include <px4_platform_common/board_common.h>
 
@@ -183,9 +215,6 @@ extern "C" {
 #ifndef __ASSEMBLY__
 
 extern void ra8e1_boardinitialize(void);
-
-#define board_peripheral_reset(ms)
-#define board_gpio_init()
 
 #endif /* __ASSEMBLY__ */
 
