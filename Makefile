@@ -64,7 +64,6 @@ all: ensure_nuttx_ra8_branch px4_sitl_default
 # for builds. Set SKIP_NUTTX_SWITCH=1 to disable this behavior.
 .PHONY: ensure_nuttx_ra8_branch
 ensure_nuttx_ra8_branch:
-	@if [ "$$SKIP_NUTTX_SWITCH" != "1" ]; then \
 		echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."; \
 		cd platforms/nuttx/NuttX/nuttx && \
 		if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
@@ -75,9 +74,6 @@ ensure_nuttx_ra8_branch:
 		else \
 			echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
 		fi; \
-	else \
-		echo "Skipping NuttX submodule branch switch (SKIP_NUTTX_SWITCH=1 set)"; \
-	fi
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )

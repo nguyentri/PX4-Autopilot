@@ -32,6 +32,13 @@ The FPB-RA8E1 is a development board from Renesas featuring:
 - **Storage**: Parameter storage in data flash
 - **RC Input**: SBUS protocol support on UART
 
+### DShot ESC Protocol Support ⚡
+- **DShot150/300/600**: Digital ESC communication protocol
+- **Hardware Timers**: Uses RA8 GPT timers for precise timing
+- **BDShot Support**: Bidirectional DShot for ESC telemetry (planned)
+- **Channel Mapping**: 4 channels mapped to GPT0/2/3/4 timers
+- **Configuration**: Use `renesas_fpb-ra8e1_dshot` target for DShot
+
 ### Not Currently Supported ❌
 - **CAN Bus**: Not implemented
 - **USB**: Limited to power only
@@ -106,29 +113,36 @@ The FPB-RA8E1 is a development board from Renesas featuring:
 
 1. **Navigate to PX4 root directory**:
    ```bash
-   cd /path/to/PX4-Autopilot
+   cd ~/projects/PX4-Autopilot
    ```
 
 2. **Clean any previous builds** (recommended):
    ```bash
-   make clean
    make distclean
+   # OR for specific target only:
+   make renesas_fpb-ra8e1_default clean
    ```
 
 3. **Build the firmware**:
    ```bash
+   # Standard build with PWM outputs
    make renesas_fpb-ra8e1_default
-   ```
-   - force to use custom repo:
-   ```bash
-    echo "y" | make renesas_fpb-ra8e1_default
+
+   # DShot build for ESC communication
+   make renesas_fpb-ra8e1_dshot
+
+   # OR with verbose output for debugging
+   make renesas_fpb-ra8e1_default V=1
    ```
 
 4. **Build output**: The firmware will be generated as:
    ```
-   build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.elf
-   build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.hex
-   build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.bin
+   build/renesas_fpb-ra8e1_default/platforms/nuttx/NuttX/nuttx/nuttx.hex
+   build/renesas_fpb-ra8e1_default/platforms/nuttx/NuttX/nuttx/nuttx.bin
+   build/renesas_fpb-ra8e1_default/platforms/nuttx/NuttX/nuttx/nuttx.elf
+
+   # For DShot build:
+   build/renesas_fpb-ra8e1_dshot/platforms/nuttx/NuttX/nuttx/nuttx.*
    ```
 
 ### Test Configuration Build
@@ -137,6 +151,25 @@ For hardware validation and testing:
 ```bash
 make renesas_fpb-ra8e1_test
 ```
+
+### DShot ESC Configuration
+
+When using the DShot build target, you can configure DShot parameters:
+
+```bash
+# Set DShot frequency (150, 300, or 600 kHz)
+# This is typically set via parameter DSHOT_CONFIG
+# 150 = DShot150, 300 = DShot300, 600 = DShot600
+
+# Enable bidirectional DShot for ESC telemetry
+# Set DSHOT_3D_ENABLE = 1 for 3D mode support
+```
+
+**DShot Channel Mapping**:
+- **Channel 0** (Motor 1): P300 → GPT3A
+- **Channel 1** (Motor 2): P415 → GPT0A
+- **Channel 2** (Motor 3): P113 → GPT2A
+- **Channel 3** (Motor 4): P302 → GPT4A
 
 ## Flash Instructions
 

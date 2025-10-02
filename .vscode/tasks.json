@@ -12,7 +12,7 @@
                 "${command:cmake.tasksBuildCommand}"
             ],
             "options": {
-                "cwd": "${command:cmake.buildDirectory}"
+                "cwd": "${command:cmake.buildDirectory}",
             },
             "group": {
                 "kind": "build",
@@ -35,7 +35,7 @@
             "type": "shell",
             "command": "make tests",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}",
             },
             "group": {
                 "kind": "test",
@@ -71,7 +71,7 @@
             "type": "shell",
             "command": "make px4_sitl_default sitl_gazebo-classic",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}",
             },
             "presentation": {
                 "echo": true,

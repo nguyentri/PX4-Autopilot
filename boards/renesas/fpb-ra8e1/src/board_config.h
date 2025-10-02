@@ -118,10 +118,10 @@
 #define BOARD_SPI_BUS_MAX_DEVICES 2
 
 /* PWM/GPT Timer Pin Definitions for ESC Control - use ra8e1_pinmap.h per-pin macros */
-#define GPIO_TIM3_CH1OUT        GPIO_P300_OUTPUT_LOW   /* P300 - GPT3A - Motor 1 */
-#define GPIO_TIM0_CH1OUT        GPIO_P415_OUTPUT_LOW   /* P415 - GPT0A - Motor 2 */
-#define GPIO_TIM2_CH1OUT        GPIO_P113_OUTPUT_LOW   /* P113 - GPT2A - Motor 3 */
-#define GPIO_TIM4_CH1OUT        GPIO_P302_OUTPUT_LOW   /* P302 - GPT4A - Motor 4 */
+#define GPIO_TIM3_CH1OUT        GPIO_GTIOC0A_3   /* P300 - GPT3A - Motor 1 */
+#define GPIO_TIM0_CH1OUT        GPIO_GTIOC2A_2   /* P415 - GPT0A - Motor 2 */
+#define GPIO_TIM2_CH1OUT        GPIO_GTIOC3A_1   /* P113 - GPT2A - Motor 3 */
+#define GPIO_TIM4_CH1OUT        GPIO_GTIOC4A_2   /* P302 - GPT4A - Motor 4 */
 
 /* Define Timer channels for PX4 */
 #define DIRECT_PWM_OUTPUT_CHANNELS  4

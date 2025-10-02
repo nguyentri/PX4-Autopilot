@@ -21,7 +21,7 @@ config FPB_RA8E1_HAVE_IMU
 		Enable the ICM20948 9-axis IMU on the GY-912 module.
 
 config FPB_RA8E1_HAVE_BARO
-	bool "Enable BMP388 Barometer"  
+	bool "Enable BMP388 Barometer"
 	default y
 	---help---
 		Enable the BMP388 barometer on the GY-912 module.

@@ -1,5 +1,5 @@
 #!/bin/bash
 set -e
 
-make distclean
-echo "y" | make renesas_fpb-ra8e1_default | -j$(nproc)
+#make distclean
+echo "y" | make renesas_fpb-ra8e1_default
