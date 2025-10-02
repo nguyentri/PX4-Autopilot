@@ -6,15 +6,13 @@
 # Start ADC driver for battery monitoring (when available)
 # board_adc start
 
-# Start IMU on SPI1 - ICM20948 9-axis sensor
-icm20948 -s -b 1 -c 1 -R 0 start
+# Start IMU on SPI1 - ICM20948 9-axis sensor with integrated magnetometer
+# -s: SPI mode, -b 1: SPI bus 1, -R 0: no rotation, -M: enable magnetometer
+icm20948 -s -b 1 -R 0 -M start
 
-# Start Barometer on SPI1 - BMP388 pressure sensor  
-bmp388 -s -b 1 -c 2 start
-
-# Try to start magnetometer (part of ICM20948)
-# The ICM20948 includes an AK09916 magnetometer
-ak09916 -I -a 0x0C start
+# Start Barometer on SPI1 - BMP388 pressure sensor
+# -s: SPI mode, -b 1: SPI bus 1
+bmp388 -s -b 1 start
 
 # Start PWM output driver for motor control
 pwm_out start

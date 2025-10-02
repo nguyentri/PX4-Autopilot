@@ -41,12 +41,31 @@
     "*",
     "**/*"
   ],
-  "C_Cpp_Runner.additionalIncludeSearch": [
-    "platforms/nuttx/src/px4/renesas",
-    "platforms/nuttx/NuttX/nuttx/arch/arm/include/ra8",
-    "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8",
-    "platforms/nuttx/NuttX/nuttx/boards/arm/ra8/fpb-ra8e1"
-  ],
+    "C_Cpp_Runner.additionalIncludeSearch": [
+        "platforms/nuttx/src/px4/renesas",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/include/ra8",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/ra8/fpb-ra8e1"
+    ],
+    // Add these patterns to exclude app sub-folders under boards and platforms/nuttx/src/px4,
+    // while keeping boards/renesas and platforms/nuttx/src/px4/renesas included.
+    // Note: add the following entries into the existing "C_Cpp_Runner.excludeSearch" array.
+    "C_Cpp_Runner.appExcludeSearch": [
+        // exclude common app/appS folder names under boards
+        "**/boards/*/app/**",
+        "**/boards/*/apps/**",
+        // exclude any app folders under platforms/nuttx/src/px4
+        "**/platforms/nuttx/src/px4/*/app/**",
+        "**/platforms/nuttx/src/px4/*/apps/**",
+        // broader catches (if apps can be nested)
+        "**/boards/**/app/**",
+        "**/boards/**/apps/**",
+        "**/platforms/nuttx/src/px4/**/app/**",
+        "**/platforms/nuttx/src/px4/**/apps/**",
+        // keep renesas paths (negation shown for clarity; some tools support "!" negation)
+        "!**/boards/renesas/**",
+        "!**/platforms/nuttx/src/px4/renesas/**"
+    ],
   "C_Cpp_Runner.excludeSearch": [
     "**/build",
     "**/build/**",

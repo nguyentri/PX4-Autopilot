@@ -1,0 +1,15 @@
+// jlink_flash_nuttx.jlink - Flash NuttX to RA8E1
+si 1
+speed 4000
+device R7FA8E1AF
+connect
+
+r        // reset
+h        // halt
+
+erase    // chip erase
+loadfile build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.elf
+
+r
+g
+exit

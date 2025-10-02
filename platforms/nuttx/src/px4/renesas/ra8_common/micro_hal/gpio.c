@@ -48,43 +48,6 @@
 #include "hardware/ra8e1/ra8e1_pinmap.h"
 #include "ra_gpio.h"
 
-#ifndef OK
-#define OK 0
-#endif
-
-/****************************************************************************
- * GPIO Configuration Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Interrupt Functions
- ****************************************************************************/
-
-/**
- * Configure GPIO interrupt, will move to ra_gpio.c later
- * Note: This is a simplified implementation
- */
-int ra_gpiosetevent(uint32_t pinset, bool rising, bool falling,
-                         bool event, xcpt_t func, void *arg)
-{
-    /* TODO: Implement GPIO interrupt configuration for RA8 */
-    /* This would involve:
-     * 1. Configure the pin for interrupt mode
-     * 2. Set up the interrupt controller
-     * 3. Register the callback function
-     */
-
-    /* For now, return success but don't actually set up interrupts */
-    (void)pinset;
-    (void)rising;
-    (void)falling;
-    (void)event;
-    (void)func;
-    (void)arg;
-
-    return OK;
-}
-
 /****************************************************************************
  * LED Control Functions
  ****************************************************************************/

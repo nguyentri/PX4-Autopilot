@@ -72,7 +72,7 @@ typedef uint32_t gpio_pinset_t;
 #define PX4_CPU_MFGUID_FORMAT_SIZE              ((2*PX4_CPU_MFGUID_BYTE_LENGTH)+1)
 
 /* Panic save implementation for RA8 */
-#define px4_savepanic(fileno, context, length)  ra8_save_panic(fileno, context, length)
+#define px4_savepanic(fileno, context, length)  ra_save_panic(fileno, context, length)
 
 #define PX4_BUS_OFFSET       0                  /* RA8 buses are 0 based */
 
@@ -124,7 +124,7 @@ int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices);
 /* PX4 SPI functions - implemented in platforms/nuttx/src/px4/renesas/ra8_common/micro_hal/spi.cpp */
 struct spi_dev_s *px4_spibus_initialize(int bus);
 
-void ra8_save_panic(int fileno, void *context, int length);
+void ra_save_panic(int fileno, void *context, int length);
 
 #ifdef __cplusplus
 }

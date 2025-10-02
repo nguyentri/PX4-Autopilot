@@ -47,66 +47,8 @@
 #include <nuttx/compiler.h>
 #include <stdint.h>
 
-/* Undefine PX4 GPIO constants that conflict with NuttX RA8 definitions */
-#ifdef GPIO_OUTPUT
-#undef GPIO_OUTPUT
-#endif
-#ifdef GPIO_INPUT
-#undef GPIO_INPUT
-#endif
-#ifdef GPIO_OUTPUT_HIGH
-#undef GPIO_OUTPUT_HIGH
-#endif
-#ifdef GPIO_OUTPUT_LOW
-#undef GPIO_OUTPUT_LOW
-#endif
-
 #include <ra_pinmap.h>
 #include <ra_gpio.h>
-
-/* RA8 GPIO definitions - need to avoid GPIO_OUTPUT conflict with PX4 */
-/* Define only what we need from ra8e1_pinmap.h */
-#ifndef gpio_pinset_t
-typedef uint32_t gpio_pinset_t;
-#endif
-
-/* Port Number definitions from RA8E1 */
-#ifndef PORT4
-#define PORT0                                   (0 << 24)
-#define PORT1                                   (1 << 24)
-#define PORT2                                   (2 << 24)
-#define PORT3                                   (3 << 24)
-#define PORT4                                   (4 << 24)
-#define PORT5                                   (5 << 24)
-#define PORT6                                   (6 << 24)
-#define PORT7                                   (7 << 24)
-#define PORT8                                   (8 << 24)
-#define PORT9                                   (9 << 24)
-#endif
-
-/* Pin Number definitions from RA8E1 */
-#ifndef PIN0
-#define PIN0                                   (0 << 16)
-#define PIN1                                   (1 << 16)
-#define PIN2                                   (2 << 16)
-#define PIN3                                   (3 << 16)
-#define PIN4                                   (4 << 16)
-#define PIN5                                   (5 << 16)
-#define PIN6                                   (6 << 16)
-#define PIN7                                   (7 << 16)
-#define PIN8                                   (8 << 16)
-#define PIN9                                   (9 << 16)
-#define PIN10                                  (10 << 16)
-#define PIN11                                  (11 << 16)
-#define PIN12                                  (12 << 16)
-#define PIN13                                  (13 << 16)
-#define PIN14                                  (14 << 16)
-#define PIN15                                  (15 << 16)
-#endif
-
-/* Use NuttX ra8e1_pinmap.h GPIO definitions directly */
-/* GPIO_OUTPUT, GPIO_INPUT, GPIO_LOW_DRIVE, etc. are defined in ra8e1_pinmap.h */
-/* Peripheral functions like GPIO_RSPCKB_B_1, GPIO_MISOB_B_1, etc. are predefined */
 
 /****************************************************************************************************
  * Definitions
@@ -150,12 +92,12 @@ typedef uint32_t gpio_pinset_t;
 #define BOARD_NUMBER_SPI_BUSES  1
 #define BOARD_SPI_BUS_SENSORS   1       /* SPI bus for sensors */
 
-/* I2C Bus Configuration */
-#define PX4_I2C_BUS_EXPANSION   3       /* I2C3 for expansion/sensors */
+/* I2C Bus Configuration - For future expansion only, sensors use SPI */
+#define PX4_I2C_BUS_EXPANSION   3       /* I2C3 for future expansion (not sensors) */
 #define PX4_I2C_BUS_MTD         PX4_I2C_BUS_EXPANSION
 
-/* Sensor Bus Configuration */
-#define PX4_SPI_BUS_SENSORS     1       /* SPI1 for sensors */
+/* Sensor Bus Configuration - Primary sensor interface */
+#define PX4_SPI_BUS_SENSORS     1       /* SPI1 for all sensors (ICM20948 (including AK09916) + BMP388) */
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
 
@@ -277,10 +219,10 @@ typedef uint32_t gpio_pinset_t;
 /* Battery monitoring constants */
 
 #define BATTERY_VOLTAGE_DIVIDER_RATIO  5.7f  /* 5.7:1 voltage divider */
-#define CURRENT_SENSOR_SENSITIVITY    185   /* ACS712-05B: 185mV/A */
-#define ADC_VREF_MV                   3300  /* 3.3V reference voltage */
-#define ADC_RESOLUTION_BITS          12    /* 12-bit ADC */
-#define ADC_MAX_VALUE                ((1 << ADC_RESOLUTION_BITS) - 1)
+#define CURRENT_SENSOR_SENSITIVITY     185   /* ACS712-05B: 185mV/A */
+#define ADC_VREF_MV                    3300  /* 3.3V reference voltage */
+#define ADC_RESOLUTION_BITS            12    /* 12-bit ADC */
+#define ADC_MAX_VALUE                  ((1 << ADC_RESOLUTION_BITS) - 1)
 
 /* Battery voltage thresholds (in mV) */
 
@@ -416,6 +358,24 @@ typedef uint32_t gpio_pinset_t;
 
 extern void fpb_ra8e1_boardinitialize(void);
 
-#include <px4_platform_common/board_common.h>
+/****************************************************************************************************
+ * Name: fpb_ra8e1_spibus_initialize
+ *
+ * Description:
+ *   Initialize the SPI bus for the board
+ *
+ ****************************************************************************************************/
+
+struct spi_dev_s;
+extern struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus);
+
+/****************************************************************************************************
+ * SPI Board Functions
+ ****************************************************************************************************/
+
+extern void fpb_ra8e1_spi_cs_init(void);
+extern void fpb_ra8e1_spi_cs_select(int devid, bool selected);
+extern uint8_t fpb_ra8e1_spi_cs_read(int devid);
+extern bool fpb_ra8e1_spi_drdy_read(void);
 
 #endif /* __ASSEMBLY__ */

@@ -5,7 +5,8 @@
         "name": "Debug RA8E1 - Renesas Hardware",
         "type": "renesas-hardware",
         "request": "launch",
-        "program": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        //"program": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        "program": "${workspaceRoot}/build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.elf",
         "target": {
             "device": "R7FA8E1AF",
             "deviceFamily": "RA",

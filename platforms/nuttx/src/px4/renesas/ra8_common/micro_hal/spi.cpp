@@ -32,123 +32,60 @@
  ****************************************************************************/
 
 /**
- * @file spi.c
+ * @file spi.cpp
  * SPI micro HAL implementation for Renesas RA8
  */
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <errno.h>
 
-#include <px4_platform_common/px4_config.h>
-#include <px4_arch/spi_hw_description.h>
+/* PX4 sensor device type definitions */
+#define DRV_IMU_DEVTYPE_ICM20948  0x28
+#define DRV_BARO_DEVTYPE_BMP388   0x67
+#define SPI_STATUS_PRESENT        0x01
 
-/* Board specific definitions */
-#include "board_config.h"
-
-/* SPI Device IDs for RA8 platform */
-#ifndef PX4_SPIDEV_ICM20948
-#define PX4_SPIDEV_ICM20948  1
-#endif
-
-#ifndef PX4_SPIDEV_BMP388
-#define PX4_SPIDEV_BMP388    2
-#endif
-
-#ifndef SPI_STATUS_PRESENT
-#define SPI_STATUS_PRESENT   0x01
-#endif
-
-#ifndef OK
-#define OK 0
-#endif
-
-/* Forward declarations */
 struct spi_dev_s;
 
-/* NuttX SPI driver function */
-extern struct spi_dev_s *ra_spibus_initialize(int bus);
+extern "C" {
+    extern struct spi_dev_s *ra_spibus_initialize(int bus);
+    extern void fpb_ra8e1_spi_gpio_init(void);
+    extern void fpb_ra8e1_spi_select(uint32_t devid, bool selected);
+    extern bool fpb_ra8e1_spi_drdy_read(void);
+}
 
-/****************************************************************************
- * SPI Bus Initialization
- ****************************************************************************/
-
-/**
- * Initialize SPI bus
- */
-struct spi_dev_s *px4_spibus_initialize(int bus)
+/* PX4 SPI bus initialization */
+extern "C" struct spi_dev_s *px4_spibus_initialize(int bus)
 {
-    struct spi_dev_s *spi_dev = NULL;
+    struct spi_dev_s *spi_dev = nullptr;
 
-    switch (bus) {
-    case 1:
-        /* Initialize SPI1 for sensors */
+    if (bus == 1) {
         spi_dev = ra_spibus_initialize(1);
-
-        if (spi_dev != NULL) {
-            /* Configure SPI1 GPIO pins */
-            px4_arch_configgpio(GPIO_SPI1_IMU_SCK);
-            px4_arch_configgpio(GPIO_SPI1_IMU_MISO);
-            px4_arch_configgpio(GPIO_SPI1_IMU_MOSI);
-            px4_arch_configgpio(GPIO_SPI1_CS0_ICM20948);
-            px4_arch_configgpio(GPIO_SPI1_CS1_BMP388);
-            px4_arch_configgpio(GPIO_SPI1_IMU_DRDY);
-
-            /* Set chip selects to inactive (high) */
-            px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, true);
-            px4_arch_gpiowrite(GPIO_SPI1_CS1_BMP388, true);
+        if (spi_dev != nullptr) {
+            fpb_ra8e1_spi_gpio_init();
         }
-        break;
-
-    default:
-        break;
     }
 
     return spi_dev;
 }
 
-/****************************************************************************
- * SPI Chip Select Functions
- ****************************************************************************/
-
-/**
- * SPI1 chip select function
- */
-void ra8_spi1select(struct spi_dev_s *dev, uint32_t devid, bool selected)
+/* SPI chip select functions for NuttX integration */
+extern "C" void ra8_spi1select(struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-    /* Handle chip select for SPI1 devices */
-    switch (devid) {
-    case PX4_SPIDEV_ICM20948:
-        px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, !selected);
-        break;
-
-    case PX4_SPIDEV_BMP388:
-        px4_arch_gpiowrite(GPIO_SPI1_CS1_BMP388, !selected);
-        break;
-
-    default:
-        break;
-    }
+    fpb_ra8e1_spi_select(devid, selected);
 }
 
-/**
- * SPI1 status function
- */
-uint8_t ra8_spi1status(struct spi_dev_s *dev, uint32_t devid)
+extern "C" uint8_t ra8_spi1status(struct spi_dev_s *dev, uint32_t devid)
 {
     uint8_t status = 0;
 
-    /* Return device-specific status */
     switch (devid) {
-    case PX4_SPIDEV_ICM20948:
-        /* Check data ready pin */
-        if (px4_arch_gpioread(GPIO_IMU_DRDY)) {
+    case DRV_IMU_DEVTYPE_ICM20948:
+        if (fpb_ra8e1_spi_drdy_read()) {
             status |= SPI_STATUS_PRESENT;
         }
         break;
 
-    case PX4_SPIDEV_BMP388:
-        /* BMP388 is always present if configured */
+    case DRV_BARO_DEVTYPE_BMP388:
         status |= SPI_STATUS_PRESENT;
         break;
 
@@ -159,33 +96,9 @@ uint8_t ra8_spi1status(struct spi_dev_s *dev, uint32_t devid)
     return status;
 }
 
-/****************************************************************************
- * SPI DMA Functions (stubs for now)
- ****************************************************************************/
-
-/**
- * Configure SPI DMA - stub implementation
- */
-void px4_spibus_set_dma_config(struct spi_dev_s *dev, uint32_t dma_config)
+/* SPI DMA stub */
+extern "C" void px4_spibus_set_dma_config(struct spi_dev_s *dev, uint32_t dma_config)
 {
-    /* TODO: Implement DMA configuration for RA8 SPI */
     (void)dev;
     (void)dma_config;
 }
-
-/****************************************************************************
- * SPI Device ID Definitions for PX4
- ****************************************************************************/
-
-/* These should match the device IDs used in spi.cpp */
-#ifndef PX4_SPIDEV_ICM20948
-#define PX4_SPIDEV_ICM20948  1
-#endif
-
-#ifndef PX4_SPIDEV_BMP388
-#define PX4_SPIDEV_BMP388    2
-#endif
-
-#ifndef SPI_STATUS_PRESENT
-#define SPI_STATUS_PRESENT   0x01
-#endif

@@ -39,7 +39,7 @@ __BEGIN_DECLS
 /* Renesas RA8 specific includes - stub for now */
 /* TODO: Add actual Renesas RA8 HAL includes when available */
 
-/* Renesas RA8 defines the 128 bit UUID 
+/* Renesas RA8 defines the 128 bit UUID
  * TODO: Define actual UUID structure for Renesas RA8
  */
 #define PX4_CPU_UUID_BYTE_LENGTH                16

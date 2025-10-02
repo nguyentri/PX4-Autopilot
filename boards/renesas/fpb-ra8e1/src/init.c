@@ -55,6 +55,7 @@ static const char hw_type[] = "FPB-RA8E1";
 #include <nuttx/i2c/i2c_master.h>
 #include <nuttx/sdio.h>
 #include <nuttx/mmcsd.h>
+#include "ra_spi.h"
 
 #include "board_config.h"
 
@@ -227,4 +228,112 @@ __EXPORT const char *board_get_hw_type_name()
 
 __EXPORT void board_gpio_init(void){
 	fpb_ra8e1_gpio_initialize();
+}
+
+/************************************************************************************
+ * SPI Board-Specific Functions for PX4 HAL
+ ************************************************************************************/
+
+__EXPORT void fpb_ra8e1_spi_gpio_init(void)
+{
+	/* Configure SPI1 GPIO pins - these are already configured in fpb_ra8e1_spidev_initialize() */
+	/* This function is called by the PX4 SPI HAL */
+	fpb_ra8e1_spidev_initialize();
+}
+
+__EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
+{
+	/* Handle chip select for SPI1 devices */
+	switch (devid) {
+	case 0x28: /* DRV_IMU_DEVTYPE_ICM20948 */
+		px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, !selected);
+		break;
+
+	case 0x67: /* DRV_BARO_DEVTYPE_BMP388 */
+		px4_arch_gpiowrite(GPIO_SPI1_CS1_BMP388, !selected);
+		break;
+
+	default:
+		break;
+	}
+}
+
+__EXPORT bool fpb_ra8e1_spi_drdy_read(void)
+{
+	/* Read the ICM20948 data ready pin */
+	return px4_arch_gpioread(GPIO_SPI1_IMU_DRDY);
+}
+
+/************************************************************************************
+ * NuttX SPI Driver Interface Functions
+ ************************************************************************************/
+
+/**
+ * Name: ra_spi_select
+ *
+ * Description:
+ *   Enable/disable the SPI chip select - required by NuttX RA8 SPI driver
+ */
+void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
+{
+	/* Handle chip select for SPI1 devices based on NuttX device IDs */
+	switch (devid) {
+	case 0: /* GY912_SPI_BMP388_DEVID */
+		px4_arch_gpiowrite(GPIO_SPI1_CS1_BMP388, !selected);
+		break;
+
+	case 1: /* GY912_SPI_ICM20948_DEVID */
+		px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, !selected);
+		break;
+
+	default:
+		/* Unknown device ID */
+		break;
+	}
+}
+
+/**
+ * Name: ra_spi_status
+ *
+ * Description:
+ *   Return the SPI status - required by NuttX RA8 SPI driver
+ */
+uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
+{
+	uint8_t status = 0;
+
+	/* Return device-specific status based on NuttX device IDs */
+	switch (devid) {
+	case 0: /* GY912_SPI_BMP388_DEVID */
+		/* BMP388 is always present if configured */
+		status = 1; /* SPI_STATUS_PRESENT equivalent */
+		break;
+
+	case 1: /* GY912_SPI_ICM20948_DEVID */
+		/* Check data ready pin for ICM20948 */
+		if (px4_arch_gpioread(GPIO_SPI1_IMU_DRDY)) {
+			status = 1; /* SPI_STATUS_PRESENT equivalent */
+		}
+		break;
+
+	default:
+		status = 0;
+		break;
+	}
+
+	return status;
+}
+
+/************************************************************************************
+ * Name: fpb_ra8e1_spibus_initialize
+ *
+ * Description:
+ *   Initialize the SPI bus for the board - called by PX4 HAL
+ *
+ ************************************************************************************/
+
+struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus)
+{
+	/* Call the NuttX RA8 SPI driver initialization */
+	return ra_spibus_initialize(bus);
 }

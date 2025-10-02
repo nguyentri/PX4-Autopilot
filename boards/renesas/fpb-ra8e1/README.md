@@ -21,6 +21,9 @@ The FPB-RA8E1 is a development board from Renesas featuring:
 - **PWM (GPT)**: 4 channels for motor control (400Hz standard ESC)
 - **GPIO**: Basic digital I/O pins
 - **Sensors**: ICM-20948 IMU + BMP388 barometer (GY-912 module)
+  - **IMU**: `icm20948` driver for 9-axis motion sensing
+  - **Barometer**: `bmp388` driver for altitude/pressure
+  - **Magnetometer**: `ak09916` driver (integrated with ICM-20948)
 - **LEDs**: 2 status LEDs for system indication
 
 ### Planned/Future Support 🚧
@@ -45,7 +48,7 @@ The FPB-RA8E1 is a development board from Renesas featuring:
 - **SCK**: P412 (SPI1 Clock)
 - **MOSI**: P411 (SPI1 MOSI)
 - **MISO**: P410 (SPI1 MISO)
-- **CS0**: P408 (ICM20948 IMU Chip Select)
+- **CS0**: P408 (ICM20948 (including AK09916) IMU Chip Select)
 - **CS1**: P407 (BMP388 Barometer Chip Select)
 - **DRDY**: P409 (ICM20948 Data Ready)
 

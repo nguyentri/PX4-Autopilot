@@ -39,104 +39,41 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <errno.h>
 
-/* Define missing constants */
+struct spi_dev_s;
+struct i2c_master_s;
+
 #ifndef OK
 #define OK 0
 #endif
 
-/* Simplified debug macros */
-#define spidbg(format, ...) /* disabled */
-#define i2cdbg(format, ...) /* disabled */
+/* Forward declaration - board-specific SPI initialization */
+extern struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus);
 
-/* Forward declare structures */
-struct spi_dev_s;
-struct i2c_master_s;
-
-/* GPIO interrupt handler type */
-typedef int (*gpio_interrupt_t)(int irq, void *context, void *arg);
-
-/* RA8 NuttX driver headers - declare functions we'll use */
-extern struct spi_dev_s *ra_spibus_initialize(int bus);
-extern struct i2c_master_s *ra_i2cbus_initialize(int bus);
-
-/* RA8 GPIO structure - matches ra_gpio.h definition */
-typedef struct {
-    uint8_t port;
-    uint8_t pin;
-    uint16_t cfg;
-} gpio_pinset_t;
-
-/* RA8 GPIO function declarations */
-extern int ra_configgpio(gpio_pinset_t cfgset);
-extern bool ra_gpioread(gpio_pinset_t pinset);
-extern void ra_gpiowrite(gpio_pinset_t pinset, bool value);
-
-/* RA8 GPIO register bit definitions (from hardware/ra_gpio.h) */
-#define R_PFS_PMR           (16) /* Bit 16: Port Mode Control */
-#define R_PFS_PCR           (4)  /* Bit 4: Pull-up Control */
-#define R_PFS_PDR           (2)  /* Bit 2: Port Direction */
-#define R_PFS_PODR          (0)  /* Bit 0: Port Output Data */
-#define R_PFS_PSEL_SHIFT_8  (8)  /* PSEL position in cfg field */
-
-/****************************************************************************
- * SPI Bus Initialization
- ****************************************************************************/
-
+/* SPI Bus Initialization - delegate to NuttX */
 struct spi_dev_s *ra_spibus_initialize(int bus)
 {
-    /* Call the actual RA8 SPI initialization from NuttX */
-    /* This would be implemented in the NuttX RA8 SPI driver */
-    spidbg("Initializing SPI bus %d\n", bus);
-
-    /* TODO: Replace with actual ra8_spibus_initialize call when available */
-    /* return ra8_spibus_initialize(bus); */
-
-    /* For now, return NULL to indicate initialization not available */
-    (void)bus;
-    return NULL;
+    /* Call the actual NuttX RA8 SPI driver directly */
+    /* We avoid naming conflict by using the NuttX board-specific function */
+    return fpb_ra8e1_spibus_initialize(bus);
 }
 
-/****************************************************************************
- * I2C Bus Initialization
- ****************************************************************************/
-
+/* I2C Bus functions - not used for sensors */
 struct i2c_master_s *ra_i2cbus_initialize(int bus)
 {
-    /* Call the actual RA8 I2C initialization from NuttX */
-    /* This would be implemented in the NuttX RA8 I2C driver */
-    i2cdbg("Initializing I2C bus %d\n", bus);
-
-    /* TODO: Replace with actual ra8_i2cbus_initialize call when available */
-    /* return ra8_i2cbus_initialize(bus); */
-
-    /* For now, return NULL to indicate initialization not available */
     (void)bus;
     return NULL;
 }
 
 int ra_i2cbus_uninitialize(struct i2c_master_s *dev)
 {
-    /* Call the actual RA8 I2C uninitialize from NuttX */
-    /* This would be implemented in the NuttX RA8 I2C driver */
-
-    /* TODO: Replace with actual ra8_i2cbus_uninitialize call when available */
-    /* return ra8_i2cbus_uninitialize(dev); */
-
-    /* For now, just return success - assume NuttX handles cleanup */
     (void)dev;
     return OK;
 }
 
-/****************************************************************************
- * Panic Save Function
- ****************************************************************************/
-
-void ra8_save_panic(int fileno, void *context, int length)
+/* Panic save stub */
+void ra_save_panic(int fileno, void *context, int length)
 {
-    /* Stub implementation for panic save */
-    /* TODO: Implement panic data storage to flash or other non-volatile memory */
     (void)fileno;
     (void)context;
     (void)length;
