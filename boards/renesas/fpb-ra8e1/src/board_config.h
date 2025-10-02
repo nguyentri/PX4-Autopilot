@@ -184,6 +184,7 @@ typedef uint32_t gpio_pinset_t;
 /* Define Timer channels for PX4 */
 #define DIRECT_PWM_OUTPUT_CHANNELS  4
 #define DIRECT_INPUT_TIMER_CHANNELS 0
+#define BOARD_NUM_IO_TIMERS         4  /* 4 GPT timers for PWM */
 
 /* LED GPIO Definitions - use ra8e1_pinmap.h per-pin macros */
 #define GPIO_nLED_RED           GPIO_P404_OUTPUT_HIGH  /* P404 - LED1 Status indicator */
@@ -310,21 +311,6 @@ typedef uint32_t gpio_pinset_t;
 #define HRT_TIMER               1  /* Use GPT1 for HRT */
 #define HRT_TIMER_CHANNEL       0  /* Use channel 0 */
 #define HRT_TIMER_FREQUENCY     120000000  /* 120MHz PCLKD for GPT timers */
-
-/* LED Configuration - using previously defined GPIO pins */
-/* LED1 (GPIO_nLED_RED) and LED2 (GPIO_nLED_GREEN) indices for PX4 */
-
-/* Safety Button - using previously defined GPIO_BTN_SAFETY */
-
-/* SPI Configuration - Use NuttX board definitions directly */
-/* GPIO_SPI1_SCK, GPIO_SPI1_MISO, GPIO_SPI1_MOSI are defined in NuttX board.h */
-
-/* SPI Chip Selects - Use NuttX board definitions from first definition */
-
-/* SPI Sensor Interrupt/Data Ready - GPIO_IMU_DRDY defined in NuttX board.h */
-
-/* UART/SCI, PWM, and I2C Configuration */
-/* All GPIO pins are defined in NuttX board.h - referenced from first definitions */
 
 /* Power Control */
 #define BOARD_HAS_PWM                   DIRECT_PWM_OUTPUT_CHANNELS

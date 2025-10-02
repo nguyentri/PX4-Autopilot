@@ -67,7 +67,7 @@ struct ra8_pwm_device_t {
 };
 
 /* Initialize RA8E1 GPT timer using NuttX HAL approach */
-static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_config)
+static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_config = {})
 {
     ::io_timers_t ret{};
 
