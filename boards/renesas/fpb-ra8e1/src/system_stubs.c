@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,27 +32,24 @@
  ****************************************************************************/
 
 /**
- * @file i2c.cpp
+ * @file system_stubs.c
  *
- * Board-specific I2C functions.
+ * System functions stubs for FPB-RA8E1
  */
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <errno.h>
+#include <unistd.h>
 
-// I2C bus structure definition to match PX4 common interface
-struct px4_i2c_bus_t {
-	int bus{-1}; ///< physical bus number (1, ...) (-1 means this is unused)
-	bool is_external; ///< static external configuration
-};
+/* Define __EXPORT for compatibility */
+#ifndef __EXPORT
+#define __EXPORT
+#endif
 
-#define I2C_BUS_MAX_BUS_ITEMS 1
-
-// Define the I2C bus array that the linker is looking for
-// For FPB-RA8E1, we have 1 I2C bus configured as internal
-const px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
-	{
-		.bus = 1,
-		.is_external = false
-	},
-};
+/* Stub implementation of pipe function */
+__EXPORT int pipe(int pipefd[2])
+{
+	/* Return failure - pipe not supported in this configuration */
+	(void)pipefd; /* Suppress unused parameter warning */
+	errno = ENOSYS; /* Function not implemented */
+	return -1;
+}

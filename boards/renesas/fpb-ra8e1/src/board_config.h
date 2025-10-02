@@ -47,6 +47,23 @@
 #include <nuttx/compiler.h>
 #include <stdint.h>
 
+/* Undefine PX4 GPIO constants that conflict with NuttX RA8 definitions */
+#ifdef GPIO_OUTPUT
+#undef GPIO_OUTPUT
+#endif
+#ifdef GPIO_INPUT
+#undef GPIO_INPUT
+#endif
+#ifdef GPIO_OUTPUT_HIGH
+#undef GPIO_OUTPUT_HIGH
+#endif
+#ifdef GPIO_OUTPUT_LOW
+#undef GPIO_OUTPUT_LOW
+#endif
+
+#include <ra_pinmap.h>
+#include <ra_gpio.h>
+
 /* RA8 GPIO definitions - need to avoid GPIO_OUTPUT conflict with PX4 */
 /* Define only what we need from ra8e1_pinmap.h */
 #ifndef gpio_pinset_t
@@ -87,20 +104,9 @@ typedef uint32_t gpio_pinset_t;
 #define PIN15                                  (15 << 16)
 #endif
 
-/* GPIO Configuration bits from RA8E1 - avoiding GPIO_OUTPUT conflict */
-#ifndef RA8_GPIO_OUTPUT
-#define RA8_GPIO_OUTPUT                         (1 << R_PFS_PDR)        /* Output direction */
-#define RA8_GPIO_INPUT                          (0)                     /* Input direction (default) */
-#define RA8_GPIO_LOW_DRIVE                      (0)                     /* Low drive strength (default) */
-#define RA8_GPIO_OUTPUT_HIGH                    (1 << R_PFS_PODR)       /* Output high */
-#define RA8_GPIO_OUTPUT_LOW                     (0)                     /* Output low (default) */
-#endif
-
-/* R_PFS register bit positions */
-#ifndef R_PFS_PDR
-#define R_PFS_PDR                               (2)     /* Port Direction Register bit */
-#define R_PFS_PODR                              (0)     /* Port Output Data Register bit */
-#endif
+/* Use NuttX ra8e1_pinmap.h GPIO definitions directly */
+/* GPIO_OUTPUT, GPIO_INPUT, GPIO_LOW_DRIVE, etc. are defined in ra8e1_pinmap.h */
+/* Peripheral functions like GPIO_RSPCKB_B_1, GPIO_MISOB_B_1, etc. are predefined */
 
 /****************************************************************************************************
  * Definitions
@@ -153,45 +159,41 @@ typedef uint32_t gpio_pinset_t;
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
 
-/* Chip Select Configuration - using RA8 NuttX gpio_pinset_t format */
-#define GPIO_SPI1_CS0_ICM20948  ((gpio_pinset_t)(PORT4 | PIN8 | RA8_GPIO_OUTPUT | RA8_GPIO_LOW_DRIVE | RA8_GPIO_OUTPUT_HIGH))  /* P408 - ICM20948 CS */
-#define GPIO_SPI1_CS1_BMP388    ((gpio_pinset_t)(PORT4 | PIN7 | RA8_GPIO_OUTPUT | RA8_GPIO_LOW_DRIVE | RA8_GPIO_OUTPUT_HIGH))  /* P407 - BMP388 CS */
+/* Chip Select Configuration - using NuttX ra8e1_pinmap.h gpio_pinset_t format */
+#define GPIO_SPI1_CS0_ICM20948  ((gpio_pinset_t)(PORT4 | PIN8 | GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_HIGH))  /* P408 - ICM20948 CS */
+#define GPIO_SPI1_CS1_BMP388    ((gpio_pinset_t)(PORT4 | PIN7 | GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_HIGH))  /* P407 - BMP388 CS */
 
 /* IMU Data Ready Pin - P409 */
-#define GPIO_SPI1_IMU_DRDY     ((gpio_pinset_t)(PORT4 | PIN9 | RA8_GPIO_INPUT))  /* P409 - ICM20948 Data Ready */
+#define GPIO_SPI1_IMU_DRDY      ((gpio_pinset_t)(PORT4 | PIN9 | GPIO_INPUT))  /* P409 - ICM20948 Data Ready */
 
-/* SPI Bus Pin Definitions - Use NuttX board definitions */
-/* SPI pins are defined in NuttX board.h:
- * GPIO_SPI1_SCK   - P412 - SPI1 Clock
- * GPIO_SPI1_MISO  - P410 - SPI1 MISO
- * GPIO_SPI1_MOSI  - P411 - SPI1 MOSI
- */
-/* GPIO_IMU_DRDY is defined in NuttX board.h as GPIO_IMU_DRDY */
+/* SPI Bus Pin Definitions - using NuttX ra8e1_pinmap.h predefined constants */
+#define GPIO_SPI1_IMU_SCK       GPIO_RSPCKB_B_1     /* P412 - SPI1 Clock */
+#define GPIO_SPI1_IMU_MISO      GPIO_MISOB_B_1      /* P410 - SPI1 MISO */
+#define GPIO_SPI1_IMU_MOSI      GPIO_MOSIB_B_1      /* P411 - SPI1 MOSI */
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
 #define BOARD_SPI_BUS_MAX_DEVICES 2
 
-/* PWM/GPT Timer Pin Definitions for ESC Control - using PX4 RA8 GPIO format */
-#define GPIO_TIM3_CH1OUT        (GPIO_PORTC | GPIO_PIN0 | GPIO_OUTPUT | GPIO_ALT_BIT)  /* P300 - GPT3A - Motor 1 */
-#define GPIO_TIM0_CH1OUT        (GPIO_PORTD | GPIO_PIN15 | GPIO_OUTPUT | GPIO_ALT_BIT) /* P415 - GPT0A - Motor 2 */
-#define GPIO_TIM2_CH1OUT        (GPIO_PORTB | GPIO_PIN3 | GPIO_OUTPUT | GPIO_ALT_BIT)  /* P113 - GPT2A - Motor 3 */
-#define GPIO_TIM4_CH1OUT        (GPIO_PORTC | GPIO_PIN2 | GPIO_OUTPUT | GPIO_ALT_BIT)  /* P302 - GPT4A - Motor 4 */
+/* PWM/GPT Timer Pin Definitions for ESC Control - use ra8e1_pinmap.h per-pin macros */
+#define GPIO_TIM3_CH1OUT        GPIO_P300_OUTPUT_LOW   /* P300 - GPT3A - Motor 1 */
+#define GPIO_TIM0_CH1OUT        GPIO_P415_OUTPUT_LOW   /* P415 - GPT0A - Motor 2 */
+#define GPIO_TIM2_CH1OUT        GPIO_P113_OUTPUT_LOW   /* P113 - GPT2A - Motor 3 */
+#define GPIO_TIM4_CH1OUT        GPIO_P302_OUTPUT_LOW   /* P302 - GPT4A - Motor 4 */
 
 /* Define Timer channels for PX4 */
 #define DIRECT_PWM_OUTPUT_CHANNELS  4
 #define DIRECT_INPUT_TIMER_CHANNELS 0
 
-/* LED GPIO Definitions - using PX4 RA8 GPIO format */
-#define GPIO_nLED_RED           (GPIO_PORTD | GPIO_PIN4 | GPIO_OUTPUT_HIGH)  /* P404 - LED1 Status indicator */
-#define GPIO_nLED_GREEN         (GPIO_PORTD | GPIO_PIN5 | GPIO_OUTPUT_HIGH)  /* P405 - LED2 Armed state indicator */
+/* LED GPIO Definitions - use ra8e1_pinmap.h per-pin macros */
+#define GPIO_nLED_RED           GPIO_P404_OUTPUT_HIGH  /* P404 - LED1 Status indicator */
+#define GPIO_nLED_GREEN         GPIO_P405_OUTPUT_HIGH  /* P405 - LED2 Armed state indicator */
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS      1
 #define BOARD_OVERLOAD_LED     		   0
 #define BOARD_ARMED_STATE_LED  		   1
 
-/* Safety Switch Configuration - using PX4 RA8 GPIO format */
-#define GPIO_BTN_SAFETY         (GPIO_PORTA | GPIO_PIN9 | GPIO_INPUT_PULLUP)  /* P009 - User Button */
+#define GPIO_BTN_SAFETY         GPIO_P009_INPUT_PULLUP  /* P009 - User Button */
 #define BOARD_HAS_NO_SAFETY_SWITCH 1   /* No dedicated safety switch */
 
 /* Use NuttX GPIO definitions from board.h instead of custom ones */
@@ -244,6 +246,7 @@ typedef uint32_t gpio_pinset_t;
 
 /* I2C Configuration */
 #define PX4_NUMBER_I2C_BUSES    1
+#define I2C_BUS_MAX_BUS_ITEMS   PX4_NUMBER_I2C_BUSES
 
 /* UART Mapping - Corrected to match NuttX assignment */
 #define PX4_UART_CONSOLE        "ttyS0"         /* Console on SCI2 -> ttyS0 */

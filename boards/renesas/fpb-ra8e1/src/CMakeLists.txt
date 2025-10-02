@@ -32,10 +32,13 @@
 ############################################################################
 
 add_library(drivers_board
+	board_common.c
 	i2c.cpp
+	i2c_funcs.c
 	init.c
 	led.c
 	spi.cpp
+	system_stubs.c
 	timer_config.cpp
 )
 
@@ -44,6 +47,7 @@ target_link_libraries(drivers_board
 		nuttx_arch
 		nuttx_drivers
 		px4_layer
+		ra8_micro_hal
 )
 
 target_include_directories(drivers_board PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
