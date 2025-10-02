@@ -33,6 +33,7 @@
 
 # Include essential common modules for Renesas RA8
 add_subdirectory(../ra8_common/board_hw_info board_hw_info)
+add_subdirectory(../ra8_common/board_critmon board_critmon)
 add_subdirectory(../ra8_common/board_reset board_reset)
 add_subdirectory(../ra8_common/hrt hrt)
 add_subdirectory(../ra8_common/io_pins io_pins)

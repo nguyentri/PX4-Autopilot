@@ -47,10 +47,7 @@
 #include "board_config.h"
 
 constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
-	initI2CBus(I2C::Bus::I2C3, {
-		initI2CDevice(0x68, I2C::Address::ICM20948), // ICM20948 IMU (if connected via I2C)
-		initI2CDevice(0x76, I2C::Address::BMP388),   // BMP388 Barometer (if connected via I2C)
-	}),
+	initI2CBus(I2C::Bus::I2C1, {}),
 };
 
 static constexpr bool unused = validateI2CConfig(px4_i2c_buses);

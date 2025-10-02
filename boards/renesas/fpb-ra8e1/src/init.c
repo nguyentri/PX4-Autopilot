@@ -112,10 +112,6 @@ __EXPORT void board_on_reset(int status)
 {
 	/* configure the GPIO pins to outputs and keep them low */
 
-	for (int i = 0; i < DIRECT_PWM_OUTPUT_CHANNELS; ++i) {
-		px4_arch_configgpio(PX4_MAKE_GPIO_OUTPUT_CLEAR(GPIO_GPIO0_OUTPUT + i));
-	}
-
 	if (status >= 0) {
 		up_mdelay(6);
 	}
@@ -153,7 +149,7 @@ static void fpb_ra8e1_gpio_initialize(void)
 	px4_arch_configgpio(GPIO_nLED_GREEN); /* LED2 */
 
 	/* Configure IMU data ready pin */
-	px4_arch_configgpio(GPIO_IMU_DRDY);
+	px4_arch_configgpio(GPIO_SPI1_IMU_DRDY);
 
 	/* Configure safety button */
 	px4_arch_configgpio(GPIO_BTN_SAFETY);

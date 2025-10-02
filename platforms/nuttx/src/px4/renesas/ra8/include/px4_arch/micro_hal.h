@@ -36,6 +36,7 @@
 
 /* NuttX includes */
 #include <nuttx/config.h>
+#include <nuttx/irq.h>
 #include <nuttx/spi/spi.h>
 #include <nuttx/i2c/i2c_master.h>
 
@@ -77,8 +78,7 @@ typedef uint32_t gpio_pinset_t;
 
 /* Bus initialization functions using RA8 NuttX drivers */
 #define px4_spibus_initialize(bus_num_1based)   ra_spibus_initialize(bus_num_1based - PX4_BUS_OFFSET)
-#define px4_i2cbus_initialize(bus_num_1based)   ra_i2cbus_initialize(bus_num_1based - PX4_BUS_OFFSET)
-#define px4_i2cbus_uninitialize(pdev)           ra_i2cbus_uninitialize(pdev)
+/* I2C functions are implemented in micro_hal/i2c.c - do not use macros */
 
 /* GPIO functions using RA8 NuttX drivers */
 #define px4_arch_configgpio(pinset)             px4_ra8_configgpio(pinset)
@@ -87,11 +87,58 @@ typedef uint32_t gpio_pinset_t;
 #define px4_arch_gpiowrite(pinset, value)       px4_ra8_gpiowrite(pinset, value)
 #define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) px4_ra8_gpiosetevent(pinset,r,f,e,fp,a)
 
-/* GPIO macros for RA8 - using generic bit operations for now */
-#define PX4_MAKE_GPIO_INPUT(gpio)               (gpio)
-#define PX4_MAKE_GPIO_EXTI(gpio)                (gpio)
-#define PX4_MAKE_GPIO_OUTPUT_CLEAR(gpio)        (gpio)
-#define PX4_MAKE_GPIO_OUTPUT_SET(gpio)          (gpio)
+/* GPIO pin encoding definitions for RA8 */
+#define GPIO_PORT_SHIFT     8
+#define GPIO_PIN_SHIFT      0
+#define GPIO_OUTPUT_BIT     0x00010000
+#define GPIO_OUTPUT_SET_BIT 0x00020000
+#define GPIO_PULLUP_BIT     0x00080000
+#define GPIO_ALT_BIT        0x00000200
+
+/* GPIO port encoding (bits 11-8) */
+#define GPIO_PORTA          (0 << GPIO_PORT_SHIFT)
+#define GPIO_PORTB          (1 << GPIO_PORT_SHIFT)
+#define GPIO_PORTC          (2 << GPIO_PORT_SHIFT)
+#define GPIO_PORTD          (3 << GPIO_PORT_SHIFT)
+#define GPIO_PORTE          (4 << GPIO_PORT_SHIFT)
+#define GPIO_PORTF          (5 << GPIO_PORT_SHIFT)
+#define GPIO_PORTG          (6 << GPIO_PORT_SHIFT)
+#define GPIO_PORTH          (7 << GPIO_PORT_SHIFT)
+#define GPIO_PORTI          (8 << GPIO_PORT_SHIFT)
+#define GPIO_PORTJ          (9 << GPIO_PORT_SHIFT)
+
+/* GPIO pin encoding (bits 3-0) */
+#define GPIO_PIN0           (0 << GPIO_PIN_SHIFT)
+#define GPIO_PIN1           (1 << GPIO_PIN_SHIFT)
+#define GPIO_PIN2           (2 << GPIO_PIN_SHIFT)
+#define GPIO_PIN3           (3 << GPIO_PIN_SHIFT)
+#define GPIO_PIN4           (4 << GPIO_PIN_SHIFT)
+#define GPIO_PIN5           (5 << GPIO_PIN_SHIFT)
+#define GPIO_PIN6           (6 << GPIO_PIN_SHIFT)
+#define GPIO_PIN7           (7 << GPIO_PIN_SHIFT)
+#define GPIO_PIN8           (8 << GPIO_PIN_SHIFT)
+#define GPIO_PIN9           (9 << GPIO_PIN_SHIFT)
+#define GPIO_PIN10          (10 << GPIO_PIN_SHIFT)
+#define GPIO_PIN11          (11 << GPIO_PIN_SHIFT)
+#define GPIO_PIN12          (12 << GPIO_PIN_SHIFT)
+#define GPIO_PIN13          (13 << GPIO_PIN_SHIFT)
+#define GPIO_PIN14          (14 << GPIO_PIN_SHIFT)
+#define GPIO_PIN15          (15 << GPIO_PIN_SHIFT)
+
+/* GPIO mode encoding */
+#define GPIO_INPUT          0
+#define GPIO_OUTPUT         GPIO_OUTPUT_BIT
+
+/* Additional GPIO mode combinations for compatibility */
+#define GPIO_OUTPUT_HIGH    (GPIO_OUTPUT_BIT | GPIO_OUTPUT_SET_BIT)
+#define GPIO_OUTPUT_LOW     GPIO_OUTPUT_BIT
+#define GPIO_INPUT_PULLUP   GPIO_PULLUP_BIT
+
+/* GPIO macros for RA8 - proper implementations */
+#define PX4_MAKE_GPIO_INPUT(gpio)               ((gpio) & ~GPIO_OUTPUT_BIT)
+#define PX4_MAKE_GPIO_EXTI(gpio)                ((gpio) & ~GPIO_OUTPUT_BIT)
+#define PX4_MAKE_GPIO_OUTPUT_CLEAR(gpio)        ((gpio) | GPIO_OUTPUT_BIT)
+#define PX4_MAKE_GPIO_OUTPUT_SET(gpio)          ((gpio) | GPIO_OUTPUT_BIT | GPIO_OUTPUT_SET_BIT)
 #define PX4_GPIO_PIN_OFF(def)                   (def)
 
 /* Timer configuration for RA8E1 - Based on PCLKD frequency */
@@ -120,6 +167,13 @@ typedef int (*gpio_interrupt_t)(int irq, void *context, void *arg);
 struct spi_dev_s *ra_spibus_initialize(int bus);
 struct i2c_master_s *ra_i2cbus_initialize(int bus);
 int ra_i2cbus_uninitialize(struct i2c_master_s *dev);
+
+/* PX4 I2C functions - implemented in platforms/nuttx/src/px4/renesas/ra8_common/micro_hal/i2c.c */
+struct i2c_master_s *px4_i2cbus_initialize(int bus);
+int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
+/* px4_i2cbus_reset is declared in i2c_hw_description.h with device pointer parameter */
+int px4_i2cbus_set_bus_frequency(struct i2c_master_s *dev, uint32_t frequency);
+int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices);
 
 /* PX4 GPIO wrapper functions that convert uint32_t to RA8 format */
 int px4_ra8_configgpio(gpio_pinset_t pinset);

@@ -41,7 +41,7 @@ The FPB-RA8E1 is a development board from Renesas featuring:
 - **SCI2** (P801/P802): Console/Debug (115200 baud)
 - **SCI3** (P309/P310): RC input/Secondary telemetry (57600 baud)
 
-### SPI Bus 1 - Sensors
+### SPI Bus 1 - Sensors (Custom sensor board GY-912)
 - **SCK**: P412 (SPI1 Clock)
 - **MOSI**: P411 (SPI1 MOSI)
 - **MISO**: P410 (SPI1 MISO)
@@ -155,7 +155,7 @@ make renesas_fpb-ra8e1_test
 
 ```bash
 # Connect to target
-JLinkExe -device R7FA8E1AFDCFB -if SWD -speed 4000
+JLinkExe -device R7FA8E1AF -if SWD -speed 4000
 
 # In J-Link console:
 connect

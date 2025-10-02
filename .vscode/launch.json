@@ -1,6 +1,20 @@
 {
     "version": "0.2.0",
     "configurations": [
+        {
+        "name": "Debug RA8E1 - Renesas Hardware",
+        "type": "renesas-hardware",
+        "request": "launch",
+        "program": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        "target": {
+            "device": "R7FA8E1AF",
+            "deviceFamily": "RA",
+            "debuggerType": "SEGGERJLINKARM"
+        },
+        "presentation": {
+            "integerFormat": "hexadecimal"
+        }
+        },
       {
         "name": "Debug RA8E1 (Onboard J-Link)",
         "type": "cortex-debug",

@@ -132,7 +132,7 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
     ret.timer_channel = (uint8_t)timer_channel.channel;
 
     // GPIO configuration - convert to PX4 RA8 format for NuttX compatibility
-    ret.gpio_out = ((uint32_t)gpio_pin.port << 24) | ((uint32_t)gpio_pin.pin << 16) | 0x0001;
+    // ret.gpio_out = ((uint32_t)gpio_pin.port << 24) | ((uint32_t)gpio_pin.pin << 16) | 0x0001;
     ret.gpio_in = 0; // Not used for PWM output
 
     ret.freq_basis = IOTimerFrequencyBasis_PWM;

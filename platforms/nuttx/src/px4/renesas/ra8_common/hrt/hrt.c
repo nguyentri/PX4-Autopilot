@@ -34,13 +34,65 @@
 /**
  * @file hrt.c
  *
- * High resolution timer for Renesas RA8 - stub implementation
+ * High resolution timer for Renesas RA8
+ * Basic implementation using NuttX system time
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual HRT functionality for Renesas RA8
+#include <sys/types.h>
+#include <stdint.h>
+#include <time.h>
 
-void ra8_hrt_stub(void)
+/* Basic types for linker compatibility */
+typedef uint64_t hrt_abstime;
+typedef void (*hrt_callout)(void *arg);
+
+struct hrt_call {
+	void *dummy; /* Basic placeholder */
+};
+
+/* Simple implementation using NuttX system time */
+/* This is a basic implementation - can be optimized later with dedicated RA8 timers */
+
+hrt_abstime hrt_absolute_time(void)
 {
-	// Stub function to allow compilation
+	struct timespec timespec_now;
+	(void)clock_gettime(CLOCK_MONOTONIC, &timespec_now);
+	return (hrt_abstime)((timespec_now.tv_sec * 1000000ULL) + (timespec_now.tv_nsec / 1000ULL));
 }
+
+hrt_abstime hrt_elapsed_time(const volatile hrt_abstime *then)
+{
+	return hrt_absolute_time() - *then;
+}
+
+int hrt_call_after(struct hrt_call *entry, hrt_abstime delay, hrt_callout callout, void *arg)
+{
+	/* Basic stub - implement later with proper timer callbacks */
+	(void)entry;
+	(void)delay;
+	(void)callout;
+	(void)arg;
+	return 0;
+}
+
+int hrt_call_every(struct hrt_call *entry, hrt_abstime delay, hrt_abstime interval, hrt_callout callout, void *arg)
+{
+	/* Basic stub - implement later with proper timer callbacks */
+	(void)entry;
+	(void)delay;
+	(void)interval;
+	(void)callout;
+	(void)arg;
+	return 0;
+}
+
+void hrt_cancel(struct hrt_call *entry)
+{
+	/* Basic stub - implement later */
+	(void)entry;
+}
+
+/* Latency monitoring stubs */
+const uint16_t latency_bucket_count = 8;
+const uint16_t latency_buckets[8] = {1, 2, 5, 10, 20, 50, 100, 1000};
+uint32_t latency_counters[9] = {0};

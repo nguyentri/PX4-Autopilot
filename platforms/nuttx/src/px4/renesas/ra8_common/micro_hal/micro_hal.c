@@ -61,16 +61,24 @@ typedef int (*gpio_interrupt_t)(int irq, void *context, void *arg);
 extern struct spi_dev_s *ra_spibus_initialize(int bus);
 extern struct i2c_master_s *ra_i2cbus_initialize(int bus);
 
-/* RA8 GPIO structure from ra_gpio.h */
-typedef struct __attribute__((packed)) {
+/* RA8 GPIO structure - matches ra_gpio.h definition */
+typedef struct {
     uint8_t port;
     uint8_t pin;
-    uint32_t cfg;
-} ra8_gpio_pinset_t;
+    uint16_t cfg;
+} gpio_pinset_t;
 
-extern int ra_configgpio(ra8_gpio_pinset_t cfgset);
-extern bool ra_gpioread(ra8_gpio_pinset_t pinset);
-extern void ra_gpiowrite(ra8_gpio_pinset_t pinset, bool value);
+/* RA8 GPIO function declarations */
+extern int ra_configgpio(gpio_pinset_t cfgset);
+extern bool ra_gpioread(gpio_pinset_t pinset);
+extern void ra_gpiowrite(gpio_pinset_t pinset, bool value);
+
+/* RA8 GPIO register bit definitions (from hardware/ra_gpio.h) */
+#define R_PFS_PMR           (16) /* Bit 16: Port Mode Control */
+#define R_PFS_PCR           (4)  /* Bit 4: Pull-up Control */
+#define R_PFS_PDR           (2)  /* Bit 2: Port Direction */
+#define R_PFS_PODR          (0)  /* Bit 0: Port Output Data */
+#define R_PFS_PSEL_SHIFT_8  (8)  /* PSEL position in cfg field */
 
 /****************************************************************************
  * SPI Bus Initialization
@@ -78,10 +86,15 @@ extern void ra_gpiowrite(ra8_gpio_pinset_t pinset, bool value);
 
 struct spi_dev_s *ra_spibus_initialize(int bus)
 {
-    /* For now, return NULL - actual implementation would call NuttX RA8 SPI driver */
-    /* TODO: Implement actual SPI bus initialization using ra_spi.c functions */
+    /* Call the actual RA8 SPI initialization from NuttX */
+    /* This would be implemented in the NuttX RA8 SPI driver */
+    spidbg("Initializing SPI bus %d\n", bus);
+
+    /* TODO: Replace with actual ra8_spibus_initialize call when available */
+    /* return ra8_spibus_initialize(bus); */
+
+    /* For now, return NULL to indicate initialization not available */
     (void)bus;
-    spidbg("SPI bus %d initialization not implemented\n", bus);
     return NULL;
 }
 
@@ -91,77 +104,29 @@ struct spi_dev_s *ra_spibus_initialize(int bus)
 
 struct i2c_master_s *ra_i2cbus_initialize(int bus)
 {
-    /* For now, return NULL - actual implementation would call NuttX RA8 I2C driver */
-    /* TODO: Implement actual I2C bus initialization using ra_i2c.c functions */
+    /* Call the actual RA8 I2C initialization from NuttX */
+    /* This would be implemented in the NuttX RA8 I2C driver */
+    i2cdbg("Initializing I2C bus %d\n", bus);
+
+    /* TODO: Replace with actual ra8_i2cbus_initialize call when available */
+    /* return ra8_i2cbus_initialize(bus); */
+
+    /* For now, return NULL to indicate initialization not available */
     (void)bus;
-    i2cdbg("I2C bus %d initialization not implemented\n", bus);
     return NULL;
 }
 
 int ra_i2cbus_uninitialize(struct i2c_master_s *dev)
 {
-    /* For now, just return success - NuttX handles cleanup */
+    /* Call the actual RA8 I2C uninitialize from NuttX */
+    /* This would be implemented in the NuttX RA8 I2C driver */
+
+    /* TODO: Replace with actual ra8_i2cbus_uninitialize call when available */
+    /* return ra8_i2cbus_uninitialize(dev); */
+
+    /* For now, just return success - assume NuttX handles cleanup */
     (void)dev;
     return OK;
-}
-
-/****************************************************************************
- * GPIO Conversion Functions
- * Convert PX4 uint32_t GPIO format to RA8 struct format
- ****************************************************************************/
-
-/* GPIO format conversion - extract port, pin, and config from uint32_t */
-static ra8_gpio_pinset_t px4_to_ra8_gpio(uint32_t px4_gpio)
-{
-    ra8_gpio_pinset_t ra8_gpio;
-    
-    /* Extract port (bits 24-31), pin (bits 16-23), and config (bits 0-15) */
-    ra8_gpio.port = (px4_gpio >> 24) & 0xFF;
-    ra8_gpio.pin = (px4_gpio >> 16) & 0xFF;
-    ra8_gpio.cfg = px4_gpio & 0xFFFF;
-    
-    return ra8_gpio;
-}
-
-int px4_ra8_configgpio(uint32_t pinset)
-{
-    ra8_gpio_pinset_t ra8_pinset = px4_to_ra8_gpio(pinset);
-    return ra_configgpio(ra8_pinset);
-}
-
-int px4_ra8_unconfiggpio(uint32_t pinset)
-{
-    ra8_gpio_pinset_t ra8_pinset = px4_to_ra8_gpio(pinset);
-    /* Configure as input to disable output */
-    ra8_pinset.cfg = 0; /* Basic input configuration */
-    return ra_configgpio(ra8_pinset);
-}
-
-bool px4_ra8_gpioread(uint32_t pinset)
-{
-    ra8_gpio_pinset_t ra8_pinset = px4_to_ra8_gpio(pinset);
-    return ra_gpioread(ra8_pinset);
-}
-
-void px4_ra8_gpiowrite(uint32_t pinset, bool value)
-{
-    ra8_gpio_pinset_t ra8_pinset = px4_to_ra8_gpio(pinset);
-    ra_gpiowrite(ra8_pinset, value);
-}
-
-int px4_ra8_gpiosetevent(uint32_t pinset, bool risingedge, bool fallingedge,
-                         bool event, gpio_interrupt_t func, void *arg)
-{
-    /* Stub implementation for GPIO interrupt setup */
-    /* TODO: Implement using RA8 ICU (Interrupt Control Unit) */
-    (void)pinset;
-    (void)risingedge;
-    (void)fallingedge;
-    (void)event;
-    (void)func;
-    (void)arg;
-    
-    return -ENOSYS; /* Not implemented yet */
 }
 
 /****************************************************************************

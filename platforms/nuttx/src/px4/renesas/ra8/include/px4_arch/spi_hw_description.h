@@ -39,36 +39,66 @@
 
 #if defined(CONFIG_SPI)
 
-// GPIO mode definitions for RA8
-#define GPIO_OUTPUT        0x01
-#define GPIO_INPUT         0x00
-#define GPIO_OUTPUT_HIGH   0x10
-#define GPIO_OUTPUT_LOW    0x00
-#define GPIO_INPUT_PULLUP  0x20
+constexpr bool validateSPIConfig(const px4_spi_bus_t spi_busses_conf[SPI_BUS_MAX_BUS_ITEMS])
+{
+	const bool nuttx_enabled_spi_buses[] = {
+#ifdef CONFIG_RA_SPI0
+		true,
+#else
+		false,
+#endif
+#ifdef CONFIG_RA_SPI1
+		true,
+#else
+		false,
+#endif
+	};
+
+	for (unsigned i = 0; i < sizeof(nuttx_enabled_spi_buses) / sizeof(nuttx_enabled_spi_buses[0]); ++i) {
+		bool found_bus = false;
+
+		for (int j = 0; j < SPI_BUS_MAX_BUS_ITEMS; ++j) {
+			// RA8 SPI bus numbering: CONFIG_RA_SPIx corresponds to PX4 SPI bus x
+			// CONFIG_RA_SPI0 -> PX4 SPI bus 0, CONFIG_RA_SPI1 -> PX4 SPI bus 1
+			if (spi_busses_conf[j].bus == (int)i) {
+				found_bus = true;
+			}
+		}
+
+		// Either the bus is enabled in NuttX and configured in spi_busses_conf, or disabled and not configured
+		constexpr_assert(found_bus == nuttx_enabled_spi_buses[i], "SPI bus config mismatch (CONFIG_RA_SPIx)");
+	}
+
+	return true;
+}
 
 static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::CS cs_gpio, SPI::DRDY drdy_gpio = {})
 {
 	px4_spi_bus_device_t ret{};
 
-	// For RA8, we create uint32_t GPIO pinset in PX4 format
-	// Format: [port:8][pin:8][config:16]
 	// CS pin configuration - output high (inactive)
-	ret.cs_gpio = ((uint32_t)cs_gpio.port << 24) | ((uint32_t)cs_gpio.pin << 16) | GPIO_OUTPUT | GPIO_OUTPUT_HIGH;
+	// GPIO_OUTPUT_HIGH = GPIO_OUTPUT_BIT | GPIO_OUTPUT_SET_BIT
+	ret.cs_gpio = getGPIOPort(cs_gpio.port) | getGPIOPin(cs_gpio.pin) | (0x00010000 | 0x00020000); // GPIO_OUTPUT_HIGH
 
-	// DRDY pin configuration - input with pull-up if specified
+	// DRDY pin configuration - input if specified
 	if (drdy_gpio.port != GPIO::PortInvalid) {
-		ret.drdy_gpio = ((uint32_t)drdy_gpio.port << 24) | ((uint32_t)drdy_gpio.pin << 16) | GPIO_INPUT | GPIO_INPUT_PULLUP;
+		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) | 0; // GPIO_INPUT
 	}
 
-	ret.devid = devid;
-	ret.devtype_driver = devid & 0xff;
+	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)
+		ret.devid = PX4_SPIDEV_ID(PX4_SPI_DEVICE_ID, devid);
+	} else { // it's a NuttX device (e.g. SPIDEV_FLASH(0))
+		ret.devid = devid;
+	}
 
+	ret.devtype_driver = PX4_SPI_DEV_ID(devid);
 	return ret;
 }
 
 static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus_devices_t &devices, GPIO::GPIOPin power_enable = {})
 {
 	px4_spi_bus_t ret{};
+	ret.requires_locking = false;
 
 	for (int i = 0; i < SPI_BUS_MAX_DEVICES; ++i) {
 		ret.devices[i] = devices.devices[i];
@@ -78,10 +108,8 @@ static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus
 	ret.is_external = false; // RA8 SPI buses are internal
 
 	if (power_enable.port != GPIO::PortInvalid) {
-		ret.power_enable_gpio = ((uint32_t)power_enable.port << 24) | ((uint32_t)power_enable.pin << 16) | GPIO_OUTPUT | GPIO_OUTPUT_LOW;
+		ret.power_enable_gpio = getGPIOPort(power_enable.port) | getGPIOPin(power_enable.pin) | 0x00010000; // GPIO_OUTPUT_LOW
 	}
-
-	ret.requires_locking = false; // RA8 SPI buses don't require locking by default
 
 	return ret;
 }

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,17 +34,93 @@
 /**
  * @file board_config.h
  *
- * FPB-RA8E1 board configuration
+ * Renesas FPB-RA8E1 board configuration
  */
 
 #pragma once
 
-#include <nuttx/config.h>
+/****************************************************************************************************
+ * Included Files
+ ****************************************************************************************************/
+
+#include <px4_platform_common/px4_config.h>
+#include <nuttx/compiler.h>
 #include <stdint.h>
-#include <stdbool.h>
+
+/* RA8 GPIO definitions - need to avoid GPIO_OUTPUT conflict with PX4 */
+/* Define only what we need from ra8e1_pinmap.h */
+#ifndef gpio_pinset_t
+typedef uint32_t gpio_pinset_t;
+#endif
+
+/* Port Number definitions from RA8E1 */
+#ifndef PORT4
+#define PORT0                                   (0 << 24)
+#define PORT1                                   (1 << 24)
+#define PORT2                                   (2 << 24)
+#define PORT3                                   (3 << 24)
+#define PORT4                                   (4 << 24)
+#define PORT5                                   (5 << 24)
+#define PORT6                                   (6 << 24)
+#define PORT7                                   (7 << 24)
+#define PORT8                                   (8 << 24)
+#define PORT9                                   (9 << 24)
+#endif
+
+/* Pin Number definitions from RA8E1 */
+#ifndef PIN0
+#define PIN0                                   (0 << 16)
+#define PIN1                                   (1 << 16)
+#define PIN2                                   (2 << 16)
+#define PIN3                                   (3 << 16)
+#define PIN4                                   (4 << 16)
+#define PIN5                                   (5 << 16)
+#define PIN6                                   (6 << 16)
+#define PIN7                                   (7 << 16)
+#define PIN8                                   (8 << 16)
+#define PIN9                                   (9 << 16)
+#define PIN10                                  (10 << 16)
+#define PIN11                                  (11 << 16)
+#define PIN12                                  (12 << 16)
+#define PIN13                                  (13 << 16)
+#define PIN14                                  (14 << 16)
+#define PIN15                                  (15 << 16)
+#endif
+
+/* GPIO Configuration bits from RA8E1 - avoiding GPIO_OUTPUT conflict */
+#ifndef RA8_GPIO_OUTPUT
+#define RA8_GPIO_OUTPUT                         (1 << R_PFS_PDR)        /* Output direction */
+#define RA8_GPIO_INPUT                          (0)                     /* Input direction (default) */
+#define RA8_GPIO_LOW_DRIVE                      (0)                     /* Low drive strength (default) */
+#define RA8_GPIO_OUTPUT_HIGH                    (1 << R_PFS_PODR)       /* Output high */
+#define RA8_GPIO_OUTPUT_LOW                     (0)                     /* Output low (default) */
+#endif
+
+/* R_PFS register bit positions */
+#ifndef R_PFS_PDR
+#define R_PFS_PDR                               (2)     /* Port Direction Register bit */
+#define R_PFS_PODR                              (0)     /* Port Output Data Register bit */
+#endif
+
+/****************************************************************************************************
+ * Definitions
+ ****************************************************************************************************/
+
+/* Configuration ************************************************************************************/
+
+/* FPB-RA8E1 GPIOs **********************************************************************************/
 
 /*
- * Board hardware configuration
+ * FPB-RA8E1 has the following:
+ * - Renesas RA8E1 MCU (R7FA8E1AFDCFB)
+ * - ARM Cortex-M85 @ 360MHz
+ * - 512KB SRAM, 1MB Flash
+ * - Custom sensor board GY-912 with ICM-20948 + BMP388
+ */
+
+
+/*
+ * Board hardware configuration for PX4
  */
 
 /* RA8E1 MCU Configuration */
@@ -76,26 +152,46 @@
 #define PX4_SPI_BUS_SENSORS     1       /* SPI1 for sensors */
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
-/* Chip Select Configuration - map to PX4 RA8 GPIO format */
-#define GPIO_SPI1_CS0_ICM20948  GPIO_SPI1_SS0  /* P408 - ICM20948 CS */
-#define GPIO_SPI1_CS1_BMP388    GPIO_SPI1_SS1  /* P407 - BMP388 CS */
+
+/* Chip Select Configuration - using RA8 NuttX gpio_pinset_t format */
+#define GPIO_SPI1_CS0_ICM20948  ((gpio_pinset_t)(PORT4 | PIN8 | RA8_GPIO_OUTPUT | RA8_GPIO_LOW_DRIVE | RA8_GPIO_OUTPUT_HIGH))  /* P408 - ICM20948 CS */
+#define GPIO_SPI1_CS1_BMP388    ((gpio_pinset_t)(PORT4 | PIN7 | RA8_GPIO_OUTPUT | RA8_GPIO_LOW_DRIVE | RA8_GPIO_OUTPUT_HIGH))  /* P407 - BMP388 CS */
+
+/* IMU Data Ready Pin - P409 */
+#define GPIO_SPI1_IMU_DRDY     ((gpio_pinset_t)(PORT4 | PIN9 | RA8_GPIO_INPUT))  /* P409 - ICM20948 Data Ready */
+
+/* SPI Bus Pin Definitions - Use NuttX board definitions */
+/* SPI pins are defined in NuttX board.h:
+ * GPIO_SPI1_SCK   - P412 - SPI1 Clock
+ * GPIO_SPI1_MISO  - P410 - SPI1 MISO
+ * GPIO_SPI1_MOSI  - P411 - SPI1 MOSI
+ */
+/* GPIO_IMU_DRDY is defined in NuttX board.h as GPIO_IMU_DRDY */
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
 #define BOARD_SPI_BUS_MAX_DEVICES 2
 
-/* PWM/GPT Timer Pin Definitions for ESC Control */
-#define BOARD_ESC_1     GPIO_GPT3_A
-#define BOARD_ESC_2     GPIO_GPT0_A
-#define BOARD_ESC_3     GPIO_GPT2_A
-#define BOARD_ESC_4     GPIO_GPT4_A
+/* PWM/GPT Timer Pin Definitions for ESC Control - using PX4 RA8 GPIO format */
+#define GPIO_TIM3_CH1OUT        (GPIO_PORTC | GPIO_PIN0 | GPIO_OUTPUT | GPIO_ALT_BIT)  /* P300 - GPT3A - Motor 1 */
+#define GPIO_TIM0_CH1OUT        (GPIO_PORTD | GPIO_PIN15 | GPIO_OUTPUT | GPIO_ALT_BIT) /* P415 - GPT0A - Motor 2 */
+#define GPIO_TIM2_CH1OUT        (GPIO_PORTB | GPIO_PIN3 | GPIO_OUTPUT | GPIO_ALT_BIT)  /* P113 - GPT2A - Motor 3 */
+#define GPIO_TIM4_CH1OUT        (GPIO_PORTC | GPIO_PIN2 | GPIO_OUTPUT | GPIO_ALT_BIT)  /* P302 - GPT4A - Motor 4 */
+
+/* Define Timer channels for PX4 */
+#define DIRECT_PWM_OUTPUT_CHANNELS  4
+#define DIRECT_INPUT_TIMER_CHANNELS 0
+
+/* LED GPIO Definitions - using PX4 RA8 GPIO format */
+#define GPIO_nLED_RED           (GPIO_PORTD | GPIO_PIN4 | GPIO_OUTPUT_HIGH)  /* P404 - LED1 Status indicator */
+#define GPIO_nLED_GREEN         (GPIO_PORTD | GPIO_PIN5 | GPIO_OUTPUT_HIGH)  /* P405 - LED2 Armed state indicator */
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS      1
 #define BOARD_OVERLOAD_LED     		   0
 #define BOARD_ARMED_STATE_LED  		   1
 
-/* Safety Switch Configuration - use NuttX GPIO definition */
-#define GPIO_BTN_SAFETY         GPIO_SW1       /* P009 - User Button from board.h */
+/* Safety Switch Configuration - using PX4 RA8 GPIO format */
+#define GPIO_BTN_SAFETY         (GPIO_PORTA | GPIO_PIN9 | GPIO_INPUT_PULLUP)  /* P009 - User Button */
 #define BOARD_HAS_NO_SAFETY_SWITCH 1   /* No dedicated safety switch */
 
 /* Use NuttX GPIO definitions from board.h instead of custom ones */
@@ -206,18 +302,131 @@
 
 #define BOARD_ENABLE_CONSOLE_BUFFER
 
+
+/* High-resolution timer - RA8 specific configuration */
+#define HRT_TIMER               1  /* Use GPT1 for HRT */
+#define HRT_TIMER_CHANNEL       0  /* Use channel 0 */
+#define HRT_TIMER_FREQUENCY     120000000  /* 120MHz PCLKD for GPT timers */
+
+/* LED Configuration - using previously defined GPIO pins */
+/* LED1 (GPIO_nLED_RED) and LED2 (GPIO_nLED_GREEN) indices for PX4 */
+
+/* Safety Button - using previously defined GPIO_BTN_SAFETY */
+
+/* SPI Configuration - Use NuttX board definitions directly */
+/* GPIO_SPI1_SCK, GPIO_SPI1_MISO, GPIO_SPI1_MOSI are defined in NuttX board.h */
+
+/* SPI Chip Selects - Use NuttX board definitions from first definition */
+
+/* SPI Sensor Interrupt/Data Ready - GPIO_IMU_DRDY defined in NuttX board.h */
+
+/* UART/SCI, PWM, and I2C Configuration */
+/* All GPIO pins are defined in NuttX board.h - referenced from first definitions */
+
+/* Power Control */
+#define BOARD_HAS_PWM                   DIRECT_PWM_OUTPUT_CHANNELS
+#define BOARD_HAS_NO_RESET              1
+#define BOARD_HAS_NO_BOOTLOADER         1
+
+/* PWM Configuration */
+#define DIRECT_PWM_OUTPUT_CHANNELS      4
+#define DIRECT_INPUT_TIMER_CHANNELS     0
+
+/* Board provides GPIO or other Hardware for signaling to timing analyze pins */
+#define BOARD_HAS_TIMING_DEBUG          0
+
+/* Mass Storage Configuration */
+#define BOARD_HAS_NO_SDCARD             1
+
+/* Battery Configuration */
+#define BOARD_BATTERY1_V_DIV            (10.1f)
+#define BOARD_BATTERY1_A_PER_V          (15.391030303f)
+
+/* This board provides a DMA pool and APIs */
+#define BOARD_DMA_ALLOC_POOL_SIZE       5120
+
+/* This board provides the board_on_reset interface */
+#define BOARD_HAS_ON_RESET              1
+
+/* Console buffer already defined above */
+
+#define BOARD_HAS_STATIC_MANIFEST       1
+
+/* Hardware Configuration */
+#define BOARD_NUMBER_I2C_BUSES          1
+#define BOARD_I2C_BUS_CLOCK_INIT        {100000}
+
+#define BOARD_NUMBER_SPI_BUSES          1
+#define BOARD_SPI_BUS_SENSORS           1
+
+/* Sensor Configuration */
+#define PX4_SPI_BUS_SENSORS             1
+#define PX4_SPI_BUS_MEMORY              PX4_SPI_BUS_SENSORS
+
+/* Bus Configuration */
+#define PX4_I2C_BUS_EXPANSION           3
+#define PX4_I2C_BUS_MTD                 PX4_I2C_BUS_EXPANSION
+
+/* RC Input Configuration - already defined above */
+#define BOARD_HAS_RC_INPUT              1
+
+/* ADC Configuration - Limited/None initially */
+#define BOARD_ADC_USB_CONNECTED         0
+#define BOARD_ADC_BRICK_VALID           0
+#define BOARD_ADC_SERVO_VALID           0
+
+/* CAN Configuration - Not supported */
+#define BOARD_NUMBER_CAN_BUSES          0
+
+/* Flash Configuration */
+#define BOARD_FLASH_SIZE                (1024 * 1024)
+#define BOARD_FLASH_SECTORS             256
+
+/* Memory Configuration */
+#define BOARD_RAM_SIZE                  (512 * 1024)
+
+/* Timer Configuration */
+#define BOARD_DSHOT_MOTOR_ASSIGNMENT    {0, 1, 2, 3}
+
+/* Console Configuration */
+#define PX4_UART_CONSOLE                "ttyS0"  /* SCI2 */
+
+/* Serial Port Mapping */
+#define PX4_UART_GPS1                   "ttyS1"  /* SCI0 */
+#define PX4_UART_TELEM1                 "ttyS1"  /* SCI0 */
+#define PX4_UART_TELEM2                 "ttyS2"  /* SCI3 */
+
+/* Board Type */
+#define BOARD_TYPE_COMPLETE             88
+
 #include <px4_platform_common/board_common.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/****************************************************************************************************
+ * Public Types
+ ****************************************************************************************************/
+
+/****************************************************************************************************
+ * Public data
+ ****************************************************************************************************/
 
 #ifndef __ASSEMBLY__
 
-extern void ra8e1_boardinitialize(void);
+/****************************************************************************************************
+ * Public Functions
+ ****************************************************************************************************/
+
+/****************************************************************************************************
+ * Name: fpb_ra8e1_boardinitialize
+ *
+ * Description:
+ *   All RA8E1 architectures must provide the following entry point.  This entry point
+ *   is called early in the initialization -- after all memory has been configured
+ *   and mapped but before any devices have been initialized.
+ *
+ ****************************************************************************************************/
+
+extern void fpb_ra8e1_boardinitialize(void);
+
+#include <px4_platform_common/board_common.h>
 
 #endif /* __ASSEMBLY__ */
-
-#ifdef __cplusplus
-}
-#endif

@@ -27,10 +27,6 @@
 
 #include <nuttx/config.h>
 
-#ifndef __ASSEMBLY__
-# include "hardware/ra_pinmap.h"
-#endif
-
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -67,36 +63,7 @@
 #define GPIO_SCI3_RX   GPIO_RXD3_MISO3_SCL3_B  /* P309 - RC Input */
 #define GPIO_SCI3_TX   GPIO_TXD3_MOSI3_SDA3_B  /* P310 - RC Input */
 
-/* SPI Pin Definitions for Sensors */
-#define GPIO_SPI1_SCK   GPIO_RSPCKB_B_1          /* P412 - SPI1 Clock */
-#define GPIO_SPI1_MOSI  GPIO_MOSIB_B_1           /* P411 - SPI1 MOSI */
-#define GPIO_SPI1_MISO  GPIO_MISOB_B_1           /* P410 - SPI1 MISO */
-#define GPIO_SPI1_CS0   GPIO_P408_OUTPUT_HIGH    /* P408 - ICM20948 CS */
-#define GPIO_SPI1_CS1   GPIO_P407_OUTPUT_HIGH    /* P407 - BMP388 CS */
-
-/* SPI Slave Select aliases (for compatibility) */
-#define GPIO_SPI1_SS0   GPIO_SPI1_CS0            /* P408 - ICM20948 CS */
-#define GPIO_SPI1_SS1   GPIO_SPI1_CS1            /* P407 - BMP388 CS */
-
-/* PWM/GPT Timer Pin Definitions for Motor Control */
-#define GPIO_GPT0_A     GPIO_GTIOC0A_3         /* P415 - Motor 2 */
-#define GPIO_GPT2_A     GPIO_GTIOC2A_2         /* P113 - Motor 3 */
-#define GPIO_GPT3_A     GPIO_GTIOC3A_1         /* P300 - Motor 1 */
-#define GPIO_GPT4_A     GPIO_GTIOC4A_2         /* P302 - Motor 4 */
-
-/* I2C Pin Definitions */
-#define GPIO_I2C3_SDA   GPIO_SDA3_MOSI3_TXD3_A /* P511 - Expansion I2C */
-#define GPIO_I2C3_SCL   GPIO_SCL3_MISO3_RXD3_A /* P512 - Expansion I2C */
-
-/* LED Pin Definitions */
-#define GPIO_nLED_RED       GPIO_LED1  /* P404 - LED1 */
-#define GPIO_nLED_GREEN     GPIO_LED2  /* P405 - LED2 */
-
-/* Button Pin Definitions */
-#define GPIO_SW1        GPIO_IRQ13_P009        /* P009 - User Button */
-
-/* IMU Data Ready Pin */
-#define GPIO_IMU_DRDY   GPIO_P409_INPUT_PULLUP /* P409 - ICM20948 Data Ready */
+/* Board-specific pin definitions removed - defined in board_config.h instead */
 
 /* LED Configuration for NuttX */
 #define LED_STARTED       0  /* LED1 */
@@ -107,12 +74,6 @@
 #define LED_SIGNAL        2  /* LED2 ON */
 #define LED_ASSERTION     2  /* LED2 ON */
 #define LED_PANIC         3  /* LED2 BLINK */
-
-/* SPI Bus Configuration */
-#define BOARD_SPI1_BUS    1
-
-/* PWM Configuration */
-#define BOARD_NPWM        4  /* Number of PWM channels */
 
 /****************************************************************************
  * Public Data

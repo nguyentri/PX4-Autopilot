@@ -44,12 +44,12 @@
 #include <drivers/drv_sensor.h>
 #include <nuttx/spi/spi.h>
 
-#include "board_config.h"
+#include <lib/drivers/device/Device.hpp>
 
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO_SPI1_CS0_ICM20948}, SPI::DRDY{GPIO_IMU_DRDY}),
-		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO_SPI1_CS1_BMP388}),
+		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port4, GPIO::Pin8}, SPI::DRDY{GPIO::Port4, GPIO::Pin9}),
+		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin7}),
 	}),
 };
 

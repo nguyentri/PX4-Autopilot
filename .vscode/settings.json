@@ -41,6 +41,12 @@
     "*",
     "**/*"
   ],
+  "C_Cpp_Runner.additionalIncludeSearch": [
+    "platforms/nuttx/src/px4/renesas",
+    "platforms/nuttx/NuttX/nuttx/arch/arm/include/ra8",
+    "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8",
+    "platforms/nuttx/NuttX/nuttx/boards/arm/ra8/fpb-ra8e1"
+  ],
   "C_Cpp_Runner.excludeSearch": [
     "**/build",
     "**/build/**",
@@ -62,8 +68,9 @@
     "*.h": "c",
     "*.c": "c",
     "*.mk": "makefile",
-    "Makefile": "makefile"
-  },
+    "Makefile": "makefile",
+    "cstdint": "c"
+},
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
   "editor.detectIndentation": false,
@@ -92,5 +99,13 @@
   "terminal.integrated.defaultProfile.windows": "MSYS2",
   "terminal.integrated.env.windows": {
     "MSYS": "winsymlinks:nativestrict"
-  }
+  },
+    "terminal.integrated.profiles.linux": {
+    "J-Link RTT": {
+    "path": "/home/a5094159/opt/SEGGER/JLink_Linux_V856a_x86_64/JLinkRTTClient",
+      "args": [],
+      "icon": "terminal-cmd"
+    }
+},
+"chat.agent.maxRequests": 1000,
 }

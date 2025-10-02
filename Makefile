@@ -57,7 +57,21 @@ endif
 # in that directory with the target upload.
 
 # explicity set default build target
-all: px4_sitl_default
+all: ensure_nuttx_ra8_branch px4_sitl_default
+
+# Ensure NuttX submodule uses the NuttX_Px4_RA8 branch
+.PHONY: ensure_nuttx_ra8_branch
+ensure_nuttx_ra8_branch:
+	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."
+	@cd platforms/nuttx/NuttX/nuttx && \
+	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
+		echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
+		git fetch origin && \
+		git checkout NuttX_Px4_RA8 && \
+		git pull --ff-only; \
+	else \
+		echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
+	fi
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )
@@ -522,28 +536,43 @@ validate_module_configs:
 
 # Cleanup
 # --------------------------------------------------------------------
-.PHONY: clean submodulesclean submodulesupdate distclean
+.PHONY: clean submodulesclean submodulesupdate submodulesupdate_safe distclean
 
 clean:
 	@[ ! -d "$(SRC_DIR)/build" ] || find "$(SRC_DIR)/build" -mindepth 1 -maxdepth 1 -type d -exec sh -c "echo {}; cmake --build {} -- clean || rm -rf {}" \; # use generated build system to clean, wipe build directory if it fails
+	@# Clean only build artifacts in submodules, avoid changing branches
 	@git submodule foreach git clean -dX --force # some submodules generate build artifacts in source
 
 submodulesclean:
 	@git submodule foreach --quiet --recursive git clean -ff -x -d
-	@git submodule update --quiet --init --recursive --force || true
-	@git submodule sync --recursive
-	@git submodule update --init --recursive --force --jobs 4
+	@# Skip submodule update to avoid reverting to default branches
+	@# @git submodule update --quiet --init --recursive || true
+	@# @git submodule sync --recursive
+	@# @git submodule update --init --recursive --jobs 4
 
 submodulesupdate:
-	@git submodule update --quiet --init --recursive --jobs 4 || true
-	@git submodule sync --recursive
-	@git submodule update --init --recursive --jobs 4
+	@# Use --init to initialize submodules without changing branches
+	@git submodule update --init --jobs 4 || true
+	@# Skip sync to avoid reverting to default branches configured in .gitmodules
+	@# @git submodule sync --recursive
+	@# Skip recursive update to avoid forcing submodule checkouts to their original commit
+	@# @git submodule update --init --recursive --jobs 4
+# Note: removed --force and sync operations to avoid forcing submodule checkouts to their original commit.
 	@git fetch --all --tags --recurse-submodules=yes --jobs=4
 
+# Safe submodule update that preserves current branches
+submodulesupdate_safe:
+	@echo "Updating submodules while preserving current branches..."
+	@git submodule update --init --jobs 4 || true
+	@git fetch --all --tags --recurse-submodules=yes --jobs=4
+	@echo "Submodule update complete. Branch configurations preserved."
+
 distclean:
-	@git submodule deinit --force $(SRC_DIR)
 	@rm -rf "$(SRC_DIR)/build"
 
+# WARNING: DO NOT UNCOMMENT THESE LINES - They will reset submodules to default branches
+# and potentially lose custom branch configurations (like NuttX_Px4_RA8)
+#@git submodule deinit --force $(SRC_DIR)
 #@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"
 
 # Help / Error / Misc

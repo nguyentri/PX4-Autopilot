@@ -31,22 +31,6 @@
 #
 ############################################################################
 
-px4_add_library(ra8_micro_hal
-	micro_hal.c
-	gpio.c
-	spi.c
-	i2c.c
-	pwm.c
-	serial.c
-)
-
-target_link_libraries(ra8_micro_hal
-	PRIVATE
-	nuttx_arch  # For the NuttX RA8 drivers
-	nuttx_drivers
-)
-
-target_include_directories(ra8_micro_hal
-	PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/../include
+px4_add_library(arch_board_critmon
+	board_critmon.c
 )

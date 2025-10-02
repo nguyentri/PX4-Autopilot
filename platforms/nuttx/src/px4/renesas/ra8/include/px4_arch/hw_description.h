@@ -65,27 +65,61 @@ enum Port : uint32_t {
 };
 
 enum Pin : uint32_t {
-	Pin0,  Pin1,  Pin2,  Pin3,  Pin4,  Pin5,  Pin6,  Pin7,
+	Pin0 = 0,  Pin1,  Pin2,  Pin3,  Pin4,  Pin5,  Pin6,  Pin7,
 	Pin8,  Pin9,  Pin10, Pin11, Pin12, Pin13, Pin14, Pin15
 };
 
-/* GPIO pinset structure for NuttX RA8 compatibility */
-typedef struct gpio_pinset
-{
-    uint8_t port;
-    uint8_t pin;
-    uint32_t cfg;
-} gpio_pinset_t;
+struct GPIOPin {
+	Port port;
+	Pin pin;
+};
 
-/* GPIO type alias for PX4 compatibility */
-using GPIOPin = gpio_pinset_t;
-
-/* Helper function to create GPIO pinset */
-constexpr gpio_pinset_t GPIO_PINSET(Port port, Pin pin, uint32_t config = 0) {
-	return {static_cast<uint8_t>(port), static_cast<uint8_t>(pin), config};
-}
 
 } // namespace GPIO
+
+static inline constexpr uint32_t getGPIOPort(GPIO::Port port)
+{
+	// Port encoding with GPIO_PORT_SHIFT = 8
+	switch (port) {
+	case GPIO::PortInvalid: return 0;
+	case GPIO::Port0: return (0 << 8);  // GPIO_PORTA
+	case GPIO::Port1: return (1 << 8);  // GPIO_PORTB
+	case GPIO::Port2: return (2 << 8);  // GPIO_PORTC
+	case GPIO::Port3: return (3 << 8);  // GPIO_PORTD
+	case GPIO::Port4: return (4 << 8);  // GPIO_PORTE
+	case GPIO::Port5: return (5 << 8);  // GPIO_PORTF
+	case GPIO::Port6: return (6 << 8);  // GPIO_PORTG
+	case GPIO::Port7: return (7 << 8);  // GPIO_PORTH
+	case GPIO::Port8: return (8 << 8);  // GPIO_PORTI
+	case GPIO::Port9: return (9 << 8);  // GPIO_PORTJ
+	default: break;
+	}
+	return 0;
+}
+
+static inline constexpr uint32_t getGPIOPin(GPIO::Pin pin)
+{
+	// Pin encoding with GPIO_PIN_SHIFT = 0
+	switch (pin) {
+	case GPIO::Pin0: return (0 << 0);  // GPIO_PIN0
+	case GPIO::Pin1: return (1 << 0);  // GPIO_PIN1
+	case GPIO::Pin2: return (2 << 0);  // GPIO_PIN2
+	case GPIO::Pin3: return (3 << 0);  // GPIO_PIN3
+	case GPIO::Pin4: return (4 << 0);  // GPIO_PIN4
+	case GPIO::Pin5: return (5 << 0);  // GPIO_PIN5
+	case GPIO::Pin6: return (6 << 0);  // GPIO_PIN6
+	case GPIO::Pin7: return (7 << 0);  // GPIO_PIN7
+	case GPIO::Pin8: return (8 << 0);  // GPIO_PIN8
+	case GPIO::Pin9: return (9 << 0);  // GPIO_PIN9
+	case GPIO::Pin10: return (10 << 0); // GPIO_PIN10
+	case GPIO::Pin11: return (11 << 0); // GPIO_PIN11
+	case GPIO::Pin12: return (12 << 0); // GPIO_PIN12
+	case GPIO::Pin13: return (13 << 0); // GPIO_PIN13
+	case GPIO::Pin14: return (14 << 0); // GPIO_PIN14
+	case GPIO::Pin15: return (15 << 0); // GPIO_PIN15
+	}
+	return 0;
+}
 
 /*
  * SPI
@@ -95,9 +129,9 @@ namespace SPI
 {
 
 enum Bus : int {
+	SPI0 = 0,
 	SPI1 = 1,
-	SPI2 = 2,
-	SPI3 = 3
+	SPI2 = 2
 };
 
 using CS = GPIO::GPIOPin;
@@ -147,9 +181,8 @@ namespace I2C
 {
 
 enum Bus : int {
-	I2C1 = 1,
-	I2C2 = 2,
-	I2C3 = 3
+	I2C0 = 0,
+	I2C1 = 1
 };
 
 } // namespace I2C

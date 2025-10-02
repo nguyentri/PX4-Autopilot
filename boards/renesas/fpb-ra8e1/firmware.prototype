@@ -1,6 +1,13 @@
-board_id: 88
-magic: 0x5744500A
-description: "Renesas FPB-RA8E1 Development Board"
-image_maxsize: 1048576
-extflash_available: 0
-extflash_maxsize: 0
+{
+    "board_id": 88,
+    "magic": "PX4FWv1",
+    "description": "Firmware for the Renesas FPB-RA8E1 Development Board",
+    "image": "",
+    "build_time": 0,
+    "summary": "FPB-RA8E1",
+    "version": "0.1",
+    "image_size": 0,
+    "image_maxsize": 1048576,
+    "git_identity": "",
+    "board_revision": 0
+}
