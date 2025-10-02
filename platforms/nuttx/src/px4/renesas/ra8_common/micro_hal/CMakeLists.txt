@@ -34,7 +34,7 @@
 px4_add_library(ra8_micro_hal
 	micro_hal.c
 	gpio.c
-	spi.c
+	spi.cpp
 	i2c.c
 	pwm.c
 	serial.c

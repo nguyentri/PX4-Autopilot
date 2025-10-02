@@ -46,6 +46,19 @@
 /* Board specific definitions */
 #include "board_config.h"
 
+/* SPI Device IDs for RA8 platform */
+#ifndef PX4_SPIDEV_ICM20948
+#define PX4_SPIDEV_ICM20948  1
+#endif
+
+#ifndef PX4_SPIDEV_BMP388
+#define PX4_SPIDEV_BMP388    2
+#endif
+
+#ifndef SPI_STATUS_PRESENT
+#define SPI_STATUS_PRESENT   0x01
+#endif
+
 #ifndef OK
 #define OK 0
 #endif
@@ -74,12 +87,12 @@ struct spi_dev_s *px4_spibus_initialize(int bus)
 
         if (spi_dev != NULL) {
             /* Configure SPI1 GPIO pins */
-            px4_arch_configgpio(GPIO_SPI1_SCK);
-            px4_arch_configgpio(GPIO_SPI1_MISO);
-            px4_arch_configgpio(GPIO_SPI1_MOSI);
+            px4_arch_configgpio(GPIO_SPI1_IMU_SCK);
+            px4_arch_configgpio(GPIO_SPI1_IMU_MISO);
+            px4_arch_configgpio(GPIO_SPI1_IMU_MOSI);
             px4_arch_configgpio(GPIO_SPI1_CS0_ICM20948);
             px4_arch_configgpio(GPIO_SPI1_CS1_BMP388);
-            px4_arch_configgpio(GPIO_IMU_DRDY);
+            px4_arch_configgpio(GPIO_SPI1_IMU_DRDY);
 
             /* Set chip selects to inactive (high) */
             px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, true);

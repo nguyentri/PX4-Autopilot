@@ -112,7 +112,7 @@ def parse_csv_data():
     current_port = -1
 
     # Read CSV data from standard input or file
-    csv_file = '/home/a5094159/projects/nuttx_ra_dev/ra8e1_pin_mapping.csv'
+    csv_file = '/home/a5094159/projects/PX4-Autopilot/ra8e1_pin_mapping.csv'
 
     with open(csv_file, 'r') as file:
         csv_reader = csv.reader(file, delimiter='\t')
@@ -184,13 +184,13 @@ def generate_header():
                 if irq_match:
                     irq_num = irq_match.group(1)
                     ds_suffix = "_DS" if "-DS" in func else ""
-                    irq_def = f"#define GPIO_IRQ{irq_num}_{pin_name}{ds_suffix}                      (gpio_pinset_t){{ PORT{port}, PIN{pin}, (GPIO_INPUT | R_PFS_PCR | R_PFS_ISEL)}}"
+                    irq_def = f"#define GPIO_IRQ{irq_num}_{pin_name}{ds_suffix}                      (gpio_pinset_t)(PORT{port} | PIN{pin} | GPIO_INPUT | R_PFS_PCR | R_PFS_ISEL)"
                     if irq_def not in irq_defs:
                         irq_defs.append(irq_def)
 
             # Generate Analog Definitions
             elif func.startswith('AN') or func.startswith('DA'):
-                analog_def = f"#define GPIO_{func}_1                        (gpio_pinset_t){{ PORT{port}, PIN{pin}, (0 | R_PFS_ASEL)}}"
+                analog_def = f"#define GPIO_{func}_1                        (gpio_pinset_t)(PORT{port} | PIN{pin} | R_PFS_ASEL)"
                 if analog_def not in analog_defs:
                     analog_defs.append(analog_def)
 
@@ -204,12 +204,12 @@ def generate_header():
                     # Check if this is a SCI function (already has A/B/C suffix)
                     if ('RXD' in clean_func or 'TXD' in clean_func) and clean_func.endswith(('_A', '_B', '_C')):
                         # SCI functions already have their suffix, use as-is
-                        alt_func_def = f"#define GPIO_{clean_func}                         (gpio_pinset_t){{ PORT{port}, PIN{pin}, ({psel} | R_PFS_PMR)}}"
+                        alt_func_def = f"#define GPIO_{clean_func}                         (gpio_pinset_t)(PORT{port} | PIN{pin} | {psel})"
                     else:
                         # Other functions use numbered suffixes
                         func_counts[clean_func] += 1
                         count = func_counts[clean_func]
-                        alt_func_def = f"#define GPIO_{clean_func}_{count}                         (gpio_pinset_t){{ PORT{port}, PIN{pin}, ({psel} | R_PFS_PMR)}}"
+                        alt_func_def = f"#define GPIO_{clean_func}_{count}                         (gpio_pinset_t)(PORT{port} | PIN{pin} | {psel})"
 
                     alt_func_defs.append(alt_func_def)
 
@@ -236,6 +236,38 @@ def generate_header():
  * Pre-processor Definitions
  ****************************************************************************/
 
+/* Port Number definitions */
+#define PORT0                                   (0 << 24)
+#define PORT1                                   (1 << 24)
+#define PORT2                                   (2 << 24)
+#define PORT3                                   (3 << 24)
+#define PORT4                                   (4 << 24)
+#define PORT5                                   (5 << 24)
+#define PORT6                                   (6 << 24)
+#define PORT7                                   (7 << 24)
+#define PORT8                                   (8 << 24)
+#define PORT9                                   (9 << 24)
+#define PORT_MAX                                (10)
+
+/* Pin Number definitions */
+#define PIN0                                   (0 << 16)
+#define PIN1                                   (1 << 16)
+#define PIN2                                   (2 << 16)
+#define PIN3                                   (3 << 16)
+#define PIN4                                   (4 << 16)
+#define PIN5                                   (5 << 16)
+#define PIN6                                   (6 << 16)
+#define PIN7                                   (7 << 16)
+#define PIN8                                   (8 << 16)
+#define PIN9                                   (9 << 16)
+#define PIN10                                  (10 << 16)
+#define PIN11                                  (11 << 16)
+#define PIN12                                  (12 << 16)
+#define PIN13                                  (13 << 16)
+#define PIN14                                  (14 << 16)
+#define PIN15                                  (15 << 16)
+#define PIN_MAX                                (16)
+
 /* Alternative Function Pin Definitions */
 {chr(10).join(sorted(alt_func_defs))}
 
@@ -254,24 +286,29 @@ def generate_header():
         pin = data['pin']
 
         print(f"/* {pin_name} Pin Definitions */")
-        print(f"#define GPIO_{pin_name}_OUTPUT_HIGH               (gpio_pinset_t){{ PORT{port}, PIN{pin}, (GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_HIGH)}}")
-        print(f"#define GPIO_{pin_name}_OUTPUT_LOW                (gpio_pinset_t){{ PORT{port}, PIN{pin}, (GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_LOW)}}")
-        print(f"#define GPIO_{pin_name}_INPUT                     (gpio_pinset_t){{ PORT{port}, PIN{pin}, (GPIO_INPUT)}}")
-        print(f"#define GPIO_{pin_name}_INPUT_PULLUP              (gpio_pinset_t){{ PORT{port}, PIN{pin}, (GPIO_INPUT | R_PFS_PCR)}}")
+        print(f"#define GPIO_{pin_name}_OUTPUT_HIGH               (gpio_pinset_t)(PORT{port} | PIN{pin} | GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_HIGH)")
+        print(f"#define GPIO_{pin_name}_OUTPUT_LOW                (gpio_pinset_t)(PORT{port} | PIN{pin} | GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_LOW)")
+        print(f"#define GPIO_{pin_name}_INPUT                     (gpio_pinset_t)(PORT{port} | PIN{pin} | GPIO_INPUT)")
+        print(f"#define GPIO_{pin_name}_INPUT_PULLUP              (gpio_pinset_t)(PORT{port} | PIN{pin} | GPIO_INPUT | R_PFS_PCR)")
 
         # Add analog capability if the pin has ANxxx function
         if any(f.startswith('AN') or f.startswith('DA') for f in data['functions']):
-            print(f"#define GPIO_{pin_name}_ANALOG                    (gpio_pinset_t){{ PORT{port}, PIN{pin}, (0 | R_PFS_ASEL)}}")
+            print(f"#define GPIO_{pin_name}_ANALOG                    (gpio_pinset_t)(PORT{port} | PIN{pin} | R_PFS_ASEL)")
 
         print("")
 
-    print(f"/* GPIO Configuration */")
-    print(f"#define GPIO_OUTPUT               R_PFS_PDR")
-    print(f"#define GPIO_INPUT               ~(R_PFS_PDR | 0xFFFFFFFF)")
-    print(f"#define GPIO_LOW_DRIVE          ~(R_PFS_DSCR | 0xFFFFFFFF)")
-    print(f"#define GPIO_MIDDLE_DRIVE       R_PFS_DSCR")
-    print(f"#define GPIO_OUTPUT_HIGH         R_PFS_PODR")
-    print(f"#define GPIO_OUTPUT_LOW         ~(R_PFS_PODR | 0xFFFFFFFF)")
+    print(f"/* GPIO Configuration for gpio_pinset_t.cfg field */")
+    print(f"#define GPIO_OUTPUT               \t    (1 << R_PFS_PDR)        /* Output direction */")
+    print(f"#define GPIO_INPUT                \t    (0)                     /* Input direction (default) */")
+    print(f"#define GPIO_LOW_DRIVE            \t    (0)                     /* Low drive strength (default) */")
+    print(f"#define GPIO_MIDDLE_DRIVE         \t    (1 << R_PFS_DSCR)      /* Middle drive strength */")
+    print(f"#define GPIO_HIGH_DRIVE           \t    ((1 << R_PFS_DSCR) | (1 << R_PFS_DSCR1)) /* High drive strength */")
+    print(f"#define GPIO_OUTPUT_HIGH          \t    (1 << R_PFS_PODR)      /* Output high */")
+    print(f"#define GPIO_OUTPUT_LOW           \t    (0)                     /* Output low (default) */")
+    print(f"#define GPIO_PULLUP               \t    (1 << R_PFS_PCR)       /* Enable pull-up */")
+    print(f"#define GPIO_OPENDRAIN            \t    (1 << R_PFS_NCODR)     /* Open drain output */")
+    print(f"")
+    print(f"/* Note: Peripheral mode is detected automatically when PSEL != 0 */")
     print(f"")
     print(f"#endif /* {HEADER_GUARD} */")
 

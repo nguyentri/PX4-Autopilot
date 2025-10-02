@@ -76,70 +76,16 @@ typedef uint32_t gpio_pinset_t;
 
 #define PX4_BUS_OFFSET       0                  /* RA8 buses are 0 based */
 
-/* Bus initialization functions using RA8 NuttX drivers */
-#define px4_spibus_initialize(bus_num_1based)   ra_spibus_initialize(bus_num_1based - PX4_BUS_OFFSET)
+/* Bus initialization functions - implemented in micro_hal/spi.cpp */
+/* SPI functions are implemented in micro_hal/spi.cpp - do not use macros */
 /* I2C functions are implemented in micro_hal/i2c.c - do not use macros */
 
 /* GPIO functions using RA8 NuttX drivers */
-#define px4_arch_configgpio(pinset)             px4_ra8_configgpio(pinset)
-#define px4_arch_unconfiggpio(pinset)           px4_ra8_unconfiggpio(pinset)
-#define px4_arch_gpioread(pinset)               px4_ra8_gpioread(pinset)
-#define px4_arch_gpiowrite(pinset, value)       px4_ra8_gpiowrite(pinset, value)
-#define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) px4_ra8_gpiosetevent(pinset,r,f,e,fp,a)
-
-/* GPIO pin encoding definitions for RA8 */
-#define GPIO_PORT_SHIFT     8
-#define GPIO_PIN_SHIFT      0
-#define GPIO_OUTPUT_BIT     0x00010000
-#define GPIO_OUTPUT_SET_BIT 0x00020000
-#define GPIO_PULLUP_BIT     0x00080000
-#define GPIO_ALT_BIT        0x00000200
-
-/* GPIO port encoding (bits 11-8) */
-#define GPIO_PORTA          (0 << GPIO_PORT_SHIFT)
-#define GPIO_PORTB          (1 << GPIO_PORT_SHIFT)
-#define GPIO_PORTC          (2 << GPIO_PORT_SHIFT)
-#define GPIO_PORTD          (3 << GPIO_PORT_SHIFT)
-#define GPIO_PORTE          (4 << GPIO_PORT_SHIFT)
-#define GPIO_PORTF          (5 << GPIO_PORT_SHIFT)
-#define GPIO_PORTG          (6 << GPIO_PORT_SHIFT)
-#define GPIO_PORTH          (7 << GPIO_PORT_SHIFT)
-#define GPIO_PORTI          (8 << GPIO_PORT_SHIFT)
-#define GPIO_PORTJ          (9 << GPIO_PORT_SHIFT)
-
-/* GPIO pin encoding (bits 3-0) */
-#define GPIO_PIN0           (0 << GPIO_PIN_SHIFT)
-#define GPIO_PIN1           (1 << GPIO_PIN_SHIFT)
-#define GPIO_PIN2           (2 << GPIO_PIN_SHIFT)
-#define GPIO_PIN3           (3 << GPIO_PIN_SHIFT)
-#define GPIO_PIN4           (4 << GPIO_PIN_SHIFT)
-#define GPIO_PIN5           (5 << GPIO_PIN_SHIFT)
-#define GPIO_PIN6           (6 << GPIO_PIN_SHIFT)
-#define GPIO_PIN7           (7 << GPIO_PIN_SHIFT)
-#define GPIO_PIN8           (8 << GPIO_PIN_SHIFT)
-#define GPIO_PIN9           (9 << GPIO_PIN_SHIFT)
-#define GPIO_PIN10          (10 << GPIO_PIN_SHIFT)
-#define GPIO_PIN11          (11 << GPIO_PIN_SHIFT)
-#define GPIO_PIN12          (12 << GPIO_PIN_SHIFT)
-#define GPIO_PIN13          (13 << GPIO_PIN_SHIFT)
-#define GPIO_PIN14          (14 << GPIO_PIN_SHIFT)
-#define GPIO_PIN15          (15 << GPIO_PIN_SHIFT)
-
-/* GPIO mode encoding */
-#define GPIO_INPUT          0
-#define GPIO_OUTPUT         GPIO_OUTPUT_BIT
-
-/* Additional GPIO mode combinations for compatibility */
-#define GPIO_OUTPUT_HIGH    (GPIO_OUTPUT_BIT | GPIO_OUTPUT_SET_BIT)
-#define GPIO_OUTPUT_LOW     GPIO_OUTPUT_BIT
-#define GPIO_INPUT_PULLUP   GPIO_PULLUP_BIT
-
-/* GPIO macros for RA8 - proper implementations */
-#define PX4_MAKE_GPIO_INPUT(gpio)               ((gpio) & ~GPIO_OUTPUT_BIT)
-#define PX4_MAKE_GPIO_EXTI(gpio)                ((gpio) & ~GPIO_OUTPUT_BIT)
-#define PX4_MAKE_GPIO_OUTPUT_CLEAR(gpio)        ((gpio) | GPIO_OUTPUT_BIT)
-#define PX4_MAKE_GPIO_OUTPUT_SET(gpio)          ((gpio) | GPIO_OUTPUT_BIT | GPIO_OUTPUT_SET_BIT)
-#define PX4_GPIO_PIN_OFF(def)                   (def)
+#define px4_arch_configgpio(pinset)              ra_configgpio(pinset)
+#define px4_arch_unconfiggpio(pinset)            ra_unconfiggpio(pinset)
+#define px4_arch_gpioread(pinset)                ra_gpioread(pinset)
+#define px4_arch_gpiowrite(pinset, value)        ra_gpiowrite(pinset, value)
+#define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) ra_gpiosetevent(pinset,r,f,e,fp,a)
 
 /* Timer configuration for RA8E1 - Based on PCLKD frequency */
 #ifndef CONFIG_RA_PCLKD_FREQUENCY
@@ -175,13 +121,8 @@ int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
 int px4_i2cbus_set_bus_frequency(struct i2c_master_s *dev, uint32_t frequency);
 int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices);
 
-/* PX4 GPIO wrapper functions that convert uint32_t to RA8 format */
-int px4_ra8_configgpio(gpio_pinset_t pinset);
-int px4_ra8_unconfiggpio(gpio_pinset_t pinset);
-bool px4_ra8_gpioread(gpio_pinset_t pinset);
-void px4_ra8_gpiowrite(gpio_pinset_t pinset, bool value);
-int px4_ra8_gpiosetevent(gpio_pinset_t pinset, bool risingedge, bool fallingedge,
-                         bool event, gpio_interrupt_t func, void *arg);
+/* PX4 SPI functions - implemented in platforms/nuttx/src/px4/renesas/ra8_common/micro_hal/spi.cpp */
+struct spi_dev_s *px4_spibus_initialize(int bus);
 
 void ra8_save_panic(int fileno, void *context, int length);
 

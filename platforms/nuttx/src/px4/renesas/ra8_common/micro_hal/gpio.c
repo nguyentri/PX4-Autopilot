@@ -42,10 +42,11 @@
 
 #include <nuttx/config.h>
 #include <arch/board/board.h>
+#include <board_config.h>
 
 /* RA8 specific headers */
 #include "hardware/ra8e1/ra8e1_pinmap.h"
-#include "ra8_gpio.h"
+#include "ra_gpio.h"
 
 #ifndef OK
 #define OK 0
@@ -55,49 +56,15 @@
  * GPIO Configuration Functions
  ****************************************************************************/
 
-/**
- * Configure a GPIO pin
- */
-int px4_arch_configgpio(uint32_t pinset)
-{
-    return ra_configgpio((gpio_pinset_t)pinset);
-}
-
-/**
- * Unconfigure a GPIO pin (return to default state)
- */
-int px4_arch_unconfiggpio(uint32_t pinset)
-{
-    /* Set pin back to input with no pull-up */
-    uint32_t input_pinset = (pinset & ~(GPIO_OUTPUT | R_PFS_PCR)) | GPIO_INPUT;
-    return ra_configgpio((gpio_pinset_t)input_pinset);
-}
-
-/**
- * Read a GPIO pin value
- */
-bool px4_arch_gpioread(uint32_t pinset)
-{
-    return ra_gpioread((gpio_pinset_t)pinset);
-}
-
-/**
- * Write a GPIO pin value
- */
-void px4_arch_gpiowrite(uint32_t pinset, bool value)
-{
-    ra_gpiowrite((gpio_pinset_t)pinset, value);
-}
-
 /****************************************************************************
  * Interrupt Functions
  ****************************************************************************/
 
 /**
- * Configure GPIO interrupt
+ * Configure GPIO interrupt, will move to ra_gpio.c later
  * Note: This is a simplified implementation
  */
-int px4_arch_gpiosetevent(uint32_t pinset, bool rising, bool falling,
+int ra_gpiosetevent(uint32_t pinset, bool rising, bool falling,
                          bool event, xcpt_t func, void *arg)
 {
     /* TODO: Implement GPIO interrupt configuration for RA8 */

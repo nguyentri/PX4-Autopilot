@@ -46,6 +46,9 @@
 #include <px4_platform_common/px4_config.h>
 #include <nuttx/arch.h>
 
+/* Board specific definitions */
+#include "board_config.h"
+
 #ifndef CONFIG_SPI_EXCHANGE
 # error This driver requires CONFIG_SPI_EXCHANGE
 #endif

@@ -83,7 +83,7 @@ int px4_arch_serial_init(void)
     /* SCI3 - RC Input (P309/P310) */
 
     /* Mark all ports as configured */
-    for (int i = 0; i < NUM_SERIAL_PORTS; i++) {
+    for (unsigned int i = 0; i < NUM_SERIAL_PORTS; i++) {
         serial_configs[i].configured = true;
     }
 
@@ -93,9 +93,9 @@ int px4_arch_serial_init(void)
 /**
  * Get serial device name by index
  */
-const char *px4_arch_serial_get_device(int port)
+const char *px4_arch_serial_get_device(unsigned int port)
 {
-    if (port < 0 || port >= NUM_SERIAL_PORTS) {
+    if (port >= NUM_SERIAL_PORTS) {
         return NULL;
     }
 
@@ -105,9 +105,9 @@ const char *px4_arch_serial_get_device(int port)
 /**
  * Get serial baud rate by index
  */
-uint32_t px4_arch_serial_get_baud(int port)
+uint32_t px4_arch_serial_get_baud(unsigned int port)
 {
-    if (port < 0 || port >= NUM_SERIAL_PORTS) {
+    if (port >= NUM_SERIAL_PORTS) {
         return 0;
     }
 
@@ -117,9 +117,9 @@ uint32_t px4_arch_serial_get_baud(int port)
 /**
  * Set serial baud rate
  */
-int px4_arch_serial_set_baud(int port, uint32_t baud)
+int px4_arch_serial_set_baud(unsigned int port, uint32_t baud)
 {
-    if (port < 0 || port >= NUM_SERIAL_PORTS) {
+    if (port >= NUM_SERIAL_PORTS)  {
         return -EINVAL;
     }
 
@@ -146,9 +146,9 @@ int px4_arch_serial_get_count(void)
 /**
  * Check if serial port is configured
  */
-bool px4_arch_serial_is_configured(int port)
+bool px4_arch_serial_is_configured(unsigned int port)
 {
-    if (port < 0 || port >= NUM_SERIAL_PORTS) {
+    if (port >= NUM_SERIAL_PORTS)  {
         return false;
     }
 
@@ -203,7 +203,7 @@ const char *px4_arch_serial_get_rc(void)
 /**
  * Test serial port by sending test data
  */
-int px4_arch_serial_test(int port)
+int px4_arch_serial_test(unsigned int port)
 {
     /* TODO: Implement serial port testing */
     /* This would:
@@ -213,7 +213,7 @@ int px4_arch_serial_test(int port)
      * 4. Close the device
      */
 
-    if (port < 0 || port >= NUM_SERIAL_PORTS) {
+    if (port >= NUM_SERIAL_PORTS)  {
         return -EINVAL;
     }
 

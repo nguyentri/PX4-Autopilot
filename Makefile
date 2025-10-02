@@ -60,17 +60,23 @@ endif
 all: ensure_nuttx_ra8_branch px4_sitl_default
 
 # Ensure NuttX submodule uses the NuttX_Px4_RA8 branch
+# This will automatically switch the NuttX submodule to the correct branch
+# for builds. Set SKIP_NUTTX_SWITCH=1 to disable this behavior.
 .PHONY: ensure_nuttx_ra8_branch
 ensure_nuttx_ra8_branch:
-	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."
-	@cd platforms/nuttx/NuttX/nuttx && \
-	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
-		echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
-		git fetch origin && \
-		git checkout NuttX_Px4_RA8 && \
-		git pull --ff-only; \
+	@if [ "$$SKIP_NUTTX_SWITCH" != "1" ]; then \
+		echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."; \
+		cd platforms/nuttx/NuttX/nuttx && \
+		if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
+			echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
+			git fetch origin && \
+			git checkout NuttX_Px4_RA8 && \
+			git pull --ff-only; \
+		else \
+			echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
+		fi; \
 	else \
-		echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
+		echo "Skipping NuttX submodule branch switch (SKIP_NUTTX_SWITCH=1 set)"; \
 	fi
 
 # define a space character to be able to explicitly find it in strings
@@ -237,12 +243,12 @@ ALL_CONFIG_TARGETS := $(shell find boards -maxdepth 3 -mindepth 3 -name '*.px4bo
 #  Do not put any spaces between function arguments.
 
 # All targets.
-$(ALL_CONFIG_TARGETS):
+$(ALL_CONFIG_TARGETS): ensure_nuttx_ra8_branch
 	@$(call cmake-build,$@$(BUILD_DIR_SUFFIX))
 
 # Filter for only default targets to allow omiting the "_default" postfix
 CONFIG_TARGETS_DEFAULT := $(patsubst %_default,%,$(filter %_default,$(ALL_CONFIG_TARGETS)))
-$(CONFIG_TARGETS_DEFAULT):
+$(CONFIG_TARGETS_DEFAULT): ensure_nuttx_ra8_branch
 	@$(call cmake-build,$@_default$(BUILD_DIR_SUFFIX))
 
 all_config_targets: $(ALL_CONFIG_TARGETS)
@@ -540,15 +546,22 @@ validate_module_configs:
 
 clean:
 	@[ ! -d "$(SRC_DIR)/build" ] || find "$(SRC_DIR)/build" -mindepth 1 -maxdepth 1 -type d -exec sh -c "echo {}; cmake --build {} -- clean || rm -rf {}" \; # use generated build system to clean, wipe build directory if it fails
-	@# Clean only build artifacts in submodules, avoid changing branches
-	@git submodule foreach git clean -dX --force # some submodules generate build artifacts in source
+	@# By default do NOT run destructive cleaning on submodules. Set FORCE_SUBMODULE_CLEAN=1 to enable full submodule clean.
+	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
+		git submodule foreach git clean -dX --force; \
+		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
+	else \
+		echo "Skipping destructive submodule cleaning (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
+	fi
 
 submodulesclean:
-	@git submodule foreach --quiet --recursive git clean -ff -x -d
-	@# Skip submodule update to avoid reverting to default branches
-	@# @git submodule update --quiet --init --recursive || true
-	@# @git submodule sync --recursive
-	@# @git submodule update --init --recursive --jobs 4
+	@# By default do NOT run destructive cleaning on submodules. Use FORCE_SUBMODULE_CLEAN=1 to enable.
+	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
+		git submodule foreach --quiet --recursive git clean -ff -x -d; \
+		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
+	else \
+		echo "Skipping submodulesclean (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
+	fi
 
 submodulesupdate:
 	@# Use --init to initialize submodules without changing branches
@@ -572,6 +585,8 @@ distclean:
 
 # WARNING: DO NOT UNCOMMENT THESE LINES - They will reset submodules to default branches
 # and potentially lose custom branch configurations (like NuttX_Px4_RA8)
+# The Makefile now guards destructive operations behind FORCE_SUBMODULE_CLEAN.
+# NuttX submodule switching is enabled by default (set SKIP_NUTTX_SWITCH=1 to disable).
 #@git submodule deinit --force $(SRC_DIR)
 #@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"
 
