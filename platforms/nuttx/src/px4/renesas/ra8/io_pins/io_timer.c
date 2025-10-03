@@ -46,11 +46,13 @@
 
 #include <sys/types.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #include <drivers/drv_pwm_output.h>
 
@@ -122,7 +124,7 @@ int up_pwm_servo_init(uint32_t channel_mask)
 				ret = -1;
 			}
 
-			syslog(LOG_INFO, "Initialized PWM channel %d (GPT%d) at %dHz\n",
+			syslog(LOG_INFO, "Initialized PWM channel %d (GPT%d) at %ldHz\n",
 			       channel, gpt_channel, pwm_rate);
 		}
 	}

@@ -62,6 +62,12 @@ static const char hw_type[] = "FPB-RA8E1";
 /****************************************************************************
  * Pre-Processor Definitions
  ****************************************************************************/
+#define DRV_IMU_DEVTYPE_ICM20948  0x28
+#define DRV_BARO_DEVTYPE_BMP388   0x67
+
+/* NuttX SPI device IDs - must match order in spi.cpp px4_spi_buses array */
+#define NUTTX_SPI_ICM20948_DEVID  0  /* First device in spi.cpp */
+#define NUTTX_SPI_BMP388_DEVID    1  /* Second device in spi.cpp */
 
 /****************************************************************************
  * Private Functions
@@ -118,22 +124,6 @@ __EXPORT void board_on_reset(int status)
 	}
 }
 
-/************************************************************************************
- * Name: fpb_ra8e1_spidev_initialize
- *
- * Description:
- *   Called to configure SPI chip select GPIO
- *
- ************************************************************************************/
-
-static void fpb_ra8e1_spidev_initialize(void)
-{
-#ifdef CONFIG_RA_SPI1
-	/* Configure SPI1 chip selects for sensors */
-	px4_arch_configgpio(GPIO_SPI1_CS0_ICM20948);  /* ICM20948 IMU */
-	px4_arch_configgpio(GPIO_SPI1_CS1_BMP388);    /* BMP388 Barometer */
-#endif
-}
 
 /************************************************************************************
  * Name: fpb_ra8e1_gpio_initialize
@@ -193,9 +183,6 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* configure pins */
 	fpb_ra8e1_gpio_initialize();
 
-	/* configure SPI interfaces */
-	fpb_ra8e1_spidev_initialize();
-
 	return OK;
 }
 
@@ -214,11 +201,8 @@ __EXPORT void ra8e1_boardinitialize(void)
 	/* Reset PWM first thing */
 	board_on_reset(-1);
 
-	/* configure pins */
+	/* configure read po */
 	fpb_ra8e1_gpio_initialize();
-
-	/* configure SPI interfaces */
-	fpb_ra8e1_spidev_initialize();
 }
 
 __EXPORT const char *board_get_hw_type_name()
@@ -230,32 +214,27 @@ __EXPORT void board_gpio_init(void){
 	fpb_ra8e1_gpio_initialize();
 }
 
-/************************************************************************************
- * SPI Board-Specific Functions for PX4 HAL
- ************************************************************************************/
-
-__EXPORT void fpb_ra8e1_spi_gpio_init(void)
-{
-	/* Configure SPI1 GPIO pins - these are already configured in fpb_ra8e1_spidev_initialize() */
-	/* This function is called by the PX4 SPI HAL */
-	fpb_ra8e1_spidev_initialize();
-}
 
 __EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
 {
-	/* Handle chip select for SPI1 devices */
+	/* Map PX4 device types to NuttX device IDs and call ra_spi_select */
+	uint32_t nuttx_devid;
+
 	switch (devid) {
-	case 0x28: /* DRV_IMU_DEVTYPE_ICM20948 */
-		px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, !selected);
+	case DRV_IMU_DEVTYPE_ICM20948: /* DRV_IMU_DEVTYPE_ICM20948 */
+		nuttx_devid = NUTTX_SPI_ICM20948_DEVID; /* ICM20948 is first in spi.cpp */
 		break;
 
-	case 0x67: /* DRV_BARO_DEVTYPE_BMP388 */
-		px4_arch_gpiowrite(GPIO_SPI1_CS1_BMP388, !selected);
+	case DRV_BARO_DEVTYPE_BMP388: /* DRV_BARO_DEVTYPE_BMP388 */
+		nuttx_devid = NUTTX_SPI_BMP388_DEVID; /* BMP388 is second in spi.cpp */
 		break;
 
 	default:
-		break;
+		return; /* Unknown device */
 	}
+
+	/* Use the common NuttX SPI select function */
+	ra_spi_select(NULL, nuttx_devid, selected);
 }
 
 __EXPORT bool fpb_ra8e1_spi_drdy_read(void)
@@ -278,12 +257,12 @@ void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
 	/* Handle chip select for SPI1 devices based on NuttX device IDs */
 	switch (devid) {
-	case 0: /* GY912_SPI_BMP388_DEVID */
-		px4_arch_gpiowrite(GPIO_SPI1_CS1_BMP388, !selected);
+	case NUTTX_SPI_ICM20948_DEVID: /* ICM20948 - first device in spi.cpp */
+		px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);
 		break;
 
-	case 1: /* GY912_SPI_ICM20948_DEVID */
-		px4_arch_gpiowrite(GPIO_SPI1_CS0_ICM20948, !selected);
+	case NUTTX_SPI_BMP388_DEVID: /* BMP388 - second device in spi.cpp */
+		px4_arch_gpiowrite(GPIO_SPI1_CS1, !selected);
 		break;
 
 	default:
@@ -304,16 +283,14 @@ uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
 
 	/* Return device-specific status based on NuttX device IDs */
 	switch (devid) {
-	case 0: /* GY912_SPI_BMP388_DEVID */
-		/* BMP388 is always present if configured */
+	case NUTTX_SPI_ICM20948_DEVID: /* ICM20948 - first device in spi.cpp */
+		/* ICM20948 is always present if configured */
 		status = 1; /* SPI_STATUS_PRESENT equivalent */
 		break;
 
-	case 1: /* GY912_SPI_ICM20948_DEVID */
-		/* Check data ready pin for ICM20948 */
-		if (px4_arch_gpioread(GPIO_SPI1_IMU_DRDY)) {
-			status = 1; /* SPI_STATUS_PRESENT equivalent */
-		}
+	case NUTTX_SPI_BMP388_DEVID: /* BMP388 - second device in spi.cpp */
+		/* BMP388 is always present if configured */
+		status = 1; /* SPI_STATUS_PRESENT equivalent */
 		break;
 
 	default:

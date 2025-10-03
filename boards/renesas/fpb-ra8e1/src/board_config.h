@@ -47,7 +47,7 @@
 #include <nuttx/compiler.h>
 #include <stdint.h>
 
-#include <ra_pinmap.h>
+#include <hardware/ra8e1/ra8e1_pinmap.h>
 #include <ra_gpio.h>
 
 /****************************************************************************************************
@@ -100,18 +100,14 @@
 #define PX4_SPI_BUS_SENSORS     1       /* SPI1 for all sensors (ICM20948 (including AK09916) + BMP388) */
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
-
-/* Chip Select Configuration - using NuttX ra8e1_pinmap.h gpio_pinset_t format */
-#define GPIO_SPI1_CS0_ICM20948  ((gpio_pinset_t)(PORT4 | PIN8 | GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_HIGH))  /* P408 - ICM20948 CS */
-#define GPIO_SPI1_CS1_BMP388    ((gpio_pinset_t)(PORT4 | PIN7 | GPIO_OUTPUT | GPIO_LOW_DRIVE | GPIO_OUTPUT_HIGH))  /* P407 - BMP388 CS */
-
+/* SPI1 - Used for GY-912 sensor board */
+#define GPIO_SPI1_SCK         GPIO_RSPCKB_B_1          /* P412 - SPI1 Clock */
+#define GPIO_SPI1_MOSI        GPIO_MOSIB_B_1           /* P411 - SPI1 MOSI */
+#define GPIO_SPI1_MISO        GPIO_MISOB_B_1           /* P410 - SPI1 MISO */
+#define GPIO_SPI1_CS0         GPIO_P408_OUTPUT_HIGH    /* P408 - ICM20948 CS */
+#define GPIO_SPI1_CS1         GPIO_P407_OUTPUT_HIGH    /* P407 - BMP388 CS */
 /* IMU Data Ready Pin - P409 */
-#define GPIO_SPI1_IMU_DRDY      ((gpio_pinset_t)(PORT4 | PIN9 | GPIO_INPUT))  /* P409 - ICM20948 Data Ready */
-
-/* SPI Bus Pin Definitions - using NuttX ra8e1_pinmap.h predefined constants */
-#define GPIO_SPI1_IMU_SCK       GPIO_RSPCKB_B_1     /* P412 - SPI1 Clock */
-#define GPIO_SPI1_IMU_MISO      GPIO_MISOB_B_1      /* P410 - SPI1 MISO */
-#define GPIO_SPI1_IMU_MOSI      GPIO_MOSIB_B_1      /* P411 - SPI1 MOSI */
+#define GPIO_SPI1_IMU_DRDY      GPIO_IRQ6_P409 /* P409 - ICM20948 Data Ready */
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
@@ -373,7 +369,6 @@ extern struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus);
  * SPI Board Functions
  ****************************************************************************************************/
 
-extern void fpb_ra8e1_spi_cs_init(void);
 extern void fpb_ra8e1_spi_cs_select(int devid, bool selected);
 extern uint8_t fpb_ra8e1_spi_cs_read(int devid);
 extern bool fpb_ra8e1_spi_drdy_read(void);

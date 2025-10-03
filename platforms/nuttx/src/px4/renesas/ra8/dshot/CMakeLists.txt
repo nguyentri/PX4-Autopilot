@@ -40,6 +40,4 @@ target_compile_options(arch_dshot PRIVATE -O1)
 
 # Add necessary include directories
 target_include_directories(arch_dshot PRIVATE
-	${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8
-	${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/hardware
 )
