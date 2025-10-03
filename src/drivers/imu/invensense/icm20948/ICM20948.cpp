@@ -486,31 +486,21 @@ void ICM20948::DataReady()
 
 bool ICM20948::DataReadyInterruptConfigure()
 {
-	// TODO: enable data ready interrupt
-	return false;
-#if 0
-
 	if (_drdy_gpio == 0) {
 		return false;
 	}
 
-	// Setup data ready on falling edge
-	return px4_arch_gpiosetevent(_drdy_gpio, false, true, true, &DataReadyInterruptCallback, this) == 0;
-#endif
+	// Setup data ready on rising edge (ICM20948 DRDY is active high)
+	return px4_arch_gpiosetevent(_drdy_gpio, true, false, true, &DataReadyInterruptCallback, this) == 0;
 }
 
 bool ICM20948::DataReadyInterruptDisable()
 {
-	// TODO: enable data ready interrupt
-	return false;
-#if 0
-
 	if (_drdy_gpio == 0) {
 		return false;
 	}
 
 	return px4_arch_gpiosetevent(_drdy_gpio, false, false, false, nullptr, nullptr) == 0;
-#endif
 }
 
 template <typename T>

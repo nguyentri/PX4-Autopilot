@@ -45,7 +45,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <debug.h>
-#include <errno.h>
 
 /* Hardware version definition */
 static const char hw_type[] = "FPB-RA8E1";
@@ -70,8 +69,16 @@ static const char hw_type[] = "FPB-RA8E1";
 #define NUTTX_SPI_BMP388_DEVID    1  /* Second device in spi.cpp */
 
 /****************************************************************************
+ * Private Variables
+ ****************************************************************************/
+
+/* No private variables needed - driver handles interrupts internally */
+
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/* No private functions needed - driver handles interrupts internally */
 
 /****************************************************************************
  * Protected Functions
@@ -129,7 +136,7 @@ __EXPORT void board_on_reset(int status)
  * Name: fpb_ra8e1_gpio_initialize
  *
  * Description:
- *   Called to configure GPIO for the board
+ *   Called to configure all GPIOs for the board except those controlled by NuttX Drivers
  *
  ************************************************************************************/
 
@@ -139,7 +146,7 @@ static void fpb_ra8e1_gpio_initialize(void)
 	px4_arch_configgpio(GPIO_nLED_RED);   /* LED1 */
 	px4_arch_configgpio(GPIO_nLED_GREEN); /* LED2 */
 
-	/* Configure IMU data ready pin */
+	/* Configure IMU data ready pin - driver will set up interrupt */
 	px4_arch_configgpio(GPIO_SPI1_IMU_DRDY);
 
 	/* Configure safety button */
@@ -239,9 +246,13 @@ __EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
 
 __EXPORT bool fpb_ra8e1_spi_drdy_read(void)
 {
-	/* Read the ICM20948 data ready pin */
+	/* Read the ICM20948 data ready pin directly */
 	return px4_arch_gpioread(GPIO_SPI1_IMU_DRDY);
 }
+
+
+
+
 
 /************************************************************************************
  * NuttX SPI Driver Interface Functions
