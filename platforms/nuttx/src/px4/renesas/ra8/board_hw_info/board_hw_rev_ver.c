@@ -37,9 +37,13 @@
  * Board hardware revision/version for Renesas RA8
  */
 
-/* Simple board hardware info implementation for Renesas RA8 */
+#include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/micro_hal.h>
+#include <stdint.h>
 
+#ifndef __EXPORT
 #define __EXPORT
+#endif
 
 static const char hw_type_name[] = "FPB-RA8E1";
 

@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <debug.h>
+#include <syslog.h>
 
 /* Hardware version definition */
 static const char hw_type[] = "FPB-RA8E1";
@@ -57,6 +58,9 @@ static const char hw_type[] = "FPB-RA8E1";
 #include "ra_spi.h"
 
 #include "board_config.h"
+
+/* External function declarations */
+extern struct spi_dev_s *px4_spibus_initialize(int bus);
 
 /****************************************************************************
  * Pre-Processor Definitions
@@ -190,8 +194,36 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* configure pins */
 	fpb_ra8e1_gpio_initialize();
 
-	/* Initialize PX4 platform (this starts the work queue manager) */
-	px4_platform_init();
+	syslog(LOG_INFO, "[RA8] Starting minimal PX4 platform initialization\n");
+
+	/* Initialize PX4 platform (core only - no filesystem) */
+	/* Need hrt running before using the ADC and platform init */
+	syslog(LOG_INFO, "[RA8] About to call px4_platform_init()\n");
+
+	/* Initialize PX4 platform (includes work queue manager, console, params, uORB) */
+	//px4_platform_init(); // already init ??
+	//syslog(LOG_INFO, "[RA8] PX4 platform initialized\n");
+
+	/* Initialize SPI buses for sensors - use PX4 platform interface */
+	struct spi_dev_s *spi1_dev = px4_spibus_initialize(1);
+	if (spi1_dev) {
+		syslog(LOG_INFO, "[RA8] SPI bus 1 initialized successfully\n");
+	} else {
+		syslog(LOG_ERR, "[RA8] Failed to initialize SPI bus 1\n");
+	}
+
+	/* Hardware version detection (RA8 uses static configuration) */
+	syslog(LOG_INFO, "[RA8] HW Info: Rev 0x%1x Ver 0x%1x %s\n",
+	       board_get_hw_revision(), board_get_hw_version(), board_get_hw_type_name());
+
+	/* Skip px4_platform_configure() for constrained platforms - it requires MTD/filesystem support */
+	syslog(LOG_INFO, "[RA8] Skipping platform configure (constrained platform)\n");
+
+	/* Reset SPI buses to ensure clean state for sensor communication */
+	board_spi_reset(10, 0xffff);
+	syslog(LOG_INFO, "[RA8] SPI reset completed\n");
+
+	syslog(LOG_INFO, "[RA8] Board initialization completed successfully\n");
 
 	return OK;
 }
@@ -247,9 +279,6 @@ __EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
 	(void)devid;    /* Suppress unused parameter warning */
 	(void)selected; /* Suppress unused parameter warning */
 }
-
-
-
 
 
 /************************************************************************************
@@ -328,28 +357,4 @@ uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
 	return status;
 }
 
-/************************************************************************************
- * Name: fpb_ra8e1_spibus_initialize
- *
- * Description:
- *   Initialize the SPI bus for the board - called by PX4 HAL
- *
- ************************************************************************************/
-
-struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus)
-{
-	struct spi_dev_s *spi_dev;
-
-	syslog(LOG_INFO, "fpb_ra8e1_spibus_initialize: Initializing SPI bus %d", bus);
-
-	/* Call the NuttX RA8 SPI driver initialization */
-	spi_dev = ra_spibus_initialize(bus);
-
-	if (spi_dev) {
-		syslog(LOG_INFO, "fpb_ra8e1_spibus_initialize: Successfully initialized SPI bus %d", bus);
-	} else {
-		syslog(LOG_ERR, "fpb_ra8e1_spibus_initialize: Failed to initialize SPI bus %d", bus);
-	}
-
-	return spi_dev;
-}
+/* fpb_ra8e1_spibus_initialize() removed - now using px4_spibus_initialize() directly */

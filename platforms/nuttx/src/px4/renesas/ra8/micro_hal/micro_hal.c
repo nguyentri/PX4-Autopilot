@@ -47,16 +47,7 @@ struct i2c_master_s;
 #define OK 0
 #endif
 
-/* Forward declaration - board-specific SPI initialization */
-extern struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus);
-
-/* SPI Bus Initialization - delegate to NuttX */
-struct spi_dev_s *ra_spibus_initialize(int bus)
-{
-    /* Call the actual NuttX RA8 SPI driver directly */
-    /* We avoid naming conflict by using the NuttX board-specific function */
-    return fpb_ra8e1_spibus_initialize(bus);
-}
+/* SPI Bus Initialization removed - ra_spibus_initialize is provided by NuttX RA8 driver directly */
 
 /* I2C Bus functions - not used for sensors */
 struct i2c_master_s *ra_i2cbus_initialize(int bus)

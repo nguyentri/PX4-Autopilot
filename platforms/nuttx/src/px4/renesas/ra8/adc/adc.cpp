@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,27 +32,69 @@
  ****************************************************************************/
 
 /**
- * @file spi.cpp
+ * @file adc.cpp
  *
- * Board-specific SPI functions.
+ * RA8 ADC driver for PX4
  */
 
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/board_common.h>
-#include <px4_arch/spi_hw_description.h>
+#include <px4_platform_common/micro_hal.h>
 
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
+#include <drivers/drv_adc.h>
+#include <drivers/drv_hrt.h>
 
-#include <lib/drivers/device/Device.hpp>
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <stdio.h>
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port4, GPIO::Pin8}, SPI::DRDY{GPIO::Port4, GPIO::Pin9}),
-		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin7}),
-	}),
-};
+#include <arch/board/board.h>
+#include <nuttx/analog/adc.h>
+#include <nuttx/arch.h>
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+#include <board_config.h>
+
+#ifdef CONFIG_ADC
+
+int px4_arch_adc_init(uint32_t base_address)
+{
+	/* ADC initialization for RA8 */
+	/* For now, return success as ADC may not be immediately needed */
+	return 0;
+}
+
+void px4_arch_adc_uninit(uint32_t base_address)
+{
+	/* ADC cleanup for RA8 */
+}
+
+uint32_t px4_arch_adc_sample(unsigned channel)
+{
+	/* Read ADC channel on RA8 */
+	/* Return 0 for now - implement when ADC hardware access is needed */
+	return 0;
+}
+
+float px4_arch_adc_reference_v()
+{
+	/* Return ADC reference voltage for RA8 (typically 3.3V) */
+	return 3.3f;
+}
+
+uint32_t px4_arch_adc_temp_sensor_mask()
+{
+	/* Return temperature sensor channel mask */
+	return 0;
+}
+
+uint32_t px4_arch_adc_dn_fullcount()
+{
+	/* Return full-scale ADC count (12-bit = 4095) */
+	return 4095;
+}
+
+#endif /* CONFIG_ADC */

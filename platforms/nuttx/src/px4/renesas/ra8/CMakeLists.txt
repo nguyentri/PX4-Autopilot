@@ -31,13 +31,16 @@
 #
 ############################################################################
 
-# Common RA8 platform modules
+# RA8 platform modules
+add_subdirectory(adc)
 add_subdirectory(board_critmon)
 add_subdirectory(board_hw_info)
 add_subdirectory(board_reset)
-add_subdirectory(cpuload)
 add_subdirectory(dshot)
 add_subdirectory(hrt)
 add_subdirectory(io_pins)
+add_subdirectory(led_pwm)
 add_subdirectory(micro_hal)
+add_subdirectory(spi)
+add_subdirectory(tone_alarm)
 add_subdirectory(version)

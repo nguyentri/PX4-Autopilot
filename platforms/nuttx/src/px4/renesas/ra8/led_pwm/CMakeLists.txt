@@ -31,21 +31,8 @@
 #
 ############################################################################
 
-px4_add_library(ra8_micro_hal
-	micro_hal.c
-	gpio.c
-	i2c.c
-	pwm.c
-	serial.c
+px4_add_library(arch_led_pwm
+	led_pwm.cpp
 )
 
-target_link_libraries(ra8_micro_hal
-	PRIVATE
-	nuttx_arch  # For the NuttX RA8 drivers
-	nuttx_drivers
-)
-
-target_include_directories(ra8_micro_hal
-	PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
+target_link_libraries(arch_led_pwm PRIVATE drivers_board)

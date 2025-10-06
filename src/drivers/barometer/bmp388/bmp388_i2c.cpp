@@ -41,6 +41,8 @@
 
 #include "bmp388.h"
 
+#if defined(CONFIG_I2C)
+
 class BMP388_I2C: public device::I2C, public IBMP388
 {
 public:
@@ -112,3 +114,5 @@ void BMP388_I2C::set_device_type(uint8_t devtype)
 {
 	device::Device::set_device_type(devtype);
 }
+
+#endif // CONFIG_I2C

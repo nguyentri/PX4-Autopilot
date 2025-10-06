@@ -364,4 +364,6 @@ private:
 
 /* interface factories */
 extern IBMP388 *bmp388_spi_interface(uint8_t busnum, uint32_t device, int bus_frequency, spi_mode_e spi_mode);
+#if defined(CONFIG_I2C)
 extern IBMP388 *bmp388_i2c_interface(uint8_t busnum, uint32_t device, int bus_frequency);
+#endif

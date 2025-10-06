@@ -43,8 +43,12 @@ BMP388::print_usage()
 	PRINT_MODULE_USAGE_NAME("bmp388", "driver");
 	PRINT_MODULE_USAGE_SUBCATEGORY("baro");
 	PRINT_MODULE_USAGE_COMMAND("start");
+#if defined(CONFIG_I2C)
 	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(true, true);
 	PRINT_MODULE_USAGE_PARAMS_I2C_ADDRESS(0x76);
+#else
+	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(false, true);
+#endif
 	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 }
 
@@ -52,12 +56,17 @@ I2CSPIDriverBase *BMP388::instantiate(const I2CSPIDriverConfig &config, int runt
 {
 	IBMP388 *interface = nullptr;
 
+#if defined(CONFIG_I2C)
 	if (config.bus_type == BOARD_I2C_BUS) {
 		interface = bmp388_i2c_interface(config.bus, config.i2c_address, config.bus_frequency);
 
-	} else if (config.bus_type == BOARD_SPI_BUS) {
+	}
+#endif // CONFIG_I2C
+#if defined(CONFIG_SPI)
+	if (config.bus_type == BOARD_SPI_BUS) {
 		interface = bmp388_spi_interface(config.bus, config.spi_devid, config.bus_frequency, config.spi_mode);
 	}
+#endif // CONFIG_SPI
 
 	if (interface == nullptr) {
 		PX4_ERR("failed creating interface for bus %i (devid 0x%" PRIx32 ")", config.bus, config.spi_devid);
@@ -88,10 +97,16 @@ I2CSPIDriverBase *BMP388::instantiate(const I2CSPIDriverConfig &config, int runt
 extern "C" int bmp388_main(int argc, char *argv[])
 {
 	using ThisDriver = BMP388;
+#if defined(CONFIG_I2C)
 	BusCLIArguments cli{true, true};
 	cli.i2c_address = 0x76;
 	cli.default_i2c_frequency = 100 * 1000;
+#else
+	BusCLIArguments cli{false, true};
+#endif
+#if defined(CONFIG_SPI)
 	cli.default_spi_frequency = 10 * 1000 * 1000;
+#endif
 
 	const char *verb = cli.parseDefaultArguments(argc, argv);
 

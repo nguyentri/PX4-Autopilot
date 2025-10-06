@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,27 +32,68 @@
  ****************************************************************************/
 
 /**
- * @file spi.cpp
+ * @file led_pwm.cpp
  *
- * Board-specific SPI functions.
+ * RA8 LED PWM driver for PX4
  */
 
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/board_common.h>
-#include <px4_arch/spi_hw_description.h>
+#include <systemlib/px4_macros.h>
 
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
-
-#include <lib/drivers/device/Device.hpp>
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port4, GPIO::Pin8}, SPI::DRDY{GPIO::Port4, GPIO::Pin9}),
-		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin7}),
-	}),
-};
+#include <arch/board/board.h>
+#include <drivers/drv_led.h>
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+__EXPORT void led_init(void)
+{
+	/* Initialize LED PWM for RA8 */
+	/* LEDs are typically handled by simple GPIO on RA8E1 */
+}
+
+__EXPORT void led_on(int led)
+{
+	/* Turn on LED via PWM or GPIO */
+	switch (led) {
+	case 0:
+		/* LED0 control */
+		break;
+	case 1:
+		/* LED1 control */
+		break;
+	default:
+		break;
+	}
+}
+
+__EXPORT void led_off(int led)
+{
+	/* Turn off LED via PWM or GPIO */
+	switch (led) {
+	case 0:
+		/* LED0 control */
+		break;
+	case 1:
+		/* LED1 control */
+		break;
+	default:
+		break;
+	}
+}
+
+__EXPORT void led_toggle(int led)
+{
+	/* Toggle LED state */
+	switch (led) {
+	case 0:
+		/* LED0 toggle */
+		break;
+	case 1:
+		/* LED1 toggle */
+		break;
+	default:
+		break;
+	}
+}

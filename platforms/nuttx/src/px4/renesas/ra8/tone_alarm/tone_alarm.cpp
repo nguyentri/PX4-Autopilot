@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2024 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,27 +32,43 @@
  ****************************************************************************/
 
 /**
- * @file spi.cpp
+ * @file tone_alarm.cpp
  *
- * Board-specific SPI functions.
+ * RA8 Tone Alarm driver for PX4
  */
 
-#include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/board_common.h>
-#include <px4_arch/spi_hw_description.h>
-
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
-
-#include <lib/drivers/device/Device.hpp>
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port4, GPIO::Pin8}, SPI::DRDY{GPIO::Port4, GPIO::Pin9}),
-		initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin7}),
-	}),
-};
+extern "C" {
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+/* Tone alarm interface for RA8 */
+/* Currently stubbed as RA8E1 board doesn't have a buzzer */
+
+int px4_arch_tone_alarm_init()
+{
+	/* Initialize tone alarm hardware */
+	/* Return success even if no hardware present */
+	return 0;
+}
+
+void px4_arch_tone_alarm_deinit()
+{
+	/* Cleanup tone alarm hardware */
+}
+
+int px4_arch_tone_alarm_start(unsigned frequency)
+{
+	/* Start tone at specified frequency */
+	/* Stub implementation for boards without buzzer */
+	(void)frequency;
+	return 0;
+}
+
+void px4_arch_tone_alarm_stop()
+{
+	/* Stop tone output */
+}
+
+}  // extern "C"

@@ -44,6 +44,17 @@ add_library(drivers_board
 
 target_link_libraries(drivers_board
 	PRIVATE
+		arch_adc
+		arch_board_critmon
+		arch_board_hw_info
+		arch_board_reset
+		arch_dshot
+		arch_hrt
+		arch_io_pins
+		arch_led_pwm
+		arch_spi
+		arch_tone_alarm
+		arch_version
 		nuttx_arch
 		nuttx_drivers
 		px4_layer

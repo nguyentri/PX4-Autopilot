@@ -354,16 +354,7 @@
 
 extern void fpb_ra8e1_boardinitialize(void);
 
-/****************************************************************************************************
- * Name: fpb_ra8e1_spibus_initialize
- *
- * Description:
- *   Initialize the SPI bus for the board
- *
- ****************************************************************************************************/
-
-struct spi_dev_s;
-extern struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus);
+/* fpb_ra8e1_spibus_initialize() removed - using px4_spibus_initialize() directly */
 
 /****************************************************************************************************
  * SPI Board Functions
