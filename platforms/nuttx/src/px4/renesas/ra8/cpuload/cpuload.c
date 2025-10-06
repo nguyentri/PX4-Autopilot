@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
+ * Copyright (c) 2024 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,15 +32,29 @@
  ****************************************************************************/
 
 /**
- * @file io_timer.c
+ * @file cpuload.c
+ * CPU load monitoring for Renesas RA8 series.
  *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * This file provides minimal stub implementations for basic BSP functionality.
+ * Advanced CPU monitoring is disabled to reduce complexity and resource usage.
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+#include <board_config.h>
 
-void ra8_io_timer_stub(void)
+// Provide minimal stub implementations for basic BSP functionality
+// These are needed even when CONFIG_SCHED_INSTRUMENTATION is disabled
+
+void cpuload_initialize_once(void)
 {
-	// Stub function to allow compilation
+    // Minimal stub - no CPU load monitoring for basic BSP
+}
+
+void cpuload_monitor_start(void)
+{
+    // Minimal stub - no CPU load monitoring for basic BSP
+}
+
+void cpuload_monitor_stop(void)
+{
+    // Minimal stub - no CPU load monitoring for basic BSP
 }

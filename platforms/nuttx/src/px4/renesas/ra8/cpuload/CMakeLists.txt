@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+# Copyright (c) 2024 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,13 +31,15 @@
 #
 ############################################################################
 
-# Common RA8 platform modules
-add_subdirectory(board_critmon)
-add_subdirectory(board_hw_info)
-add_subdirectory(board_reset)
-add_subdirectory(cpuload)
-add_subdirectory(dshot)
-add_subdirectory(hrt)
-add_subdirectory(io_pins)
-add_subdirectory(micro_hal)
-add_subdirectory(version)
+add_library(cpuload_ra8_common
+	cpuload.c
+)
+
+target_include_directories(cpuload_ra8_common PRIVATE
+	${PX4_SOURCE_DIR}/platforms/nuttx/src/px4/common/include
+	${PX4_SOURCE_DIR}/boards/renesas/fpb-ra8e1/src
+)
+
+target_link_libraries(cpuload_ra8_common
+	prebuild_targets
+)

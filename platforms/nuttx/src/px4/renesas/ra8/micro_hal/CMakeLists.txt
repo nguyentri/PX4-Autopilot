@@ -31,13 +31,22 @@
 #
 ############################################################################
 
-# Common RA8 platform modules
-add_subdirectory(board_critmon)
-add_subdirectory(board_hw_info)
-add_subdirectory(board_reset)
-add_subdirectory(cpuload)
-add_subdirectory(dshot)
-add_subdirectory(hrt)
-add_subdirectory(io_pins)
-add_subdirectory(micro_hal)
-add_subdirectory(version)
+px4_add_library(ra8_micro_hal
+	micro_hal.c
+	gpio.c
+	spi.cpp
+	i2c.c
+	pwm.c
+	serial.c
+)
+
+target_link_libraries(ra8_micro_hal
+	PRIVATE
+	nuttx_arch  # For the NuttX RA8 drivers
+	nuttx_drivers
+)
+
+target_include_directories(ra8_micro_hal
+	PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/../include
+)

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+cd ./nuttx
+make distclean -j$(nproc)
+./tools/configure.sh fpb-ra8e1:spi-loopback
+make -j$(nproc)

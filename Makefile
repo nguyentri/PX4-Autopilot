@@ -64,16 +64,16 @@ all: ensure_nuttx_ra8_branch px4_sitl_default
 # for builds. Set SKIP_NUTTX_SWITCH=1 to disable this behavior.
 .PHONY: ensure_nuttx_ra8_branch
 ensure_nuttx_ra8_branch:
-		echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."; \
-		cd platforms/nuttx/NuttX/nuttx && \
-		if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
-			echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
-			git fetch origin && \
-			git checkout NuttX_Px4_RA8 && \
-			git pull --ff-only; \
-		else \
-			echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
-		fi; \
+	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."; \
+	cd platforms/nuttx/NuttX/nuttx && \
+	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
+		echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
+		git fetch origin && \
+		git checkout NuttX_Px4_RA8 && \
+		git pull --ff-only; \
+	else \
+		echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
+	fi
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )

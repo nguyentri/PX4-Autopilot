@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,15 +32,49 @@
  ****************************************************************************/
 
 /**
- * @file io_timer.c
- *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * @file micro_hal.c
+ * PX4 HAL implementation for Renesas RA8 microcontrollers
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 
-void ra8_io_timer_stub(void)
+struct spi_dev_s;
+struct i2c_master_s;
+
+#ifndef OK
+#define OK 0
+#endif
+
+/* Forward declaration - board-specific SPI initialization */
+extern struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus);
+
+/* SPI Bus Initialization - delegate to NuttX */
+struct spi_dev_s *ra_spibus_initialize(int bus)
 {
-	// Stub function to allow compilation
+    /* Call the actual NuttX RA8 SPI driver directly */
+    /* We avoid naming conflict by using the NuttX board-specific function */
+    return fpb_ra8e1_spibus_initialize(bus);
+}
+
+/* I2C Bus functions - not used for sensors */
+struct i2c_master_s *ra_i2cbus_initialize(int bus)
+{
+    (void)bus;
+    return NULL;
+}
+
+int ra_i2cbus_uninitialize(struct i2c_master_s *dev)
+{
+    (void)dev;
+    return OK;
+}
+
+/* Panic save stub */
+void ra_save_panic(int fileno, void *context, int length)
+{
+    (void)fileno;
+    (void)context;
+    (void)length;
 }

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,15 +32,73 @@
  ****************************************************************************/
 
 /**
- * @file io_timer.c
- *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * @file spi.cpp
+ * SPI micro HAL implementation for Renesas RA8
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+#include <stdint.h>
+#include <stdbool.h>
 
-void ra8_io_timer_stub(void)
+/* PX4 sensor device type definitions */
+#define DRV_IMU_DEVTYPE_ICM20948  0x28
+#define DRV_BARO_DEVTYPE_BMP388   0x67
+#define SPI_STATUS_PRESENT        0x01
+
+struct spi_dev_s;
+
+extern "C" {
+    extern struct spi_dev_s *ra_spibus_initialize(int bus);
+    extern void fpb_ra8e1_spi_gpio_init(void);
+    extern void fpb_ra8e1_spi_select(uint32_t devid, bool selected);
+    extern bool fpb_ra8e1_spi_drdy_read(void);
+}
+
+/* PX4 SPI bus initialization */
+extern "C" struct spi_dev_s *px4_spibus_initialize(int bus)
 {
-	// Stub function to allow compilation
+    struct spi_dev_s *spi_dev = nullptr;
+
+    if (bus == 1) {
+        spi_dev = ra_spibus_initialize(1);
+        if (spi_dev != nullptr) {
+            fpb_ra8e1_spi_gpio_init();
+        }
+    }
+
+    return spi_dev;
+}
+
+/* SPI chip select functions for NuttX integration */
+extern "C" void ra8_spi1select(struct spi_dev_s *dev, uint32_t devid, bool selected)
+{
+    fpb_ra8e1_spi_select(devid, selected);
+}
+
+extern "C" uint8_t ra8_spi1status(struct spi_dev_s *dev, uint32_t devid)
+{
+    uint8_t status = 0;
+
+    switch (devid) {
+    case DRV_IMU_DEVTYPE_ICM20948:
+        if (fpb_ra8e1_spi_drdy_read()) {
+            status |= SPI_STATUS_PRESENT;
+        }
+        break;
+
+    case DRV_BARO_DEVTYPE_BMP388:
+        status |= SPI_STATUS_PRESENT;
+        break;
+
+    default:
+        break;
+    }
+
+    return status;
+}
+
+/* SPI DMA stub */
+extern "C" void px4_spibus_set_dma_config(struct spi_dev_s *dev, uint32_t dma_config)
+{
+    (void)dev;
+    (void)dma_config;
 }

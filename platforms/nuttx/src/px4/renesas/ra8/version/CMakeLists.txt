@@ -31,13 +31,6 @@
 #
 ############################################################################
 
-# Common RA8 platform modules
-add_subdirectory(board_critmon)
-add_subdirectory(board_hw_info)
-add_subdirectory(board_reset)
-add_subdirectory(cpuload)
-add_subdirectory(dshot)
-add_subdirectory(hrt)
-add_subdirectory(io_pins)
-add_subdirectory(micro_hal)
-add_subdirectory(version)
+px4_add_library(arch_version
+	version.c
+)

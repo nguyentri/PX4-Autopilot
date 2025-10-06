@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2015 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,13 +31,12 @@
 #
 ############################################################################
 
-# Common RA8 platform modules
-add_subdirectory(board_critmon)
-add_subdirectory(board_hw_info)
-add_subdirectory(board_reset)
-add_subdirectory(cpuload)
-add_subdirectory(dshot)
-add_subdirectory(hrt)
-add_subdirectory(io_pins)
-add_subdirectory(micro_hal)
-add_subdirectory(version)
+add_library(drivers_board
+	init.c
+	timer_config.cpp
+)
+
+target_link_libraries(drivers_board
+	PRIVATE
+		nuttx_arch
+)

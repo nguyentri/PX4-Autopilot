@@ -45,6 +45,8 @@
 #include <nuttx/spi/spi.h>
 
 #include <lib/drivers/device/Device.hpp>
+#include <stdint.h>
+#include <stdbool.h>
 
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 	initSPIBus(SPI::Bus::SPI1, {

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,15 +32,12 @@
  ****************************************************************************/
 
 /**
- * @file io_timer.c
+ * @file cpuload.h
  *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * RA8 CPU load monitoring wrapper - includes common NuttX implementation
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+#pragma once
 
-void ra8_io_timer_stub(void)
-{
-	// Stub function to allow compilation
-}
+/* Include the common NuttX cpuload implementation */
+#include "../../../../common/include/px4_platform/cpuload.h"

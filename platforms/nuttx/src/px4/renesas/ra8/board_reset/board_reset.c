@@ -32,15 +32,15 @@
  ****************************************************************************/
 
 /**
- * @file io_timer.c
+ * @file board_reset.c
  *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * Board reset functionality for Renesas RA8 - stub implementation
  */
 
 // Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+// TODO: Implement actual board reset functionality for Renesas RA8
 
-void ra8_io_timer_stub(void)
+void ra8_board_reset_stub(void)
 {
 	// Stub function to allow compilation
 }

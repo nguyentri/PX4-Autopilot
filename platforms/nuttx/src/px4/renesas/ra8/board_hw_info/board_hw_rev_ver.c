@@ -32,15 +32,61 @@
  ****************************************************************************/
 
 /**
- * @file io_timer.c
+ * @file board_hw_rev_ver.c
  *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * Board hardware revision/version for Renesas RA8
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+/* Simple board hardware info implementation for Renesas RA8 */
 
-void ra8_io_timer_stub(void)
+#define __EXPORT
+
+static const char hw_type_name[] = "FPB-RA8E1";
+
+/************************************************************************************
+ * Name: board_get_hw_type_name
+ *
+ * Description:
+ *   Returns the board hardware type name
+ *
+ * Returned Value:
+ *   A pointer to a string containing the hardware type name
+ *
+ ************************************************************************************/
+
+__EXPORT const char *board_get_hw_type_name(void)
 {
-	// Stub function to allow compilation
+	return hw_type_name;
+}
+
+/************************************************************************************
+ * Name: board_get_hw_version
+ *
+ * Description:
+ *   Returns the board hardware version
+ *
+ * Returned Value:
+ *   The hardware version as an integer (V1.0 = 1)
+ *
+ ************************************************************************************/
+
+__EXPORT int board_get_hw_version(void)
+{
+	return 1; /* Version 1.0 */
+}
+
+/************************************************************************************
+ * Name: board_get_hw_revision
+ *
+ * Description:
+ *   Returns the board hardware revision
+ *
+ * Returned Value:
+ *   The hardware revision as an integer
+ *
+ ************************************************************************************/
+
+__EXPORT int board_get_hw_revision(void)
+{
+	return 0; /* Revision 0 */
 }

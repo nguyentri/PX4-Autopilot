@@ -233,6 +233,21 @@ __EXPORT bool fpb_ra8e1_spi_drdy_read(void)
 	return px4_arch_gpioread(GPIO_SPI1_IMU_DRDY);
 }
 
+__EXPORT void fpb_ra8e1_spi_gpio_init(void)
+{
+	/* Initialize SPI-related GPIO pins for FPB-RA8E1 board */
+	/* SPI GPIO initialization is handled by fpb_ra8e1_gpio_initialize() */
+	/* This is a stub for specific SPI GPIO setup if needed */
+}
+
+__EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
+{
+	/* Handle chip select for SPI devices based on device ID */
+	/* This functionality is moved to ra_spi_select but kept for compatibility */
+	(void)devid;    /* Suppress unused parameter warning */
+	(void)selected; /* Suppress unused parameter warning */
+}
+
 
 
 

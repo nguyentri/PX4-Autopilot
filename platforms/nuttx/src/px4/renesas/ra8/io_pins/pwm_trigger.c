@@ -26,21 +26,21 @@
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
  * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
 
 /**
- * @file io_timer.c
+ * @file pwm_trigger.c
  *
- * Timer I/O driver for Renesas RA8 - stub implementation
+ * PWM trigger driver for Renesas RA8 - stub implementation
  */
 
 // Minimal stub implementation for build compatibility
-// TODO: Implement actual timer I/O functionality for Renesas RA8
+// TODO: Implement actual PWM trigger functionality for Renesas RA8
 
-void ra8_io_timer_stub(void)
+void ra8_pwm_trigger_stub(void)
 {
 	// Stub function to allow compilation
 }
