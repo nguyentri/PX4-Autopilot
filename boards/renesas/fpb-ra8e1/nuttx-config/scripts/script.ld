@@ -160,7 +160,7 @@ SECTIONS
     __ram_dtc_vector$$ ALIGN(.,1024) (NOLOAD) :
     {
         __ram_dtc_vector$$Base = .;
-        *(.fsp_dtc_vector_table)
+        *(.dtc_vector_table)
         __ram_dtc_vector$$Limit = .;
     }> RAM
     /* ram initialized from ospi0_cs1 */

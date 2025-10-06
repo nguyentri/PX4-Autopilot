@@ -9,7 +9,7 @@ param set-default SYS_AUTOSTART 4001
 # Disable system supply checks (no power sensing on this board)
 param set-default CBRK_SUPPLY_CHK 894281
 
-# Disable USB check (no USB support initially)  
+# Disable USB check (no USB support initially)
 param set-default CBRK_USB_CHK 197848
 
 # Set the PWM output frequency to 400Hz for standard ESCs

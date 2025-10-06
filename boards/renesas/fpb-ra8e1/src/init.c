@@ -190,6 +190,9 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* configure pins */
 	fpb_ra8e1_gpio_initialize();
 
+	/* Initialize PX4 platform (this starts the work queue manager) */
+	px4_platform_init();
+
 	return OK;
 }
 
@@ -222,27 +225,7 @@ __EXPORT void board_gpio_init(void){
 }
 
 
-__EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
-{
-	/* Map PX4 device types to NuttX device IDs and call ra_spi_select */
-	uint32_t nuttx_devid;
-
-	switch (devid) {
-	case DRV_IMU_DEVTYPE_ICM20948: /* DRV_IMU_DEVTYPE_ICM20948 */
-		nuttx_devid = NUTTX_SPI_ICM20948_DEVID; /* ICM20948 is first in spi.cpp */
-		break;
-
-	case DRV_BARO_DEVTYPE_BMP388: /* DRV_BARO_DEVTYPE_BMP388 */
-		nuttx_devid = NUTTX_SPI_BMP388_DEVID; /* BMP388 is second in spi.cpp */
-		break;
-
-	default:
-		return; /* Unknown device */
-	}
-
-	/* Use the common NuttX SPI select function */
-	ra_spi_select(NULL, nuttx_devid, selected);
-}
+/* fpb_ra8e1_spi_select is no longer needed - functionality moved to ra_spi_select */
 
 __EXPORT bool fpb_ra8e1_spi_drdy_read(void)
 {
@@ -266,18 +249,26 @@ __EXPORT bool fpb_ra8e1_spi_drdy_read(void)
  */
 void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-	/* Handle chip select for SPI1 devices based on NuttX device IDs */
-	switch (devid) {
-	case NUTTX_SPI_ICM20948_DEVID: /* ICM20948 - first device in spi.cpp */
+	syslog(LOG_INFO, "ra_spi_select: devid=0x%x, selected=%d", (unsigned)devid, (int)selected);
+
+	/* Extract the actual device type from PX4 device ID */
+	uint32_t device_type = devid & 0xFFFF;  /* Lower 16 bits contain the device type */
+	syslog(LOG_INFO, "ra_spi_select: extracted device_type=0x%x", (unsigned)device_type);
+
+	/* Handle chip select for SPI devices based on PX4 device types */
+	switch (device_type) {
+	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 */
+		syslog(LOG_INFO, "ra_spi_select: ICM20948 CS, selected=%d", (int)selected);
 		px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);
 		break;
 
-	case NUTTX_SPI_BMP388_DEVID: /* BMP388 - second device in spi.cpp */
+	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 */
+		syslog(LOG_INFO, "ra_spi_select: BMP388 CS, selected=%d", (int)selected);
 		px4_arch_gpiowrite(GPIO_SPI1_CS1, !selected);
 		break;
 
 	default:
-		/* Unknown device ID */
+		syslog(LOG_INFO, "ra_spi_select: Unknown device_type 0x%x", (unsigned)device_type);
 		break;
 	}
 }
@@ -292,23 +283,33 @@ uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
 {
 	uint8_t status = 0;
 
-	/* Return device-specific status based on NuttX device IDs */
-	switch (devid) {
-	case NUTTX_SPI_ICM20948_DEVID: /* ICM20948 - first device in spi.cpp */
+	syslog(LOG_INFO, "ra_spi_status: devid=0x%x", (unsigned)devid);
+
+	/* Extract the actual device type from PX4 device ID */
+	uint32_t device_type = devid & 0xFFFF;  /* Lower 16 bits contain the device type */
+	syslog(LOG_INFO, "ra_spi_status: extracted device_type=0x%x", (unsigned)device_type);
+
+	/* Return device-specific status based on PX4 device types */
+	switch (device_type) {
+	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 */
+		syslog(LOG_INFO, "ra_spi_status: ICM20948 device");
 		/* ICM20948 is always present if configured */
 		status = 1; /* SPI_STATUS_PRESENT equivalent */
 		break;
 
-	case NUTTX_SPI_BMP388_DEVID: /* BMP388 - second device in spi.cpp */
+	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 */
+		syslog(LOG_INFO, "ra_spi_status: BMP388 device");
 		/* BMP388 is always present if configured */
 		status = 1; /* SPI_STATUS_PRESENT equivalent */
 		break;
 
 	default:
+		syslog(LOG_INFO, "ra_spi_status: Unknown device_type 0x%x", (unsigned)device_type);
 		status = 0;
 		break;
 	}
 
+	syslog(LOG_INFO, "ra_spi_status: returning status=0x%x", (unsigned)status);
 	return status;
 }
 
@@ -322,6 +323,18 @@ uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
 
 struct spi_dev_s *fpb_ra8e1_spibus_initialize(int bus)
 {
+	struct spi_dev_s *spi_dev;
+
+	syslog(LOG_INFO, "fpb_ra8e1_spibus_initialize: Initializing SPI bus %d", bus);
+
 	/* Call the NuttX RA8 SPI driver initialization */
-	return ra_spibus_initialize(bus);
+	spi_dev = ra_spibus_initialize(bus);
+
+	if (spi_dev) {
+		syslog(LOG_INFO, "fpb_ra8e1_spibus_initialize: Successfully initialized SPI bus %d", bus);
+	} else {
+		syslog(LOG_ERR, "fpb_ra8e1_spibus_initialize: Failed to initialize SPI bus %d", bus);
+	}
+
+	return spi_dev;
 }
