@@ -79,19 +79,19 @@ struct GPIOPin {
 
 static inline constexpr uint32_t getGPIOPort(GPIO::Port port)
 {
-	// Port encoding with GPIO_PORT_SHIFT = 8
+	// Matches NuttX RA8 GPIO pinset encoding
 	switch (port) {
 	case GPIO::PortInvalid: return 0;
-	case GPIO::Port0: return (0 << 8);  // GPIO_PORTA
-	case GPIO::Port1: return (1 << 8);  // GPIO_PORTB
-	case GPIO::Port2: return (2 << 8);  // GPIO_PORTC
-	case GPIO::Port3: return (3 << 8);  // GPIO_PORTD
-	case GPIO::Port4: return (4 << 8);  // GPIO_PORTE
-	case GPIO::Port5: return (5 << 8);  // GPIO_PORTF
-	case GPIO::Port6: return (6 << 8);  // GPIO_PORTG
-	case GPIO::Port7: return (7 << 8);  // GPIO_PORTH
-	case GPIO::Port8: return (8 << 8);  // GPIO_PORTI
-	case GPIO::Port9: return (9 << 8);  // GPIO_PORTJ
+	case GPIO::Port0: return (0 << 24);  // GPIO_PORT0
+	case GPIO::Port1: return (1 << 24);  // GPIO_PORT1
+	case GPIO::Port2: return (2 << 24);  // GPIO_PORT2
+	case GPIO::Port3: return (3 << 24);  // GPIO_PORT3
+	case GPIO::Port4: return (4 << 24);  // GPIO_PORT4
+	case GPIO::Port5: return (5 << 24);  // GPIO_PORT5
+	case GPIO::Port6: return (6 << 24);  // GPIO_PORT6
+	case GPIO::Port7: return (7 << 24);  // GPIO_PORT7
+	case GPIO::Port8: return (8 << 24);  // GPIO_PORT8
+	case GPIO::Port9: return (9 << 24);  // GPIO_PORT9
 	default: break;
 	}
 	return 0;
@@ -99,24 +99,25 @@ static inline constexpr uint32_t getGPIOPort(GPIO::Port port)
 
 static inline constexpr uint32_t getGPIOPin(GPIO::Pin pin)
 {
-	// Pin encoding with GPIO_PIN_SHIFT = 0
+	// Pin encoding with GPIO_PIN_SHIFT = 16 (bits 23-16)
+	// Matches NuttX RA8 GPIO pinset encoding
 	switch (pin) {
-	case GPIO::Pin0: return (0 << 0);  // GPIO_PIN0
-	case GPIO::Pin1: return (1 << 0);  // GPIO_PIN1
-	case GPIO::Pin2: return (2 << 0);  // GPIO_PIN2
-	case GPIO::Pin3: return (3 << 0);  // GPIO_PIN3
-	case GPIO::Pin4: return (4 << 0);  // GPIO_PIN4
-	case GPIO::Pin5: return (5 << 0);  // GPIO_PIN5
-	case GPIO::Pin6: return (6 << 0);  // GPIO_PIN6
-	case GPIO::Pin7: return (7 << 0);  // GPIO_PIN7
-	case GPIO::Pin8: return (8 << 0);  // GPIO_PIN8
-	case GPIO::Pin9: return (9 << 0);  // GPIO_PIN9
-	case GPIO::Pin10: return (10 << 0); // GPIO_PIN10
-	case GPIO::Pin11: return (11 << 0); // GPIO_PIN11
-	case GPIO::Pin12: return (12 << 0); // GPIO_PIN12
-	case GPIO::Pin13: return (13 << 0); // GPIO_PIN13
-	case GPIO::Pin14: return (14 << 0); // GPIO_PIN14
-	case GPIO::Pin15: return (15 << 0); // GPIO_PIN15
+	case GPIO::Pin0: return (0 << 16);  // GPIO_PIN0
+	case GPIO::Pin1: return (1 << 16);  // GPIO_PIN1
+	case GPIO::Pin2: return (2 << 16);  // GPIO_PIN2
+	case GPIO::Pin3: return (3 << 16);  // GPIO_PIN3
+	case GPIO::Pin4: return (4 << 16);  // GPIO_PIN4
+	case GPIO::Pin5: return (5 << 16);  // GPIO_PIN5
+	case GPIO::Pin6: return (6 << 16);  // GPIO_PIN6
+	case GPIO::Pin7: return (7 << 16);  // GPIO_PIN7
+	case GPIO::Pin8: return (8 << 16);  // GPIO_PIN8
+	case GPIO::Pin9: return (9 << 16);  // GPIO_PIN9
+	case GPIO::Pin10: return (10 << 16); // GPIO_PIN10
+	case GPIO::Pin11: return (11 << 16); // GPIO_PIN11
+	case GPIO::Pin12: return (12 << 16); // GPIO_PIN12
+	case GPIO::Pin13: return (13 << 16); // GPIO_PIN13
+	case GPIO::Pin14: return (14 << 16); // GPIO_PIN14
+	case GPIO::Pin15: return (15 << 16); // GPIO_PIN15
 	}
 	return 0;
 }

@@ -221,12 +221,12 @@ static const struct file_operations g_console_buffer_fops = {
 #endif
 };
 
-int px4_console_buffer_init()
+int px4_console_buffer_init(void)
 {
 	return register_driver(CONSOLE_BUFFER_DEVICE, &g_console_buffer_fops, 0666, NULL);
 }
 
-int px4_console_buffer_size()
+int px4_console_buffer_size(void)
 {
 	return g_console_buffer.size();
 }

@@ -47,12 +47,12 @@
 
 // TODO: User side implementation of px4_console_buffer
 
-int px4_console_buffer_init()
+int px4_console_buffer_init(void)
 {
 	return 0;
 }
 
-int px4_console_buffer_size()
+int px4_console_buffer_size(void)
 {
 	return 0;
 }

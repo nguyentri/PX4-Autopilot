@@ -34,98 +34,170 @@
 /**
  * @file pwm_servo.c
  *
- * PWM servo driver for Renesas RA8
+ * Servo driver supporting PWM servos connected to Renesas RA8 GPT timer blocks.
+ *
+ * This provides the interface between PX4's pwm_out driver and the RA8 GPT
+ * hardware timers for motor control.
  */
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <px4_platform_common/px4_config.h>
+#include <nuttx/arch.h>
+#include <nuttx/irq.h>
+
 #include <sys/types.h>
+#include <stdbool.h>
 
-// Basic PWM servo implementation for RA8
-// This provides the minimum functions needed by PX4 PWM output driver
+#include <assert.h>
+#include <debug.h>
+#include <time.h>
+#include <queue.h>
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>
 
-#define MAX_PWM_CHANNELS 8
-#define MAX_RATE_GROUPS 4
+#include <arch/board/board.h>
+#include <drivers/drv_pwm_output.h>
 
-static bool pwm_initialized = false;
-static uint16_t pwm_values[MAX_PWM_CHANNELS];
-static uint32_t pwm_rate_groups[MAX_RATE_GROUPS] = {50, 50, 50, 50}; // Default 50Hz
+#include <px4_arch/io_timer.h>
 
-int up_pwm_servo_init(uint32_t channel_mask)
-{
-	/* Initialize PWM channels based on mask */
-	pwm_initialized = true;
-
-	/* Clear PWM values */
-	for (int i = 0; i < MAX_PWM_CHANNELS; i++) {
-		pwm_values[i] = 0;
-	}
-
-	return 0; /* Success */
-}
-
-int up_pwm_servo_deinit(void)
-{
-	pwm_initialized = false;
-	return 0;
-}
-
-int up_pwm_servo_arm(bool armed)
-{
-	/* Arm/disarm PWM outputs */
-	(void)armed;
-	return 0;
-}
-
+/**
+ * Set PWM pulse width for a servo channel
+ *
+ * @param channel PWM channel number (0-3 for 4 motors)
+ * @param value   Pulse width in microseconds (typically 1000-2000)
+ * @return        OK on success, negative errno on failure
+ */
 int up_pwm_servo_set(unsigned channel, uint16_t value)
 {
-	if (channel >= MAX_PWM_CHANNELS) {
-		return -1;
-	}
-
-	pwm_values[channel] = value;
-	return 0;
+	return io_timer_set_ccr(channel, value);
 }
 
+/**
+ * Get current PWM pulse width for a servo channel
+ *
+ * @param channel PWM channel number
+ * @return        Current pulse width in microseconds, or 0 on error
+ */
 uint16_t up_pwm_servo_get(unsigned channel)
 {
-	if (channel >= MAX_PWM_CHANNELS) {
-		return 0;
+	return io_channel_get_ccr(channel);
+}
+
+/**
+ * Initialize PWM servo outputs
+ *
+ * @param channel_mask Bitmask of channels to initialize (bit 0 = channel 0, etc.)
+ * @return             Bitmask of successfully initialized channels, or negative errno
+ */
+int up_pwm_servo_init(uint32_t channel_mask)
+{
+	/* Get currently allocated PWM channels */
+	uint32_t current = io_timer_get_mode_channels(IOTimerChanMode_PWMOut) |
+			   io_timer_get_mode_channels(IOTimerChanMode_OneShot);
+
+	/* First free the current set of PWM channels */
+	for (unsigned channel = 0; current != 0 && channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (current & (1 << channel)) {
+			io_timer_set_enable(false, IOTimerChanMode_PWMOut, 1 << channel);
+			io_timer_unallocate_channel(channel);
+			current &= ~(1 << channel);
+		}
 	}
 
-	return pwm_values[channel];
-}
+	/* Now allocate the new set of channels */
+	int ret_val = OK;
+	int channels_init_mask = 0;
 
-int up_pwm_servo_set_rate_group_update(unsigned group, uint32_t rate)
-{
-	if (group >= MAX_RATE_GROUPS) {
-		return -1;
+	for (unsigned channel = 0; channel_mask != 0 && channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (channel_mask & (1 << channel)) {
+			/* Initialize channel for PWM output mode */
+			ret_val = io_timer_channel_init(channel, IOTimerChanMode_PWMOut, NULL, NULL);
+			channel_mask &= ~(1 << channel);
+
+			if (OK == ret_val) {
+				channels_init_mask |= 1 << channel;
+
+			} else if (ret_val == -EBUSY) {
+				/* Timer or channel already in use - not fatal */
+				ret_val = 0;
+			}
+		}
 	}
 
-	pwm_rate_groups[group] = rate;
-	return 0;
+	return ret_val == OK ? channels_init_mask : ret_val;
 }
 
-uint32_t up_pwm_servo_get_rate_group(unsigned channel)
+/**
+ * Deinitialize PWM servo outputs
+ *
+ * @param channel_mask Bitmask of channels to deinitialize
+ */
+void up_pwm_servo_deinit(uint32_t channel_mask)
 {
-	/* Simple mapping: channels 0-1 -> group 0, 2-3 -> group 1, etc. */
-	unsigned group = channel / 2;
-	if (group >= MAX_RATE_GROUPS) {
-		group = 0;
+	/* Disable the timers */
+	up_pwm_servo_arm(false, channel_mask);
+}
+
+/**
+ * Set PWM rate (frequency) for a channel's timer group
+ *
+ * @param channel PWM channel number
+ * @param rate    PWM frequency in Hz (0 for OneShot mode, 1-10000 for normal PWM)
+ * @return        OK on success, negative errno on failure
+ */
+int up_pwm_servo_set_rate_group_update(unsigned channel, unsigned rate)
+{
+	if (io_timer_validate_channel_index(channel) < 0) {
+		return ERROR;
 	}
 
-	return pwm_rate_groups[group];
+	/* Allow a rate of 0 to enter OneShot mode */
+	if (rate != 0) {
+		/* Limit update rate to 1..10000Hz; somewhat arbitrary but safe */
+		if (rate < 1) {
+			return -ERANGE;
+		}
+
+		if (rate > 10000) {
+			return -ERANGE;
+		}
+	}
+
+	return io_timer_set_pwm_rate(channel, rate);
 }
 
-int up_pwm_update(void)
+/**
+ * Trigger PWM update for OneShot/DShot modes
+ *
+ * @param channel_mask Bitmask of channels to update
+ */
+void up_pwm_update(unsigned channel_mask)
 {
-	/* Update PWM outputs - stub for now */
-	return 0;
+	io_timer_trigger(channel_mask);
 }
 
-/* IO Timer functions */
-int io_timer_get_group(unsigned timer)
+/**
+ * Get the set of PWM channels in a timer group
+ *
+ * @param group Timer group number
+ * @return      Bitmask of channels in the group
+ */
+uint32_t up_pwm_servo_get_rate_group(unsigned group)
 {
-	/* Simple mapping: timer -> group */
-	return (timer < MAX_RATE_GROUPS) ? timer : 0;
+	/* Return the set of channels in the group which we own */
+	return (io_timer_get_mode_channels(IOTimerChanMode_PWMOut) |
+		io_timer_get_mode_channels(IOTimerChanMode_OneShot)) &
+	       io_timer_get_group(group);
+}
+
+/**
+ * Enable or disable PWM outputs (arm/disarm motors)
+ *
+ * @param armed        true to enable outputs, false to disable
+ * @param channel_mask Bitmask of channels to arm/disarm
+ */
+void up_pwm_servo_arm(bool armed, uint32_t channel_mask)
+{
+	io_timer_set_enable(armed, IOTimerChanMode_OneShot, channel_mask);
+	io_timer_set_enable(armed, IOTimerChanMode_PWMOut, channel_mask);
 }

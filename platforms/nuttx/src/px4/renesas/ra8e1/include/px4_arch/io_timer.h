@@ -138,7 +138,17 @@ __EXPORT int io_timer_set_alt_rate(unsigned timer, unsigned rate);
 
 /* PWM output functions */
 __EXPORT int io_channel_init(void);
-__EXPORT void io_timer_trigger(void);
+__EXPORT void io_timer_trigger(unsigned channel_mask);
+
+/* Timer CCR (Compare/Capture Register) functions */
+__EXPORT int io_timer_set_ccr(unsigned channel, uint16_t value);
+__EXPORT uint16_t io_channel_get_ccr(unsigned channel);
+
+/* Timer channel initialization */
+typedef void (*channel_handler_t)(void *context, uint32_t chan_index,
+				  uint64_t isrs_time, uint32_t isrs_rcnt);
+__EXPORT int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
+				    channel_handler_t callback, void *context);
 
 /* Board-specific timer configuration - must be defined in board code */
 __EXPORT extern const io_timers_t io_timers[MAX_IO_TIMERS];
