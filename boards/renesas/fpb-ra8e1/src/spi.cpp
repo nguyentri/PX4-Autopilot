@@ -39,6 +39,7 @@
 
 #include <px4_arch/spi_hw_description.h>
 #include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/spi.h>
 #include <px4_arch/io_timer.h>
 #include <drivers/drv_sensor.h>
 #include <nuttx/spi/spi.h>
@@ -113,23 +114,24 @@ bool fpb_ra8e1_spi_drdy_read()
  */
 extern "C" void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-	SPI_DEBUG("ra_spi_select: devid=%lu selected=%d", (unsigned long)devid, selected);
-
 	/* Handle chip select for GY-912 SPI devices using predefined GPIO macros */
 	/* Device ID determines which CS pin to control */
-	switch (devid) {
-	case 0: /* First SPI device - ICM20948 on CS0 (P408) */
+	/* Note: devid is encoded with PX4_SPIDEV_ID, extract lower 16 bits for device type */
+	uint16_t devtype = PX4_SPI_DEV_ID(devid);
+
+	switch (devtype) {
+	case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P408) */
 		SPI_DEBUG("  -> Controlling CS0 (P408) for ICM20948");
 		ra_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */
 		break;
 
-	case 1: /* Second SPI device - BMP388 on CS1 (P407) */
+	case DRV_BARO_DEVTYPE_BMP388: /* Second SPI device - BMP388 on CS1 (P407) */
 		SPI_DEBUG("  -> Controlling CS1 (P407) for BMP388");
 		ra_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */
 		break;
 
 	default:
-		SPI_DEBUG("  -> Unknown devid, no action taken");
+		SPI_DEBUG("  -> Unknown devtype 0x%04x, no action taken", devtype);
 		/* Unknown device ID - do nothing */
 		break;
 	}
@@ -157,19 +159,22 @@ extern "C" uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
 
 	/* For GY-912 module, all configured SPI devices are present */
 	/* Return present status for configured device IDs */
-	switch (devid) {
-	case 0: /* ICM20948 9DOF IMU on CS0 */
+	/* Note: devid is encoded with PX4_SPIDEV_ID, extract lower 16 bits for device type */
+	uint16_t devtype = PX4_SPI_DEV_ID(devid);
+
+	switch (devtype) {
+	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 9DOF IMU on CS0 */
 		status = SPI_STATUS_PRESENT;
-		SPI_DEBUG("ra_spi_status: devid=0 (ICM20948) -> PRESENT");
+		SPI_DEBUG("ra_spi_status: devtype=0x%04x (ICM20948) -> PRESENT", devtype);
 		break;
 
-	case 1: /* BMP388 Barometric pressure sensor on CS1 */
+	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 Barometric pressure sensor on CS1 */
 		status = SPI_STATUS_PRESENT;
-		SPI_DEBUG("ra_spi_status: devid=1 (BMP388) -> PRESENT");
+		SPI_DEBUG("ra_spi_status: devtype=0x%04x (BMP388) -> PRESENT", devtype);
 		break;
 
 	default:
-		SPI_DEBUG("ra_spi_status: devid=%lu -> NOT PRESENT", (unsigned long)devid);
+		SPI_DEBUG("ra_spi_status: devtype=0x%04x -> NOT PRESENT", devtype);
 		status = 0;  /* Unknown device */
 		break;
 	}
