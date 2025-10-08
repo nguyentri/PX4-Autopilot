@@ -63,6 +63,11 @@
 #define GPIO_SCI3_RX   GPIO_RXD3_MISO3_SCL3_B  /* P309 - RC Input */
 #define GPIO_SCI3_TX   GPIO_TXD3_MOSI3_SDA3_B  /* P310 - RC Input */
 
+/* SPI1 Pin Definitions - GY-912 Sensor Module */
+#define GPIO_SPI1_SCK   GPIO_RSPCKB_B_1        /* P412 - SPI1 Clock */
+#define GPIO_SPI1_MISO  GPIO_MISOB_B_1         /* P410 - SPI1 MISO */
+#define GPIO_SPI1_MOSI  GPIO_MOSIB_B_1         /* P411 - SPI1 MOSI */
+
 /* Board-specific pin definitions removed - defined in board_config.h instead */
 
 /* LED Configuration for NuttX */

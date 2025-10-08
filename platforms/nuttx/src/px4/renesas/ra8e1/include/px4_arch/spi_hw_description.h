@@ -36,6 +36,8 @@
 #include <px4_arch/hw_description.h>
 #include <px4_platform_common/spi.h>
 #include <px4_arch/micro_hal.h>
+#include <ra_gpio.h>
+
 #include <board_config.h>
 
 #if defined(CONFIG_SPI)
@@ -78,19 +80,16 @@ static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::
 	px4_spi_bus_device_t ret{};
 
 	// CS pin configuration - output high (inactive)
-	// RA8 GPIO pinset encoding: bits[31:24]=port, bits[23:16]=pin, bits[15:0]=config
-	// R_PFS_PDR (bit 2) = 1 for output, R_PFS_PODR (bit 0) = 1 for high
-	ret.cs_gpio = getGPIOPort(cs_gpio.port) |
-	              getGPIOPin(cs_gpio.pin) |
-	              (1 << 2) |   // GPIO_OUTPUT (R_PFS_PDR)
-	              (1 << 0);    // GPIO_OUTPUT_HIGH (R_PFS_PODR)
-	ret.cs_gpio = GPIO_SPI1_CS0;
-	// DRDY pin configuration - input with pull-up and IRQ enabled
+	// For RA8, use getGPIOPort and getGPIOPin to extract port and pin from the enum
+	// GPIO flags: GPIO_OUTPUT = (1 << R_PFS_PDR), GPIO_OUTPUT_HIGH = (1 << R_PFS_PODR)
+	ret.cs_gpio = getGPIOPort(cs_gpio.port) | getGPIOPin(cs_gpio.pin) |
+	              (1 << 2) |  // GPIO_OUTPUT (R_PFS_PDR bit 2)
+	              (1 << 0);   // GPIO_OUTPUT_HIGH (R_PFS_PODR bit 0)
+
+	// DRDY pin configuration - input with pull-up
 	if (drdy_gpio.port != GPIO::PortInvalid) {
-		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) |
-		                getGPIOPin(drdy_gpio.pin) |
-		                (1 << 4) |   // R_PFS_PCR (pull-up control)
-		                (1 << 14);   // R_PFS_ISEL (IRQ input enable)
+		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) |
+		                (1 << 4);   // R_PFS_PCR (pull-up control bit 4)
 	}
 
 	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)
@@ -110,27 +109,38 @@ static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus
 
 	for (int i = 0; i < SPI_BUS_MAX_DEVICES; ++i) {
 		ret.devices[i] = devices.devices[i];
+
+		if (ret.devices[i].cs_gpio != 0) {
+			if (PX4_SPI_DEVICE_ID == PX4_SPIDEVID_TYPE(ret.devices[i].devid)) {
+				int same_devices_count = 0;
+
+				for (int j = 0; j < i; ++j) {
+					if (ret.devices[j].cs_gpio != 0) {
+						same_devices_count += (ret.devices[i].devid & 0xff) == (ret.devices[j].devid & 0xff);
+					}
+				}
+
+				// increment the 2. LSB byte to allow multiple devices of the same type
+				ret.devices[i].devid |= same_devices_count << 8;
+
+			} else {
+				// A bus potentially requires locking if it is accessed by non-PX4 devices (i.e. NuttX drivers)
+				ret.requires_locking = true;
+			}
+		}
 	}
 
 	ret.bus = (int)bus;
-	ret.is_external = false; // RA8 SPI buses are internal
+	ret.is_external = false;
 
 	if (power_enable.port != GPIO::PortInvalid) {
 		// Power enable GPIO - output low (power off initially)
-		ret.power_enable_gpio = getGPIOPort(power_enable.port) |
-		                         getGPIOPin(power_enable.pin) |
-		                         (1 << 2);  // GPIO_OUTPUT (R_PFS_PDR), bit 0=0 for low
+		// GPIO_OUTPUT = (1 << R_PFS_PDR bit 2), output low = bit 0 clear
+		ret.power_enable_gpio = getGPIOPort(power_enable.port) | getGPIOPin(power_enable.pin) |
+		                        (1 << 2);  // GPIO_OUTPUT only, bit 0=0 for low
 	}
 
 	return ret;
-}
-
-// Helper function to create GPIO pinset for RA8
-static inline constexpr uint32_t px4_ra8_gpio_pinset(GPIO::Port port, GPIO::Pin pin, uint32_t mode, uint32_t config)
-{
-	// For RA8, we need to convert the generic GPIO port/pin to RA8 format
-	// This is a simplified implementation - in practice, this would map to the actual RA8 GPIO structure
-	return ((uint32_t)port << 24) | ((uint32_t)pin << 16) | (mode & 0xFF) | (config & 0xFF);
 }
 
 #endif /* CONFIG_SPI */

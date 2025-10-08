@@ -37,9 +37,65 @@
 
 struct spi_dev_s;
 
+#ifndef __EXPORT
+#define __EXPORT
+#endif
+
+#ifndef SPI_STATUS_PRESENT
+#define SPI_STATUS_PRESENT  0x01
+#endif
+
 extern "C" {
     extern struct spi_dev_s *ra_spibus_initialize(int bus);
 }
+
+/************************************************************************************
+ * Name: ra_spi0select and ra_spi0status
+ *
+ * Description:
+ *   Called by RA SPI driver on bus 0.
+ *
+ ************************************************************************************/
+#ifdef CONFIG_RA_SPI0
+__EXPORT void ra_spi0select(struct spi_dev_s *dev, uint32_t devid, bool selected)
+{
+	// CS handling will be done by board-specific code
+	(void)dev;
+	(void)devid;
+	(void)selected;
+}
+
+__EXPORT uint8_t ra_spi0status(struct spi_dev_s *dev, uint32_t devid)
+{
+	(void)dev;
+	(void)devid;
+	return SPI_STATUS_PRESENT;
+}
+#endif // CONFIG_RA_SPI0
+
+/************************************************************************************
+ * Name: ra_spi1select and ra_spi1status
+ *
+ * Description:
+ *   Called by RA SPI driver on bus 1.
+ *
+ ************************************************************************************/
+#ifdef CONFIG_RA_SPI1
+__EXPORT void ra_spi1select(struct spi_dev_s *dev, uint32_t devid, bool selected)
+{
+	// CS handling will be done by board-specific code
+	(void)dev;
+	(void)devid;
+	(void)selected;
+}
+
+__EXPORT uint8_t ra_spi1status(struct spi_dev_s *dev, uint32_t devid)
+{
+	(void)dev;
+	(void)devid;
+	return SPI_STATUS_PRESENT;
+}
+#endif // CONFIG_RA_SPI1
 
 /* PX4 SPI bus initialization */
 extern "C" struct spi_dev_s *px4_spibus_initialize(int bus)
@@ -47,16 +103,31 @@ extern "C" struct spi_dev_s *px4_spibus_initialize(int bus)
 	return ra_spibus_initialize(bus);
 }
 
-/* SPI DMA stub */
-extern "C" void px4_spibus_set_dma_config(struct spi_dev_s *dev, uint32_t dma_config)
+/* SPI power control stub */
+extern "C" __EXPORT void board_control_spi_sensors_power(bool enable_power, int bus_mask)
 {
-	(void)dev;
-	(void)dma_config;
+	(void)enable_power;
+	(void)bus_mask;
+	// Board-specific power control implementation
 }
 
-/* SPI reset stub */
-extern "C" void board_spi_reset(int reset_delay_ms, uint32_t bus_mask)
+/* SPI power GPIO configuration stub */
+extern "C" __EXPORT void board_control_spi_sensors_power_configgpio()
 {
-	(void)bus_mask;
-	usleep(reset_delay_ms * 1000);
+	// Board-specific GPIO configuration
 }
+
+/* SPI reset function */
+extern "C" __EXPORT void board_spi_reset(int ms, int bus_mask)
+{
+	// Disable SPI sensors
+	board_control_spi_sensors_power(false, bus_mask);
+
+	usleep((unsigned int)(ms * 1000));
+
+	// Re-enable SPI sensors
+	board_control_spi_sensors_power(true, bus_mask);
+}
+
+
+/* Platform SPI functions removed - implemented in board-specific layer */

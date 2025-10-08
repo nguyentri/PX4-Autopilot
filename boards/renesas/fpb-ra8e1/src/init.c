@@ -40,6 +40,7 @@
 #include <px4_platform_common/init.h>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/console_buffer.h>
+#include <px4_platform_common/board_common.h>
 #include <px4_arch/io_timer.h>
 
 #include <stdbool.h>
@@ -56,6 +57,7 @@ static const char hw_type[] = "FPB-RA8E1";
 #include <nuttx/i2c/i2c_master.h>
 #include <nuttx/sdio.h>
 #include <nuttx/mmcsd.h>
+#include <drivers/drv_sensor.h>
 #include "ra_spi.h"
 
 #include "board_config.h"
@@ -63,27 +65,10 @@ static const char hw_type[] = "FPB-RA8E1";
 /* External function declarations */
 extern struct spi_dev_s *px4_spibus_initialize(int bus);
 
-/****************************************************************************
- * Pre-Processor Definitions
- ****************************************************************************/
-#define DRV_IMU_DEVTYPE_ICM20948  0x28
-#define DRV_BARO_DEVTYPE_BMP388   0x67
-
-/* NuttX SPI device IDs - must match order in spi.cpp px4_spi_buses array */
-#define NUTTX_SPI_ICM20948_DEVID  0  /* First device in spi.cpp */
-#define NUTTX_SPI_BMP388_DEVID    1  /* Second device in spi.cpp */
-
-/****************************************************************************
- * Private Variables
- ****************************************************************************/
-
-/* No private variables needed - driver handles interrupts internally */
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-/* No private functions needed - driver handles interrupts internally */
+/* No additional board-level sensor definitions required. Standard PX4 driver
+ * identifiers from drivers/drv_sensor.h are used by spi.cpp to register the
+ * devices on the shared sensor bus.
+ */
 
 /****************************************************************************
  * Protected Functions
@@ -150,6 +135,14 @@ static void fpb_ra8e1_gpio_initialize(void)
 	px4_arch_configgpio(GPIO_nLED_RED);   /* LED1 */
 	px4_arch_configgpio(GPIO_nLED_GREEN); /* LED2 */
 
+	/* Configure SPI1 Chip Select pins - must be initialized before SPI bus */
+	px4_arch_configgpio(GPIO_SPI1_CS0);   /* P408 - ICM20948 CS (active low) */
+	px4_arch_configgpio(GPIO_SPI1_CS1);   /* P407 - BMP388 CS (active low) */
+
+	/* Set CS pins high (inactive) initially */
+	px4_arch_gpiowrite(GPIO_SPI1_CS0, true);  /* Deassert ICM20948 CS */
+	px4_arch_gpiowrite(GPIO_SPI1_CS1, true);  /* Deassert BMP388 CS */
+
 	/* Configure IMU data ready pin - driver will set up interrupt */
 	px4_arch_configgpio(GPIO_SPI1_IMU_DRDY);
 
@@ -184,9 +177,17 @@ static void fpb_ra8e1_gpio_initialize(void)
 
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
-	/* Power on Peripherals, board_peripheral_reset called by px4_platform_init()
-	 * that is called from board_late_initialize()
-	 */
+	/* Initialize PX4 platform FIRST - this sets up all core infrastructure */
+	/* This includes: HRT, console buffer, work queues, params, uORB */
+	int ret = px4_platform_init();
+
+	if (ret != OK) {
+		// Can't use syslog yet if init failed, use direct output
+		return ret;
+	}
+
+	/* Now syslog is safe to use */
+	syslog(LOG_INFO, "board_app_initialize: px4_platform_init() OK\n");
 
 	/* configure LEDs */
 	board_autoled_initialize();
@@ -194,22 +195,23 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* configure pins */
 	fpb_ra8e1_gpio_initialize();
 
-	/* Initialize timers first - critical for HRT and console operations */
+	/* Initialize timers for PWM/IO */
 	fpb_ra8e1_timer_initialize();
 
-	/* Initialize console buffer driver early so PX4 logging can safely use it */
-	px4_console_buffer_init();
-
-	/* Initialize PX4 platform (includes work queue manager, console, params, uORB) */
-	/* Need hrt running before using the ADC and platform init */
-	px4_platform_init();
-
-	/* Initialize SPI buses for sensors - use PX4 platform interface */
-	px4_spibus_initialize(1);
+	/* Initialize SPI buses for sensors */
+	syslog(LOG_INFO, "board_app_initialize: Initializing SPI bus 1\n");
+	struct spi_dev_s *spi1 = px4_spibus_initialize(1);
+	if (spi1 == NULL) {
+		syslog(LOG_ERR, "board_app_initialize: px4_spibus_initialize(1) returned NULL!\n");
+	} else {
+		syslog(LOG_INFO, "board_app_initialize: SPI bus 1 initialized OK\n");
+	}
 
 	/* Reset SPI buses to ensure clean state for sensor communication */
+	syslog(LOG_INFO, "board_app_initialize: Resetting SPI buses\n");
 	board_spi_reset(10, 0xffff);
 
+	syslog(LOG_INFO, "board_app_initialize: Complete!\n");
 	return OK;
 }
 
@@ -235,96 +237,4 @@ __EXPORT void ra8e1_boardinitialize(void)
 __EXPORT const char *board_get_hw_type_name()
 {
 	return (const char *) hw_type;
-}
-
-__EXPORT void board_gpio_init(void){
-	fpb_ra8e1_gpio_initialize();
-}
-
-
-/* fpb_ra8e1_spi_select is no longer needed - functionality moved to ra_spi_select */
-
-__EXPORT bool fpb_ra8e1_spi_drdy_read(void)
-{
-	/* Read the ICM20948 data ready pin directly */
-	return px4_arch_gpioread(GPIO_SPI1_IMU_DRDY);
-}
-
-__EXPORT void fpb_ra8e1_spi_gpio_init(void)
-{
-	/* Initialize SPI-related GPIO pins for FPB-RA8E1 board */
-	/* SPI GPIO initialization is handled by fpb_ra8e1_gpio_initialize() */
-	/* This is a stub for specific SPI GPIO setup if needed */
-}
-
-__EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
-{
-	/* Handle chip select for SPI devices based on device ID */
-	/* This functionality is moved to ra_spi_select but kept for compatibility */
-	(void)devid;    /* Suppress unused parameter warning */
-	(void)selected; /* Suppress unused parameter warning */
-}
-
-
-/************************************************************************************
- * NuttX SPI Driver Interface Functions
- ************************************************************************************/
-
-/**
- * Name: ra_spi_select
- *
- * Description:
- *   Enable/disable the SPI chip select - required by NuttX RA8 SPI driver
- */
-void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
-{
-	/* Extract the actual device type from PX4 device ID */
-	uint32_t device_type = devid & 0xFFFF;  /* Lower 16 bits contain the device type */
-
-	/* Handle chip select for SPI devices based on PX4 device types */
-	switch (device_type) {
-	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 */
-		px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);
-		break;
-
-	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 */
-		px4_arch_gpiowrite(GPIO_SPI1_CS1, !selected);
-		break;
-
-	default:
-		break;
-	}
-}
-
-/**
- * Name: ra_spi_status
- *
- * Description:
- *   Return the SPI status - required by NuttX RA8 SPI driver
- */
-uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
-{
-	uint8_t status = 0;
-
-	/* Extract the actual device type from PX4 device ID */
-	uint32_t device_type = devid & 0xFFFF;  /* Lower 16 bits contain the device type */
-
-	/* Return device-specific status based on PX4 device types */
-	switch (device_type) {
-	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 */
-		/* ICM20948 is always present if configured */
-		status = 1; /* SPI_STATUS_PRESENT equivalent */
-		break;
-
-	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 */
-		/* BMP388 is always present if configured */
-		status = 1; /* SPI_STATUS_PRESENT equivalent */
-		break;
-
-	default:
-		status = 0;
-		break;
-	}
-
-	return status;
 }

@@ -34,10 +34,10 @@
 /**
  * @file cpuload.h
  *
- * RA8 CPU load monitoring wrapper - includes common NuttX implementation
+ * RA8E1 CPU load monitoring wrapper - includes RA8 implementation
  */
 
 #pragma once
 
-/* Include the common NuttX cpuload implementation */
-#include "../../../../common/include/px4_platform/cpuload.h"
+/* Include the RA8 cpuload implementation */
+#include "../../../ra8/include/px4_platform/cpuload.h"

@@ -113,6 +113,11 @@
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
 #define BOARD_SPI_BUS_MAX_DEVICES 2
 
+/* PX4 SPI configuration constants */
+#define SPI_BUS_MAX_BUS_ITEMS   BOARD_SPI_BUS_MAX_BUS_ITEMS
+/* Note: SPI_BUS_MAX_DEVICES is defined in px4_platform_common/spi.h (default=6)
+ * We only use 2 devices, but the platform array size of 6 is fine - unused slots are empty */
+
 /* PWM/GPT Timer Pin Definitions for ESC Control - use ra8e1_pinmap.h per-pin macros */
 #define GPIO_TIM3_CH1OUT        GPIO_GTIOC0A_3   /* P300 - GPT3A - Motor 1 */
 #define GPIO_TIM0_CH1OUT        GPIO_GTIOC2A_2   /* P415 - GPT0A - Motor 2 */
