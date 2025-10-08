@@ -70,7 +70,7 @@ ensure_nuttx_ra8_branch:
 		echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
 		git fetch origin && \
 		git checkout NuttX_Px4_RA8 && \
-		git pull --ff-only; \
+		git pull; \
 	else \
 		echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
 	fi

@@ -39,6 +39,7 @@
 
 #include <px4_platform_common/init.h>
 #include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/console_buffer.h>
 #include <px4_arch/io_timer.h>
 
 #include <stdbool.h>
@@ -106,7 +107,6 @@ __EXPORT void board_peripheral_reset(int ms)
 
 	/* wait for the peripheral rail to reach GND */
 	usleep(ms * 1000);
-	syslog(LOG_DEBUG, "reset done, %d ms", ms);
 
 	/* re-enable power */
 
@@ -194,36 +194,21 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* configure pins */
 	fpb_ra8e1_gpio_initialize();
 
-	syslog(LOG_INFO, "[RA8] Starting minimal PX4 platform initialization\n");
+	/* Initialize timers first - critical for HRT and console operations */
+	fpb_ra8e1_timer_initialize();
 
-	/* Initialize PX4 platform (core only - no filesystem) */
-	/* Need hrt running before using the ADC and platform init */
-	syslog(LOG_INFO, "[RA8] About to call px4_platform_init()\n");
+	/* Initialize console buffer driver early so PX4 logging can safely use it */
+	px4_console_buffer_init();
 
 	/* Initialize PX4 platform (includes work queue manager, console, params, uORB) */
-	//px4_platform_init(); // already init ??
-	//syslog(LOG_INFO, "[RA8] PX4 platform initialized\n");
+	/* Need hrt running before using the ADC and platform init */
+	px4_platform_init();
 
 	/* Initialize SPI buses for sensors - use PX4 platform interface */
-	struct spi_dev_s *spi1_dev = px4_spibus_initialize(1);
-	if (spi1_dev) {
-		syslog(LOG_INFO, "[RA8] SPI bus 1 initialized successfully\n");
-	} else {
-		syslog(LOG_ERR, "[RA8] Failed to initialize SPI bus 1\n");
-	}
-
-	/* Hardware version detection (RA8 uses static configuration) */
-	syslog(LOG_INFO, "[RA8] HW Info: Rev 0x%1x Ver 0x%1x %s\n",
-	       board_get_hw_revision(), board_get_hw_version(), board_get_hw_type_name());
-
-	/* Skip px4_platform_configure() for constrained platforms - it requires MTD/filesystem support */
-	syslog(LOG_INFO, "[RA8] Skipping platform configure (constrained platform)\n");
+	px4_spibus_initialize(1);
 
 	/* Reset SPI buses to ensure clean state for sensor communication */
 	board_spi_reset(10, 0xffff);
-	syslog(LOG_INFO, "[RA8] SPI reset completed\n");
-
-	syslog(LOG_INFO, "[RA8] Board initialization completed successfully\n");
 
 	return OK;
 }
@@ -293,26 +278,20 @@ __EXPORT void fpb_ra8e1_spi_select(uint32_t devid, bool selected)
  */
 void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-	syslog(LOG_INFO, "ra_spi_select: devid=0x%x, selected=%d", (unsigned)devid, (int)selected);
-
 	/* Extract the actual device type from PX4 device ID */
 	uint32_t device_type = devid & 0xFFFF;  /* Lower 16 bits contain the device type */
-	syslog(LOG_INFO, "ra_spi_select: extracted device_type=0x%x", (unsigned)device_type);
 
 	/* Handle chip select for SPI devices based on PX4 device types */
 	switch (device_type) {
 	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 */
-		syslog(LOG_INFO, "ra_spi_select: ICM20948 CS, selected=%d", (int)selected);
 		px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);
 		break;
 
 	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 */
-		syslog(LOG_INFO, "ra_spi_select: BMP388 CS, selected=%d", (int)selected);
 		px4_arch_gpiowrite(GPIO_SPI1_CS1, !selected);
 		break;
 
 	default:
-		syslog(LOG_INFO, "ra_spi_select: Unknown device_type 0x%x", (unsigned)device_type);
 		break;
 	}
 }
@@ -327,34 +306,25 @@ uint8_t ra_spi_status(struct spi_dev_s *dev, uint32_t devid)
 {
 	uint8_t status = 0;
 
-	syslog(LOG_INFO, "ra_spi_status: devid=0x%x", (unsigned)devid);
-
 	/* Extract the actual device type from PX4 device ID */
 	uint32_t device_type = devid & 0xFFFF;  /* Lower 16 bits contain the device type */
-	syslog(LOG_INFO, "ra_spi_status: extracted device_type=0x%x", (unsigned)device_type);
 
 	/* Return device-specific status based on PX4 device types */
 	switch (device_type) {
 	case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 */
-		syslog(LOG_INFO, "ra_spi_status: ICM20948 device");
 		/* ICM20948 is always present if configured */
 		status = 1; /* SPI_STATUS_PRESENT equivalent */
 		break;
 
 	case DRV_BARO_DEVTYPE_BMP388: /* BMP388 */
-		syslog(LOG_INFO, "ra_spi_status: BMP388 device");
 		/* BMP388 is always present if configured */
 		status = 1; /* SPI_STATUS_PRESENT equivalent */
 		break;
 
 	default:
-		syslog(LOG_INFO, "ra_spi_status: Unknown device_type 0x%x", (unsigned)device_type);
 		status = 0;
 		break;
 	}
 
-	syslog(LOG_INFO, "ra_spi_status: returning status=0x%x", (unsigned)status);
 	return status;
 }
-
-/* fpb_ra8e1_spibus_initialize() removed - now using px4_spibus_initialize() directly */

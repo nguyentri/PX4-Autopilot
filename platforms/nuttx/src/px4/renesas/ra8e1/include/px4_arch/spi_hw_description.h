@@ -36,6 +36,7 @@
 #include <px4_arch/hw_description.h>
 #include <px4_platform_common/spi.h>
 #include <px4_arch/micro_hal.h>
+#include <board_config.h>
 
 #if defined(CONFIG_SPI)
 
@@ -77,12 +78,19 @@ static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::
 	px4_spi_bus_device_t ret{};
 
 	// CS pin configuration - output high (inactive)
-	// GPIO_OUTPUT_HIGH = GPIO_OUTPUT_BIT | GPIO_OUTPUT_SET_BIT
-	ret.cs_gpio = getGPIOPort(cs_gpio.port) | getGPIOPin(cs_gpio.pin) | (0x00010000 | 0x00020000); // GPIO_OUTPUT_HIGH
-
-	// DRDY pin configuration - input if specified
+	// RA8 GPIO pinset encoding: bits[31:24]=port, bits[23:16]=pin, bits[15:0]=config
+	// R_PFS_PDR (bit 2) = 1 for output, R_PFS_PODR (bit 0) = 1 for high
+	ret.cs_gpio = getGPIOPort(cs_gpio.port) |
+	              getGPIOPin(cs_gpio.pin) |
+	              (1 << 2) |   // GPIO_OUTPUT (R_PFS_PDR)
+	              (1 << 0);    // GPIO_OUTPUT_HIGH (R_PFS_PODR)
+	ret.cs_gpio = GPIO_SPI1_CS0;
+	// DRDY pin configuration - input with pull-up and IRQ enabled
 	if (drdy_gpio.port != GPIO::PortInvalid) {
-		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) | 0; // GPIO_INPUT
+		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) |
+		                getGPIOPin(drdy_gpio.pin) |
+		                (1 << 4) |   // R_PFS_PCR (pull-up control)
+		                (1 << 14);   // R_PFS_ISEL (IRQ input enable)
 	}
 
 	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)
@@ -108,7 +116,10 @@ static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus
 	ret.is_external = false; // RA8 SPI buses are internal
 
 	if (power_enable.port != GPIO::PortInvalid) {
-		ret.power_enable_gpio = getGPIOPort(power_enable.port) | getGPIOPin(power_enable.pin) | 0x00010000; // GPIO_OUTPUT_LOW
+		// Power enable GPIO - output low (power off initially)
+		ret.power_enable_gpio = getGPIOPort(power_enable.port) |
+		                         getGPIOPin(power_enable.pin) |
+		                         (1 << 2);  // GPIO_OUTPUT (R_PFS_PDR), bit 0=0 for low
 	}
 
 	return ret;
@@ -119,7 +130,7 @@ static inline constexpr uint32_t px4_ra8_gpio_pinset(GPIO::Port port, GPIO::Pin 
 {
 	// For RA8, we need to convert the generic GPIO port/pin to RA8 format
 	// This is a simplified implementation - in practice, this would map to the actual RA8 GPIO structure
-	return ((uint32_t)port << 16) | ((uint32_t)pin << 8) | (mode & 0xFF) | (config & 0xFF);
+	return ((uint32_t)port << 24) | ((uint32_t)pin << 16) | (mode & 0xFF) | (config & 0xFF);
 }
 
 #endif /* CONFIG_SPI */

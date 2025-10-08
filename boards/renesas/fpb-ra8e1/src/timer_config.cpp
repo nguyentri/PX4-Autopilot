@@ -37,21 +37,132 @@
  * Timer configuration for RA8E1 board
  */
 
-#include <px4_arch/io_timer_hw_description.h>
+#include <stdint.h>
 
-constexpr io_timers_t io_timers[MAX_IO_TIMERS] = {
-	initIOTimer(Timer::Timer0),  // GPT0 - Motor 2 - P415
-	initIOTimer(Timer::Timer2),  // GPT2 - Motor 3 - P113
-	initIOTimer(Timer::Timer3),  // GPT3 - Motor 1 - P300
-	initIOTimer(Timer::Timer4),  // GPT4 - Motor 4 - P302
+// Forward declarations
+extern "C" int io_timer_init();
+extern "C" void hrt_init(void);
+
+// Board-specific timer configuration for RA8E1
+// This provides the timer configuration that the io_timer.c expects
+extern "C" {
+
+// Configuration limits for RA8E1 board
+#ifndef MAX_IO_TIMERS
+#define MAX_IO_TIMERS			2
+#endif
+
+#ifndef MAX_TIMER_IO_CHANNELS
+#define MAX_TIMER_IO_CHANNELS	8
+#endif
+
+// Timer structure definition (matches io_timer.c)
+typedef struct io_timers_t {
+	uint32_t	base;
+	uint32_t	first_channel_index;
+	uint32_t	last_channel_index;
+	uint32_t	vectorno;
+} io_timers_t;
+
+// Timer I/O channel configuration
+typedef struct timer_io_channels_t {
+	uint32_t			gpio_out;
+	uint32_t			gpio_in;
+	uint8_t				timer_index;
+	uint8_t				timer_channel;
+	uint8_t				freq_basis;
+} timer_io_channels_t;
+
+// RA8E1 board timer configuration
+// For now, these are placeholder configurations
+// In a full implementation, these would map to actual RA8 GPT timers
+const io_timers_t io_timers[MAX_IO_TIMERS] = {
+	{
+		.base = 0x40169000,         // GPT0 base address (example)
+		.first_channel_index = 0,
+		.last_channel_index = 3,
+		.vectorno = 0,              // IRQ vector (to be determined)
+	},
+	{
+		.base = 0x4016A000,         // GPT1 base address (example)
+		.first_channel_index = 4,
+		.last_channel_index = 7,
+		.vectorno = 0,              // IRQ vector (to be determined)
+	}
 };
 
-constexpr timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-	initIOTimerChannel(io_timers, {Timer::Timer0, Timer::Channel1}, {GPIO::Port4, GPIO::Pin15}), // P415 - Motor 2
-	initIOTimerChannel(io_timers, {Timer::Timer2, Timer::Channel1}, {GPIO::Port1, GPIO::Pin13}), // P113 - Motor 3
-	initIOTimerChannel(io_timers, {Timer::Timer3, Timer::Channel1}, {GPIO::Port3, GPIO::Pin0}),  // P300 - Motor 1
-	initIOTimerChannel(io_timers, {Timer::Timer4, Timer::Channel1}, {GPIO::Port3, GPIO::Pin2}),  // P302 - Motor 4
+// Timer channel mappings for RA8E1
+// These would normally map to actual GPIO pins and their timer functions
+const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
+	// Timer 0 channels
+	{
+		.gpio_out = 0,              // GPIO configuration (to be defined)
+		.gpio_in = 0,
+		.timer_index = 0,
+		.timer_channel = 0,         // GPT channel A
+		.freq_basis = 0,            // PWM frequency basis
+	},
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 0,
+		.timer_channel = 1,         // GPT channel B
+		.freq_basis = 0,
+	},
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 0,
+		.timer_channel = 2,         // GPT channel C
+		.freq_basis = 0,
+	},
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 0,
+		.timer_channel = 3,         // GPT channel D
+		.freq_basis = 0,
+	},
+	// Timer 1 channels
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 1,
+		.timer_channel = 0,
+		.freq_basis = 0,
+	},
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 1,
+		.timer_channel = 1,
+		.freq_basis = 0,
+	},
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 1,
+		.timer_channel = 2,
+		.freq_basis = 0,
+	},
+	{
+		.gpio_out = 0,
+		.gpio_in = 0,
+		.timer_index = 1,
+		.timer_channel = 3,
+		.freq_basis = 0,
+	}
 };
 
-constexpr io_timers_channel_mapping_t io_timers_channel_mapping =
-	initIOTimerChannelMapping(io_timers, timer_io_channels);
+// Main initialization function
+void fpb_ra8e1_timer_initialize()
+{
+	// Initialize HRT system first (needed for px4_usleep and timing)
+	hrt_init();
+
+	// Initialize IO timer system for RA8E1
+	// This calls the io_timer_init() function in io_timer.c
+	io_timer_init();
+}
+
+} // extern "C"

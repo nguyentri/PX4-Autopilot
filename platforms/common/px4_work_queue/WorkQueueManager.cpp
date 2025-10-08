@@ -371,6 +371,13 @@ WorkQueueManagerRun(int, char **)
 int
 WorkQueueManagerStart()
 {
+        // Ensure atomics are properly initialized (workaround for potential platform issue)
+	static bool initialized = false;
+	if (!initialized) {
+		_wq_manager_should_exit.store(true);
+		_wq_manager_running.store(false);
+		initialized = true;
+	}
 	if (_wq_manager_should_exit.load() && !_wq_manager_running.load()) {
 
 		_wq_manager_should_exit.store(false);
