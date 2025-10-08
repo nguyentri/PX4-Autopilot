@@ -418,7 +418,9 @@ SECTIONS
         *(.ram_from_flash)
         /* section.ram.code_from_flash */
         *(.ram_code_from_flash)
-        *(.data*)
+        *(.data .data.*)
+        *(.gnu.linkonce.d.*)
+        CONSTRUCTORS
         *(vtable)
         __ram_from_flash$$Limit = .;
     }> RAM AT > FLASH

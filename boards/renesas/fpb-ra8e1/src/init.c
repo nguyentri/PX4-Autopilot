@@ -182,13 +182,11 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	int ret = px4_platform_init();
 
 	if (ret != OK) {
-		// Can't use syslog yet if init failed, use direct output
+		/* Now syslog is safe to use */
+		syslog(LOG_ERR, "board_app_initialize: px4_platform_init() failed with error %d\n", ret);
+
 		return ret;
 	}
-
-	/* Now syslog is safe to use */
-	syslog(LOG_INFO, "board_app_initialize: px4_platform_init() OK\n");
-
 	/* configure LEDs */
 	board_autoled_initialize();
 
@@ -199,19 +197,14 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	fpb_ra8e1_timer_initialize();
 
 	/* Initialize SPI buses for sensors */
-	syslog(LOG_INFO, "board_app_initialize: Initializing SPI bus 1\n");
 	struct spi_dev_s *spi1 = px4_spibus_initialize(1);
 	if (spi1 == NULL) {
 		syslog(LOG_ERR, "board_app_initialize: px4_spibus_initialize(1) returned NULL!\n");
-	} else {
-		syslog(LOG_INFO, "board_app_initialize: SPI bus 1 initialized OK\n");
 	}
 
 	/* Reset SPI buses to ensure clean state for sensor communication */
-	syslog(LOG_INFO, "board_app_initialize: Resetting SPI buses\n");
 	board_spi_reset(10, 0xffff);
 
-	syslog(LOG_INFO, "board_app_initialize: Complete!\n");
 	return OK;
 }
 
