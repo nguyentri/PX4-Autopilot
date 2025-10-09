@@ -12,10 +12,32 @@ param set-default CBRK_SUPPLY_CHK 894281
 # Disable USB check (no USB support initially)
 param set-default CBRK_USB_CHK 197848
 
-# Set the PWM output frequency to 400Hz for standard ESCs
+#
+# PWM/ESC Configuration for 4 motor outputs
+# Motor mapping:
+#   Motor 1 (Front Right): P300 (GPT3A) - Channel 1
+#   Motor 2 (Rear Left):   P415 (GPT0A) - Channel 2
+#   Motor 3 (Front Left):  P113 (GPT2A) - Channel 3
+#   Motor 4 (Rear Right):  P302 (GPT4A) - Channel 4
+#
+
+# Set PWM output frequency to 400Hz for standard ESCs
+param set-default PWM_MAIN_RATE 400
 param set-default PWM_MAIN_MAX 2000
 param set-default PWM_MAIN_MIN 1000
 param set-default PWM_MAIN_DIS 900
+
+# Assign motor functions for quadcopter X configuration
+param set-default PWM_MAIN_FUNC1 101  # Motor 1 (Front Right)
+param set-default PWM_MAIN_FUNC2 102  # Motor 2 (Rear Left)
+param set-default PWM_MAIN_FUNC3 103  # Motor 3 (Front Left)
+param set-default PWM_MAIN_FUNC4 104  # Motor 4 (Rear Right)
+
+# Set failsafe PWM values (motors off)
+param set-default PWM_MAIN_FAIL1 1000
+param set-default PWM_MAIN_FAIL2 1000
+param set-default PWM_MAIN_FAIL3 1000
+param set-default PWM_MAIN_FAIL4 1000
 
 # Configure RC input parameters
 param set-default RC_MAP_THROTTLE 3

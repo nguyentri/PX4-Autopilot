@@ -118,10 +118,16 @@
 /* Note: SPI_BUS_MAX_DEVICES is defined in px4_platform_common/spi.h (default=6)
  * We only use 2 devices, but the platform array size of 6 is fine - unused slots are empty */
 
-/* PWM/GPT Timer Pin Definitions for ESC Control - use ra8e1_pinmap.h per-pin macros */
-#define GPIO_TIM3_CH1OUT        GPIO_GTIOC0A_3   /* P300 - GPT3A - Motor 1 */
-#define GPIO_TIM0_CH1OUT        GPIO_GTIOC2A_2   /* P415 - GPT0A - Motor 2 */
-#define GPIO_TIM2_CH1OUT        GPIO_GTIOC3A_1   /* P113 - GPT2A - Motor 3 */
+/* PWM/GPT Timer Pin Definitions for ESC Control */
+/* Motor mapping verified from ra8e1_pinmap.h:
+ * - Motor 1: P300 (PORT3 | PIN0)  -> GPT3A (GTIOC3A_1)
+ * - Motor 2: P415 (PORT4 | PIN15) -> GPT0A (GTIOC0A_3)
+ * - Motor 3: P113 (PORT1 | PIN13) -> GPT2A (GTIOC2A_2)
+ * - Motor 4: P302 (PORT3 | PIN2)  -> GPT4A (GTIOC4A_2)
+ */
+#define GPIO_TIM3_CH1OUT        GPIO_GTIOC3A_1   /* P300 - GPT3A - Motor 1 */
+#define GPIO_TIM0_CH1OUT        GPIO_GTIOC0A_3   /* P415 - GPT0A - Motor 2 */
+#define GPIO_TIM2_CH1OUT        GPIO_GTIOC2A_2   /* P113 - GPT2A - Motor 3 */
 #define GPIO_TIM4_CH1OUT        GPIO_GTIOC4A_2   /* P302 - GPT4A - Motor 4 */
 
 /* Define Timer channels for PX4 */
@@ -343,6 +349,8 @@
 
 #ifndef __ASSEMBLY__
 
+__BEGIN_DECLS
+
 /****************************************************************************************************
  * Public Functions
  ****************************************************************************************************/
@@ -371,5 +379,7 @@ extern void fpb_ra8e1_timer_initialize(void);
 extern void fpb_ra8e1_spi_cs_select(int devid, bool selected);
 extern uint8_t fpb_ra8e1_spi_cs_read(int devid);
 extern bool fpb_ra8e1_spi_drdy_read(void);
+
+__END_DECLS
 
 #endif /* __ASSEMBLY__ */

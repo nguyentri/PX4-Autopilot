@@ -80,8 +80,8 @@
 #define DSHOT_T0H_PERCENT        37.5f
 #define DSHOT_T1H_PERCENT        75.0f
 
-/* System clock assumption - should be read from clock config */
-#define PCLKD_FREQUENCY          120000000
+/* System clock - RA8E1 PCLKD frequency for GPT timers */
+#define PCLKD_FREQUENCY          120000000  /* 120MHz PCLKD */
 
 /****************************************************************************
  * Private Types
