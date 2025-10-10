@@ -36,11 +36,11 @@
  *
  * RA8 timer I/O interface
  */
-
-#pragma once
-
+#include <px4_platform_common/px4_config.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+#pragma once
 
 #ifndef __EXPORT
 #define __EXPORT
@@ -57,7 +57,7 @@ extern "C" {
 #define MAX_IO_TIMERS			2
 #endif
 
-#if DIRECT_PWM_OUTPUT_CHANNELS > 8
+#ifdef DIRECT_PWM_OUTPUT_CHANNELS
 #define MAX_TIMER_IO_CHANNELS	DIRECT_PWM_OUTPUT_CHANNELS
 #else
 #define MAX_TIMER_IO_CHANNELS	8

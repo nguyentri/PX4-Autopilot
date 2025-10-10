@@ -47,13 +47,15 @@
 #include "board_config.h"
 
 /* Include GPT hardware definitions */
-#include <hardware/ra_gpt.h>
-#include <hardware/ra8e1/ra8e1_memorymap.h>
+#include "hardware/ra_gpt.h"
+#include "hardware/ra8e1/ra8e1_memorymap.h"
 
 /* Include timer configuration structures - this will use BOARD_NUM_IO_TIMERS for MAX_IO_TIMERS */
-#include <px4_arch/io_timer.h>
+#include "../include/px4_arch/io_timer.h"
 
 /* Include critical section support */
+#include "ra_gpio.h"
+#include <px4_platform/micro_hal.h>
 #include <px4_platform_common/micro_hal.h>
 #include <nuttx/irq.h>
 
@@ -99,18 +101,28 @@ extern const timer_io_channels_t timer_io_channels[];
 extern int ra8_gpt_timer_init_all(void);
 extern void ra8_gpt_timer_deinit_all(void);
 extern int gpt_set_pwm_pulse(unsigned channel, uint16_t pulse_us);
+extern uint16_t gpt_get_pwm_pulse(unsigned channel);
 extern int gpt_set_pwm_frequency(unsigned channel, unsigned frequency_hz);
+extern int gpt_oneshot_configure(unsigned channel, uint16_t pulse_us);
+extern int gpt_oneshot_trigger(unsigned channel);
+extern int gpt_configure_input_capture(unsigned channel, bool rising_edge, bool falling_edge);
+extern uint32_t gpt_read_capture(unsigned channel);
+extern int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool overflow);
+extern int gpt_disable_interrupts(unsigned channel);
+extern uint32_t gpt_read_status(unsigned channel);
+extern int gpt_clear_status(unsigned channel, uint32_t flags);
+extern int gpt_pwm_enable(unsigned channel, bool enable);
 
 /* Helper function to read 32-bit register */
 static inline uint32_t io_timer_getreg32(uint32_t addr)
 {
-	return *(volatile uint32_t *)addr;
+	return *(volatile uint32_t *)(uintptr_t)addr;
 }
 
 /* Helper function to write 32-bit register */
 static inline void io_timer_putreg32(uint32_t val, uint32_t addr)
 {
-	*(volatile uint32_t *)addr = val;
+	*(volatile uint32_t *)(uintptr_t)addr = val;
 }
 
 /**
@@ -224,7 +236,9 @@ uint32_t io_timer_channel_get_gpio_output(unsigned channel)
 	if (io_timer_validate_channel_index(channel) != 0) {
 		return 0;
 	}
-	return 0;
+
+	/* Return the GPIO configuration for PWM output */
+	return timer_io_channels[channel].gpio_out;
 }
 
 uint32_t io_timer_channel_get_as_pwm_input(unsigned channel)
@@ -232,6 +246,9 @@ uint32_t io_timer_channel_get_as_pwm_input(unsigned channel)
 	if (io_timer_validate_channel_index(channel) != 0) {
 		return 0;
 	}
+
+	/* Return the GPIO configuration for PWM input */
+	/* Input capture not yet implemented for RA8 */
 	return 0;
 }
 
@@ -242,28 +259,75 @@ int io_timer_set_rate(unsigned timer, unsigned rate)
 		return -EINVAL;
 	}
 
-	/* Validate rate is within reasonable bounds (50Hz - 400Hz for PWM) */
-	if (rate < 50 || rate > 400) {
+	/* Validate rate is within reasonable bounds for typical PWM/oneshot */
+	if (rate < 25 || rate > 2000) {
 		return -EINVAL;
 	}
 
-	/* Get the channel index for this timer */
-	/* Each timer in our configuration maps to one channel */
-	unsigned channel = timer;  /* For FPB-RA8E1, timer index = channel index */
+	bool updated = false;
 
-	if (channel >= MAX_TIMER_IO_CHANNELS) {
-		return -EINVAL;
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (timer_io_channels[channel].gpio_out == 0) {
+			continue;
+		}
+		if (timer_io_channels[channel].timer_index == timer) {
+			updated = true;
+			int result = gpt_set_pwm_frequency(channel, rate);
+
+			if (result != 0) {
+				return result;
+			}
+		}
 	}
 
-	/* Update the GPT timer frequency using hardware implementation */
-	return gpt_set_pwm_frequency(channel, rate);
+	return updated ? 0 : -EINVAL;
 }
 
 int io_timer_set_enable(bool state, io_timer_channel_mode_t mode, io_timer_allocation_t allocate)
 {
-	(void)state;    /* Unused parameter */
-	(void)mode;     /* Unused parameter */
-	(void)allocate; /* Unused parameter */
+	switch (mode) {
+	case IOTimerChanMode_NotUsed:
+	case IOTimerChanMode_PWMOut:
+	case IOTimerChanMode_OneShot:
+	case IOTimerChanMode_Trigger:
+		break;
+
+	case IOTimerChanMode_PWMIn:
+	case IOTimerChanMode_Capture:
+	default:
+		return -EINVAL;
+	}
+
+	/* Was the request for all channels in this mode? */
+	io_timer_channel_allocation_t masks = allocate;
+
+	if (masks == IO_TIMER_ALL_MODES_CHANNELS) {
+		/* Yes - we provide them */
+		masks = channel_allocations[mode];
+
+	} else {
+		/* No - caller provided mask */
+		/* Only allow the channels in that mode to be affected */
+		masks &= channel_allocations[mode];
+	}
+
+	if (masks) {
+		irqstate_t flags = px4_enter_critical_section();
+
+		/* Enable or disable each channel in the mask */
+		for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+			if (masks & (1 << channel)) {
+				if (state) {
+					gpt_pwm_enable(channel, true);
+				} else {
+					gpt_pwm_enable(channel, false);
+				}
+			}
+		}
+
+		px4_leave_critical_section(flags);
+	}
+
 	return 0;
 }
 
@@ -288,26 +352,71 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
 uint16_t io_channel_get_ccr(unsigned channel)
 {
 	uint16_t value = 0;
+
 	if (io_timer_validate_channel_index(channel) == 0) {
 		int mode = io_timer_get_channel_mode(channel);
+
 		if ((mode == IOTimerChanMode_PWMOut) ||
 		    (mode == IOTimerChanMode_OneShot) ||
 		    (mode == IOTimerChanMode_Trigger)) {
-			/* TODO: Implement RA8 GPT CCR reading */
+			/* Read actual CCR value from GPT hardware */
+			value = gpt_get_pwm_pulse(channel);
 		}
 	}
+
 	return value;
 }
 
 uint32_t io_timer_get_group(unsigned timer)
 {
-	return 0;
+	/* Get the channel mask for this timer */
+	if (validate_timer_index(timer) < 0) {
+		return 0;
+	}
+
+	uint32_t channels = 0;
+
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (timer_io_channels[channel].gpio_out == 0) {
+			continue;
+		}
+		if (timer_io_channels[channel].timer_index == timer) {
+			channels |= (1u << channel);
+		}
+	}
+
+	return channels;
 }
 
 void io_timer_trigger(unsigned channel_mask)
 {
-	/* TODO: Implement RA8 GPT triggering for OneShot mode */
-	(void)channel_mask; /* Unused parameter */
+	/* Trigger OneShot channels
+	 * For RA8 GPT timers in OneShot mode:
+	 * 1. Reload the counter value
+	 * 2. Trigger a single pulse via GTSTR
+	 */
+
+	int mode_mask = io_timer_get_mode_channels(IOTimerChanMode_OneShot);
+	io_timer_channel_allocation_t oneshots = (mode_mask < 0) ? 0 :
+			(io_timer_channel_allocation_t)mode_mask;
+	oneshots &= (io_timer_channel_allocation_t)channel_mask;
+
+	if (oneshots != 0) {
+		irqstate_t flags = px4_enter_critical_section();
+
+		/* Trigger each channel in OneShot mode */
+		for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+			if (timer_io_channels[channel].gpio_out == 0) {
+				continue;
+			}
+			if (oneshots & (1u << channel)) {
+				/* Trigger GPT OneShot pulse via hardware implementation */
+				gpt_oneshot_trigger(channel);
+			}
+		}
+
+		px4_leave_critical_section(flags);
+	}
 }
 
 /* Additional required functions */
@@ -346,12 +455,6 @@ int io_channel_init(void)
 	return io_timer_init();
 }
 
-/* Stub for compatibility */
-void ra8_io_timer_stub(void)
-{
-	/* Stub function to allow compilation */
-}
-
 /**
  * Initialize a timer channel
  *
@@ -368,36 +471,61 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 		return -EINVAL;
 	}
 
-	/* Check if channel is already allocated for a different mode */
-	int current_mode = io_timer_get_channel_mode(channel);
+	/* Determine GPIO configuration based on mode */
+	uint32_t gpio = 0;
 
-	if (current_mode > IOTimerChanMode_NotUsed && current_mode != mode) {
-		return -EBUSY;
+	switch (mode) {
+	case IOTimerChanMode_OneShot:
+	case IOTimerChanMode_PWMOut:
+	case IOTimerChanMode_Trigger:
+		gpio = timer_io_channels[channel].gpio_out;
+		break;
+
+	case IOTimerChanMode_PWMIn:
+	case IOTimerChanMode_Capture:
+		/* Input modes not yet supported */
+		return -EINVAL;
+
+	case IOTimerChanMode_NotUsed:
+		/* Free the channel */
+		break;
+
+	default:
+		return -EINVAL;
 	}
 
-	/* For NotUsed mode, just free the channel */
-	if (mode == IOTimerChanMode_NotUsed) {
-		return io_timer_unallocate_channel(channel);
+	irqstate_t flags = px4_enter_critical_section();
+
+	/* Get current mode */
+	int previous_mode = io_timer_get_channel_mode(channel);
+
+	/* Allocate the channel */
+	int status = io_timer_allocate_channel(channel, mode);
+
+	if (status == 0 && previous_mode == IOTimerChanMode_NotUsed) {
+		/* Initialize the timer if this is the first use */
+		/* The timer is already initialized by ra8_gpt_timer_init_all() in io_timer_init() */
+
+		/* Configure GPIO if needed */
+		if (gpio) {
+			px4_arch_configgpio(gpio);
+		}
+
+		/* Store callback if provided */
+		if (callback != NULL) {
+			/* Callbacks are not yet supported on the RA8 GPT backend */
+			status = -ENOTSUP;
+		}
 	}
 
-	/* Allocate the channel for the requested mode */
-	int ret = io_timer_allocate_channel(channel, mode);
-
-	if (ret != 0) {
-		return ret;
+	if (status != 0 && previous_mode == IOTimerChanMode_NotUsed) {
+		/* Free the channel if we couldn't initialize it */
+		io_timer_unallocate_channel(channel);
 	}
 
-	/* TODO: Configure hardware timer channel based on mode */
-	/* This would involve:
-	 * 1. Determine which timer this channel belongs to
-	 * 2. Enable timer clock if not already enabled
-	 * 3. Configure timer mode (PWM, capture, etc.)
-	 * 4. Configure GPIO pin for timer function
-	 * 5. Set up interrupt if callback provided
-	 */
+	px4_leave_critical_section(flags);
 
-	(void)callback;  /* Unused for now */
-	(void)context;   /* Unused for now */
+	(void)context;
 
-	return OK;
+	return status;
 }

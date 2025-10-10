@@ -365,12 +365,11 @@ __BEGIN_DECLS
  *
  ****************************************************************************************************/
 
+/* Board initialization function */
 extern void fpb_ra8e1_boardinitialize(void);
 
 /* Timer initialization function */
 extern void fpb_ra8e1_timer_initialize(void);
-
-/* fpb_ra8e1_spibus_initialize() removed - using px4_spibus_initialize() directly */
 
 /****************************************************************************************************
  * SPI Board Functions

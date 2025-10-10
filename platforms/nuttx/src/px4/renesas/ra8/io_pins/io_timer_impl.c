@@ -46,9 +46,21 @@
  *  - Motor 4: P302 (GPT4 Channel A) - Channel 3
  */
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <errno.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "../include/px4_arch/io_timer.h"
+
+#include "hardware/ra_gpt.h"
+#include "hardware/ra_mstp.h"
+#include "hardware/ra8e1/ra8e1_memorymap.h"
+#include "arm_internal.h"
+
+#include <board_config.h>
+#include "../include/px4_arch/micro_hal.h"
+
 
 /* Board configuration constants - must be included before px4_arch headers */
 /* This file provides BOARD_NUM_IO_TIMERS and BOARD_PCLKD_FREQUENCY */
@@ -64,315 +76,453 @@
 #define BOARD_NUM_IO_TIMERS  4  /* 4 timers for FPB-RA8E1 */
 #endif
 
-/* Include IO timer types and declarations */
-#include "../include/px4_arch/io_timer.h"
+#ifndef PWM_DEFAULT_FREQUENCY_HZ
+#define PWM_DEFAULT_FREQUENCY_HZ 400u
+#endif
 
-/* NuttX RA8 hardware headers - provides register addresses, offsets and bits */
-#include <hardware/ra_gpt.h>                  /* GPT register offsets and bit definitions */
-#include <hardware/ra_mstp.h>                 /* Module stop control register definitions */
-#include <hardware/ra8e1/ra8e1_memorymap.h>  /* R_GPT*_BASE addresses, R_MSTP_BASE */
-#include <arm_internal.h>                    /* For getreg32/putreg32 macros */
+#define PWM_MIN_PULSE_US      1000u
+#define PWM_MAX_PULSE_US      2000u
+#define PWM_DEFAULT_PULSE_US  1500u
 
-#include "board_config.h"                  /* Board-specific configuration */
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
 
 /* External declarations from timer_config.cpp */
 extern const io_timers_t io_timers[];
 extern const timer_io_channels_t timer_io_channels[];
 
-/* PWM Configuration Parameters - Use board configuration */
-#define PWM_DEFAULT_FREQUENCY_HZ    400        /* Default 400Hz for standard ESCs */
-#define DEFAULT_PRESCALER           64         /* PCLKD/64 */
+static const uint32_t kPrescalerDivisors[] = {1u, 4u, 16u, 64u, 256u, 1024u};
 
-/* PWM pulse width limits (in microseconds) */
-#define PWM_MIN_PULSE_US    1000
-#define PWM_MAX_PULSE_US    2000
-#define PWM_DEFAULT_PULSE_US 1500
-
-/* GPT timer configuration - populated at runtime */
-static struct {
+typedef struct {
 	uint32_t base;
 	uint32_t period;
-	uint32_t prescaler;
+	uint32_t prescaler_div;
+	uint32_t frequency_hz;
+	uint16_t last_pulse_us;
+	uint8_t prescaler_idx;
+	uint8_t timer_index;
 	uint8_t gpt_channel;
 	bool initialized;
-} gpt_config[DIRECT_PWM_OUTPUT_CHANNELS];
+	bool enabled;
+} gpt_channel_state_t;
 
-/* Forward declarations */
-static int gpt_enable_clock(uint8_t gpt_channel);
-static int gpt_configure_gpio(uint32_t gpio_config);
-static uint32_t gpt_get_base_address(uint8_t gpt_channel);
+static gpt_channel_state_t gpt_state[MAX_TIMER_IO_CHANNELS];
 
-/**
- * @brief Get GPT base address from GPT channel number
- *
- * Uses NuttX RA_GPT_BASE() macro from ra_gpt.h which calculates:
- * Base = R_GPT0_BASE + (channel * 0x100)
- */
-static uint32_t gpt_get_base_address(uint8_t gpt_channel)
+static inline void gpt_wp_begin(uint32_t base)
+{
+	putreg32(GPT_GTWP_PRKEY, base + RA_GPT_GTWP_OFFSET);
+}
+
+static inline void gpt_wp_end(uint32_t base)
+{
+	putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP | GPT_GTWP_CMNWP, base + RA_GPT_GTWP_OFFSET);
+}
+
+static inline uint32_t gpt_base_address(uint8_t gpt_channel)
 {
 	return RA_GPT_BASE(gpt_channel);
 }
 
-/**
- * @brief Enable GPT timer clock via MSTP (Module Stop Control)
- *
- * Uses NuttX definitions from ra_mstp.h:
- * - R_MSTP_MSTPCRE: Module Stop Control Register E address
- * - R_MSTP_MSTPCRE_GPT*: Bit masks for each GPT timer
- */
 static int gpt_enable_clock(uint8_t gpt_channel)
 {
-	uint32_t mstpcre;
-	uint32_t bit_mask = 0;
+	uint32_t bit_mask;
 
-	/* Determine the MSTP bit for this GPT channel using NuttX definitions */
 	switch (gpt_channel) {
-	case 0:  bit_mask = R_MSTP_MSTPCRE_GPT0; break;
-	case 2:  bit_mask = R_MSTP_MSTPCRE_GPT2; break;
-	case 3:  bit_mask = R_MSTP_MSTPCRE_GPT3; break;
-	case 4:  bit_mask = R_MSTP_MSTPCRE_GPT4; break;
-	default: return -EINVAL;
-	}
-
-	/* Read-modify-write to clear the stop bit (enable clock) */
-	mstpcre = getreg32(R_MSTP_MSTPCRE);
-	mstpcre &= ~bit_mask;
-	putreg32(mstpcre, R_MSTP_MSTPCRE);
-
-	return 0;
-}
-
-/**
- * @brief Configure GPIO pin for GPT timer output
- */
-static int gpt_configure_gpio(uint32_t gpio_config)
-{
-	if (gpio_config == 0) {
+	case 0: bit_mask = R_MSTP_MSTPCRE_GPT0; break;
+	case 2: bit_mask = R_MSTP_MSTPCRE_GPT2; break;
+	case 3: bit_mask = R_MSTP_MSTPCRE_GPT3; break;
+	case 4: bit_mask = R_MSTP_MSTPCRE_GPT4; break;
+	default:
 		return -EINVAL;
 	}
 
-	/* Extract port and pin from encoded config */
-	uint8_t port = (gpio_config >> 24) & 0xFF;
-	uint8_t pin = (gpio_config >> 16) & 0xFF;
-
-	/* GPIO configuration will be done by board-specific code
-	 * using the GPIO definitions from board_config.h
-	 * The gpio_config value is just a placeholder for now
-	 */
-	(void)port;
-	(void)pin;
-
-	/* TODO: Call ra_configgpio() with proper pinset when available */
-	ra_configgpio(GPIO_TIM3_CH1OUT);
-	ra_configgpio(GPIO_TIM0_CH1OUT);
-	ra_configgpio(GPIO_TIM2_CH1OUT);
-	ra_configgpio(GPIO_TIM4_CH1OUT);
+	uint32_t reg = getreg32(R_MSTP_MSTPCRE);
+	reg &= ~bit_mask;
+	putreg32(reg, R_MSTP_MSTPCRE);
 
 	return 0;
 }
 
-/**
- * @brief Initialize a single GPT timer for PWM output
- *
- * Configures a GPT timer channel for standard PWM ESC control.
- * All register offsets and bit definitions are from NuttX ra_gpt.h
- */
+static int gpt_configure_gpio(uint32_t gpio_pinset)
+{
+	if (gpio_pinset == 0) {
+		return -EINVAL;
+	}
+
+	return px4_arch_configgpio(gpio_pinset);
+}
+
+static int gpt_select_timing(unsigned frequency_hz, uint32_t *prescaler_idx, uint32_t *period_ticks)
+{
+	if (frequency_hz == 0u || !prescaler_idx || !period_ticks) {
+		return -EINVAL;
+	}
+
+	for (uint32_t idx = 0; idx < ARRAY_SIZE(kPrescalerDivisors); idx++) {
+		uint32_t divisor = kPrescalerDivisors[idx];
+		uint64_t timer_clk = BOARD_PCLKD_FREQUENCY / divisor;
+		uint64_t ticks = (timer_clk + (frequency_hz / 2u)) / frequency_hz;
+
+		if (ticks == 0 || ticks > UINT32_MAX) {
+			continue;
+		}
+
+		*prescaler_idx = idx;
+		*period_ticks = (uint32_t)(ticks - 1u);
+		return 0;
+	}
+
+	return -ERANGE;
+}
+
 static int gpt_timer_init_pwm(unsigned channel, unsigned frequency_hz)
 {
-	if (channel >= DIRECT_PWM_OUTPUT_CHANNELS) {
+	if (channel >= MAX_TIMER_IO_CHANNELS) {
 		return -EINVAL;
 	}
 
-	/* Get timer configuration from io_timers array */
-	uint8_t gpt_channel = io_timers[channel].timer_id;
-	uint32_t base = gpt_get_base_address(gpt_channel);
+	const timer_io_channels_t *chan_cfg = &timer_io_channels[channel];
+	uint8_t timer_index = chan_cfg->timer_index;
 
-	/* Enable GPT clock */
-	int ret = gpt_enable_clock(gpt_channel);
+	if (timer_index >= MAX_IO_TIMERS) {
+		return -EINVAL;
+	}
+
+	uint8_t gpt_channel = io_timers[timer_index].timer_id;
+	if (gpt_channel == 0xff) {
+		return -EINVAL;
+	}
+
+	uint32_t prescaler_idx = 0;
+	uint32_t period_ticks = 0;
+	int ret = gpt_select_timing(frequency_hz, &prescaler_idx, &period_ticks);
 
 	if (ret != 0) {
 		return ret;
 	}
 
-	/* Configure GPIO pin for timer output */
-	ret = gpt_configure_gpio(timer_io_channels[channel].gpio_out);
+	ret = gpt_enable_clock(gpt_channel);
 
 	if (ret != 0) {
-		/* Non-fatal for now, continue with timer config */
+		return ret;
 	}
 
-	/* 1. Disable write protection using NuttX macros */
-	putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, base + RA_GPT_GTWP_OFFSET);
+	(void)gpt_configure_gpio(chan_cfg->gpio_out);
 
-	/* 2. Stop the timer if running */
+	uint32_t base = gpt_base_address(gpt_channel);
+	uint32_t prescaler_div = kPrescalerDivisors[prescaler_idx];
+	uint32_t timer_clk = BOARD_PCLKD_FREQUENCY / prescaler_div;
+	uint64_t initial_ticks = ((uint64_t)timer_clk * PWM_DEFAULT_PULSE_US) / 1000000u;
+
+	if (initial_ticks > period_ticks) {
+		initial_ticks = period_ticks;
+	}
+
+	gpt_wp_begin(base);
 	putreg32(0, base + RA_GPT_GTCR_OFFSET);
-
-	/* 3. Clear the counter */
-	putreg32(1 << gpt_channel, base + RA_GPT_GTCLR_OFFSET);
-
-	/* 4. Calculate period for desired frequency
-	 * Timer clock = PCLKD / Prescaler
-	 * Period = (Timer clock / Frequency) - 1
-	 */
-	uint32_t prescaler = DEFAULT_PRESCALER;
-	uint32_t timer_clock = BOARD_PCLKD_FREQUENCY / prescaler;
-	uint32_t period = (timer_clock / frequency_hz) - 1;
-
-	/* Store configuration for later use */
-	gpt_config[channel].base = base;
-	gpt_config[channel].period = period;
-	gpt_config[channel].prescaler = prescaler;
-	gpt_config[channel].gpt_channel = gpt_channel;
-	gpt_config[channel].initialized = true;
-
-	/* 5. Configure timer mode: Saw-wave PWM (up-counting), PCLKD/64 */
-	uint32_t gtcr = GPT_GTCR_MD_SAW_WAVE_UP | GPT_GTCR_TPCS_PCLKD_64;
-	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
-
-	/* 6. Set count direction to up */
+	putreg32(GPT_GTCR_MD_SAW_WAVE_UP | (prescaler_idx << GPT_GTCR_TPCS_SHIFT), base + RA_GPT_GTCR_OFFSET);
 	putreg32(GPT_GTUDDTYC_UD, base + RA_GPT_GTUDDTYC_OFFSET);
+	putreg32(GPT_GTIOR_GTIOA_INITIAL_LOW, base + RA_GPT_GTIOR_OFFSET);
+	putreg32(period_ticks, base + RA_GPT_GTPR_OFFSET);
+	putreg32(period_ticks, base + RA_GPT_GTPBR_OFFSET);
+	putreg32((uint32_t)initial_ticks, base + RA_GPT_GTCCRA_OFFSET);
+	putreg32(0, base + RA_GPT_GTCNT_OFFSET);
+	putreg32(getreg32(base + RA_GPT_GTCR_OFFSET) | GPT_GTCR_CST, base + RA_GPT_GTCR_OFFSET);
+	gpt_wp_end(base);
 
-	/* 7. Configure I/O control - GTIOA output initial low, high on compare match */
-	uint32_t gtior = GPT_GTIOR_GTIOA_INITIAL_LOW;
-	putreg32(gtior, base + RA_GPT_GTIOR_OFFSET);
-
-	/* 8. Set period for desired PWM frequency */
-	putreg32(period, base + RA_GPT_GTPR_OFFSET);
-	putreg32(period, base + RA_GPT_GTPBR_OFFSET);
-
-	/* 9. Set initial duty cycle to neutral (1500us) */
-	uint32_t initial_ccr = (PWM_DEFAULT_PULSE_US * period * frequency_hz) / 1000000;
-	putreg32(initial_ccr, base + RA_GPT_GTCCRA_OFFSET);
-
-	/* 10. Enable buffer operation */
-	putreg32(0x03, base + RA_GPT_GTBER_OFFSET);
-
-	/* 11. Start the timer */
-	uint32_t gtcr_run = getreg32(base + RA_GPT_GTCR_OFFSET);
-	putreg32(gtcr_run | GPT_GTCR_CST, base + RA_GPT_GTCR_OFFSET);
-
-	/* 12. Re-enable write protection */
-	putreg32(GPT_GTWP_PRKEY, base + RA_GPT_GTWP_OFFSET);
+	gpt_state[channel] = (gpt_channel_state_t) {
+		.base = base,
+		.period = period_ticks,
+		.prescaler_div = prescaler_div,
+		.frequency_hz = frequency_hz,
+		.last_pulse_us = PWM_DEFAULT_PULSE_US,
+		.prescaler_idx = (uint8_t)prescaler_idx,
+		.timer_index = timer_index,
+		.gpt_channel = gpt_channel,
+		.initialized = true,
+		.enabled = true,
+	};
 
 	return 0;
 }
 
-/**
- * @brief Set PWM pulse width in microseconds
- *
- * @param channel PWM channel (0-3)
- * @param pulse_us Pulse width in microseconds (1000-2000)
- * @return 0 on success, -1 on error
- */
 int gpt_set_pwm_pulse(unsigned channel, uint16_t pulse_us)
 {
-	if (channel >= DIRECT_PWM_OUTPUT_CHANNELS || !gpt_config[channel].initialized) {
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
 		return -EINVAL;
 	}
 
-	/* Clamp pulse width to valid range */
 	if (pulse_us < PWM_MIN_PULSE_US) {
 		pulse_us = PWM_MIN_PULSE_US;
-	}
-	if (pulse_us > PWM_MAX_PULSE_US) {
+	} else if (pulse_us > PWM_MAX_PULSE_US) {
 		pulse_us = PWM_MAX_PULSE_US;
 	}
 
-	/* Convert microseconds to timer counts
-	 * CCR = (pulse_us * timer_frequency) / 1000000
-	 * Where timer_frequency = PCLKD / prescaler
-	 */
-	uint32_t base = gpt_config[channel].base;
-	uint32_t period = gpt_config[channel].period;
-	uint32_t timer_freq = BOARD_PCLKD_FREQUENCY / gpt_config[channel].prescaler;
-	uint32_t ccr = (pulse_us * timer_freq) / 1000000;
+	uint32_t base = gpt_state[channel].base;
+	uint32_t timer_clk = BOARD_PCLKD_FREQUENCY / gpt_state[channel].prescaler_div;
+	uint64_t ticks = ((uint64_t)timer_clk * pulse_us) / 1000000u;
 
-	/* Clamp to period */
-	if (ccr > period) {
-		ccr = period;
+	if (ticks > gpt_state[channel].period) {
+		ticks = gpt_state[channel].period;
 	}
 
-	/* Write to compare register using NuttX offset definition */
-	putreg32(ccr, base + RA_GPT_GTCCRA_OFFSET);
+	gpt_wp_begin(base);
+	putreg32((uint32_t)ticks, base + RA_GPT_GTCCRA_OFFSET);
+	gpt_wp_end(base);
 
+	gpt_state[channel].last_pulse_us = pulse_us;
 	return 0;
 }
 
-/**
- * @brief Set PWM frequency for a timer
- *
- * @param channel PWM channel
- * @param frequency_hz Desired frequency in Hz
- * @return 0 on success, negative on error
- */
-int gpt_set_pwm_frequency(unsigned channel, unsigned frequency_hz)
+uint16_t gpt_get_pwm_pulse(unsigned channel)
 {
-	if (channel >= DIRECT_PWM_OUTPUT_CHANNELS || !gpt_config[channel].initialized) {
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return 0;
+	}
+
+	uint32_t ccr = getreg32(gpt_state[channel].base + RA_GPT_GTCCRA_OFFSET);
+	uint32_t timer_clk = BOARD_PCLKD_FREQUENCY / gpt_state[channel].prescaler_div;
+
+	return (uint16_t)((ccr * 1000000u) / timer_clk);
+}
+
+int gpt_pwm_enable(unsigned channel, bool enable)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
 		return -EINVAL;
 	}
 
-	/* Calculate new period */
-	uint32_t prescaler = gpt_config[channel].prescaler;
-	uint32_t timer_clock = BOARD_PCLKD_FREQUENCY / prescaler;
-	uint32_t period = (timer_clock / frequency_hz) - 1;
+	uint32_t base = gpt_state[channel].base;
 
-	/* Update hardware using NuttX register definitions */
-	uint32_t base = gpt_config[channel].base;
+	gpt_wp_begin(base);
+	uint32_t gtcr = getreg32(base + RA_GPT_GTCR_OFFSET);
 
-	/* Disable write protection */
-	putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, base + RA_GPT_GTWP_OFFSET);
+	if (enable) {
+		gtcr |= GPT_GTCR_CST;
+	} else {
+		gtcr &= ~GPT_GTCR_CST;
+	}
 
-	/* Update period registers */
-	putreg32(period, base + RA_GPT_GTPR_OFFSET);
-	putreg32(period, base + RA_GPT_GTPBR_OFFSET);
+	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
+	gpt_wp_end(base);
 
-	/* Re-enable write protection */
-	putreg32(GPT_GTWP_PRKEY, base + RA_GPT_GTWP_OFFSET);
-
-	/* Update cached configuration */
-	gpt_config[channel].period = period;
-
+	gpt_state[channel].enabled = enable;
 	return 0;
 }
 
-/**
- * @brief Initialize all GPT timers for ESC control
- *
- * @return 0 on success, negative on error
- */
-int ra8_gpt_timer_init_all(void)
+int gpt_set_pwm_frequency(unsigned channel, unsigned frequency_hz)
 {
-	int ret = 0;
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized || frequency_hz == 0u) {
+		return -EINVAL;
+	}
 
-	/* Initialize all configured PWM channels */
-	for (unsigned i = 0; i < DIRECT_PWM_OUTPUT_CHANNELS; i++) {
-		if (gpt_timer_init_pwm(i, PWM_DEFAULT_FREQUENCY_HZ) != 0) {
-			ret = -1;
-		}
+	uint32_t prescaler_idx = 0;
+	uint32_t period_ticks = 0;
+	int ret = gpt_select_timing(frequency_hz, &prescaler_idx, &period_ticks);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	uint32_t base = gpt_state[channel].base;
+	bool was_enabled = gpt_state[channel].enabled;
+
+	gpt_pwm_enable(channel, false);
+
+	gpt_wp_begin(base);
+	uint32_t gtcr = getreg32(base + RA_GPT_GTCR_OFFSET);
+	gtcr &= ~GPT_GTCR_TPCS_MASK;
+	gtcr |= (prescaler_idx << GPT_GTCR_TPCS_SHIFT);
+	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
+	putreg32(period_ticks, base + RA_GPT_GTPR_OFFSET);
+	putreg32(period_ticks, base + RA_GPT_GTPBR_OFFSET);
+	gpt_wp_end(base);
+
+	gpt_state[channel].prescaler_idx = (uint8_t)prescaler_idx;
+	gpt_state[channel].prescaler_div = kPrescalerDivisors[prescaler_idx];
+	gpt_state[channel].period = period_ticks;
+	gpt_state[channel].frequency_hz = frequency_hz;
+
+	ret = gpt_set_pwm_pulse(channel, gpt_state[channel].last_pulse_us);
+
+	if (was_enabled) {
+		gpt_pwm_enable(channel, true);
 	}
 
 	return ret;
 }
 
-/**
- * @brief Deinitialize GPT timers
- *
- * Stops all GPT timers and marks them as uninitialized.
- * Uses NuttX register definitions from ra_gpt.h
- */
-void ra8_gpt_timer_deinit_all(void)
+int gpt_oneshot_configure(unsigned channel, uint16_t pulse_us)
 {
-	/* Stop all timers */
-	for (unsigned i = 0; i < DIRECT_PWM_OUTPUT_CHANNELS; i++) {
-		if (gpt_config[i].initialized) {
-			uint32_t base = gpt_config[i].base;
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
 
-			/* Disable write protection, stop timer, re-enable protection */
-			putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, base + RA_GPT_GTWP_OFFSET);
-			putreg32(0, base + RA_GPT_GTCR_OFFSET);
-			putreg32(GPT_GTWP_PRKEY, base + RA_GPT_GTWP_OFFSET);
+	uint32_t base = gpt_state[channel].base;
 
-			gpt_config[i].initialized = false;
+	gpt_pwm_enable(channel, false);
+
+	gpt_wp_begin(base);
+	uint32_t gtcr = getreg32(base + RA_GPT_GTCR_OFFSET);
+	gtcr &= ~GPT_GTCR_MD_MASK;
+	gtcr |= GPT_GTCR_MD_ONE_SHOT_PULSE;
+	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
+	gpt_wp_end(base);
+
+	return gpt_set_pwm_pulse(channel, pulse_us);
+}
+
+int gpt_oneshot_trigger(unsigned channel)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
+
+	uint32_t base = gpt_state[channel].base;
+
+	gpt_wp_begin(base);
+	putreg32((1u << gpt_state[channel].gpt_channel), base + RA_GPT_GTCLR_OFFSET);
+	gpt_wp_end(base);
+
+	return gpt_pwm_enable(channel, true);
+}
+
+int gpt_configure_input_capture(unsigned channel, bool rising_edge, bool falling_edge)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
+
+	(void)rising_edge;
+	(void)falling_edge;
+
+	return -ENOTSUP;
+}
+
+uint32_t gpt_read_capture(unsigned channel)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return 0;
+	}
+
+	return getreg32(gpt_state[channel].base + RA_GPT_GTCCRA_OFFSET);
+}
+
+int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool overflow)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
+
+	uint32_t mask = 0;
+
+	if (compare_a) {
+		mask |= GPT_GTINTAD_GTINTA;
+	}
+
+	if (compare_b) {
+		mask |= GPT_GTINTAD_GTINTB;
+	}
+
+	if (overflow) {
+		mask |= GPT_GTINTAD_GTINTV;
+	}
+
+	putreg32(mask, gpt_state[channel].base + RA_GPT_GTINTAD_OFFSET);
+	return 0;
+}
+
+int gpt_disable_interrupts(unsigned channel)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
+
+	putreg32(0, gpt_state[channel].base + RA_GPT_GTINTAD_OFFSET);
+	return 0;
+}
+
+uint32_t gpt_read_status(unsigned channel)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return 0;
+	}
+
+	return getreg32(gpt_state[channel].base + RA_GPT_GTST_OFFSET);
+}
+
+int gpt_clear_status(unsigned channel, uint32_t flags)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
+
+	uint32_t base = gpt_state[channel].base;
+	uint32_t current = getreg32(base + RA_GPT_GTST_OFFSET);
+	current &= ~flags;
+	putreg32(current, base + RA_GPT_GTST_OFFSET);
+
+	return 0;
+}
+
+int ra8_gpt_timer_init_all(void)
+{
+	int status = 0;
+
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (timer_io_channels[channel].gpio_out == 0) {
+			continue;
+		}
+
+		if (gpt_timer_init_pwm(channel, PWM_DEFAULT_FREQUENCY_HZ) != 0) {
+			status = -1;
 		}
 	}
+
+	return status;
+}
+
+void ra8_gpt_timer_deinit_all(void)
+{
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (!gpt_state[channel].initialized) {
+			continue;
+		}
+
+		uint32_t base = gpt_state[channel].base;
+
+		gpt_wp_begin(base);
+		putreg32(getreg32(base + RA_GPT_GTCR_OFFSET) & ~GPT_GTCR_CST, base + RA_GPT_GTCR_OFFSET);
+		gpt_wp_end(base);
+
+		gpt_state[channel].initialized = false;
+		gpt_state[channel].enabled = false;
+	}
+}
+
+int ra8_gpt_timer_isr(unsigned channel, void *context)
+{
+	//int status = 0;
+
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return -EINVAL;
+	}
+
+	uint32_t flags = px4_enter_critical_section();
+
+	uint32_t masks = getreg32(gpt_state[channel].base + RA_GPT_GTINTAD_OFFSET);
+	if (masks != 0) {
+		for (unsigned idx = 0; idx < MAX_TIMER_IO_CHANNELS; idx++) {
+			if (masks & (1 << idx)) {
+				if (gpt_state[idx].enabled) {
+					gpt_pwm_enable(idx, false);
+				}
+			}
+		}
+
+		px4_leave_critical_section(flags);
+	}
+
+	return 0;
 }

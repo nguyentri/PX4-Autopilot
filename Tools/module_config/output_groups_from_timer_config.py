@@ -63,9 +63,49 @@ def imxrt_is_dshot(line):
 
     return False
 
+def parse_alias_array(timer_config, array_type, extract_fn):
+    alias_map = {}
+    pattern = re.compile(r'{}\s+([A-Za-z0-9_]+)\s*\[[^\]]*\]\s*=\s*{{'.format(array_type))
+    search_pos = 0
+
+    while True:
+        match = pattern.search(timer_config, search_pos)
+        if not match:
+            break
+
+        name = match.group(1)
+        remainder = timer_config[match.start():]
+        open_idx, close_idx = find_matching_brackets(('{', '}'), remainder, False)
+        block = remainder[open_idx:close_idx]
+
+        alias_entries = []
+
+        for line in block.splitlines():
+            line = line.strip()
+            if len(line) == 0 or line.startswith('//'):
+                continue
+
+            timer, timer_type = extract_fn(line)
+            if timer:
+                alias_entries.append({'timer': timer, 'timer_type': timer_type, 'line': line})
+
+        if alias_entries:
+            alias_map[name] = alias_entries
+
+        search_pos = match.start() + close_idx
+
+    return alias_map
+
+
 def get_timer_groups(timer_config_file, verbose=False):
     with open(timer_config_file, 'r') as f:
-        timer_config = f.read()
+        full_config = f.read()
+
+    timer_aliases = parse_alias_array(full_config, r'(?:constexpr\s+)?io_timers_t', extract_timer)
+    channel_aliases = parse_alias_array(full_config, r'(?:constexpr\s+)?timer_io_channels_t',
+                                        lambda line: (extract_timer_from_channel(line, []), 'generic'))
+
+    timer_config = full_config
 
     # timers
     dshot_support = {str(i): False for i in range(16)}
@@ -95,6 +135,19 @@ def get_timer_groups(timer_config_file, verbose=False):
             dshot_support[timer] = 'DMA' in line
             timers.append(timer)
         else:
+            alias_match = re.search(r'makeTimer\s*\(\s*([A-Za-z0-9_]+)\s*\[(\d+)\]', line)
+            if alias_match:
+                alias_name = alias_match.group(1)
+                alias_index = int(alias_match.group(2))
+                if alias_name in timer_aliases and alias_index < len(timer_aliases[alias_name]):
+                    alias_entry = timer_aliases[alias_name][alias_index]
+                    timer = alias_entry['timer']
+                    timer_type = alias_entry['timer_type']
+                    if verbose: print('alias timer resolved: {:} -> {:}'.format(alias_match.group(0), timer))
+                    dshot_support[timer] = 'DMA' in alias_entry['line']
+                    timers.append(timer)
+                    continue
+
             # Make sure we don't miss anything (e.g. for different syntax) or misparse (e.g. multi-line comments)
             raise Exception('Unparsed timer in line: {:}'.format(line))
 
@@ -124,6 +177,18 @@ def get_timer_groups(timer_config_file, verbose=False):
             channel_types.append('cap' if 'capture' in line.lower() else 'pwm')
             channel_timers.append(timer)
         else:
+            alias_match = re.search(r'makeChannel\s*\(\s*([A-Za-z0-9_]+)\s*\[(\d+)\]', line)
+            if alias_match:
+                alias_name = alias_match.group(1)
+                alias_index = int(alias_match.group(2))
+                if alias_name in channel_aliases and alias_index < len(channel_aliases[alias_name]):
+                    alias_timer = channel_aliases[alias_name][alias_index]['timer']
+                    if alias_timer:
+                        if verbose: print('alias channel resolved: {:} -> {:}'.format(alias_match.group(0), alias_timer))
+                        channel_types.append('cap' if 'capture' in line.lower() else 'pwm')
+                        channel_timers.append(alias_timer)
+                        continue
+
             # Make sure we don't miss anything (e.g. for different syntax) or misparse (e.g. multi-line comments)
             raise Exception('Unparsed channel in line: {:}'.format(line))
 

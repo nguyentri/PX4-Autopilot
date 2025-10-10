@@ -61,7 +61,6 @@ all: ensure_nuttx_ra8_branch px4_sitl_default
 
 # Ensure NuttX submodule uses the NuttX_Px4_RA8 branch
 # This will automatically switch the NuttX submodule to the correct branch
-# for builds. Set SKIP_NUTTX_SWITCH=1 to disable this behavior.
 .PHONY: ensure_nuttx_ra8_branch
 ensure_nuttx_ra8_branch:
 	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."; \
@@ -582,7 +581,6 @@ distclean:
 # WARNING: DO NOT UNCOMMENT THESE LINES - They will reset submodules to default branches
 # and potentially lose custom branch configurations (like NuttX_Px4_RA8)
 # The Makefile now guards destructive operations behind FORCE_SUBMODULE_CLEAN.
-# NuttX submodule switching is enabled by default (set SKIP_NUTTX_SWITCH=1 to disable).
 #@git submodule deinit --force $(SRC_DIR)
 #@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"
 
