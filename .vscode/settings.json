@@ -81,7 +81,10 @@
     "regex": "c",
     "tuple": "c",
     "type_traits": "c",
-    "utility": "c"
+    "utility": "c",
+    "ranges": "c",
+    "mutex": "cpp",
+    "thread": "cpp"
 },
   "editor.insertSpaces": true,
   "editor.tabSize": 4,

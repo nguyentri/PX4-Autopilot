@@ -23,19 +23,19 @@
     <hardware>
         <!-- Serial Ports -->
         <serial_ports>
-            <port name="TELEM1" device="/dev/ttyS0" connector="Expansion">
+            <port name="TELEM1" device="/dev/ttyS1" connector="Expansion">
                 <description>Primary MAVLink telemetry - SCI0</description>
                 <pins>P609 (RX), P610 (TX)</pins>
                 <baudrate_default>57600</baudrate_default>
                 <flow_control>false</flow_control>
             </port>
-            <port name="DEBUG" device="/dev/ttyS2" connector="Internal">
+            <port name="DEBUG" device="/dev/ttyS0" connector="Internal">
                 <description>Debug console port (NSH) - SCI2</description>
                 <pins>P802 (RX), P801 (TX)</pins>
                 <baudrate_default>115200</baudrate_default>
                 <flow_control>false</flow_control>
             </port>
-            <port name="TELEM2" device="/dev/ttyS3" connector="Arduino-D0/D1">
+            <port name="TELEM2" device="/dev/ttyS2" connector="Arduino-D0/D1">
                 <description>Secondary telemetry/RC input (SBUS) - SCI3</description>
                 <pins>P309 (RX), P310 (TX)</pins>
                 <baudrate_default>100000</baudrate_default>
@@ -55,7 +55,7 @@
 
         <!-- RC Input -->
         <rc_input>
-            <port name="RC_IN" device="/dev/ttyS3" protocol="SBUS">
+            <port name="RC_IN" device="/dev/ttyS2" protocol="SBUS">
                 <description>RC receiver input (SBUS) - SCI3</description>
                 <pins>P309 (RX), P310 (TX)</pins>
                 <baudrate>100000</baudrate>

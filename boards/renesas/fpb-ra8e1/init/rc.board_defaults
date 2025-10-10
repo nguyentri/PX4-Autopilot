@@ -51,7 +51,7 @@ param set-default SER_RC_PROTO 1
 # MAVLink configuration
 param set-default MAV_0_CONFIG 101  # TELEM1
 param set-default MAV_0_MODE 2      # Onboard
-param set-default MAV_0_RATE 40000  # 40kBaud
+param set-default MAV_0_RATE 57600  # 57600 baud (QGroundControl standard)
 param set-default MAV_0_FORWARD 1   # Enable forwarding
 
 # Sensor configuration - disable external I2C probing

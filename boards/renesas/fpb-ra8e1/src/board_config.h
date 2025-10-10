@@ -165,12 +165,12 @@
 #define BOARD_BATTERY1_A_PER_V  (15.391030303f) /* Current sense ratio */
 
 /* RC Input Configuration */
-#define RC_SERIAL_PORT          "/dev/ttyS3"    /* UART for RC input */
+#define RC_SERIAL_PORT          "/dev/ttyS2"    /* UART for RC input */
 #define BOARD_HAS_RC_INPUT      1
 
 /* Telemetry Configuration */
-#define BOARD_TELEM1_DEV        "/dev/ttyS0"    /* Primary telemetry */
-#define BOARD_TELEM2_DEV        "/dev/ttyS3"    /* Secondary telemetry */
+#define BOARD_TELEM1_DEV        "/dev/ttyS1"    /* Primary telemetry */
+#define BOARD_TELEM2_DEV        "/dev/ttyS2"    /* Secondary telemetry */
 
 /* Timer Configuration */
 #define BOARD_DSHOT_MOTOR_ASSIGNMENT {0, 1, 2, 3} /* Motor assignment for DShot */
@@ -243,6 +243,7 @@
 
 /* Hardfault logging path */
 #define HARDFAULT_ULOG_PATH      "/fs/microsd/fault.log"
+#define HARDFAULT_MAX_ULOG_FILE_LEN 64  /* Maximum ulog file path length */
 
 /* Default Sensor Orientation */
 #define BOARD_ROTATION_DEFAULT  ROTATION_NONE
@@ -281,7 +282,7 @@
 #define BOARD_BATTERY1_A_PER_V          (15.391030303f)
 
 /* This board provides a DMA pool and APIs */
-#define BOARD_DMA_ALLOC_POOL_SIZE       5120
+/* #define BOARD_DMA_ALLOC_POOL_SIZE       5120 */  /* Disabled - CONFIG_GRAN not enabled */
 
 /* This board provides the board_on_reset interface */
 #define BOARD_HAS_ON_RESET              1

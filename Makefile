@@ -539,15 +539,16 @@ validate_module_configs:
 # --------------------------------------------------------------------
 .PHONY: clean submodulesclean submodulesupdate submodulesupdate_safe distclean
 
-clean:
-	@[ ! -d "$(SRC_DIR)/build" ] || find "$(SRC_DIR)/build" -mindepth 1 -maxdepth 1 -type d -exec sh -c "echo {}; cmake --build {} -- clean || rm -rf {}" \; # use generated build system to clean, wipe build directory if it fails
-	@# By default do NOT run destructive cleaning on submodules. Set FORCE_SUBMODULE_CLEAN=1 to enable full submodule clean.
-	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
-		git submodule foreach git clean -dX --force; \
-		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
-	else \
-		echo "Skipping destructive submodule cleaning (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
-	fi
+clean: distclean
+# use distrclean to wipe the build directory only
+#	@[ ! -d "$(SRC_DIR)/build" ] || find "$(SRC_DIR)/build" -mindepth 1 -maxdepth 1 -type d -exec sh -c "echo {}; cmake --build {} -- clean || rm -rf {}" \; # use generated build system to clean, wipe build directory if it fails
+#	@# By default do NOT run destructive cleaning on submodules. Set FORCE_SUBMODULE_CLEAN=1 to enable full submodule clean.
+#	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
+#		git submodule foreach git clean -dX --force; \
+#		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
+#	else \
+#		echo "Skipping destructive submodule cleaning (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
+#	fi
 
 submodulesclean:
 	@# By default do NOT run destructive cleaning on submodules. Use FORCE_SUBMODULE_CLEAN=1 to enable.
