@@ -49,54 +49,6 @@ extern "C" {
     extern struct spi_dev_s *ra_spibus_initialize(int bus);
 }
 
-/************************************************************************************
- * Name: ra_spi0select and ra_spi0status
- *
- * Description:
- *   Called by RA SPI driver on bus 0.
- *
- ************************************************************************************/
-#ifdef CONFIG_RA_SPI0
-__EXPORT void ra_spi0select(struct spi_dev_s *dev, uint32_t devid, bool selected)
-{
-	// CS handling will be done by board-specific code
-	(void)dev;
-	(void)devid;
-	(void)selected;
-}
-
-__EXPORT uint8_t ra_spi0status(struct spi_dev_s *dev, uint32_t devid)
-{
-	(void)dev;
-	(void)devid;
-	return SPI_STATUS_PRESENT;
-}
-#endif // CONFIG_RA_SPI0
-
-/************************************************************************************
- * Name: ra_spi1select and ra_spi1status
- *
- * Description:
- *   Called by RA SPI driver on bus 1.
- *
- ************************************************************************************/
-#ifdef CONFIG_RA_SPI1
-__EXPORT void ra_spi1select(struct spi_dev_s *dev, uint32_t devid, bool selected)
-{
-	// CS handling will be done by board-specific code
-	(void)dev;
-	(void)devid;
-	(void)selected;
-}
-
-__EXPORT uint8_t ra_spi1status(struct spi_dev_s *dev, uint32_t devid)
-{
-	(void)dev;
-	(void)devid;
-	return SPI_STATUS_PRESENT;
-}
-#endif // CONFIG_RA_SPI1
-
 /* PX4 SPI bus initialization */
 extern "C" struct spi_dev_s *px4_spibus_initialize(int bus)
 {
