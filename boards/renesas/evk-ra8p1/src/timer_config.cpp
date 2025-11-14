@@ -115,13 +115,13 @@ const io_timers_t io_timers[MAX_IO_TIMERS] = {
 // Export timer channel configurations with GPIO mappings
 // GPIO_TIMx_CH1OUT macros are defined in board_config.h and map to GPTxA pins
 const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM3_CH1OUT),  // Motor 1: P300 (GPIO_GTIOC3A_1)
-        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM0_CH1OUT),  // Motor 2: P415 (GPIO_GTIOC0A_3)
-        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM2_CH1OUT),  // Motor 3: P113 (GPIO_GTIOC2A_2)
-        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM4_CH1OUT),  // Motor 4: P302 (GPIO_GTIOC4A_2)
+        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM0_CH1OUT),  // Motor 1: P300 (GPIO_GTIOC3A_1)
+        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM10_CH1OUT),  // Motor 2: P415 (GPIO_GTIOC0A_3)
+        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM11_CH1OUT),  // Motor 3: P113 (GPIO_GTIOC2A_2)
+        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM12_CH1OUT),  // Motor 4: P302 (GPIO_GTIOC4A_2)
 };
 
-void fpb_ra8e1_timer_initialize()
+void evk_ra8p1_timer_initialize()
 {
         hrt_init();
         io_timer_init();

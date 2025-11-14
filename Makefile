@@ -61,18 +61,18 @@ all: ensure_nuttx_ra8p1_branch px4_sitl_default
 
 # Ensure NuttX submodule uses the nuttx ra8p1 branch
 # This will automatically switch the NuttX submodule to the correct branch
-.PHONY: ensure_nuttx_ra8p1_branch
-ensure_nuttx_ra8p1_branch:
-	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8_Refactoring branch..."; \
-	cd platforms/nuttx/NuttX/nuttx && \
-	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8_Refactoring" ]; then \
-		echo "Switching NuttX submodule to NuttX_Px4_RA8_Refactoring branch..."; \
-		git fetch origin && \
-		git checkout NuttX_Px4_RA8_Refactoring && \
-		git pull; \
-	else \
-		echo "NuttX submodule already on NuttX_Px4_RA8_Refactoring branch"; \
-	fi
+#.PHONY: ensure_nuttx_ra8p1_branch
+#ensure_nuttx_ra8p1_branch:
+#	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8_Refactoring branch..."; \
+#	cd platforms/nuttx/NuttX/nuttx && \
+#	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8_Refactoring" ]; then \
+#		echo "Switching NuttX submodule to NuttX_Px4_RA8_Refactoring branch..."; \
+#		git fetch origin && \
+#		git checkout NuttX_Px4_RA8_Refactoring && \
+#		git pull; \
+#	else \
+#		echo "NuttX submodule already on NuttX_Px4_RA8_Refactoring branch"; \
+#	fi
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )

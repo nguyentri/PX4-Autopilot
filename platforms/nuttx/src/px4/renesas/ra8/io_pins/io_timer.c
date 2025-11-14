@@ -47,8 +47,7 @@
 #include "board_config.h"
 
 /* Include GPT hardware definitions */
-#include "hardware/ra_gpt.h"
-#include "hardware/ra8e1/ra8e1_memorymap.h"
+#include "hardware/ra_memorymap.h"
 
 /* Include timer configuration structures - this will use BOARD_NUM_IO_TIMERS for MAX_IO_TIMERS */
 #include "../include/px4_arch/io_timer.h"

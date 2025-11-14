@@ -109,11 +109,11 @@
  * - CS1:  P402 (Pmod1 RESET) - BMP388 (repurposed GPIO)
  * - DRDY: P006 (Pmod1 IRQ)   - ICM20948 Data Ready
  */
-#define GPIO_SPI1_SCK         GPIO_RSPCKA_C_1          /* P803 - SPI1 Clock */
-#define GPIO_SPI1_MOSI        GPIO_MOSI2_A_1           /* P801 - SPI1 MOSI */
-#define GPIO_SPI1_MISO        GPIO_MISO2_A_1           /* P802 - SPI1 MISO */
-#define GPIO_SPI1_CS0         GPIO_SSL2_A_1            /* P804 - ICM20948 CS (active low) */
-#define GPIO_SPI1_CS1         GPIO_P402_OUTPUT_HIGH    /* P402 - BMP388 CS (active low) */
+//#define GPIO_SPI1_SCK         GPIO_RSPCKA_C_1          /* P803 - SPI1 Clock */
+//#define GPIO_SPI1_MOSI        GPIO_MOSI2_A_1           /* P801 - SPI1 MOSI */
+//#define GPIO_SPI1_MISO        GPIO_MISO2_A_1           /* P802 - SPI1 MISO */
+//#define GPIO_SPI1_CS0         GPIO_SSL2_A_1            /* P804 - ICM20948 CS (active low) */
+//#define GPIO_SPI1_CS1         GPIO_P402_OUTPUT_HIGH    /* P402 - BMP388 CS (active low) */
 
 /* IMU Data Ready Pin - P006 (Pmod1 IRQ pin)
  * The ICM20948 DRDY signal is active HIGH and indicates when new sensor data is ready.
@@ -126,7 +126,7 @@
  * - Driver: ICM20948.cpp configures this via px4_arch_gpiosetevent()
  * Note: P006 doesn't have a predefined IRQ macro in ra8p1_pinmap.h, so we construct it manually
  */
-#define GPIO_SPI1_IMU_DRDY    (gpio_pinset_t)(PORT0 | PIN6 | MODE_INPUT | PFS_ISEL_IRQ11)
+//#define GPIO_SPI1_IMU_DRDY    (gpio_pinset_t)(PORT0 | PIN6 | MODE_INPUT | PFS_ISEL_IRQ11)
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1

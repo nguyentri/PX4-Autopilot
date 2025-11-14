@@ -49,7 +49,7 @@ struct px4_i2c_bus_t {
 #define I2C_BUS_MAX_BUS_ITEMS 1
 
 // Define the I2C bus array that the linker is looking for
-// For FPB-RA8E1, we have 1 I2C bus configured as internal
+// For EVK-RA8P1, we have 1 I2C bus configured as internal
 const px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
 	{
 		.bus = 1,

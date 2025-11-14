@@ -53,9 +53,9 @@
 
 #include "../include/px4_arch/io_timer.h"
 
-#include "hardware/ra_gpt.h"
-#include "hardware/ra_mstp.h"
-#include "hardware/ra8e1/ra8e1_memorymap.h"
+#include "ra_gpt.h"
+#include "ra_mstp.h"
+#include "hardware/ra_memorymap.h"
 #include "arm_internal.h"
 
 #include <board_config.h>
@@ -111,17 +111,17 @@ static gpt_channel_state_t gpt_state[MAX_TIMER_IO_CHANNELS];
 
 static inline void gpt_wp_begin(uint32_t base)
 {
-	putreg32(GPT_GTWP_PRKEY, base + RA_GPT_GTWP_OFFSET);
+	putreg32(GPT_GTWP_PRKEY, base + R_GPT32_GTWP_OFFSET);
 }
 
 static inline void gpt_wp_end(uint32_t base)
 {
-	putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP | GPT_GTWP_CMNWP, base + RA_GPT_GTWP_OFFSET);
+	putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP | GPT_GTWP_CMNWP, base + R_GPT32_GTWP_OFFSET);
 }
 
 static inline uint32_t gpt_base_address(uint8_t gpt_channel)
 {
-	return RA_GPT_BASE(gpt_channel);
+	return R_GPT_CH_BASE(gpt_channel);
 }
 
 static int gpt_enable_clock(uint8_t gpt_channel)
@@ -220,15 +220,15 @@ static int gpt_timer_init_pwm(unsigned channel, unsigned frequency_hz)
 	}
 
 	gpt_wp_begin(base);
-	putreg32(0, base + RA_GPT_GTCR_OFFSET);
-	putreg32(GPT_GTCR_MD_SAW_WAVE_UP | (prescaler_idx << GPT_GTCR_TPCS_SHIFT), base + RA_GPT_GTCR_OFFSET);
-	putreg32(GPT_GTUDDTYC_UD, base + RA_GPT_GTUDDTYC_OFFSET);
-	putreg32(GPT_GTIOR_GTIOA_INITIAL_LOW, base + RA_GPT_GTIOR_OFFSET);
-	putreg32(period_ticks, base + RA_GPT_GTPR_OFFSET);
-	putreg32(period_ticks, base + RA_GPT_GTPBR_OFFSET);
-	putreg32((uint32_t)initial_ticks, base + RA_GPT_GTCCRA_OFFSET);
-	putreg32(0, base + RA_GPT_GTCNT_OFFSET);
-	putreg32(getreg32(base + RA_GPT_GTCR_OFFSET) | GPT_GTCR_CST, base + RA_GPT_GTCR_OFFSET);
+	putreg32(0, base + R_GPT32_GTCR_OFFSET);
+	putreg32(GPT_GTCR_MD_SAW_WAVE_UP | (prescaler_idx << GPT_GTCR_TPCS_SHIFT), base + R_GPT32_GTCR_OFFSET);
+	putreg32(R_GPT_GTUDDTYC_UD, base + R_GPT32_GTUDDTYC_OFFSET);
+	putreg32(GPT_GTIOR_GTIOA_INITIAL_LOW, base + R_GPT32_GTIOR_OFFSET);
+	putreg32(period_ticks, base + R_GPT32_GTPR_OFFSET);
+	putreg32(period_ticks, base + R_GPT32_GTPBR_OFFSET);
+	putreg32((uint32_t)initial_ticks, base + R_GPT32_GTCCRA_OFFSET);
+	putreg32(0, base + R_GPT32_GTCNT_OFFSET);
+	putreg32(getreg32(base + R_GPT32_GTCR_OFFSET) | GPT_GTCR_CST, base + R_GPT32_GTCR_OFFSET);
 	gpt_wp_end(base);
 
 	gpt_state[channel] = (gpt_channel_state_t) {
@@ -268,7 +268,7 @@ int gpt_set_pwm_pulse(unsigned channel, uint16_t pulse_us)
 	}
 
 	gpt_wp_begin(base);
-	putreg32((uint32_t)ticks, base + RA_GPT_GTCCRA_OFFSET);
+	putreg32((uint32_t)ticks, base + R_GPT32_GTCCRA_OFFSET);
 	gpt_wp_end(base);
 
 	gpt_state[channel].last_pulse_us = pulse_us;
@@ -281,7 +281,7 @@ uint16_t gpt_get_pwm_pulse(unsigned channel)
 		return 0;
 	}
 
-	uint32_t ccr = getreg32(gpt_state[channel].base + RA_GPT_GTCCRA_OFFSET);
+	uint32_t ccr = getreg32(gpt_state[channel].base + R_GPT32_GTCCRA_OFFSET);
 	uint32_t timer_clk = BOARD_PCLKD_FREQUENCY / gpt_state[channel].prescaler_div;
 
 	return (uint16_t)((ccr * 1000000u) / timer_clk);
@@ -296,7 +296,7 @@ int gpt_pwm_enable(unsigned channel, bool enable)
 	uint32_t base = gpt_state[channel].base;
 
 	gpt_wp_begin(base);
-	uint32_t gtcr = getreg32(base + RA_GPT_GTCR_OFFSET);
+	uint32_t gtcr = getreg32(base + R_GPT32_GTCR_OFFSET);
 
 	if (enable) {
 		gtcr |= GPT_GTCR_CST;
@@ -304,7 +304,7 @@ int gpt_pwm_enable(unsigned channel, bool enable)
 		gtcr &= ~GPT_GTCR_CST;
 	}
 
-	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
+	putreg32(gtcr, base + R_GPT32_GTCR_OFFSET);
 	gpt_wp_end(base);
 
 	gpt_state[channel].enabled = enable;
@@ -331,12 +331,12 @@ int gpt_set_pwm_frequency(unsigned channel, unsigned frequency_hz)
 	gpt_pwm_enable(channel, false);
 
 	gpt_wp_begin(base);
-	uint32_t gtcr = getreg32(base + RA_GPT_GTCR_OFFSET);
+	uint32_t gtcr = getreg32(base + R_GPT32_GTCR_OFFSET);
 	gtcr &= ~GPT_GTCR_TPCS_MASK;
 	gtcr |= (prescaler_idx << GPT_GTCR_TPCS_SHIFT);
-	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
-	putreg32(period_ticks, base + RA_GPT_GTPR_OFFSET);
-	putreg32(period_ticks, base + RA_GPT_GTPBR_OFFSET);
+	putreg32(gtcr, base + R_GPT32_GTCR_OFFSET);
+	putreg32(period_ticks, base + R_GPT32_GTPR_OFFSET);
+	putreg32(period_ticks, base + R_GPT32_GTPBR_OFFSET);
 	gpt_wp_end(base);
 
 	gpt_state[channel].prescaler_idx = (uint8_t)prescaler_idx;
@@ -364,10 +364,10 @@ int gpt_oneshot_configure(unsigned channel, uint16_t pulse_us)
 	gpt_pwm_enable(channel, false);
 
 	gpt_wp_begin(base);
-	uint32_t gtcr = getreg32(base + RA_GPT_GTCR_OFFSET);
+	uint32_t gtcr = getreg32(base + R_GPT32_GTCR_OFFSET);
 	gtcr &= ~GPT_GTCR_MD_MASK;
-	gtcr |= GPT_GTCR_MD_ONE_SHOT_PULSE;
-	putreg32(gtcr, base + RA_GPT_GTCR_OFFSET);
+	gtcr |= RA_GPT_TIMER_ONE_SHOT;
+	putreg32(gtcr, base + R_GPT32_GTCR_OFFSET);
 	gpt_wp_end(base);
 
 	return gpt_set_pwm_pulse(channel, pulse_us);
@@ -382,7 +382,7 @@ int gpt_oneshot_trigger(unsigned channel)
 	uint32_t base = gpt_state[channel].base;
 
 	gpt_wp_begin(base);
-	putreg32((1u << gpt_state[channel].gpt_channel), base + RA_GPT_GTCLR_OFFSET);
+	putreg32((1u << gpt_state[channel].gpt_channel), base + R_GPT32_GTCLR_OFFSET);
 	gpt_wp_end(base);
 
 	return gpt_pwm_enable(channel, true);
@@ -406,7 +406,7 @@ uint32_t gpt_read_capture(unsigned channel)
 		return 0;
 	}
 
-	return getreg32(gpt_state[channel].base + RA_GPT_GTCCRA_OFFSET);
+	return getreg32(gpt_state[channel].base + R_GPT32_GTCCRA_OFFSET);
 }
 
 int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool overflow)
@@ -418,18 +418,18 @@ int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool
 	uint32_t mask = 0;
 
 	if (compare_a) {
-		mask |= GPT_GTINTAD_GTINTA;
+		mask |= R_GPT_GTINTAD_GTINTA;
 	}
 
 	if (compare_b) {
-		mask |= GPT_GTINTAD_GTINTB;
+		mask |= R_GPT_GTINTAD_GTINTA;
 	}
 
 	if (overflow) {
-		mask |= GPT_GTINTAD_GTINTV;
+		mask |= R_GPT_GTINTAD_GTINTB;
 	}
 
-	putreg32(mask, gpt_state[channel].base + RA_GPT_GTINTAD_OFFSET);
+	putreg32(mask, gpt_state[channel].base + R_GPT32_GTINTAD_OFFSET);
 	return 0;
 }
 
@@ -439,7 +439,7 @@ int gpt_disable_interrupts(unsigned channel)
 		return -EINVAL;
 	}
 
-	putreg32(0, gpt_state[channel].base + RA_GPT_GTINTAD_OFFSET);
+	putreg32(0, gpt_state[channel].base + R_GPT32_GTINTAD_OFFSET);
 	return 0;
 }
 
@@ -449,7 +449,7 @@ uint32_t gpt_read_status(unsigned channel)
 		return 0;
 	}
 
-	return getreg32(gpt_state[channel].base + RA_GPT_GTST_OFFSET);
+	return getreg32(gpt_state[channel].base + R_GPT32_GTST_OFFSET);
 }
 
 int gpt_clear_status(unsigned channel, uint32_t flags)
@@ -459,9 +459,9 @@ int gpt_clear_status(unsigned channel, uint32_t flags)
 	}
 
 	uint32_t base = gpt_state[channel].base;
-	uint32_t current = getreg32(base + RA_GPT_GTST_OFFSET);
+	uint32_t current = getreg32(base + R_GPT32_GTST_OFFSET);
 	current &= ~flags;
-	putreg32(current, base + RA_GPT_GTST_OFFSET);
+	putreg32(current, base + R_GPT32_GTST_OFFSET);
 
 	return 0;
 }
@@ -493,7 +493,7 @@ void ra8_gpt_timer_deinit_all(void)
 		uint32_t base = gpt_state[channel].base;
 
 		gpt_wp_begin(base);
-		putreg32(getreg32(base + RA_GPT_GTCR_OFFSET) & ~GPT_GTCR_CST, base + RA_GPT_GTCR_OFFSET);
+		putreg32(getreg32(base + R_GPT32_GTCR_OFFSET) & ~GPT_GTCR_CST, base + R_GPT32_GTCR_OFFSET);
 		gpt_wp_end(base);
 
 		gpt_state[channel].initialized = false;
@@ -511,7 +511,7 @@ int ra8_gpt_timer_isr(unsigned channel, void *context)
 
 	uint32_t flags = px4_enter_critical_section();
 
-	uint32_t masks = getreg32(gpt_state[channel].base + RA_GPT_GTINTAD_OFFSET);
+	uint32_t masks = getreg32(gpt_state[channel].base + R_GPT32_GTINTAD_OFFSET);
 	if (masks != 0) {
 		for (unsigned idx = 0; idx < MAX_TIMER_IO_CHANNELS; idx++) {
 			if (masks & (1 << idx)) {

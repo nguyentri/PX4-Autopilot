@@ -138,12 +138,12 @@ extern "C" {
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P804) */
             SPI_DEBUG("  -> Controlling CS0 (P804) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
-            ra_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */
+            //ra_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */ must move GPIO configuration out of driver
             break;
 
         case DRV_BARO_DEVTYPE_BMP388: /* Second SPI device - BMP388 on CS1 (P402) */
             SPI_DEBUG("  -> Controlling CS1 (P402) for BMP388 %s", selected ? "SELECTED" : "DESELECTED");
-            ra_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */
+            // ra_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */ must move GPIO configuration out of driver
             break;
 
         default:
@@ -234,7 +234,7 @@ extern "C" {
             .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) */
             .cur_bits = 8,                         /* 8-bit transfers */
             .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - ICM20948 datasheet */
-            .cs_gpio = GPIO_SPI1_CS0,              /* P408 - CS pin */
+            .cs_gpio = 0,              /* T.B.D */
             .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
             .ssl_select = 0xFF,                    /* Use GPIO */
             .setup_delay = 2,                      /* 2 RSPCK cycles CS setup delay */
@@ -250,7 +250,7 @@ extern "C" {
             .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) - BMP388 datasheet */
             .cur_bits = 8,                         /* 8-bit transfers */
             .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - BMP388 datasheet */
-            .cs_gpio = GPIO_SPI1_CS1,              /* P407 - CS pin */
+            .cs_gpio = 0,               /* T.B.D */
             .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
             .ssl_select = 0xFF,                    /* Use GPIO */
             .setup_delay = 1,                      /* 1 RSPCK cycle CS setup (datasheet: min 6ns @ 5MHz = 200ns period) */

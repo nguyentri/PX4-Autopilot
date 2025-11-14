@@ -46,6 +46,7 @@
         "platforms/nuttx/NuttX/nuttx/arch/arm/include/ra8",
         "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8",
         "platforms/nuttx/NuttX/nuttx/boards/arm/ra8/fpb-ra8e1",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/ra8/fpb-ra8p1",
     ],
   "C_Cpp_Runner.excludeSearch": [
     "**/build",
@@ -84,7 +85,8 @@
     "utility": "c",
     "ranges": "c",
     "mutex": "cpp",
-    "thread": "cpp"
+    "thread": "cpp",
+    "random": "c"
 },
   "editor.insertSpaces": true,
   "editor.tabSize": 4,
@@ -116,11 +118,11 @@
     "MSYS": "winsymlinks:nativestrict"
   },
     "terminal.integrated.profiles.linux": {
-    "J-Link RTT": {
-    "path": "/home/a5094159/opt/SEGGER/JLink_Linux_V856a_x86_64/JLinkRTTClient",
-      "args": [],
-      "icon": "terminal-cmd"
-    }
-},
-"chat.agent.maxRequests": 1000,
+        "J-Link RTT": {
+            "path": "/opt/JLink_Linux_V876_x86_64/JLinkRTTClientExe",
+            "args": [],
+            "icon": "terminal-cmd"
+        }
+    },
+    "chat.agent.maxRequests": 1000,
 }

@@ -45,7 +45,7 @@
 #include <board_config.h>
 
 /* RA8 specific headers */
-#include "hardware/ra8e1/ra8e1_pinmap.h"
+#include "hardware/ra_pinmap.h"
 #include "ra_gpio.h"
 
 /****************************************************************************

@@ -155,7 +155,15 @@ enum Timer : uint32_t {
 	Timer4,
 	Timer5,
 	Timer6,
-	Timer7
+	Timer7,
+    Timer8,
+    Timer9,
+    Timer10,
+    Timer11,
+    Timer12,
+    Timer13,
+    Timer14,
+    Timer15
 };
 
 enum Channel : uint32_t {
