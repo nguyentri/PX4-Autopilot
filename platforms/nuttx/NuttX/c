@@ -3,5 +3,5 @@ set -e
 
 cd ./nuttx
 make distclean -j$(nproc)
-./tools/configure.sh fpb-ra8e1:spi-loopback
+./tools/configure.sh fpb-ra8p1:nsh-leds
 make -j$(nproc)

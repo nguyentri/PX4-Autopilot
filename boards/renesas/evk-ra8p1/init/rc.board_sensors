@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Renesas FPB-RA8E1 board sensors init
+# Renesas EVK-RA8P1 board sensors init
 #------------------------------------------------------------------------------
 
 # Initial power stabilization delay - wait for sensors to power up
@@ -12,7 +12,7 @@ usleep 100000
 
 # Start IMU on SPI1 - ICM20948 9-axis sensor with integrated magnetometer
 # -s: SPI mode, -b 1: SPI bus 1, -R 0: no rotation, -M 1: enable magnetometer (AK09916)
-# Note: Device will auto-detect on SPI bus 1, CS0 (P408), DRDY on P409
+# Note: Device will auto-detect on SPI bus 1, CS0 (P804), DRDY on P006
 if icm20948 start -s -b 1 -R 0 -M 1
 then
         echo "ICM20948 IMU initialized successfully"

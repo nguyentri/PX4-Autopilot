@@ -34,7 +34,7 @@
 /**
  * @file spi.cpp
  *
- * Board-specific SPI functions.
+ * EVK-RA8P1 Board-specific SPI functions for GY-912 sensor board.
  */
 
 #include <px4_arch/spi_hw_description.h>
@@ -61,24 +61,24 @@
 #define SPI_DEBUG(fmt, ...) syslog(LOG_INFO, "SPI_DBG: " fmt "\n", ##__VA_ARGS__)
 
 // Use predefined GPIO macros from board_config.h for GY-912 SPI pins
-// GPIO_SPI1_CS0 (P408) - ICM20948 CS
-// GPIO_SPI1_CS1 (P407) - BMP388 CS
-// GPIO_SPI1_IMU_DRDY (P409) - ICM20948 Data Ready
+// GPIO_SPI1_CS0 (P804) - ICM20948 CS
+// GPIO_SPI1_CS1 (P402) - BMP388 CS
+// GPIO_SPI1_IMU_DRDY (P006) - ICM20948 Data Ready
 
 // GY-912 10DOF sensor module configuration
 // Contains ICM-20948 (9DOF IMU) and BMP388 (barometric pressure sensor)
 //
-// Hardware connections on FPB-RA8E1:
-// - ICM-20948: CS=P408, DRDY=P409 (9DOF IMU: gyro + accel + mag)
-// - BMP388:    CS=P407            (barometric pressure sensor)
+// Hardware connections on EVK-RA8P1 via Pmod1:
+// - ICM-20948: CS=P804, DRDY=P006 (9DOF IMU: gyro + accel + mag)
+// - BMP388:    CS=P402            (barometric pressure sensor)
 // - SPI Bus:   SPI1 (1MHz default, up to 7MHz for ICM20948, 10MHz for BMP388)
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
         initSPIBus(SPI::Bus::SPI1, {
                 // ICM-20948: 9DOF IMU (gyroscope, accelerometer, magnetometer)
-                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port4, GPIO::Pin8}, SPI::DRDY{GPIO::Port4, GPIO::Pin9}),
+                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port8, GPIO::Pin4}, SPI::DRDY{GPIO::Port0, GPIO::Pin6}),
 
                 // BMP388: Barometric pressure sensor
-                initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin7}),
+                initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin2}),
         }),
 };
 
@@ -136,13 +136,13 @@ extern "C" {
         }
 
         switch (devtype) {
-        case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P408) */
-            SPI_DEBUG("  -> Controlling CS0 (P408) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
+        case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P804) */
+            SPI_DEBUG("  -> Controlling CS0 (P804) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
             ra_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */
             break;
 
-        case DRV_BARO_DEVTYPE_BMP388: /* Second SPI device - BMP388 on CS1 (P407) */
-            SPI_DEBUG("  -> Controlling CS1 (P407) for BMP388 %s", selected ? "SELECTED" : "DESELECTED");
+        case DRV_BARO_DEVTYPE_BMP388: /* Second SPI device - BMP388 on CS1 (P402) */
+            SPI_DEBUG("  -> Controlling CS1 (P402) for BMP388 %s", selected ? "SELECTED" : "DESELECTED");
             ra_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */
             break;
 

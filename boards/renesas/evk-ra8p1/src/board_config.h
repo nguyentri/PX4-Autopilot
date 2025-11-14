@@ -34,7 +34,7 @@
 /**
  * @file board_config.h
  *
- * Renesas FPB-RA8E1 board configuration
+ * Renesas EVK-RA8P1 board configuration
  */
 
 #pragma once
@@ -56,14 +56,14 @@
 
 /* Configuration ************************************************************************************/
 
-/* FPB-RA8E1 GPIOs **********************************************************************************/
+/* EVK-RA8P1 GPIOs **********************************************************************************/
 
 /*
- * FPB-RA8E1 has the following:
- * - Renesas RA8E1 MCU (R7FA8E1AFDCFB)
- * - ARM Cortex-M85 @ 360MHz
- * - 512KB SRAM, 1MB Flash
- * - Custom sensor board GY-912 with ICM-20948 + BMP388
+ * EVK-RA8P1 has the following:
+ * - Renesas RA8P1 MCU (R7FA8P1AHECBD)
+ * - ARM Cortex-M85 @ 480MHz
+ * - 1024KB SRAM, 2MB Flash, 128MB external SDRAM
+ * - Custom sensor board GY-912 with ICM-20948 + BMP388 (via Pmod connector)
  */
 
 
@@ -100,24 +100,33 @@
 #define PX4_SPI_BUS_SENSORS     1       /* SPI1 for all sensors (ICM20948 (including AK09916) + BMP388) */
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
-/* SPI1 - Used for GY-912 sensor board */
-#define GPIO_SPI1_SCK         GPIO_RSPCKB_B_1          /* P412 - SPI1 Clock */
-#define GPIO_SPI1_MOSI        GPIO_MOSIB_B_1           /* P411 - SPI1 MOSI */
-#define GPIO_SPI1_MISO        GPIO_MISOB_B_1           /* P410 - SPI1 MISO */
-#define GPIO_SPI1_CS0         GPIO_P408_OUTPUT_HIGH    /* P408 - ICM20948 CS (active low) */
-#define GPIO_SPI1_CS1         GPIO_P407_OUTPUT_HIGH    /* P407 - BMP388 CS (active low) */
+/* SPI1 - Used for GY-912 sensor board via Pmod1 connector
+ * Pin mapping based on EVK-RA8P1 Pmod1 (SCI2/SPI1):
+ * - SCK:  P803 (Pmod1 pin 4) - RSPCKA_C_1
+ * - MISO: P802 (Pmod1 pin 3) - MISO2_A_1 (shared with RXD2)
+ * - MOSI: P801 (Pmod1 pin 2) - MOSI2_A_1 (shared with TXD2)
+ * - CS0:  P804 (Pmod1 pin 1) - SSL2_A_1 - ICM20948 (including AK09916)
+ * - CS1:  P402 (Pmod1 RESET) - BMP388 (repurposed GPIO)
+ * - DRDY: P006 (Pmod1 IRQ)   - ICM20948 Data Ready
+ */
+#define GPIO_SPI1_SCK         GPIO_RSPCKA_C_1          /* P803 - SPI1 Clock */
+#define GPIO_SPI1_MOSI        GPIO_MOSI2_A_1           /* P801 - SPI1 MOSI */
+#define GPIO_SPI1_MISO        GPIO_MISO2_A_1           /* P802 - SPI1 MISO */
+#define GPIO_SPI1_CS0         GPIO_SSL2_A_1            /* P804 - ICM20948 CS (active low) */
+#define GPIO_SPI1_CS1         GPIO_P402_OUTPUT_HIGH    /* P402 - BMP388 CS (active low) */
 
-/* IMU Data Ready Pin - P409 (configured as external interrupt IRQ6)
+/* IMU Data Ready Pin - P006 (Pmod1 IRQ pin)
  * The ICM20948 DRDY signal is active HIGH and indicates when new sensor data is ready.
- * This pin is connected to IRQ6 which triggers an interrupt on rising edge.
+ * This pin is connected to IRQ11 (with DS capability) which triggers an interrupt on rising edge.
  * The interrupt handler (DataReadyInterruptCallback) schedules FIFO reads for efficient data collection.
- * Configuration verified:
- * - Pin: P409 (GPIO Port 4, Pin 9)
- * - Function: IRQ6 (External Interrupt 6)
+ * Configuration:
+ * - Pin: P006 (GPIO Port 0, Pin 6)
+ * - Function: IRQ11-DS (External Interrupt 11 with Deep Software Standby)
  * - Trigger: Rising edge (ICM20948 DRDY is active high)
  * - Driver: ICM20948.cpp configures this via px4_arch_gpiosetevent()
+ * Note: P006 doesn't have a predefined IRQ macro in ra8p1_pinmap.h, so we construct it manually
  */
-#define GPIO_SPI1_IMU_DRDY      GPIO_IRQ6_P409 /* P409 - ICM20948 Data Ready */
+#define GPIO_SPI1_IMU_DRDY    (gpio_pinset_t)(PORT0 | PIN6 | MODE_INPUT | PFS_ISEL_IRQ11)
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
@@ -128,26 +137,37 @@
 /* Note: SPI_BUS_MAX_DEVICES is defined in px4_platform_common/spi.h (default=6)
  * We only use 2 devices, but the platform array size of 6 is fine - unused slots are empty */
 
-/* PWM/GPT Timer Pin Definitions for ESC Control */
-/* Motor mapping verified from ra8e1_pinmap.h:
- * - Motor 1: P300 (PORT3 | PIN0)  -> GPT3A (GTIOC3A_1)
- * - Motor 2: P415 (PORT4 | PIN15) -> GPT0A (GTIOC0A_3)
- * - Motor 3: P113 (PORT1 | PIN13) -> GPT2A (GTIOC2A_2)
- * - Motor 4: P302 (PORT3 | PIN2)  -> GPT4A (GTIOC4A_2)
+/* PWM/GPT Timer Pin Definitions for ESC Control
+ * Motor mapping for EVK-RA8P1:
+ * Using GPT channels that don't conflict with SDRAM, Ethernet, or USB pins
+ * - Motor 1: P211 (PORT2 | PIN11) -> GPT0A (GTIOC0A_1)
+ * - Motor 2: P109 (PORT1 | PIN9)  -> GPT10A (GTIOC10A_1) - Arduino D9
+ * - Motor 3: P711 (PORT7 | PIN11) -> GPT11A (GTIOC11A_1)
+ * - Motor 4: P708 (PORT7 | PIN8)  -> GPT12A (GTIOC12A_1)
  */
-#define GPIO_TIM3_CH1OUT        GPIO_GTIOC3A_1   /* P300 - GPT3A - Motor 1 */
-#define GPIO_TIM0_CH1OUT        GPIO_GTIOC0A_3   /* P415 - GPT0A - Motor 2 */
-#define GPIO_TIM2_CH1OUT        GPIO_GTIOC2A_2   /* P113 - GPT2A - Motor 3 */
-#define GPIO_TIM4_CH1OUT        GPIO_GTIOC4A_2   /* P302 - GPT4A - Motor 4 */
+#define GPIO_TIM0_CH1OUT        GPIO_GTIOC0A_1    /* P211 - GPT0A - Motor 1 */
+#define GPIO_TIM10_CH1OUT       GPIO_GTIOC10A_1   /* P109 - GPT10A - Motor 2 */
+#define GPIO_TIM11_CH1OUT       GPIO_GTIOC11A_1   /* P711 - GPT11A - Motor 3 */
+#define GPIO_TIM12_CH1OUT       GPIO_GTIOC12A_1   /* P708 - GPT12A - Motor 4 */
 
 /* Define Timer channels for PX4 */
 #define DIRECT_PWM_OUTPUT_CHANNELS  4
 #define DIRECT_INPUT_TIMER_CHANNELS 0
 #define BOARD_NUM_IO_TIMERS         4  /* 4 GPT timers for PWM */
 
-/* LED GPIO Definitions - use ra8e1_pinmap.h per-pin macros */
-#define GPIO_nLED_RED           GPIO_P404_OUTPUT_HIGH  /* P404 - LED1 Status indicator */
-#define GPIO_nLED_GREEN         GPIO_P405_OUTPUT_HIGH  /* P405 - LED2 Armed state indicator */
+/* LED GPIO Definitions - use ra8p1_pinmap.h per-pin macros
+ * EVK-RA8P1 has 3 user LEDs:
+ * - LED1 (Blue):  P600
+ * - LED2 (Green): P303
+ * - LED3 (Red):   PA07
+ */
+#define GPIO_nLED_BLUE          GPIO_P600_OUTPUT_HIGH  /* P600 - LED1 Blue */
+#define GPIO_nLED_GREEN         GPIO_P303_OUTPUT_HIGH  /* P303 - LED2 Green */
+#define GPIO_nLED_RED           GPIO_PA07_OUTPUT_HIGH  /* PA07 - LED3 Red */
+
+/* Map to standard PX4 LED names */
+#define GPIO_nLED_1             GPIO_nLED_BLUE         /* Status indicator */
+#define GPIO_nLED_2             GPIO_nLED_GREEN        /* Armed state indicator */
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS      1
 #define BOARD_OVERLOAD_LED                 0
@@ -367,28 +387,28 @@ __BEGIN_DECLS
  ****************************************************************************************************/
 
 /****************************************************************************************************
- * Name: fpb_ra8e1_boardinitialize
+ * Name: evk_ra8p1_boardinitialize
  *
  * Description:
- *   All RA8E1 architectures must provide the following entry point.  This entry point
+ *   All RA8P1 architectures must provide the following entry point.  This entry point
  *   is called early in the initialization -- after all memory has been configured
  *   and mapped but before any devices have been initialized.
  *
  ****************************************************************************************************/
 
 /* Board initialization function */
-extern void fpb_ra8e1_boardinitialize(void);
+extern void evk_ra8p1_boardinitialize(void);
 
 /* Timer initialization function */
-extern void fpb_ra8e1_timer_initialize(void);
+extern void evk_ra8p1_timer_initialize(void);
 
 /****************************************************************************************************
  * SPI Board Functions
  ****************************************************************************************************/
 
-extern void fpb_ra8e1_spi_cs_select(int devid, bool selected);
-extern uint8_t fpb_ra8e1_spi_cs_read(int devid);
-extern bool fpb_ra8e1_spi_drdy_read(void);
+extern void evk_ra8p1_spi_cs_select(int devid, bool selected);
+extern uint8_t evk_ra8p1_spi_cs_read(int devid);
+extern bool evk_ra8p1_spi_drdy_read(void);
 
 __END_DECLS
 

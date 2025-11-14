@@ -57,21 +57,21 @@ endif
 # in that directory with the target upload.
 
 # explicity set default build target
-all: ensure_nuttx_ra8_branch px4_sitl_default
+all: ensure_nuttx_ra8p1_branch px4_sitl_default
 
-# Ensure NuttX submodule uses the NuttX_Px4_RA8 branch
+# Ensure NuttX submodule uses the nuttx ra8p1 branch
 # This will automatically switch the NuttX submodule to the correct branch
-.PHONY: ensure_nuttx_ra8_branch
-ensure_nuttx_ra8_branch:
-	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8 branch..."; \
+.PHONY: ensure_nuttx_ra8p1_branch
+ensure_nuttx_ra8p1_branch:
+	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8_Refactoring branch..."; \
 	cd platforms/nuttx/NuttX/nuttx && \
-	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8" ]; then \
-		echo "Switching NuttX submodule to NuttX_Px4_RA8 branch..."; \
+	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8_Refactoring" ]; then \
+		echo "Switching NuttX submodule to NuttX_Px4_RA8_Refactoring branch..."; \
 		git fetch origin && \
-		git checkout NuttX_Px4_RA8 && \
+		git checkout NuttX_Px4_RA8_Refactoring && \
 		git pull; \
 	else \
-		echo "NuttX submodule already on NuttX_Px4_RA8 branch"; \
+		echo "NuttX submodule already on NuttX_Px4_RA8_Refactoring branch"; \
 	fi
 
 # define a space character to be able to explicitly find it in strings
@@ -238,12 +238,12 @@ ALL_CONFIG_TARGETS := $(shell find boards -maxdepth 3 -mindepth 3 -name '*.px4bo
 #  Do not put any spaces between function arguments.
 
 # All targets.
-$(ALL_CONFIG_TARGETS): ensure_nuttx_ra8_branch
+$(ALL_CONFIG_TARGETS): ensure_nuttx_ra8p1_branch
 	@$(call cmake-build,$@$(BUILD_DIR_SUFFIX))
 
 # Filter for only default targets to allow omiting the "_default" postfix
 CONFIG_TARGETS_DEFAULT := $(patsubst %_default,%,$(filter %_default,$(ALL_CONFIG_TARGETS)))
-$(CONFIG_TARGETS_DEFAULT): ensure_nuttx_ra8_branch
+$(CONFIG_TARGETS_DEFAULT): ensure_nuttx_ra8p1_branch
 	@$(call cmake-build,$@_default$(BUILD_DIR_SUFFIX))
 
 all_config_targets: $(ALL_CONFIG_TARGETS)
@@ -537,7 +537,7 @@ validate_module_configs:
 
 # Cleanup
 # --------------------------------------------------------------------
-.PHONY: clean submodulesclean submodulesupdate submodulesupdate_safe distclean
+.PHONY: clean  submodulesupdate submodulesupdate_safe distclean
 
 clean: distclean
 # use distrclean to wipe the build directory only
@@ -550,14 +550,14 @@ clean: distclean
 #		echo "Skipping destructive submodule cleaning (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
 #	fi
 
-submodulesclean:
-	@# By default do NOT run destructive cleaning on submodules. Use FORCE_SUBMODULE_CLEAN=1 to enable.
-	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
-		git submodule foreach --quiet --recursive git clean -ff -x -d; \
-		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
-	else \
-		echo "Skipping submodulesclean (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
-	fi
+#submodulesclean:
+#	@# By default do NOT run destructive cleaning on submodules. Use FORCE_SUBMODULE_CLEAN=1 to enable.
+#	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
+#		git submodule foreach --quiet --recursive git clean -ff -x -d; \
+#		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
+#	else \
+#		echo "Skipping submodulesclean (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
+#	fi
 
 submodulesupdate:
 	@# Use --init to initialize submodules without changing branches
@@ -580,7 +580,7 @@ distclean:
 	@rm -rf "$(SRC_DIR)/build"
 
 # WARNING: DO NOT UNCOMMENT THESE LINES - They will reset submodules to default branches
-# and potentially lose custom branch configurations (like NuttX_Px4_RA8)
+# and potentially lose custom branch configurations (like NuttX_Px4_RA8_Refactoring)
 # The Makefile now guards destructive operations behind FORCE_SUBMODULE_CLEAN.
 #@git submodule deinit --force $(SRC_DIR)
 #@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"

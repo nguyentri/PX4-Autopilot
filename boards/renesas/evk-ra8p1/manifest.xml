@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     Board manifest for FPB-RA8E1
+     This file describes the board hardware configuration for QGroundControl and other tools
+-->
+
+<board_manifest version="1.0">
+    <board_info>
+        <name>FPB-RA8E1</name>
+        <vendor>Renesas</vendor>
+        <model>FPB-RA8E1</model>
+        <version>1.0</version>
+        <description>Renesas FPB-RA8E1 Development Board with RA8E1 MCU</description>
+        <cpu>
+            <family>ARM Cortex-M85</family>
+            <model>R7FA8E1AFDCFB</model>
+            <frequency>360000000</frequency>  <!-- 360MHz -->
+            <flash_size>1024000</flash_size>  <!-- 1MB -->
+            <ram_size>512000</ram_size>      <!-- 512KB -->
+        </cpu>
+    </board_info>
+
+    <hardware>
+        <!-- Serial Ports -->
+        <serial_ports>
+            <port name="TELEM1" device="/dev/ttyS1" connector="Expansion">
+                <description>Primary MAVLink telemetry - SCI0</description>
+                <pins>P609 (RX), P610 (TX)</pins>
+                <baudrate_default>57600</baudrate_default>
+                <flow_control>false</flow_control>
+            </port>
+            <port name="DEBUG" device="/dev/ttyS0" connector="Internal">
+                <description>Debug console port (NSH) - SCI2</description>
+                <pins>P802 (RX), P801 (TX)</pins>
+                <baudrate_default>115200</baudrate_default>
+                <flow_control>false</flow_control>
+            </port>
+            <port name="TELEM2" device="/dev/ttyS2" connector="Arduino-D0/D1">
+                <description>Secondary telemetry/RC input (SBUS) - SCI3</description>
+                <pins>P309 (RX), P310 (TX)</pins>
+                <baudrate_default>100000</baudrate_default>
+                <flow_control>false</flow_control>
+            </port>
+        </serial_ports>
+
+        <!-- PWM Outputs -->
+        <pwm_outputs>
+            <group name="MAIN" timer="GPT">
+                <channel number="1" pin="P300" function="Motor1" timer="GPT3A"/>
+                <channel number="2" pin="P415" function="Motor2" timer="GPT0A"/>
+                <channel number="3" pin="P113" function="Motor3" timer="GPT2A"/>
+                <channel number="4" pin="P302" function="Motor4" timer="GPT4A"/>
+            </group>
+        </pwm_outputs>
+
+        <!-- RC Input -->
+        <rc_input>
+            <port name="RC_IN" device="/dev/ttyS2" protocol="SBUS">
+                <description>RC receiver input (SBUS) - SCI3</description>
+                <pins>P309 (RX), P310 (TX)</pins>
+                <baudrate>100000</baudrate>
+            </port>
+        </rc_input>
+
+        <!-- Sensors -->
+        <sensors>
+            <!-- IMU -->
+            <imu name="ICM20948" bus="SPI1" address="0" rotation="0" chip_select="P408">
+                <description>InvenSense ICM-20948 9-DOF IMU</description>
+                <gyroscope enabled="true"/>
+                <accelerometer enabled="true"/>
+                <magnetometer enabled="true"/>
+                <data_ready_pin>P409</data_ready_pin>
+            </imu>
+
+            <!-- Barometer -->
+            <barometer name="BMP388" bus="SPI1" address="1" chip_select="P407">
+                <description>Bosch BMP388 barometric pressure sensor</description>
+            </barometer>
+
+            <!-- External magnetometer option -->
+            <magnetometer name="BMM150" bus="I2C1" address="0x1E">
+                <description>Bosch BMM150 magnetometer</description>
+                <optional>false</optional>
+            </magnetometer>
+        </sensors>
+
+        <!-- LEDs -->
+        <leds>
+            <led name="LED1" color="green" function="status" pin="P404"/>
+            <!-- LED2 (P408) conflicts with SPI CS0 - not available when using sensors -->
+        </leds>
+
+        <!-- User Switch -->
+        <user_switch>
+            <button name="SW1" pin="P009" interrupt="IRQ13" function="user_button"/>
+        </user_switch>
+
+        <!-- Buzzer -->
+        <buzzer name="BUZZER" pin="P303" note="Piezo buzzer control"/>
+
+        <!-- I2C Buses -->
+        <i2c_buses>
+            <bus name="I2C1" device="/dev/i2c-1" connector="Arduino">
+                <description>External I2C bus for expansion - Arduino compatible</description>
+                <pins>P511 (SDA), P512 (SCL)</pins>
+            </bus>
+        </i2c_buses>
+
+        <!-- SPI Buses -->
+        <spi_buses>
+            <bus name="SPI1" device="/dev/spi-1">
+                <description>Primary sensor bus - SPI1</description>
+                <pins>P412 (SCK), P411 (MOSI), P410 (MISO)</pins>
+                <chip_select name="ICM20948" pin="P408"/>
+                <chip_select name="BMP388" pin="P407"/>
+            </bus>
+        </spi_buses>
+
+        <!-- ADC Channels -->
+        <adc>
+            <channel number="0" name="A0" pin="P004" adc_channel="AN000" arduino_pin="A0"/>
+            <channel number="1" name="A1" pin="P003" adc_channel="AN104" arduino_pin="A1"/>
+            <channel number="2" name="A2" pin="P007" adc_channel="AN004" arduino_pin="A2"/>
+            <channel number="3" name="A3" pin="P001" adc_channel="AN101" arduino_pin="A3"/>
+            <channel number="4" name="A4" pin="P014" adc_channel="AN007" arduino_pin="A4"/>
+            <channel number="5" name="A5" pin="P015" adc_channel="AN105" arduino_pin="A5"/>
+        </adc>
+
+        <!-- Additional GPIO Pins from Board.h -->
+        <gpio_pins>
+            <pin name="IMU_DRDY" pin="P409" function="ICM20948 Data Ready" direction="input"/>
+            <pin name="USER1" pin="P406" function="User configurable" direction="input"/>
+            <pin name="USER2" pin="P407" function="User configurable (conflicts with SPI1 CS1)" direction="input"/>
+            <pin name="SENSOR_INT1" pin="P100" function="General sensor interrupt" direction="input"/>
+            <pin name="SENSOR_INT2" pin="P101" function="General sensor interrupt" direction="input"/>
+            <pin name="SENSOR_INT3" pin="P104" function="General sensor interrupt" direction="input"/>
+            <pin name="SENSOR_INT4" pin="P105" function="General sensor interrupt" direction="input"/>
+            <pin name="CTRL_OUT1" pin="P106" function="General control output" direction="output"/>
+            <pin name="CTRL_OUT2" pin="P107" function="General control output" direction="output"/>
+            <pin name="CTRL_OUT3" pin="P112" function="General control output" direction="output"/>
+            <pin name="CTRL_OUT4" pin="P400" function="General control output" direction="output"/>
+            <pin name="STATUS1" pin="P401" function="Status indicator" direction="output"/>
+            <pin name="STATUS2" pin="P402" function="Status indicator" direction="output"/>
+            <pin name="DEBUG1" pin="P403" function="Debug signal" direction="output"/>
+            <pin name="DEBUG2" pin="P405" function="Debug signal" direction="output"/>
+        </gpio_pins>
+
+    </hardware>
+
+    <!-- QGroundControl Configuration -->
+    <qgc_config>
+        <vehicle_type>multirotor</vehicle_type>
+        <default_airframe>4001</default_airframe>
+        <calibration_supported>
+            <gyroscope>true</gyroscope>
+            <accelerometer>true</accelerometer>
+            <magnetometer>true</magnetometer>
+            <level_horizon>true</level_horizon>
+            <radio>true</radio>
+            <esc>true</esc>
+        </calibration_supported>
+    </qgc_config>
+</board_manifest>

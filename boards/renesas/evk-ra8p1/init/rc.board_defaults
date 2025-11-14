@@ -1,0 +1,87 @@
+#!/bin/sh
+#
+# Renesas FPB-RA8E1 board defaults
+#------------------------------------------------------------------------------
+
+# Set the default system autostart for a quadrotor X configuration
+param set-default SYS_AUTOSTART 4001
+
+# Disable system supply checks (no power sensing on this board)
+param set-default CBRK_SUPPLY_CHK 894281
+
+# Disable USB check (no USB support initially)
+param set-default CBRK_USB_CHK 197848
+
+#
+# PWM/ESC Configuration for 4 motor outputs
+# Motor mapping:
+#   Motor 1 (Front Right): P300 (GPT3A) - Channel 1
+#   Motor 2 (Rear Left):   P415 (GPT0A) - Channel 2
+#   Motor 3 (Front Left):  P113 (GPT2A) - Channel 3
+#   Motor 4 (Rear Right):  P302 (GPT4A) - Channel 4
+#
+
+# Set PWM output frequency to 400Hz for standard ESCs
+param set-default PWM_MAIN_RATE 400
+param set-default PWM_MAIN_MAX 2000
+param set-default PWM_MAIN_MIN 1000
+param set-default PWM_MAIN_DIS 900
+
+# Assign motor functions for quadcopter X configuration
+param set-default PWM_MAIN_FUNC1 101  # Motor 1 (Front Right)
+param set-default PWM_MAIN_FUNC2 102  # Motor 2 (Rear Left)
+param set-default PWM_MAIN_FUNC3 103  # Motor 3 (Front Left)
+param set-default PWM_MAIN_FUNC4 104  # Motor 4 (Rear Right)
+
+# Set failsafe PWM values (motors off)
+param set-default PWM_MAIN_FAIL1 1000
+param set-default PWM_MAIN_FAIL2 1000
+param set-default PWM_MAIN_FAIL3 1000
+param set-default PWM_MAIN_FAIL4 1000
+
+# Configure RC input parameters
+param set-default RC_MAP_THROTTLE 3
+param set-default RC_MAP_ROLL 1
+param set-default RC_MAP_PITCH 2
+param set-default RC_MAP_YAW 4
+
+# Enable RC input via UART (SBUS on SCI3)
+param set-default SER_RC_PROTO 1
+
+# MAVLink configuration
+param set-default MAV_0_CONFIG 101  # TELEM1
+param set-default MAV_0_MODE 2      # Onboard
+param set-default MAV_0_RATE 57600  # 57600 baud (QGroundControl standard)
+param set-default MAV_0_FORWARD 1   # Enable forwarding
+
+# Sensor configuration - disable external I2C probing
+param set-default SENS_EXT_I2C_PRB 0
+
+# Battery configuration (if battery monitoring is added later)
+param set-default BAT1_V_DIV 10.1
+param set-default BAT1_A_PER_V 15.391
+
+# EKF2 configuration - conservative settings for initial testing
+param set-default EKF2_REQ_GPS_H 10.0
+param set-default EKF2_GPS_V_NOISE 5.0
+
+# Land detector configuration for multicopter
+param set-default LNDMC_ALT_MAX 5.0
+param set-default LNDMC_THR_MAX 0.3
+
+# Navigator settings
+param set-default NAV_ACC_RAD 2.0
+
+# Commander settings - be more permissive for testing
+param set-default COM_ARM_WO_GPS 1
+param set-default COM_RC_IN_MODE 1
+
+# Logger settings - reduce logging to save flash space
+param set-default SDLOG_MODE 0
+param set-default SDLOG_PROFILE 1
+
+# Set flight mode channel
+param set-default RC_MAP_FLTMODE 5
+
+# Enable manual control mode by default
+param set-default RC_MAP_MODE_SW 5

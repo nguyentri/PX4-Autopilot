@@ -1,0 +1,36 @@
+# Renesas EVK-RA8P1 board configuration
+
+config BOARD_RENESAS_EVK_RA8P1
+bool "Renesas EVK-RA8P1"
+depends on ARCH_CHIP_R7FA8P1AHECBD
+select ARCH_HAVE_LEDS
+select ARCH_HAVE_BUTTONS
+select ARCH_HAVE_PWM
+select MODULE_SENSORS
+select DRIVERS_IMU_INVENSENSE_ICM20948
+select DRIVERS_BAROMETER_BMP388
+---help---
+able support for the Renesas EVK-RA8P1 development board.
+
+if BOARD_RENESAS_EVK_RA8P1
+
+config EVK_RA8P1_HAVE_IMU
+bool "Enable ICM20948 IMU"
+default y
+---help---
+able the ICM20948 9-axis IMU on the GY-912 module.
+
+config EVK_RA8P1_HAVE_BARO
+bool "Enable BMP388 Barometer"
+default y
+---help---
+able the BMP388 barometer on the GY-912 module.
+
+config EVK_RA8P1_HAVE_MAG
+bool "Enable AK09916 Magnetometer"
+default y
+depends on EVK_RA8P1_HAVE_IMU
+---help---
+able the AK09916 magnetometer (part of ICM20948).
+
+endif # BOARD_RENESAS_EVK_RA8P1
