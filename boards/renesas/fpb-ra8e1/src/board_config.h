@@ -47,8 +47,10 @@
 #include <nuttx/compiler.h>
 #include <stdint.h>
 
+#if defined(__PX4_NUTTX)
 #include <hardware/ra_pinmap.h>
 #include <ra_gpio.h>
+#endif
 
 /****************************************************************************************************
  * Definitions
@@ -106,6 +108,28 @@
 #define GPIO_SPI1_MISO        GPIO_MISOB_B_1           /* P410 - SPI1 MISO */
 #define GPIO_SPI1_CS0         GPIO_P408_OUTPUT_HIGH    /* P408 - ICM20948 CS (active low) */
 #define GPIO_SPI1_CS1         GPIO_P407_OUTPUT_HIGH    /* P407 - BMP388 CS (active low) */
+
+/* PX4 SPI macros - prefer PX4 assignment (alias to GPIO_SPI1_* or raw pin macros) */
+#ifndef PX4_SPI_IMU_SCK
+#  define PX4_SPI_IMU_SCK GPIO_SPI1_SCK
+#endif
+#ifndef PX4_SPI_IMU_MOSI
+#  define PX4_SPI_IMU_MOSI GPIO_SPI1_MOSI
+#endif
+#ifndef PX4_SPI_IMU_MISO
+#  define PX4_SPI_IMU_MISO GPIO_SPI1_MISO
+#endif
+#ifndef PX4_SPI_IMU_CS0
+#  define PX4_SPI_IMU_CS0 GPIO_SPI1_CS0
+#endif
+#ifndef PX4_SPI_BARO_CS1
+#  define PX4_SPI_BARO_CS1 GPIO_SPI1_CS1
+#endif
+
+/* Provide PX4 DRDY macro */
+#ifndef PX4_SPI_IMU_DRDY
+#  define PX4_SPI_IMU_DRDY GPIO_SPI1_IMU_DRDY
+#endif
 
 /* IMU Data Ready Pin - P409 (configured as external interrupt IRQ6)
  * The ICM20948 DRDY signal is active HIGH and indicates when new sensor data is ready.
@@ -366,29 +390,8 @@ __BEGIN_DECLS
  * Public Functions
  ****************************************************************************************************/
 
-/****************************************************************************************************
- * Name: fpb_ra8e1_boardinitialize
- *
- * Description:
- *   All RA8E1 architectures must provide the following entry point.  This entry point
- *   is called early in the initialization -- after all memory has been configured
- *   and mapped but before any devices have been initialized.
- *
- ****************************************************************************************************/
-
-/* Board initialization function */
-extern void fpb_ra8e1_boardinitialize(void);
-
 /* Timer initialization function */
 extern void fpb_ra8e1_timer_initialize(void);
-
-/****************************************************************************************************
- * SPI Board Functions
- ****************************************************************************************************/
-
-extern void fpb_ra8e1_spi_cs_select(int devid, bool selected);
-extern uint8_t fpb_ra8e1_spi_cs_read(int devid);
-extern bool fpb_ra8e1_spi_drdy_read(void);
 
 __END_DECLS
 

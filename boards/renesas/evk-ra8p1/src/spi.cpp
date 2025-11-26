@@ -37,14 +37,17 @@
  * EVK-RA8P1 Board-specific SPI functions for GY-912 sensor board.
  */
 
-#include <px4_arch/spi_hw_description.h>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/spi.h>
 #include <px4_arch/io_timer.h>
 #include <drivers/drv_sensor.h>
 #include <nuttx/spi/spi.h>
 #include "board_config.h"
+
+#ifdef __PX4_NUTTX
+#include <px4_arch/spi_hw_description.h>
 #include "ra_gpio.h"
+#endif
 
 #include <lib/drivers/device/Device.hpp>
 #include <stdint.h>
@@ -72,6 +75,7 @@
 // - ICM-20948: CS=P804, DRDY=P006 (9DOF IMU: gyro + accel + mag)
 // - BMP388:    CS=P402            (barometric pressure sensor)
 // - SPI Bus:   SPI1 (1MHz default, up to 7MHz for ICM20948, 10MHz for BMP388)
+#if defined(__PX4_NUTTX)
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
         initSPIBus(SPI::Bus::SPI1, {
                 // ICM-20948: 9DOF IMU (gyroscope, accelerometer, magnetometer)
@@ -80,16 +84,18 @@ constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
                 // BMP388: Barometric pressure sensor
                 initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin2}),
         }),
+#if defined(__PX4_NUTTX)
 };
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+static const bool unused = validateSPIConfig(px4_spi_buses);
+#endif
 
 /************************************************************************************
  * GY-912 Board-specific SPI Functions
  ************************************************************************************/
 
 extern "C" {
-#if (1) // Set to 1 to enable override for PX4 settings
+#if defined(__PX4_NUTTX)
     #include "ra_spi.h"
 
     /**
@@ -138,12 +144,20 @@ extern "C" {
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P804) */
             SPI_DEBUG("  -> Controlling CS0 (P804) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
-            //ra_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */ must move GPIO configuration out of driver
+            #ifdef PX4_SPI_IMU_CS0
+                px4_arch_gpiowrite(PX4_SPI_IMU_CS0, !selected);  /* Active low CS */
+            #else
+                px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */
+            #endif
             break;
 
         case DRV_BARO_DEVTYPE_BMP388: /* Second SPI device - BMP388 on CS1 (P402) */
             SPI_DEBUG("  -> Controlling CS1 (P402) for BMP388 %s", selected ? "SELECTED" : "DESELECTED");
-            // ra_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */ must move GPIO configuration out of driver
+            #ifdef PX4_SPI_BARO_CS1
+                px4_arch_gpiowrite(PX4_SPI_BARO_CS1, !selected);  /* Active low CS */
+            #else
+                px4_arch_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */
+            #endif
             break;
 
         default:
@@ -225,7 +239,15 @@ extern "C" {
      * Returned Value:
      *   Pointer to device configuration structure, or NULL for default settings
      */
+#if defined(__PX4_NUTTX)
     const struct ra_spi_ext_dev_config_s *ra_spi_get_dev_config(struct spi_dev_s *dev, uint32_t devid)
+#else
+    const struct ra_spi_ext_dev_config_s *ra_spi_get_dev_config(struct spi_dev_s *dev, uint32_t devid)
+    {
+        (void)dev; (void)devid;
+        return nullptr;
+    }
+#endif
     {
         /* Static configuration structures for each sensor */
         static const struct ra_spi_ext_dev_config_s icm20948_config = {
@@ -234,7 +256,12 @@ extern "C" {
             .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) */
             .cur_bits = 8,                         /* 8-bit transfers */
             .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - ICM20948 datasheet */
-            .cs_gpio = 0,              /* T.B.D */
+            .cs_gpio =
+#if defined(PX4_SPI_IMU_CS0)
+                PX4_SPI_IMU_CS0,
+#else
+                GPIO_SPI1_CS0,
+#endif
             .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
             .ssl_select = 0xFF,                    /* Use GPIO */
             .setup_delay = 2,                      /* 2 RSPCK cycles CS setup delay */
@@ -250,7 +277,12 @@ extern "C" {
             .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) - BMP388 datasheet */
             .cur_bits = 8,                         /* 8-bit transfers */
             .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - BMP388 datasheet */
-            .cs_gpio = 0,               /* T.B.D */
+            .cs_gpio =
+#if defined(PX4_SPI_BARO_CS1)
+                PX4_SPI_BARO_CS1,
+#else
+                GPIO_SPI1_CS1,
+#endif
             .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
             .ssl_select = 0xFF,                    /* Use GPIO */
             .setup_delay = 1,                      /* 1 RSPCK cycle CS setup (datasheet: min 6ns @ 5MHz = 200ns period) */

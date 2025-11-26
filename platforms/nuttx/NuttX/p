@@ -1,0 +1,64 @@
+#!/bin/bash
+# Build all NuttX samples for the EVK-RA8P1 board
+set -e
+
+CONFIGS=(
+  "adc-b"
+  "gpt-pwm"
+  "i2c"
+  "nsh"
+  "nsh-leds"
+  "spi-loopback"
+)
+
+BOARD="evk-ra8p1"
+BUILD_DIR="./nuttx"
+OUTPUT_DIR="../build_output_ra8p1"
+
+cd "$(dirname "$0")"
+# Create output directory
+mkdir -p "$OUTPUT_DIR"
+
+cd "$BUILD_DIR"
+
+echo "========================================"
+echo "Building all configurations for $BOARD"
+echo "========================================"
+echo ""
+
+for config in "${CONFIGS[@]}"; do
+  echo "----------------------------------------"
+  echo "Building: $BOARD:$config"
+  echo "----------------------------------------"
+
+  # Clean previous build
+  make distclean -j$(nproc) || true
+
+  # Configure
+  ./tools/configure.sh "$BOARD:$config"
+
+  # Build
+  if make -j$(nproc) 2>"$OUTPUT_DIR/error_${config}.log"; then
+    echo "✓ SUCCESS: $BOARD:$config"
+
+    # Copy binaries to output directory
+    if [ -f nuttx.bin ]; then
+      cp nuttx.bin "$OUTPUT_DIR/nuttx_${config}.bin"
+      cp nuttx.hex "$OUTPUT_DIR/nuttx_${config}.hex" 2>/dev/null || true
+      cp nuttx "$OUTPUT_DIR/nuttx_${config}.elf"
+      echo "  Binaries saved to: $OUTPUT_DIR/nuttx_${config}.*"
+    fi
+    rm -f "$OUTPUT_DIR/error_${config}.log"
+  else
+    echo "✗ FAILED: $BOARD:$config"
+    echo "  See error log: $OUTPUT_DIR/error_${config}.log"
+  fi
+
+  done
+
+  echo ""
+
+echo "========================================"
+echo "All configurations built successfully!"
+echo "Output directory: $OUTPUT_DIR"
+echo "========================================"

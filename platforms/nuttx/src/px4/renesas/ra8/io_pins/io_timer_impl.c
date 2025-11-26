@@ -55,6 +55,7 @@
 
 #include "ra_gpt.h"
 #include "ra_mstp.h"
+#include "ra_icu.h"
 #include "hardware/ra_memorymap.h"
 #include "arm_internal.h"
 
@@ -121,7 +122,7 @@ static inline void gpt_wp_end(uint32_t base)
 
 static inline uint32_t gpt_base_address(uint8_t gpt_channel)
 {
-	return R_GPT_CH_BASE(gpt_channel);
+	return R_GPT32_CH_BASE(gpt_channel);
 }
 
 static int gpt_enable_clock(uint8_t gpt_channel)
@@ -222,7 +223,7 @@ static int gpt_timer_init_pwm(unsigned channel, unsigned frequency_hz)
 	gpt_wp_begin(base);
 	putreg32(0, base + R_GPT32_GTCR_OFFSET);
 	putreg32(GPT_GTCR_MD_SAW_WAVE_UP | (prescaler_idx << GPT_GTCR_TPCS_SHIFT), base + R_GPT32_GTCR_OFFSET);
-	putreg32(R_GPT_GTUDDTYC_UD, base + R_GPT32_GTUDDTYC_OFFSET);
+	putreg32(R_GPT32_GTUDDTYC_UD, base + R_GPT32_GTUDDTYC_OFFSET);
 	putreg32(GPT_GTIOR_GTIOA_INITIAL_LOW, base + R_GPT32_GTIOR_OFFSET);
 	putreg32(period_ticks, base + R_GPT32_GTPR_OFFSET);
 	putreg32(period_ticks, base + R_GPT32_GTPBR_OFFSET);
@@ -415,21 +416,9 @@ int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool
 		return -EINVAL;
 	}
 
-	uint32_t mask = 0;
+    // Attach GPT timer interrupt here
+    /// int ret = ra_icu_attach(0, ra8_gpt_timer_isr, dev, true);
 
-	if (compare_a) {
-		mask |= R_GPT_GTINTAD_GTINTA;
-	}
-
-	if (compare_b) {
-		mask |= R_GPT_GTINTAD_GTINTA;
-	}
-
-	if (overflow) {
-		mask |= R_GPT_GTINTAD_GTINTB;
-	}
-
-	putreg32(mask, gpt_state[channel].base + R_GPT32_GTINTAD_OFFSET);
 	return 0;
 }
 

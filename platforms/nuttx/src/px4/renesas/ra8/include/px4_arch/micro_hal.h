@@ -81,8 +81,8 @@ typedef uint32_t gpio_pinset_t;
 /* I2C functions are implemented in micro_hal/i2c.c - do not use macros */
 
 /* GPIO functions using RA8 NuttX drivers */
-#define px4_arch_configgpio(pinset)              ra_configgpio(pinset)
-#define px4_arch_unconfiggpio(pinset)            ra_unconfiggpio(pinset)
+#define px4_arch_configgpio(pinset)              ra_gpioconfig(pinset)
+#define px4_arch_unconfiggpio(pinset)            ra_gpiounconfig(pinset)
 #define px4_arch_gpioread(pinset)                ra_gpioread(pinset)
 #define px4_arch_gpiowrite(pinset, value)        ra_gpiowrite(pinset, value)
 #define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) ra_gpiosetevent(pinset,r,f,e,fp,a)

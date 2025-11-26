@@ -52,6 +52,7 @@
 /* Hardware version definition */
 static const char hw_type[] = "FPB-RA8E1";
 
+#if defined(__PX4_NUTTX)
 #include <nuttx/board.h>
 #include <nuttx/spi/spi.h>
 #include <nuttx/i2c/i2c_master.h>
@@ -59,6 +60,7 @@ static const char hw_type[] = "FPB-RA8E1";
 #include <nuttx/mmcsd.h>
 #include <drivers/drv_sensor.h>
 #include "ra_spi.h"
+#endif
 
 #include "board_config.h"
 
@@ -131,17 +133,20 @@ __EXPORT void board_on_reset(int status)
 
 static void fpb_ra8e1_gpio_initialize(void)
 {
-	/* Configure LEDs */
-	px4_arch_configgpio(GPIO_nLED_RED);   /* LED1 */
-	px4_arch_configgpio(GPIO_nLED_GREEN); /* LED2 */
+	/* Configure standard PX4 LEDs */
+#if defined(GPIO_nLED_1)
+	px4_arch_configgpio(GPIO_nLED_1); /* LED1 */
+#endif
+#if defined(GPIO_nLED_2)
+	px4_arch_configgpio(GPIO_nLED_2); /* LED2 */
+#endif
 
 	/* Configure SPI1 Chip Select pins - must be initialized before SPI bus */
-	px4_arch_configgpio(GPIO_SPI1_CS0);   /* P408 - ICM20948 CS (active low) */
-	px4_arch_configgpio(GPIO_SPI1_CS1);   /* P407 - BMP388 CS (active low) */
-
-	/* Set CS pins high (inactive) initially */
-	px4_arch_gpiowrite(GPIO_SPI1_CS0, true);  /* Deassert ICM20948 CS */
-	px4_arch_gpiowrite(GPIO_SPI1_CS1, true);  /* Deassert BMP388 CS */
+#if defined(PX4_SPI_IMU_CS0)
+	px4_arch_configgpio(PX4_SPI_IMU_CS0);  /* P804 - ICM20948 CS (active low) */
+#elif defined(GPIO_ARDUINO_SPI_CS0)
+	px4_arch_configgpio(GPIO_ARDUINO_SPI_CS0);   /* P408 - ICM20948 CS (active low) */
+#endif
 
 	/* Configure IMU data ready pin - driver will set up interrupt */
 	px4_arch_configgpio(GPIO_SPI1_IMU_DRDY);

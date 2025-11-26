@@ -57,13 +57,13 @@
  */
 void px4_arch_init_leds(void)
 {
-    /* Configure LED pins as outputs */
-    px4_arch_configgpio(GPIO_nLED_RED);
-    px4_arch_configgpio(GPIO_nLED_GREEN);
-
     /* Turn off both LEDs initially (active low) */
-    px4_arch_gpiowrite(GPIO_nLED_RED, true);    /* LED off */
-    px4_arch_gpiowrite(GPIO_nLED_GREEN, true);  /* LED off */
+#ifdef GPIOn_LED_1
+    px4_arch_gpiowrite(GPIO_nLED_1, true);    /* LED off */
+#endif
+#ifdef GPIOn_LED_2
+    px4_arch_gpiowrite(GPIO_nLED_2, true);   /* LED off */
+#endif
 }
 
 /**
@@ -72,12 +72,16 @@ void px4_arch_init_leds(void)
 void px4_arch_set_led(int led, bool state)
 {
     switch (led) {
-    case 0: /* Red LED */
-        px4_arch_gpiowrite(GPIO_nLED_RED, !state);  /* Active low */
+#ifdef GPIOn_LED_1
+    case 0: /* LED1 */
+        px4_arch_gpiowrite(GPIO_nLED_1, !state);  /* Active low */
         break;
-    case 1: /* Green LED */
-        px4_arch_gpiowrite(GPIO_nLED_GREEN, !state); /* Active low */
+#endif
+#ifdef GPIOn_LED_2
+    case 1: /* LED2 */
+        px4_arch_gpiowrite(GPIO_nLED_2, !state); /* Active low */
         break;
+#endif
     default:
         break;
     }

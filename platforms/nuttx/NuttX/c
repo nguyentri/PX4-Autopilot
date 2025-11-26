@@ -3,5 +3,6 @@ set -e
 
 cd ./nuttx
 make distclean -j$(nproc)
-./tools/configure.sh fpb-ra8p1:nsh-leds
+./tools/configure.sh evk-ra8p1:gpt-pwm
+#./tools/configure.sh fpb-ra8e1:nsh
 make -j$(nproc)

@@ -47,8 +47,10 @@
 #include <nuttx/compiler.h>
 #include <stdint.h>
 
+#if defined(__PX4_NUTTX)
 #include <hardware/ra_pinmap.h>
 #include <ra_gpio.h>
+#endif
 
 /****************************************************************************************************
  * Definitions
@@ -109,24 +111,82 @@
  * - CS1:  P402 (Pmod1 RESET) - BMP388 (repurposed GPIO)
  * - DRDY: P006 (Pmod1 IRQ)   - ICM20948 Data Ready
  */
-//#define GPIO_SPI1_SCK         GPIO_RSPCKA_C_1          /* P803 - SPI1 Clock */
-//#define GPIO_SPI1_MOSI        GPIO_MOSI2_A_1           /* P801 - SPI1 MOSI */
-//#define GPIO_SPI1_MISO        GPIO_MISO2_A_1           /* P802 - SPI1 MISO */
-//#define GPIO_SPI1_CS0         GPIO_SSL2_A_1            /* P804 - ICM20948 CS (active low) */
-//#define GPIO_SPI1_CS1         GPIO_P402_OUTPUT_HIGH    /* P402 - BMP388 CS (active low) */
+#ifndef PX4_SPI_IMU_SCK
+#  define PX4_SPI_IMU_SCK   GPIO_RSPCKA_C_1      /* P803 - SPI1 Clock (Pmod1 pin 4) */
+#endif
+#ifndef PX4_SPI_IMU_MOSI
+#  define PX4_SPI_IMU_MOSI  GPIO_MOSI2_A_1       /* P801 - SPI1 MOSI (Pmod1 pin 2) */
+#endif
+#ifndef PX4_SPI_IMU_MISO
+#  define PX4_SPI_IMU_MISO  GPIO_MISO2_A_1       /* P802 - SPI1 MISO (Pmod1 pin 3) */
+#endif
+#ifndef PX4_SPI_IMU_CS0
+#  ifdef GPIO_SPI1_CS0
+#    define PX4_SPI_IMU_CS0 GPIO_SPI1_CS0
+#  else
+#    define PX4_SPI_IMU_CS0   GPIO_SSL2_A_1        /* P804 - ICM20948 CS (Pmod1 pin 1, active low) */
+#  endif
+#endif
+#ifndef PX4_SPI_BARO_CS1
+#  ifdef GPIO_SPI1_CS1
+#    define PX4_SPI_BARO_CS1 GPIO_SPI1_CS1
+#  else
+#    define PX4_SPI_BARO_CS1  GPIO_P402_OUTPUT_HIGH /* P402 - BMP388 CS (Pmod1 RESET, repurposed GPIO, active low) */
+#  endif
+#endif
 
-/* IMU Data Ready Pin - P006 (Pmod1 IRQ pin)
- * The ICM20948 DRDY signal is active HIGH and indicates when new sensor data is ready.
- * This pin is connected to IRQ11 (with DS capability) which triggers an interrupt on rising edge.
- * The interrupt handler (DataReadyInterruptCallback) schedules FIFO reads for efficient data collection.
- * Configuration:
- * - Pin: P006 (GPIO Port 0, Pin 6)
- * - Function: IRQ11-DS (External Interrupt 11 with Deep Software Standby)
- * - Trigger: Rising edge (ICM20948 DRDY is active high)
- * - Driver: ICM20948.cpp configures this via px4_arch_gpiosetevent()
- * Note: P006 doesn't have a predefined IRQ macro in ra8p1_pinmap.h, so we construct it manually
- */
-//#define GPIO_SPI1_IMU_DRDY    (gpio_pinset_t)(PORT0 | PIN6 | MODE_INPUT | PFS_ISEL_IRQ11)
+/* DRDY pin (ICM20948) - prefer PX4 macro or fallback to IRQ pin definitions */
+#ifndef PX4_SPI_IMU_DRDY
+#  ifdef GPIO_SPI1_IMU_DRDY
+#    define PX4_SPI_IMU_DRDY GPIO_SPI1_IMU_DRDY
+#  elif defined(GPIO_IRQ11_P006_DS)
+#    define PX4_SPI_IMU_DRDY GPIO_IRQ11_P006_DS /* P006 - Pmod1 IRQ */
+#  elif defined(GPIO_IRQ6_P409)
+#    define PX4_SPI_IMU_DRDY GPIO_IRQ6_P409 /* P409 - Pmod 2 or alternate DRDY */
+#  endif
+#endif
+
+/* Provide `GPIO_SPI1_CS*` aliases for PX4 code if not present (copy from PX4 macros or RA pinmap) */
+#ifndef GPIO_SPI1_CS0
+#  ifdef PX4_SPI_IMU_CS0
+#    define GPIO_SPI1_CS0 PX4_SPI_IMU_CS0
+#  elif defined(GPIO_SSL2_A_1)
+#    define GPIO_SPI1_CS0 GPIO_SSL2_A_1
+#  endif
+#endif
+#ifndef GPIO_SPI1_CS1
+#  ifdef PX4_SPI_BARO_CS1
+#    define GPIO_SPI1_CS1 PX4_SPI_BARO_CS1
+#  elif defined(GPIO_P402_OUTPUT_HIGH)
+#    define GPIO_SPI1_CS1 GPIO_P402_OUTPUT_HIGH
+#  endif
+#endif
+
+/* NuttX-only guard removed; use per-macro guards instead */
+/* Provide `GPIO_SPI1_IMU_DRDY` alias if not present */
+#ifndef GPIO_SPI1_IMU_DRDY
+#  ifdef PX4_SPI_IMU_DRDY
+#    define GPIO_SPI1_IMU_DRDY PX4_SPI_IMU_DRDY
+#  elif defined(GPIO_IRQ11_P006_DS)
+#    define GPIO_SPI1_IMU_DRDY GPIO_IRQ11_P006_DS
+#  elif defined(GPIO_IRQ6_P409)
+#    define GPIO_SPI1_IMU_DRDY GPIO_IRQ6_P409
+#  endif
+#endif
+
+/* Provide GPIO_SPI1_CS* aliases for PX4 code if NuttX-style aliases are not available */
+#ifndef GPIO_SPI1_CS0
+# ifdef GPIO_SSL2_A_1
+#  define GPIO_SPI1_CS0 GPIO_SSL2_A_1
+# endif
+#endif
+#ifndef GPIO_SPI1_CS1
+# ifdef GPIO_P402_OUTPUT_HIGH
+#  define GPIO_SPI1_CS1 GPIO_P402_OUTPUT_HIGH
+# endif
+#endif
+
+/* End NuttX-only SIMPLIFIED block */
 
 /* SPI Bus Configuration */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS 1
@@ -161,19 +221,49 @@
  * - LED2 (Green): P303
  * - LED3 (Red):   PA07
  */
-#define GPIO_nLED_BLUE          GPIO_P600_OUTPUT_HIGH  /* P600 - LED1 Blue */
-#define GPIO_nLED_GREEN         GPIO_P303_OUTPUT_HIGH  /* P303 - LED2 Green */
-#define GPIO_nLED_RED           GPIO_PA07_OUTPUT_HIGH  /* PA07 - LED3 Red */
+#ifndef GPIO_nLED_BLUE
+# ifdef GPIO_USER_LED_BLUE
+#  define GPIO_nLED_BLUE GPIO_USER_LED_BLUE
+# else
+#  define GPIO_nLED_BLUE GPIO_P600_OUTPUT_HIGH  /* P600 - LED1 Blue */
+# endif
+#endif
+
+#ifndef GPIO_nLED_GREEN
+# ifdef GPIO_USER_LED_GREEN
+#  define GPIO_nLED_GREEN GPIO_USER_LED_GREEN
+# else
+#  define GPIO_nLED_GREEN GPIO_P303_OUTPUT_HIGH  /* P303 - LED2 Green */
+# endif
+#endif
+
+#ifndef GPIO_nLED_RED
+# ifdef GPIO_USER_LED_RED
+#  define GPIO_nLED_RED GPIO_USER_LED_RED
+# else
+#  define GPIO_nLED_RED GPIO_PA07_OUTPUT_HIGH  /* PA07 - LED3 Red */
+# endif
+#endif
 
 /* Map to standard PX4 LED names */
+#ifdef GPIO_nLED_BLUE
 #define GPIO_nLED_1             GPIO_nLED_BLUE         /* Status indicator */
+#endif
+#ifdef GPIO_nLED_GREEN
 #define GPIO_nLED_2             GPIO_nLED_GREEN        /* Armed state indicator */
+#endif
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS      1
 #define BOARD_OVERLOAD_LED                 0
 #define BOARD_ARMED_STATE_LED              1
 
-#define GPIO_BTN_SAFETY         GPIO_P009_INPUT_PULLUP  /* P009 - User Button */
+#ifndef GPIO_BTN_SAFETY
+# ifdef GPIO_USER_SW1
+#  define GPIO_BTN_SAFETY GPIO_USER_SW1
+# else
+#  define GPIO_BTN_SAFETY GPIO_P009_INPUT_PULLUP  /* P009 - User Button */
+# endif
+#endif
 #define BOARD_HAS_NO_SAFETY_SWITCH 1   /* No dedicated safety switch */
 
 /* Use NuttX GPIO definitions from board.h instead of custom ones */
@@ -268,8 +358,12 @@
 
 /* GPIO pin definitions for ADC channels */
 
-#define GPIO_ADC_BATTERY_VOLTAGE     GPIO_P004_AN000  /* P004 as AN000 */
-#define GPIO_ADC_BATTERY_CURRENT     GPIO_P003_AN104  /* P003 as AN104 */
+#ifndef GPIO_ADC_BATTERY_VOLTAGE
+#  define GPIO_ADC_BATTERY_VOLTAGE GPIO_P004_AN000  /* P004 as AN000 */
+#endif
+#ifndef GPIO_ADC_BATTERY_CURRENT
+#  define GPIO_ADC_BATTERY_CURRENT GPIO_P003_AN104  /* P003 as AN104 */
+#endif
 
 /* Hardfault logging path */
 #define HARDFAULT_ULOG_PATH      "/fs/microsd/fault.log"
