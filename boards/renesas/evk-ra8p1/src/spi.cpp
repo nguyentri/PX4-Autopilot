@@ -84,7 +84,6 @@ constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
                 // BMP388: Barometric pressure sensor
                 initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin2}),
         }),
-#if defined(__PX4_NUTTX)
 };
 
 static const bool unused = validateSPIConfig(px4_spi_buses);

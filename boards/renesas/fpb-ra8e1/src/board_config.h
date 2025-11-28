@@ -103,33 +103,12 @@
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
 /* SPI1 - Used for GY-912 sensor board */
-#define GPIO_SPI1_SCK         GPIO_RSPCKB_B_1          /* P412 - SPI1 Clock */
-#define GPIO_SPI1_MOSI        GPIO_MOSIB_B_1           /* P411 - SPI1 MOSI */
-#define GPIO_SPI1_MISO        GPIO_MISOB_B_1           /* P410 - SPI1 MISO */
-#define GPIO_SPI1_CS0         GPIO_P408_OUTPUT_HIGH    /* P408 - ICM20948 CS (active low) */
-#define GPIO_SPI1_CS1         GPIO_P407_OUTPUT_HIGH    /* P407 - BMP388 CS (active low) */
-
-/* PX4 SPI macros - prefer PX4 assignment (alias to GPIO_SPI1_* or raw pin macros) */
-#ifndef PX4_SPI_IMU_SCK
-#  define PX4_SPI_IMU_SCK GPIO_SPI1_SCK
-#endif
-#ifndef PX4_SPI_IMU_MOSI
-#  define PX4_SPI_IMU_MOSI GPIO_SPI1_MOSI
-#endif
-#ifndef PX4_SPI_IMU_MISO
-#  define PX4_SPI_IMU_MISO GPIO_SPI1_MISO
-#endif
-#ifndef PX4_SPI_IMU_CS0
-#  define PX4_SPI_IMU_CS0 GPIO_SPI1_CS0
-#endif
-#ifndef PX4_SPI_BARO_CS1
-#  define PX4_SPI_BARO_CS1 GPIO_SPI1_CS1
-#endif
-
-/* Provide PX4 DRDY macro */
-#ifndef PX4_SPI_IMU_DRDY
-#  define PX4_SPI_IMU_DRDY GPIO_SPI1_IMU_DRDY
-#endif
+#define PX4_SPI_IMU_SCK   GPIO_SPI1_SCK
+#define PX4_SPI_IMU_MOSI  GPIO_SPI1_MOSI
+#define PX4_SPI_IMU_MISO  GPIO_SPI1_MISO
+#define PX4_SPI_IMU_CS0   GPIO_SPI1_CS0
+#define PX4_SPI_BARO_CS1  GPIO_SPI1_CS1
+#define PX4_SPI_IMU_DRDY  GPIO_SPI1_IMU_DRDY
 
 /* IMU Data Ready Pin - P409 (configured as external interrupt IRQ6)
  * The ICM20948 DRDY signal is active HIGH and indicates when new sensor data is ready.

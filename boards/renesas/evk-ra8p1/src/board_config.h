@@ -73,7 +73,7 @@
  * Board hardware configuration for PX4
  */
 
-/* RA8E1 MCU Configuration */
+/* RA8P1 MCU Configuration */
 #define BOARD_HAS_SLOW_PWMOUT   1  /* PWM outputs run at 400Hz for ESCs */
 #define BOARD_HAS_PWM           DIRECT_PWM_OUTPUT_CHANNELS
 #define BOARD_HAS_NO_RESET      1  /* No dedicated reset button */
@@ -102,89 +102,22 @@
 #define PX4_SPI_BUS_SENSORS     1       /* SPI1 for all sensors (ICM20948 (including AK09916) + BMP388) */
 #define PX4_SPI_BUS_MEMORY      PX4_SPI_BUS_SENSORS
 
-/* SPI1 - Used for GY-912 sensor board via Pmod1 connector
- * Pin mapping based on EVK-RA8P1 Pmod1 (SCI2/SPI1):
- * - SCK:  P803 (Pmod1 pin 4) - RSPCKA_C_1
- * - MISO: P802 (Pmod1 pin 3) - MISO2_A_1 (shared with RXD2)
- * - MOSI: P801 (Pmod1 pin 2) - MOSI2_A_1 (shared with TXD2)
- * - CS0:  P804 (Pmod1 pin 1) - SSL2_A_1 - ICM20948 (including AK09916)
- * - CS1:  P402 (Pmod1 RESET) - BMP388 (repurposed GPIO)
- * - DRDY: P006 (Pmod1 IRQ)   - ICM20948 Data Ready
+/* Arduino SPI - Used for GY-912 sensor board via Arduino connector
+ * Pin mapping based on EVK-RA8P1 Arduino Expansion Header:
+ * - SCK:   P102 (Arduino D13)
+ * - MISO:  P100 (Arduino D12)
+ * - MOSI:  P101 (Arduino D11)
+ * - CS0:   P103 (Arduino D10) - ICM20948 (including AK09916)
+ * - CS1:   P110 (Arduino D9)  -  BMP388 CS)
+ * - DRDY:  P011 (Arduino D2)  - ICM20948 Data Ready
  */
-#ifndef PX4_SPI_IMU_SCK
-#  define PX4_SPI_IMU_SCK   GPIO_RSPCKA_C_1      /* P803 - SPI1 Clock (Pmod1 pin 4) */
-#endif
-#ifndef PX4_SPI_IMU_MOSI
-#  define PX4_SPI_IMU_MOSI  GPIO_MOSI2_A_1       /* P801 - SPI1 MOSI (Pmod1 pin 2) */
-#endif
-#ifndef PX4_SPI_IMU_MISO
-#  define PX4_SPI_IMU_MISO  GPIO_MISO2_A_1       /* P802 - SPI1 MISO (Pmod1 pin 3) */
-#endif
-#ifndef PX4_SPI_IMU_CS0
-#  ifdef GPIO_SPI1_CS0
-#    define PX4_SPI_IMU_CS0 GPIO_SPI1_CS0
-#  else
-#    define PX4_SPI_IMU_CS0   GPIO_SSL2_A_1        /* P804 - ICM20948 CS (Pmod1 pin 1, active low) */
-#  endif
-#endif
-#ifndef PX4_SPI_BARO_CS1
-#  ifdef GPIO_SPI1_CS1
-#    define PX4_SPI_BARO_CS1 GPIO_SPI1_CS1
-#  else
-#    define PX4_SPI_BARO_CS1  GPIO_P402_OUTPUT_HIGH /* P402 - BMP388 CS (Pmod1 RESET, repurposed GPIO, active low) */
-#  endif
-#endif
 
-/* DRDY pin (ICM20948) - prefer PX4 macro or fallback to IRQ pin definitions */
-#ifndef PX4_SPI_IMU_DRDY
-#  ifdef GPIO_SPI1_IMU_DRDY
-#    define PX4_SPI_IMU_DRDY GPIO_SPI1_IMU_DRDY
-#  elif defined(GPIO_IRQ11_P006_DS)
-#    define PX4_SPI_IMU_DRDY GPIO_IRQ11_P006_DS /* P006 - Pmod1 IRQ */
-#  elif defined(GPIO_IRQ6_P409)
-#    define PX4_SPI_IMU_DRDY GPIO_IRQ6_P409 /* P409 - Pmod 2 or alternate DRDY */
-#  endif
-#endif
-
-/* Provide `GPIO_SPI1_CS*` aliases for PX4 code if not present (copy from PX4 macros or RA pinmap) */
-#ifndef GPIO_SPI1_CS0
-#  ifdef PX4_SPI_IMU_CS0
-#    define GPIO_SPI1_CS0 PX4_SPI_IMU_CS0
-#  elif defined(GPIO_SSL2_A_1)
-#    define GPIO_SPI1_CS0 GPIO_SSL2_A_1
-#  endif
-#endif
-#ifndef GPIO_SPI1_CS1
-#  ifdef PX4_SPI_BARO_CS1
-#    define GPIO_SPI1_CS1 PX4_SPI_BARO_CS1
-#  elif defined(GPIO_P402_OUTPUT_HIGH)
-#    define GPIO_SPI1_CS1 GPIO_P402_OUTPUT_HIGH
-#  endif
-#endif
-
-/* NuttX-only guard removed; use per-macro guards instead */
-/* Provide `GPIO_SPI1_IMU_DRDY` alias if not present */
-#ifndef GPIO_SPI1_IMU_DRDY
-#  ifdef PX4_SPI_IMU_DRDY
-#    define GPIO_SPI1_IMU_DRDY PX4_SPI_IMU_DRDY
-#  elif defined(GPIO_IRQ11_P006_DS)
-#    define GPIO_SPI1_IMU_DRDY GPIO_IRQ11_P006_DS
-#  elif defined(GPIO_IRQ6_P409)
-#    define GPIO_SPI1_IMU_DRDY GPIO_IRQ6_P409
-#  endif
-#endif
-
-/* Provide GPIO_SPI1_CS* aliases for PX4 code if NuttX-style aliases are not available */
-#ifndef GPIO_SPI1_CS0
-# ifdef GPIO_SSL2_A_1
-#  define GPIO_SPI1_CS0 GPIO_SSL2_A_1
-# endif
-#endif
-#ifndef GPIO_SPI1_CS1
-# ifdef GPIO_P402_OUTPUT_HIGH
-#  define GPIO_SPI1_CS1 GPIO_P402_OUTPUT_HIGH
-# endif
-#endif
+#define PX4_SPI_IMU_SCK   GPIO_ARDUINO_SPI_SCK
+#define PX4_SPI_IMU_MOSI  GPIO_ARDUINO_SPI_MOSI
+#define PX4_SPI_IMU_MISO  GPIO_ARDUINO_SPI_MISO
+#define PX4_SPI_IMU_CS0   GPIO_ARDUINO_SPI_CS0
+#define PX4_SPI_BARO_CS1  GPIO_ARDUINO_SPI_CS1
+#define PX4_SPI_IMU_DRDY  GPIO_ARDUINO_D2_INT
 
 /* End NuttX-only SIMPLIFIED block */
 
@@ -490,19 +423,9 @@ __BEGIN_DECLS
  *
  ****************************************************************************************************/
 
-/* Board initialization function */
-extern void evk_ra8p1_boardinitialize(void);
-
 /* Timer initialization function */
 extern void evk_ra8p1_timer_initialize(void);
 
-/****************************************************************************************************
- * SPI Board Functions
- ****************************************************************************************************/
-
-extern void evk_ra8p1_spi_cs_select(int devid, bool selected);
-extern uint8_t evk_ra8p1_spi_cs_read(int devid);
-extern bool evk_ra8p1_spi_drdy_read(void);
 
 __END_DECLS
 
