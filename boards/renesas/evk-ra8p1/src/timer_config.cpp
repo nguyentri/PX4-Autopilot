@@ -42,10 +42,10 @@
  * The EVK-RA8P1 uses 4 GPT channels mapped to specific pins for ESC control.
  *
  * Hardware Configuration (verified from EVK-RA8P1 pinout):
- * - Motor 1 (Channel 0): GPT0A on P211 (PORT2, PIN11)
- * - Motor 2 (Channel 1): GPT10A on P109 (PORT1, PIN9) - Arduino D9
- * - Motor 3 (Channel 2): GPT11A on P711 (PORT7, PIN11)
- * - Motor 4 (Channel 3): GPT12A on P708 (PORT7, PIN8)
+ * - Motor 1 (Channel 0): GPT3A on P300 (PORT3, PIN0)
+ * - Motor 2 (Channel 1): GPT0A on P415 (PORT4, PIN15)
+ * - Motor 3 (Channel 2): GPT2A on P113 (PORT1, PIN13)
+ * - Motor 4 (Channel 3): GPT4A on P302 (PORT3, PIN2)
  *
  * Timer Settings:
  * - Frequency: 400 Hz (configurable via startup script)
@@ -67,18 +67,18 @@ namespace
 
 // Initialize the 4 GPT timers used for PWM motor control
 constexpr io_timers_t kIOTimersRaw[MAX_IO_TIMERS] = {
-        initIOTimer(Timer::Timer0),   // Motor 1 - GPT0
-        initIOTimer(Timer::Timer10),  // Motor 2 - GPT10
-        initIOTimer(Timer::Timer11),  // Motor 3 - GPT11
-        initIOTimer(Timer::Timer12),  // Motor 4 - GPT12
+        initIOTimer(Timer::Timer3),   // Motor 1 - GPT3
+        initIOTimer(Timer::Timer0),   // Motor 2 - GPT0
+        initIOTimer(Timer::Timer2),   // Motor 3 - GPT2
+        initIOTimer(Timer::Timer4),   // Motor 4 - GPT4
 };
 
 // Map each timer to its hardware pin (verified from EVK-RA8P1 pinout)
 constexpr timer_io_channels_t kTimerChannelsRaw[MAX_TIMER_IO_CHANNELS] = {
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer0, Timer::Channel1}, {GPIO::Port2, GPIO::Pin11}),  // Motor 1: GPT0A/P211
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer10, Timer::Channel1}, {GPIO::Port1, GPIO::Pin9}),  // Motor 2: GPT10A/P109
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer11, Timer::Channel1}, {GPIO::Port7, GPIO::Pin11}), // Motor 3: GPT11A/P711
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer12, Timer::Channel1}, {GPIO::Port7, GPIO::Pin8}),  // Motor 4: GPT12A/P708
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::Channel1}, {GPIO::Port3, GPIO::Pin0}),   // Motor 1: GPT3A/P300
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer0, Timer::Channel1}, {GPIO::Port4, GPIO::Pin15}),  // Motor 2: GPT0A/P415
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer2, Timer::Channel1}, {GPIO::Port1, GPIO::Pin13}),  // Motor 3: GPT2A/P113
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer4, Timer::Channel1}, {GPIO::Port3, GPIO::Pin2}),   // Motor 4: GPT4A/P302
 };
 
 template<typename TimerType>
@@ -115,10 +115,10 @@ const io_timers_t io_timers[MAX_IO_TIMERS] = {
 // Export timer channel configurations with GPIO mappings
 // GPIO_TIMx_CH1OUT macros are defined in board_config.h and map to GPTxA pins
 const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM0_CH1OUT),  // Motor 1: P300 (GPIO_GTIOC3A_1)
-        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM10_CH1OUT),  // Motor 2: P415 (GPIO_GTIOC0A_3)
-        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM11_CH1OUT),  // Motor 3: P113 (GPIO_GTIOC2A_2)
-        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM12_CH1OUT),  // Motor 4: P302 (GPIO_GTIOC4A_2)
+        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM3_CH1OUT),  // Motor 1: P300 (GPIO_GTIOC3A_1)
+        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM0_CH1OUT),  // Motor 2: P415 (GPIO_GTIOC0A_2)
+        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM2_CH1OUT),  // Motor 3: P113 (GPIO_GTIOC2A_2)
+        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM4_CH1OUT),  // Motor 4: P302 (GPIO_GTIOC4A_2)
 };
 
 void evk_ra8p1_timer_initialize()

@@ -1,21 +1,20 @@
 /****************************************************************************
  *
  * Copyright (C) 2025 PX4 Development Team. All rights reserved.
- * Author: Peter van der Perk <peter.vanderperk@nxp.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *	notice, this list of conditions and the following disclaimer.
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *	notice, this list of conditions and the following disclaimer in
- *	the documentation and/or other materials provided with the
- *	distribution.
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  * 3. Neither the name PX4 nor the names of its contributors may be
- *	used to endorse or promote products derived from this software
- *	without specific prior written permission.
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -32,794 +31,495 @@
  *
  ****************************************************************************/
 
+/**
+ * @file dshot.c
+ *
+ * Hardware-accelerated DShot implementation for Renesas RA8
+ * Uses GPT timers with DMA for efficient bit-level protocol generation
+ */
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <errno.h>
+#include <syslog.h>
+
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
-#include <nuttx/spinlock.h>
-#include <debug.h>
-#include <errno.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
 
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/micro_hal.h>
 #include <px4_platform_common/log.h>
-#include <px4_arch/dshot.h>
-#include <px4_arch/io_timer.h>
 #include <drivers/drv_dshot.h>
 
+#include "dshot.h"
+
 #include "arm_internal.h"
-#include "chip.h"
-#include "hardware/ra_gpt.h"
-#include "hardware/ra_memorymap.h"
-#include "ra_pinmap.h"
 #include "ra_gpt.h"
-#include "ra_mstp.h"
-#include "ra_icu.h"
 #include "ra_gpio.h"
+#include "ra_mstp.h"
+#include "hardware/ra8p1/ra_gpt32.h"
 
-/* Include arch-specific headers for ELC constants */
-#include <arch/irq.h>
-#include <arch/board/board.h>
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
 
-/* DShot configuration constants */
-#define DSHOT_MAX_CHANNELS      4      /* Maximum number of DShot channels on RA8E1 board */
-#define DSHOT_THROTTLE_POSITION 5u     /* Throttle value bit position */
-#define DSHOT_TELEMETRY_POSITION 4u    /* Telemetry request bit position */
-#define DSHOT_CHECKSUM_BITS     4u     /* Number of checksum bits */
-#define DSHOT_FRAME_SIZE        16u    /* DShot frame size in bits */
-#define DSHOT_NIBBLES_SIZE      4u     /* Nibble size for checksum calculation */
-#define DSHOT_NUMBER_OF_NIBBLES 3u     /* Number of nibbles for checksum */
+#define DSHOT_MAX_CHANNELS       4
+#define DSHOT_FRAME_BITS         16
+#define DSHOT_THROTTLE_BITS      11
+#define DSHOT_TELEMETRY_BIT      1
+#define DSHOT_CHECKSUM_BITS      4
 
-#define BDSHOT_OFFLINE_COUNT    400    /* ESC offline threshold count */
+#define DSHOT150_FREQ            150000u
+#define DSHOT300_FREQ            300000u
+#define DSHOT600_FREQ            600000u
 
-/* DShot timing parameters (based on PCLKD = 120MHz) */
-#define DSHOT150_FREQ           150000  /* 150 kHz */
-#define DSHOT300_FREQ           300000  /* 300 kHz */
-#define DSHOT600_FREQ           600000  /* 600 kHz */
+#define DSHOT_T0H_PERCENT        37.5f
+#define DSHOT_T1H_PERCENT        75.0f
 
-/* DShot bit encoding timing */
-#define DSHOT_T0H_RATIO         37.5f   /* Bit 0 high time percentage */
-#define DSHOT_T1H_RATIO         75.0f   /* Bit 1 high time percentage */
+#define PCLKD_FREQUENCY          120000000u
 
-/* GPT channel mapping for DShot on FPB-RA8E1 board */
-static struct {
-    uint8_t gpt_channel;
-    uint32_t gpio_pin;
-    ra_mstp_module_t mstp_module;
-    int elc_compare; /* ELC event for compare match */
-    int elc_overflow; /* ELC event for overflow (BDShot timing) */
-} dshot_channel_map[DSHOT_MAX_CHANNELS] = {
-    {3, GPIO_GTIOC0A_3, RA_MSTP_GPT3,  RA_ELC_GPT3_CAPTURE_COMPARE_A, RA_ELC_GPT3_CAPTURE_OVERFLOW_A},  /* Motor 1: P300 (GPT3A) */
-    {0, GPIO_GTIOC2A_2, RA_MSTP_GPT0,  RA_ELC_GPT0_CAPTURE_COMPARE_A, RA_ELC_GPT0_CAPTURE_OVERFLOW_A},  /* Motor 2: P415 (GPT0A) */
-    {2, GPIO_GTIOC3A_1, RA_MSTP_GPT2,  RA_ELC_GPT2_CAPTURE_COMPARE_A, RA_ELC_GPT2_CAPTURE_OVERFLOW_A},  /* Motor 3: P113 (GPT2A) */
-    {4, GPIO_GTIOC4A_2, RA_MSTP_GPT4,  RA_ELC_GPT4_CAPTURE_COMPARE_A, RA_ELC_GPT4_CAPTURE_OVERFLOW_A},  /* Motor 4: P302 (GPT4A) */
-};
+#define BDSHOT_OFFLINE_COUNT     400
 
-/* DShot state enumeration */
-typedef enum {
-    DSHOT_STATE_IDLE = 0,
-    DSHOT_STATE_SENDING,
-    DSHOT_STATE_COMPLETE,
-    BDSHOT_STATE_RECEIVING,
-    BDSHOT_STATE_COMPLETE
-} dshot_state_t;
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
 
-/* DShot channel instance */
-typedef struct {
-    bool initialized;
-    bool bdshot_enabled;
-    uint8_t gpt_channel;
-    uint32_t gpio_pin;
-    uint32_t mstp_module;
+typedef struct
+{
+  bool     initialized;
+  uint8_t  gpt_channel;
+  uint32_t bit_period_ticks;
+  uint32_t t0h_ticks;
+  uint32_t t1h_ticks;
+  uint16_t current_frame;
+  uint32_t dma_buffer[DSHOT_FRAME_BITS];
 
-    /* DShot protocol state */
-    dshot_state_t state;
-    uint16_t current_frame;
-    uint8_t bit_index;
-    uint32_t bit_period;
-    uint32_t t0h_period;
-    uint32_t t1h_period;
+  /* BDShot telemetry */
 
-    /* BDShot telemetry */
-    uint32_t raw_response;
-    uint16_t erpm;
-    uint32_t crc_error_count;
-    uint32_t frame_error_count;
-    uint32_t no_response_count;
-    uint32_t last_no_response_count;
-
-    /* ICU interrupt management */
-    int icu_compare_irq;
-    int icu_overflow_irq;
-    uint32_t telemetry_capture_start;
-    uint32_t telemetry_bits[32]; /* Buffer for captured telemetry bits */
-    uint8_t telemetry_bit_count;
+  uint16_t erpm;
+  uint32_t crc_error_count;
+  uint32_t frame_error_count;
+  uint32_t no_response_count;
 } dshot_channel_t;
 
-/* Global DShot state */
-static struct {
-    bool initialized;
-    uint32_t frequency;
-    bool bidirectional_enabled;
-    uint32_t active_channels;
-    dshot_channel_t channels[DSHOT_MAX_CHANNELS];
-    bool lock;
-} g_dshot;
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
 
-/* Forward declarations */
-static int dshot_gpt_interrupt(int irq, void *context, void *arg);
-static int dshot_bdshot_overflow_interrupt(int irq, void *context, void *arg);
-static void dshot_configure_channel(uint8_t channel);
-static void dshot_configure_bdshot_capture(uint8_t channel);
-static void dshot_send_bit(uint8_t channel, bool bit_value);
-static void dshot_start_frame(uint8_t channel);
-static void dshot_complete_frame(uint8_t channel);
-static uint32_t dshot_calculate_periods(uint32_t frequency, uint32_t *t0h, uint32_t *t1h);
-static uint16_t dshot_encode_frame(uint16_t throttle, bool telemetry, bool bdshot);
-static void bdshot_decode_response(uint8_t channel, uint32_t raw_data);
+static bool g_dma_available =
+#ifdef CONFIG_RA_DMAC
+  true;
+#else
+  false;
+#endif
+
+static bool g_bdshot_enabled = false;
+static uint32_t g_active_channels = 0;
+static uint32_t g_dshot_frequency = 0;
+
+static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
+static const uint8_t kGptMap[DSHOT_MAX_CHANNELS] = {3, 0, 2, 4};
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
-/**
- * Calculate timer periods for DShot bit timing
- */
-static uint32_t dshot_calculate_periods(uint32_t frequency, uint32_t *t0h, uint32_t *t1h)
+static inline void gpt_putreg32(uint8_t ch, uint32_t offset, uint32_t val)
 {
-    /* Get PCLKD frequency from board configuration */
-    uint32_t pclkd_freq = BOARD_PCLKD_FREQUENCY;
-
-    /* Calculate bit period in timer counts */
-    uint32_t bit_period = pclkd_freq / frequency;
-
-    /* Calculate high periods for bit 0 and bit 1 */
-    *t0h = (uint32_t)(bit_period * DSHOT_T0H_RATIO / 100.0f);
-    *t1h = (uint32_t)(bit_period * DSHOT_T1H_RATIO / 100.0f);
-
-    return bit_period;
+  putreg32(val, R_GPT32_CH_BASE(ch) + offset);
 }
 
-/**
- * Encode DShot frame with throttle value, telemetry request and checksum
- */
-static uint16_t dshot_encode_frame(uint16_t throttle, bool telemetry, bool bdshot)
+static inline uint32_t gpt_getreg32(uint8_t ch, uint32_t offset)
 {
-    uint16_t packet = 0;
-    uint16_t checksum = 0;
-    uint16_t csum_data;
+  return getreg32(R_GPT32_CH_BASE(ch) + offset);
+}
 
-    /* Build packet: 11 bits throttle + 1 bit telemetry */
-    packet |= (throttle & 0x7FF) << DSHOT_THROTTLE_POSITION;
-    packet |= (telemetry ? 1 : 0) << DSHOT_TELEMETRY_POSITION;
+static void dshot_calculate_timing(uint32_t frequency, uint32_t *bit_period,
+                                    uint32_t *t0h, uint32_t *t1h)
+{
+  *bit_period = PCLKD_FREQUENCY / frequency;
+  *t0h = (uint32_t)(*bit_period * DSHOT_T0H_PERCENT / 100.0f);
+  *t1h = (uint32_t)(*bit_period * DSHOT_T1H_PERCENT / 100.0f);
+}
 
-    /* Calculate checksum */
-    csum_data = bdshot ? ~packet : packet;
-    csum_data >>= DSHOT_NIBBLES_SIZE;
+static uint16_t dshot_encode_frame(uint16_t throttle, bool telemetry)
+{
+  uint16_t frame = 0;
+  uint16_t checksum = 0;
+  uint16_t checksum_data;
 
-    for (unsigned i = 0; i < DSHOT_NUMBER_OF_NIBBLES; i++) {
-        checksum ^= (csum_data & 0x0F);
-        csum_data >>= DSHOT_NIBBLES_SIZE;
+  frame = (throttle & 0x7FFu) << 5;
+  frame |= (telemetry ? 1u : 0u) << 4;
+
+  checksum_data = frame >> 4;
+
+  for (int i = 0; i < 3; i++)
+    {
+      checksum ^= (checksum_data & 0xFu);
+      checksum_data >>= 4;
     }
 
-    /* Add checksum to packet */
-    packet |= (checksum & 0x0F);
-
-    return packet;
+  frame |= (checksum & 0xFu);
+  return frame;
 }
 
 /**
- * Configure GPT channel for DShot output
+ * Configure GPT channel for DShot PWM output with saw-wave mode
  */
-static void dshot_configure_channel(uint8_t channel)
+
+static int gpt_setup_channel(uint8_t gpt_channel,
+                              uint32_t bit_period_ticks)
 {
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
+  /* Unlock write protection */
 
-    /* Enable module stop control */
-    ra_mstp_start(dshot_ch->mstp_module);
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET, GPT_GTWP_PRKEY);
 
-    /* Disable write protection */
-    putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
+  /* Stop and clear */
 
-    /* Stop timer if running */
-    putreg32(0, RA_GPT_GTCR(gpt_ch));
+  gpt_putreg32(gpt_channel, R_GPT32_GTSTP_OFFSET, 1u << gpt_channel);
+  gpt_putreg32(gpt_channel, R_GPT32_GTCLR_OFFSET, 1u << gpt_channel);
 
-    /* Configure GPT for PWM mode with saw-wave up counting */
-    uint32_t gtcr = GPT_GTCR_MD_SAW_WAVE_UP | GPT_GTCR_TPCS_PCLKD_1;
-    putreg32(gtcr, RA_GPT_GTCR(gpt_ch));
+  /* Saw-wave up-count, prescaler = PCLKD/1 */
 
-    /* Set period register */
-    putreg32(dshot_ch->bit_period - 1, RA_GPT_GTPR(gpt_ch));
+  uint32_t gtcr = GPT_GTCR_MD_SAW_WAVE_UP | GPT_GTCR_TPCS_PCLKD_1;
+  gpt_putreg32(gpt_channel, R_GPT32_GTCR_OFFSET, gtcr);
 
-    /* Configure GTIOA pin for PWM output (initial low, compare match high) */
-    uint32_t gtior = GPT_GTIOR_GTIOA_INITIAL_LOW;
-    putreg32(gtior, RA_GPT_GTIOR(gpt_ch));
+  /* Set period (GTPR counts from 0..GTPR) */
 
-    /* Enable Compare A interrupt */
-    putreg32(GPT_GTINTAD_GTINTA, RA_GPT_GTINTAD(gpt_ch));
+  uint32_t period = (bit_period_ticks > 0) ? (bit_period_ticks - 1u) : 0u;
+  gpt_putreg32(gpt_channel, R_GPT32_GTPR_OFFSET, period);
 
-    /* Enable buffer for period and compare registers */
-    /* Configure GPT buffer registers for smooth PWM transitions */
-    uint32_t gtber = (1 << 2) | (1 << 1); /* Enable CCRA and PR buffer */
-    putreg32(gtber, RA_GPT_GTBER(gpt_ch));
+  /* Initial low, go high at compare, go low at overflow
+   * This produces: |<-- low -->|<-- high -->|
+   * Where high time = GTCCRA, total period = GTPR
+   */
 
-    /* Configure buffer operation - single buffer mode */
-    uint32_t gtbdr = 0; /* Disable double buffer for simplicity */
-    putreg32(gtbdr, RA_GPT_GTBDR(gpt_ch));
+  gpt_putreg32(gpt_channel, R_GPT32_GTIOR_OFFSET, GPT_GTIOR_PWM_HIGH_A);
 
-    /* Enable write protection */
-    putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
+  /* Enable buffer for GTCCRA for glitch-free duty updates */
 
-    PX4_DEBUG("DShot channel %d: GPT%d configured, period=%lu",
-              channel, gpt_ch, dshot_ch->bit_period);
+  gpt_putreg32(gpt_channel, R_GPT32_GTBER_OFFSET, GPT_GTBER_CCRA);
+
+  /* Re-enable write protection */
+
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET,
+               GPT_GTWP_PRKEY | GPT_GTWP_WP);
+
+  return 0;
 }
 
-/**
- * Configure GPIO pin for DShot output
- */
-static void dshot_configure_gpio(uint8_t channel)
+#ifdef CONFIG_RA_DMAC
+static int gpt_load_frame_to_dma(uint8_t gpt_channel,
+                                 dshot_channel_t *ch)
 {
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
+  struct ra_gpt_dma_s dma;
+  memset(&dma, 0, sizeof(dma));
 
-    /* Configure GPIO pin for GPT function */
-    /* This needs to be board-specific based on pin mapping */
-    switch (gpt_ch) {
-        case 0: /* GPT0A - P415 */
-            ra_gpio_config(dshot_ch->gpio_pin);
-            break;
-        case 2: /* GPT2A - P113 */
-            ra_gpio_config(dshot_ch->gpio_pin);
-            break;
-        case 3: /* GPT3A - P300 */
-            ra_gpio_config(dshot_ch->gpio_pin);
-            break;
-        case 4: /* GPT4A - P302 */
-            ra_gpio_config(dshot_ch->gpio_pin);
-            break;
-        default:
-            PX4_ERR("Unsupported GPT channel %d for DShot", gpt_ch);
-            break;
-    }
-}
+  /* Populate DMA buffer with compare values for each bit
+   * DShot encodes: bit=0 as ~37.5% duty, bit=1 as ~75% duty
+   */
 
-/**
- * Start sending a DShot frame
- */
-static void dshot_start_frame(uint8_t channel)
-{
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
-
-    /* Reset state */
-    dshot_ch->state = DSHOT_STATE_SENDING;
-    dshot_ch->bit_index = 0;
-
-    /* Send first bit */
-    bool first_bit = (dshot_ch->current_frame >> (DSHOT_FRAME_SIZE - 1)) & 1;
-    dshot_send_bit(channel, first_bit);
-
-    /* Start timer */
-    putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
-    uint32_t gtcr = getreg32(RA_GPT_GTCR(gpt_ch)) | GPT_GTCR_CST;
-    putreg32(gtcr, RA_GPT_GTCR(gpt_ch));
-    putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
-
-    dshot_ch->bit_index = 1;
-}
-
-/**
- * Send a single DShot bit
- */
-static void dshot_send_bit(uint8_t channel, bool bit_value)
-{
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
-    uint32_t compare_value;
-
-    /* Set compare value based on bit value */
-    if (bit_value) {
-        compare_value = dshot_ch->t1h_period;  /* Bit 1: 75% high */
-    } else {
-        compare_value = dshot_ch->t0h_period;  /* Bit 0: 37.5% high */
+  for (int bit = DSHOT_FRAME_BITS - 1; bit >= 0; bit--)
+    {
+      bool one = (ch->current_frame >> bit) & 1u;
+      uint32_t high_ticks = one ? ch->t1h_ticks : ch->t0h_ticks;
+      ch->dma_buffer[DSHOT_FRAME_BITS - 1 - bit] = high_ticks;
     }
 
-    /* Disable write protection and update compare register */
-    putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
-    putreg32(compare_value, RA_GPT_GTCCRA(gpt_ch));
-    putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
+  /* Configure DMA to transfer from buffer to GTCCRA on each overflow */
+
+  dma.trigger = 2;  /* Overflow trigger */
+  dma.src_addr = (uint32_t)ch->dma_buffer;
+  dma.dst_addr = R_GPT32_CH_BASE(gpt_channel) + R_GPT32_GTCCRA_OFFSET;
+  dma.transfer_count = DSHOT_FRAME_BITS;
+  dma.enable = true;
+
+  return ra_gpt_set_dma(gpt_channel, &dma);
 }
 
-/**
- * Complete DShot frame transmission
- */
-static void dshot_complete_frame(uint8_t channel)
+static void gpt_start(uint8_t gpt_channel)
 {
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
-
-    /* Stop timer */
-    putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
-    uint32_t gtcr = getreg32(RA_GPT_GTCR(gpt_ch)) & ~GPT_GTCR_CST;
-    putreg32(gtcr, RA_GPT_GTCR(gpt_ch));
-    putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
-
-    /* Set output low */
-    putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
-    putreg32(0, RA_GPT_GTCCRA(gpt_ch));
-    putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
-
-    dshot_ch->state = DSHOT_STATE_COMPLETE;
-
-    /* Start bidirectional reception if enabled */
-    if (dshot_ch->bdshot_enabled) {
-        dshot_ch->state = BDSHOT_STATE_RECEIVING;
-        /* Setup input capture for BDShot telemetry */
-        dshot_configure_bdshot_capture(channel);
-
-        /* Reset GPT counter for telemetry timing */
-        putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
-        putreg32(0, RA_GPT_GTCNT(gpt_ch));
-        putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
-    }
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET, GPT_GTWP_PRKEY);
+  gpt_putreg32(gpt_channel, R_GPT32_GTSTR_OFFSET, 1u << gpt_channel);
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET,
+               GPT_GTWP_PRKEY | GPT_GTWP_WP);
 }
 
-/**
- * GPT interrupt handler for DShot bit timing
- */
-static int dshot_gpt_interrupt(int irq, void *context, void *arg)
+static void gpt_stop(uint8_t gpt_channel)
 {
-    uint8_t channel = (uintptr_t)arg;
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
-
-    /* Clear interrupt flag */
-    uint32_t gtst = getreg32(RA_GPT_GTST_REG(gpt_ch));
-    putreg32(gtst & ~GPT_GTST_TCFA, RA_GPT_GTST_REG(gpt_ch));
-
-    if (dshot_ch->state == DSHOT_STATE_SENDING) {
-        if (dshot_ch->bit_index < DSHOT_FRAME_SIZE) {
-            /* Send next bit */
-            bool bit_value = (dshot_ch->current_frame >> (DSHOT_FRAME_SIZE - 1 - dshot_ch->bit_index)) & 1;
-            dshot_send_bit(channel, bit_value);
-            dshot_ch->bit_index++;
-        } else {
-            /* Frame complete */
-            dshot_complete_frame(channel);
-        }
-    }
-
-    return OK;
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET, GPT_GTWP_PRKEY);
+  gpt_putreg32(gpt_channel, R_GPT32_GTSTP_OFFSET, 1u << gpt_channel);
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET,
+               GPT_GTWP_PRKEY | GPT_GTWP_WP);
 }
 
-/**
- * BDShot overflow interrupt handler for telemetry timing
- */
-static int dshot_bdshot_overflow_interrupt(int irq, void *context, void *arg)
-{
-    uint8_t channel = (uintptr_t)arg;
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
-
-    /* Clear overflow interrupt flag */
-    uint32_t gtst = getreg32(RA_GPT_GTST_REG(gpt_ch));
-    putreg32(gtst & ~GPT_GTST_TCFPO, RA_GPT_GTST_REG(gpt_ch));
-
-    if (dshot_ch->state == BDSHOT_STATE_RECEIVING) {
-        /* Start telemetry capture - switch to input mode */
-        dshot_configure_bdshot_capture(channel);
-
-        /* Implement telemetry bit capture using input capture */
-        uint32_t current_time = getreg32(RA_GPT_GTCNT(gpt_ch));
-        uint32_t bit_time = current_time - dshot_ch->telemetry_capture_start;
-
-        /* BDShot uses inverted timing: short pulse = 1, long pulse = 0 */
-        /* Threshold at 50% of bit period for bit detection */
-        uint32_t bit_threshold = dshot_ch->bit_period / 2;
-        bool bit_value = (bit_time < bit_threshold) ? 1 : 0;
-
-        /* Store captured bit if we have room */
-        if (dshot_ch->telemetry_bit_count < 32) {
-            dshot_ch->telemetry_bits[dshot_ch->telemetry_bit_count] = bit_value;
-            dshot_ch->telemetry_bit_count++;
-        }
-
-        /* Check if we've captured a complete telemetry frame (21 bits for BDShot) */
-        if (dshot_ch->telemetry_bit_count >= 21) {
-            /* Reconstruct telemetry data from captured bits */
-            uint32_t raw_data = 0;
-            for (int i = 0; i < 21; i++) {
-                raw_data = (raw_data << 1) | dshot_ch->telemetry_bits[i];
-            }
-
-            /* Decode the telemetry response */
-            bdshot_decode_response(channel, raw_data);
-            dshot_ch->state = BDSHOT_STATE_COMPLETE;
-        } else {
-            /* Update capture start for next bit */
-            dshot_ch->telemetry_capture_start = current_time;
-        }
-    }
-
-    return OK;
-}
-
-/**
- * Configure GPT channel for BDShot input capture (telemetry)
- */
-static void dshot_configure_bdshot_capture(uint8_t channel)
-{
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-    uint8_t gpt_ch = dshot_ch->gpt_channel;
-
-    /* Disable write protection */
-    putreg32(GPT_GTWP_PRKEY | GPT_GTWP_WP, RA_GPT_GTWP(gpt_ch));
-
-    /* Configure GTIOA pin for input capture mode */
-    uint32_t gtior = getreg32(RA_GPT_GTIOR(gpt_ch));
-    gtior &= ~(0x1F << 0); /* Clear GTIOA bits */
-    gtior |= (0x09 << 0);  /* Set GTIOA for rising edge capture */
-    putreg32(gtior, RA_GPT_GTIOR(gpt_ch));
-
-    /* Enable capture interrupt */
-    putreg32(GPT_GTINTAD_GTINTA, RA_GPT_GTINTAD(gpt_ch));
-
-    /* Re-enable write protection */
-    putreg32(GPT_GTWP_PRKEY, RA_GPT_GTWP(gpt_ch));
-
-    /* Initialize telemetry capture state */
-    dshot_ch->telemetry_bit_count = 0;
-    dshot_ch->telemetry_capture_start = getreg32(RA_GPT_GTCNT(gpt_ch));
-}
-
-/**
- * Decode BDShot telemetry response
- */
-static void bdshot_decode_response(uint8_t channel, uint32_t raw_data)
-{
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-
-    /* Implement BDShot GCR (Generic Cyclic Redundancy) decoding */
-    dshot_ch->raw_response = raw_data;
-
-    /* BDShot telemetry format: 21-bit GCR encoded frame */
-    /* GCR decoding: convert 21 bits to 16 bits of data */
-    uint16_t decoded_data = 0;
-    bool decode_success = true;
-
-    /* Simple GCR decode - extract data bits from 21-bit frame */
-    /* This is a simplified implementation - full GCR requires lookup table */
-    for (int i = 0; i < 16; i++) {
-        /* Extract every 4th bit starting from bit 2 (simplified) */
-        if (i * 21 / 16 < 21) {
-            decoded_data |= ((raw_data >> (20 - (i * 21 / 16))) & 1) << (15 - i);
-        }
-    }
-
-    if (decode_success) {
-        /* Extract eRPM from decoded data (bits 11-4) */
-        uint16_t erpm_raw = (decoded_data >> 4) & 0xFF;
-
-        /* Convert to actual eRPM value */
-        /* eRPM = (raw_value * 100) / poles (assuming 14 poles) */
-        dshot_ch->erpm = (erpm_raw * 100) / 14;
-
-        /* Reset no-response counter on successful decode */
-        dshot_ch->no_response_count = 0;
-    } else {
-        /* Decoding failed */
-        dshot_ch->crc_error_count++;
-        dshot_ch->erpm = 0;
-    }
-
-    dshot_ch->state = BDSHOT_STATE_COMPLETE;
-}
+#endif /* CONFIG_RA_DMAC */
 
 /****************************************************************************
- * Public Functions - DShot API Implementation
+ * Public Functions
  ****************************************************************************/
 
 /**
- * Initialize DShot system
+ * Initialize DShot driver
  */
-int up_dshot_init(uint32_t channel_mask, unsigned dshot_pwm_freq, bool enable_bidirectional_dshot)
+
+int up_dshot_init(uint32_t channel_mask, unsigned dshot_pwm_freq,
+                  bool enable_bidirectional_dshot)
 {
-    irqstate_t flags;
-    int ret = OK;
-
-    PX4_INFO("Initializing DShot: mask=0x%lx, freq=%u, bdshot=%s",
-             channel_mask, dshot_pwm_freq, enable_bidirectional_dshot ? "yes" : "no");
-
-    /* Validate frequency */
-    if (dshot_pwm_freq != DSHOT150_FREQ &&
-        dshot_pwm_freq != DSHOT300_FREQ &&
-        dshot_pwm_freq != DSHOT600_FREQ) {
-        PX4_ERR("Unsupported DShot frequency: %u", dshot_pwm_freq);
-        return -EINVAL;
+  if (dshot_pwm_freq != DSHOT150_FREQ &&
+      dshot_pwm_freq != DSHOT300_FREQ &&
+      dshot_pwm_freq != DSHOT600_FREQ)
+    {
+      return -EINVAL;
     }
 
-    flags = enter_critical_section();
+  g_dshot_frequency = dshot_pwm_freq;
+  g_bdshot_enabled = enable_bidirectional_dshot;
+  g_active_channels = 0;
 
-    /* Initialize global state */
-    if (!g_dshot.initialized) {
-        memset(&g_dshot, 0, sizeof(g_dshot));
-        g_dshot.lock = false;
-        g_dshot.initialized = true;
-    }
-
-    g_dshot.frequency = dshot_pwm_freq;
-    g_dshot.bidirectional_enabled = enable_bidirectional_dshot;
-    g_dshot.active_channels = 0;
-
-    /* Initialize requested channels */
-    for (uint8_t channel = 0; channel < DSHOT_MAX_CHANNELS; channel++) {
-        if (!(channel_mask & (1 << channel))) {
-            continue;
+  for (uint8_t ch_idx = 0; ch_idx < DSHOT_MAX_CHANNELS; ch_idx++)
+    {
+      if (!(channel_mask & (1u << ch_idx)))
+        {
+          continue;
         }
 
-        dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
+      dshot_channel_t *ch = &g_channels[ch_idx];
+      ch->gpt_channel = kGptMap[ch_idx];
 
-        /* Copy configuration from channel map */
-        dshot_ch->gpt_channel = dshot_channel_map[channel].gpt_channel;
-        dshot_ch->gpio_pin = dshot_channel_map[channel].gpio_pin;
-        dshot_ch->mstp_module = dshot_channel_map[channel].mstp_module;
+      dshot_calculate_timing(dshot_pwm_freq, &ch->bit_period_ticks,
+                             &ch->t0h_ticks, &ch->t1h_ticks);
 
-        /* Enable GPT module clock - simplified approach */
-        ra_mstp_start(dshot_ch->gpt_channel); /* Use channel number as MSTP ID */
+      gpt_setup_channel(ch->gpt_channel, ch->bit_period_ticks);
 
-        /* Calculate timing parameters */
-        dshot_ch->bit_period = dshot_calculate_periods(dshot_pwm_freq,
-                                                       &dshot_ch->t0h_period,
-                                                       &dshot_ch->t1h_period);
-
-        /* Initialize state */
-        dshot_ch->bdshot_enabled = enable_bidirectional_dshot;
-        dshot_ch->state = DSHOT_STATE_IDLE;
-        dshot_ch->current_frame = 0;
-        dshot_ch->bit_index = 0;
-
-        /* Reset telemetry counters */
-        dshot_ch->crc_error_count = 0;
-        dshot_ch->frame_error_count = 0;
-        dshot_ch->no_response_count = 0;
-        dshot_ch->last_no_response_count = 0;
-
-        /* Configure hardware */
-        dshot_configure_gpio(channel);
-        dshot_configure_channel(channel);
-
-        /* Setup ICU interrupt for compare match (DShot bit timing) */
-        int icu_irq = ra_icu_attach(dshot_channel_map[channel].elc_compare,
-                                   dshot_gpt_interrupt,
-                                   (void *)(uintptr_t)channel,
-                                   true);
-        if (icu_irq < 0) {
-            PX4_ERR("Failed to attach ICU compare IRQ for channel %d: %d", channel, icu_irq);
-            ret = icu_irq;
-            break;
-        }
-
-        dshot_ch->icu_compare_irq = icu_irq;
-        dshot_channel_map[channel].icu_irq = icu_irq;
-
-        /* Setup ICU interrupt for overflow (BDShot telemetry timing) if bidirectional enabled */
-        if (enable_bidirectional_dshot) {
-            int overflow_irq = ra_icu_attach(dshot_channel_map[channel].elc_overflow,
-                                           dshot_bdshot_overflow_interrupt,
-                                           (void *)(uintptr_t)channel,
-                                           true);
-            if (overflow_irq < 0) {
-                PX4_ERR("Failed to attach ICU overflow IRQ for channel %d: %d", channel, overflow_irq);
-                /* Non-fatal for DShot-only operation */
-                dshot_ch->icu_overflow_irq = -1;
-            } else {
-                dshot_ch->icu_overflow_irq = overflow_irq;
-            }
-        } else {
-            dshot_ch->icu_overflow_irq = -1;
-        }
-
-        dshot_ch->initialized = true;
-        g_dshot.active_channels |= (1 << channel);
-
-        PX4_DEBUG("DShot channel %d initialized: GPT%d, period=%lu",
-                  channel, dshot_ch->gpt_channel, dshot_ch->bit_period);
+      ch->current_frame = 0;
+      memset(ch->dma_buffer, 0, sizeof(ch->dma_buffer));
+      ch->erpm = 0;
+      ch->crc_error_count = 0;
+      ch->frame_error_count = 0;
+      ch->no_response_count = 0;
+      ch->initialized = true;
+      g_active_channels |= (1u << ch_idx);
     }
 
-    spin_unlock_irqrestore(&g_dshot.lock, flags);
-
-    if (ret < 0) {
-        PX4_ERR("DShot initialization failed");
-        return ret;
+  if (!g_dma_available)
+    {
+      syslog(LOG_WARNING,
+             "DShot: DMA not available, using software fallback\n");
     }
 
-    PX4_INFO("DShot initialized successfully: %d channels active",
-             __builtin_popcount(g_dshot.active_channels));
-
-    return g_dshot.active_channels;
+  return (int)g_active_channels;
 }
 
 /**
- * Set DShot motor data for a channel
+ * Set motor throttle data
  */
-void dshot_motor_data_set(unsigned channel, uint16_t throttle, bool telemetry)
+
+void dshot_motor_data_set(unsigned channel, uint16_t throttle,
+                          bool telemetry)
 {
-    if (channel >= DSHOT_MAX_CHANNELS || !g_dshot.initialized) {
-        return;
+  if (channel >= DSHOT_MAX_CHANNELS)
+    {
+      return;
     }
 
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-
-    if (!dshot_ch->initialized) {
-        return;
+  dshot_channel_t *ch = &g_channels[channel];
+  if (!ch->initialized)
+    {
+      return;
     }
 
-    /* Encode DShot frame */
-    dshot_ch->current_frame = dshot_encode_frame(throttle, telemetry, dshot_ch->bdshot_enabled);
-
-    PX4_DEBUG("DShot channel %d: throttle=%u, tel=%s, frame=0x%04x",
-              channel, throttle, telemetry ? "yes" : "no", dshot_ch->current_frame);
+  ch->current_frame = dshot_encode_frame(throttle, telemetry);
 }
 
 /**
- * Trigger DShot data transmission for all channels
+ * Trigger transmission of DShot frames
  */
+
 void up_dshot_trigger(void)
 {
-    if (!g_dshot.initialized) {
-        return;
-    }
+#ifdef CONFIG_RA_DMAC
+  if (g_dma_available)
+    {
+      for (uint8_t ch_idx = 0; ch_idx < DSHOT_MAX_CHANNELS; ch_idx++)
+        {
+          if (!(g_active_channels & (1u << ch_idx)))
+            {
+              continue;
+            }
 
-    irqstate_t flags = enter_critical_section();
+          dshot_channel_t *ch = &g_channels[ch_idx];
+          if (!ch->initialized || ch->current_frame == 0)
+            {
+              continue;
+            }
 
-    /* Start transmission on all active channels */
-    for (uint8_t channel = 0; channel < DSHOT_MAX_CHANNELS; channel++) {
-        if (!(g_dshot.active_channels & (1 << channel))) {
-            continue;
+          /* Load frame into DMA buffer and configure DMA */
+
+          if (gpt_load_frame_to_dma(ch->gpt_channel, ch) < 0)
+            {
+              continue;
+            }
+
+          /* Start timer - DMA will automatically update GTCCRA */
+
+          gpt_start(ch->gpt_channel);
+
+          /* Wait for frame completion
+           * Each bit takes (1/frequency) seconds
+           * Total frame time = 16 bits + small margin
+           */
+
+          uint32_t bit_time_us = (1000000u + g_dshot_frequency / 2u) /
+                                 g_dshot_frequency;
+          up_udelay(bit_time_us * DSHOT_FRAME_BITS + 10u);
+
+          /* Stop timer */
+
+          gpt_stop(ch->gpt_channel);
+
+          /* Disable DMA for next cycle */
+
+          struct ra_gpt_dma_s dma_disable;
+          memset(&dma_disable, 0, sizeof(dma_disable));
+          dma_disable.trigger = 2;
+          dma_disable.enable = false;
+          ra_gpt_set_dma(ch->gpt_channel, &dma_disable);
         }
-
-        dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-
-        /* Only start if not already sending and have data */
-        if (dshot_ch->state == DSHOT_STATE_IDLE && dshot_ch->current_frame != 0) {
-            dshot_start_frame(channel);
-        }
     }
+  else
+#endif
+    {
+      /* Software fallback if DMA not available
+       * Note: This is a simplified implementation
+       * Full bit-banging would be CPU-intensive
+       */
 
-    leave_critical_section(flags);
+      syslog(LOG_WARNING,
+             "DShot: Software bit-banging not fully implemented\n");
+    }
 }
 
 /**
- * Arm or disarm DShot outputs
+ * Arm/disarm DShot outputs
  */
+
 int up_dshot_arm(bool armed)
 {
-    if (!g_dshot.initialized) {
-        return -ENODEV;
-    }
+  if (!armed)
+    {
+      /* Send zero throttle to all channels */
 
-    PX4_INFO("DShot %s", armed ? "armed" : "disarmed");
-
-    if (!armed) {
-        /* Disarm: Set all channels to DSHOT_DISARM_VALUE */
-        for (uint8_t channel = 0; channel < DSHOT_MAX_CHANNELS; channel++) {
-            if (g_dshot.active_channels & (1 << channel)) {
-                dshot_motor_data_set(channel, 0, false); /* DSHOT_DISARM_VALUE = 0 */
+      for (uint8_t ch = 0; ch < DSHOT_MAX_CHANNELS; ch++)
+        {
+          if (g_active_channels & (1u << ch))
+            {
+              dshot_motor_data_set(ch, 0, false);
             }
         }
 
-        /* Trigger to send disarm values */
-        up_dshot_trigger();
+      up_dshot_trigger();
     }
 
-    return OK;
+  return 0;
 }
 
 /**
- * Get number of BDShot channels ready for telemetry
+ * BDShot telemetry functions
  */
+
 int up_bdshot_num_erpm_ready(void)
 {
-    if (!g_dshot.initialized || !g_dshot.bidirectional_enabled) {
-        return 0;
+  if (!g_bdshot_enabled)
+    {
+      return 0;
     }
 
-    int ready_count = 0;
-
-    for (uint8_t channel = 0; channel < DSHOT_MAX_CHANNELS; channel++) {
-        if (!(g_dshot.active_channels & (1 << channel))) {
-            continue;
-        }
-
-        dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-
-        if (dshot_ch->state == BDSHOT_STATE_COMPLETE) {
-            ready_count++;
+  int count = 0;
+  for (uint8_t ch = 0; ch < DSHOT_MAX_CHANNELS; ch++)
+    {
+      if ((g_active_channels & (1u << ch)) &&
+          g_channels[ch].erpm > 0)
+        {
+          count++;
         }
     }
 
-    return ready_count;
+  return count;
 }
 
-/**
- * Get BDShot eRPM for a channel
- */
 int up_bdshot_get_erpm(uint8_t channel, int *erpm)
 {
-    if (channel >= DSHOT_MAX_CHANNELS || !g_dshot.initialized ||
-        !g_dshot.bidirectional_enabled || erpm == NULL) {
-        return -EINVAL;
+  if (channel >= DSHOT_MAX_CHANNELS || !erpm)
+    {
+      return -EINVAL;
     }
 
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-
-    if (!dshot_ch->initialized || dshot_ch->state != BDSHOT_STATE_COMPLETE) {
-        return -ENODATA;
+  if (!g_channels[channel].initialized)
+    {
+      return -ENODEV;
     }
 
-    *erpm = dshot_ch->erpm;
-    dshot_ch->state = DSHOT_STATE_IDLE; /* Reset state after reading */
+  *erpm = (int)g_channels[channel].erpm;
 
-    return OK;
+  /* Check for offline ESC */
+
+  if (g_channels[channel].no_response_count > BDSHOT_OFFLINE_COUNT)
+    {
+      return -ETIMEDOUT;
+    }
+
+  return 0;
 }
 
-/**
- * Get BDShot channel status
- */
 int up_bdshot_channel_status(uint8_t channel)
 {
-    if (channel >= DSHOT_MAX_CHANNELS || !g_dshot.initialized || !g_dshot.bidirectional_enabled) {
-        return -1;
+  if (channel >= DSHOT_MAX_CHANNELS)
+    {
+      return -EINVAL;
     }
 
-    dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-
-    if (!dshot_ch->initialized) {
-        return -1;
+  if (!g_channels[channel].initialized)
+    {
+      return -ENODEV;
     }
 
-    /* Check if ESC is responding (online if response count delta is less than offline threshold) */
-    uint32_t response_delta = dshot_ch->no_response_count - dshot_ch->last_no_response_count;
-    dshot_ch->last_no_response_count = dshot_ch->no_response_count;
+  /* Return -1 if ESC is offline */
 
-    return (response_delta < BDSHOT_OFFLINE_COUNT) ? 1 : 0;
+  if (g_channels[channel].no_response_count > BDSHOT_OFFLINE_COUNT)
+    {
+      return -1;
+    }
+
+  return 0;
 }
 
-/**
- * Print BDShot status for all channels
- */
 void up_bdshot_status(void)
 {
-    if (!g_dshot.initialized) {
-        PX4_INFO("DShot not initialized");
-        return;
-    }
+  syslog(LOG_INFO, "DShot Status:\n");
+  syslog(LOG_INFO, "  Frequency: %u Hz\n", (unsigned int)g_dshot_frequency);
+  syslog(LOG_INFO, "  Active channels: 0x%x\n",
+         (unsigned int)g_active_channels);
+  syslog(LOG_INFO, "  BDShot: %s\n",
+         g_bdshot_enabled ? "enabled" : "disabled");
+  syslog(LOG_INFO, "  DMA: %s\n",
+         g_dma_available ? "available" : "unavailable");
 
-    PX4_INFO("DShot Status: freq=%lu Hz, bdshot=%s, channels=0x%lx",
-             g_dshot.frequency, g_dshot.bidirectional_enabled ? "enabled" : "disabled",
-             g_dshot.active_channels);
-
-    for (uint8_t channel = 0; channel < DSHOT_MAX_CHANNELS; channel++) {
-        if (!(g_dshot.active_channels & (1 << channel))) {
-            continue;
-        }
-
-        dshot_channel_t *dshot_ch = &g_dshot.channels[channel];
-        int status = up_bdshot_channel_status(channel);
-
-        PX4_INFO("Channel %d: GPT%d %s, eRPM=%u",
-                 channel, dshot_ch->gpt_channel,
-                 (status > 0) ? "online" : (status == 0) ? "offline" : "N/A",
-                 dshot_ch->erpm);
-
-        if (g_dshot.bidirectional_enabled) {
-            PX4_INFO("  CRC errors: %lu, Frame errors: %lu, No response: %lu",
-                     dshot_ch->crc_error_count, dshot_ch->frame_error_count,
-                     dshot_ch->no_response_count);
+  for (uint8_t ch = 0; ch < DSHOT_MAX_CHANNELS; ch++)
+    {
+      if (g_active_channels & (1u << ch))
+        {
+          dshot_channel_t *chan = &g_channels[ch];
+          syslog(LOG_INFO, "  Channel %u (GPT%u):\n", ch,
+                 chan->gpt_channel);
+          syslog(LOG_INFO, "    eRPM: %u\n", chan->erpm);
+          syslog(LOG_INFO, "    CRC errors: %lu\n",
+                 (unsigned long)chan->crc_error_count);
+          syslog(LOG_INFO, "    Frame errors: %lu\n",
+                 (unsigned long)chan->frame_error_count);
+          syslog(LOG_INFO, "    No response: %lu\n",
+                 (unsigned long)chan->no_response_count);
         }
     }
 }

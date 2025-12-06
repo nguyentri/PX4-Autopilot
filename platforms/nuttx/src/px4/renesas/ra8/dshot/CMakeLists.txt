@@ -32,7 +32,8 @@
 ############################################################################
 
 px4_add_library(arch_dshot
-	dshot_simple.c
+	dshot.c
+    dshot.h
 )
 
 # Use less aggressive optimization to help with compilation
