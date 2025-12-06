@@ -88,20 +88,25 @@
  * Memory Configuration
  ****************************************************************************************************/
 
-/* Flash Memory */
-#define BOARD_FLASH_SIZE                (2 * 1024 * 1024)  /* 2MB Code Flash */
-#define BOARD_FLASH_SECTORS             512                /* 4KB sectors */
+/* MRAM (Magnetoresistive RAM) - Non-volatile memory used as code flash */
+#define BOARD_FLASH_SIZE                (1 * 1024 * 1024)  /* 1MB MRAM */
+#define BOARD_FLASH_SECTORS             256                /* 4KB sectors */
 
 /* SRAM */
-#define BOARD_RAM_SIZE                  (1024 * 1024)      /* 1MB SRAM */
+#define BOARD_RAM_SIZE                  (2 * 1024 * 1024)  /* 2MB SRAM with ECC */
 
-/* MRAM Configuration (from board.h) */
+/* MRAM Configuration */
 #define BOARD_MRAM_CODE_BASE            0x02000000
-#define BOARD_MRAM_CODE_SIZE            0x001F0000  /* 2MB - 64KB */
-#define BOARD_MRAM_DATA_BASE            0x021F0000  /* Last 64KB for params */
+#define BOARD_MRAM_CODE_SIZE            0x000F0000  /* 1MB - 64KB (960KB code) */
+#define BOARD_MRAM_DATA_BASE            0x020F0000  /* Last 64KB for params */
 #define BOARD_MRAM_DATA_SIZE            0x00010000  /* 64KB */
 #define BOARD_MRAM_WRITE_SIZE           32          /* 32 bytes per write */
-#define BOARD_MRAM_BLOCK_SIZE           8192        /* 8KB simulated blocks */
+#define BOARD_MRAM_BLOCK_SIZE           4096        /* 4KB sectors */
+
+/* External Octo-SPI Flash */
+#define BOARD_OSPI_FLASH_BASE           0x80000000  /* Octo-SPI CS0 */
+#define BOARD_OSPI_FLASH_SIZE           (64 * 1024 * 1024)  /* 64MB (512Mb) */
+#define BOARD_OSPI_FLASH_SECTOR_SIZE    4096        /* 4KB sectors */
 
 /* Mass Storage Configuration */
 #define BOARD_HAS_NO_SDCARD             1  /* No SD card slot */

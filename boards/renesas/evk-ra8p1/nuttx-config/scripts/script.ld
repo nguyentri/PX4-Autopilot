@@ -1,5 +1,5 @@
  /****************************************************************************
- * boards/arm/ra8/fpb-ra8e1/scripts/fpb-ra8e1.ld
+ * boards/arm/ra8/evk-ra8p1/scripts/evk-ra8p1.ld
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,72 +18,118 @@
  *
  ****************************************************************************/
 
-/* The RA8E1 has 1MB of FLASH beginning at address 0x02000000 and
- * 512KB RAM beginning at address 0x22060000, plus TCM memories.
+/* The RA8P1 has 1MB MRAM (non-volatile) at 0x02000000, 2MB SRAM at 0x22000000,
+ * plus TCM memories. External 64MB Octo-SPI Flash at 0x80000000.
  */
-RAM_START = 0x22060000;
-RAM_LENGTH = 0x00080000;
+RAM_START = 0x22000000;
+RAM_LENGTH = 0x001d4000;
 FLASH_START = 0x02000000;
 FLASH_LENGTH = 0x00100000;
 DATA_FLASH_START = 0x27000000;
-DATA_FLASH_LENGTH = 0x00003000;
+DATA_FLASH_LENGTH = 0x00000000;
+SDRAM_START = 0x68000000;
+SDRAM_LENGTH = 0x08000000;
 OSPI0_CS0_START = 0x80000000;
 OSPI0_CS0_LENGTH = 0x10000000;
 OSPI0_CS1_START = 0x90000000;
 OSPI0_CS1_LENGTH = 0x10000000;
-OPTION_SETTING_OFS0_START = 0x0300a100;
+OSPI1_CS0_START = 0x70000000;
+OSPI1_CS0_LENGTH = 0x08000000;
+OSPI1_CS1_START = 0x78000000;
+OSPI1_CS1_LENGTH = 0x08000000;
+OPTION_SETTING_OFS0_START = 0x02c9f040;
 OPTION_SETTING_OFS0_LENGTH = 0x00000004;
-OPTION_SETTING_OFS2_START = 0x0300a104;
+OPTION_SETTING_OFS2_START = 0x02c9f044;
 OPTION_SETTING_OFS2_LENGTH = 0x00000004;
-OPTION_SETTING_DUALSEL_START = 0x0300a110;
-OPTION_SETTING_DUALSEL_LENGTH = 0x00000004;
-OPTION_SETTING_OFS1_START = 0x1300a180;
+OPTION_SETTING_SAS_START = 0x02c9f074;
+OPTION_SETTING_SAS_LENGTH = 0x00000004;
+OPTION_SETTING_OFS1_START = 0x12c9f4c0;
 OPTION_SETTING_OFS1_LENGTH = 0x00000004;
-OPTION_SETTING_BANKSEL_START = 0x1300a190;
-OPTION_SETTING_BANKSEL_LENGTH = 0x00000004;
-OPTION_SETTING_BPS_START = 0x1300a1c0;
-OPTION_SETTING_BPS_LENGTH = 0x00000010;
-OPTION_SETTING_PBPS_START = 0x1300a1e0;
-OPTION_SETTING_PBPS_LENGTH = 0x00000010;
-OPTION_SETTING_OFS1_SEC_START = 0x0300a200;
+OPTION_SETTING_OFS1_SEC_START = 0x02c9f0c0;
 OPTION_SETTING_OFS1_SEC_LENGTH = 0x00000004;
-OPTION_SETTING_BANKSEL_SEC_START = 0x0300a210;
-OPTION_SETTING_BANKSEL_SEC_LENGTH = 0x00000004;
-OPTION_SETTING_BPS_SEC_START = 0x0300a240;
-OPTION_SETTING_BPS_SEC_LENGTH = 0x00000010;
-OPTION_SETTING_PBPS_SEC_START = 0x0300a260;
-OPTION_SETTING_PBPS_SEC_LENGTH = 0x00000010;
-OPTION_SETTING_OFS1_SEL_START = 0x0300a280;
+OPTION_SETTING_OFS1_SEL_START = 0x02c9f120;
 OPTION_SETTING_OFS1_SEL_LENGTH = 0x00000004;
-OPTION_SETTING_BANKSEL_SEL_START = 0x0300a290;
-OPTION_SETTING_BANKSEL_SEL_LENGTH = 0x00000004;
-OPTION_SETTING_BPS_SEL_START = 0x0300a2c0;
-OPTION_SETTING_BPS_SEL_LENGTH = 0x00000010;
+OPTION_SETTING_OFS3_START = 0x12c9f4c4;
+OPTION_SETTING_OFS3_LENGTH = 0x00000004;
+OPTION_SETTING_OFS3_SEC_START = 0x02c9f0c4;
+OPTION_SETTING_OFS3_SEC_LENGTH = 0x00000004;
+OPTION_SETTING_OFS3_SEL_START = 0x02c9f124;
+OPTION_SETTING_OFS3_SEL_LENGTH = 0x00000004;
+OPTION_SETTING_BPS_START = 0x12c9f600;
+OPTION_SETTING_BPS_LENGTH = 0x00000080;
+OPTION_SETTING_BPS_SEC_START = 0x02c9f200;
+OPTION_SETTING_BPS_SEC_LENGTH = 0x00000080;
+OPTION_SETTING_OTP_FSBLCTRL0_START = 0x02e07600;
+OPTION_SETTING_OTP_FSBLCTRL0_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_FSBLCTRL1_START = 0x02e07604;
+OPTION_SETTING_OTP_FSBLCTRL1_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_FSBLCTRL2_START = 0x02e07608;
+OPTION_SETTING_OTP_FSBLCTRL2_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SAMR_START = 0x02e07614;
+OPTION_SETTING_OTP_SAMR_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC00_START = 0x02e07620;
+OPTION_SETTING_OTP_SACC00_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC10_START = 0x02e07630;
+OPTION_SETTING_OTP_SACC10_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC01_START = 0x02e07640;
+OPTION_SETTING_OTP_SACC01_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC11_START = 0x02e07650;
+OPTION_SETTING_OTP_SACC11_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC02_START = 0x02e07660;
+OPTION_SETTING_OTP_SACC02_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC12_START = 0x02e07670;
+OPTION_SETTING_OTP_SACC12_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC03_START = 0x02e07680;
+OPTION_SETTING_OTP_SACC03_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_SACC13_START = 0x02e07690;
+OPTION_SETTING_OTP_SACC13_LENGTH = 0x00000004;
+OPTION_SETTING_OTP_PBPS_SEC_START = 0x02e17700;
+OPTION_SETTING_OTP_PBPS_SEC_LENGTH = 0x00000080;
+OPTION_SETTING_OTP_PBPS_START = 0x12e17780;
+OPTION_SETTING_OTP_PBPS_LENGTH = 0x00000080;
+OPTION_SETTING_OTP_ZHUK_START = 0x02e17920;
+OPTION_SETTING_OTP_ZHUK_LENGTH = 0x00000004;
 ITCM_START = 0x00000000;
-ITCM_LENGTH = 0x00004000;
+ITCM_LENGTH = 0x00020000;
 DTCM_START = 0x20000000;
-DTCM_LENGTH = 0x00004000;
+DTCM_LENGTH = 0x00020000;
+
 MEMORY
 {
     RAM (rwx) : ORIGIN = RAM_START, LENGTH = RAM_LENGTH
     FLASH (rx) : ORIGIN = FLASH_START, LENGTH = FLASH_LENGTH
     DATA_FLASH (rx) : ORIGIN = DATA_FLASH_START, LENGTH = DATA_FLASH_LENGTH
+    SDRAM (rwx) : ORIGIN = SDRAM_START, LENGTH = SDRAM_LENGTH
     OSPI0_CS0 (rwx) : ORIGIN = OSPI0_CS0_START, LENGTH = OSPI0_CS0_LENGTH
     OSPI0_CS1 (rx) : ORIGIN = OSPI0_CS1_START, LENGTH = OSPI0_CS1_LENGTH
+    OSPI1_CS0 (rwx) : ORIGIN = OSPI1_CS0_START, LENGTH = OSPI1_CS0_LENGTH
+    OSPI1_CS1 (rx) : ORIGIN = OSPI1_CS1_START, LENGTH = OSPI1_CS1_LENGTH
     OPTION_SETTING_OFS0 (r) : ORIGIN = OPTION_SETTING_OFS0_START, LENGTH = OPTION_SETTING_OFS0_LENGTH
     OPTION_SETTING_OFS2 (r) : ORIGIN = OPTION_SETTING_OFS2_START, LENGTH = OPTION_SETTING_OFS2_LENGTH
-    OPTION_SETTING_DUALSEL (r) : ORIGIN = OPTION_SETTING_DUALSEL_START, LENGTH = OPTION_SETTING_DUALSEL_LENGTH
+    OPTION_SETTING_SAS (r) : ORIGIN = OPTION_SETTING_SAS_START, LENGTH = OPTION_SETTING_SAS_LENGTH
     OPTION_SETTING_OFS1 (r) : ORIGIN = OPTION_SETTING_OFS1_START, LENGTH = OPTION_SETTING_OFS1_LENGTH
-    OPTION_SETTING_BANKSEL (r) : ORIGIN = OPTION_SETTING_BANKSEL_START, LENGTH = OPTION_SETTING_BANKSEL_LENGTH
-    OPTION_SETTING_BPS (r) : ORIGIN = OPTION_SETTING_BPS_START, LENGTH = OPTION_SETTING_BPS_LENGTH
-    OPTION_SETTING_PBPS (r) : ORIGIN = OPTION_SETTING_PBPS_START, LENGTH = OPTION_SETTING_PBPS_LENGTH
     OPTION_SETTING_OFS1_SEC (r) : ORIGIN = OPTION_SETTING_OFS1_SEC_START, LENGTH = OPTION_SETTING_OFS1_SEC_LENGTH
-    OPTION_SETTING_BANKSEL_SEC (r) : ORIGIN = OPTION_SETTING_BANKSEL_SEC_START, LENGTH = OPTION_SETTING_BANKSEL_SEC_LENGTH
-    OPTION_SETTING_BPS_SEC (r) : ORIGIN = OPTION_SETTING_BPS_SEC_START, LENGTH = OPTION_SETTING_BPS_SEC_LENGTH
-    OPTION_SETTING_PBPS_SEC (r) : ORIGIN = OPTION_SETTING_PBPS_SEC_START, LENGTH = OPTION_SETTING_PBPS_SEC_LENGTH
     OPTION_SETTING_OFS1_SEL (r) : ORIGIN = OPTION_SETTING_OFS1_SEL_START, LENGTH = OPTION_SETTING_OFS1_SEL_LENGTH
-    OPTION_SETTING_BANKSEL_SEL (r) : ORIGIN = OPTION_SETTING_BANKSEL_SEL_START, LENGTH = OPTION_SETTING_BANKSEL_SEL_LENGTH
-    OPTION_SETTING_BPS_SEL (r) : ORIGIN = OPTION_SETTING_BPS_SEL_START, LENGTH = OPTION_SETTING_BPS_SEL_LENGTH
+    OPTION_SETTING_OFS3 (r) : ORIGIN = OPTION_SETTING_OFS3_START, LENGTH = OPTION_SETTING_OFS3_LENGTH
+    OPTION_SETTING_OFS3_SEC (r) : ORIGIN = OPTION_SETTING_OFS3_SEC_START, LENGTH = OPTION_SETTING_OFS3_SEC_LENGTH
+    OPTION_SETTING_OFS3_SEL (r) : ORIGIN = OPTION_SETTING_OFS3_SEL_START, LENGTH = OPTION_SETTING_OFS3_SEL_LENGTH
+    OPTION_SETTING_BPS (r) : ORIGIN = OPTION_SETTING_BPS_START, LENGTH = OPTION_SETTING_BPS_LENGTH
+    OPTION_SETTING_BPS_SEC (r) : ORIGIN = OPTION_SETTING_BPS_SEC_START, LENGTH = OPTION_SETTING_BPS_SEC_LENGTH
+    OPTION_SETTING_OTP_FSBLCTRL0 (r) : ORIGIN = OPTION_SETTING_OTP_FSBLCTRL0_START, LENGTH = OPTION_SETTING_OTP_FSBLCTRL0_LENGTH
+    OPTION_SETTING_OTP_FSBLCTRL1 (r) : ORIGIN = OPTION_SETTING_OTP_FSBLCTRL1_START, LENGTH = OPTION_SETTING_OTP_FSBLCTRL1_LENGTH
+    OPTION_SETTING_OTP_FSBLCTRL2 (r) : ORIGIN = OPTION_SETTING_OTP_FSBLCTRL2_START, LENGTH = OPTION_SETTING_OTP_FSBLCTRL2_LENGTH
+    OPTION_SETTING_OTP_SAMR (r) : ORIGIN = OPTION_SETTING_OTP_SAMR_START, LENGTH = OPTION_SETTING_OTP_SAMR_LENGTH
+    OPTION_SETTING_OTP_SACC00 (r) : ORIGIN = OPTION_SETTING_OTP_SACC00_START, LENGTH = OPTION_SETTING_OTP_SACC00_LENGTH
+    OPTION_SETTING_OTP_SACC10 (r) : ORIGIN = OPTION_SETTING_OTP_SACC10_START, LENGTH = OPTION_SETTING_OTP_SACC10_LENGTH
+    OPTION_SETTING_OTP_SACC01 (r) : ORIGIN = OPTION_SETTING_OTP_SACC01_START, LENGTH = OPTION_SETTING_OTP_SACC01_LENGTH
+    OPTION_SETTING_OTP_SACC11 (r) : ORIGIN = OPTION_SETTING_OTP_SACC11_START, LENGTH = OPTION_SETTING_OTP_SACC11_LENGTH
+    OPTION_SETTING_OTP_SACC02 (r) : ORIGIN = OPTION_SETTING_OTP_SACC02_START, LENGTH = OPTION_SETTING_OTP_SACC02_LENGTH
+    OPTION_SETTING_OTP_SACC12 (r) : ORIGIN = OPTION_SETTING_OTP_SACC12_START, LENGTH = OPTION_SETTING_OTP_SACC12_LENGTH
+    OPTION_SETTING_OTP_SACC03 (r) : ORIGIN = OPTION_SETTING_OTP_SACC03_START, LENGTH = OPTION_SETTING_OTP_SACC03_LENGTH
+    OPTION_SETTING_OTP_SACC13 (r) : ORIGIN = OPTION_SETTING_OTP_SACC13_START, LENGTH = OPTION_SETTING_OTP_SACC13_LENGTH
+    OPTION_SETTING_OTP_PBPS_SEC (r) : ORIGIN = OPTION_SETTING_OTP_PBPS_SEC_START, LENGTH = OPTION_SETTING_OTP_PBPS_SEC_LENGTH
+    OPTION_SETTING_OTP_PBPS (r) : ORIGIN = OPTION_SETTING_OTP_PBPS_START, LENGTH = OPTION_SETTING_OTP_PBPS_LENGTH
+    OPTION_SETTING_OTP_ZHUK (r) : ORIGIN = OPTION_SETTING_OTP_ZHUK_START, LENGTH = OPTION_SETTING_OTP_ZHUK_LENGTH
     ITCM (rwx) : ORIGIN = ITCM_START, LENGTH = ITCM_LENGTH
     DTCM (rwx) : ORIGIN = DTCM_START, LENGTH = DTCM_LENGTH
 }
@@ -100,6 +146,23 @@ SECTIONS
         __ddsc_OSPI0_CS1_START = .;
 
     }> OSPI0_CS1
+    /***** SDRAM memory section allocations ******/
+    .sdram.startof :
+    {
+        __ddsc_SDRAM_START = .;
+
+    }> SDRAM
+    /* sdram initialized from ospi0_cs1 */
+    __sdram_from_ospi0_cs1$$ :
+    {
+        __sdram_from_ospi0_cs1$$Base = .;__sdram_from_ospi0_cs1$$Load = LOADADDR(__sdram_from_ospi0_cs1$$);
+        /* section.sdram.from_ospi0_cs1 */
+        *(.sdram_from_ospi0_cs1)
+        /* section.sdram.code_from_ospi0_cs1 */
+        *(.sdram_code_from_ospi0_cs1)
+        __sdram_from_ospi0_cs1$$Limit = .;
+    }> SDRAM AT > OSPI0_CS1
+
     /***** OSPI0_CS0 memory section allocations ******/
     .ospi0_cs0.startof :
     {
@@ -116,6 +179,23 @@ SECTIONS
         *(.ospi0_cs0_code_from_ospi0_cs1)
         __ospi0_cs0_from_ospi0_cs1$$Limit = .;
     }> OSPI0_CS0 AT > OSPI0_CS1
+
+    /***** OSPI1_CS0 memory section allocations ******/
+    .ospi1_cs0.startof :
+    {
+        __ddsc_OSPI1_CS0_START = .;
+
+    }> OSPI1_CS0
+    /* ospi1_cs0 initialized from ospi0_cs1 */
+    __ospi1_cs0_from_ospi0_cs1$$ :
+    {
+        __ospi1_cs0_from_ospi0_cs1$$Base = .;__ospi1_cs0_from_ospi0_cs1$$Load = LOADADDR(__ospi1_cs0_from_ospi0_cs1$$);
+        /* section.ospi1_cs0.from_ospi0_cs1 */
+        *(.ospi1_cs0_from_ospi0_cs1)
+        /* section.ospi1_cs0.code_from_ospi0_cs1 */
+        *(.ospi1_cs0_code_from_ospi0_cs1)
+        __ospi1_cs0_from_ospi0_cs1$$Limit = .;
+    }> OSPI1_CS0 AT > OSPI0_CS1
 
     /***** ITCM memory section allocations ******/
     .itcm.startof :
@@ -196,12 +276,124 @@ SECTIONS
 
     }> OSPI0_CS1
 
+    /***** OSPI1_CS1 memory section allocations ******/
+    .ospi1_cs1.startof :
+    {
+        __ddsc_OSPI1_CS1_START = .;
+
+    }> OSPI1_CS1
+    /***** SDRAM memory section allocations ******/
+    /* sdram initialized from ospi1_cs1 */
+    __sdram_from_ospi1_cs1$$ :
+    {
+        __sdram_from_ospi1_cs1$$Base = .;__sdram_from_ospi1_cs1$$Load = LOADADDR(__sdram_from_ospi1_cs1$$);
+        /* section.sdram.from_ospi1_cs1 */
+        *(.sdram_from_ospi1_cs1)
+        /* section.sdram.code_from_ospi1_cs1 */
+        *(.sdram_code_from_ospi1_cs1)
+        __sdram_from_ospi1_cs1$$Limit = .;
+    }> SDRAM AT > OSPI1_CS1
+
+    /***** OSPI0_CS0 memory section allocations ******/
+    /* ospi0_cs0 initialized from ospi1_cs1 */
+    __ospi0_cs0_from_ospi1_cs1$$ :
+    {
+        __ospi0_cs0_from_ospi1_cs1$$Base = .;__ospi0_cs0_from_ospi1_cs1$$Load = LOADADDR(__ospi0_cs0_from_ospi1_cs1$$);
+        /* section.ospi0_cs0.from_ospi1_cs1 */
+        *(.ospi0_cs0_from_ospi1_cs1)
+        /* section.ospi0_cs0.code_from_ospi1_cs1 */
+        *(.ospi0_cs0_code_from_ospi1_cs1)
+        __ospi0_cs0_from_ospi1_cs1$$Limit = .;
+    }> OSPI0_CS0 AT > OSPI1_CS1
+
+    /***** OSPI1_CS0 memory section allocations ******/
+    /* ospi1_cs0 initialized from ospi1_cs1 */
+    __ospi1_cs0_from_ospi1_cs1$$ :
+    {
+        __ospi1_cs0_from_ospi1_cs1$$Base = .;__ospi1_cs0_from_ospi1_cs1$$Load = LOADADDR(__ospi1_cs0_from_ospi1_cs1$$);
+        /* section.ospi1_cs0.from_ospi1_cs1 */
+        *(.ospi1_cs0_from_ospi1_cs1)
+        /* section.ospi1_cs0.code_from_ospi1_cs1 */
+        *(.ospi1_cs0_code_from_ospi1_cs1)
+        __ospi1_cs0_from_ospi1_cs1$$Limit = .;
+    }> OSPI1_CS0 AT > OSPI1_CS1
+
+    /***** ITCM memory section allocations ******/
+    /* itcm initialized from ospi1_cs1 */
+    __itcm_from_ospi1_cs1$$ :
+    {
+        __itcm_from_ospi1_cs1$$Base = .;__itcm_from_ospi1_cs1$$Load = LOADADDR(__itcm_from_ospi1_cs1$$);
+        /* section.itcm.from_ospi1_cs1 */
+        *(.itcm_from_ospi1_cs1)
+        /* section.itcm.code_from_ospi1_cs1 */
+        *(.itcm_code_from_ospi1_cs1)
+        __itcm_from_ospi1_cs1$$Limit = .;
+    }> ITCM AT > OSPI1_CS1
+
+    /***** DTCM memory section allocations ******/
+    /* dtcm initialized from ospi1_cs1 */
+    __dtcm_from_ospi1_cs1$$ :
+    {
+        __dtcm_from_ospi1_cs1$$Base = .;__dtcm_from_ospi1_cs1$$Load = LOADADDR(__dtcm_from_ospi1_cs1$$);
+        /* section.dtcm.from_ospi1_cs1 */
+        *(.dtcm_from_ospi1_cs1)
+        /* section.dtcm.code_from_ospi1_cs1 */
+        *(.dtcm_code_from_ospi1_cs1)
+        __dtcm_from_ospi1_cs1$$Limit = .;
+    }> DTCM AT > OSPI1_CS1
+
+    /***** RAM memory section allocations ******/
+    /* ram initialized from ospi1_cs1 */
+    __ram_from_ospi1_cs1$$ :
+    {
+        __ram_from_ospi1_cs1$$Base = .;__ram_from_ospi1_cs1$$Load = LOADADDR(__ram_from_ospi1_cs1$$);
+        /* section.ram.from_ospi1_cs1 */
+        *(.ram_from_ospi1_cs1)
+        /* section.ram.code_from_ospi1_cs1 */
+        *(.ram_code_from_ospi1_cs1)
+        __ram_from_ospi1_cs1$$Limit = .;
+    }> RAM AT > OSPI1_CS1
+
+    __ospi1_cs1_readonly$$ :
+    {
+        __ospi1_cs1_readonly$$Base = .;
+        /* section.ospi1_cs1.readonly */
+        *(.ospi1_cs1)
+        /* section.ospi1_cs1.code */
+        *(.ospi1_cs1_code)
+        __ospi1_cs1_readonly$$Limit = .;
+    }> OSPI1_CS1
+    __ospi1_cs1_noinit$$ (NOLOAD) :
+    {
+        __ospi1_cs1_noinit$$Base = .;
+        /* section.ospi1_cs1.noinit */
+        *(.ospi1_cs1_noinit)
+        __ospi1_cs1_noinit$$Limit = .;
+    }> OSPI1_CS1
+    .ospi1_cs1.endof ALIGN(.,512) :
+    {
+        __ddsc_OSPI1_CS1_END = .;
+
+    }> OSPI1_CS1
+
     /***** DATA_FLASH memory section allocations ******/
     .data_flash.startof :
     {
         __ddsc_DATA_FLASH_START = .;
 
     }> DATA_FLASH
+    /***** SDRAM memory section allocations ******/
+    /* sdram initialized from data_flash */
+    __sdram_from_data_flash$$ :
+    {
+        __sdram_from_data_flash$$Base = .;__sdram_from_data_flash$$Load = LOADADDR(__sdram_from_data_flash$$);
+        /* section.sdram.from_data_flash */
+        *(.sdram_from_data_flash)
+        /* section.sdram.code_from_data_flash */
+        *(.sdram_code_from_data_flash)
+        __sdram_from_data_flash$$Limit = .;
+    }> SDRAM AT > DATA_FLASH
+
     /***** OSPI0_CS0 memory section allocations ******/
     /* ospi0_cs0 initialized from data_flash */
     __ospi0_cs0_from_data_flash$$ :
@@ -213,6 +405,18 @@ SECTIONS
         *(.ospi0_cs0_code_from_data_flash)
         __ospi0_cs0_from_data_flash$$Limit = .;
     }> OSPI0_CS0 AT > DATA_FLASH
+
+    /***** OSPI1_CS0 memory section allocations ******/
+    /* ospi1_cs0 initialized from data_flash */
+    __ospi1_cs0_from_data_flash$$ :
+    {
+        __ospi1_cs0_from_data_flash$$Base = .;__ospi1_cs0_from_data_flash$$Load = LOADADDR(__ospi1_cs0_from_data_flash$$);
+        /* section.ospi1_cs0.from_data_flash */
+        *(.ospi1_cs0_from_data_flash)
+        /* section.ospi1_cs0.code_from_data_flash */
+        *(.ospi1_cs0_code_from_data_flash)
+        __ospi1_cs0_from_data_flash$$Limit = .;
+    }> OSPI1_CS0 AT > DATA_FLASH
 
     /***** ITCM memory section allocations ******/
     /* itcm initialized from data_flash */
@@ -293,6 +497,56 @@ SECTIONS
         *(.flash_noinit)
         __flash_noinit$$Limit = .;
     }> FLASH
+    /***** SDRAM memory section allocations ******/
+    /* sdram initialized from flash */
+    __sdram_from_flash$$ :
+    {
+        __sdram_from_flash$$Base = .;__sdram_from_flash$$Load = LOADADDR(__sdram_from_flash$$);
+        /* section.sdram.from_flash */
+        *(.sdram_from_flash)
+        /* section.sdram.code_from_flash */
+        *(.sdram_code_from_flash)
+        __sdram_from_flash$$Limit = .;
+    }> SDRAM AT > FLASH
+    /* Non-initialized, non-cached sdram */
+    __sdram_noinit_nocache$$ ALIGN(.,32) (NOLOAD) :
+    {
+        __sdram_noinit_nocache$$Base = .;
+        /* section.sdram.noinit_nocache */
+        *(.sdram_noinit_nocache)
+        __sdram_noinit_nocache$$Limit = .;
+    }> SDRAM
+    /* Zeroed, non-cached sdram */
+    __sdram_zero_nocache$$ (NOLOAD) :
+    {
+        __sdram_zero_nocache$$Base = .;
+        /* section.sdram.zero_nocache */
+        *(.sdram_nocache)
+        . = ALIGN(32);
+        __sdram_zero_nocache$$Limit = .;
+    }> SDRAM
+    /* Non-initialized sdram */
+    __sdram_noinit$$ (NOLOAD) :
+    {
+        __sdram_noinit$$Base = .;
+        /* section.sdram.noinit */
+        *(.sdram_noinit)
+        __sdram_noinit$$Limit = .;
+    }> SDRAM
+    /* Zeroed sdram */
+    __sdram_zero$$ (NOLOAD) :
+    {
+        __sdram_zero$$Base = .;
+        /* section.sdram.zero */
+        *(.sdram)
+        __sdram_zero$$Limit = .;
+    }> SDRAM
+    .sdram.endof ALIGN(.,512) :
+    {
+        __ddsc_SDRAM_END = .;
+
+    }> SDRAM
+
     /***** OSPI0_CS0 memory section allocations ******/
     /* ospi0_cs0 initialized from flash */
     __ospi0_cs0_from_flash$$ :
@@ -342,6 +596,56 @@ SECTIONS
         __ddsc_OSPI0_CS0_END = .;
 
     }> OSPI0_CS0
+
+    /***** OSPI1_CS0 memory section allocations ******/
+    /* ospi1_cs0 initialized from flash */
+    __ospi1_cs0_from_flash$$ :
+    {
+        __ospi1_cs0_from_flash$$Base = .;__ospi1_cs0_from_flash$$Load = LOADADDR(__ospi1_cs0_from_flash$$);
+        /* section.ospi1_cs0.from_flash */
+        *(.ospi1_cs0_from_flash)
+        /* section.ospi1_cs0.code_from_flash */
+        *(.ospi1_cs0_code_from_flash)
+        __ospi1_cs0_from_flash$$Limit = .;
+    }> OSPI1_CS0 AT > FLASH
+    /* Non-initialized, non-cached ospi1_cs0 */
+    __ospi1_cs0_noinit_nocache$$ ALIGN(.,32) (NOLOAD) :
+    {
+        __ospi1_cs0_noinit_nocache$$Base = .;
+        /* section.ospi1_cs0.noinit_nocache */
+        *(.ospi1_cs0_noinit_nocache)
+        __ospi1_cs0_noinit_nocache$$Limit = .;
+    }> OSPI1_CS0
+    /* Zeroed, non-cached ospi1_cs0 */
+    __ospi1_cs0_zero_nocache$$ (NOLOAD) :
+    {
+        __ospi1_cs0_zero_nocache$$Base = .;
+        /* section.ospi1_cs0.zero_nocache */
+        *(.ospi1_cs0_nocache)
+        . = ALIGN(32);
+        __ospi1_cs0_zero_nocache$$Limit = .;
+    }> OSPI1_CS0
+    /* Non-initialized ospi1_cs0 */
+    __ospi1_cs0_noinit$$ (NOLOAD) :
+    {
+        __ospi1_cs0_noinit$$Base = .;
+        /* section.ospi1_cs0.noinit */
+        *(.ospi1_cs0_noinit)
+        __ospi1_cs0_noinit$$Limit = .;
+    }> OSPI1_CS0
+    /* Zeroed ospi1_cs0 */
+    __ospi1_cs0_zero$$ (NOLOAD) :
+    {
+        __ospi1_cs0_zero$$Base = .;
+        /* section.ospi1_cs0.zero */
+        *(.ospi1_cs0)
+        __ospi1_cs0_zero$$Limit = .;
+    }> OSPI1_CS0
+    .ospi1_cs0.endof ALIGN(.,512) :
+    {
+        __ddsc_OSPI1_CS0_END = .;
+
+    }> OSPI1_CS0
 
     /***** ITCM memory section allocations ******/
     /* itcm initialized from flash */
@@ -550,7 +854,7 @@ SECTIONS
         *(SORT(.dtors.*))
         *(.dtors)
 
-    }> FLASH
+        }> FLASH
     __flash_.got$$ :
     {
 
@@ -617,24 +921,24 @@ SECTIONS
 
     }> OPTION_SETTING_OFS2
 
-    /***** OPTION_SETTING_DUALSEL memory section allocations ******/
-    .option_setting_dualsel.startof :
+    /***** OPTION_SETTING_SAS memory section allocations ******/
+    .option_setting_sas.startof :
     {
-        __ddsc_OPTION_SETTING_DUALSEL_START = .;
+        __ddsc_OPTION_SETTING_SAS_START = .;
 
-    }> OPTION_SETTING_DUALSEL
-    /* Dual Mode Select Register */
-    __option_setting_dualsel_reg$$ :
+    }> OPTION_SETTING_SAS
+    /* Startup Area Setting Register */
+    __option_setting_sas_reg$$ :
     {
-        __option_setting_dualsel_reg$$Base = .;
-        KEEP(*(.option_setting_dualsel))
-        __option_setting_dualsel_reg$$Limit = .;
-    }> OPTION_SETTING_DUALSEL
-    .option_setting_dualsel.endof :
+        __option_setting_sas_reg$$Base = .;
+        KEEP(*(.option_setting_sas))
+        __option_setting_sas_reg$$Limit = .;
+    }> OPTION_SETTING_SAS
+    .option_setting_sas.endof :
     {
-        __ddsc_OPTION_SETTING_DUALSEL_END = .;
+        __ddsc_OPTION_SETTING_SAS_END = .;
 
-    }> OPTION_SETTING_DUALSEL
+    }> OPTION_SETTING_SAS
 
     /***** OPTION_SETTING_OFS1 memory section allocations ******/
     .option_setting_ofs1.startof :
@@ -655,24 +959,100 @@ SECTIONS
 
     }> OPTION_SETTING_OFS1
 
-    /***** OPTION_SETTING_BANKSEL memory section allocations ******/
-    .option_setting_banksel.startof :
+    /***** OPTION_SETTING_OFS1_SEC memory section allocations ******/
+    .option_setting_ofs1_sec.startof :
     {
-        __ddsc_OPTION_SETTING_BANKSEL_START = .;
+        __ddsc_OPTION_SETTING_OFS1_SEC_START = .;
 
-    }> OPTION_SETTING_BANKSEL
-    /* Bank Select Register */
-    __option_setting_banksel_reg$$ :
+    }> OPTION_SETTING_OFS1_SEC
+    /* Option Function Select Register 1 Secure */
+    __option_setting_ofs1_sec_reg$$ :
     {
-        __option_setting_banksel_reg$$Base = .;
-        KEEP(*(.option_setting_banksel))
-        __option_setting_banksel_reg$$Limit = .;
-    }> OPTION_SETTING_BANKSEL
-    .option_setting_banksel.endof :
+        __option_setting_ofs1_sec_reg$$Base = .;
+        KEEP(*(.option_setting_ofs1_sec))
+        __option_setting_ofs1_sec_reg$$Limit = .;
+    }> OPTION_SETTING_OFS1_SEC
+    .option_setting_ofs1_sec.endof :
     {
-        __ddsc_OPTION_SETTING_BANKSEL_END = .;
+        __ddsc_OPTION_SETTING_OFS1_SEC_END = .;
 
-    }> OPTION_SETTING_BANKSEL
+    }> OPTION_SETTING_OFS1_SEC
+
+    /***** OPTION_SETTING_OFS1_SEL memory section allocations ******/
+    .option_setting_ofs1_sel.startof :
+    {
+        __ddsc_OPTION_SETTING_OFS1_SEL_START = .;
+
+    }> OPTION_SETTING_OFS1_SEL
+    /* OFS1 Security Attribution */
+    __option_setting_ofs1_sel_reg$$ :
+    {
+        __option_setting_ofs1_sel_reg$$Base = .;
+        KEEP(*(.option_setting_ofs1_sel))
+        __option_setting_ofs1_sel_reg$$Limit = .;
+    }> OPTION_SETTING_OFS1_SEL
+    .option_setting_ofs1_sel.endof :
+    {
+        __ddsc_OPTION_SETTING_OFS1_SEL_END = .;
+
+    }> OPTION_SETTING_OFS1_SEL
+
+    /***** OPTION_SETTING_OFS3 memory section allocations ******/
+    .option_setting_ofs3.startof :
+    {
+        __ddsc_OPTION_SETTING_OFS3_START = .;
+
+    }> OPTION_SETTING_OFS3
+    /* Option Function Select Register 3 */
+    __option_setting_ofs3_reg$$ :
+    {
+        __option_setting_ofs3_reg$$Base = .;
+        KEEP(*(.option_setting_ofs3))
+        __option_setting_ofs3_reg$$Limit = .;
+    }> OPTION_SETTING_OFS3
+    .option_setting_ofs3.endof :
+    {
+        __ddsc_OPTION_SETTING_OFS3_END = .;
+
+    }> OPTION_SETTING_OFS3
+
+    /***** OPTION_SETTING_OFS3_SEC memory section allocations ******/
+    .option_setting_ofs3_sec.startof :
+    {
+        __ddsc_OPTION_SETTING_OFS3_SEC_START = .;
+
+    }> OPTION_SETTING_OFS3_SEC
+    /* Option Function Select Register 3 Secure */
+    __option_setting_ofs3_sec_reg$$ :
+    {
+        __option_setting_ofs3_sec_reg$$Base = .;
+        KEEP(*(.option_setting_ofs3_sec))
+        __option_setting_ofs3_sec_reg$$Limit = .;
+    }> OPTION_SETTING_OFS3_SEC
+    .option_setting_ofs3_sec.endof :
+    {
+        __ddsc_OPTION_SETTING_OFS3_SEC_END = .;
+
+    }> OPTION_SETTING_OFS3_SEC
+
+    /***** OPTION_SETTING_OFS3_SEL memory section allocations ******/
+    .option_setting_ofs3_sel.startof :
+    {
+        __ddsc_OPTION_SETTING_OFS3_SEL_START = .;
+
+    }> OPTION_SETTING_OFS3_SEL
+    /* OFS3 Security Attribution */
+    __option_setting_ofs3_sel_reg$$ :
+    {
+        __option_setting_ofs3_sel_reg$$Base = .;
+        KEEP(*(.option_setting_ofs3_sel))
+        __option_setting_ofs3_sel_reg$$Limit = .;
+    }> OPTION_SETTING_OFS3_SEL
+    .option_setting_ofs3_sel.endof :
+    {
+        __ddsc_OPTION_SETTING_OFS3_SEL_END = .;
+
+    }> OPTION_SETTING_OFS3_SEL
 
     /***** OPTION_SETTING_BPS memory section allocations ******/
     .option_setting_bps.startof :
@@ -693,63 +1073,6 @@ SECTIONS
 
     }> OPTION_SETTING_BPS
 
-    /***** OPTION_SETTING_PBPS memory section allocations ******/
-    .option_setting_pbps.startof :
-    {
-        __ddsc_OPTION_SETTING_PBPS_START = .;
-
-    }> OPTION_SETTING_PBPS
-    /* Permanent Block Protect Setting Register */
-    __option_setting_pbps_reg$$ :
-    {
-        __option_setting_pbps_reg$$Base = .;
-        KEEP(*(.option_setting_pbps))
-        __option_setting_pbps_reg$$Limit = .;
-    }> OPTION_SETTING_PBPS
-    .option_setting_pbps.endof :
-    {
-        __ddsc_OPTION_SETTING_PBPS_END = .;
-
-    }> OPTION_SETTING_PBPS
-
-    /***** OPTION_SETTING_OFS1_SEC memory section allocations ******/
-    .option_setting_ofs1_sec.startof :
-    {
-        __ddsc_OPTION_SETTING_OFS1_SEC_START = .;
-
-    }> OPTION_SETTING_OFS1_SEC
-    /* Option Function Select Register 1 Secure */
-    __option_setting_ofs1_sec_reg$$ :
-    {
-        __option_setting_ofs1_sec_reg$$Base = .;
-        KEEP(*(.option_setting_ofs1_sec))
-        __option_setting_ofs1_sec_reg$$Limit = .;
-    }> OPTION_SETTING_OFS1_SEC
-    .option_setting_ofs1_sec.endof :
-    {
-        __ddsc_OPTION_SETTING_OFS1_SEC_END = .;
-
-    }> OPTION_SETTING_OFS1_SEC
-
-    /***** OPTION_SETTING_BANKSEL_SEC memory section allocations ******/
-    .option_setting_banksel_sec.startof :
-    {
-        __ddsc_OPTION_SETTING_BANKSEL_SEC_START = .;
-
-    }> OPTION_SETTING_BANKSEL_SEC
-    /* Bank Select Register Secure */
-    __option_setting_banksel_sec_reg$$ :
-    {
-        __option_setting_banksel_sec_reg$$Base = .;
-        KEEP(*(.option_setting_banksel_sec))
-        __option_setting_banksel_sec_reg$$Limit = .;
-    }> OPTION_SETTING_BANKSEL_SEC
-    .option_setting_banksel_sec.endof :
-    {
-        __ddsc_OPTION_SETTING_BANKSEL_SEC_END = .;
-
-    }> OPTION_SETTING_BANKSEL_SEC
-
     /***** OPTION_SETTING_BPS_SEC memory section allocations ******/
     .option_setting_bps_sec.startof :
     {
@@ -769,81 +1092,290 @@ SECTIONS
 
     }> OPTION_SETTING_BPS_SEC
 
-    /***** OPTION_SETTING_PBPS_SEC memory section allocations ******/
-    .option_setting_pbps_sec.startof :
+    /***** OPTION_SETTING_OTP_FSBLCTRL0 memory section allocations ******/
+    .option_setting_otp_fsblctrl0.startof :
     {
-        __ddsc_OPTION_SETTING_PBPS_SEC_START = .;
+        __ddsc_OPTION_SETTING_OTP_FSBLCTRL0_START = .;
 
-    }> OPTION_SETTING_PBPS_SEC
+    }> OPTION_SETTING_OTP_FSBLCTRL0
+    /* FSBL Control Register 0 */
+    __option_setting_otp_fsblctrl0_reg$$ :
+    {
+        __option_setting_otp_fsblctrl0_reg$$Base = .;
+        KEEP(*(.option_setting_otp_fsblctrl0))
+        __option_setting_otp_fsblctrl0_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_FSBLCTRL0
+    .option_setting_otp_fsblctrl0.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_FSBLCTRL0_END = .;
+
+    }> OPTION_SETTING_OTP_FSBLCTRL0
+
+    /***** OPTION_SETTING_OTP_FSBLCTRL1 memory section allocations ******/
+    .option_setting_otp_fsblctrl1.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_FSBLCTRL1_START = .;
+
+    }> OPTION_SETTING_OTP_FSBLCTRL1
+    /* FSBL Control Register 1 */
+    __option_setting_otp_fsblctrl1_reg$$ :
+    {
+        __option_setting_otp_fsblctrl1_reg$$Base = .;
+        KEEP(*(.option_setting_otp_fsblctrl1))
+        __option_setting_otp_fsblctrl1_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_FSBLCTRL1
+    .option_setting_otp_fsblctrl1.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_FSBLCTRL1_END = .;
+
+    }> OPTION_SETTING_OTP_FSBLCTRL1
+
+    /***** OPTION_SETTING_OTP_FSBLCTRL2 memory section allocations ******/
+    .option_setting_otp_fsblctrl2.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_FSBLCTRL2_START = .;
+
+    }> OPTION_SETTING_OTP_FSBLCTRL2
+    /* FSBL Control Register 2 */
+    __option_setting_otp_fsblctrl2_reg$$ :
+    {
+        __option_setting_otp_fsblctrl2_reg$$Base = .;
+        KEEP(*(.option_setting_otp_fsblctrl2))
+        __option_setting_otp_fsblctrl2_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_FSBLCTRL2
+    .option_setting_otp_fsblctrl2.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_FSBLCTRL2_END = .;
+
+    }> OPTION_SETTING_OTP_FSBLCTRL2
+
+    /***** OPTION_SETTING_OTP_SAMR memory section allocations ******/
+    .option_setting_otp_samr.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SAMR_START = .;
+
+    }> OPTION_SETTING_OTP_SAMR
+    /* Start Address of Measurement Report */
+    __option_setting_otp_samr_reg$$ :
+    {
+        __option_setting_otp_samr_reg$$Base = .;
+        KEEP(*(.option_setting_otp_samr))
+        __option_setting_otp_samr_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SAMR
+    .option_setting_otp_samr.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SAMR_END = .;
+
+    }> OPTION_SETTING_OTP_SAMR
+
+    /***** OPTION_SETTING_OTP_SACC00 memory section allocations ******/
+    .option_setting_otp_sacc00.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC00_START = .;
+
+    }> OPTION_SETTING_OTP_SACC00
+    /* Start Address of Code Certificate 00 */
+    __option_setting_otp_sacc00_reg$$ :
+    {
+        __option_setting_otp_sacc00_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc00))
+        __option_setting_otp_sacc00_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC00
+    .option_setting_otp_sacc00.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC00_END = .;
+
+    }> OPTION_SETTING_OTP_SACC00
+
+    /***** OPTION_SETTING_OTP_SACC10 memory section allocations ******/
+    .option_setting_otp_sacc10.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC10_START = .;
+
+    }> OPTION_SETTING_OTP_SACC10
+    /* Start Address of Code Certificate 10 */
+    __option_setting_otp_sacc10_reg$$ :
+    {
+        __option_setting_otp_sacc10_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc10))
+        __option_setting_otp_sacc10_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC10
+    .option_setting_otp_sacc10.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC10_END = .;
+
+    }> OPTION_SETTING_OTP_SACC10
+
+    /***** OPTION_SETTING_OTP_SACC01 memory section allocations ******/
+    .option_setting_otp_sacc01.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC01_START = .;
+
+    }> OPTION_SETTING_OTP_SACC01
+    /* Start Address of Code Certificate 01 */
+    __option_setting_otp_sacc01_reg$$ :
+    {
+        __option_setting_otp_sacc01_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc01))
+        __option_setting_otp_sacc01_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC01
+    .option_setting_otp_sacc01.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC01_END = .;
+
+    }> OPTION_SETTING_OTP_SACC01
+
+    /***** OPTION_SETTING_OTP_SACC11 memory section allocations ******/
+    .option_setting_otp_sacc11.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC11_START = .;
+
+    }> OPTION_SETTING_OTP_SACC11
+    /* Start Address of Code Certificate 11 */
+    __option_setting_otp_sacc11_reg$$ :
+    {
+        __option_setting_otp_sacc11_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc11))
+        __option_setting_otp_sacc11_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC11
+    .option_setting_otp_sacc11.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC11_END = .;
+
+    }> OPTION_SETTING_OTP_SACC11
+
+    /***** OPTION_SETTING_OTP_SACC02 memory section allocations ******/
+    .option_setting_otp_sacc02.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC02_START = .;
+
+    }> OPTION_SETTING_OTP_SACC02
+    /* Start Address of Code Certificate 02 */
+    __option_setting_otp_sacc02_reg$$ :
+    {
+        __option_setting_otp_sacc02_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc02))
+        __option_setting_otp_sacc02_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC02
+    .option_setting_otp_sacc02.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC02_END = .;
+
+    }> OPTION_SETTING_OTP_SACC02
+
+    /***** OPTION_SETTING_OTP_SACC12 memory section allocations ******/
+    .option_setting_otp_sacc12.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC12_START = .;
+
+    }> OPTION_SETTING_OTP_SACC12
+    /* Start Address of Code Certificate 12 */
+    __option_setting_otp_sacc12_reg$$ :
+    {
+        __option_setting_otp_sacc12_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc12))
+        __option_setting_otp_sacc12_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC12
+    .option_setting_otp_sacc12.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC12_END = .;
+
+    }> OPTION_SETTING_OTP_SACC12
+
+    /***** OPTION_SETTING_OTP_SACC03 memory section allocations ******/
+    .option_setting_otp_sacc03.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC03_START = .;
+
+    }> OPTION_SETTING_OTP_SACC03
+    /* Start Address of Code Certificate 03 */
+    __option_setting_otp_sacc03_reg$$ :
+    {
+        __option_setting_otp_sacc03_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc03))
+        __option_setting_otp_sacc03_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC03
+    .option_setting_otp_sacc03.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC03_END = .;
+
+    }> OPTION_SETTING_OTP_SACC03
+
+    /***** OPTION_SETTING_OTP_SACC13 memory section allocations ******/
+    .option_setting_otp_sacc13.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC13_START = .;
+
+    }> OPTION_SETTING_OTP_SACC13
+    /* Start Address of Code Certificate 13 */
+    __option_setting_otp_sacc13_reg$$ :
+    {
+        __option_setting_otp_sacc13_reg$$Base = .;
+        KEEP(*(.option_setting_otp_sacc13))
+        __option_setting_otp_sacc13_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_SACC13
+    .option_setting_otp_sacc13.endof :
+    {
+        __ddsc_OPTION_SETTING_OTP_SACC13_END = .;
+
+    }> OPTION_SETTING_OTP_SACC13
+
+    /***** OPTION_SETTING_OTP_PBPS_SEC memory section allocations ******/
+    .option_setting_otp_pbps_sec.startof :
+    {
+        __ddsc_OPTION_SETTING_OTP_PBPS_SEC_START = .;
+
+    }> OPTION_SETTING_OTP_PBPS_SEC
     /* Permanent Block Protect Setting Register Secure */
-    __option_setting_pbps_sec_reg$$ :
+    __option_setting_otp_pbps_sec_reg$$ :
     {
-        __option_setting_pbps_sec_reg$$Base = .;
-        KEEP(*(.option_setting_pbps_sec))
-        __option_setting_pbps_sec_reg$$Limit = .;
-    }> OPTION_SETTING_PBPS_SEC
-    .option_setting_pbps_sec.endof :
+        __option_setting_otp_pbps_sec_reg$$Base = .;
+        KEEP(*(.option_setting_otp_pbps_sec))
+        __option_setting_otp_pbps_sec_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_PBPS_SEC
+    .option_setting_otp_pbps_sec.endof :
     {
-        __ddsc_OPTION_SETTING_PBPS_SEC_END = .;
+        __ddsc_OPTION_SETTING_OTP_PBPS_SEC_END = .;
 
-    }> OPTION_SETTING_PBPS_SEC
+    }> OPTION_SETTING_OTP_PBPS_SEC
 
-    /***** OPTION_SETTING_OFS1_SEL memory section allocations ******/
-    .option_setting_ofs1_sel.startof :
+    /***** OPTION_SETTING_OTP_PBPS memory section allocations ******/
+    .option_setting_otp_pbps.startof :
     {
-        __ddsc_OPTION_SETTING_OFS1_SEL_START = .;
+        __ddsc_OPTION_SETTING_OTP_PBPS_START = .;
 
-    }> OPTION_SETTING_OFS1_SEL
-    /* OFS1 Register Select */
-    __option_setting_ofs1_sel_reg$$ :
+    }> OPTION_SETTING_OTP_PBPS
+    /* Permanent Block Protect Setting Register */
+    __option_setting_otp_pbps_reg$$ :
     {
-        __option_setting_ofs1_sel_reg$$Base = .;
-        KEEP(*(.option_setting_ofs1_sel))
-        __option_setting_ofs1_sel_reg$$Limit = .;
-    }> OPTION_SETTING_OFS1_SEL
-    .option_setting_ofs1_sel.endof :
+        __option_setting_otp_pbps_reg$$Base = .;
+        KEEP(*(.option_setting_otp_pbps))
+        __option_setting_otp_pbps_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_PBPS
+    .option_setting_otp_pbps.endof :
     {
-        __ddsc_OPTION_SETTING_OFS1_SEL_END = .;
+        __ddsc_OPTION_SETTING_OTP_PBPS_END = .;
 
-    }> OPTION_SETTING_OFS1_SEL
+    }> OPTION_SETTING_OTP_PBPS
 
-    /***** OPTION_SETTING_BANKSEL_SEL memory section allocations ******/
-    .option_setting_banksel_sel.startof :
+    /***** OPTION_SETTING_OTP_ZHUK memory section allocations ******/
+    .option_setting_otp_zhuk.startof :
     {
-        __ddsc_OPTION_SETTING_BANKSEL_SEL_START = .;
+        __ddsc_OPTION_SETTING_OTP_ZHUK_START = .;
 
-    }> OPTION_SETTING_BANKSEL_SEL
-    /* Banksel Register Select */
-    __option_setting_banksel_sel_reg$$ :
+    }> OPTION_SETTING_OTP_ZHUK
+    /* Zerorization HUK Register */
+    __option_setting_otp_zhuk_reg$$ :
     {
-        __option_setting_banksel_sel_reg$$Base = .;
-        KEEP(*(.option_setting_banksel_sel))
-        __option_setting_banksel_sel_reg$$Limit = .;
-    }> OPTION_SETTING_BANKSEL_SEL
-    .option_setting_banksel_sel.endof :
+        __option_setting_otp_zhuk_reg$$Base = .;
+        KEEP(*(.option_setting_otp_zhuk))
+        __option_setting_otp_zhuk_reg$$Limit = .;
+    }> OPTION_SETTING_OTP_ZHUK
+    .option_setting_otp_zhuk.endof :
     {
-        __ddsc_OPTION_SETTING_BANKSEL_SEL_END = .;
+        __ddsc_OPTION_SETTING_OTP_ZHUK_END = .;
 
-    }> OPTION_SETTING_BANKSEL_SEL
-
-    /***** OPTION_SETTING_BPS_SEL memory section allocations ******/
-    .option_setting_bps_sel.startof :
-    {
-        __ddsc_OPTION_SETTING_BPS_SEL_START = .;
-
-    }> OPTION_SETTING_BPS_SEL
-    /* BPS Register Select */
-    __option_setting_bps_sel_reg$$ :
-    {
-        __option_setting_bps_sel_reg$$Base = .;
-        KEEP(*(.option_setting_bps_sel))
-        __option_setting_bps_sel_reg$$Limit = .;
-    }> OPTION_SETTING_BPS_SEL
-    .option_setting_bps_sel.endof :
-    {
-        __ddsc_OPTION_SETTING_BPS_SEL_END = .;
-
-    }> OPTION_SETTING_BPS_SEL
+    }> OPTION_SETTING_OTP_ZHUK
 
 }
 
@@ -862,4 +1394,5 @@ PROVIDE( _edata = ADDR(__ram_from_flash$$) + SIZEOF(__ram_from_flash$$) );
 PROVIDE( _stext = ADDR(__flash_readonly$$));
 PROVIDE( _etext = ADDR(__flash_readonly$$) + SIZEOF(__flash_readonly$$) );
 PROVIDE( _eronly = ADDR(__flash_readonly$$) + SIZEOF(__flash_readonly$$) );
+PROVIDE( _sbss = ADDR(__ram_zero$$) );
 PROVIDE( _ebss = ADDR(__ram_zero$$) + SIZEOF(__ram_zero$$) );

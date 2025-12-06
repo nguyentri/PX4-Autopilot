@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-# Comprehensive sensor integration test for FPB-RA8E1
+# Comprehensive sensor integration test for EVK-RA8P1
 # This script verifies that ICM20948 and BMP388 are working correctly on SPI
 #
 
-echo "=== FPB-RA8E1 Sensor Integration Test ==="
+echo "=== EVK-RA8P1 Sensor Integration Test ==="
 echo
 
 echo "1. Checking driver status..."

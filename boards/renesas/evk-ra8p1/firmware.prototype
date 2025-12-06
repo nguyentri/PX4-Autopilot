@@ -1,10 +1,10 @@
 {
     "board_id": 88,
     "magic": "PX4FWv1",
-    "description": "Firmware for the Renesas FPB-RA8E1 Development Board",
+    "description": "Firmware for the Renesas EVK-RA8P1 Evaluation Kit",
     "image": "",
     "build_time": 0,
-    "summary": "FPB-RA8E1",
+    "summary": "EVK-RA8P1",
     "version": "0.1",
     "image_size": 0,
     "image_maxsize": 1048576,

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Renesas FPB-RA8E1 board main initialization
+# Renesas EVK-RA8P1 board main initialization
 #------------------------------------------------------------------------------
 
 # Load default parameters specific to this board
@@ -23,4 +23,4 @@ fi
 # Set up LED driver for status indication
 led_control start
 
-echo "FPB-RA8E1 board initialization complete"
+echo "EVK-RA8P1 board initialization complete"

@@ -1,11 +1,11 @@
 #!/bin/sh
 #
-# FPB-RA8E1 Board Validation Script
+# EVK-RA8P1 Board Validation Script
 # Run this script on the target to validate hardware functionality
 #------------------------------------------------------------------------------
 
 echo "==============================================="
-echo "FPB-RA8E1 Board Validation Script"
+echo "EVK-RA8P1 Board Validation Script"
 echo "==============================================="
 
 # Test 1: System Status
@@ -75,7 +75,7 @@ echo "==============================================="
 echo ""
 echo "Next steps:"
 echo "1. Connect RC transmitter to SCI3 (P309/P310)"
-echo "2. Connect telemetry to SCI0 (P609/P610)" 
+echo "2. Connect telemetry to SCI0 (P609/P610)"
 echo "3. Connect motors to PWM outputs (P300,P415,P113,P302)"
 echo "4. Test arming: 'commander arm'"
 echo ""

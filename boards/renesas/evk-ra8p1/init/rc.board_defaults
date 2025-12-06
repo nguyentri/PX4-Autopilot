@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Renesas FPB-RA8E1 board defaults
+# Renesas EVK-RA8P1 board defaults
 #------------------------------------------------------------------------------
 
 # Set the default system autostart for a quadrotor X configuration

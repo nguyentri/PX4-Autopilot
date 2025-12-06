@@ -1,22 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-     Board manifest for FPB-RA8E1
+     Board manifest for EVK-RA8P1
      This file describes the board hardware configuration for QGroundControl and other tools
 -->
 
 <board_manifest version="1.0">
     <board_info>
-        <name>FPB-RA8E1</name>
+        <name>EVK-RA8P1</name>
         <vendor>Renesas</vendor>
-        <model>FPB-RA8E1</model>
+        <model>EVK-RA8P1</model>
         <version>1.0</version>
-        <description>Renesas FPB-RA8E1 Development Board with RA8E1 MCU</description>
+        <description>Renesas EVK-RA8P1 Evaluation Kit with RA8P1 MCU</description>
         <cpu>
-            <family>ARM Cortex-M85</family>
-            <model>R7FA8E1AFDCFB</model>
-            <frequency>360000000</frequency>  <!-- 360MHz -->
-            <flash_size>1024000</flash_size>  <!-- 1MB -->
-            <ram_size>512000</ram_size>      <!-- 512KB -->
+            <family>ARM Cortex-M85 + Cortex-M33</family>
+            <model>R7KA8P1KFLCAC</model>
+            <frequency_m85>1000000000</frequency_m85>  <!-- 1 GHz Cortex-M85 -->
+            <frequency_m33>250000000</frequency_m33>   <!-- 250 MHz Cortex-M33 -->
+            <mram_size>1048576</mram_size>             <!-- 1MB MRAM (non-volatile) -->
+            <ram_size>2097152</ram_size>               <!-- 2MB SRAM with ECC -->
+            <external_flash_size>67108864</external_flash_size>  <!-- 64MB Octo-SPI Flash -->
         </cpu>
     </board_info>
 
