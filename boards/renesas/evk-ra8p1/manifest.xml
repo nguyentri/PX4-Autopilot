@@ -48,10 +48,10 @@
         <!-- PWM Outputs -->
         <pwm_outputs>
             <group name="MAIN" timer="GPT">
-                <channel number="1" pin="P300" function="Motor1" timer="GPT3A"/>
-                <channel number="2" pin="P415" function="Motor2" timer="GPT0A"/>
-                <channel number="3" pin="P113" function="Motor3" timer="GPT2A"/>
-                <channel number="4" pin="P302" function="Motor4" timer="GPT4A"/>
+                <channel number="1" pin="P912" function="Motor1" timer="GPT3A"/>
+                <channel number="2" pin="P915" function="Motor2" timer="GPT5A"/>
+                <channel number="3" pin="P903" function="Motor3" timer="GPT11A"/>
+                <channel number="4" pin="P515" function="Motor4" timer="GPT13A"/>
             </group>
         </pwm_outputs>
 

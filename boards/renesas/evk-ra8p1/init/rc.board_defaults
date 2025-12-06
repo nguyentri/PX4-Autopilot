@@ -15,10 +15,10 @@ param set-default CBRK_USB_CHK 197848
 #
 # PWM/ESC Configuration for 4 motor outputs
 # Motor mapping:
-#   Motor 1 (Front Right): P300 (GPT3A) - Channel 1
-#   Motor 2 (Rear Left):   P415 (GPT0A) - Channel 2
-#   Motor 3 (Front Left):  P113 (GPT2A) - Channel 3
-#   Motor 4 (Rear Right):  P302 (GPT4A) - Channel 4
+#   Motor 1 (Front Right): P912 (GPT3A) - Channel 1
+#   Motor 2 (Rear Left):   P915 (GPT5A) - Channel 2
+#   Motor 3 (Front Left):  P903 (GPT11A) - Channel 3
+#   Motor 4 (Rear Right):  P515 (GPT13A) - Channel 4
 #
 
 # Set PWM output frequency to 400Hz for standard ESCs
