@@ -119,7 +119,7 @@
   },
     "terminal.integrated.profiles.linux": {
         "J-Link RTT": {
-            "path": "/opt/JLink_Linux_V876_x86_64/JLinkRTTClientExe",
+            "path": "/opt/SEGGER/JLink/JLinkRTTClientExe",
             "args": [],
             "icon": "terminal-cmd"
         }
