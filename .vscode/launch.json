@@ -1,67 +1,24 @@
 {
-    "version": "0.2.0",
     "configurations": [
         {
-        "name": "Debug RA8E1 - Renesas Hardware",
-        "type": "renesas-hardware",
+        "name": "Debug RA8P1 - Cortex-Debug",
+        "cwd": "${workspaceRoot}",
+        "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
         "request": "launch",
-        //"program": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
-        "program": "${workspaceRoot}/build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.elf",
-        "target": {
-            "device": "R7FA8E1AF",
-            "deviceFamily": "RA",
-            "debuggerType": "SEGGERJLINKARM"
-        },
-        "presentation": {
-            "integerFormat": "hexadecimal"
-        }
-        },
-      {
-        "name": "Debug RA8E1 (Onboard J-Link)",
         "type": "cortex-debug",
-        "request": "launch",
-        "cwd": "${workspaceFolder}",
-        "executable": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/Debug/sci_uart_fpb_ra8e1_ep.elf",
-        "armToolchainPath": "C:/UserSoftware/arm-toolchain/arm-gnu-toolchain-13.2.Rel1/bin",
+        "gdbPath": "/usr/bin/gdb-multiarch",
         "servertype": "jlink",
-        "serverpath": "C:/Users/tringuyen/SEGGER/JLink_V850/JLinkGDBServerCL.exe",
+        "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
         "serverArgs": [
-          "-device", "R7FA8E1AF",
-          "-if", "SWD",
-          "-speed", "4000",
-          "-select", "USB=1080979173",
-          "-singlerun",
-          "-nogui",
-          "-JLinkScriptfile", "d:/scripts/ra8e1_script.jlink",
-          "-log", "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/JLinkLog.log"
+          "-speed", "15000",
+            // "-select", "IP=10.231.20.16:19023", // Need to check the IP address and Port of the JLink server
+            // "-select", "IP=192.168.1.89:19023", // incase of running on wsl, need to run jlinkRemoteServer on windown
         ],
-        "device": "R7FA8E1AF",
-        "interface": "swd",
+        "device": "R7KA8P1KF_CPU0", // R9A09G057H44_M33_0/R9A09G057H44_R8_0
+        // "serialNumber": "52006677", // 51028188/52006677/51026290
         "showDevDebugOutput": "parsed",
-        "overrideLaunchCommands": [
-            "monitor reset",
-            "monitor halt",
-            "monitor long 0x40001004 = 0x0000001F",
-            "monitor long 0x40001008 = 0x00000003",
-            "monitor long 0xE000EDF0 = 0xA05F0001",
-            "monitor long 0x407A0000 = 0x0000CCCC",
-            "monitor long 0x407A0004 = 0x0000CCCC",
-            "monitor long 0x407A0100 = 0x00000001",
-            "monitor flash erase",
-            "monitor long 0x0300A100 = 0xFFFFFFFF",
-            "monitor long 0x0300A104 = 0xFFFFFFFF",
-            "monitor long 0x0300A200 = 0xFFF5FFFD",
-            "monitor long 0x0300A280 = 0x00000000",
-            "load",
-            "monitor reset",
-            "monitor halt"
-        ],
-        "postStartSessionCommands": [
-          "set mem inaccessible-by-default off",
-          "set remotetimeout 60"
-        ],
-        "runToEntryPoint": "main",
-        "breakAfterReset": true,
+        // "runToEntryPoint": "main",
         "rttConfig": {
           "enabled": true,
           "address": "auto",
@@ -69,33 +26,42 @@
             {
               "label": "rtt_0",
               "port": 0,
-              "type": "console"
+              "type": "console",
             }
           ]
         },
         "liveWatch": {
           "enabled": true,
           "samplesPerSecond": 4
-        }
+        },
+        /* https://github.com/Marus/cortex-debug/issues/955#issuecomment-1806828308
+            We have to reset after FW download, because we have no idea where you PC/SP are.
+            Many devices use temporary FW to program the device. Besides, a 'reset' should always work.
+            This is how 99% of devices work.
+            If a reset causes a problem, should take it up with your device manufacturer and their openocd scripts.
+            Btw, the Reset/Restart buttons also will not work.
+        */
+        "overrideLaunchCommands": [
+          "monitor reset",    // Reset the target
+          "monitor halt",     // Halt the target
+          "load"              // Load the binary
+          // "c"              // Continue the target (not be used in CR8)
+        ],
       },
-      {
-        "name": "C/C++ Runner: Debug Session",
-        "type": "cppdbg",
-        "request": "launch",
-        "args": [],
-        "stopAtEntry": false,
-        "externalConsole": true,
-        "cwd": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/src",
-        "program": "d:/00_sst_non_auto/05_fpb_ra8e1_update/sci_uart/sci_uart_fpb_ra8e1_ep/e2studio/src/build/Debug/outDebug",
-        "MIMode": "gdb",
-        "miDebuggerPath": "gdb",
-        "setupCommands": [
-          {
-            "description": "Enable pretty-printing for gdb",
-            "text": "-enable-pretty-printing",
-            "ignoreFailures": true
-          }
-        ]
-      }
+        {
+            "name": "Debug RA8P1 - Renesas Extension",
+            "type": "renesas-hardware",
+            "request": "launch",
+            "program": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+            "target": {
+                "device": "R7KA8P1KF_CPU0",
+                "deviceFamily": "RA",
+                "debuggerType": "SEGGERJLINKARM"
+            },
+            "presentation": {
+                "integerFormat": "hexadecimal"
+            },
+        },
+
     ]
   }
