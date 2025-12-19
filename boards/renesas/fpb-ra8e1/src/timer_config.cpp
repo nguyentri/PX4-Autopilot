@@ -55,6 +55,7 @@
  * Note: All timers use Channel 1 (GTIOCA) for PWM output.
  */
 
+#include <nuttx/config.h>
 #include <stdint.h>
 
 #include <drivers/drv_pwm_output.h>
@@ -74,11 +75,43 @@ constexpr io_timers_t kIOTimersRaw[MAX_IO_TIMERS] = {
 };
 
 // Map each timer to its hardware pin (verified from RA8E1 datasheet)
+constexpr int8_t kDmaGpt3 =
+#ifdef CONFIG_RA_DMAC_GPT3_CHANNEL
+CONFIG_RA_DMAC_GPT3_CHANNEL;
+#else
+-1;
+#endif
+
+constexpr int8_t kDmaGpt5 =
+#ifdef CONFIG_RA_DMAC_GPT5_CHANNEL
+CONFIG_RA_DMAC_GPT5_CHANNEL;
+#else
+-1;
+#endif
+
+constexpr int8_t kDmaGpt11 =
+#ifdef CONFIG_RA_DMAC_GPT11_CHANNEL
+CONFIG_RA_DMAC_GPT11_CHANNEL;
+#else
+-1;
+#endif
+
+constexpr int8_t kDmaGpt13 =
+#ifdef CONFIG_RA_DMAC_GPT13_CHANNEL
+CONFIG_RA_DMAC_GPT13_CHANNEL;
+#else
+-1;
+#endif
+
 constexpr timer_io_channels_t kTimerChannelsRaw[MAX_TIMER_IO_CHANNELS] = {
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::Channel1}, {GPIO::Port9, GPIO::Pin12}),  // Motor 1: GPT3A/P912
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer5, Timer::Channel1}, {GPIO::Port9, GPIO::Pin15}),  // Motor 2: GPT5A/P915
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer11, Timer::Channel1}, {GPIO::Port9, GPIO::Pin3}),  // Motor 3: GPT11A/P903
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer13, Timer::Channel1}, {GPIO::Port5, GPIO::Pin15}), // Motor 4: GPT13A/P515
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::Channel1}, {GPIO::Port9, GPIO::Pin12},
+                           makeDshotConf(3, 0, kDmaGpt3, -1)),   // Motor 1: GPT3A/P912
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer5, Timer::Channel1}, {GPIO::Port9, GPIO::Pin15},
+                           makeDshotConf(5, 0, kDmaGpt5, -1)),   // Motor 2: GPT5A/P915
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer11, Timer::Channel1}, {GPIO::Port9, GPIO::Pin3},
+                           makeDshotConf(11, 0, kDmaGpt11, -1)), // Motor 3: GPT11A/P903
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer13, Timer::Channel1}, {GPIO::Port5, GPIO::Pin15},
+                           makeDshotConf(13, 0, kDmaGpt13, -1)), // Motor 4: GPT13A/P515
 };
 
 template<typename TimerType>

@@ -40,6 +40,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <px4_arch/dshot.h>
+
 #pragma once
 
 #ifndef __EXPORT
@@ -108,6 +110,7 @@ typedef struct timer_io_channels_t {
 	uint8_t				timer_index;   /* Index into io_timers array */
 	uint8_t				timer_channel; /* GPT channel (A or B) */
 	timer_frequency_base_t	freq_basis;
+	dshot_conf_t			dshot;        /* Optional DShot specific data */
 } timer_io_channels_t;
 
 /* Function declarations */

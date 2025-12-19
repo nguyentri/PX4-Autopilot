@@ -36,6 +36,7 @@
 #include <px4_platform_common/px4_config.h>
 #include <px4_arch/hw_description.h>
 #include <px4_arch/io_timer.h>
+#include <px4_arch/dshot.h>
 #include <nuttx/timers/pwm.h>
 #include <nuttx/timers/timer.h>
 #include <stdint.h>
@@ -105,9 +106,12 @@ static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_co
     return ret;
 }
 
-static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_timers_t io_timers_array[], const Timer::TimerChannel timer_channel, const GPIO::GPIOPin gpio_pin)
+static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_timers_t io_timers_array[],
+		const Timer::TimerChannel timer_channel,
+		const GPIO::GPIOPin gpio_pin,
+		const dshot_conf_t dshot_conf = {})
 {
-    ::timer_io_channels_t ret{};
+	::timer_io_channels_t ret{};
 
     // Map timer to timer_index for NuttX HAL
     switch(timer_channel.timer) {
@@ -129,16 +133,17 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
     }
 
     // Set channel (NuttX GPT channels)
-    ret.timer_channel = (uint8_t)timer_channel.channel;
+	ret.timer_channel = (uint8_t)timer_channel.channel;
 
     // GPIO configuration - encode port/pin for GPIO initialization
     // Format: [31:24]=port, [23:16]=pin, [15:0]=reserved for flags
     ret.gpio_out = ((uint32_t)gpio_pin.port << 24) | ((uint32_t)gpio_pin.pin << 16);
     ret.gpio_in = 0; // Not used for PWM output
 
-    ret.freq_basis = IOTimerFrequencyBasis_PWM;
+	ret.freq_basis = IOTimerFrequencyBasis_PWM;
+	ret.dshot = dshot_conf;
 
-    return ret;
+	return ret;
 }
 
 static inline constexpr io_timers_channel_mapping_t initIOTimerChannelMapping(const ::io_timers_t io_timers_array[], const ::timer_io_channels_t timer_channels[])

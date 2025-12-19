@@ -50,15 +50,21 @@
 
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/log.h>
+#include <px4_arch/io_timer.h>
 #include <drivers/drv_dshot.h>
 
 #include "dshot.h"
 
 #include "arm_internal.h"
+#include "ra_dmac.h"
 #include "ra_gpt.h"
 #include "ra_gpio.h"
 #include "ra_mstp.h"
+#include <arch/ra8/ra8p1_irq.h>
 #include "hardware/ra8p1/ra_gpt32.h"
+
+extern const io_timers_t io_timers[MAX_IO_TIMERS];
+extern const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS];
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -73,6 +79,7 @@
 #define DSHOT150_FREQ            150000u
 #define DSHOT300_FREQ            300000u
 #define DSHOT600_FREQ            600000u
+#define DSHOT1200_FREQ           1200000u
 
 #define DSHOT_T0H_PERCENT        37.5f
 #define DSHOT_T1H_PERCENT        75.0f
@@ -88,7 +95,14 @@
 typedef struct
 {
   bool     initialized;
+  uint8_t  io_channel;
+  uint8_t  timer_index;
   uint8_t  gpt_channel;
+  uint8_t  gpt_output;
+  uint32_t gpio_pin;
+  int8_t   dma_channel;
+  ra_dmac_handle_t dma_handle;
+  uint32_t dma_dest;
   uint32_t bit_period_ticks;
   uint32_t t0h_ticks;
   uint32_t t1h_ticks;
@@ -117,9 +131,76 @@ static bool g_dma_available =
 static bool g_bdshot_enabled = false;
 static uint32_t g_active_channels = 0;
 static uint32_t g_dshot_frequency = 0;
+static bool g_dmac_initialized = false;
 
 static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
-static const uint8_t kGptMap[DSHOT_MAX_CHANNELS] = {3, 0, 2, 4};
+
+static const ra_mstp_module_t kGptMstpMap[] = {
+  RA_MSTP_GPT0,  RA_MSTP_GPT1,  RA_MSTP_GPT2,  RA_MSTP_GPT3,
+  RA_MSTP_GPT4,  RA_MSTP_GPT5,  RA_MSTP_GPT6,  RA_MSTP_GPT7,
+  RA_MSTP_GPT8,  RA_MSTP_GPT9,  RA_MSTP_GPT10, RA_MSTP_GPT11,
+  RA_MSTP_GPT12, RA_MSTP_GPT13
+};
+
+static const uint16_t kGptElcCaptureA[] = {
+  RA_ELC_GPT0_CAPTURE_COMPARE_A,
+  RA_ELC_GPT1_CAPTURE_COMPARE_A,
+  RA_ELC_GPT2_CAPTURE_COMPARE_A,
+  RA_ELC_GPT3_CAPTURE_COMPARE_A,
+  RA_ELC_GPT4_CAPTURE_COMPARE_A,
+  RA_ELC_GPT5_CAPTURE_COMPARE_A,
+  RA_ELC_GPT6_CAPTURE_COMPARE_A,
+  RA_ELC_GPT7_CAPTURE_COMPARE_A,
+  RA_ELC_GPT8_CAPTURE_COMPARE_A,
+  RA_ELC_GPT9_CAPTURE_COMPARE_A,
+  RA_ELC_GPT10_CAPTURE_COMPARE_A,
+  RA_ELC_GPT11_CAPTURE_COMPARE_A,
+  RA_ELC_GPT12_CAPTURE_COMPARE_A,
+  RA_ELC_GPT13_CAPTURE_COMPARE_A
+};
+
+static bool dshot_map_channel(uint8_t logical_channel, dshot_channel_t *ch)
+{
+  if (logical_channel >= MAX_TIMER_IO_CHANNELS)
+    {
+      PX4_ERR("DShot channel %u exceeds timer IO channels (%u)",
+              logical_channel, MAX_TIMER_IO_CHANNELS);
+      return false;
+    }
+
+  const timer_io_channels_t *cfg = &timer_io_channels[logical_channel];
+
+  if (cfg->timer_index >= MAX_IO_TIMERS)
+    {
+      PX4_ERR("DShot channel %u invalid timer index %u",
+              logical_channel, cfg->timer_index);
+      return false;
+    }
+
+  const io_timers_t *timer = &io_timers[cfg->timer_index];
+  uint8_t gpt_channel = (cfg->dshot.gpt_channel != 0) ? cfg->dshot.gpt_channel : timer->timer_id;
+
+  if (gpt_channel == 0xFF || gpt_channel > 13)
+    {
+      PX4_ERR("Timer %u lacks valid GPT channel id", cfg->timer_index);
+      return false;
+    }
+
+  ch->io_channel = logical_channel;
+  ch->timer_index = cfg->timer_index;
+  ch->gpt_channel = gpt_channel;
+  ch->gpt_output = (cfg->timer_channel == 1) ? 0 : 1;
+  ch->gpio_pin = cfg->gpio_out;
+  ch->dma_channel = cfg->dshot.dma_channel;
+  ch->dma_handle = NULL;
+
+  const uint32_t compare_offset = (ch->gpt_output == 0)
+                                  ? R_GPT32_GTCCRA_OFFSET
+                                  : R_GPT32_GTCCRB_OFFSET;
+  ch->dma_dest = R_GPT32_CH_BASE(ch->gpt_channel) + compare_offset;
+
+  return true;
+}
 
 /****************************************************************************
  * Private Functions
@@ -209,35 +290,6 @@ static int gpt_setup_channel(uint8_t gpt_channel,
   return 0;
 }
 
-#ifdef CONFIG_RA_DMAC
-static int gpt_load_frame_to_dma(uint8_t gpt_channel,
-                                 dshot_channel_t *ch)
-{
-  struct ra_gpt_dma_s dma;
-  memset(&dma, 0, sizeof(dma));
-
-  /* Populate DMA buffer with compare values for each bit
-   * DShot encodes: bit=0 as ~37.5% duty, bit=1 as ~75% duty
-   */
-
-  for (int bit = DSHOT_FRAME_BITS - 1; bit >= 0; bit--)
-    {
-      bool one = (ch->current_frame >> bit) & 1u;
-      uint32_t high_ticks = one ? ch->t1h_ticks : ch->t0h_ticks;
-      ch->dma_buffer[DSHOT_FRAME_BITS - 1 - bit] = high_ticks;
-    }
-
-  /* Configure DMA to transfer from buffer to GTCCRA on each overflow */
-
-  dma.trigger = 2;  /* Overflow trigger */
-  dma.src_addr = (uint32_t)ch->dma_buffer;
-  dma.dst_addr = R_GPT32_CH_BASE(gpt_channel) + R_GPT32_GTCCRA_OFFSET;
-  dma.transfer_count = DSHOT_FRAME_BITS;
-  dma.enable = true;
-
-  return ra_gpt_set_dma(gpt_channel, &dma);
-}
-
 static void gpt_start(uint8_t gpt_channel)
 {
   gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET, GPT_GTWP_PRKEY);
@@ -254,7 +306,155 @@ static void gpt_stop(uint8_t gpt_channel)
                GPT_GTWP_PRKEY | GPT_GTWP_WP);
 }
 
-#endif /* CONFIG_RA_DMAC */
+
+static inline uint16_t dshot_get_elc_event(uint8_t gpt_channel)
+{
+  if (gpt_channel < (sizeof(kGptElcCaptureA) / sizeof(kGptElcCaptureA[0])))
+    {
+      return kGptElcCaptureA[gpt_channel];
+    }
+
+  return RA_ELC_GPT0_CAPTURE_COMPARE_A;
+}
+
+static void gpt_enable_overflow_dma_request(uint8_t gpt_channel)
+{
+  irqstate_t flags = enter_critical_section();
+
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET, GPT_GTWP_PRKEY);
+
+  uint32_t gtintad = gpt_getreg32(gpt_channel, R_GPT32_GTINTAD_OFFSET);
+  gtintad |= GPT_GTINTAD_ADTRAUEN;
+
+  gpt_putreg32(gpt_channel, R_GPT32_GTADTRA_OFFSET,
+               gpt_getreg32(gpt_channel, R_GPT32_GTPR_OFFSET));
+  gpt_putreg32(gpt_channel, R_GPT32_GTINTAD_OFFSET, gtintad);
+
+  gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET,
+               GPT_GTWP_PRKEY | GPT_GTWP_WP | GPT_GTWP_CMNWP);
+
+  leave_critical_section(flags);
+}
+
+static int dshot_dma_setup(dshot_channel_t *ch)
+{
+#ifdef CONFIG_RA_DMAC
+  if (!g_dma_available)
+    {
+      return -ENODEV;
+    }
+
+  if (!g_dmac_initialized)
+    {
+      if (ra_dmac_initialize() < 0)
+        {
+          g_dma_available = false;
+          return -ENODEV;
+        }
+
+      g_dmac_initialized = true;
+    }
+
+  if (ch->dma_handle != NULL)
+    {
+      return OK;
+    }
+
+  gpt_enable_overflow_dma_request(ch->gpt_channel);
+
+  ra_dmac_config_t dma_config;
+  memset(&dma_config, 0, sizeof(dma_config));
+
+  dma_config.mode = RA_DMAC_MODE_REPEAT;
+  dma_config.repeat_area = RA_DMAC_REPEAT_AREA_SRC;
+  dma_config.size = RA_DMAC_SIZE_32BIT;
+  dma_config.src_addr_mode = RA_DMAC_ADDR_INCR;
+  dma_config.dest_addr_mode = RA_DMAC_ADDR_FIXED;
+  dma_config.trigger = RA_DMAC_TRIGGER_HW;
+  dma_config.src_addr = (uint32_t)ch->dma_buffer;
+  dma_config.dest_addr = ch->dma_dest;
+  dma_config.transfer_count = DSHOT_FRAME_BITS;
+  dma_config.block_count = 1;
+  dma_config.elc_src = dshot_get_elc_event(ch->gpt_channel);
+
+  int ret;
+
+  if (ch->dma_channel >= 0)
+    {
+      ret = ra_dmac_open_channel(&ch->dma_handle, &dma_config, ch->dma_channel);
+    }
+  else
+    {
+      ret = ra_dmac_open(&ch->dma_handle, &dma_config);
+    }
+
+  if (ret < 0)
+    {
+      PX4_ERR("Failed to open DMAC for GPT%u (%d)", ch->gpt_channel, ret);
+      ch->dma_handle = NULL;
+      return ret;
+    }
+
+  return OK;
+#else
+  return -ENODEV;
+#endif
+}
+
+static inline void dshot_prepare_buffer(dshot_channel_t *ch)
+{
+  for (int bit = DSHOT_FRAME_BITS - 1; bit >= 0; bit--)
+    {
+      const bool one = (ch->current_frame >> bit) & 1u;
+      const uint32_t high_ticks = one ? ch->t1h_ticks : ch->t0h_ticks;
+      ch->dma_buffer[DSHOT_FRAME_BITS - 1 - bit] = high_ticks;
+    }
+}
+
+static int dshot_dma_start(dshot_channel_t *ch)
+{
+#ifdef CONFIG_RA_DMAC
+  if (dshot_dma_setup(ch) < 0 || ch->dma_handle == NULL)
+    {
+      return -ENODEV;
+    }
+
+  int ret = ra_dmac_reset(ch->dma_handle,
+                          (uint32_t)ch->dma_buffer,
+                          ch->dma_dest,
+                          DSHOT_FRAME_BITS);
+
+  if (ret < 0)
+    {
+      PX4_ERR("DMAC reset failed (GPT%u): %d", ch->gpt_channel, ret);
+      return ret;
+    }
+
+  ret = ra_dmac_enable(ch->dma_handle);
+
+  if (ret < 0)
+    {
+      PX4_ERR("DMAC enable failed (GPT%u): %d", ch->gpt_channel, ret);
+      return ret;
+    }
+
+  return OK;
+#else
+  return -ENODEV;
+#endif
+}
+
+static inline void dshot_dma_stop(dshot_channel_t *ch)
+{
+#ifdef CONFIG_RA_DMAC
+  if (ch->dma_handle != NULL)
+    {
+      ra_dmac_disable(ch->dma_handle);
+    }
+#else
+  (void)ch;
+#endif
+}
 
 /****************************************************************************
  * Public Functions
@@ -269,7 +469,8 @@ int up_dshot_init(uint32_t channel_mask, unsigned dshot_pwm_freq,
 {
   if (dshot_pwm_freq != DSHOT150_FREQ &&
       dshot_pwm_freq != DSHOT300_FREQ &&
-      dshot_pwm_freq != DSHOT600_FREQ)
+      dshot_pwm_freq != DSHOT600_FREQ &&
+      dshot_pwm_freq != DSHOT1200_FREQ)
     {
       return -EINVAL;
     }
@@ -286,12 +487,32 @@ int up_dshot_init(uint32_t channel_mask, unsigned dshot_pwm_freq,
         }
 
       dshot_channel_t *ch = &g_channels[ch_idx];
-      ch->gpt_channel = kGptMap[ch_idx];
+
+      if (!dshot_map_channel(ch_idx, ch))
+        {
+          PX4_ERR("Skipping DShot channel %u (no mapping)", ch_idx);
+          continue;
+        }
+
+      if (ch->gpio_pin != 0)
+        {
+          ra_gpioconfig(ch->gpio_pin);
+        }
+
+      if (ch->gpt_channel < (sizeof(kGptMstpMap) / sizeof(kGptMstpMap[0])))
+        {
+          ra_mstp_start(kGptMstpMap[ch->gpt_channel]);
+        }
 
       dshot_calculate_timing(dshot_pwm_freq, &ch->bit_period_ticks,
                              &ch->t0h_ticks, &ch->t1h_ticks);
 
       gpt_setup_channel(ch->gpt_channel, ch->bit_period_ticks);
+
+      if (g_dma_available)
+        {
+          dshot_dma_setup(ch);
+        }
 
       ch->current_frame = 0;
       memset(ch->dma_buffer, 0, sizeof(ch->dma_buffer));
@@ -355,9 +576,9 @@ void up_dshot_trigger(void)
               continue;
             }
 
-          /* Load frame into DMA buffer and configure DMA */
+          dshot_prepare_buffer(ch);
 
-          if (gpt_load_frame_to_dma(ch->gpt_channel, ch) < 0)
+          if (dshot_dma_start(ch) < 0)
             {
               continue;
             }
@@ -381,11 +602,7 @@ void up_dshot_trigger(void)
 
           /* Disable DMA for next cycle */
 
-          struct ra_gpt_dma_s dma_disable;
-          memset(&dma_disable, 0, sizeof(dma_disable));
-          dma_disable.trigger = 2;
-          dma_disable.enable = false;
-          ra_gpt_set_dma(ch->gpt_channel, &dma_disable);
+          dshot_dma_stop(ch);
         }
     }
   else
