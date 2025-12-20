@@ -1,0 +1,39 @@
+# RDK-RZV2H board Kconfig options
+
+config BOARD_RDK_RZV2H
+	bool "Renesas RDK-RZV2H Development Kit"
+	default n
+	---help---
+		Enable support for Renesas RDK-RZV2H Development Kit.
+		This board uses a Renesas RZV2H MPU with Cortex-R8 and Cortex-A55 cores.
+
+if BOARD_RDK_RZV2H
+
+config BOARD_RDK_RZV2H_PWM_CHANNELS
+	int "Number of PWM channels"
+	default 4
+	range 1 8
+	---help---
+		Number of PWM output channels for motor control.
+		Default is 4 channels for quadcopter configuration.
+
+config BOARD_RDK_RZV2H_HAS_BARO
+	bool "Enable barometer support"
+	default y
+	---help---
+		Enable BMP388/BMP280 barometer sensor on I2C bus 7.
+
+config BOARD_RDK_RZV2H_HAS_IMU
+	bool "Enable IMU support"
+	default y
+	---help---
+		Enable MPU9250 IMU sensor on SPI bus 0.
+
+config BOARD_RDK_RZV2H_HAS_MAG
+	bool "Enable magnetometer support"
+	default y
+	depends on BOARD_RDK_RZV2H_HAS_IMU
+	---help---
+		Enable AK8963 magnetometer (internal to MPU9250).
+
+endif # BOARD_RDK_RZV2H

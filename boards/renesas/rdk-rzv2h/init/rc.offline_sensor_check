@@ -1,0 +1,27 @@
+#!/bin/sh
+# Simple sensor snapshot for standalone CR8 boots
+# Use this script to verify sensor connectivity without full flight stack
+
+bmp388 -I -b 7 -a 0x76 start
+? sleep 1
+mpu9250 -s -M -b 0 -R 0 start
+? sleep 1
+
+echo "=== Sensor snapshot (1 of 3) ==="
+listener sensor_combined -n 1
+echo "---"
+listener sensor_baro -n 1
+
+echo "=== Sensor snapshot (2 of 3) ==="
+listener sensor_combined -n 1
+echo "---"
+listener sensor_baro -n 1
+
+echo "=== Sensor snapshot (3 of 3) ==="
+listener sensor_combined -n 1
+echo "---"
+listener sensor_baro -n 1
+
+echo "=== Sensor snapshot complete ==="
+
+exit 0

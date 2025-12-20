@@ -1,0 +1,126 @@
+/****************************************************************************
+ *
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name PX4 nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+#pragma once
+
+#include <px4_platform/micro_hal.h>
+
+/* NuttX includes */
+#include <nuttx/config.h>
+#include <nuttx/irq.h>
+#include <nuttx/spi/spi.h>
+#include <nuttx/i2c/i2c_master.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Forward declarations */
+struct spi_dev_s;
+struct i2c_master_s;
+
+/* GPIO pinset type for RZV2H - use uint32_t for PX4 compatibility */
+typedef uint32_t gpio_pinset_t;
+
+/* Renesas RZV2H UUID configuration
+ * Based on RZV2H unique ID structure
+ */
+#define PX4_CPU_UUID_BYTE_LENGTH                16
+#define PX4_CPU_UUID_WORD32_LENGTH              (PX4_CPU_UUID_BYTE_LENGTH/sizeof(uint32_t))
+
+/* The mfguid will be an array of bytes with
+ * MSD @ index 0 - LSD @ index PX4_CPU_MFGUID_BYTE_LENGTH-1
+ */
+#define PX4_CPU_MFGUID_BYTE_LENGTH              PX4_CPU_UUID_BYTE_LENGTH
+
+/* UUID correlation for Renesas RZV2H */
+#define PX4_CPU_UUID_WORD32_UNIQUE_H            0 /* Least significant digits change the most */
+#define PX4_CPU_UUID_WORD32_UNIQUE_M            1 /* Middle significant digits */
+#define PX4_CPU_UUID_WORD32_UNIQUE_L            2 /* Most significant digits change the least */
+
+/*                                                  Separator    nnn:nnn:nnnn     2 char per byte           term */
+#define PX4_CPU_UUID_WORD32_FORMAT_SIZE         (PX4_CPU_UUID_WORD32_LENGTH-1+(2*PX4_CPU_UUID_BYTE_LENGTH)+1)
+#define PX4_CPU_MFGUID_FORMAT_SIZE              ((2*PX4_CPU_MFGUID_BYTE_LENGTH)+1)
+
+/* Panic save implementation for RZV2H */
+#define px4_savepanic(fileno, context, length)  rzv_save_panic(fileno, context, length)
+
+#define PX4_BUS_OFFSET       0                  /* RZV2H buses are 0 based */
+
+/* GPIO functions using RZV2H NuttX drivers */
+#define px4_arch_configgpio(pinset)              rzv_gpioconfig(pinset)
+#define px4_arch_unconfiggpio(pinset)            rzv_gpiounconfig(pinset)
+#define px4_arch_gpioread(pinset)                rzv_gpioread(pinset)
+#define px4_arch_gpiowrite(pinset, value)        rzv_gpiowrite(pinset, value)
+#define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) rzv_gpiosetevent(pinset,r,f,e,fp,a)
+
+/* Timer configuration for RZV2H - Based on PCLK frequency */
+#ifndef CONFIG_RZV_PCLK_FREQUENCY
+#  define CONFIG_RZV_PCLK_FREQUENCY    200000000  /* 200MHz PCLK for RZV2H */
+#endif
+
+#define TIMER_HRT_CYCLES_PER_US (CONFIG_RZV_PCLK_FREQUENCY / 1000000)
+#define TIMER_HRT_CYCLES_PER_MS (CONFIG_RZV_PCLK_FREQUENCY / 1000)
+
+/* Cache alignment - ARMv7-R Cortex-R8 has cache */
+#if defined(CONFIG_ARMV7R_DCACHE)
+#  define PX4_ARCH_DCACHE_ALIGNMENT 32 /* ARMv7-R cache line size */
+#  define px4_cache_aligned_data() __attribute__((aligned(32)))
+#  define px4_cache_aligned_alloc(s) memalign(32,(s))
+#else
+#  define PX4_ARCH_DCACHE_ALIGNMENT 1
+#  define px4_cache_aligned_data()
+#  define px4_cache_aligned_alloc malloc
+#endif
+
+/* Interrupt handler function pointer type */
+typedef int (*gpio_interrupt_t)(int irq, void *context, void *arg);
+
+/* Function declarations for RZV2H specific implementations */
+struct spi_dev_s *rzv_spibus_initialize(int bus);
+struct i2c_master_s *rzv_i2cbus_initialize(int bus);
+int rzv_i2cbus_uninitialize(struct i2c_master_s *dev);
+
+/* PX4 I2C functions */
+struct i2c_master_s *px4_i2cbus_initialize(int bus);
+int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
+int px4_i2cbus_set_bus_frequency(struct i2c_master_s *dev, uint32_t frequency);
+int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices);
+
+/* PX4 SPI functions */
+struct spi_dev_s *px4_spibus_initialize(int bus);
+
+void rzv_save_panic(int fileno, void *context, int length);
+
+#ifdef __cplusplus
+}
+#endif

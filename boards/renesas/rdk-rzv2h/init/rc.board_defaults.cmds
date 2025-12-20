@@ -1,0 +1,178 @@
+# RDK-RZV2H PX4 Configuration
+# Indoor Renesas RZ/V2H baseline configuration
+# Supports OFFLINE mode (no GPS required)
+#
+# Sensor Configuration:
+# - MPU9250 IMU on SPI bus 0
+# - BMP388/BMP280 barometer on I2C bus 7 at address 0x76
+# - RC Input on SCI0 (/dev/ttyS0) - SBUS
+# - GPS on SCI2 (/dev/ttyS2)
+# - MAVLink on SCI1 (/dev/ttyS1)
+# - 4 PWM outputs on GPT timers (P7_1, P7_2, P7_5, P7_6)
+
+# Basic system configuration
+param set SYS_AUTOSTART 4001
+param set SYS_AUTOCONFIG 0
+param set MAV_TYPE 2
+param set BAT1_SOURCE -1
+param set CBRK_SUPPLY_CHK 894281
+
+# Offline mode settings (indoor/no-GPS operation)
+# - COM_ARM_WO_GPS: Allow arming without GPS
+# - COM_ARM_MAG_STR: Relax magnetometer strength check
+# - NAV_DLL_ACT/RCL_ACT: Disable datalink/RC loss actions (offline safe)
+# - COM_OBL_RC_ACT: No action required for offboard/RC switch
+# - COM_RC_LOSS_T: RC loss timeout (5 seconds before triggering)
+# - COM_LOW_BAT_ACT: Disable low battery action (warning only)
+param set COM_DISARM_PRFLT -1
+param set COM_ARM_WO_GPS 1
+param set COM_ARM_MAG_STR 0
+param set NAV_DLL_ACT 0
+param set NAV_RCL_ACT 0
+param set COM_OBL_RC_ACT 0
+param set COM_RC_LOSS_T 5.0
+param set COM_LOW_BAT_ACT 0
+
+# Flight mode configuration
+param set COM_FLTMODE1 8
+param set COM_FLTMODE2 8
+param set COM_FLTMODE3 1
+param set COM_FLTMODE4 1
+param set COM_FLTMODE5 4
+param set COM_FLTMODE6 4
+
+# RC input configuration
+param set RC_CHAN_CNT 8
+param set RC_MAP_ROLL 1
+param set RC_MAP_PITCH 2
+param set RC_MAP_THROTTLE 3
+param set RC_MAP_YAW 4
+param set RC_MAP_FLTMODE 5
+param set RC_MAP_ARM_SW 6
+param set RC_MAP_KILL_SW 0
+param set COM_RC_IN_MODE 3
+param set RC_INPUT_PROTO 2
+
+# EKF2 configuration
+param set EKF2_MAG_TYPE 0
+param set EKF2_RNG_FOG 1
+
+# Sensor calibration data (placeholder - calibrate for your setup)
+param set CAL_BARO0_ID 4159033
+param set CAL_BARO0_PRIO 50
+param set CAL_BARO0_OFF 0
+param set SENS_BARO_QNH 1011
+
+param set CAL_ACC0_ID 2368514
+param set CAL_ACC0_PRIO 75
+param set CAL_ACC0_ROT 0
+param set CAL_ACC0_XOFF 0.0
+param set CAL_ACC0_XSCALE 1.0
+param set CAL_ACC0_YOFF 0.0
+param set CAL_ACC0_YSCALE 1.0
+param set CAL_ACC0_ZOFF 0.0
+param set CAL_ACC0_ZSCALE 1.0
+
+param set CAL_GYRO0_ID 2368514
+param set CAL_GYRO0_PRIO 50
+param set CAL_GYRO0_ROT 0
+param set CAL_GYRO0_XOFF 0.0
+param set CAL_GYRO0_YOFF 0.0
+param set CAL_GYRO0_ZOFF 0.0
+
+param set SENS_BOARD_X_OFF 0.0
+param set SENS_BOARD_Y_OFF 0.0
+
+param set CAL_MAG0_ID 271362
+param set CAL_MAG0_PRIO 75
+param set CAL_MAG0_ROT 0
+param set CAL_MAG0_XOFF 0.0
+param set CAL_MAG0_XSCALE 1.0
+param set CAL_MAG0_YOFF 0.0
+param set CAL_MAG0_YSCALE 1.0
+param set CAL_MAG0_ZOFF 0.0
+param set CAL_MAG0_ZSCALE 1.0
+
+# Quadcopter X rotor configuration
+param set CA_ROTOR_COUNT 4
+param set CA_ROTOR0_PX 0.22
+param set CA_ROTOR0_PY 0.22
+param set CA_ROTOR1_PX -0.22
+param set CA_ROTOR1_PY -0.22
+param set CA_ROTOR2_PX 0.22
+param set CA_ROTOR2_PY -0.22
+param set CA_ROTOR3_PX -0.22
+param set CA_ROTOR3_PY 0.22
+
+# Rate controller tuning
+param set MC_ROLLRATE_P 0.1
+param set MC_ROLLRATE_K 0.3
+param set MC_ROLLRATE_D 0.008
+param set MC_ROLLRATE_I 0.25
+param set MC_PITCHRATE_P 0.1
+param set MC_PITCHRATE_K 0.3
+param set MC_PITCHRATE_D 0.01
+param set MC_PITCHRATE_I 0.25
+param set MC_YAWRATE_P 0.1
+param set MC_YAWRATE_K 0.25
+param set MC_YAWRATE_I 0.2
+
+# PWM output configuration
+param set PWM_MAIN_FUNC1 101
+param set PWM_MAIN_FUNC2 102
+param set PWM_MAIN_FUNC3 103
+param set PWM_MAIN_FUNC4 104
+param set PWM_MAIN_MIN1 1100
+param set PWM_MAIN_MIN2 1100
+param set PWM_MAIN_MIN3 1100
+param set PWM_MAIN_MIN4 1100
+param set PWM_MAIN_MAX1 1900
+param set PWM_MAIN_MAX2 1900
+param set PWM_MAIN_MAX3 1900
+param set PWM_MAIN_MAX4 1900
+param set PWM_MAIN_DIS1 1000
+param set PWM_MAIN_DIS2 1000
+param set PWM_MAIN_DIS3 1000
+param set PWM_MAIN_DIS4 1000
+
+# System feature flags
+param set MAN_ARM_GESTURE 0
+param set SYS_HAS_BARO 1
+param set SYS_HAS_GPS 1
+param set SYS_HAS_MAG 1
+
+# Start data manager for mission storage
+dataman start -r
+load_mon start
+? sleep 1
+
+# Start RC input (SBUS on SCI0)
+rc_input start -d /dev/ttyS0
+? sleep 1
+rc_update start
+? sleep 1
+
+# Start sensors
+bmp388 -I -b 7 -a 0x76 start
+? sleep 1
+mpu9250 -s -M -b 0 -R 0 start
+? sleep 1
+sensors start
+? sleep 1
+
+# Start GPS on SCI2
+gps start -d /dev/ttyS2 -b 115200
+? sleep 1
+
+# Start land detector
+land_detector start multicopter
+
+# Start PWM output driver
+pwm_out start
+
+# Start EKF2
+ekf2 start
+? sleep 1
+
+# Start navigator
+navigator start
