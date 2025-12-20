@@ -60,6 +60,9 @@
 
 #include <drivers/drv_pwm_output.h>
 #include <px4_arch/io_timer_hw_description.h>
+#include <px4_platform_common/px4_config.h>
+
+#include "rzv_gpio.h"
 
 #include "board_config.h"
 
@@ -165,6 +168,20 @@ extern "C" {
 	 */
 	int rdk_rzv2h_timer_initialize(void)
 	{
+		/* Ensure PWM pins are configured for GPT output */
+#ifdef BOARD_PWM_CH0_GPIO
+		px4_arch_configgpio(BOARD_PWM_CH0_GPIO);
+#endif
+#ifdef BOARD_PWM_CH1_GPIO
+		px4_arch_configgpio(BOARD_PWM_CH1_GPIO);
+#endif
+#ifdef BOARD_PWM_CH2_GPIO
+		px4_arch_configgpio(BOARD_PWM_CH2_GPIO);
+#endif
+#ifdef BOARD_PWM_CH3_GPIO
+		px4_arch_configgpio(BOARD_PWM_CH3_GPIO);
+#endif
+
 		/* Initialize high-resolution timer first */
 		hrt_init();
 

@@ -168,12 +168,10 @@ sensors start
 gps start -d /dev/ttyS2 -b 115200
 ? sleep 1
 
-# Distance sensor (if available)
-? tfmini start -d /dev/ttyS4
-
 land_detector start multicopter
 
 # PWM output driver
+mixer load /etc/mixers/quad_x.main.mix
 pwm_out start
 ? sleep 1
 
