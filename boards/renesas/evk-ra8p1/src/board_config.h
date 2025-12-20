@@ -89,17 +89,19 @@
  ****************************************************************************************************/
 
 /* UART Device Mapping (aligned with NuttX board.h)
- * SCI2 (ttyS0): Console (Pmod 1 UART: P802=RXD2, P801=TXD2)
- * SCI0 (ttyS1): GPS/Telemetry (Pmod 2 UART: P602=RXD0, P603=TXD0)
- * SCI7 (ttyS2): Arduino/mikroBUS UART (P808=RXD7, P809=TXD7)
+ * SCI0 (ttyS0): Console on Pmod2 UART (P602=RXD0, P603=TXD0)
+ * SCI4 (ttyS1): TELEM1/GPS on J1 (P715=RXD4_C, P714=TXD4_C)
+ * SCI5 (ttyS2): TELEM2 on J1 (PB02=RXD5_C, PB03=TXD5_C)
+ * SCI8 (ttyS3): RC input RX-only on P806 (RXD8_A)
+ * SCI9 (ttyS4): spare UART on P208/P209 (RXD9_B/TXD9_B)
  */
-#define PX4_UART_CONSOLE                "ttyS0"  /* SCI2 - Console */
-#define PX4_UART_GPS1                   "ttyS1"  /* SCI0 - GPS/Primary Telemetry */
-#define PX4_UART_TELEM1                 "ttyS1"  /* SCI0 - Primary Telemetry */
-#define PX4_UART_TELEM2                 "ttyS2"  /* SCI7 - Secondary Telemetry */
+#define PX4_UART_CONSOLE                "ttyS0"  /* SCI0 - Console */
+#define PX4_UART_GPS1                   "ttyS1"  /* SCI4 - Primary telemetry/GPS */
+#define PX4_UART_TELEM1                 "ttyS1"  /* SCI4 - Primary telemetry */
+#define PX4_UART_TELEM2                 "ttyS2"  /* SCI5 - Secondary telemetry */
 
 /* RC Input Configuration */
-#define RC_SERIAL_PORT                  "/dev/ttyS2"  /* UART for RC input */
+#define RC_SERIAL_PORT                  "/dev/ttyS3"  /* SCI8 RX-only on P806 */
 #define BOARD_HAS_RC_INPUT              1
 
 /* Console Buffer */
@@ -111,8 +113,8 @@
 
 /* SPI Bus Configuration */
 #define BOARD_NUMBER_SPI_BUSES          1
-#define BOARD_SPI_BUS_SENSORS           1  /* Arduino SPI for sensors */
-#define PX4_SPI_BUS_SENSORS             1
+#define BOARD_SPI_BUS_SENSORS           0  /* Arduino SPI0 for sensors */
+#define PX4_SPI_BUS_SENSORS             0
 #define PX4_SPI_BUS_MEMORY              PX4_SPI_BUS_SENSORS
 
 /* SPI Bus Limits */
@@ -126,13 +128,11 @@
  * MISO: P100 (Arduino D12) - GPIO_ARDUINO_SPI_MISO = GPIO_MISOB_A_1
  * MOSI: P101 (Arduino D11) - GPIO_ARDUINO_SPI_MOSI = GPIO_MOSIB_A_1
  * CS0:  P103 (Arduino D10) - GPIO_ARDUINO_SPI_CS0 = GPIO_SSLB0_A_1 (ICM-20948)
- * CS1:  P110 (Arduino D9)  - GPIO_ARDUINO_SPI_CS1 = GPIO_P110_OUTPUT_HIGH (BMP388)
  */
 #define PX4_SPI_IMU_SCK                 GPIO_ARDUINO_SPI_SCK   /* P102 */
 #define PX4_SPI_IMU_MOSI                GPIO_ARDUINO_SPI_MOSI  /* P101 */
 #define PX4_SPI_IMU_MISO                GPIO_ARDUINO_SPI_MISO  /* P100 */
 #define PX4_SPI_IMU_CS0                 GPIO_ARDUINO_SPI_CS0   /* P103 - ICM-20948 */
-#define PX4_SPI_BARO_CS1                GPIO_ARDUINO_SPI_CS1   /* P110 - BMP388 */
 
 /* Sensor Data Ready Interrupt (from board.h) */
 #define PX4_SPI_IMU_DRDY                GPIO_ARDUINO_D2_INT    /* P011 - IRQ16 */
@@ -146,8 +146,8 @@
  * I2C1: P512=SCL1, P511=SDA1 (Grove 1/2, Camera Port, Qwiic)
  */
 #define BOARD_NUMBER_I2C_BUSES          2
-#define BOARD_I2C_BUS_CLOCK_INIT        {100000, 100000}  /* 100kHz for both buses */
-#define PX4_NUMBER_I2C_BUSES            2
+#define BOARD_I2C_BUS_CLOCK_INIT        {100000}  /* 100kHz for bus 0 */
+#define PX4_NUMBER_I2C_BUSES            1
 #define I2C_BUS_MAX_BUS_ITEMS           PX4_NUMBER_I2C_BUSES
 
 /* I2C Bus Assignment */
@@ -173,13 +173,10 @@
  * High-Resolution Timer (HRT)
  ****************************************************************************************************/
 
-/* HRT Configuration using GPT13 (from board.h)
- * GPT13A: P515 - GPIO_GTIOC13A_1
- * GPT13B: P514 - GPIO_GTIOC13B_2
- */
-#define HRT_TIMER                       13  /* Use GPT13 for HRT */
+/* HRT Configuration using GPT0 (dedicated, no pin output required) */
+#define HRT_TIMER                       0   /* Use GPT0 for HRT */
 #define HRT_TIMER_CHANNEL               0   /* Channel A */
-#define HRT_TIMER_FREQUENCY             120000000  /* 120MHz PCLKD for GPT */
+#define HRT_TIMER_FREQUENCY             BOARD_PCLKD_FREQUENCY  /* PCLKD at 250MHz */
 
 /****************************************************************************************************
  * LED Configuration

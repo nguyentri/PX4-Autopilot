@@ -10,10 +10,10 @@ usleep 100000
 # Start ADC driver for battery monitoring (when available)
 # board_adc start
 
-# Start IMU on SPI1 - ICM20948 9-axis sensor with integrated magnetometer
-# -s: SPI mode, -b 1: SPI bus 1, -R 0: no rotation, -M 1: enable magnetometer (AK09916)
-# Note: Device will auto-detect on SPI bus 1, CS0 (P804), DRDY on P006
-if icm20948 start -s -b 1 -R 0 -M 1
+# Start IMU on SPI0 - ICM20948 9-axis sensor with integrated magnetometer
+# -s: SPI mode, -b 0: SPI bus 0 (Arduino header), -R 0: no rotation, -M 1: enable magnetometer (AK09916)
+# Note: Device will auto-detect on SPI bus 0, CS0 (P103), DRDY on P006
+if icm20948 start -s -b 0 -R 0 -M 1
 then
         echo "ICM20948 IMU initialized successfully"
 else
@@ -24,10 +24,8 @@ fi
 # Important: Give time for DRDY interrupt to be configured and sensor to settle
 usleep 50000
 
-# Start Barometer on SPI1 - BMP388 pressure sensor
-# -s: SPI mode, -b 1: SPI bus 1, -T: device type ID
-# Device type 6553601 = (1<<24 | DRV_BARO_DEVTYPE_BMP388) for proper identification
-if bmp388 start -s -b 1 -T 6553601
+# Start Barometer on I2C0 - BMP388 pressure sensor at 0x76
+if bmp388 start -X -b 0 -a 0x76
 then
         echo "BMP388 barometer initialized successfully"
 else
@@ -37,26 +35,52 @@ fi
 # Short delay after barometer initialization
 usleep 10000
 
-# Start PWM output driver for motor control
-# This initializes the GPT timers for the 4 motor channels
-if pwm_out start
+# Start ADC for battery monitoring
+if board_adc start
 then
-        echo "PWM output driver started"
+        echo "ADC driver started"
 else
-        echo "ERROR: PWM output driver failed to start!"
+        echo "ERROR: ADC driver failed to start!"
 fi
 
-# Configure PWM outputs for standard ESC operation
-# Sets PWM mode (not OneShot, not DShot)
-pwm_out mode_pwm
+# Motor output driver selection:
+# - Use DShot for ESCs that support it (better performance, telemetry)
+# - Use PWM for standard ESCs
+#
+# DShot protocol is selected via DSHOT_CONFIG parameter:
+#   0 = PWM mode (default)
+#   150/300/600/1200 = DShot speed in kbps
 
-# Set PWM output frequency to 400 Hz (standard for ESCs)
-# This configures all 4 channels (GPT0, GPT2, GPT3, GPT4) to 400Hz
-pwm_out rate -a -r 400
+param compare DSHOT_CONFIG 0
+if [ $? -eq 0 ]
+then
+        # PWM mode - standard ESC protocol
+        echo "Starting PWM output driver"
+        if pwm_out start
+        then
+                echo "PWM output driver started"
+                pwm_out mode_pwm
+                pwm_out rate -a -r 400
+        else
+                echo "ERROR: PWM output driver failed to start!"
+        fi
+else
+        # DShot mode - digital ESC protocol
+        echo "Starting DShot output driver"
+        if dshot start
+        then
+                echo "DShot output driver started"
+        else
+                echo "ERROR: DShot output driver failed to start!"
+                # Fall back to PWM
+                echo "Falling back to PWM mode"
+                pwm_out start
+                pwm_out mode_pwm
+                pwm_out rate -a -r 400
+        fi
+fi
 
-# DO NOT auto-arm the PWM outputs here for safety
+# DO NOT auto-arm the motor outputs here for safety
 # Arming should only happen through commander when system is ready
-# The following line is intentionally removed:
-# pwm_out arm
 
 echo "Board sensor initialization complete"

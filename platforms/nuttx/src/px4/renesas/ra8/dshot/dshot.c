@@ -47,6 +47,7 @@
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
+#include <arch/board/board.h>
 
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/log.h>
@@ -84,7 +85,12 @@ extern const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS];
 #define DSHOT_T0H_PERCENT        37.5f
 #define DSHOT_T1H_PERCENT        75.0f
 
-#define PCLKD_FREQUENCY          120000000u
+/* Use board-defined PCLKD frequency (250MHz for RA8P1) */
+#ifdef BOARD_PCLKD_FREQUENCY
+#  define PCLKD_FREQUENCY        BOARD_PCLKD_FREQUENCY
+#else
+#  define PCLKD_FREQUENCY        250000000u  /* Default to 250MHz for RA8P1 */
+#endif
 
 #define BDSHOT_OFFLINE_COUNT     400
 

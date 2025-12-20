@@ -34,115 +34,38 @@
 /**
  * @file hrt.c
  *
- * High-resolution timer callouts and timekeeping for Renesas RA8.
- *
- * This implementation uses the RA8 GPT (General Purpose Timer) to provide a
- * 1MHz high-resolution timer for PX4 scheduling and time-critical operations.
- * It supports scheduling callouts with microsecond precision.
- *
+ * GPT0-based high-resolution timer for Renesas RA8.
+ * - Free-running counter at PCLKD/64.
+ * - Compare A interrupt drives PX4 HRT scheduling.
  */
 
-#include <sys/types.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <time.h>
-#include <string.h>
-#include <stdint.h>
-#include <sched.h>
+#include <px4_platform_common/px4_config.h>
+#include <drivers/drv_hrt.h>
 
-/* Try to include proper headers, with fallbacks for linting */
-#ifdef __PX4_NUTTX
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
-#include <drivers/drv_hrt.h>
-#else
-/* Fallback definitions for development/linting environment */
-typedef uint64_t hrt_abstime;
-typedef void (*hrt_callout)(void *arg);
-typedef uint32_t irqstate_t;
+#include <queue.h>
 
-/* Simple queue structures compatible with NuttX */
-struct sq_entry_s {
-	struct sq_entry_s *flink;
-};
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
-struct sq_queue_s {
-	struct sq_entry_s *head;
-	struct sq_entry_s *tail;
-};
-typedef struct sq_queue_s sq_queue_t;
+#include "arm_internal.h"
+#include "ra_icu.h"
+#include "ra_gpt.h"
+#include "hardware/ra8p1/ra_gpt32.h"
+#include <arch/ra8/ra8p1_irq.h>
+#include "board_config.h"
 
-struct hrt_call {
-	struct sq_entry_s	link;
-	hrt_abstime		deadline;
-	hrt_abstime		period;
-	hrt_callout		callout;
-	void			*arg;
-};
-
-/* Queue function compatibility macros */
-#define sq_init(q) do { (q)->head = NULL; (q)->tail = NULL; } while(0)
-#define sq_empty(q) ((q)->head == NULL)
-
-static inline irqstate_t enter_critical_section(void) { return 0; }
-static inline void leave_critical_section(irqstate_t flags) { (void)flags; }
-
-/* Simple queue implementations for fallback */
-static inline void sq_addlast(struct sq_entry_s *node, sq_queue_t *queue)
-{
-	node->flink = NULL;
-	if (queue->tail) {
-		queue->tail->flink = node;
-	} else {
-		queue->head = node;
-	}
-	queue->tail = node;
-}
-
-static inline struct sq_entry_s *sq_remfirst(sq_queue_t *queue)
-{
-	struct sq_entry_s *node = queue->head;
-	if (node) {
-		queue->head = node->flink;
-		if (!queue->head) {
-			queue->tail = NULL;
-		}
-		node->flink = NULL;
-	}
-	return node;
-}
-
-static inline void sq_rem(struct sq_entry_s *node, sq_queue_t *queue)
-{
-	if (queue->head == node) {
-		queue->head = node->flink;
-		if (!queue->head) {
-			queue->tail = NULL;
-		}
-	} else {
-		struct sq_entry_s *prev = queue->head;
-		while (prev && prev->flink != node) {
-			prev = prev->flink;
-		}
-		if (prev) {
-			prev->flink = node->flink;
-			if (queue->tail == node) {
-				queue->tail = prev;
-			}
-		}
-	}
-	node->flink = NULL;
-}
-#endif
-
-/* Define missing constants */
 #ifndef LATENCY_BUCKET_COUNT
 #define LATENCY_BUCKET_COUNT 8
 #endif
 
-#ifndef EXPORT
-#define EXPORT
-#endif
+#define HRT_PCLKD_HZ            HRT_TIMER_FREQUENCY
+#define HRT_PRESCALER_DIV       64u
+#define HRT_TIMER_FREQ_HZ       (HRT_PCLKD_HZ / HRT_PRESCALER_DIV)
+#define HRT_MIN_DELTA_US        5u
 
 #ifdef CONFIG_DEBUG_HRT
 #  define hrtinfo _info
@@ -150,7 +73,11 @@ static inline void sq_rem(struct sq_entry_s *node, sq_queue_t *queue)
 #  define hrtinfo(x...)
 #endif
 
-/* Helper function to safely cast from sq_entry_s to hrt_call */
+static sq_queue_t g_callout_queue;
+static volatile uint32_t g_last_counter;
+static volatile uint64_t g_accumulated_counts;
+static int g_hrt_irq = -1;
+
 __attribute__((always_inline))
 static inline struct hrt_call *entry_to_call(struct sq_entry_s *entry)
 {
@@ -160,41 +87,72 @@ static inline struct hrt_call *entry_to_call(struct sq_entry_s *entry)
 #pragma GCC diagnostic pop
 }
 
-/* Global callback queue - use NuttX queue type */
-static sq_queue_t callout_queue;
-
-/**
- * Fetch a never-wrapping absolute time value in microseconds
- */
-hrt_abstime
-hrt_absolute_time(void)
+static inline uint32_t gpt_getreg(unsigned int offset)
 {
-	struct timespec timespec_now;
-	(void)clock_gettime(CLOCK_MONOTONIC, &timespec_now);
-	return (hrt_abstime)((timespec_now.tv_sec * 1000000ULL) + (timespec_now.tv_nsec / 1000ULL));
+	return getreg32(R_GPT32_CH_BASE(HRT_TIMER) + offset);
 }
 
-/**
- * Store the absolute time in an interrupt-safe fashion
- */
-void
-hrt_store_absolute_time(volatile hrt_abstime *time_ptr)
+static inline void gpt_putreg(uint32_t val, unsigned int offset)
+{
+	putreg32(val, R_GPT32_CH_BASE(HRT_TIMER) + offset);
+}
+
+static inline uint64_t counts_to_time_us(uint64_t counts)
+{
+	return (counts * 1000000ULL) / HRT_TIMER_FREQ_HZ;
+}
+
+static inline uint32_t time_to_counts(hrt_abstime us)
+{
+	const uint64_t ticks = (us * (uint64_t)HRT_TIMER_FREQ_HZ + 500000ULL) / 1000000ULL;
+	return (ticks > UINT32_MAX) ? UINT32_MAX : (uint32_t)ticks;
+}
+
+static inline uint32_t hrt_read_count(void)
+{
+	return gpt_getreg(R_GPT32_GTCNT_OFFSET);
+}
+
+static void hrt_schedule(void);
+static void hrt_call_invoke(void);
+
+hrt_abstime hrt_absolute_time(void)
+{
+	irqstate_t flags = enter_critical_section();
+
+	const uint32_t now = hrt_read_count();
+	const uint32_t last = g_last_counter;
+	g_last_counter = now;
+
+	const uint32_t delta = now - last;
+	g_accumulated_counts += delta;
+	const uint64_t counts = g_accumulated_counts;
+
+	leave_critical_section(flags);
+	return counts_to_time_us(counts);
+}
+
+hrt_abstime hrt_us_to_ticks(hrt_abstime us)
+{
+	return time_to_counts(us);
+}
+
+hrt_abstime hrt_ticks_to_us(hrt_abstime ticks)
+{
+	return counts_to_time_us(ticks);
+}
+
+void hrt_store_absolute_time(volatile hrt_abstime *time_ptr)
 {
 	irqstate_t flags = enter_critical_section();
 	*time_ptr = hrt_absolute_time();
 	leave_critical_section(flags);
 }
 
-
-
-/**
- * Cancel all outstanding HRT calls
- */
 void hrt_cancel_all(void)
 {
-	/* Remove all entries from the queue */
-	while (!sq_empty(&callout_queue)) {
-		struct sq_entry_s *entry = sq_remfirst(&callout_queue);
+	while (!sq_empty(&g_callout_queue)) {
+		struct sq_entry_s *entry = sq_remfirst(&g_callout_queue);
 		if (entry != NULL) {
 			struct hrt_call *call = entry_to_call(entry);
 			call->deadline = 0;
@@ -205,25 +163,42 @@ void hrt_cancel_all(void)
 	}
 }
 
-/**
- * Initialize the HRT system - usually called during boot
- */
-void hrt_init(void)
+static void hrt_program_compare(hrt_abstime deadline)
 {
-	// Initialize queue
-	sq_init(&callout_queue);
+	hrt_abstime now = hrt_absolute_time();
 
-	// Initialize timing base (using system clock for now)
-	// On real hardware, this would initialize the high-resolution timer
-	// For now, we'll use the system time as our base
+	if (deadline <= now) {
+		deadline = now + HRT_MIN_DELTA_US;
+	}
 
-	// Clear any existing callbacks
-	hrt_cancel_all();
+	const hrt_abstime delta_us = deadline - now;
+	uint32_t next_ticks = time_to_counts(delta_us);
+
+	if (next_ticks < (HRT_MIN_DELTA_US * (HRT_TIMER_FREQ_HZ / 1000000U))) {
+		next_ticks = HRT_MIN_DELTA_US * (HRT_TIMER_FREQ_HZ / 1000000U);
+	}
+
+	irqstate_t flags = enter_critical_section();
+	const uint32_t current = hrt_read_count();
+	const uint32_t compare = current + next_ticks;
+
+	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
+	gpt_putreg(compare, R_GPT32_GTCCRA_OFFSET);
+	gpt_putreg(GPT_GTINTAD_GTINTA, R_GPT32_GTINTAD_OFFSET);
+	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+
+	leave_critical_section(flags);
 }
 
-/**
- * Process pending callbacks - call this periodically
- */
+static void hrt_schedule(void)
+{
+	struct hrt_call *next = entry_to_call(g_callout_queue.head);
+
+	if (next != NULL) {
+		hrt_program_compare(next->deadline);
+	}
+}
+
 static void hrt_call_invoke(void)
 {
 	hrt_abstime now = hrt_absolute_time();
@@ -231,34 +206,27 @@ static void hrt_call_invoke(void)
 
 	irqstate_t flags = enter_critical_section();
 
-	while ((call = entry_to_call(callout_queue.head)) != NULL) {
+	while ((call = entry_to_call(g_callout_queue.head)) != NULL) {
 		if (call->deadline > now) {
-			break; /* Not ready yet */
+			break;
 		}
 
-		/* Remove from queue */
-		sq_remfirst(&callout_queue);
-
-		/* Mark as completed */
+		sq_remfirst(&g_callout_queue);
 		hrt_abstime deadline = call->deadline;
 		call->deadline = 0;
 
 		leave_critical_section(flags);
 
-		/* Call the callback */
 		if (call->callout) {
 			call->callout(call->arg);
 		}
 
-		/* Re-enter critical section for next iteration or periodic re-queue */
 		flags = enter_critical_section();
 
-		/* If periodic, reschedule */
 		if (call->period != 0) {
 			call->deadline = deadline + call->period;
 
-			/* Insert back into queue in order */
-			struct hrt_call *pos = entry_to_call(callout_queue.head);
+			struct hrt_call *pos = entry_to_call(g_callout_queue.head);
 			struct hrt_call *prev = NULL;
 
 			while (pos && pos->deadline <= call->deadline) {
@@ -270,42 +238,103 @@ static void hrt_call_invoke(void)
 				call->link.flink = prev->link.flink;
 				prev->link.flink = &call->link;
 				if (!call->link.flink) {
-					callout_queue.tail = &call->link;
+					g_callout_queue.tail = &call->link;
 				}
 			} else {
-				call->link.flink = callout_queue.head;
-				callout_queue.head = &call->link;
-				if (!callout_queue.tail) {
-					callout_queue.tail = &call->link;
+				call->link.flink = g_callout_queue.head;
+				g_callout_queue.head = &call->link;
+				if (!g_callout_queue.tail) {
+					g_callout_queue.tail = &call->link;
 				}
 			}
 		}
 	}
 
 	leave_critical_section(flags);
+	hrt_schedule();
 }
 
-/**
- * Call callout(arg) after interval has elapsed.
- */
-void
-hrt_call_after(struct hrt_call *entry, hrt_abstime delay, hrt_callout callout, void *arg)
+static int hrt_interrupt(int irq, void *context, void *arg)
+{
+	(void)irq;
+	(void)arg;
+
+	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
+	const uint32_t status = gpt_getreg(R_GPT32_GTST_OFFSET);
+	gpt_putreg(status & ~(GPT_GTST_TCFA), R_GPT32_GTST_OFFSET);
+	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+
+	if (status & GPT_GTST_TCFA) {
+		hrt_call_invoke();
+	}
+
+	return OK;
+}
+
+static void hrt_gpt_start(void)
 {
 	irqstate_t flags = enter_critical_section();
 
-	/* Remove from queue if already queued */
+	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
+
+	/* Stop and reset */
+	uint32_t regval = gpt_getreg(R_GPT32_GTCR_OFFSET);
+	regval &= ~GPT_GTCR_CST;
+	gpt_putreg(regval, R_GPT32_GTCR_OFFSET);
+
+	gpt_putreg(0, R_GPT32_GTCNT_OFFSET);
+	gpt_putreg(0xFFFFFFFF, R_GPT32_GTPR_OFFSET);
+
+	/* Set prescaler and sawtooth up mode */
+	regval = GPT_GTCR_MD_SAW_WAVE_UP | GPT_GTCR_TPCS_PCLKD_64;
+	gpt_putreg(regval, R_GPT32_GTCR_OFFSET);
+
+	/* Disable compare outputs */
+	gpt_putreg(0, R_GPT32_GTIOR_OFFSET);
+
+	/* Enable compare A interrupt */
+	gpt_putreg(GPT_GTINTAD_GTINTA, R_GPT32_GTINTAD_OFFSET);
+
+	/* Start */
+	regval = gpt_getreg(R_GPT32_GTCR_OFFSET);
+	regval |= GPT_GTCR_CST;
+	gpt_putreg(regval, R_GPT32_GTCR_OFFSET);
+
+	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+
+	leave_critical_section(flags);
+}
+
+void hrt_init(void)
+{
+	sq_init(&g_callout_queue);
+	hrt_cancel_all();
+
+	/* Attach ICU interrupt for GPT0 compare A */
+	g_hrt_irq = ra_icu_attach(RA_ELC_GPT0_CAPTURE_COMPARE_A, hrt_interrupt, NULL, true);
+	DEBUGASSERT(g_hrt_irq >= 0);
+
+	g_last_counter = hrt_read_count();
+	g_accumulated_counts = 0;
+
+	hrt_gpt_start();
+	hrt_schedule();
+}
+
+void hrt_call_after(struct hrt_call *entry, hrt_abstime delay, hrt_callout callout, void *arg)
+{
+	irqstate_t flags = enter_critical_section();
+
 	if (entry->deadline != 0) {
-		sq_rem(&entry->link, &callout_queue);
+		sq_rem(&entry->link, &g_callout_queue);
 	}
 
-	/* Set up the call */
 	entry->deadline = hrt_absolute_time() + delay;
 	entry->period = 0;
 	entry->callout = callout;
 	entry->arg = arg;
 
-	/* Insert into queue in deadline order */
-	struct hrt_call *pos = entry_to_call(callout_queue.head);
+	struct hrt_call *pos = entry_to_call(g_callout_queue.head);
 	struct hrt_call *prev = NULL;
 
 	while (pos && pos->deadline <= entry->deadline) {
@@ -317,54 +346,41 @@ hrt_call_after(struct hrt_call *entry, hrt_abstime delay, hrt_callout callout, v
 		entry->link.flink = prev->link.flink;
 		prev->link.flink = &entry->link;
 		if (!entry->link.flink) {
-			callout_queue.tail = &entry->link;
+			g_callout_queue.tail = &entry->link;
 		}
 	} else {
-		entry->link.flink = callout_queue.head;
-		callout_queue.head = &entry->link;
-		if (!callout_queue.tail) {
-			callout_queue.tail = &entry->link;
+		entry->link.flink = g_callout_queue.head;
+		g_callout_queue.head = &entry->link;
+		if (!g_callout_queue.tail) {
+			g_callout_queue.tail = &entry->link;
 		}
 	}
 
 	leave_critical_section(flags);
-
-	/* Process callbacks immediately to handle short delays */
-	hrt_call_invoke();
+	hrt_schedule();
 }
 
-/**
- * Call callout(arg) at calltime.
- */
-void
-hrt_call_at(struct hrt_call *entry, hrt_abstime calltime, hrt_callout callout, void *arg)
+void hrt_call_at(struct hrt_call *entry, hrt_abstime calltime, hrt_callout callout, void *arg)
 {
 	hrt_abstime now = hrt_absolute_time();
 	hrt_abstime delay = (calltime > now) ? (calltime - now) : 0;
 	hrt_call_after(entry, delay, callout, arg);
 }
 
-/**
- * Call callout(arg) every period.
- */
-void
-hrt_call_every(struct hrt_call *entry, hrt_abstime delay, hrt_abstime interval, hrt_callout callout, void *arg)
+void hrt_call_every(struct hrt_call *entry, hrt_abstime delay, hrt_abstime interval, hrt_callout callout, void *arg)
 {
 	irqstate_t flags = enter_critical_section();
 
-	/* Remove from queue if already queued */
 	if (entry->deadline != 0) {
-		sq_rem(&entry->link, &callout_queue);
+		sq_rem(&entry->link, &g_callout_queue);
 	}
 
-	/* Set up the call */
 	entry->deadline = hrt_absolute_time() + delay;
 	entry->period = interval;
 	entry->callout = callout;
 	entry->arg = arg;
 
-	/* Insert into queue in deadline order */
-	struct hrt_call *pos = entry_to_call(callout_queue.head);
+	struct hrt_call *pos = entry_to_call(g_callout_queue.head);
 	struct hrt_call *prev = NULL;
 
 	while (pos && pos->deadline <= entry->deadline) {
@@ -376,43 +392,31 @@ hrt_call_every(struct hrt_call *entry, hrt_abstime delay, hrt_abstime interval, 
 		entry->link.flink = prev->link.flink;
 		prev->link.flink = &entry->link;
 		if (!entry->link.flink) {
-			callout_queue.tail = &entry->link;
+			g_callout_queue.tail = &entry->link;
 		}
 	} else {
-		entry->link.flink = callout_queue.head;
-		callout_queue.head = &entry->link;
-		if (!callout_queue.tail) {
-			callout_queue.tail = &entry->link;
+		entry->link.flink = g_callout_queue.head;
+		g_callout_queue.head = &entry->link;
+		if (!g_callout_queue.tail) {
+			g_callout_queue.tail = &entry->link;
 		}
 	}
 
 	leave_critical_section(flags);
-
-	/* Process callbacks immediately to handle short delays */
-	hrt_call_invoke();
+	hrt_schedule();
 }
 
-/**
- * If this returns true, the call has been invoked and removed from the callout list.
- */
-bool
-hrt_called(struct hrt_call *entry)
+bool hrt_called(struct hrt_call *entry)
 {
-	/* Check if callback processing is needed */
-	hrt_call_invoke();
 	return (entry->deadline == 0);
 }
 
-/**
- * Remove the entry from the callout list.
- */
-void
-hrt_cancel(struct hrt_call *entry)
+void hrt_cancel(struct hrt_call *entry)
 {
 	irqstate_t flags = enter_critical_section();
 
 	if (entry->deadline != 0) {
-		sq_rem(&entry->link, &callout_queue);
+		sq_rem(&entry->link, &g_callout_queue);
 		entry->deadline = 0;
 		entry->period = 0;
 	}
@@ -420,20 +424,12 @@ hrt_cancel(struct hrt_call *entry)
 	leave_critical_section(flags);
 }
 
-/**
- * Initialize a hrt_call structure
- */
-void
-hrt_call_init(struct hrt_call *entry)
+void hrt_call_init(struct hrt_call *entry)
 {
 	memset(entry, 0, sizeof(*entry));
 }
 
-/**
- * Delay a hrt_call_every() periodic call by the given number of microseconds.
- */
-void
-hrt_call_delay(struct hrt_call *entry, hrt_abstime delay)
+void hrt_call_delay(struct hrt_call *entry, hrt_abstime delay)
 {
 	irqstate_t flags = enter_critical_section();
 	if (entry->deadline != 0) {
@@ -442,17 +438,12 @@ hrt_call_delay(struct hrt_call *entry, hrt_abstime delay)
 	leave_critical_section(flags);
 }
 
-/**
- * Background processing - should be called regularly by system
- */
 void hrt_work(void)
 {
 	hrt_call_invoke();
 }
 
-
-
-/* Latency baseline and counters for compatibility */
 const uint16_t latency_bucket_count = LATENCY_BUCKET_COUNT;
 const uint16_t latency_buckets[LATENCY_BUCKET_COUNT] = { 1, 2, 5, 10, 20, 50, 100, 1000 };
-EXPORT uint32_t latency_counters[LATENCY_BUCKET_COUNT + 1] = {0};
+__EXPORT uint32_t latency_counters[LATENCY_BUCKET_COUNT + 1] = {0};
+

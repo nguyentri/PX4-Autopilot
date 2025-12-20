@@ -63,26 +63,14 @@
 // Debug macro for SPI operations
 #define SPI_DEBUG(fmt, ...) syslog(LOG_INFO, "SPI_DBG: " fmt "\n", ##__VA_ARGS__)
 
-// Use predefined GPIO macros from board_config.h for GY-912 SPI pins
-// GPIO_SPI1_CS0 (P804) - ICM20948 CS
-// GPIO_SPI1_CS1 (P402) - BMP388 CS
-// GPIO_SPI1_IMU_DRDY (P006) - ICM20948 Data Ready
-
-// GY-912 10DOF sensor module configuration
-// Contains ICM-20948 (9DOF IMU) and BMP388 (barometric pressure sensor)
-//
-// Hardware connections on EVK-RA8P1 via Pmod1:
-// - ICM-20948: CS=P804, DRDY=P006 (9DOF IMU: gyro + accel + mag)
-// - BMP388:    CS=P402            (barometric pressure sensor)
-// - SPI Bus:   SPI1 (1MHz default, up to 7MHz for ICM20948, 10MHz for BMP388)
+// Use Arduino SPI0 pins for the IMU to avoid OSPI conflicts
+// GPIO_ARDUINO_SPI_CS0 (P103) - ICM20948 CS
+// GPIO_SPI_IMU_DRDY (P006)    - ICM20948 Data Ready
 #if defined(__PX4_NUTTX)
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-        initSPIBus(SPI::Bus::SPI1, {
+        initSPIBus(SPI::Bus::SPI0, {
                 // ICM-20948: 9DOF IMU (gyroscope, accelerometer, magnetometer)
-                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port8, GPIO::Pin4}, SPI::DRDY{GPIO::Port0, GPIO::Pin6}),
-
-                // BMP388: Barometric pressure sensor
-                initSPIDevice(DRV_BARO_DEVTYPE_BMP388, SPI::CS{GPIO::Port4, GPIO::Pin2}),
+                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port1, GPIO::Pin3}, SPI::DRDY{GPIO::Port0, GPIO::Pin6}),
         }),
 };
 
@@ -115,48 +103,12 @@ extern "C" {
      */
     void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
     {
-        /* Handle chip select for GY-912 SPI devices using predefined GPIO macros */
-        /* Device ID determines which CS pin to control */
-        /* Note: devid is encoded with PX4_SPIDEV_ID, extract lower 16 bits for device type */
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
 
-        if (selected) {
-            /* Get device-specific configuration and calculate SPI parameters */
-            const struct ra_spi_ext_dev_config_s *config = ra_spi_get_dev_config(dev, devid);
-            /* Overwrite the PX4 settings*/
-            if (config != nullptr) {
-                /* Calculate device-specific settings (writes immediately to hardware) */
-                SPI_DEBUG("Applying config for devtype 0x%04x: freq=%lu, mode=%u, bits=%u, dir=%s",
-                          devtype, (unsigned long)config->max_frequency, config->cur_mode, config->cur_bits,
-                          config->cur_dir == RA_SPI_DIR_LSB_FIRST ? "LSB" : "MSB");
-
-                /* Write to hardware registers immediately */
-                SPI_SETFREQUENCY(dev, config->max_frequency);
-                SPI_SETMODE(dev, (enum spi_mode_e)config->cur_mode);
-                SPI_SETBITS(dev, config->cur_bits);
-
-                /* Set bit order (MSB-first or LSB-first) */
-                ra_spi_setbitorder(dev, config->cur_dir == RA_SPI_DIR_LSB_FIRST);
-            }
-        }
-
         switch (devtype) {
-        case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P804) */
-            SPI_DEBUG("  -> Controlling CS0 (P804) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
-            #ifdef PX4_SPI_IMU_CS0
-                px4_arch_gpiowrite(PX4_SPI_IMU_CS0, !selected);  /* Active low CS */
-            #else
-                px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */
-            #endif
-            break;
-
-        case DRV_BARO_DEVTYPE_BMP388: /* Second SPI device - BMP388 on CS1 (P402) */
-            SPI_DEBUG("  -> Controlling CS1 (P402) for BMP388 %s", selected ? "SELECTED" : "DESELECTED");
-            #ifdef PX4_SPI_BARO_CS1
-                px4_arch_gpiowrite(PX4_SPI_BARO_CS1, !selected);  /* Active low CS */
-            #else
-                px4_arch_gpiowrite(GPIO_SPI1_CS1, !selected);  /* Active low CS */
-            #endif
+        case DRV_IMU_DEVTYPE_ICM20948: /* IMU on CS0 (P103) */
+            SPI_DEBUG("  -> Controlling CS0 (P103) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
+            px4_arch_gpiowrite(PX4_SPI_IMU_CS0, !selected);  /* Active low CS */
             break;
 
         default:
@@ -186,20 +138,12 @@ extern "C" {
 
         uint8_t status = 0;
 
-        /* For GY-912 module, all configured SPI devices are present */
-        /* Return present status for configured device IDs */
-        /* Note: devid is encoded with PX4_SPIDEV_ID, extract lower 16 bits for device type */
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
 
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948: /* ICM20948 9DOF IMU on CS0 */
             status = SPI_STATUS_PRESENT;
             SPI_DEBUG("ra_spi_status: devtype=0x%04x (ICM20948) -> PRESENT", devtype);
-            break;
-
-        case DRV_BARO_DEVTYPE_BMP388: /* BMP388 Barometric pressure sensor on CS1 */
-            status = SPI_STATUS_PRESENT;
-            SPI_DEBUG("ra_spi_status: devtype=0x%04x (BMP388) -> PRESENT", devtype);
             break;
 
         default:
@@ -270,27 +214,6 @@ extern "C" {
             .name = "ICM20948"
         };
 
-        static const struct ra_spi_ext_dev_config_s bmp388_config = {
-            .devid = DRV_BARO_DEVTYPE_BMP388,
-            .max_frequency = 5000000,              /* 5 MHz - BMP388 (datasheet supports up to 10 MHz) */
-            .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) - BMP388 datasheet */
-            .cur_bits = 8,                         /* 8-bit transfers */
-            .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - BMP388 datasheet */
-            .cs_gpio =
-#if defined(PX4_SPI_BARO_CS1)
-                PX4_SPI_BARO_CS1,
-#else
-                GPIO_SPI1_CS1,
-#endif
-            .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
-            .ssl_select = 0xFF,                    /* Use GPIO */
-            .setup_delay = 1,                      /* 1 RSPCK cycle CS setup (datasheet: min 6ns @ 5MHz = 200ns period) */
-            .hold_delay = 1,                       /* 1 RSPCK cycle CS hold (datasheet: min 6ns) */
-            .negation_delay = 1,                   /* 1 RSPCK cycle between transactions */
-            .active_low = true,                    /* CS active low */
-            .name = "BMP388"
-        };
-
         /* Extract device type from encoded devid */
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
 
@@ -299,10 +222,6 @@ extern "C" {
         case DRV_IMU_DEVTYPE_ICM20948:
             SPI_DEBUG("ra_spi_get_dev_config: Returning ICM20948 config (4MHz, Mode3)");
             return &icm20948_config;
-
-        case DRV_BARO_DEVTYPE_BMP388:
-            SPI_DEBUG("ra_spi_get_dev_config: Returning BMP388 config (5MHz, Mode3)");
-            return &bmp388_config;
 
         default:
             SPI_DEBUG("ra_spi_get_dev_config: No config for devtype 0x%04x, using defaults", devtype);

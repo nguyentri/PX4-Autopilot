@@ -69,34 +69,6 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* ADC-B Register Base Address */
-#ifndef R_ADC_B_BASE
-#define R_ADC_B_BASE           0x40338000
-#endif
-
-/* Register offsets */
-#define R_ADC_B_ADCLKENR_OFFSET        0x0000
-#define R_ADC_B_ADCLKSR_OFFSET         0x0004
-#define R_ADC_B_ADCLKCR_OFFSET         0x0008
-#define R_ADC_B_ADMDR_OFFSET           0x0040
-#define R_ADC_B_ADSGER_OFFSET          0x0048
-#define R_ADC_B_ADSGCR0_OFFSET         0x004C
-#define R_ADC_B_ADSSTR0_OFFSET         0x0240
-#define R_ADC_B_ADCNVSTR_OFFSET        0x0260
-#define R_ADC_B_ADCALSTR_OFFSET        0x0C00
-#define R_ADC_B_ADSTR_OFFSET(n)        (0x0C20 + ((n) * 4))
-#define R_ADC_B_ADSTOPR_OFFSET         0x0C60
-#define R_ADC_B_ADSR_OFFSET            0x0C80
-#define R_ADC_B_ADSCANENDSR_OFFSET     0x0D50
-#define R_ADC_B_ADSCANENDSCR_OFFSET    0x0D54
-#define R_ADC_B_ADCALENDSR_OFFSET      0x0C98
-#define R_ADC_B_ADCALENDSCR_OFFSET     0x0C9C
-#define R_ADC_B_ADCHCR_OFFSET(n)       (0x0600 + ((n) * 0x10))
-#define R_ADC_B_ADDOPCRA_OFFSET(n)     (0x0604 + ((n) * 0x10))
-#define R_ADC_B_ADDOPCRB_OFFSET(n)     (0x0608 + ((n) * 0x10))
-#define R_ADC_B_ADDOPCRC_OFFSET(n)     (0x060C + ((n) * 0x10))
-#define R_ADC_B_ADDR_OFFSET(n)         (0x2000 + ((n) * 4))
-
 /* Register bit definitions */
 #define ADCLKENR_CLKEN          (1 << 0)
 #define ADCLKSR_CLKSR           (1 << 0)
@@ -360,8 +332,8 @@ float px4_arch_adc_reference_v()
 
 uint32_t px4_arch_adc_temp_sensor_mask()
 {
-	/* Return temperature sensor channel mask (channel 32) */
-	return (1U << 32);
+	/* Return temperature sensor channel mask (channel 32) - not supported */
+    return 0;
 }
 
 uint32_t px4_arch_adc_dn_fullcount()

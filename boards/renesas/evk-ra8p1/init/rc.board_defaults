@@ -27,6 +27,10 @@ param set-default PWM_MAIN_MAX 2000
 param set-default PWM_MAIN_MIN 1000
 param set-default PWM_MAIN_DIS 900
 
+# DShot configuration (0 = PWM mode, 150/300/600/1200 = DShot speed)
+# Set to 0 for PWM, or 600 for DShot600 (recommended for most ESCs)
+param set-default DSHOT_CONFIG 0
+
 # Assign motor functions for quadcopter X configuration
 param set-default PWM_MAIN_FUNC1 101  # Motor 1 (Front Right)
 param set-default PWM_MAIN_FUNC2 102  # Motor 2 (Rear Left)

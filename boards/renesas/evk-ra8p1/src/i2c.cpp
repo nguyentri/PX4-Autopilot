@@ -37,22 +37,11 @@
  * Board-specific I2C functions.
  */
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/i2c.h>
+#include <px4_arch/i2c_hw_description.h>
 
-// I2C bus structure definition to match PX4 common interface
-struct px4_i2c_bus_t {
-	int bus{-1}; ///< physical bus number (1, ...) (-1 means this is unused)
-	bool is_external; ///< static external configuration
-};
-
-#define I2C_BUS_MAX_BUS_ITEMS 1
-
-// Define the I2C bus array that the linker is looking for
-// For EVK-RA8P1, we have 1 I2C bus configured as internal
-const px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
-	{
-		.bus = 1,
-		.is_external = false
-	},
+// Single internal I2C bus (I2C0 on P400/P401)
+constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
+	initI2CBusInternal(I2C::Bus::I2C0),  // I2C0 for external devices
 };
