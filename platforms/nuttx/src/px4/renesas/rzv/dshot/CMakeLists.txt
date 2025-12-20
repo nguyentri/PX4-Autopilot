@@ -31,21 +31,13 @@
 #
 ############################################################################
 
-# RZV2H platform modules
-add_subdirectory(board_critmon)
-add_subdirectory(board_hw_info)
-add_subdirectory(board_reset)
-add_subdirectory(hrt)
-add_subdirectory(io_pins)
-add_subdirectory(led_pwm)
-add_subdirectory(micro_hal)
-add_subdirectory(spi)
-add_subdirectory(version)
+px4_add_library(arch_dshot
+	dshot.c
+)
 
-# Optional features
-if(DEFINED CONFIG_ADC)
-	add_subdirectory(adc)
-endif()
+# Optimize for speed
+target_compile_options(arch_dshot PRIVATE -O2)
 
-# DShot support (stub for now)
-add_subdirectory(dshot)
+target_include_directories(arch_dshot PRIVATE
+	${PX4_SOURCE_DIR}/platforms/nuttx/src/px4/renesas/rzv/include
+)
