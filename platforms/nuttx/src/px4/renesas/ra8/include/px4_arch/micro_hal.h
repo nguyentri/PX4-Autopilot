@@ -109,20 +109,17 @@ typedef uint32_t gpio_pinset_t;
 /* Interrupt handler function pointer type */
 typedef int (*gpio_interrupt_t)(int irq, void *context, void *arg);
 
-/* Function declarations for RA8 specific implementations */
+/* NuttX RA8 driver function declarations */
 struct spi_dev_s *ra_spibus_initialize(int bus);
 struct i2c_master_s *ra_i2cbus_initialize(int bus);
 int ra_i2cbus_uninitialize(struct i2c_master_s *dev);
 
-/* PX4 I2C functions - implemented in platforms/nuttx/src/px4/renesas/ra8_common/micro_hal/i2c.c */
-struct i2c_master_s *px4_i2cbus_initialize(int bus);
-int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
-/* px4_i2cbus_reset is declared in i2c_hw_description.h with device pointer parameter */
-int px4_i2cbus_set_bus_frequency(struct i2c_master_s *dev, uint32_t frequency);
-int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices);
-
-/* PX4 SPI functions - implemented in platforms/nuttx/src/px4/renesas/ra8_common/micro_hal/spi.cpp */
+/* PX4 SPI functions */
 struct spi_dev_s *px4_spibus_initialize(int bus);
+
+/* PX4 I2C functions - macro redirects to NuttX RA8 I2C driver (like IMXRT pattern) */
+#define px4_i2cbus_initialize(bus)      ra_i2cbus_initialize(bus)
+#define px4_i2cbus_uninitialize(dev)    ra_i2cbus_uninitialize(dev)
 
 void ra_save_panic(int fileno, void *context, int length);
 

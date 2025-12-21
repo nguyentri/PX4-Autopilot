@@ -73,9 +73,10 @@ extern "C" {
 #define I2C_TRANSFER(dev, msgs, count) px4_i2c_transfer(dev, msgs, count)
 #endif
 
-/* I2C hardware interface functions for RZV FreeRTOS */
-struct i2c_master_s *px4_i2cbus_initialize(int bus);
-int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
+/* I2C hardware interface function declarations
+ * px4_i2cbus_initialize/uninitialize are macros defined in micro_hal.h
+ * that redirect to NuttX ra_i2cbus_initialize/uninitialize
+ */
 int px4_i2cbus_reset(struct i2c_master_s *dev);
 int px4_i2c_transfer(struct i2c_master_s *dev, struct i2c_msg_s *msgs, int count);
 

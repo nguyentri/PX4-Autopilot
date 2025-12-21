@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2021 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -33,5 +33,11 @@
 
 #pragma once
 
+/**
+ * @file i2c_hw_description.h
+ * RA8E1-specific I2C hardware description
+ * I2C bus init/uninit handled via macros in micro_hal.h
+ */
 
+/* Include base RA8 I2C definitions */
 #include "../../../ra8/include/px4_arch/i2c_hw_description.h"

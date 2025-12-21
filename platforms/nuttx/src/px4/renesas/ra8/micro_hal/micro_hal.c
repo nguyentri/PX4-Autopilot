@@ -40,28 +40,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-struct spi_dev_s;
-struct i2c_master_s;
-
-#ifndef OK
-#define OK 0
-#endif
-
-/* SPI Bus Initialization removed - ra_spibus_initialize is provided by NuttX RA8 driver directly */
-
-/* I2C Bus functions - not used for sensors */
-struct i2c_master_s *ra_i2cbus_initialize(int bus)
-{
-    (void)bus;
-    return NULL;
-}
-
-int ra_i2cbus_uninitialize(struct i2c_master_s *dev)
-{
-    (void)dev;
-    return OK;
-}
-
 /* Panic save stub */
 void ra_save_panic(int fileno, void *context, int length)
 {
