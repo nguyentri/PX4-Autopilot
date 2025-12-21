@@ -42,9 +42,10 @@
 #include <px4_arch/i2c_hw_description.h>
 
 #ifdef CONFIG_I2C
-// Single internal I2C bus (I2C0 on P400/P401)
+// Two I2C buses available (I2C0 on P400/P401, I2C1 on P512/P511)
 constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
 	initI2CBusInternal(I2C::Bus::I2C0),  // I2C0 for external devices
+	//initI2CBusInternal(I2C::Bus::I2C1),  // I2C1 for camera/Grove expansion
 };
 
 #endif // CONFIG_I2C

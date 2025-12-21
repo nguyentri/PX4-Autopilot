@@ -34,13 +34,16 @@
 /**
  * @file board_reset.c
  *
- * Board reset functionality for Renesas RA8 - stub implementation
+ * Board reset functionality for Renesas RA8
  */
 
-// Minimal stub implementation for build compatibility
-// TODO: Implement actual board reset functionality for Renesas RA8
+#include <nuttx/config.h>
+#include <nuttx/arch.h>
 
-void ra8_board_reset_stub(void)
+#include <px4_platform_common/px4_config.h>
+
+void board_system_reset(int status)
 {
-	// Stub function to allow compilation
+	(void)status;
+	up_systemreset();
 }

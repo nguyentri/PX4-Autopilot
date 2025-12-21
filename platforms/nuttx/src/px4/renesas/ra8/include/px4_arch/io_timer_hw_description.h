@@ -72,32 +72,36 @@ static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_co
 {
     ::io_timers_t ret{};
 
-    // Map timer enum to GPT channel number for NuttX HAL
-    switch(timer) {
-        case Timer::Timer0:
-            ret.timer_id = 0;        // GPT0
-            ret.first_channel_index = 0;
-            ret.last_channel_index = 0;
-            break;
-        case Timer::Timer2:
-            ret.timer_id = 2;        // GPT2
-            ret.first_channel_index = 1;
-            ret.last_channel_index = 1;
-            break;
-        case Timer::Timer3:
-            ret.timer_id = 3;        // GPT3
-            ret.first_channel_index = 2;
-            ret.last_channel_index = 2;
-            break;
-        case Timer::Timer4:
-            ret.timer_id = 4;        // GPT4
-            ret.first_channel_index = 3;
-            ret.last_channel_index = 3;
-            break;
-        default:
-            ret.timer_id = 0xFF;
-            break;
-    }
+	// Map timer enum to GPT channel number for NuttX HAL
+	switch (timer) {
+	case Timer::Timer3:
+		ret.timer_id = 3;        // GPT3
+		ret.first_channel_index = 0;
+		ret.last_channel_index = 0;
+		break;
+
+	case Timer::Timer5:
+		ret.timer_id = 5;        // GPT5
+		ret.first_channel_index = 1;
+		ret.last_channel_index = 1;
+		break;
+
+	case Timer::Timer11:
+		ret.timer_id = 11;       // GPT11
+		ret.first_channel_index = 2;
+		ret.last_channel_index = 2;
+		break;
+
+	case Timer::Timer13:
+		ret.timer_id = 13;       // GPT13
+		ret.first_channel_index = 3;
+		ret.last_channel_index = 3;
+		break;
+
+	default:
+		ret.timer_id = 0xff;
+		break;
+	}
 
     // Set base address to 0 - we'll use NuttX HAL instead of direct register access
     ret.base = 0;
@@ -113,24 +117,24 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
 {
 	::timer_io_channels_t ret{};
 
-    // Map timer to timer_index for NuttX HAL
-    switch(timer_channel.timer) {
-        case Timer::Timer0:
-            ret.timer_index = 0;
-            break;
-        case Timer::Timer2:
-            ret.timer_index = 1;
-            break;
-        case Timer::Timer3:
-            ret.timer_index = 2;
-            break;
-        case Timer::Timer4:
-            ret.timer_index = 3;
-            break;
-        default:
-            ret.timer_index = 0xFF;
-            break;
-    }
+	// Map timer to timer_index for NuttX HAL (matches timer_config.cpp order)
+	switch (timer_channel.timer) {
+	case Timer::Timer3:
+		ret.timer_index = 0;
+		break;
+	case Timer::Timer5:
+		ret.timer_index = 1;
+		break;
+	case Timer::Timer11:
+		ret.timer_index = 2;
+		break;
+	case Timer::Timer13:
+		ret.timer_index = 3;
+		break;
+	default:
+		ret.timer_index = 0xff;
+		break;
+	}
 
     // Set channel (NuttX GPT channels)
 	ret.timer_channel = (uint8_t)timer_channel.channel;

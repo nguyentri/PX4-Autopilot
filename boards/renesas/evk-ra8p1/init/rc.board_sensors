@@ -24,10 +24,13 @@ fi
 # Important: Give time for DRDY interrupt to be configured and sensor to settle
 usleep 50000
 
-# Start Barometer on I2C0 - BMP388 pressure sensor at 0x76
+# Start Barometer on I2C0 - BMP388 pressure sensor (try 0x76 then 0x77)
 if bmp388 start -X -b 0 -a 0x76
 then
-        echo "BMP388 barometer initialized successfully"
+        echo "BMP388 barometer initialized successfully (0x76)"
+elif bmp388 start -X -b 0 -a 0x77
+then
+        echo "BMP388 barometer initialized successfully (0x77)"
 else
         echo "ERROR: BMP388 barometer initialization failed!"
 fi

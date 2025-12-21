@@ -131,9 +131,19 @@ static int gpt_enable_clock(uint8_t gpt_channel)
 
 	switch (gpt_channel) {
 	case 0: bit_mask = R_MSTP_MSTPCRE_GPT0; break;
+	case 1: bit_mask = R_MSTP_MSTPCRE_GPT1; break;
 	case 2: bit_mask = R_MSTP_MSTPCRE_GPT2; break;
 	case 3: bit_mask = R_MSTP_MSTPCRE_GPT3; break;
 	case 4: bit_mask = R_MSTP_MSTPCRE_GPT4; break;
+	case 5: bit_mask = R_MSTP_MSTPCRE_GPT5; break;
+    case 6: bit_mask = R_MSTP_MSTPCRE_GPT6; break;
+    case 7: bit_mask = R_MSTP_MSTPCRE_GPT7; break;
+    case 8: bit_mask = R_MSTP_MSTPCRE_GPT8; break;
+    case 9: bit_mask = R_MSTP_MSTPCRE_GPT9; break;
+    case 10: bit_mask = R_MSTP_MSTPCRE_GPT10; break;
+	case 11: bit_mask = R_MSTP_MSTPCRE_GPT11; break;
+    case 12: bit_mask = R_MSTP_MSTPCRE_GPT12; break;
+	case 13: bit_mask = R_MSTP_MSTPCRE_GPT13; break;
 	default:
 		return -EINVAL;
 	}

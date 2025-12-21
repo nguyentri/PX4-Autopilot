@@ -54,6 +54,7 @@
 #include "arm_internal.h"
 #include "ra_icu.h"
 #include "ra_gpt.h"
+#include "ra_mstp.h"
 #include "hardware/ra8p1/ra_gpt32.h"
 #include <arch/ra8/ra8p1_irq.h>
 #include "board_config.h"
@@ -116,6 +117,13 @@ static inline uint32_t hrt_read_count(void)
 static void hrt_schedule(void);
 static void hrt_call_invoke(void);
 
+static inline void hrt_enable_clock(void)
+{
+	uint32_t reg = getreg32(R_MSTP_MSTPCRE);
+	reg &= ~R_MSTP_MSTPCRE_GPT0;
+	putreg32(reg, R_MSTP_MSTPCRE);
+}
+
 hrt_abstime hrt_absolute_time(void)
 {
 	irqstate_t flags = enter_critical_section();
@@ -173,9 +181,10 @@ static void hrt_program_compare(hrt_abstime deadline)
 
 	const hrt_abstime delta_us = deadline - now;
 	uint32_t next_ticks = time_to_counts(delta_us);
+	const uint32_t min_ticks = time_to_counts(HRT_MIN_DELTA_US);
 
-	if (next_ticks < (HRT_MIN_DELTA_US * (HRT_TIMER_FREQ_HZ / 1000000U))) {
-		next_ticks = HRT_MIN_DELTA_US * (HRT_TIMER_FREQ_HZ / 1000000U);
+	if (next_ticks < min_ticks) {
+		next_ticks = min_ticks;
 	}
 
 	irqstate_t flags = enter_critical_section();
@@ -274,6 +283,8 @@ static int hrt_interrupt(int irq, void *context, void *arg)
 static void hrt_gpt_start(void)
 {
 	irqstate_t flags = enter_critical_section();
+
+	hrt_enable_clock();
 
 	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
 
@@ -446,4 +457,3 @@ void hrt_work(void)
 const uint16_t latency_bucket_count = LATENCY_BUCKET_COUNT;
 const uint16_t latency_buckets[LATENCY_BUCKET_COUNT] = { 1, 2, 5, 10, 20, 50, 100, 1000 };
 __EXPORT uint32_t latency_counters[LATENCY_BUCKET_COUNT + 1] = {0};
-

@@ -146,12 +146,12 @@ const io_timers_t io_timers[MAX_IO_TIMERS] = {
 };
 
 // Export timer channel configurations with GPIO mappings
-// GPIO_TIMx_CH1OUT macros are defined in board_config.h and map to GPTxA pins
+// Motor position macros are defined in board_config.h for quadcopter X-configuration
 const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM3_CH1OUT),   // Motor 1: P912 (GPIO_GTIOC3A)
-        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM5_CH1OUT),   // Motor 2: P915 (GPIO_GTIOC5A)
-        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM11_CH1OUT),  // Motor 3: P903 (GPIO_GTIOC11A_2)
-        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM13_CH1OUT),  // Motor 4: P515 (GPIO_GTIOC13A)
+        makeChannel(kTimerChannelsRaw[0], 0, PX4_GPIO_MOTOR_FRONT_RIGHT),  // Motor 1: Front Right - P912
+        makeChannel(kTimerChannelsRaw[1], 1, PX4_GPIO_MOTOR_REAR_LEFT),    // Motor 2: Rear Left - P915
+        makeChannel(kTimerChannelsRaw[2], 2, PX4_GPIO_MOTOR_FRONT_LEFT),   // Motor 3: Front Left - P903
+        makeChannel(kTimerChannelsRaw[3], 3, PX4_GPIO_MOTOR_REAR_RIGHT),   // Motor 4: Rear Right - P515
 };
 
 void evk_ra8p1_timer_initialize()
