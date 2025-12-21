@@ -18,8 +18,20 @@
  *
  ****************************************************************************/
 
-/* The RA8P1 has 1MB MRAM (non-volatile) at 0x02000000, 2MB SRAM at 0x22000000,
+/* The RA8P1 has 1MB MRAM (non-volatile) at 0x02000000, 2MB total SRAM,
  * plus TCM memories. External 64MB Octo-SPI Flash at 0x80000000.
+ *
+ * RA8P1 Memory Specification (from datasheet):
+ * ============================================
+ * Total SRAM: 2048KB = 256KB(CM85 TCM) + 128KB(CM33 TCM) + 1664KB(User SRAM)
+ *   - CM85 TCM RAM: 256KB (128KB ITCM + 128KB DTCM)
+ *   - CM33 TCM RAM: 128KB (64KB ITCM + 64KB DTCM)
+ *   - User SRAM: 1664KB @ 0x22000000 - 0x221FFFFF
+ *
+ * Hybrid Memory Layout for Large Applications (PX4):
+ * ===================================================
+ * INTERNAL MRAM (1MB) - Boot, NuttX kernel, critical drivers
+ * EXTERNAL OSPI FLASH (64MB) - PX4 application code and modules
  */
 RAM_START = 0x22000000;
 RAM_LENGTH = 0x001d4000;
@@ -801,6 +813,41 @@ SECTIONS
         __sau_ddsc_RAM_NSC = .;
 
     }> RAM
+
+    /***** IPC Shared Memory Section ******/
+    /* Non-cacheable shared memory for inter-processor communication */
+    .ipc_shmem.startof :
+    {
+        __ipc_shmem_start = .;
+        __ddsc_IPC_SHMEM_START = .;
+    }> IPC_SHMEM
+
+    /* IPC shared data (no init required, managed by IPC driver) */
+    .ipc_shmem (NOLOAD) :
+    {
+        __ipc_shmem_data_start = .;
+
+        /* IPC hardware control structures */
+        *(.ipc_shmem)
+        *(.ipc_shmem.*)
+
+        /* Message queues and mailboxes */
+        *(.ipc_msgq)
+        *(.ipc_msgq.*)
+
+        /* Shared buffers for data exchange */
+        *(.ipc_buffer)
+        *(.ipc_buffer.*)
+
+        . = ALIGN(32);  /* Cache line alignment for coherency */
+        __ipc_shmem_data_end = .;
+    }> IPC_SHMEM
+
+    .ipc_shmem.endof :
+    {
+        __ipc_shmem_end = .;
+        __ddsc_IPC_SHMEM_END = .;
+    }> IPC_SHMEM
 
     __flash_readonly$$ :
     {

@@ -41,7 +41,10 @@
 #include <px4_platform_common/i2c.h>
 #include <px4_arch/i2c_hw_description.h>
 
+#ifdef CONFIG_I2C
 // Single internal I2C bus (I2C0 on P400/P401)
 constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
 	initI2CBusInternal(I2C::Bus::I2C0),  // I2C0 for external devices
 };
+
+#endif // CONFIG_I2C
