@@ -150,6 +150,10 @@
 #define PX4_NUMBER_I2C_BUSES            1
 #define I2C_BUS_MAX_BUS_ITEMS           PX4_NUMBER_I2C_BUSES
 
+/* I2C Pin Definitions */
+#define PX4_I2C0_SCL                    GPIO_I2C0_SCL  /* P400 */
+#define PX4_I2C0_SDA                    GPIO_I2C0_SDA  /* P401 */
+
 /* I2C Bus Assignment */
 #define PX4_I2C_BUS_EXPANSION           0  /* I2C0 for external devices */
 #define PX4_I2C_BUS_MTD                 PX4_I2C_BUS_EXPANSION
@@ -169,6 +173,27 @@
 /* DShot Motor Assignment */
 #define BOARD_DSHOT_MOTOR_ASSIGNMENT    {0, 1, 2, 3}
 
+/* PWM GPIO Macros - Standard Quadcopter Motor Layout
+ *
+ * Motor Layout (X Configuration):
+ *   Front
+ *  3     1
+ *    \ /
+ *     X
+ *    / \
+ *  2     4
+ *   Rear
+ *
+ * Motor 1: Front Right - GPT3  (P912)
+ * Motor 2: Rear Left   - GPT5  (P915)
+ * Motor 3: Front Left  - GPT11 (P903)
+ * Motor 4: Rear Right  - GPT13 (P515)
+ */
+#define PX4_GPIO_MOTOR_FRONT_RIGHT      GPIO_TIM3_CH1OUT   /* Motor 1: P912 - GPT3A */
+#define PX4_GPIO_MOTOR_REAR_LEFT        GPIO_TIM5_CH1OUT   /* Motor 2: P915 - GPT5A */
+#define PX4_GPIO_MOTOR_FRONT_LEFT       GPIO_TIM11_CH1OUT  /* Motor 3: P903 - GPT11A */
+#define PX4_GPIO_MOTOR_REAR_RIGHT       GPIO_TIM13_CH1OUT  /* Motor 4: P515 - GPT13A */
+
 /****************************************************************************************************
  * High-Resolution Timer (HRT)
  ****************************************************************************************************/
@@ -176,7 +201,7 @@
 /* HRT Configuration using GPT0 (dedicated, no pin output required) */
 #define HRT_TIMER                       0   /* Use GPT0 for HRT */
 #define HRT_TIMER_CHANNEL               0   /* Channel A */
-#define HRT_TIMER_FREQUENCY             BOARD_PCLKD_FREQUENCY  /* PCLKD at 250MHz */
+#define HRT_TIMER_FREQUENCY             (BOARD_PCLKD_FREQUENCY / 64)  /* GPT0 prescaler /64 */
 
 /****************************************************************************************************
  * LED Configuration

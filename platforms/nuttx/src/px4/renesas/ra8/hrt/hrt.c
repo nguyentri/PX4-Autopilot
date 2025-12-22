@@ -67,6 +67,11 @@
 #define HRT_PRESCALER_DIV       64u
 #define HRT_TIMER_FREQ_HZ       (HRT_PCLKD_HZ / HRT_PRESCALER_DIV)
 #define HRT_MIN_DELTA_US        5u
+#define HRT_COUNTER_PERIOD      ((1ULL << 32) * 1000000ULL / HRT_TIMER_FREQ_HZ)  /* 32-bit counter wrap period in microseconds */
+
+#ifndef GPT_GTINTAD_GTINTOV
+#define GPT_GTINTAD_GTINTOV     (1 << 6)
+#endif
 
 #ifdef CONFIG_DEBUG_HRT
 #  define hrtinfo _info
@@ -193,7 +198,11 @@ static void hrt_program_compare(hrt_abstime deadline)
 
 	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
 	gpt_putreg(compare, R_GPT32_GTCCRA_OFFSET);
-	gpt_putreg(GPT_GTINTAD_GTINTA, R_GPT32_GTINTAD_OFFSET);
+
+	/* Ensure interrupt is enabled (preserving overflow enable) */
+	uint32_t intad = gpt_getreg(R_GPT32_GTINTAD_OFFSET);
+	gpt_putreg(intad | GPT_GTINTAD_GTINTA, R_GPT32_GTINTAD_OFFSET);
+
 	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
 
 	leave_critical_section(flags);
@@ -202,10 +211,19 @@ static void hrt_program_compare(hrt_abstime deadline)
 static void hrt_schedule(void)
 {
 	struct hrt_call *next = entry_to_call(g_callout_queue.head);
+	hrt_abstime deadline;
 
 	if (next != NULL) {
-		hrt_program_compare(next->deadline);
+		deadline = next->deadline;
+	} else {
+		/* No callouts scheduled - program a far future deadline to ensure
+		 * the compare interrupt fires at least once per counter period
+		 * for accurate timekeeping (similar to i.MX RT HRT_INTERVAL_MAX).
+		 */
+		deadline = hrt_absolute_time() + (HRT_COUNTER_PERIOD / 2);
 	}
+
+	hrt_program_compare(deadline);
 }
 
 static void hrt_call_invoke(void)
@@ -270,8 +288,25 @@ static int hrt_interrupt(int irq, void *context, void *arg)
 
 	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
 	const uint32_t status = gpt_getreg(R_GPT32_GTST_OFFSET);
-	gpt_putreg(status & ~(GPT_GTST_TCFA), R_GPT32_GTST_OFFSET);
+
+	/* Clear status flags */
+	uint32_t clear_mask = 0;
+	if (status & GPT_GTST_TCFA) {
+		clear_mask |= GPT_GTST_TCFA;
+	}
+	if (status & GPT_GTST_TCFPO) {
+		clear_mask |= GPT_GTST_TCFPO;
+	}
+
+	if (clear_mask) {
+		gpt_putreg(status & ~clear_mask, R_GPT32_GTST_OFFSET);
+	}
+
 	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+
+	if (status & GPT_GTST_TCFPO) {
+		hrt_absolute_time(); /* Update accumulated time */
+	}
 
 	if (status & GPT_GTST_TCFA) {
 		hrt_call_invoke();
@@ -303,8 +338,8 @@ static void hrt_gpt_start(void)
 	/* Disable compare outputs */
 	gpt_putreg(0, R_GPT32_GTIOR_OFFSET);
 
-	/* Enable compare A interrupt */
-	gpt_putreg(GPT_GTINTAD_GTINTA, R_GPT32_GTINTAD_OFFSET);
+	/* Enable compare A and overflow interrupts */
+	gpt_putreg(GPT_GTINTAD_GTINTA | GPT_GTINTAD_GTINTOV, R_GPT32_GTINTAD_OFFSET);
 
 	/* Start */
 	regval = gpt_getreg(R_GPT32_GTCR_OFFSET);
@@ -324,6 +359,9 @@ void hrt_init(void)
 	/* Attach ICU interrupt for GPT0 compare A */
 	g_hrt_irq = ra_icu_attach(RA_ELC_GPT0_CAPTURE_COMPARE_A, hrt_interrupt, NULL, true);
 	DEBUGASSERT(g_hrt_irq >= 0);
+
+	/* Attach ICU interrupt for GPT0 overflow */
+	ra_icu_attach(RA_ELC_GPT0_COUNTER_OVERFLOW, hrt_interrupt, NULL, true);
 
 	g_last_counter = hrt_read_count();
 	g_accumulated_counts = 0;
