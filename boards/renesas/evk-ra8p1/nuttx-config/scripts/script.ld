@@ -26,7 +26,7 @@
  * Total SRAM: 2048KB = 256KB(CM85 TCM) + 128KB(CM33 TCM) + 1664KB(User SRAM)
  *   - CM85 TCM RAM: 256KB (128KB ITCM + 128KB DTCM)
  *   - CM33 TCM RAM: 128KB (64KB ITCM + 64KB DTCM)
- *   - User SRAM: 1664KB @ 0x22000000 - 0x221FFFFF
+ *   - User SRAM: 1664KB @ 0x22000000 - 0x2219FFFF
  *
  * Hybrid Memory Layout for Large Applications (PX4):
  * ===================================================
@@ -34,7 +34,7 @@
  * EXTERNAL OSPI FLASH (64MB) - PX4 application code and modules
  */
 RAM_START = 0x22000000;
-RAM_LENGTH = 0x001d4000;
+RAM_LENGTH = 0x001A0000;
 FLASH_START = 0x02000000;
 FLASH_LENGTH = 0x00100000;
 DATA_FLASH_START = 0x27000000;
@@ -42,13 +42,13 @@ DATA_FLASH_LENGTH = 0x00000000;
 SDRAM_START = 0x68000000;
 SDRAM_LENGTH = 0x08000000;
 OSPI0_CS0_START = 0x80000000;
-OSPI0_CS0_LENGTH = 0x10000000;
+OSPI0_CS0_LENGTH = 0x00000000;  /* Not populated on EK-RA8P1 */
 OSPI0_CS1_START = 0x90000000;
-OSPI0_CS1_LENGTH = 0x10000000;
+OSPI0_CS1_LENGTH = 0x04000000;  /* 64MB Macronix MX25LW51245GXDI00 (XIP) */
 OSPI1_CS0_START = 0x70000000;
-OSPI1_CS0_LENGTH = 0x08000000;
+OSPI1_CS0_LENGTH = 0x00000000;  /* OSPI1 not present on EK-RA8P1 */
 OSPI1_CS1_START = 0x78000000;
-OSPI1_CS1_LENGTH = 0x08000000;
+OSPI1_CS1_LENGTH = 0x00000000;  /* OSPI1 not present on EK-RA8P1 */
 OPTION_SETTING_OFS0_START = 0x02c9f040;
 OPTION_SETTING_OFS0_LENGTH = 0x00000004;
 OPTION_SETTING_OFS2_START = 0x02c9f044;
@@ -105,6 +105,8 @@ ITCM_START = 0x00000000;
 ITCM_LENGTH = 0x00020000;
 DTCM_START = 0x20000000;
 DTCM_LENGTH = 0x00020000;
+IPC_SHMEM_START = 0x220E2000;
+IPC_SHMEM_LENGTH = 0x00008000;
 
 MEMORY
 {
@@ -144,6 +146,7 @@ MEMORY
     OPTION_SETTING_OTP_ZHUK (r) : ORIGIN = OPTION_SETTING_OTP_ZHUK_START, LENGTH = OPTION_SETTING_OTP_ZHUK_LENGTH
     ITCM (rwx) : ORIGIN = ITCM_START, LENGTH = ITCM_LENGTH
     DTCM (rwx) : ORIGIN = DTCM_START, LENGTH = DTCM_LENGTH
+    IPC_SHMEM (rw) : ORIGIN = IPC_SHMEM_START, LENGTH = IPC_SHMEM_LENGTH
 }
 
 OUTPUT_ARCH(arm)
@@ -269,6 +272,31 @@ SECTIONS
     __ospi0_cs1_readonly$$ :
     {
         __ospi0_cs1_readonly$$Base = .;
+
+        /* NOTE: OSPI code placement disabled - OSPI must be initialized before XIP works.
+         * To enable XIP for PX4 apps:
+         * 1. Ensure OSPI initialization runs in board_early_initialize() or ra8_ospi_init()
+         * 2. Configure XIP mode before any PX4 code executes
+         * 3. Uncomment the PX4 module patterns below
+         */
+
+        /* PX4 Application Modules - Place in OSPI Flash (DISABLED until OSPI XIP ready) */
+        /* *libmodules__uORB.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libmodules__systemlib.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libmodules__controllib.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libdrivers__device.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libdrivers__led.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libdrivers__gps.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libdrivers__imu.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libdrivers__magnetometer.a:*(.text .text.* .rodata .rodata.*) */
+        /* *libdrivers__barometer.a:*(.text .text.* .rodata .rodata.*) */
+        /* *liblib__mixer.a:*(.text .text.* .rodata .rodata.*) */
+        /* *liblib__mathlib.a:*(.text .text.* .rodata .rodata.*) */
+        /* *liblib__matrix.a:*(.text .text.* .rodata .rodata.*) */
+        /* *liblib__ecl.a:*(.text .text.* .rodata .rodata.*) */
+        /* *modules__*:*(.text .text.* .rodata .rodata.*) */
+        /* *px4_layer__*:*(.text .text.* .rodata .rodata.*) */
+
         /* section.ospi0_cs1.readonly */
         *(.ospi0_cs1)
         /* section.ospi0_cs1.code */
