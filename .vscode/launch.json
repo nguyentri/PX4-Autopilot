@@ -3,7 +3,9 @@
         {
         "name": "Debug RA8P1 - Cortex-Debug",
         "cwd": "${workspaceRoot}",
-        "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        "executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
+        //"executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        //"executable": "${workspaceRoot}/.refs/sci_uart_ek_ra8p1_ep/e2studio/Debug/sci_uart_ek_ra8p1_ep.elf",
         "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
         "request": "launch",
         "type": "cortex-debug",
@@ -19,7 +21,7 @@
         "device": "R7KA8P1KF", // Base device name without package suffix
         // "serialNumber": "52006677", // 51028188/52006677/51026290
         "showDevDebugOutput": "parsed",
-        // "runToEntryPoint": "main",
+        "runToEntryPoint": "main",
         "rttConfig": {
           "enabled": true,
           "address": "auto",
@@ -54,6 +56,7 @@
             "type": "renesas-hardware",
             "request": "launch",
             "program": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+            //"program": "${workspaceRoot}/.refs/sci_uart_ek_ra8p1_ep/e2studio/Debug/sci_uart_ek_ra8p1_ep.elf",
             "target": {
                 "device": "R7KA8P1KF_CPU0",
                 "deviceFamily": "RA",
