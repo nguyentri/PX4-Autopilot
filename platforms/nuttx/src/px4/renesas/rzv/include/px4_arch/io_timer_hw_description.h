@@ -97,14 +97,44 @@ static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_co
 
 	case Timer::Timer4:
 		ret.timer_id = 4;        // GPT4
-		ret.first_channel_index = 3;
-		ret.last_channel_index = 3;
+		ret.first_channel_index = 2;
+		ret.last_channel_index = 2;
+		break;
+
+	case Timer::Timer5:
+		ret.timer_id = 5;        // GPT5
+		ret.first_channel_index = 0;
+		ret.last_channel_index = 0;
+		break;
+
+	case Timer::Timer6:
+		ret.timer_id = 6;        // GPT6 - PWM0 (PA4)
+		ret.first_channel_index = 0;
+		ret.last_channel_index = 0;
+		break;
+
+	case Timer::Timer7:
+		ret.timer_id = 7;        // GPT7 - PWM1 (PA7)
+		ret.first_channel_index = 1;
+		ret.last_channel_index = 1;
+		break;
+
+	case Timer::Timer8:
+		ret.timer_id = 8;        // GPT8
+		ret.first_channel_index = 0;
+		ret.last_channel_index = 0;
+		break;
+
+	case Timer::Timer9:
+		ret.timer_id = 9;        // GPT9 - PWM2 (P96)
+		ret.first_channel_index = 2;
+		ret.last_channel_index = 2;
 		break;
 
 	case Timer::Timer10:
-		ret.timer_id = 10;       // GPT10
-		ret.first_channel_index = 0;
-		ret.last_channel_index = 0;
+		ret.timer_id = 10;       // GPT10 - PWM3 (P53)
+		ret.first_channel_index = 3;
+		ret.last_channel_index = 3;
 		break;
 
 	case Timer::Timer11:
@@ -145,6 +175,8 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
 	::timer_io_channels_t ret{};
 
 	// Map timer to timer_index for NuttX HAL
+	// The timer_index corresponds to the PWM channel index (0-3)
+	// RDK-RZV2H PWM mapping: GPT6→PWM0, GPT7→PWM1, GPT9→PWM2, GPT10→PWM3
 	switch (timer_channel.timer) {
 	case Timer::Timer0:
 		ret.timer_index = 0;
@@ -163,11 +195,31 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
 		break;
 
 	case Timer::Timer4:
-		ret.timer_index = 3;
+		ret.timer_index = 2;
+		break;
+
+	case Timer::Timer5:
+		ret.timer_index = 0;
+		break;
+
+	case Timer::Timer6:
+		ret.timer_index = 0;  // PWM channel 0 (PA4)
+		break;
+
+	case Timer::Timer7:
+		ret.timer_index = 1;  // PWM channel 1 (PA7)
+		break;
+
+	case Timer::Timer8:
+		ret.timer_index = 0;
+		break;
+
+	case Timer::Timer9:
+		ret.timer_index = 2;  // PWM channel 2 (P96)
 		break;
 
 	case Timer::Timer10:
-		ret.timer_index = 0;
+		ret.timer_index = 3;  // PWM channel 3 (P53)
 		break;
 
 	case Timer::Timer11:

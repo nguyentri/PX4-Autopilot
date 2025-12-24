@@ -67,6 +67,30 @@
 #define OK 0
 #endif
 
+/**
+ * GPT Clock Configuration
+ *
+ * The RZV2H GPT timers are clocked from PCLKD. The frequency should be
+ * defined in the NuttX configuration (CONFIG_RZV_PCLK_FREQUENCY).
+ * Default: 120 MHz for RZV2H GPT peripheral clock domain.
+ *
+ * PWM Frequency Calculation:
+ *   PWM_freq = PCLKD / (prescaler * period)
+ *   For 400Hz @ 120MHz: period = 120000000 / 400 = 300000 ticks
+ *
+ * Duty Cycle Resolution:
+ *   At 400Hz with 120MHz clock: 300000 ticks per period
+ *   Resolution per µs: 120 ticks (sufficient for 1µs PWM precision)
+ */
+#ifndef CONFIG_RZV_PCLK_FREQUENCY
+#define CONFIG_RZV_PCLK_FREQUENCY 120000000  /* 120MHz PCLKD for RZV2H GPT */
+#endif
+
+/* PWM Configuration Constants */
+#define PWM_DEFAULT_FREQUENCY_HZ    400      /* Default 400Hz for ESCs */
+#define PWM_MIN_FREQUENCY_HZ        50       /* Minimum supported frequency */
+#define PWM_MAX_FREQUENCY_HZ        500      /* Maximum supported frequency */
+
 /* High-resolution time type */
 typedef uint64_t hrt_abstime;
 
@@ -89,15 +113,16 @@ extern const timer_io_channels_t timer_io_channels[];
 static struct {
 	bool initialized;
 	uint32_t period;      /* PWM period in timer ticks */
-	uint16_t ccr_value;   /* Current compare value (pulse width) */
+	uint16_t ccr_value;   /* Current compare value (pulse width in µs) */
 } gpt_state[MAX_TIMER_IO_CHANNELS];
 
-/* Default GPT clock (PCLKD) */
-#ifndef CONFIG_RZV_PCLK_FREQUENCY
-#define CONFIG_RZV_PCLK_FREQUENCY 120000000
-#endif
-
-/* Helper function to get GPT base address */
+/**
+ * Get GPT base address from timer ID
+ *
+ * RZV2H GPT Memory Map:
+ * - GPT0-7:   0x13010000 + (channel * 0x100)
+ * - GPT10-17: 0x13020000 + ((channel-10) * 0x100)
+ */
 static uint32_t get_gpt_base(uint8_t timer_id)
 {
 	switch (timer_id) {
@@ -109,6 +134,8 @@ static uint32_t get_gpt_base(uint8_t timer_id)
 	case 5:  return RZV_GPT5_BASE;
 	case 6:  return RZV_GPT6_BASE;
 	case 7:  return RZV_GPT7_BASE;
+	case 8:  return RZV_GPT8_BASE;
+	case 9:  return RZV_GPT9_BASE;
 	case 10: return RZV_GPT10_BASE;
 	case 11: return RZV_GPT11_BASE;
 	case 12: return RZV_GPT12_BASE;

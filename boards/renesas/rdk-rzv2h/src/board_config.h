@@ -64,18 +64,20 @@
  * - ARM Cortex-A55 cores for Linux/application processing
  * - 24 MHz crystal oscillator
  *
- * PX4 Sensor Configuration (from FSP reference):
- * - MPU9250 IMU on SPI bus 0 with DRDY on P5_0
- * - BMP388/BMP280 barometer on I2C bus 7 at address 0x76
+ * PX4 Sensor Configuration (from hardware table):
+ * - MPU9250 IMU on SPI6 (P90=MOSI, P91=MISO, P92=SCK, P93=CS0) with INT on P50
+ * - ICM20948 IMU on SPI6 (P94=CS1) with INT on PA0
+ * - BMP280 barometer on I2C7 at address 0x76 (P76=SDA, P77=SCL)
  *
  * Serial Ports:
- * - SCI0 (/dev/ttyS0): RC input
- * - SCI1 (/dev/ttyS1): MAVLink telemetry
- * - SCI2 (/dev/ttyS2): GPS
  * - SCI3 (/dev/ttyS3): NSH Console
+ * - SCI4 (/dev/ttyS4): TFminiPlux LiDAR (P70=TXD, P71=RXD)
+ * - SCI5 (/dev/ttyS5): Sik Telemetry v3 (P72=TXD, P73=RXD)
+ * - SCI6 (/dev/ttyS6): fs-a8s RC receiver (P75=RXD)
+ * - SCI9 (/dev/ttyS9): GPS M10 module (P82=TXD, P83=RXD)
  *
- * PWM Outputs:
- * - 4 channels using GPT timers on Port 7 (P7_1, P7_2, P7_5, P7_6)
+ * PWM Outputs (ESC control):
+ * - 4 channels using GPT timers: GPT6A(PA4), GPT7B(PA7), GPT9A(P96), GPT10B(P53)
  */
 
 /****************************************************************************************************
@@ -110,20 +112,22 @@
  * UART/Serial Configuration
  ****************************************************************************************************/
 
-/* UART Device Mapping (aligned with NuttX board.h)
- * SCI0 (ttyS0): RC input
- * SCI1 (ttyS1): MAVLink telemetry
- * SCI2 (ttyS2): GPS
+/* UART Device Mapping (aligned with hardware table)
  * SCI3 (ttyS3): NSH Console
+ * SCI4 (ttyS4): TFminiPlux LiDAR (P70=TXD4, P71=RXD4)
+ * SCI5 (ttyS5): Sik Telemetry v3 (P72=TXD5, P73=RXD5)
+ * SCI6 (ttyS6): fs-a8s RC receiver (P75=RXD6)
+ * SCI9 (ttyS9): GPS M10 (P82=TXD9, P83=RXD9)
  */
 #define PX4_UART_CONSOLE                "ttyS3"  /* SCI3 - Console */
-#define PX4_UART_GPS1                   "ttyS2"  /* SCI2 - GPS */
-#define PX4_UART_TELEM1                 "ttyS1"  /* SCI1 - Primary Telemetry */
-#define PX4_UART_RC                     "ttyS0"  /* SCI0 - RC Input */
+#define PX4_UART_GPS1                   "ttyS9"  /* SCI9 - GPS M10 */
+#define PX4_UART_TELEM1                 "ttyS5"  /* SCI5 - Sik Telemetry v3 */
+#define PX4_UART_RANGEFINDER            "ttyS4"  /* SCI4 - TFminiPlux */
+#define PX4_UART_RC                     "ttyS6"  /* SCI6 - fs-a8s RC Input */
 
 /* RC Input Configuration */
 #ifndef RC_SERIAL_PORT
-#  define RC_SERIAL_PORT                  "/dev/ttyS0"  /* UART for RC input */
+#  define RC_SERIAL_PORT                  "/dev/ttyS6"  /* SCI6 for RC input */
 #endif
 #define BOARD_HAS_RC_INPUT              1
 
@@ -135,7 +139,7 @@
  ****************************************************************************************************/
 
 /* I2C Bus Configuration
- * I2C7 (RIIC7): Barometer sensor (BMP388/BMP280)
+ * I2C7 (RIIC7): BMP280 barometer (P76=SDA7, P77=SCL7)
  */
 #define PX4_NUMBER_I2C_BUSES            1
 #define BOARD_NUMBER_I2C_BUSES          1
@@ -145,41 +149,71 @@
 /* I2C Bus Assignment */
 #define PX4_I2C_BUS_EXPANSION           7  /* I2C7 for external devices (barometer) */
 #define PX4_I2C_BUS_MTD                 PX4_I2C_BUS_EXPANSION
-#define PX4_I2C_OBDEV_BMP280            0x76  /* BMP388/BMP280 I2C address */
+#define PX4_I2C_OBDEV_BMP280            0x76  /* BMP280 I2C address */
 
 /****************************************************************************************************
  * SPI Configuration
  ****************************************************************************************************/
 
 /* SPI Bus Configuration
- * SPI0: MPU9250 IMU sensor
+ * SPI6: MPU9250 and ICM20948 IMU sensors
+ * P90 = MOSI6, P91 = MISO6, P92 = SCK6
+ * P93 = SS0 (MPU9250 NCS), P94 = SS1 (ICM20948 NCS)
  */
 #define PX4_NUMBER_SPI_BUSES            2
 #define BOARD_NUMBER_SPI_BUSES          1
-#define BOARD_SPI_BUS_SENSORS           0  /* SPI0 for IMU sensor */
-#define PX4_SPI_BUS_SENSORS             0
+#define BOARD_SPI_BUS_SENSORS           6  /* SPI6 for IMU sensors */
+#define PX4_SPI_BUS_SENSORS             6
 #define PX4_SPI_BUS_MEMORY              PX4_SPI_BUS_SENSORS
 
 /* SPI Bus Limits */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS     1
-#define BOARD_SPI_BUS_MAX_DEVICES       2  /* MPU9250 + potential expansion */
+#define BOARD_SPI_BUS_MAX_DEVICES       2  /* MPU9250 + ICM20948 */
 #define SPI_BUS_MAX_BUS_ITEMS           BOARD_SPI_BUS_MAX_BUS_ITEMS
 
-/* MPU9250 IMU on SPI0 */
-#define BOARD_MPU9250_BUS               0       /* SPI bus 0 */
-#define BOARD_MPU9250_DRDY_GPIO         GPIO_P5_0_INPUT  /* P50 = PORT5 pin 0, input with IRQ */
+/* MPU9250 IMU on SPI6 */
+#define BOARD_MPU9250_BUS               6       /* SPI bus 6 */
+#define BOARD_MPU9250_CS_GPIO           GPIO_P9_3_OUTPUT_HIGH  /* P93 = RSPI6_SSL0 */
+#define BOARD_MPU9250_DRDY_GPIO         GPIO_IRQ0_P5_0  /* P50 = IRQ0 input */
+
+/* ICM20948 IMU on SPI6 */
+#define BOARD_ICM20948_BUS              6       /* SPI bus 6 */
+#define BOARD_ICM20948_CS_GPIO          GPIO_P9_4_OUTPUT_HIGH  /* P94 = RSPI6_SSL1 */
+#define BOARD_ICM20948_DRDY_GPIO        GPIO_IRQ10_PA_2  /* PA0 = IRQ10 input */
 
 /****************************************************************************************************
  * PWM/Timer Configuration (GPT)
  ****************************************************************************************************/
 
-/* PWM Configuration - 4 channels using GPT timers
- * From NuttX board.h:
- * - Timer1 GTIOCA on P71 (PWM Channel 0)
- * - Timer2 GTIOCB on P72 (PWM Channel 1)
- * - Timer3 GTIOCA on P75 (PWM Channel 2)
- * - Timer4 GTIOCB on P76 (PWM Channel 3)
+/**
+ * PWM Configuration - 4 ESC channels using GPT timers
+ *
+ * Timer-to-Channel-to-Pin Mapping (Single Source of Truth):
+ * Based on RDK-RZV2H pin mapping table:
+ * ┌─────────┬───────────┬─────────┬──────────────────────────┬───────────┐
+ * │ PX4 Ch  │ GPT Timer │ Output  │ GPIO Pin                 │ Mode      │
+ * ├─────────┼───────────┼─────────┼──────────────────────────┼───────────┤
+ * │ PWM0    │ GPT6      │ GTIOC6A │ PA4 (Port10, Pin4)       │ Mode 11   │
+ * │ PWM1    │ GPT7      │ GTIOC7B │ PA7 (Port10, Pin7)       │ Mode 11   │
+ * │ PWM2    │ GPT9      │ GTIOC9A │ P96 (Port9, Pin6)        │ Mode 9    │
+ * │ PWM3    │ GPT10     │ GTIOC10B│ P53 (Port5, Pin3)        │ Mode 11   │
+ * └─────────┴───────────┴─────────┴──────────────────────────┴───────────┘
+ *
+ * GPIO Header Pin Assignment:
+ * - GPIO12/PWM0 → PA4 → ESC1 (GPT6A)
+ * - GPIO13/PWM1 → PA7 → ESC2 (GPT7B)
+ * - GPIO19      → P96 → ESC3 (GPT9A)
+ * - GPIO06      → P53 → ESC4 (GPT10B)
+ *
+ * PWM Settings:
+ * - Frequency: 400 Hz (default ESC rate, configurable to 50-500 Hz)
+ * - Pulse Width: 1000-2000 µs (standard PWM servo range)
+ * - Resolution: ~10-bit at 400Hz with 120MHz PCLK
+ *
+ * Reference: NuttX arch/arm/src/rzv/hardware/rzv2h/rzv2h_pinmap.h
  */
+
+/* ESC Channel Count */
 #define DIRECT_PWM_OUTPUT_CHANNELS      4
 #define DIRECT_INPUT_TIMER_CHANNELS     0
 #define BOARD_NUM_IO_TIMERS             4   /* 4 GPT timers for PWM */
@@ -189,23 +223,42 @@
 #define BOARD_HAS_SLOW_PWMOUT           1   /* 400Hz PWM for ESCs */
 #define PWM_OUTPUT_ACTIVE_LOW           0   /* Active high PWM */
 
-/* PWM GPIO Definitions (from NuttX board.h) */
-#define BOARD_PWM_CH0_GPIO              GPIO_GTIOC1A_P7_1_M1  /* Timer1 GTIOCA on P71 */
-#define BOARD_PWM_CH1_GPIO              GPIO_GTIOC2B_P7_2_M1  /* Timer2 GTIOCB on P72 */
-#define BOARD_PWM_CH2_GPIO              GPIO_GTIOC3A_P7_5_M1  /* Timer3 GTIOCA on P75 */
-#define BOARD_PWM_CH3_GPIO              GPIO_GTIOC4B_P7_6_M1  /* Timer4 GTIOCB on P76 */
+/**
+ * PWM GPIO Definitions
+ *
+ * These must match the RZV2H pinmap definitions from NuttX.
+ * Reference: platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv2h/rzv2h_pinmap.h
+ *
+ * Pin Mapping:
+ * - PA4 (Port10, Pin4): GPT6A (GTIOC6A) - PWM0/ESC1, Mode 11
+ * - PA7 (Port10, Pin7): GPT7B (GTIOC7B) - PWM1/ESC2, Mode 11
+ * - P96 (Port9, Pin6):  GPT9A (GTIOC9A) - PWM2/ESC3, Mode 9
+ * - P53 (Port5, Pin3):  GPT10B (GTIOC10B) - PWM3/ESC4, Mode 11
+ */
+#define BOARD_PWM_CH0_GPIO              GPIO_GTIOC6A_PA_4_M11  /* ESC1: GPT6A on PA4 (GPIO12/PWM0) */
+#define BOARD_PWM_CH1_GPIO              GPIO_GTIOC7B_PA_7_M11  /* ESC2: GPT7B on PA7 (GPIO13/PWM1) */
+#define BOARD_PWM_CH2_GPIO              GPIO_GTIOC9A_P9_6_M9   /* ESC3: GPT9A on P96 (GPIO19) */
+#define BOARD_PWM_CH3_GPIO              GPIO_GTIOC10B_P5_3_M11 /* ESC4: GPT10B on P53 (GPIO06) */
 
-/* DShot Motor Assignment */
+/* DShot Motor Assignment (channel index mapping) */
 #define BOARD_DSHOT_MOTOR_ASSIGNMENT    {0, 1, 2, 3}
 
 /****************************************************************************************************
  * High-Resolution Timer (HRT)
  ****************************************************************************************************/
 
-/* HRT Configuration using GPT */
+/**
+ * HRT Configuration using GPT
+ *
+ * The High-Resolution Timer provides microsecond-accurate timing for PX4.
+ * Uses GPT0 which is separate from the PWM output timers (GPT1-4).
+ *
+ * Note: HRT_TIMER_FREQUENCY should match CONFIG_RZV_PCLK_FREQUENCY (120MHz)
+ * for accurate timing calculations.
+ */
 #define HRT_TIMER                       0   /* Use GPT0 for HRT */
 #define HRT_TIMER_CHANNEL               0   /* Channel A */
-#define HRT_TIMER_FREQUENCY             200000000  /* 200MHz PCLK for RZV2H GPT */
+#define HRT_TIMER_FREQUENCY             120000000  /* 120MHz PCLKD for RZV2H GPT */
 
 /****************************************************************************************************
  * LED Configuration
@@ -269,9 +322,10 @@
  ****************************************************************************************************/
 
 /* Sensor Availability */
-#define BOARD_HAS_SENSOR_IMU            1  /* MPU9250 (9-axis: gyro+accel+mag) */
-#define BOARD_HAS_SENSOR_MAG            1  /* AK8963 (internal to MPU9250) */
-#define BOARD_HAS_SENSOR_BARO           1  /* BMP388/BMP280 */
+#define BOARD_HAS_SENSOR_IMU            2  /* MPU9250 + ICM20948 (dual 9-axis IMU) */
+#define BOARD_HAS_SENSOR_MAG            2  /* AK8963 (MPU9250) + AK09916 (ICM20948) */
+#define BOARD_HAS_SENSOR_BARO           1  /* BMP280 */
+#define BOARD_HAS_SENSOR_RANGEFINDER    1  /* TFminiPlux LiDAR */
 
 /* Default Sensor Orientation */
 #define BOARD_ROTATION_DEFAULT          ROTATION_NONE

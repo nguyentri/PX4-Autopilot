@@ -84,8 +84,17 @@ typedef uint32_t gpio_pinset_t;
 #define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) rzv_gpiosetevent(pinset,r,f,e,fp,a)
 
 /* Timer configuration for RZV2H - Based on PCLK frequency */
+/**
+ * GPT Timer Clock Configuration
+ *
+ * RZV2H GPT timers use PCLKD (Peripheral Clock D).
+ * Default: 120 MHz for the GPT peripheral domain.
+ *
+ * Note: This value should match the NuttX kernel configuration
+ * and the io_timer.c definitions for consistent PWM operation.
+ */
 #ifndef CONFIG_RZV_PCLK_FREQUENCY
-#  define CONFIG_RZV_PCLK_FREQUENCY    200000000  /* 200MHz PCLK for RZV2H */
+#  define CONFIG_RZV_PCLK_FREQUENCY    120000000  /* 120MHz PCLKD for RZV2H GPT */
 #endif
 
 #define TIMER_HRT_CYCLES_PER_US (CONFIG_RZV_PCLK_FREQUENCY / 1000000)

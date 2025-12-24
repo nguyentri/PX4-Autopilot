@@ -36,22 +36,33 @@
  *
  * Timer configuration for RDK-RZV2H board
  *
- * PWM/GPT Hardware Mapping:
- * -------------------------
+ * PWM/GPT Hardware Mapping (Single Source of Truth - see board_config.h):
+ * -----------------------------------------------------------------------
  * This file configures the General Purpose Timer (GPT) channels for PWM motor control.
  * The RDK-RZV2H uses 4 GPT channels mapped to specific pins for ESC control.
  *
- * Hardware Configuration (from NuttX board.h):
- * - Motor 1 (Channel 0): GPT1A on P7_1 (Timer1 GTIOCA)
- * - Motor 2 (Channel 1): GPT2B on P7_2 (Timer2 GTIOCB)
- * - Motor 3 (Channel 2): GPT3A on P7_5 (Timer3 GTIOCA)
- * - Motor 4 (Channel 3): GPT4B on P7_6 (Timer4 GTIOCB)
+ * Timer-to-Channel-to-Pin Mapping:
+ * ┌─────────┬───────────┬─────────┬─────────────────────┬───────────┐
+ * │ PX4 Ch  │ GPT Timer │ Output  │ GPIO Pin            │ Mode      │
+ * ├─────────┼───────────┼─────────┼─────────────────────┼───────────┤
+ * │ PWM0    │ GPT6      │ GTIOC6A │ PA4 (Port10, Pin4)  │ Mode 11   │
+ * │ PWM1    │ GPT7      │ GTIOC7B │ PA7 (Port10, Pin7)  │ Mode 11   │
+ * │ PWM2    │ GPT9      │ GTIOC9A │ P96 (Port9, Pin6)   │ Mode 9    │
+ * │ PWM3    │ GPT10     │ GTIOC10B│ P53 (Port5, Pin3)   │ Mode 11   │
+ * └─────────┴───────────┴─────────┴─────────────────────┴───────────┘
+ *
+ * GPIO Header Mapping:
+ * - GPIO12/PWM0 → PA4 → ESC1 (GPT6A)
+ * - GPIO13/PWM1 → PA7 → ESC2 (GPT7B)
+ * - GPIO19      → P96 → ESC3 (GPT9A)
+ * - GPIO06      → P53 → ESC4 (GPT10B)
  *
  * Timer Settings:
- * - Frequency: 400 Hz (configurable via startup script)
+ * - Frequency: 400 Hz (configurable via startup script, range 50-500 Hz)
  * - Mode: Standard PWM (1000-2000 µs pulse width)
+ * - Clock: PCLKD = 120 MHz (from CONFIG_RZV_PCLK_FREQUENCY)
  *
- * Pin assignments follow the FSP configuration in pin_data.c
+ * Pin assignments from rzv2h_pinmap.h
  */
 
 #include <nuttx/config.h>
@@ -69,53 +80,85 @@
 namespace
 {
 
-// Initialize the 4 GPT timers used for PWM motor control
+/**
+ * GPT Timer Instances for PWM Output
+ *
+ * Each timer controls one PWM channel. Timer IDs map to:
+ * - Timer6 = GPT6 (base 0x13010600) - PWM0/PA4
+ * - Timer7 = GPT7 (base 0x13010700) - PWM1/PA7
+ * - Timer9 = GPT9 (base 0x13010900) - PWM2/P96
+ * - Timer10 = GPT10 (base 0x13010A00) - PWM3/P53
+ *
+ * Note: These timers were chosen to match the RDK-RZV2H
+ * header pin mapping for ESC connections.
+ */
 constexpr io_timers_t kIOTimersRaw[MAX_IO_TIMERS] = {
-	initIOTimer(Timer::Timer1),   // Motor 1 - GPT1
-	initIOTimer(Timer::Timer2),   // Motor 2 - GPT2
-	initIOTimer(Timer::Timer3),   // Motor 3 - GPT3
-	initIOTimer(Timer::Timer4),   // Motor 4 - GPT4
+	initIOTimer(Timer::Timer6),   // PWM0 - GPT6 (PA4)
+	initIOTimer(Timer::Timer7),   // PWM1 - GPT7 (PA7)
+	initIOTimer(Timer::Timer9),   // PWM2 - GPT9 (P96)
+	initIOTimer(Timer::Timer10),  // PWM3 - GPT10 (P53)
 };
 
-// DMA configuration - disabled by default, can be enabled per channel
-constexpr int8_t kDmaGpt1 =
-#ifdef CONFIG_RZV_DMAC_GPT1_CHANNEL
-	CONFIG_RZV_DMAC_GPT1_CHANNEL;
+/**
+ * DMA Channel Configuration
+ *
+ * DMA is optional and used for DShot protocol. When disabled (-1),
+ * PWM operates in software mode which is sufficient for standard ESC control.
+ */
+constexpr int8_t kDmaGpt6 =
+#ifdef CONFIG_RZV_DMAC_GPT6_CHANNEL
+	CONFIG_RZV_DMAC_GPT6_CHANNEL;
 #else
-	- 1;
+	-1;  /* DMA disabled */
 #endif
 
-constexpr int8_t kDmaGpt2 =
-#ifdef CONFIG_RZV_DMAC_GPT2_CHANNEL
-	CONFIG_RZV_DMAC_GPT2_CHANNEL;
+constexpr int8_t kDmaGpt7 =
+#ifdef CONFIG_RZV_DMAC_GPT7_CHANNEL
+	CONFIG_RZV_DMAC_GPT7_CHANNEL;
 #else
-	- 1;
+	-1;  /* DMA disabled */
 #endif
 
-constexpr int8_t kDmaGpt3 =
-#ifdef CONFIG_RZV_DMAC_GPT3_CHANNEL
-	CONFIG_RZV_DMAC_GPT3_CHANNEL;
+constexpr int8_t kDmaGpt9 =
+#ifdef CONFIG_RZV_DMAC_GPT9_CHANNEL
+	CONFIG_RZV_DMAC_GPT9_CHANNEL;
 #else
-	- 1;
+	-1;  /* DMA disabled */
 #endif
 
-constexpr int8_t kDmaGpt4 =
-#ifdef CONFIG_RZV_DMAC_GPT4_CHANNEL
-	CONFIG_RZV_DMAC_GPT4_CHANNEL;
+constexpr int8_t kDmaGpt10 =
+#ifdef CONFIG_RZV_DMAC_GPT10_CHANNEL
+	CONFIG_RZV_DMAC_GPT10_CHANNEL;
 #else
-	- 1;
+	-1;  /* DMA disabled */
 #endif
 
-// Map each timer to its hardware pin (from NuttX board.h)
+/**
+ * Timer Channel Configuration
+ *
+ * Maps each PWM channel to:
+ * - Timer instance (from kIOTimersRaw)
+ * - Timer output channel (Channel1=GTIOCA, Channel2=GTIOCB)
+ * - GPIO port and pin
+ * - DShot DMA configuration
+ *
+ * Channel types:
+ * - Channel1 = GTIOCA output (even compare register)
+ * - Channel2 = GTIOCB output (odd compare register)
+ */
 constexpr timer_io_channels_t kTimerChannelsRaw[MAX_TIMER_IO_CHANNELS] = {
-	initIOTimerChannel(kIOTimersRaw, {Timer::Timer1, Timer::Channel1}, {GPIO::Port7, GPIO::Pin1},
-			   makeDshotConf(1, 0, kDmaGpt1, -1)),   // Motor 1: GPT1A/P7_1
-	initIOTimerChannel(kIOTimersRaw, {Timer::Timer2, Timer::Channel2}, {GPIO::Port7, GPIO::Pin2},
-			   makeDshotConf(2, 1, kDmaGpt2, -1)),   // Motor 2: GPT2B/P7_2
-	initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::Channel1}, {GPIO::Port7, GPIO::Pin5},
-			   makeDshotConf(3, 0, kDmaGpt3, -1)),   // Motor 3: GPT3A/P7_5
-	initIOTimerChannel(kIOTimersRaw, {Timer::Timer4, Timer::Channel2}, {GPIO::Port7, GPIO::Pin6},
-			   makeDshotConf(4, 1, kDmaGpt4, -1)),   // Motor 4: GPT4B/P7_6
+	/* PWM0: GPT6 GTIOCA on PA4 (PortA, Pin4) - ESC1 */
+	initIOTimerChannel(kIOTimersRaw, {Timer::Timer6, Timer::Channel1}, {GPIO::PortA, GPIO::Pin4},
+			   makeDshotConf(6, 0, kDmaGpt6, -1)),
+	/* PWM1: GPT7 GTIOCB on PA7 (PortA, Pin7) - ESC2 */
+	initIOTimerChannel(kIOTimersRaw, {Timer::Timer7, Timer::Channel2}, {GPIO::PortA, GPIO::Pin7},
+			   makeDshotConf(7, 1, kDmaGpt7, -1)),
+	/* PWM2: GPT9 GTIOCA on P96 (Port9, Pin6) - ESC3 */
+	initIOTimerChannel(kIOTimersRaw, {Timer::Timer9, Timer::Channel1}, {GPIO::Port9, GPIO::Pin6},
+			   makeDshotConf(9, 0, kDmaGpt9, -1)),
+	/* PWM3: GPT10 GTIOCB on P53 (Port5, Pin3) - ESC4 */
+	initIOTimerChannel(kIOTimersRaw, {Timer::Timer10, Timer::Channel2}, {GPIO::Port5, GPIO::Pin3},
+			   makeDshotConf(10, 1, kDmaGpt10, -1)),
 };
 
 template<typename TimerType>
@@ -140,22 +183,31 @@ extern "C" void hrt_init(void);
 
 extern "C" {
 
-	// Export timer configurations for PX4 PWM subsystem
-	// These are referenced by the pwm_out driver to control motor outputs
+	/**
+	 * Timer Configuration Export
+	 *
+	 * These arrays are the single source of truth for timer configuration,
+	 * referenced by io_timer.c and pwm_servo.c. GPIO pins are defined in
+	 * board_config.h (BOARD_PWM_CHx_GPIO macros).
+	 */
 	const io_timers_t io_timers[MAX_IO_TIMERS] = {
-		makeTimer(kIOTimersRaw[0], 0),  // GPT1 - Motor 1
-		makeTimer(kIOTimersRaw[1], 1),  // GPT2 - Motor 2
-		makeTimer(kIOTimersRaw[2], 2),  // GPT3 - Motor 3
-		makeTimer(kIOTimersRaw[3], 3),  // GPT4 - Motor 4
+		makeTimer(kIOTimersRaw[0], 0),  /* GPT6 - PWM0/PA4 */
+		makeTimer(kIOTimersRaw[1], 1),  /* GPT7 - PWM1/PA7 */
+		makeTimer(kIOTimersRaw[2], 2),  /* GPT9 - PWM2/P96 */
+		makeTimer(kIOTimersRaw[3], 3),  /* GPT10 - PWM3/P53 */
 	};
 
-	// Export timer channel configurations with GPIO mappings
-	// GPIO_TIMx_CHxOUT macros are defined in board_config.h and map to GPTx pins
+	/**
+	 * Timer Channel Configuration Export
+	 *
+	 * Maps timer channels to GPIO pins defined in board_config.h.
+	 * This ensures single-source configuration with no duplication.
+	 */
 	const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-		makeChannel(kTimerChannelsRaw[0], 0, BOARD_PWM_CH0_GPIO),  // Motor 1: GPT1A/P7_1
-		makeChannel(kTimerChannelsRaw[1], 1, BOARD_PWM_CH1_GPIO),  // Motor 2: GPT2B/P7_2
-		makeChannel(kTimerChannelsRaw[2], 2, BOARD_PWM_CH2_GPIO),  // Motor 3: GPT3A/P7_5
-		makeChannel(kTimerChannelsRaw[3], 3, BOARD_PWM_CH3_GPIO),  // Motor 4: GPT4B/P7_6
+		makeChannel(kTimerChannelsRaw[0], 0, BOARD_PWM_CH0_GPIO),  /* PWM0: GPT6 GTIOCA/PA4 */
+		makeChannel(kTimerChannelsRaw[1], 1, BOARD_PWM_CH1_GPIO),  /* PWM1: GPT7 GTIOCB/PA7 */
+		makeChannel(kTimerChannelsRaw[2], 2, BOARD_PWM_CH2_GPIO),  /* PWM2: GPT9 GTIOCA/P96 */
+		makeChannel(kTimerChannelsRaw[3], 3, BOARD_PWM_CH3_GPIO),  /* PWM3: GPT10 GTIOCB/P53 */
 	};
 
 	/**

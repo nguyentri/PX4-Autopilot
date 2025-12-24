@@ -83,8 +83,16 @@ extern const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS];
 #define DSHOT_T0H_PERCENT        37.5f
 #define DSHOT_T1H_PERCENT        75.0f
 
-/* RZV2H PCLKD frequency (120 MHz) */
-#define PCLKD_FREQUENCY          120000000u
+/**
+ * GPT Clock Frequency
+ *
+ * Use the same clock definition as io_timer.c for consistency.
+ * PCLKD is the peripheral clock for GPT timers on RZV2H.
+ */
+#ifndef CONFIG_RZV_PCLK_FREQUENCY
+#define CONFIG_RZV_PCLK_FREQUENCY 120000000  /* 120MHz PCLKD for RZV2H GPT */
+#endif
+#define PCLKD_FREQUENCY          CONFIG_RZV_PCLK_FREQUENCY
 
 #define BDSHOT_OFFLINE_COUNT     400
 

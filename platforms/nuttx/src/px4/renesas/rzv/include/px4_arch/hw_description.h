@@ -99,6 +99,8 @@ enum Timer : uint8_t {
 	Timer5,
 	Timer6,
 	Timer7,
+	Timer8,
+	Timer9,
 	Timer10 = 10,
 	Timer11,
 	Timer12,
