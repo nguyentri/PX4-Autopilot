@@ -63,6 +63,7 @@
 #include "../include/px4_arch/micro_hal.h"
 
 #include <arch/board/board.h>
+#include <drivers/drv_hrt.h>
 
 /* Board configuration constants - must be included before px4_arch headers */
 /* This file provides BOARD_NUM_IO_TIMERS and BOARD_PCLKD_FREQUENCY */
@@ -98,7 +99,21 @@
 extern const io_timers_t io_timers[];
 extern const timer_io_channels_t timer_io_channels[];
 
+/* Prescaler divisor values for each supported prescaler index.
+ * These are the actual divisor values (not TPCS register values).
+ */
 static const uint32_t kPrescalerDivisors[] = {1u, 4u, 16u, 64u, 256u, 1024u};
+
+/* TPCS register values corresponding to each prescaler divisor.
+ * Per RA8P1 CMSIS (R_GPT0_GTCR_TPCS_Pos=23):
+ *   TPCS=0 -> /1,   TPCS=2 -> /4,   TPCS=4 -> /16,
+ *   TPCS=6 -> /64,  TPCS=8 -> /256, TPCS=10 -> /1024
+ */
+static const uint8_t kPrescalerTPCS[] = {0u, 2u, 4u, 6u, 8u, 10u};
+
+/* GPT output channel selection (from timer_io_channels_t.timer_channel) */
+#define GPT_OUTPUT_CHANNEL_A  1  /* Use GTIOCA output */
+#define GPT_OUTPUT_CHANNEL_B  2  /* Use GTIOCB output */
 
 typedef struct {
 	uint32_t base;
@@ -108,7 +123,8 @@ typedef struct {
 	uint16_t last_pulse_us;
 	uint8_t prescaler_idx;
 	uint8_t timer_index;
-	uint8_t gpt_channel;
+	uint8_t gpt_channel;        /* GPT timer number (0-13) */
+	uint8_t gpt_output_channel; /* GPT output: A (1) or B (2) */
 	bool initialized;
 	bool enabled;
 	/* Input capture state */
@@ -245,12 +261,38 @@ static int gpt_timer_init_pwm(unsigned channel, unsigned frequency_hz)
 
 	gpt_wp_begin(base);
 	putreg32(0, base + R_GPT32_GTCR_OFFSET);
-	putreg32(GPT_GTCR_MD_SAW_WAVE_UP | (prescaler_idx << GPT_GTCR_TPCS_SHIFT), base + R_GPT32_GTCR_OFFSET);
+
+	/* Configure timer mode and prescaler:
+	 * - MD = 0 (Saw-wave PWM up-count)
+	 * - TPCS = kPrescalerTPCS[idx] (correct TPCS register value for divisor)
+	 */
+	uint32_t tpcs_val = kPrescalerTPCS[prescaler_idx];
+	putreg32(GPT_GTCR_MD_SAW_WAVE_UP | (tpcs_val << GPT_GTCR_TPCS_SHIFT), base + R_GPT32_GTCR_OFFSET);
+
 	putreg32(R_GPT32_GTUDDTYC_UD, base + R_GPT32_GTUDDTYC_OFFSET);
-	putreg32(GPT_GTIOR_GTIOA_INITIAL_LOW, base + R_GPT32_GTIOR_OFFSET);
+
+	/* Configure GTIOR for PWM output on GTIOCA or GTIOCB:
+	 * - GTIOA/B[4:0] = 0x06: Initial low, high at compare match, low at period end
+	 * - OAE/OBE (bit 8/24) = 1: Enable GTIOCx pin output
+	 * timer_channel: 1 = Channel A (GTIOCA), 2 = Channel B (GTIOCB)
+	 */
+	uint8_t output_channel = chan_cfg->timer_channel;
+	if (output_channel == GPT_OUTPUT_CHANNEL_B) {
+		putreg32(GPT_GTIOR_PWM_HIGH_B, base + R_GPT32_GTIOR_OFFSET);
+	} else {
+		putreg32(GPT_GTIOR_PWM_HIGH_A, base + R_GPT32_GTIOR_OFFSET);
+		output_channel = GPT_OUTPUT_CHANNEL_A;  /* Default to A */
+	}
+
 	putreg32(period_ticks, base + R_GPT32_GTPR_OFFSET);
 	putreg32(period_ticks, base + R_GPT32_GTPBR_OFFSET);
-	putreg32((uint32_t)initial_ticks, base + R_GPT32_GTCCRA_OFFSET);
+
+	/* Write initial pulse width to the appropriate compare register */
+	if (output_channel == GPT_OUTPUT_CHANNEL_B) {
+		putreg32((uint32_t)initial_ticks, base + R_GPT32_GTCCRB_OFFSET);
+	} else {
+		putreg32((uint32_t)initial_ticks, base + R_GPT32_GTCCRA_OFFSET);
+	}
 	putreg32(0, base + R_GPT32_GTCNT_OFFSET);
 	putreg32(getreg32(base + R_GPT32_GTCR_OFFSET) | GPT_GTCR_CST, base + R_GPT32_GTCR_OFFSET);
 	gpt_wp_end(base);
@@ -264,6 +306,7 @@ static int gpt_timer_init_pwm(unsigned channel, unsigned frequency_hz)
 		.prescaler_idx = (uint8_t)prescaler_idx,
 		.timer_index = timer_index,
 		.gpt_channel = gpt_channel,
+		.gpt_output_channel = output_channel,
 		.initialized = true,
 		.enabled = true,
 	};
@@ -292,7 +335,12 @@ int gpt_set_pwm_pulse(unsigned channel, uint16_t pulse_us)
 	}
 
 	gpt_wp_begin(base);
-	putreg32((uint32_t)ticks, base + R_GPT32_GTCCRA_OFFSET);
+	/* Write to the appropriate compare register based on output channel */
+	if (gpt_state[channel].gpt_output_channel == GPT_OUTPUT_CHANNEL_B) {
+		putreg32((uint32_t)ticks, base + R_GPT32_GTCCRB_OFFSET);
+	} else {
+		putreg32((uint32_t)ticks, base + R_GPT32_GTCCRA_OFFSET);
+	}
 	gpt_wp_end(base);
 
 	gpt_state[channel].last_pulse_us = pulse_us;
@@ -305,7 +353,13 @@ uint16_t gpt_get_pwm_pulse(unsigned channel)
 		return 0;
 	}
 
-	uint32_t ccr = getreg32(gpt_state[channel].base + R_GPT32_GTCCRA_OFFSET);
+	/* Read from the appropriate compare register based on output channel */
+	uint32_t ccr;
+	if (gpt_state[channel].gpt_output_channel == GPT_OUTPUT_CHANNEL_B) {
+		ccr = getreg32(gpt_state[channel].base + R_GPT32_GTCCRB_OFFSET);
+	} else {
+		ccr = getreg32(gpt_state[channel].base + R_GPT32_GTCCRA_OFFSET);
+	}
 	uint32_t timer_clk = BOARD_PCLKD_FREQUENCY / gpt_state[channel].prescaler_div;
 
 	return (uint16_t)((ccr * 1000000u) / timer_clk);
@@ -357,7 +411,9 @@ int gpt_set_pwm_frequency(unsigned channel, unsigned frequency_hz)
 	gpt_wp_begin(base);
 	uint32_t gtcr = getreg32(base + R_GPT32_GTCR_OFFSET);
 	gtcr &= ~GPT_GTCR_TPCS_MASK;
-	gtcr |= (prescaler_idx << GPT_GTCR_TPCS_SHIFT);
+	/* Use correct TPCS register value from lookup table */
+	uint32_t tpcs_val = kPrescalerTPCS[prescaler_idx];
+	gtcr |= (tpcs_val << GPT_GTCR_TPCS_SHIFT);
 	putreg32(gtcr, base + R_GPT32_GTCR_OFFSET);
 	putreg32(period_ticks, base + R_GPT32_GTPR_OFFSET);
 	putreg32(period_ticks, base + R_GPT32_GTPBR_OFFSET);
@@ -390,7 +446,10 @@ int gpt_oneshot_configure(unsigned channel, uint16_t pulse_us)
 	gpt_wp_begin(base);
 	uint32_t gtcr = getreg32(base + R_GPT32_GTCR_OFFSET);
 	gtcr &= ~GPT_GTCR_MD_MASK;
-	gtcr |= RA_GPT_TIMER_ONE_SHOT;
+	/* One-shot mode: MD[2:0] = 001 (Saw-wave one-shot / Single buffer)
+	 * GPT automatically stops after one period when configured this way
+	 */
+	gtcr |= (RA_GPT_TIMER_ONE_SHOT << GPT_GTCR_MD_SHIFT);
 	putreg32(gtcr, base + R_GPT32_GTCR_OFFSET);
 	gpt_wp_end(base);
 
@@ -412,9 +471,16 @@ int gpt_oneshot_trigger(unsigned channel)
 	return gpt_pwm_enable(channel, true);
 }
 
+/* External function from io_timer.c to call registered callbacks */
+extern void io_timer_call_handler(unsigned channel, hrt_abstime isrs_time, uint32_t isrs_rcnt);
+
 /**
  * Input capture interrupt handler
  * Called when GTCCRA capture event occurs
+ *
+ * This ISR is invoked by the ICU when a GPT input capture event occurs.
+ * It reads the captured timer value, records ISR timestamp, and invokes
+ * any registered callback for the channel.
  */
 static int gpt_capture_isr(int irq, void *context, void *arg)
 {
@@ -424,7 +490,13 @@ static int gpt_capture_isr(int irq, void *context, void *arg)
 		return OK;
 	}
 
+	/* Get ISR entry timestamp for latency calculation */
+	hrt_abstime isrs_time = hrt_absolute_time();
+
 	uint32_t base = gpt_state[channel].base;
+
+	/* Read current counter value for latency calculation */
+	uint32_t isrs_rcnt = getreg32(base + R_GPT32_GTCNT_OFFSET);
 
 	/* Read captured value from GTCCRA */
 	gpt_state[channel].last_capture_a = getreg32(base + R_GPT32_GTCCRA_OFFSET);
@@ -434,6 +506,9 @@ static int gpt_capture_isr(int irq, void *context, void *arg)
 	uint32_t gtst = getreg32(base + R_GPT32_GTST_OFFSET);
 	gtst &= ~GPT_GTST_TCFA;  /* Clear compare/capture match A flag */
 	putreg32(gtst, base + R_GPT32_GTST_OFFSET);
+
+	/* Invoke registered callback */
+	io_timer_call_handler(channel, isrs_time, isrs_rcnt);
 
 	return OK;
 }
@@ -668,6 +743,76 @@ int gpt_clear_status(unsigned channel, uint32_t flags)
 	return 0;
 }
 
+/**
+ * Start all initialized PWM timers simultaneously for synchronized output.
+ *
+ * This function uses the GPT GTSTR register to start multiple timers
+ * at exactly the same time, ensuring all PWM channels have aligned edges.
+ * Writing to any channel's GTSTR with a bit mask affects all specified channels.
+ * We use channel 0's registers for this operation.
+ *
+ * Per HWM 23.2.2: GTSTR bit n starts GPT32_n count.
+ *
+ * @return 0 on success, negative errno on failure
+ */
+int gpt_start_all_synchronized(void)
+{
+	uint32_t start_mask = 0;
+
+	/* Build a mask of all initialized GPT channels */
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (gpt_state[channel].initialized) {
+			start_mask |= (1u << gpt_state[channel].gpt_channel);
+		}
+	}
+
+	if (start_mask == 0) {
+		return -ENODEV;  /* No timers initialized */
+	}
+
+	/* Stop all timers first to align counters (via channel 0's GTSTP register) */
+	putreg32(start_mask, R_GPT32_GTSTP(0));
+
+	/* Clear all timer counters to zero (via channel 0's GTCLR register) */
+	putreg32(start_mask, R_GPT32_GTCLR(0));
+
+	/* Start all timers simultaneously with a single register write */
+	putreg32(start_mask, R_GPT32_GTSTR(0));
+
+	/* Update state tracking */
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (gpt_state[channel].initialized) {
+			gpt_state[channel].enabled = true;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * Stop all PWM timers simultaneously.
+ *
+ * @return 0 on success
+ */
+int gpt_stop_all_synchronized(void)
+{
+	uint32_t stop_mask = 0;
+
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (gpt_state[channel].initialized && gpt_state[channel].enabled) {
+			stop_mask |= (1u << gpt_state[channel].gpt_channel);
+			gpt_state[channel].enabled = false;
+		}
+	}
+
+	if (stop_mask != 0) {
+		/* Stop via channel 0's GTSTP register with bit mask */
+		putreg32(stop_mask, R_GPT32_GTSTP(0));
+	}
+
+	return 0;
+}
+
 int gpt_timer_init_all(void)
 {
 	int status = 0;
@@ -680,6 +825,14 @@ int gpt_timer_init_all(void)
 		if (gpt_timer_init_pwm(channel, PWM_DEFAULT_FREQUENCY_HZ) != 0) {
 			status = -1;
 		}
+	}
+
+	/* After all timers are initialized, start them simultaneously
+	 * for synchronized PWM output on all ESC channels.
+	 * This reduces EMI and ensures consistent motor timing.
+	 */
+	if (status == 0) {
+		gpt_start_all_synchronized();
 	}
 
 	return status;

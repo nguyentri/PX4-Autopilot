@@ -153,6 +153,17 @@ typedef void (*channel_handler_t)(void *context, uint32_t chan_index,
 __EXPORT int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 				    channel_handler_t callback, void *context);
 
+/**
+ * Synchronized timer start/stop functions for ESC PWM outputs
+ *
+ * These functions start/stop all initialized PWM timers simultaneously,
+ * ensuring all ESC channels have perfectly aligned PWM edges.
+ * This reduces electromagnetic interference (EMI) and ensures
+ * consistent motor control timing.
+ */
+__EXPORT int gpt_start_all_synchronized(void);
+__EXPORT int gpt_stop_all_synchronized(void);
+
 /* Board-specific timer configuration - must be defined in board code */
 __EXPORT extern const io_timers_t io_timers[MAX_IO_TIMERS];
 __EXPORT extern const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS];

@@ -90,8 +90,14 @@ extern uint32_t gpt_get_capture_clock(unsigned channel);
 #define DSHOT600_FREQ            600000u
 #define DSHOT1200_FREQ           1200000u
 
-#define DSHOT_T0H_PERCENT        37.5f
-#define DSHOT_T1H_PERCENT        75.0f
+/* DShot Protocol Timing Constants
+ * Per DShot specification:
+ * - Bit 0: 37.5% duty cycle (T0H = 0.375 * bit_period)
+ * - Bit 1: 75.0% duty cycle (T1H = 0.750 * bit_period)
+ * The remaining time in each bit period is low.
+ */
+#define DSHOT_T0H_PERCENT        37.5f   /* Bit '0' high time as percentage */
+#define DSHOT_T1H_PERCENT        75.0f   /* Bit '1' high time as percentage */
 
 /* Use board-defined PCLKD frequency (250MHz for RA8P1, 120MHz for RA8E1) */
 #ifdef BOARD_PCLKD_FREQUENCY
@@ -109,10 +115,36 @@ extern uint32_t gpt_get_capture_clock(unsigned channel);
 /* DShot frame timeout in microseconds (with margin) */
 #define DSHOT_FRAME_TIMEOUT_US   500
 
-/* BDShot telemetry timing */
+/* BDShot Telemetry Protocol Constants
+ * BDShot (Bidirectional DShot) allows ESCs to send telemetry back.
+ * After sending a DShot frame, the flight controller switches the
+ * signal line to input mode to receive GCR-encoded eRPM data.
+ *
+ * Timing requirements:
+ * - Response delay: ESC needs ~30µs to switch from RX to TX mode
+ * - Response length: 21 bits GCR encoded (16-bit data + 5-bit CRC)
+ * - Capture window: Must complete within 100µs for reliable operation
+ */
 #define BDSHOT_RESPONSE_DELAY_US  30   /* Time for ESC to respond after frame TX */
-#define BDSHOT_RESPONSE_BITS      21   /* GCR encoded response is 21 bits */
-#define BDSHOT_CAPTURE_TIMEOUT_US 100  /* Timeout waiting for capture */
+#define BDSHOT_RESPONSE_BITS      21   /* GCR encoded response: 4 nibbles + CRC */
+#define BDSHOT_CAPTURE_TIMEOUT_US 100  /* Max time to wait for response capture */
+
+/* Most hobby brushless motors operate in the range 0-100,000 eRPM.
+ * Values above 200,000 are likely decoding errors.
+*/
+#define BDSHOT_MAX_VALID_ERPM  200000u
+
+  /* PFS Write Protection Control
+   * PWPR register bits:
+   *   Bit 6 (PFSWE): PFS Write Enable - must be set to modify PFS registers
+   *   Bit 7 (B0WI):  PFSWE Write Disable - prevents accidental changes
+   * Unlock sequence: Clear B0WI first, then set PFSWE
+   * Lock sequence: Clear PFSWE (optional), then set B0WI
+   */
+#define PWPR_PFSWE_BIT  (1 << 6)  /* PFS Write Enable */
+#define PWPR_B0WI_BIT   (1 << 7)  /* PFSWE Write Disable */
+
+#define GCR_INVALID  0xFF  /* Marker for invalid GCR symbols */
 
 /****************************************************************************
  * Private Types
@@ -261,15 +293,35 @@ static inline uint32_t gpt_getreg32(uint8_t ch, uint32_t offset)
  * The ESC sends pulses where bit timing encodes data.
  ****************************************************************************/
 
-/* GCR 5-to-4 bit decoding table
- * Maps 5-bit GCR symbols to 4-bit nibbles
- * Invalid symbols map to 0xFF
+/* GCR (Golay-Corrected Reverse) 5-to-4 Bit Decoding Table
+ *
+ * BDShot telemetry uses GCR encoding to improve signal integrity.
+ * Each 4-bit nibble is encoded as a 5-bit GCR symbol for transmission.
+ *
+ * GCR Encoding Mapping (4-bit value -> 5-bit symbol):
+ *   0x0 -> 0x19 (11001)    0x8 -> 0x1A (11010)
+ *   0x1 -> 0x1B (11011)    0x9 -> 0x09 (01001)
+ *   0x2 -> 0x12 (10010)    0xA -> 0x0A (01010)
+ *   0x3 -> 0x13 (10011)    0xB -> 0x0B (01011)
+ *   0x4 -> 0x1D (11101)    0xC -> 0x1E (11110)
+ *   0x5 -> 0x15 (10101)    0xD -> 0x0D (01101)
+ *   0x6 -> 0x16 (10110)    0xE -> 0x0E (01110)
+ *   0x7 -> 0x17 (10111)    0xF -> 0x0F (01111)
+ *
+ * This table provides reverse lookup: 5-bit symbol -> 4-bit value
+ * Invalid symbols (not in the encoding) map to 0xFF (GCR_INVALID)
  */
+
 static const uint8_t gcr_decode_table[32] = {
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  /* 0x00-0x07 */
-  0xFF, 0x09, 0x0A, 0x0B, 0xFF, 0x0D, 0x0E, 0x0F,  /* 0x08-0x0F */
-  0xFF, 0xFF, 0x02, 0x03, 0xFF, 0x05, 0x06, 0x07,  /* 0x10-0x17 */
-  0xFF, 0x00, 0x08, 0x01, 0xFF, 0x04, 0x0C, 0xFF   /* 0x18-0x1F */
+  /* 0x00-0x07: All invalid (no valid GCR symbols in this range) */
+  GCR_INVALID, GCR_INVALID, GCR_INVALID, GCR_INVALID,
+  GCR_INVALID, GCR_INVALID, GCR_INVALID, GCR_INVALID,
+  /* 0x08-0x0F: 0x09=9, 0x0A=A, 0x0B=B, 0x0D=D, 0x0E=E, 0x0F=F */
+  GCR_INVALID, 0x09, 0x0A, 0x0B, GCR_INVALID, 0x0D, 0x0E, 0x0F,
+  /* 0x10-0x17: 0x12=2, 0x13=3, 0x15=5, 0x16=6, 0x17=7 */
+  GCR_INVALID, GCR_INVALID, 0x02, 0x03, GCR_INVALID, 0x05, 0x06, 0x07,
+  /* 0x18-0x1F: 0x19=0, 0x1A=8, 0x1B=1, 0x1D=4, 0x1E=C */
+  GCR_INVALID, 0x00, 0x08, 0x01, GCR_INVALID, 0x04, 0x0C, GCR_INVALID
 };
 
 /**
@@ -295,7 +347,7 @@ static int bdshot_gcr_decode(uint32_t gcr_value, uint16_t *decoded)
       uint8_t gcr_symbol = (gcr_value >> (i * 5 + 1)) & 0x1F;
       nibble = gcr_decode_table[gcr_symbol];
 
-      if (nibble == 0xFF)
+      if (nibble == GCR_INVALID)
         {
           return -2;  /* Invalid GCR symbol */
         }
@@ -362,10 +414,10 @@ static uint32_t bdshot_decode_erpm(uint16_t decoded, uint8_t motor_poles)
 
   uint32_t erpm = 120000000u / (period * motor_poles);
 
-  /* Sanity check: typical brushless motor eRPM range is 0-100000 */
-  if (erpm > 200000)
+  /* Sanity check: typical brushless motor eRPM range */
+  if (erpm > BDSHOT_MAX_VALID_ERPM)
     {
-      return 0;  /* Invalid reading */
+      return 0;  /* Invalid reading - likely decode error */
     }
 
   return erpm;
@@ -390,8 +442,8 @@ static void bdshot_gpio_set_input(dshot_channel_t *ch)
                       (pin * R_PFS_PSEL_PIN_OFFSET);
 
   /* Enable PFS write access */
-  putreg8(0, R_PFS_PWPR);
-  putreg8((1 << 6), R_PFS_PWPR);  /* PFSWE = 1 */
+  putreg8(0, R_PFS_PWPR);               /* Clear B0WI to allow PFSWE change */
+  putreg8(PWPR_PFSWE_BIT, R_PFS_PWPR);  /* Enable PFS register writes */
 
   /* Configure as input with noise filter */
   uint32_t pfs_value = getreg32(pfs_addr);
@@ -399,8 +451,8 @@ static void bdshot_gpio_set_input(dshot_channel_t *ch)
   putreg32(pfs_value, pfs_addr);
 
   /* Disable PFS write access */
-  putreg8(0, R_PFS_PWPR);
-  putreg8((1 << 7), R_PFS_PWPR);  /* B0WI = 1 */
+  putreg8(0, R_PFS_PWPR);              /* Clear PFSWE */
+  putreg8(PWPR_B0WI_BIT, R_PFS_PWPR);  /* Lock PFS registers */
 }
 
 /**

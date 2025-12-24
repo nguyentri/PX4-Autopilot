@@ -34,9 +34,26 @@
 /**
  * @file hrt.c
  *
- * GPT0-based high-resolution timer for Renesas RA8.
- * - Free-running counter at PCLKD/64.
- * - Compare A interrupt drives PX4 HRT scheduling.
+ * GPT0-based high-resolution timer for Renesas RA8P1.
+ *
+ * Timer configuration:
+ * - Uses GPT0 as a free-running 32-bit counter
+ * - PCLKD = 250MHz (peripheral clock D from PLL1P/4)
+ * - Prescaler = /64 (TPCS=6) -> Timer frequency = 3.90625 MHz
+ * - Compare A interrupt drives PX4 HRT callout scheduling
+ * - Overflow interrupt maintains 64-bit absolute time across 32-bit wrap
+ *
+ * Clock relationship:
+ *   BOARD_PCLKD_FREQUENCY (250 MHz)
+ *        |
+ *        v  /64 prescaler (GTCR.TPCS = 6)
+ *        |
+ *   HRT_TIMER_CLOCK (3.90625 MHz)
+ *        |
+ *        v  Free-running 32-bit counter
+ *        |
+ *   Converted to microseconds via counts_to_time_us()
+ *
  */
 
 #include <px4_platform_common/px4_config.h>
@@ -53,7 +70,6 @@
 
 #include "arm_internal.h"
 #include "ra_icu.h"
-#include "ra_gpt.h"
 #include "ra_mstp.h"
 #include "hardware/ra8p1/ra_gpt32.h"
 #include <arch/ra8/ra8p1_irq.h>
@@ -63,15 +79,59 @@
 #define LATENCY_BUCKET_COUNT 8
 #endif
 
-#define HRT_PCLKD_HZ            HRT_TIMER_FREQUENCY
+/*
+ * HRT Timer Clock Configuration
+ *
+ * BOARD_PCLKD_FREQUENCY: 250 MHz (from board.h)
+ * HRT_PRESCALER_DIV: 64 (TPCS=6 in GTCR register)
+ * HRT_TIMER_CLOCK: 250MHz / 64 = 3,906,250 Hz (~3.9 MHz)
+ *
+ * This gives us:
+ * - 1 tick = 256 ns
+ * - Counter period = 2^32 / 3.90625 MHz = ~1100 seconds
+ * - Microsecond conversion: us = counts * 1000000 / HRT_TIMER_CLOCK
+ */
 #define HRT_PRESCALER_DIV       64u
-#define HRT_TIMER_FREQ_HZ       (HRT_PCLKD_HZ / HRT_PRESCALER_DIV)
-#define HRT_MIN_DELTA_US        5u
-#define HRT_COUNTER_PERIOD      ((1ULL << 32) * 1000000ULL / HRT_TIMER_FREQ_HZ)  /* 32-bit counter wrap period in microseconds */
+#define HRT_TIMER_CLOCK         (BOARD_PCLKD_FREQUENCY / HRT_PRESCALER_DIV)  /* 3.90625 MHz */
 
-#ifndef GPT_GTINTAD_GTINTOV
-#define GPT_GTINTAD_GTINTOV     (1 << 6)
+/* Minimum scheduling delta in microseconds - must be larger than ISR latency */
+#define HRT_MIN_DELTA_US        5u
+
+/* Maximum interval before we must service the timer to prevent wrap issues.
+ * With 32-bit counter at 3.9MHz, wrap is ~1100 seconds, but we want to
+ * service much more frequently for accurate timekeeping.
+ * Use ~half the counter period similar to i.MXRT HRT_INTERVAL_MAX.
+ */
+#define HRT_INTERVAL_MAX        ((1ULL << 31) * 1000000ULL / HRT_TIMER_CLOCK)
+
+/* 32-bit counter wrap period in microseconds */
+#define HRT_COUNTER_PERIOD      ((1ULL << 32) * 1000000ULL / HRT_TIMER_CLOCK)
+
+/* GPT GTINTAD register bits for interrupt enable */
+#ifndef GPT_GTINTAD_GTINTA
+#define GPT_GTINTAD_GTINTA      (1 << 0)   /* Compare match A interrupt enable */
 #endif
+#ifndef GPT_GTINTAD_GTINTOV
+#define GPT_GTINTAD_GTINTOV     (1 << 6)   /* Overflow interrupt enable */
+#endif
+
+/* GPT GTST status register bits */
+#ifndef GPT_GTST_TCFA
+#define GPT_GTST_TCFA           (1 << 0)   /* Compare match A flag */
+#endif
+#ifndef GPT_GTST_TCFPO
+#define GPT_GTST_TCFPO          (1 << 6)   /* Overflow flag */
+#endif
+
+/* GPT GTCR control register bits - use correct RA8P1 definitions */
+#define HRT_GTCR_CST            (1 << 0)                           /* Count start */
+#define HRT_GTCR_MD_SAW_UP      R_GPT32_GTCR_MD_0000               /* Saw-wave PWM mode 1 (up-count) */
+#define HRT_GTCR_TPCS_DIV64     R_GPT32_GTCR_TPCS_0110             /* PCLKD/64 prescaler */
+
+/* GPT GTWP write protect key */
+#define HRT_GTWP_PRKEY          (0xA500 << 8)
+#define HRT_GTWP_WP             (1 << 0)
+#define HRT_GTWP_CMNWP          (1 << 4)
 
 #ifdef CONFIG_DEBUG_HRT
 #  define hrtinfo _info
@@ -103,14 +163,22 @@ static inline void gpt_putreg(uint32_t val, unsigned int offset)
 	putreg32(val, R_GPT32_CH_BASE(HRT_TIMER) + offset);
 }
 
+/**
+ * Convert timer counts to microseconds.
+ * Uses 64-bit math to prevent overflow.
+ */
 static inline uint64_t counts_to_time_us(uint64_t counts)
 {
-	return (counts * 1000000ULL) / HRT_TIMER_FREQ_HZ;
+	return (counts * 1000000ULL) / HRT_TIMER_CLOCK;
 }
 
+/**
+ * Convert microseconds to timer counts.
+ * Rounds to nearest tick; clamps to 32-bit max.
+ */
 static inline uint32_t time_to_counts(hrt_abstime us)
 {
-	const uint64_t ticks = (us * (uint64_t)HRT_TIMER_FREQ_HZ + 500000ULL) / 1000000ULL;
+	const uint64_t ticks = (us * (uint64_t)HRT_TIMER_CLOCK + 500000ULL) / 1000000ULL;
 	return (ticks > UINT32_MAX) ? UINT32_MAX : (uint32_t)ticks;
 }
 
@@ -196,14 +264,14 @@ static void hrt_program_compare(hrt_abstime deadline)
 	const uint32_t current = hrt_read_count();
 	const uint32_t compare = current + next_ticks;
 
-	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
+	gpt_putreg(HRT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
 	gpt_putreg(compare, R_GPT32_GTCCRA_OFFSET);
 
 	/* Ensure interrupt is enabled (preserving overflow enable) */
 	uint32_t intad = gpt_getreg(R_GPT32_GTINTAD_OFFSET);
 	gpt_putreg(intad | GPT_GTINTAD_GTINTA, R_GPT32_GTINTAD_OFFSET);
 
-	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+	gpt_putreg(HRT_GTWP_PRKEY | HRT_GTWP_WP | HRT_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
 
 	leave_critical_section(flags);
 }
@@ -286,7 +354,7 @@ static int hrt_interrupt(int irq, void *context, void *arg)
 	(void)irq;
 	(void)arg;
 
-	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
+	gpt_putreg(HRT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
 	const uint32_t status = gpt_getreg(R_GPT32_GTST_OFFSET);
 
 	/* Clear status flags */
@@ -302,7 +370,7 @@ static int hrt_interrupt(int irq, void *context, void *arg)
 		gpt_putreg(status & ~clear_mask, R_GPT32_GTST_OFFSET);
 	}
 
-	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+	gpt_putreg(HRT_GTWP_PRKEY | HRT_GTWP_WP | HRT_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
 
 	if (status & GPT_GTST_TCFPO) {
 		hrt_absolute_time(); /* Update accumulated time */
@@ -321,32 +389,46 @@ static void hrt_gpt_start(void)
 
 	hrt_enable_clock();
 
-	gpt_putreg(GPT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
+	/* Unlock write protection */
+	gpt_putreg(HRT_GTWP_PRKEY, R_GPT32_GTWP_OFFSET);
 
-	/* Stop and reset */
+	/* Stop timer if running */
 	uint32_t regval = gpt_getreg(R_GPT32_GTCR_OFFSET);
-	regval &= ~GPT_GTCR_CST;
+	regval &= ~HRT_GTCR_CST;
 	gpt_putreg(regval, R_GPT32_GTCR_OFFSET);
 
+	/* Reset counter and set period to max (free-running mode) */
 	gpt_putreg(0, R_GPT32_GTCNT_OFFSET);
 	gpt_putreg(0xFFFFFFFF, R_GPT32_GTPR_OFFSET);
 
-	/* Set prescaler and sawtooth up mode */
-	regval = GPT_GTCR_MD_SAW_WAVE_UP | GPT_GTCR_TPCS_PCLKD_64;
+	/* Configure timer mode:
+	 * - Saw-wave PWM mode 1 (up-counting)
+	 * - Prescaler = PCLKD/64 (TPCS=6)
+	 *
+	 * GTCR register layout for RA8P1:
+	 * - Bits [0]:     CST (Count Start)
+	 * - Bits [19:16]: MD (Mode Select) - 0000 = Saw-wave mode 1
+	 * - Bits [26:23]: TPCS (Timer Prescaler) - 0110 = /64
+	 */
+	regval = HRT_GTCR_MD_SAW_UP | HRT_GTCR_TPCS_DIV64;
 	gpt_putreg(regval, R_GPT32_GTCR_OFFSET);
 
-	/* Disable compare outputs */
+	/* Disable all pin outputs - HRT is internal only */
 	gpt_putreg(0, R_GPT32_GTIOR_OFFSET);
 
-	/* Enable compare A and overflow interrupts */
+	/* Enable compare A and overflow interrupts
+	 * - GTINTA: Compare match A interrupt (for scheduling)
+	 * - GTINTOV: Overflow interrupt (for 64-bit time extension)
+	 */
 	gpt_putreg(GPT_GTINTAD_GTINTA | GPT_GTINTAD_GTINTOV, R_GPT32_GTINTAD_OFFSET);
 
-	/* Start */
+	/* Start the timer */
 	regval = gpt_getreg(R_GPT32_GTCR_OFFSET);
-	regval |= GPT_GTCR_CST;
+	regval |= HRT_GTCR_CST;
 	gpt_putreg(regval, R_GPT32_GTCR_OFFSET);
 
-	gpt_putreg(GPT_GTWP_PRKEY | R_GPT32_GTWP_WP | R_GPT32_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
+	/* Re-enable write protection */
+	gpt_putreg(HRT_GTWP_PRKEY | HRT_GTWP_WP | HRT_GTWP_CMNWP, R_GPT32_GTWP_OFFSET);
 
 	leave_critical_section(flags);
 }

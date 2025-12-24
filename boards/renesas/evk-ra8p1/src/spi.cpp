@@ -64,13 +64,13 @@
 #define SPI_DEBUG(fmt, ...) syslog(LOG_INFO, "SPI_DBG: " fmt "\n", ##__VA_ARGS__)
 
 // Use Arduino SPI0 pins for the IMU to avoid OSPI conflicts
-// GPIO_ARDUINO_SPI_CS0 (P103) - ICM20948 CS
-// GPIO_SPI_IMU_DRDY (P006)    - ICM20948 Data Ready
+// GPIO_ARDUINO_SPI_CS0 (P103) - ICM20948 CS (Port1, Pin3)
+// PX4_SPI_IMU_DRDY (P011)     - ICM20948 Data Ready (Port0, Pin11 = Arduino D2/IRQ16)
 #if defined(__PX4_NUTTX)
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
         initSPIBus(SPI::Bus::SPI0, {
                 // ICM-20948: 9DOF IMU (gyroscope, accelerometer, magnetometer)
-                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port1, GPIO::Pin3}, SPI::DRDY{GPIO::Port0, GPIO::Pin6}),
+                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::Port1, GPIO::Pin3}, SPI::DRDY{GPIO::Port0, GPIO::Pin11}),
         }),
 };
 

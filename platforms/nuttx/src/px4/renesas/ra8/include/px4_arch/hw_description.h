@@ -56,12 +56,12 @@ enum Port : uint32_t {
 	Port7,
 	Port8,
 	Port9,
-	Port10,
-	Port11,
-	Port12,
-	Port13,
-	Port14,
-	Port15
+	PortA,
+	PortB,
+	PortC,
+	PortD,
+	PortE,
+	PortF
 };
 
 enum Pin : uint32_t {
@@ -79,19 +79,25 @@ struct GPIOPin {
 
 static inline constexpr uint32_t getGPIOPort(GPIO::Port port)
 {
-	// Port encoding with GPIO_PORT_SHIFT = 8
+	// Port encoding: GPIO_PORT_SHIFT = 28 (bits 31-28) per ra_gpio.h
 	switch (port) {
 	case GPIO::PortInvalid: return 0;
-	case GPIO::Port0: return (0 << 24);  // GPIO_PORTA
-	case GPIO::Port1: return (1 << 24);  // GPIO_PORTB
-	case GPIO::Port2: return (2 << 24);  // GPIO_PORTC
-	case GPIO::Port3: return (3 << 24);  // GPIO_PORTD
-	case GPIO::Port4: return (4 << 24);  // GPIO_PORTE
-	case GPIO::Port5: return (5 << 24);  // GPIO_PORTF
-	case GPIO::Port6: return (6 << 24);  // GPIO_PORTG
-	case GPIO::Port7: return (7 << 24);  // GPIO_PORTH
-	case GPIO::Port8: return (8 << 24);  // GPIO_PORTI
-	case GPIO::Port9: return (9 << 24);  // GPIO_PORTJ
+	case GPIO::Port0: return (0 << 28);  // Port 0
+	case GPIO::Port1: return (1 << 28);  // Port 1
+	case GPIO::Port2: return (2 << 28);  // Port 2
+	case GPIO::Port3: return (3 << 28);  // Port 3
+	case GPIO::Port4: return (4 << 28);  // Port 4
+	case GPIO::Port5: return (5 << 28);  // Port 5
+	case GPIO::Port6: return (6 << 28);  // Port 6
+	case GPIO::Port7: return (7 << 28);  // Port 7
+	case GPIO::Port8: return (8 << 28);  // Port 8
+	case GPIO::Port9: return (9 << 28);  // Port 9
+    case GPIO::PortA: return (10 << 28); // Port 10
+    case GPIO::PortB: return (11 << 28); // Port 11
+    case GPIO::PortC: return (12 << 28); // Port 12
+    case GPIO::PortD: return (13 << 28); // Port 13
+    case GPIO::PortE: return (14 << 28); // Port 14
+    case GPIO::PortF: return (15 << 28); // Port 15
 	default: break;
 	}
 	return 0;
@@ -99,24 +105,24 @@ static inline constexpr uint32_t getGPIOPort(GPIO::Port port)
 
 static inline constexpr uint32_t getGPIOPin(GPIO::Pin pin)
 {
-	// Pin encoding with GPIO_PIN_SHIFT = 0
+	// Pin encoding: GPIO_PIN_SHIFT = 24 (bits 27-24) per ra_gpio.h
 	switch (pin) {
-	case GPIO::Pin0: return (0 << 16);  // GPIO_PIN0
-	case GPIO::Pin1: return (1 << 16);  // GPIO_PIN1
-	case GPIO::Pin2: return (2 << 16);  // GPIO_PIN2
-	case GPIO::Pin3: return (3 << 16);  // GPIO_PIN3
-	case GPIO::Pin4: return (4 << 16);  // GPIO_PIN4
-	case GPIO::Pin5: return (5 << 16);  // GPIO_PIN5
-	case GPIO::Pin6: return (6 << 16);  // GPIO_PIN6
-	case GPIO::Pin7: return (7 << 16);  // GPIO_PIN7
-	case GPIO::Pin8: return (8 << 16);  // GPIO_PIN8
-	case GPIO::Pin9: return (9 << 16);  // GPIO_PIN9
-	case GPIO::Pin10: return (10 << 16); // GPIO_PIN10
-	case GPIO::Pin11: return (11 << 16); // GPIO_PIN11
-	case GPIO::Pin12: return (12 << 16); // GPIO_PIN12
-	case GPIO::Pin13: return (13 << 16); // GPIO_PIN13
-	case GPIO::Pin14: return (14 << 16); // GPIO_PIN14
-	case GPIO::Pin15: return (15 << 16); // GPIO_PIN15
+	case GPIO::Pin0: return (0 << 24);   // Pin 0
+	case GPIO::Pin1: return (1 << 24);   // Pin 1
+	case GPIO::Pin2: return (2 << 24);   // Pin 2
+	case GPIO::Pin3: return (3 << 24);   // Pin 3
+	case GPIO::Pin4: return (4 << 24);   // Pin 4
+	case GPIO::Pin5: return (5 << 24);   // Pin 5
+	case GPIO::Pin6: return (6 << 24);   // Pin 6
+	case GPIO::Pin7: return (7 << 24);   // Pin 7
+	case GPIO::Pin8: return (8 << 24);   // Pin 8
+	case GPIO::Pin9: return (9 << 24);   // Pin 9
+	case GPIO::Pin10: return (10 << 24); // Pin 10
+	case GPIO::Pin11: return (11 << 24); // Pin 11
+	case GPIO::Pin12: return (12 << 24); // Pin 12
+	case GPIO::Pin13: return (13 << 24); // Pin 13
+	case GPIO::Pin14: return (14 << 24); // Pin 14
+	case GPIO::Pin15: return (15 << 24); // Pin 15
 	}
 	return 0;
 }

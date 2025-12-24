@@ -34,7 +34,14 @@
 /**
  * @file i2c.cpp
  *
- * Board-specific I2C functions.
+ * Board-specific I2C functions for EVK-RA8P1.
+ *
+ * I2C Bus Configuration:
+ * - I2C0: P400 (SCL), P401 (SDA) - Used for BMP388 barometer and external I2C devices
+ *         Connected via Arduino header, Grove 1, Qwiic, mikroBUS
+ *
+ * Note: I2C1 (P512/P511) is available on hardware but not enabled in PX4.
+ *       It can be enabled for camera or additional Grove expansion if needed.
  */
 
 #include <px4_platform_common/px4_config.h>
@@ -42,10 +49,9 @@
 #include <px4_arch/i2c_hw_description.h>
 
 #ifdef CONFIG_I2C
-// Two I2C buses available (I2C0 on P400/P401, I2C1 on P512/P511)
+/* Only I2C0 is configured for BMP388 barometer and external devices */
 constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
-	initI2CBusInternal(I2C::Bus::I2C0),  // I2C0 for external devices
-	//initI2CBusInternal(I2C::Bus::I2C1),  // I2C1 for camera/Grove expansion
+	initI2CBusExternal(I2C::Bus::I2C0),  /* I2C0: BMP388 (0x76/0x77) and external I2C devices */
 };
 
 #endif // CONFIG_I2C

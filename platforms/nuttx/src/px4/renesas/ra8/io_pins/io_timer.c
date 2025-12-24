@@ -89,6 +89,12 @@ typedef uint16_t io_timer_channel_allocation_t;
 static io_timer_channel_allocation_t channel_allocations[NUM_CHANNEL_MODES] = { 0 };
 static io_timer_channel_allocation_t timer_allocations[MAX_IO_TIMERS] = { 0 };
 
+/* Per-channel callback handler storage */
+static struct channel_handler_entry {
+	channel_handler_t handler;
+	void             *context;
+} channel_handlers[MAX_TIMER_IO_CHANNELS];
+
 /* Forward declarations - these are declared in io_timer.h */
 /* No need for forward declarations, header provides them */
 
@@ -460,7 +466,7 @@ int io_channel_init(void)
  *
  * @param channel Channel number (0-7)
  * @param mode    Channel mode (PWMOut, Capture, etc.)
- * @param callback Optional callback function
+ * @param callback Optional callback function for capture/interrupt modes
  * @param context Optional callback context
  * @return        OK on success, negative errno on failure
  */
@@ -483,11 +489,14 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 
 	case IOTimerChanMode_PWMIn:
 	case IOTimerChanMode_Capture:
-		/* Input modes not yet supported */
-		return -EINVAL;
+		/* Input modes use gpio_in */
+		gpio = timer_io_channels[channel].gpio_in;
+		break;
 
 	case IOTimerChanMode_NotUsed:
-		/* Free the channel */
+		/* Free the channel - unbind callback first */
+		channel_handlers[channel].handler = NULL;
+		channel_handlers[channel].context = NULL;
 		break;
 
 	default:
@@ -502,20 +511,20 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 	/* Allocate the channel */
 	int status = io_timer_allocate_channel(channel, mode);
 
-	if (status == 0 && previous_mode == IOTimerChanMode_NotUsed) {
-		/* Initialize the timer if this is the first use */
-		/* The timer is already initialized by gpt_timer_init_all() in io_timer_init() */
+	if (status == 0) {
+		if (previous_mode == IOTimerChanMode_NotUsed || previous_mode != mode) {
+			/* Initialize the timer if this is the first use or mode change */
+			/* The timer is already initialized by gpt_timer_init_all() in io_timer_init() */
 
-		/* Configure GPIO if needed */
-		if (gpio) {
-			px4_arch_configgpio(gpio);
+			/* Configure GPIO if needed */
+			if (gpio) {
+				px4_arch_configgpio(gpio);
+			}
 		}
 
-		/* Store callback if provided */
-		if (callback != NULL) {
-			/* Callbacks are not yet supported on the RA8 GPT backend */
-			status = -ENOTSUP;
-		}
+		/* Store callback for capture modes (and any mode that needs it) */
+		channel_handlers[channel].handler = callback;
+		channel_handlers[channel].context = context;
 	}
 
 	if (status != 0 && previous_mode == IOTimerChanMode_NotUsed) {
@@ -525,7 +534,29 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 
 	px4_leave_critical_section(flags);
 
-	(void)context;
-
 	return status;
+}
+
+/**
+ * Invoke the registered callback for a channel
+ *
+ * This function is called from io_timer_impl.c ISR handlers to invoke
+ * any registered callback for a given channel.
+ *
+ * @param channel    Channel index
+ * @param isrs_time  ISR entry timestamp
+ * @param isrs_rcnt  Timer counter value at ISR entry
+ */
+void io_timer_call_handler(unsigned channel, hrt_abstime isrs_time, uint32_t isrs_rcnt)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS) {
+		return;
+	}
+
+	if (channel_handlers[channel].handler != NULL) {
+		channel_handlers[channel].handler(channel_handlers[channel].context,
+						  channel,
+						  isrs_time,
+						  isrs_rcnt);
+	}
 }

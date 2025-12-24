@@ -143,9 +143,11 @@
 
 /* I2C Bus Configuration (from board.h)
  * I2C0: P400=SCL0, P401=SDA0 (Grove 1, Qwiic, Arduino, mikroBUS)
- * I2C1: P512=SCL1, P511=SDA1 (Grove 1/2, Camera Port, Qwiic)
+ * I2C1: P512=SCL1, P511=SDA1 (Grove 1/2, Camera Port, Qwiic) - NOT USED IN PX4
+ *
+ * Only I2C0 is enabled for BMP388 barometer sensor.
  */
-#define BOARD_NUMBER_I2C_BUSES          2
+#define BOARD_NUMBER_I2C_BUSES          1       /* Only I2C0 configured */
 #define BOARD_I2C_BUS_CLOCK_INIT        {100000}  /* 100kHz for bus 0 */
 #define PX4_NUMBER_I2C_BUSES            1
 #define I2C_BUS_MAX_BUS_ITEMS           PX4_NUMBER_I2C_BUSES
@@ -212,10 +214,18 @@
  * High-Resolution Timer (HRT)
  ****************************************************************************************************/
 
-/* HRT Configuration using GPT0 (dedicated, no pin output required) */
+/* HRT Configuration using GPT0 (dedicated, no pin output required)
+ *
+ * HRT_TIMER: GPT channel number (0 = GPT0)
+ * HRT_TIMER_CHANNEL: Compare register (0 = GTCCRA)
+ *
+ * Note: The actual timer clock configuration (PCLKD/64 = 3.90625 MHz)
+ * is set in hrt.c using the correct GPT register definitions.
+ * HRT_TIMER_FREQUENCY is deprecated and no longer used - the clock
+ * calculation is now done correctly in hrt.c using BOARD_PCLKD_FREQUENCY.
+ */
 #define HRT_TIMER                       0   /* Use GPT0 for HRT */
-#define HRT_TIMER_CHANNEL               0   /* Channel A */
-#define HRT_TIMER_FREQUENCY             (BOARD_PCLKD_FREQUENCY / 64)  /* GPT0 prescaler /64 */
+#define HRT_TIMER_CHANNEL               0   /* Channel A (GTCCRA for compare) */
 
 /****************************************************************************************************
  * LED Configuration

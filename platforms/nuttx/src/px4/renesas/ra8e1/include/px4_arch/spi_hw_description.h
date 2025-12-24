@@ -80,16 +80,17 @@ static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::
 	px4_spi_bus_device_t ret{};
 
 	// CS pin configuration - output high (inactive)
-	// For RA8, use getGPIOPort and getGPIOPin to extract port and pin from the enum
-	// GPIO flags: GPIO_OUTPUT = (1 << R_PFS_PDR), GPIO_OUTPUT_HIGH = (1 << R_PFS_PODR)
+	// Uses GPIO macros from ra_pinmap.h: GPIO_OUTPUT (R_PFS_PDR), GPIO_OUTPUT_HIGH (R_PFS_PODR)
 	ret.cs_gpio = getGPIOPort(cs_gpio.port) | getGPIOPin(cs_gpio.pin) |
-	              (1 << 2) |  // GPIO_OUTPUT (R_PFS_PDR bit 2)
-	              (1 << 0);   // GPIO_OUTPUT_HIGH (R_PFS_PODR bit 0)
+	              GPIO_OUTPUT |       // R_PFS_PDR - output direction
+	              GPIO_OUTPUT_HIGH;   // R_PFS_PODR - output high (CS inactive)
 
-	// DRDY pin configuration - input with pull-up
+	// DRDY pin configuration - input with pull-up and IRQ enable
+	// Uses GPIO macros: GPIO_PULLUP (R_PFS_PCR), GPIO_IRQ (R_PFS_ISEL)
 	if (drdy_gpio.port != GPIO::PortInvalid) {
 		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) |
-		                (1 << 4);   // R_PFS_PCR (pull-up control bit 4)
+		                GPIO_PULLUP |  // R_PFS_PCR - pull-up control
+		                GPIO_IRQ;      // R_PFS_ISEL - IRQ input enable
 	}
 
 	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)
@@ -135,9 +136,9 @@ static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus
 
 	if (power_enable.port != GPIO::PortInvalid) {
 		// Power enable GPIO - output low (power off initially)
-		// GPIO_OUTPUT = (1 << R_PFS_PDR bit 2), output low = bit 0 clear
+		// GPIO_OUTPUT sets direction to output, output data bit cleared for low
 		ret.power_enable_gpio = getGPIOPort(power_enable.port) | getGPIOPin(power_enable.pin) |
-		                        (1 << 2);  // GPIO_OUTPUT only, bit 0=0 for low
+		                        GPIO_OUTPUT;  // Output low (GPIO_OUTPUT_HIGH not set)
 	}
 
 	return ret;
