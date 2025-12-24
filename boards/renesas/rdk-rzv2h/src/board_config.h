@@ -172,14 +172,26 @@
 #define SPI_BUS_MAX_BUS_ITEMS           BOARD_SPI_BUS_MAX_BUS_ITEMS
 
 /* MPU9250 IMU on SPI6 */
-#define BOARD_MPU9250_BUS               6       /* SPI bus 6 */
-#define BOARD_MPU9250_CS_GPIO           GPIO_P9_3_OUTPUT_HIGH  /* P93 = RSPI6_SSL0 */
-#define BOARD_MPU9250_DRDY_GPIO         GPIO_IRQ0_P5_0  /* P50 = IRQ0 input */
+#ifndef BOARD_MPU9250_BUS
+#  define BOARD_MPU9250_BUS             6       /* SPI bus 6 */
+#endif
+#ifndef BOARD_MPU9250_CS_GPIO
+#  define BOARD_MPU9250_CS_GPIO         GPIO_P9_3_OUTPUT_HIGH  /* P93 = RSPI6_SSL0 */
+#endif
+#ifndef BOARD_MPU9250_DRDY_GPIO
+#  define BOARD_MPU9250_DRDY_GPIO       GPIO_IRQ0_P5_0  /* P50 = IRQ0 input */
+#endif
 
 /* ICM20948 IMU on SPI6 */
-#define BOARD_ICM20948_BUS              6       /* SPI bus 6 */
-#define BOARD_ICM20948_CS_GPIO          GPIO_P9_4_OUTPUT_HIGH  /* P94 = RSPI6_SSL1 */
-#define BOARD_ICM20948_DRDY_GPIO        GPIO_IRQ10_PA_2  /* PA0 = IRQ10 input */
+#ifndef BOARD_ICM20948_BUS
+#  define BOARD_ICM20948_BUS            6       /* SPI bus 6 */
+#endif
+#ifndef BOARD_ICM20948_CS_GPIO
+#  define BOARD_ICM20948_CS_GPIO        GPIO_P9_4_OUTPUT_HIGH  /* P94 = RSPI6_SSL1 */
+#endif
+#ifndef BOARD_ICM20948_DRDY_GPIO
+#  define BOARD_ICM20948_DRDY_GPIO      GPIO_IRQ10_PA_2  /* PA0 = IRQ10 input */
+#endif
 
 /****************************************************************************************************
  * PWM/Timer Configuration (GPT)
@@ -235,10 +247,18 @@
  * - P96 (Port9, Pin6):  GPT9A (GTIOC9A) - PWM2/ESC3, Mode 9
  * - P53 (Port5, Pin3):  GPT10B (GTIOC10B) - PWM3/ESC4, Mode 11
  */
-#define BOARD_PWM_CH0_GPIO              GPIO_GTIOC6A_PA_4_M11  /* ESC1: GPT6A on PA4 (GPIO12/PWM0) */
-#define BOARD_PWM_CH1_GPIO              GPIO_GTIOC7B_PA_7_M11  /* ESC2: GPT7B on PA7 (GPIO13/PWM1) */
-#define BOARD_PWM_CH2_GPIO              GPIO_GTIOC9A_P9_6_M9   /* ESC3: GPT9A on P96 (GPIO19) */
-#define BOARD_PWM_CH3_GPIO              GPIO_GTIOC10B_P5_3_M11 /* ESC4: GPT10B on P53 (GPIO06) */
+#ifndef BOARD_PWM_CH0_GPIO
+#  define BOARD_PWM_CH0_GPIO            GPIO_GTIOC6A_PA_4_M11  /* ESC1: GPT6A on PA4 (GPIO12/PWM0) */
+#endif
+#ifndef BOARD_PWM_CH1_GPIO
+#  define BOARD_PWM_CH1_GPIO            GPIO_GTIOC7B_PA_7_M11  /* ESC2: GPT7B on PA7 (GPIO13/PWM1) */
+#endif
+#ifndef BOARD_PWM_CH2_GPIO
+#  define BOARD_PWM_CH2_GPIO            GPIO_GTIOC9A_P9_6_M9   /* ESC3: GPT9A on P96 (GPIO19) */
+#endif
+#ifndef BOARD_PWM_CH3_GPIO
+#  define BOARD_PWM_CH3_GPIO            GPIO_GTIOC10B_P5_3_M11 /* ESC4: GPT10B on P53 (GPIO06) */
+#endif
 
 /* DShot Motor Assignment (channel index mapping) */
 #define BOARD_DSHOT_MOTOR_ASSIGNMENT    {0, 1, 2, 3}

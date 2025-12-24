@@ -43,6 +43,11 @@
 
 #include "board_config.h"
 
+/* Undefine NuttX empty macros so we can provide implementation */
+#undef board_autoled_initialize
+#undef board_autoled_on
+#undef board_autoled_off
+
 /**
  * Initialize LED GPIOs
  */
