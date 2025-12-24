@@ -97,8 +97,8 @@ extern const io_timers_t io_timers[];
 extern const timer_io_channels_t timer_io_channels[];
 
 /* External GPT hardware functions from io_timer_impl.c */
-extern int ra8_gpt_timer_init_all(void);
-extern void ra8_gpt_timer_deinit_all(void);
+extern int gpt_timer_init_all(void);
+extern void gpt_timer_deinit_all(void);
 extern int gpt_set_pwm_pulse(unsigned channel, uint16_t pulse_us);
 extern uint16_t gpt_get_pwm_pulse(unsigned channel);
 extern int gpt_set_pwm_frequency(unsigned channel, unsigned frequency_hz);
@@ -106,8 +106,9 @@ extern int gpt_oneshot_configure(unsigned channel, uint16_t pulse_us);
 extern int gpt_oneshot_trigger(unsigned channel);
 extern int gpt_configure_input_capture(unsigned channel, bool rising_edge, bool falling_edge);
 extern uint32_t gpt_read_capture(unsigned channel);
-extern int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool overflow);
-extern int gpt_disable_interrupts(unsigned channel);
+extern bool gpt_capture_ready(unsigned channel);
+extern void gpt_capture_clear(unsigned channel);
+extern uint32_t gpt_get_capture_clock(unsigned channel);
 extern uint32_t gpt_read_status(unsigned channel);
 extern int gpt_clear_status(unsigned channel, uint32_t flags);
 extern int gpt_pwm_enable(unsigned channel, bool enable);
@@ -139,7 +140,7 @@ int io_timer_init(void)
 	}
 
 	/* Initialize GPT timers for PWM at 400Hz */
-	int ret = ra8_gpt_timer_init_all();
+	int ret = gpt_timer_init_all();
 	if (ret != 0) {
 		return ret;
 	}
@@ -503,7 +504,7 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 
 	if (status == 0 && previous_mode == IOTimerChanMode_NotUsed) {
 		/* Initialize the timer if this is the first use */
-		/* The timer is already initialized by ra8_gpt_timer_init_all() in io_timer_init() */
+		/* The timer is already initialized by gpt_timer_init_all() in io_timer_init() */
 
 		/* Configure GPIO if needed */
 		if (gpio) {

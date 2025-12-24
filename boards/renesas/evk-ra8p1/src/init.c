@@ -245,8 +245,10 @@ __EXPORT void ra8p1_boardinitialize(void)
 	/* Reset PWM first thing */
 	board_on_reset(-1);
 
-	/* configure read po */
-	evk_ra8p1_gpio_initialize();
+	/* Note: GPIO initialization is performed later in board_app_initialize()
+	 * after px4_platform_init() to ensure proper initialization order.
+	 * Do NOT call evk_ra8p1_gpio_initialize() here to avoid double-init.
+	 */
 }
 
 __EXPORT const char *board_get_hw_type_name()

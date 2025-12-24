@@ -116,7 +116,6 @@ src/systemcmds/topic_listener/listener_generated.cpp
 log/
 keys/
 **/*.b
-**/*.c
 **/*.f
 **/*.j
 px4_ra8.md
@@ -124,14 +123,17 @@ pin_map.h
 ra8_nuttx_architecture.md
 
 git config advice.addIgnoredFile false
-
-boards/renesas/fpb-ra8e1/DRDY_VERIFICATION_CHECKLIST.md
-boards/renesas/fpb-ra8e1/GY921_QUICK_TEST.md
-boards/renesas/fpb-ra8e1/GY921_SPI_FIX_SUMMARY.md
-boards/renesas/fpb-ra8e1/ICM20948_DRDY_ANALYSIS.md
 .vscode/.gitignore
 .vscode/c_cpp_properties.json
 .vscode/configurationCache.log
 .vscode/dryrun.log
 .vscode/settings.json
 .vscode/targets.log
+
+*.md
+*.py
+*.csv
+.refs
+.backup
+*log
+*log*

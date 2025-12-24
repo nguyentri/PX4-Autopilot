@@ -188,6 +188,20 @@
  * Motor 2: Rear Left   - GPT5  (P915)
  * Motor 3: Front Left  - GPT11 (P903)
  * Motor 4: Rear Right  - GPT13 (P515)
+ *
+ * GPIO Configuration Attributes for Motor Pins:
+ * -----------------------------------------------
+ * - Mode:          Peripheral function (PMR=1, PSEL=GPT)
+ * - Direction:     Output (PDR=1)
+ * - Drive:         High drive strength (DSCR=10b) for 3.3V fast switching
+ * - Pull-up:       Disabled (PCR=0) - external ESC pull-down expected
+ * - Open-drain:    Disabled (NCODR=0) - push-pull output required
+ * - Slew rate:     High speed (default for GPT outputs)
+ *
+ * Electrical Characteristics (RA8P1 @ 3.3V VCC):
+ * - High drive: IOH = 8mA sink/source typical
+ * - Rise/fall time: ~5ns at high drive
+ * - PWM frequency: 400Hz standard, up to 1.2MHz for DShot1200
  */
 #define PX4_GPIO_MOTOR_FRONT_RIGHT      GPIO_TIM3_CH1OUT   /* Motor 1: P912 - GPT3A */
 #define PX4_GPIO_MOTOR_REAR_LEFT        GPIO_TIM5_CH1OUT   /* Motor 2: P915 - GPT5A */

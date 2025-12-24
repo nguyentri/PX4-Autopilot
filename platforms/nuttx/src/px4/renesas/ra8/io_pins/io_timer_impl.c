@@ -62,11 +62,16 @@
 #include <board_config.h>
 #include "../include/px4_arch/micro_hal.h"
 
+#include <arch/board/board.h>
 
 /* Board configuration constants - must be included before px4_arch headers */
 /* This file provides BOARD_NUM_IO_TIMERS and BOARD_PCLKD_FREQUENCY */
 #ifndef BOARD_PCLKD_FREQUENCY
-#define BOARD_PCLKD_FREQUENCY  120000000  /* 120MHz PCLKD clock - from board.h */
+#  if defined(CONFIG_RA8P1_GROUP)
+#    define BOARD_PCLKD_FREQUENCY  250000000  /* 250MHz PCLKD for RA8P1 - from board.h */
+#  else
+#    define BOARD_PCLKD_FREQUENCY  120000000  /* 120MHz PCLKD for RA8E1 - from board.h */
+#  endif
 #endif
 
 #ifndef DIRECT_PWM_OUTPUT_CHANNELS
@@ -106,6 +111,14 @@ typedef struct {
 	uint8_t gpt_channel;
 	bool initialized;
 	bool enabled;
+	/* Input capture state */
+	bool capture_enabled;
+	bool capture_rising;
+	bool capture_falling;
+	volatile uint32_t last_capture_a;
+	volatile uint32_t last_capture_b;
+	volatile bool capture_ready;
+	int icu_irq;
 } gpt_channel_state_t;
 
 static gpt_channel_state_t gpt_state[MAX_TIMER_IO_CHANNELS];
@@ -399,47 +412,237 @@ int gpt_oneshot_trigger(unsigned channel)
 	return gpt_pwm_enable(channel, true);
 }
 
+/**
+ * Input capture interrupt handler
+ * Called when GTCCRA capture event occurs
+ */
+static int gpt_capture_isr(int irq, void *context, void *arg)
+{
+	unsigned channel = (unsigned)(uintptr_t)arg;
+
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return OK;
+	}
+
+	uint32_t base = gpt_state[channel].base;
+
+	/* Read captured value from GTCCRA */
+	gpt_state[channel].last_capture_a = getreg32(base + R_GPT32_GTCCRA_OFFSET);
+	gpt_state[channel].capture_ready = true;
+
+	/* Clear the capture interrupt flag in GTST */
+	uint32_t gtst = getreg32(base + R_GPT32_GTST_OFFSET);
+	gtst &= ~GPT_GTST_TCFA;  /* Clear compare/capture match A flag */
+	putreg32(gtst, base + R_GPT32_GTST_OFFSET);
+
+	return OK;
+}
+
+/**
+ * Configure GPT channel for input capture mode
+ *
+ * This function configures a GPT timer channel to capture the counter value
+ * on rising and/or falling edges of the GTIOCA pin input.
+ *
+ * Implementation uses:
+ * - GTICASR register to select capture source (GTIOCA pin edges)
+ * - GTINTAD register to enable capture interrupt
+ * - ICU for interrupt handling
+ *
+ * Use cases:
+ * - BDShot telemetry (eRPM feedback from ESC)
+ * - RC PWM input capture
+ * - Frequency/pulse width measurement
+ *
+ * @param channel      Logical timer channel
+ * @param rising_edge  Enable capture on rising edge
+ * @param falling_edge Enable capture on falling edge
+ * @return 0 on success, negative errno on failure
+ */
 int gpt_configure_input_capture(unsigned channel, bool rising_edge, bool falling_edge)
 {
 	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
 		return -EINVAL;
 	}
 
-	(void)rising_edge;
-	(void)falling_edge;
+	if (!rising_edge && !falling_edge) {
+		/* Disable input capture */
+		gpt_state[channel].capture_enabled = false;
+		gpt_state[channel].capture_ready = false;
 
-	return -ENOTSUP;
+		uint32_t base = gpt_state[channel].base;
+
+		gpt_wp_begin(base);
+
+		/* Disable capture source */
+		putreg32(0, base + R_GPT32_GTICASR_OFFSET);
+
+		/* Disable capture interrupt */
+		uint32_t gtintad = getreg32(base + R_GPT32_GTINTAD_OFFSET);
+		gtintad &= ~GPT_GTINTAD_GTINTA;
+		putreg32(gtintad, base + R_GPT32_GTINTAD_OFFSET);
+
+		gpt_wp_end(base);
+
+		/* Detach ICU interrupt if attached */
+		if (gpt_state[channel].icu_irq > 0) {
+			ra_icu_detach(gpt_state[channel].icu_irq);
+			gpt_state[channel].icu_irq = 0;
+		}
+
+		return 0;
+	}
+
+	uint32_t base = gpt_state[channel].base;
+	uint8_t gpt_ch = gpt_state[channel].gpt_channel;
+
+	/* Stop timer during configuration */
+	gpt_pwm_enable(channel, false);
+
+	gpt_wp_begin(base);
+
+	/* Configure GTICASR for GTIOCA pin edge capture
+	 * Bits 8-11 control GTIOCnA pin capture:
+	 * - ASCARBL (bit 8): Rising during GTIOCnB Low
+	 * - ASCARBH (bit 9): Rising during GTIOCnB High
+	 * - ASCAFBL (bit 10): Falling during GTIOCnB Low
+	 * - ASCAFBH (bit 11): Falling during GTIOCnB High
+	 * For simple edge capture, we use both B states
+	 */
+	uint32_t gticasr = 0;
+
+	if (rising_edge) {
+		/* Capture on rising edge regardless of GTIOCB state */
+		gticasr |= R_GPT32_GTICASR_ASCARBL | R_GPT32_GTICASR_ASCARBH;
+	}
+
+	if (falling_edge) {
+		/* Capture on falling edge regardless of GTIOCB state */
+		gticasr |= R_GPT32_GTICASR_ASCAFBL | R_GPT32_GTICASR_ASCAFBH;
+	}
+
+	putreg32(gticasr, base + R_GPT32_GTICASR_OFFSET);
+
+	/* Configure GTIOR for input mode on GTIOCA
+	 * Clear output enable, enable noise filter
+	 */
+	uint32_t gtior = getreg32(base + R_GPT32_GTIOR_OFFSET);
+	gtior &= ~GPT_GTIOR_OAE;     /* Disable output (input mode) */
+	gtior |= GPT_GTIOR_NFAEN;    /* Enable noise filter A */
+	putreg32(gtior, base + R_GPT32_GTIOR_OFFSET);
+
+	/* Enable capture interrupt in GTINTAD */
+	uint32_t gtintad = getreg32(base + R_GPT32_GTINTAD_OFFSET);
+	gtintad |= GPT_GTINTAD_GTINTA;  /* Enable compare/capture A interrupt */
+	putreg32(gtintad, base + R_GPT32_GTINTAD_OFFSET);
+
+	/* Set up free-running counter mode for capture timing
+	 * Use maximum period for continuous counting
+	 */
+	putreg32(0xFFFFFFFF, base + R_GPT32_GTPR_OFFSET);
+
+	gpt_wp_end(base);
+
+	/* Attach ICU interrupt for capture events
+	 * Use GPT capture compare A event
+	 */
+	static const uint16_t kGptCaptureAEvents[] = {
+		RA_ELC_GPT0_CAPTURE_COMPARE_A, RA_ELC_GPT1_CAPTURE_COMPARE_A,
+		RA_ELC_GPT2_CAPTURE_COMPARE_A, RA_ELC_GPT3_CAPTURE_COMPARE_A,
+		RA_ELC_GPT4_CAPTURE_COMPARE_A, RA_ELC_GPT5_CAPTURE_COMPARE_A,
+		RA_ELC_GPT6_CAPTURE_COMPARE_A, RA_ELC_GPT7_CAPTURE_COMPARE_A,
+		RA_ELC_GPT8_CAPTURE_COMPARE_A, RA_ELC_GPT9_CAPTURE_COMPARE_A,
+		RA_ELC_GPT10_CAPTURE_COMPARE_A, RA_ELC_GPT11_CAPTURE_COMPARE_A,
+		RA_ELC_GPT12_CAPTURE_COMPARE_A, RA_ELC_GPT13_CAPTURE_COMPARE_A
+	};
+
+	if (gpt_ch < ARRAY_SIZE(kGptCaptureAEvents)) {
+		int icu_irq = ra_icu_attach(kGptCaptureAEvents[gpt_ch],
+					    gpt_capture_isr,
+					    (void *)(uintptr_t)channel,
+					    true);
+		if (icu_irq < 0) {
+			/* Failed to attach interrupt - disable capture */
+			gpt_wp_begin(base);
+			putreg32(0, base + R_GPT32_GTICASR_OFFSET);
+			gpt_wp_end(base);
+			return icu_irq;
+		}
+
+		gpt_state[channel].icu_irq = icu_irq;
+	}
+
+	/* Store capture configuration */
+	gpt_state[channel].capture_enabled = true;
+	gpt_state[channel].capture_rising = rising_edge;
+	gpt_state[channel].capture_falling = falling_edge;
+	gpt_state[channel].capture_ready = false;
+	gpt_state[channel].last_capture_a = 0;
+
+	/* Start the timer in free-running mode */
+	gpt_pwm_enable(channel, true);
+
+	return 0;
 }
 
+/**
+ * Read last captured value from GTCCRA
+ * Returns the raw timer tick count at the last capture event
+ */
 uint32_t gpt_read_capture(unsigned channel)
 {
 	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
 		return 0;
 	}
 
+	/* If capture is enabled, return the ISR-captured value */
+	if (gpt_state[channel].capture_enabled) {
+		return gpt_state[channel].last_capture_a;
+	}
+
+	/* Otherwise read directly from register */
 	return getreg32(gpt_state[channel].base + R_GPT32_GTCCRA_OFFSET);
 }
 
-int gpt_enable_interrupts(unsigned channel, bool compare_a, bool compare_b, bool overflow)
+/**
+ * Check if a capture event has occurred and is ready to read
+ * @param channel  Logical timer channel
+ * @return true if capture data is available
+ */
+bool gpt_capture_ready(unsigned channel)
 {
 	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
-		return -EINVAL;
+		return false;
 	}
 
-    // Attach GPT timer interrupt here
-    /// int ret = ra_icu_attach(0, ra8_gpt_timer_isr, dev, true);
-
-	return 0;
+	return gpt_state[channel].capture_ready;
 }
 
-int gpt_disable_interrupts(unsigned channel)
+/**
+ * Clear the capture ready flag after reading
+ * @param channel  Logical timer channel
+ */
+void gpt_capture_clear(unsigned channel)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
-		return -EINVAL;
+	if (channel >= MAX_TIMER_IO_CHANNELS) {
+		return;
 	}
 
-	putreg32(0, gpt_state[channel].base + R_GPT32_GTINTAD_OFFSET);
-	return 0;
+	gpt_state[channel].capture_ready = false;
+}
+
+/**
+ * Get the timer clock frequency for capture timestamp conversion
+ * @param channel  Logical timer channel
+ * @return Timer clock frequency in Hz
+ */
+uint32_t gpt_get_capture_clock(unsigned channel)
+{
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+		return 0;
+	}
+
+	return BOARD_PCLKD_FREQUENCY / gpt_state[channel].prescaler_div;
 }
 
 uint32_t gpt_read_status(unsigned channel)
@@ -465,7 +668,7 @@ int gpt_clear_status(unsigned channel, uint32_t flags)
 	return 0;
 }
 
-int ra8_gpt_timer_init_all(void)
+int gpt_timer_init_all(void)
 {
 	int status = 0;
 
@@ -482,7 +685,7 @@ int ra8_gpt_timer_init_all(void)
 	return status;
 }
 
-void ra8_gpt_timer_deinit_all(void)
+void gpt_timer_deinit_all(void)
 {
 	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
 		if (!gpt_state[channel].initialized) {

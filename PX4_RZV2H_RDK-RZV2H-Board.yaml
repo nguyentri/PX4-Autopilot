@@ -1,0 +1,301 @@
+# AI Agent Task: Create PX4 BSP for RZV2H/rdk-rzv2h Board
+
+## Task Overview
+Create a complete PX4 Board Support Package (BSP) for the Renesas RZV2H/rdk-rzv2h board based on existing working implementations and reference board configurations.
+
+## Reference Sources
+
+### 1. Working Implementation (Primary Reference)
+- **Location**: `.refs/rzv2h_px4_freertos_fsp/`
+- **Description**: Working PX4 + FreeRTOS + FreeRTOS Plus POSIX + Renesas FSP implementation
+- **Key Components**:
+  - FreeRTOS POSIX layer: `src/freertos_posix/`
+  - Platform implementation: `src/platform/`
+  - RPC implementation: `src/rpc/`
+  - Board configuration: `rzv/board/`, `rzv/fsp/`
+  - FSP configuration: `rzv_cfg/fsp_cfg/`
+  - Generated HAL data: `rzv_gen/`
+  - Build system: `CMakeLists.txt`, `cross.cmake`
+- **Detailed PX4 board tree (reference)**:
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/cmake`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/init`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/init/rc.board_defaults`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/init/rc.board_defaults.cmds`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/init/rc.offline_sensor_check`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/board_config.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/board_pwm_out.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/board_pwm_out.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/priority_map.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/rzv_serial_config.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/stub_params.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/posix_compat`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/posix_compat/spi`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/posix_compat/spi/spidev.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/posix_compat/i2c-dev.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/device_registry.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/dma_buffer.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/hrt.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/i2c_fsp_backend.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/spi_fsp_backend.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/uart_channel_map.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/uart_fsp_backend.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/rzv_fsp/uart_rc_ringbuffer.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/bsp_mcu_info.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/include/semaphore.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/i2c_fsp_backend.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/rzv_device_registry.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/rzv_dma_buffer.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/rzv_hrt.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/rzv_i2c_cdev.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/rzv_spi_cdev.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/rzv_uart_cdev.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/serial_impl_stub.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/spi_fsp_backend.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/uart_channel_map.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/uart_fsp_backend.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/uart_openamp_backend.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/uart_openamp_backend.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/rzv_fsp/uart_rc_ringbuffer.c`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/drivers/CMakeLists.txt`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/i2c.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/micro_hal.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/sensor_hal.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/sensor_hal.h`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/hal/spi.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/services`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/services/remote_storage.cpp`
+  - `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/services/rzv_peripheral_access.hpp`
+
+### 2. PX4 BSP Reference (RA8P1 Board)
+- **PX4 Board Configuration**:
+  - `boards/renesas/evk-ra8p1/nuttx-config/include/board.h`
+  - `boards/renesas/evk-ra8p1/src/board_config.h`
+  - `boards/renesas/evk-ra8p1/src/init.c`
+  - `boards/renesas/evk-ra8p1/src/timer_config.cpp`
+  - `boards/renesas/evk-ra8p1/default.px4board`
+
+### 3. NuttX Board Reference (RDK-RZV2H)
+- **Location**: `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/`
+- **Key Files**:
+  - `include/board.h`
+  - `src/rdk-rzv2h.h`
+  - Configuration scripts: `scripts/rdk-rzv2h_cr8_0.ld`, `scripts/Make.defs`
+  - Board source files: `src/rzv2h_*.c`
+  - Example configs: `configs/nsh/defconfig`, `configs/pwm/defconfig`, `configs/spi/defconfig`, `configs/sci-i2c-gy912/defconfig`
+
+### 4. RZV Architecture Support
+- **Hardware Definitions**:
+  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv2h/rzv2h_pinmap.h`
+  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_<driver>.h`:
+	  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_gpt.h`
+	  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_gpio.h`
+- **Driver Implementation**:
+  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c` (GPT-based PWM)
+  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c`
+  - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_serial.c`
+
+### 5. PX4 Platform Integration (RA8 Reference)
+- **IO Timer Framework**:
+  - `platforms/nuttx/src/px4/renesas/ra8/io_pins/io_timer.c`
+  - `platforms/nuttx/src/px4/renesas/ra8/io_pins/pwm_servo.c`
+  - `platforms/nuttx/src/px4/renesas/ra8/io_pins/pwm_trigger.c`
+- **Platform Headers**:
+  - `platforms/nuttx/src/px4/renesas/ra8/include/px4_arch/io_timer_hw_description.h`
+  - `platforms/nuttx/src/px4/renesas/ra8/include/px4_arch/io_timer.h`
+  - `platforms/nuttx/src/px4/renesas/ra8/include/px4_arch/micro_hal.h`
+  - `platforms/nuttx/src/px4/renesas/ra8/include/px4_arch/hw_description.h`
+- **DShot Support** (optional):
+  - `platforms/nuttx/src/px4/renesas/ra8/dshot/dshot.c`
+
+## Required Deliverables
+
+### Phase 1: Create Board Directory Structure
+Create the following directory structure under `boards/renesas/rdk-rzv2h/`:
+```
+boards/renesas/rdk-rzv2h/
+├── default.px4board              # Board configuration file
+├── nuttx-config/
+│   ├── include/
+│   │   └── board.h              # Board-specific hardware definitions
+│   ├── nsh/
+│   │   └── defconfig            # NuttX shell configuration
+│   └── scripts/
+│       └── ld.script            # Linker script
+├── src/
+│   ├── board_config.h           # PX4 board configuration
+│   ├── init.c                   # Board initialization
+│   ├── timer_config.cpp         # Timer/PWM configuration
+│   ├── spi.cpp                  # SPI bus configuration (if needed)
+│   ├── i2c.cpp                  # I2C bus configuration (if needed)
+│   └── CMakeLists.txt           # Build configuration
+└── firmware.prototype           # Firmware prototype file
+```
+
+### Phase 2: Create Platform Support (if not exists)
+Create platform support under `platforms/nuttx/src/px4/renesas/rzv/`:
+```
+platforms/nuttx/src/px4/renesas/rzv/
+├── include/
+│   └── px4_arch/
+│       ├── io_timer_hw_description.h
+│       ├── io_timer.h
+│       ├── micro_hal.h
+│       └── hw_description.h
+├── io_pins/
+│   ├── io_timer.c
+│   ├── pwm_servo.c
+│   └── pwm_trigger.c
+└── CMakeLists.txt
+```
+
+### Phase 3: Port Key Components
+
+#### 3.1 Board Configuration Files
+- **`default.px4board`**: Define board capabilities, processor, memory, peripherals
+  - Reference: `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/default.px4board`
+  - Adapt for RZV2H specifications (CR8 core0, memory layout, peripherals)
+
+- **`board_config.h`**: PX4-specific board configuration
+  - References: `boards/renesas/evk-ra8p1/nuttx-config/include/board.h`, `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/board_config.h`, `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/board_pwm_out.h`, `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/src/board/rzv_serial_config.h`
+  - Use RZV2H pinmap from `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv2h/rzv2h_pinmap.h`
+  - Define sensors, actuators, communication interfaces
+  - Include rc defaults from `.refs/rzv2h_px4_freertos_fsp/px4/boards/renesas/rzv/init/rc.board_defaults.cmds`
+
+#### 3.2 Initialization and Timer Configuration
+- **`init.c`**: Board-specific initialization
+  - Reference: `boards/renesas/evk-ra8p1/src/init.c`
+  - Port FreeRTOS initialization concepts from `.refs/rzv2h_px4_freertos_fsp/src/platform/`
+
+- **`timer_config.cpp`**: Timer/PWM channel configuration
+  - Reference: `boards/renesas/evk-ra8p1/src/timer_config.cpp`
+  - Map RZV2H GPT channels for PWM output
+
+#### 3.3 IO Timer Framework
+- Port RA8 IO timer framework to RZV:
+  - Adapt `platforms/nuttx/src/px4/renesas/ra8/io_pins/io_timer.c` for RZV GPT hardware
+  - Update register definitions using `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_gpt.h`
+  - Implement PWM DShot and trigger support
+
+#### 3.4 Platform Headers
+- Create or adapt platform headers:
+  - Define IO timer hardware description for RZV2H GPT timers
+  - Map hardware capabilities to PX4 requirements
+  - Define micro HAL for RZV2H architecture
+
+### Phase 4: Integration Points
+
+#### 4.1 FreeRTOS Plus POSIX Integration
+- Analyze `.refs/rzv2h_px4_freertos_fsp/src/freertos_posix/` implementation
+- Ensure compatibility with NuttX POSIX layer or create adaptation layer
+- Consider threading model differences between FreeRTOS and NuttX
+
+#### 4.2 Driver Mapping
+Map FSP drivers to NuttX/PX4 equivalents:
+- **Serial/UART**: Use `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_serial.c`
+- **GPIO**: Use `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c`
+- **SPI**: Adapt from `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c`
+- **I2C**: Adapt from `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c` or `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c`
+- **ADC**: Adapt from `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_adc.c`
+
+- Map FSP pin configuration: `.refs/rzv2h_px4_freertos_fsp/rzv_gen/pin_data.c`
+- Peripheral integrations (from `.refs/rzv2h_px4_freertos_fsp`):
+  - MPU9250 (SPI)
+  - BMP388 (I2C)
+  - RC (SCI/UART)
+  - GP1S (SCI/UART)
+  - TE1/MAVLink (SCI/UART)
+  - NSH (SCI/UART)
+  - 4 ESCs (4 GPT channel output)
+
+#### 4.3 Build System Integration
+- Update `boards/renesas/rdk-rzv2h/src/CMakeLists.txt` with proper dependencies
+- Ensure platform-specific compilation flags
+- Configure linker script based on `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld`
+
+### Phase 5: Configuration and Testing
+
+#### 5.1 NuttX Configuration
+Create `defconfig` file:
+- Base on `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/nsh/defconfig`
+- Enable required PX4 features (PWM, sensors, communication protocols)
+- Configure memory layout for CR8 core0
+
+#### 5.2 Build Target
+- Add build target: `make renesas_rdk-rzv2h_default`
+- Verify build process completes without errors
+
+#### 5.3 Validation Checklist
+- [ ] Board boots and initializes correctly
+- [ ] UART/serial communication functional
+- [ ] GPIO control operational
+- [ ] PWM outputs generate correct signals
+- [ ] Sensor interfaces (I2C/SPI) communicate properly
+- [ ] Timer framework operates as expected
+- [ ] PX4 modules load and run correctly
+
+## Key Considerations
+
+### Hardware Differences (RZV2H vs RA8P1)
+- **CPU Architecture**: ARM Cortex-R8/Armv7-R (RZV2H) vs Cortex-M85/Armv8.1-M (RA8P1)
+- **Memory Layout**: Different SRAM/Flash configurations
+- **Peripheral Addresses**: RZV2H-specific memory map
+- **Timer Channels**: Different GPT channel availability
+- **Pin Multiplexing**: RZV2H-specific IOPORT configuration
+
+### Critical Files to Create
+1. `boards/renesas/rdk-rzv2h/default.px4board` - Board definition
+  - boards/renesas/rdk-rzv2h/init/rc.board_defaults
+  - boards/renesas/rdk-rzv2h/init/rc.board_defaults.cmds
+  - boards/renesas/rdk-rzv2h/init/rc.offline_sensor_check
+2. `boards/renesas/rdk-rzv2h/nuttx-config/include/board.h` - Hardware definitions
+3. `boards/renesas/rdk-rzv2h/src/board_config.h` - PX4 configuration
+4. `boards/renesas/rdk-rzv2h/src/init.c` - Initialization code
+5. `boards/renesas/rdk-rzv2h/src/timer_config.cpp` - Timer configuration
+6. `platforms/nuttx/src/px4/renesas/rzv/io_pins/io_timer.c` - IO timer implementation
+
+### Dependencies to Address
+- Ensure NuttX submodule includes RZV2H support
+- Verify GPT driver implementation in NuttX for RZV2H
+- Check GPIO driver compatibility with RZV2H pinmap
+- Validate clock configuration for RZV2H peripherals
+
+## Success Criteria
+1. ✅ Complete directory structure created under `boards/renesas/rdk-rzv2h/`
+2. ✅ All required configuration files implemented
+3. ✅ Platform support files created/adapted for RZV architecture
+4. ✅ Build target `renesas_rdk-rzv2h_default` successfully compiles
+5. ✅ Firmware can be flashed to RDK-RZV2H board
+6. ✅ Basic PX4 functionality verified (boot, UART, GPIO, PWM)
+7. ✅ IO timer framework operational with correct PWM output
+8. ✅ Sensor interfaces functional (I2C/SPI drivers working)
+
+## Notes
+- Preserve working FreeRTOS implementation as reference in `.refs/rzv2h_px4_freertos_fsp/`
+- Follow existing PX4 board porting guidelines and naming conventions
+- Maintain compatibility with PX4 build system and Makefile structure
+- Document any RZV2H-specific limitations or hardware constraints
+- Consider future DShot support based on RA8P1 implementation
+
+## Priority Order
+1. **HIGH**: Board configuration files and basic initialization
+2. **HIGH**: IO timer and PWM framework
+3. **MEDIUM**: Serial/UART and GPIO drivers
+4. **MEDIUM**: I2C/SPI sensor interfaces
+5. **LOW**: Advanced features (DShot, ADC)
+6. **LOW**: Optimization and performance tuning
+
+## Additional Resources
+- Renesas RZV2H Hardware Manual
+- NuttX RZV architecture documentation
+- PX4 board porting guide
+- Existing board configurations in `boards/` directory
+- FSP configuration files in `.refs/rzv2h_px4_freertos_fsp/rzv_cfg/`
