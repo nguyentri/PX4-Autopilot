@@ -165,7 +165,15 @@ typedef struct
   uint32_t t0h_ticks;
   uint32_t t1h_ticks;
   uint16_t current_frame;
-  uint32_t dma_buffer[DSHOT_FRAME_BITS];
+
+  /* Double-buffered DMA for reduced jitter
+   * Uses ping-pong buffers: while one buffer is being transmitted via DMA,
+   * the CPU can prepare the next frame in the other buffer.
+   */
+  uint32_t dma_buffer[2][DSHOT_FRAME_BITS];  /* Ping-pong buffers */
+  uint8_t  active_buffer;                     /* Currently transmitting buffer (0 or 1) */
+  uint16_t pending_frame;                     /* Next frame to transmit */
+  bool     pending_update;                    /* True if pending_frame has new data */
 
   /* DMA completion tracking */
   volatile bool dma_complete;
@@ -572,17 +580,45 @@ static inline uint16_t dshot_get_elc_event(uint8_t gpt_channel)
 
 /**
  * DMA completion callback - called from interrupt context when DMA transfer completes
+ * Implements ping-pong buffer swap for continuous low-jitter motor control.
  */
 #ifdef CONFIG_RA_DMAC
 static void dshot_dma_callback(void *handle, int event, void *user_data)
 {
   dshot_channel_t *ch = (dshot_channel_t *)user_data;
 
-  if (ch != NULL)
+  if (ch == NULL)
     {
-      ch->dma_complete = true;
+      return;
+    }
 
-      /* Stop the timer immediately after DMA completes */
+  ch->dma_complete = true;
+
+  /* Check if there's a pending update in the inactive buffer */
+
+  if (ch->pending_update)
+    {
+      /* Swap to the next buffer which has the new frame ready */
+
+      ch->active_buffer = (ch->active_buffer + 1) & 1;
+      ch->current_frame = ch->pending_frame;
+      ch->pending_update = false;
+
+      /* Reset DMA to use the new buffer and continue transmission
+       * This enables continuous streaming without CPU intervention per frame
+       */
+
+      ra_dmac_reset(ch->dma_handle,
+                    (uint32_t)ch->dma_buffer[ch->active_buffer],
+                    ch->dma_dest,
+                    DSHOT_FRAME_BITS);
+
+      /* DMA will auto-restart on next GPT overflow trigger */
+    }
+  else
+    {
+      /* No pending update - stop the timer to avoid retransmitting old data */
+
       gpt_stop(ch->gpt_channel);
     }
 }
@@ -623,6 +659,13 @@ static int dshot_dma_setup(dshot_channel_t *ch)
           return -ENODEV;
         }
 
+      /* Set fixed priority mode - lower channel numbers get higher priority.
+       * Assign DShot to lower channel numbers for flight-critical priority.
+       */
+
+      ra_dmac_set_priority_mode(0, RA_DMAC_PRIORITY_FIXED);
+      ra_dmac_set_priority_mode(1, RA_DMAC_PRIORITY_FIXED);
+
       g_dmac_initialized = true;
     }
 
@@ -633,6 +676,12 @@ static int dshot_dma_setup(dshot_channel_t *ch)
 
   gpt_enable_overflow_dma_request(ch->gpt_channel);
 
+  /* Initialize double-buffer state */
+
+  ch->active_buffer = 0;
+  ch->pending_update = false;
+  ch->pending_frame = 0;
+
   ra_dmac_config_t dma_config;
   memset(&dma_config, 0, sizeof(dma_config));
 
@@ -642,13 +691,18 @@ static int dshot_dma_setup(dshot_channel_t *ch)
   dma_config.src_addr_mode = RA_DMAC_ADDR_INCR;
   dma_config.dest_addr_mode = RA_DMAC_ADDR_FIXED;
   dma_config.trigger = RA_DMAC_TRIGGER_HW;
-  dma_config.src_addr = (uint32_t)ch->dma_buffer;
+  dma_config.src_addr = (uint32_t)ch->dma_buffer[ch->active_buffer];
   dma_config.dest_addr = ch->dma_dest;
   dma_config.transfer_count = DSHOT_FRAME_BITS;
   dma_config.block_count = 1;
   dma_config.elc_src = dshot_get_elc_event(ch->gpt_channel);
 
-  /* Register DMA completion callback for interrupt-driven completion */
+  /* Set critical priority for motor control DMA */
+
+  dma_config.priority = RA_DMAC_CHANNEL_PRIORITY_CRITICAL;
+
+  /* Register DMA completion callback for ping-pong buffer management */
+
   dma_config.callback = dshot_dma_callback;
   dma_config.user_data = ch;
 
@@ -678,11 +732,15 @@ static int dshot_dma_setup(dshot_channel_t *ch)
 
 static inline void dshot_prepare_buffer(dshot_channel_t *ch)
 {
+  /* Prepare frame in the inactive buffer for ping-pong operation */
+
+  uint8_t inactive_buffer = (ch->active_buffer + 1) & 1;
+
   for (int bit = DSHOT_FRAME_BITS - 1; bit >= 0; bit--)
     {
       const bool one = (ch->current_frame >> bit) & 1u;
       const uint32_t high_ticks = one ? ch->t1h_ticks : ch->t0h_ticks;
-      ch->dma_buffer[DSHOT_FRAME_BITS - 1 - bit] = high_ticks;
+      ch->dma_buffer[inactive_buffer][DSHOT_FRAME_BITS - 1 - bit] = high_ticks;
     }
 }
 
@@ -694,8 +752,41 @@ static int dshot_dma_start(dshot_channel_t *ch)
       return -ENODEV;
     }
 
+  /* For ping-pong operation:
+   * 1. Prepare the new frame in the inactive buffer
+   * 2. If DMA is already running, just mark pending update
+   * 3. If DMA is idle, reset and enable with active buffer
+   */
+
+  uint8_t inactive_buffer = (ch->active_buffer + 1) & 1;
+
+  /* Prepare frame data in inactive buffer */
+
+  for (int bit = DSHOT_FRAME_BITS - 1; bit >= 0; bit--)
+    {
+      const bool one = (ch->current_frame >> bit) & 1u;
+      const uint32_t high_ticks = one ? ch->t1h_ticks : ch->t0h_ticks;
+      ch->dma_buffer[inactive_buffer][DSHOT_FRAME_BITS - 1 - bit] = high_ticks;
+    }
+
+  /* Check if DMA is currently active (timer running) */
+
+  if (!ch->dma_complete)
+    {
+      /* DMA is still running - queue the update for the callback to pick up */
+
+      ch->pending_frame = ch->current_frame;
+      ch->pending_update = true;
+      return OK;
+    }
+
+  /* DMA is idle - swap buffers and start fresh */
+
+  ch->active_buffer = inactive_buffer;
+  ch->dma_complete = false;
+
   int ret = ra_dmac_reset(ch->dma_handle,
-                          (uint32_t)ch->dma_buffer,
+                          (uint32_t)ch->dma_buffer[ch->active_buffer],
                           ch->dma_dest,
                           DSHOT_FRAME_BITS);
 

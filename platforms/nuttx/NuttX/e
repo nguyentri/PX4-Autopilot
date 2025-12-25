@@ -8,8 +8,8 @@ CONFIGS=(
   "cf"
   "df"
   "gps"
-  "gpt-escs"
-  "gpt-pwm"
+  "escs"
+  "pwm"
   "i2c-acc"
   "i2c-gy912"
   "nsh"
@@ -23,7 +23,7 @@ CONFIGS=(
 
 BOARD="fpb-ra8e1"
 BUILD_DIR="./nuttx"
-OUTPUT_DIR="./build_output_ra8e1"
+OUTPUT_DIR="../build_output_ra8e1"
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"

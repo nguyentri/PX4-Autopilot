@@ -23,4 +23,12 @@ fi
 # Set up LED driver for status indication
 led_control start
 
+# Start Commander (required for arming and mode switching)
+if commander start
+then
+	echo "Commander started"
+else
+	echo "ERROR: Commander failed to start"
+fi
+
 echo "EVK-RA8P1 board initialization complete"
