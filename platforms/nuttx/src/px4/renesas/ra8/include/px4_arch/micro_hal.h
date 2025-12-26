@@ -35,6 +35,7 @@
 #include <px4_platform/micro_hal.h>
 
 /* NuttX includes */
+#include "hardware/ra_clock.h"
 #include <nuttx/config.h>
 #include <nuttx/irq.h>
 #include <nuttx/spi/spi.h>
@@ -87,13 +88,8 @@ typedef uint32_t gpio_pinset_t;
 #define px4_arch_gpiowrite(pinset, value)        ra_gpiowrite(pinset, value)
 #define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) ra_gpiosetevent(pinset,r,f,e,fp,a)
 
-/* Timer configuration for RA8E1 - Based on PCLKD frequency */
-#ifndef CONFIG_RA_PCLKD_FREQUENCY
-#  define CONFIG_RA_PCLKD_FREQUENCY    120000000  /* 120MHz PCLKD */
-#endif
-
-#define TIMER_HRT_CYCLES_PER_US (CONFIG_RA_PCLKD_FREQUENCY / 1000000)
-#define TIMER_HRT_CYCLES_PER_MS (CONFIG_RA_PCLKD_FREQUENCY / 1000)
+#define TIMER_HRT_CYCLES_PER_US (RA_PCLKD_FREQUENCY / 1000000)
+#define TIMER_HRT_CYCLES_PER_MS (RA_PCLKD_FREQUENCY / 1000)
 
 /* Cache alignment - ARMv8-M Cortex-M85 has cache */
 #if defined(CONFIG_ARMV8M_DCACHE)
