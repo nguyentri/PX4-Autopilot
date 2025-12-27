@@ -3,9 +3,9 @@
         {
         "name": "Debug RA8P1 - Cortex-Debug",
         "cwd": "${workspaceRoot}",
-        //"executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
-        "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
-        //"executable": "${workspaceRoot}/.refs/sci_uart_ek_ra8p1_ep/e2studio/Debug/sci_uart_ek_ra8p1_ep.elf",
+        "executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
+        //"executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+        //"executable": "${workspaceRoot}/.refs/spi_ek_ra8p1_ep/e2studio/Debug/spi_ek_ra8p1_ep.elf",
         "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
         "request": "launch",
         "type": "cortex-debug",
@@ -45,10 +45,11 @@
             Btw, the Reset/Restart buttons also will not work.
         */
         "overrideLaunchCommands": [
-          "monitor reset",    // Reset the target
+          "monitor reset",    // Reset the target before loading
           "monitor halt",     // Halt the target
-          "load"              // Load the binary
-          // "c"              // Continue the target (not be used in CR8)
+          "load",             // Load the binary
+          "monitor reset",    // Reset AFTER loading to clear caches and reinitialize
+          "monitor halt"      // Halt before starting debug
         ],
       },
         {
