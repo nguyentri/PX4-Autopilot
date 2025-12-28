@@ -2,6 +2,13 @@
 #
 # Renesas EVK-RA8P1 board sensors init
 #------------------------------------------------------------------------------
+#
+# BUS CONFIGURATION - Change these values to switch buses
+# Must match PX4_SPI_BUS_SENSORS and PX4_I2C_BUS_EXPANSION in board_config.h
+#
+SENSOR_SPI_BUS=1    # SPI bus for IMU (0 or 1) - must match board_config.h
+SENSOR_I2C_BUS=0    # I2C bus for barometer (0 or 1)
+#------------------------------------------------------------------------------
 
 # Initial power stabilization delay - wait for sensors to power up
 # Critical: ICM20948 needs 100ms from power-on to be ready for communication
@@ -10,29 +17,29 @@ usleep 100000
 # Start ADC driver for battery monitoring (when available)
 # board_adc start
 
-# Start IMU on SPI0 - ICM20948 9-axis sensor with integrated magnetometer
-# -s: SPI mode, -b 0: SPI bus 0 (Arduino header), -R 0: no rotation, -M 1: enable magnetometer (AK09916)
-# Note: Device will auto-detect on SPI bus 0, CS0 (P103), DRDY on P011 (Arduino D2/IRQ16)
-if icm20948 start -s -b 0 -R 0 -M 1
+# Start IMU on SPI - ICM20948 9-axis sensor with integrated magnetometer
+# -s: SPI mode, -b: SPI bus (from config), -R 0: no rotation, -M 1: enable magnetometer (AK09916)
+# Note: Device will auto-detect on configured SPI bus, CS0 (P103), DRDY on P011 (Arduino D2/IRQ16)
+if icm20948 start -s -b ${SENSOR_SPI_BUS} -M
 then
-        echo "ICM20948 IMU initialized successfully"
+        echo "ICM20948 IMU initialized successfully on SPI bus ${SENSOR_SPI_BUS}"
 else
-        echo "ERROR: ICM20948 IMU initialization failed!"
+        echo "ERROR: ICM20948 IMU initialization failed on SPI bus ${SENSOR_SPI_BUS}!"
 fi
 
 # Delay after IMU initialization - allow ICM20948 to stabilize
 # Important: Give time for DRDY interrupt to be configured and sensor to settle
 usleep 50000
 
-# Start Barometer on I2C0 - BMP388 pressure sensor (try 0x76 then 0x77)
-if bmp388 start -X -b 0 -a 0x76
+# Start Barometer on I2C - BMP388 pressure sensor (try 0x76 then 0x77)
+if bmp388 start -X -b ${SENSOR_I2C_BUS} -a 0x76
 then
-        echo "BMP388 barometer initialized successfully (0x76)"
-elif bmp388 start -X -b 0 -a 0x77
+        echo "BMP388 barometer initialized successfully (0x76) on I2C bus ${SENSOR_I2C_BUS}"
+elif bmp388 start -X -b ${SENSOR_I2C_BUS} -a 0x77
 then
-        echo "BMP388 barometer initialized successfully (0x77)"
+        echo "BMP388 barometer initialized successfully (0x77) on I2C bus ${SENSOR_I2C_BUS}"
 else
-        echo "ERROR: BMP388 barometer initialization failed!"
+        echo "ERROR: BMP388 barometer initialization failed on I2C bus ${SENSOR_I2C_BUS}!"
 fi
 
 # Short delay after barometer initialization

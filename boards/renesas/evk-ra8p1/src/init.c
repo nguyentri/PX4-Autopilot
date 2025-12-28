@@ -49,9 +49,6 @@
 #include <debug.h>
 #include <syslog.h>
 
-/* Hardware version definition */
-static const char hw_type[] = "EVK-RA8P1";
-
 #if defined(__PX4_NUTTX)
 #include <nuttx/board.h>
 #include <nuttx/spi/spi.h>
@@ -137,15 +134,20 @@ __EXPORT void board_on_reset(int status)
 
 static void evk_ra8p1_gpio_initialize(void)
 {
-    /* Configure SPI0 peripheral pins BEFORE initializing SPI bus */
-    px4_arch_configgpio(PX4_SPI_IMU_MOSI);  /* P101 - Arduino SPI MOSI */
-    px4_arch_configgpio(PX4_SPI_IMU_MISO);  /* P100 - Arduino SPI MISO */
-    px4_arch_configgpio(PX4_SPI_IMU_SCK);   /* P102 - Arduino SPI SCK */
-
-    /* Configure SPI0 Chip Select pins - GPIO mode for manual control */
-    px4_arch_configgpio(PX4_SPI_IMU_CS0);
-    px4_arch_gpiowrite(PX4_SPI_IMU_CS0, true);
-
+    /* Configure SPI1 peripheral pins BEFORE initializing SPI bus */
+    px4_arch_configgpio(PX4_SPI_IMU_MOSI);  /* P101 - Arduino SPI MOSI (MOSIB) */
+    px4_arch_configgpio(PX4_SPI_IMU_MISO);  /* P100 - Arduino SPI MISO (MISOB) */
+    px4_arch_configgpio(PX4_SPI_IMU_SCK);   /* P102 - Arduino SPI SCK (RSPCKB) */
+#ifdef PX4_SPI_IMU_CS0
+    /* Configure SPI1 Chip Select - Hardware SSL0 mode (SSLB0)
+     * The pin is configured as SPI peripheral function, not GPIO.
+     * CS assertion/deassertion is controlled automatically by SPI_B hardware.
+     */
+    px4_arch_configgpio(PX4_SPI_IMU_CS0);   /* P103 - Hardware SSLB0 (SPI peripheral mode) */
+#else
+    px4_arch_configgpio(PX4_SPI_IMU_CS1);
+    px4_arch_gpiowrite(PX4_SPI_IMU_CS1, true);
+#endif
     /* Configure IMU data ready pin */
     px4_arch_configgpio(PX4_SPI_IMU_DRDY);
 
@@ -210,10 +212,10 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* Initialize timers for PWM/IO */
 	evk_ra8p1_timer_initialize();
 
-	/* Initialize SPI bus 0 for sensors */
-	struct spi_dev_s *spi0 = px4_spibus_initialize(0);
-	if (spi0 == NULL) {
-		syslog(LOG_ERR, "board_app_initialize: px4_spibus_initialize(0) returned NULL!\n");
+	/* Initialize SPI bus for sensors - uses PX4_SPI_BUS_SENSORS from board_config.h */
+	struct spi_dev_s *spi_sensors = px4_spibus_initialize(PX4_SPI_BUS_SENSORS);
+	if (spi_sensors == NULL) {
+		syslog(LOG_ERR, "board_app_initialize: px4_spibus_initialize(%d) returned NULL!\\n", PX4_SPI_BUS_SENSORS);
 	}
 
 	/* Reset SPI buses to ensure clean state for sensor communication */
@@ -249,9 +251,4 @@ __EXPORT void ra8p1_boardinitialize(void)
 	 * after px4_platform_init() to ensure proper initialization order.
 	 * Do NOT call evk_ra8p1_gpio_initialize() here to avoid double-init.
 	 */
-}
-
-__EXPORT const char *board_get_hw_type_name()
-{
-	return (const char *) hw_type;
 }

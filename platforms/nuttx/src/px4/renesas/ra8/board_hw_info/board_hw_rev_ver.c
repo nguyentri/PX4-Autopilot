@@ -35,17 +35,32 @@
  * @file board_hw_rev_ver.c
  *
  * Board hardware revision/version for Renesas RA8
+ * Board-specific values are defined in board_config.h
  */
 
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/micro_hal.h>
 #include <stdint.h>
+#include "board_config.h"
 
 #ifndef __EXPORT
 #define __EXPORT
 #endif
 
-static const char hw_type_name[] = "FPB-RA8E1";
+/* Board-specific defines with defaults */
+#ifndef BOARD_HW_TYPE_NAME
+#define BOARD_HW_TYPE_NAME "RA8-UNKNOWN"
+#endif
+
+#ifndef BOARD_HW_VERSION
+#define BOARD_HW_VERSION 1
+#endif
+
+#ifndef BOARD_HW_REVISION
+#define BOARD_HW_REVISION 0
+#endif
+
+static const char hw_type_name[] = BOARD_HW_TYPE_NAME;
 
 /************************************************************************************
  * Name: board_get_hw_type_name
@@ -70,13 +85,13 @@ __EXPORT const char *board_get_hw_type_name(void)
  *   Returns the board hardware version
  *
  * Returned Value:
- *   The hardware version as an integer (V1.0 = 1)
+ *   The hardware version as an integer
  *
  ************************************************************************************/
 
 __EXPORT int board_get_hw_version(void)
 {
-	return 1; /* Version 1.0 */
+	return BOARD_HW_VERSION;
 }
 
 /************************************************************************************
@@ -92,5 +107,5 @@ __EXPORT int board_get_hw_version(void)
 
 __EXPORT int board_get_hw_revision(void)
 {
-	return 0; /* Revision 0 */
+	return BOARD_HW_REVISION;
 }

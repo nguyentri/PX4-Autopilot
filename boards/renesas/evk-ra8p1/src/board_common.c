@@ -35,24 +35,22 @@
  * @file board_common.c
  *
  * EVK-RA8P1 board common functions
+ *
+ * Note: Functions provided by platform (platforms/nuttx/src/px4/renesas/ra8/):
+ *   - board_get_hw_type_name()  -> board_hw_info/board_hw_rev_ver.c
+ *   - board_get_hw_version()    -> board_hw_info/board_hw_rev_ver.c
+ *   - board_get_hw_revision()   -> board_hw_info/board_hw_rev_ver.c
+ *   - board_get_uuid32()        -> platforms/common/board_identity.c
+ *   - board_get_px4_guid()      -> platforms/common/board_identity.c
+ *
+ * This file only provides board-specific overrides not covered by platform.
  */
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
 
-/* Define __EXPORT for compatibility */
-#ifndef __EXPORT
-#define __EXPORT
-#endif
-
-/* Define board bus types for compatibility */
-enum board_bus_types {
-	BOARD_INVALID_BUS = 0,
-	BOARD_SPI_BUS = 1,
-	BOARD_I2C_BUS = 2
-};
+#include "board_config.h"  /* For PX4_SPI_BUS_SENSORS, PX4_I2C_BUS_EXPANSION */
+#include <px4_platform_common/board_common.h>  /* For enum board_bus_types */
 
 /* Forward declarations for LED functions */
 extern void led_init(void);
@@ -60,78 +58,24 @@ extern void led_on(int led);
 extern void led_off(int led);
 
 /************************************************************************************
- * Board identification functions
- ************************************************************************************/
-
-__EXPORT uint32_t board_get_uuid32(void)
-{
-	/* Return a simple unique ID based on board type for now */
-	return 0x5A8F1001; /* EVK-RA8P1 identifier */
-}
-
-__EXPORT void board_get_px4_guid(uint8_t *guid)
-{
-	/* Generate a simple GUID for the board */
-	uint32_t uuid = board_get_uuid32();
-
-	memset(guid, 0, 16);
-	guid[0] = (uuid >> 24) & 0xFF;
-	guid[1] = (uuid >> 16) & 0xFF;
-	guid[2] = (uuid >> 8) & 0xFF;
-	guid[3] = uuid & 0xFF;
-	guid[4] = 0x5A; /* Board family identifier */
-	guid[5] = 0x8E;
-	guid[6] = 0x10;
-	guid[7] = 0x01;
-}
-
-__EXPORT void board_get_px4_guid_formated(char *s, size_t len)
-{
-	uint8_t guid[16];
-	board_get_px4_guid(guid);
-
-	snprintf(s, len, "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-		guid[0], guid[1], guid[2], guid[3],
-		guid[4], guid[5], guid[6], guid[7],
-		guid[8], guid[9], guid[10], guid[11],
-		guid[12], guid[13], guid[14], guid[15]);
-}
-
-__EXPORT uint32_t board_get_hw_version(void)
-{
-	/* Return hardware version - version 1.0 */
-	return 0x00010000;
-}
-
-__EXPORT uint32_t board_get_hw_revision(void)
-{
-	/* Return hardware revision - revision A */
-	return 0x00000001;
-}
-
-__EXPORT const char *board_mcu_version(void)
-{
-	return "RA8P1";
-}
-
-/************************************************************************************
  * Power management functions
  ************************************************************************************/
 
-__EXPORT void board_power_off(void)
+__EXPORT int board_power_off(int status)
 {
+	(void)status; /* Unused */
 	/* Basic power off - put system in lowest power state */
 	/* TODO: Implement actual power management for RA8P1 */
 	while (1) {
 		/* Stay in infinite loop until reset */
 	}
+	return 0; /* Never reached */
 }
 
-__EXPORT int board_register_power_state_notification_cb(void *cb)
+__EXPORT int board_register_power_state_notification_cb(power_button_state_notification_t cb)
 {
-	/* Power state notification callback registration */
-	(void)cb; /* Unused for now */
-	return 0; /* Success */
+	(void)cb; /* Unused - no power button on this board */
+	return 0;
 }
 
 /************************************************************************************
@@ -142,12 +86,12 @@ __EXPORT bool board_has_bus(enum board_bus_types type, uint32_t bus)
 {
 	switch (type) {
 	case BOARD_SPI_BUS:
-		/* We have SPI0 bus */
-		return (bus == 0);
+		/* Check against configured SPI bus from board_config.h */
+		return (bus == PX4_SPI_BUS_SENSORS);
 
 	case BOARD_I2C_BUS:
-		/* We have I2C0 */
-		return (bus == 0);
+		/* Check against configured I2C bus from board_config.h */
+		return (bus == PX4_I2C_BUS_EXPANSION);
 
 	case BOARD_INVALID_BUS:
 	default:

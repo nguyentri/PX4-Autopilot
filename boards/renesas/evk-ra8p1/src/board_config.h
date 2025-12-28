@@ -75,7 +75,24 @@
 #define BOARD_HAS_NO_RESET              1  /* No dedicated external reset */
 #define BOARD_HAS_NO_BOOTLOADER         1  /* No bootloader support initially */
 #define BOARD_TYPE_COMPLETE             88 /* Board type ID */
-#define PX4_SOC_ARCH_ID                 PX4_SOC_ARCH_ID_NUTTX
+#define PX4_SOC_ARCH_ID                 PX4_SOC_ARCH_ID_RENESAS_RA8
+
+/****************************************************************************************************
+ * Board Hardware Info (used by platforms/nuttx/src/px4/renesas/ra8/board_hw_info/)
+ ****************************************************************************************************/
+
+#define BOARD_HW_TYPE_NAME              "EVK-RA8P1"
+#define BOARD_HW_VERSION                1  /* Version 1.x */
+#define BOARD_HW_REVISION               0  /* Revision 0 */
+
+/* Board UUID - used by board_identity.c for GUID generation
+ * Must be exactly 16 characters for PX4_CPU_UUID_BYTE_LENGTH */
+// #define BOARD_OVERRIDE_UUID             "RA8P10000000000"  /* 16 characters */
+// #define BOARD_OVERRIDE_PX4_GUID         1  /* Enable PX4 GUID override */
+// #define BOARD_OVERRIDE_MFGUID           1  /* Enable MFGUID override */
+
+/* MCU Version override - prevents need for board_mcu_version() implementation */
+/* #define BOARD_OVERRIDE_CPU_VERSION      0 */  /* Define only if using macro override */
 
 /* CPU UUID Configuration */
 #if !defined(PX4_CPU_UUID_BYTE_LENGTH)
@@ -108,23 +125,50 @@
 #define BOARD_ENABLE_CONSOLE_BUFFER     1
 
 /****************************************************************************************************
- * SPI Configuration
+ * SPI Configuration - CENTRALIZED CONFIGURATION
+ *
+ * To switch SPI buses, only change the defines in this section.
+ * All other files (init.c, spi.cpp, board_common.c, rc.board_sensors) use these defines.
+ *
+ * Available buses on RA8P1:
+ *   - SPI0: Requires CONFIG_RA_SPI0=y in defconfig (Arduino header alternate)
+ *   - SPI1: Requires CONFIG_RA_SPI1=y in defconfig (Arduino header default)
+ *
+ * To enable a bus, ensure the corresponding CONFIG_RA_SPIx=y is set in:
+ *   boards/renesas/evk-ra8p1/nuttx-config/nsh/defconfig
  ****************************************************************************************************/
 
-/* SPI Bus Configuration */
-#define BOARD_NUMBER_SPI_BUSES          1
-#define BOARD_SPI_BUS_SENSORS           0  /* Arduino SPI0 for sensors */
-#define PX4_SPI_BUS_SENSORS             0
-#define PX4_SPI_BUS_MEMORY              PX4_SPI_BUS_SENSORS
+/* ============== USER CONFIGURABLE SECTION - CHANGE ONLY HERE ============== */
 
-/* SPI Bus Limits */
-#define BOARD_SPI_BUS_MAX_BUS_ITEMS     1
-#define BOARD_SPI_BUS_MAX_DEVICES       2  /* ICM-20948 + BMP388 */
+/* Primary sensor SPI bus selection (0 or 1) */
+#define PX4_SPI_BUS_SENSORS             1       /* Change to 0 for SPI0, 1 for SPI1 */
+
+/* Number of SPI buses enabled */
+#define BOARD_NUMBER_SPI_BUSES          1       /* Set to 2 if using both buses */
+
+/* Maximum devices per bus */
+#define BOARD_SPI_BUS_MAX_DEVICES       2       /* ICM-20948 + optional BMP388 */
+
+/* ============== END USER CONFIGURABLE SECTION ============== */
+
+/* Derived configuration - DO NOT MODIFY */
+#define BOARD_SPI_BUS_SENSORS           PX4_SPI_BUS_SENSORS
+#define PX4_SPI_BUS_MEMORY              PX4_SPI_BUS_SENSORS
+#define BOARD_SPI_BUS_MAX_BUS_ITEMS     BOARD_NUMBER_SPI_BUSES
 #define SPI_BUS_MAX_BUS_ITEMS           BOARD_SPI_BUS_MAX_BUS_ITEMS
+
+/* SPI Bus enum for spi.cpp - maps to NuttX SPI bus number */
+#if (PX4_SPI_BUS_SENSORS == 0)
+#define PX4_SPI_BUS_SENSORS_ENUM        SPI::Bus::SPI0
+#elif (PX4_SPI_BUS_SENSORS == 1)
+#define PX4_SPI_BUS_SENSORS_ENUM        SPI::Bus::SPI1
+#else
+#error "Invalid PX4_SPI_BUS_SENSORS value. Must be 0 or 1."
+#endif
 
 /* Arduino SPI Pin Configuration (from board.h)
  * Used for GY-912 sensor board connection
- * SCK:  P102 (Arduino D13) - GPIO_ARDUINO_SPI_SCK = GPIO_RSPCKA_B_1
+ * SCK:  P102 (Arduino D13) - GPIO_ARDUINO_SPI_SCK = GPIO_RSPCKB_A_1
  * MISO: P100 (Arduino D12) - GPIO_ARDUINO_SPI_MISO = GPIO_MISOB_A_1
  * MOSI: P101 (Arduino D11) - GPIO_ARDUINO_SPI_MOSI = GPIO_MOSIB_A_1
  * CS0:  P103 (Arduino D10) - GPIO_ARDUINO_SPI_CS0 = GPIO_SSLB0_A_1 (ICM-20948)
@@ -132,10 +176,27 @@
 #define PX4_SPI_IMU_SCK                 GPIO_ARDUINO_SPI_SCK   /* P102 */
 #define PX4_SPI_IMU_MOSI                GPIO_ARDUINO_SPI_MOSI  /* P101 */
 #define PX4_SPI_IMU_MISO                GPIO_ARDUINO_SPI_MISO  /* P100 */
-#define PX4_SPI_IMU_CS0                 GPIO_ARDUINO_SPI_CS0   /* P103 - ICM-20948 */
-
+//#define PX4_SPI_IMU_CS0                 GPIO_ARDUINO_SPI_CS0 | GPIO_CFG_OUTPUT_HIGH   /* P103 - ICM-20948 */
+#define PX4_SPI_IMU_CS1                 GPIO_ARDUINO_SPI_CS1        /* P110 - BMP388 (not used) */
 /* Sensor Data Ready Interrupt (from board.h) */
 #define PX4_SPI_IMU_DRDY                GPIO_ARDUINO_D2_INT    /* P011 - IRQ16 */
+
+/* SPI CS and DRDY Pin Port/Pin for spi.cpp initSPIDevice()
+ * These map to the GPIO::Port and GPIO::Pin enums used by PX4 SPI framework
+ * CS0:  P103 = Port1, Pin3
+ * DRDY: P011 = Port0, Pin11
+ */
+#if defined PX4_SPI_IMU_CS0
+#define PX4_SPI_IMU_CS_PORT             GPIO::Port1
+#define PX4_SPI_IMU_CS_PIN              GPIO::Pin3
+#elif defined PX4_SPI_IMU_CS1
+#define PX4_SPI_IMU_CS_PORT             GPIO::PortB
+#define PX4_SPI_IMU_CS_PIN              GPIO::Pin0
+#else
+#error "CS is not defined!"
+#endif
+#define PX4_SPI_IMU_DRDY_PORT           GPIO::Port0
+#define PX4_SPI_IMU_DRDY_PIN            GPIO::Pin11
 
 /****************************************************************************************************
  * I2C Configuration
@@ -433,7 +494,11 @@
  * Power Configuration
  ****************************************************************************************************/
 
-#define BOARD_HAS_POWER_CONTROL         0  /* No power control initially */
+/* Note: BOARD_HAS_POWER_CONTROL is intentionally NOT defined (not even as 0)
+ * to prevent compilation of power button callback registration in Commander.
+ * The #if defined() check requires the macro to be undefined, not just 0.
+ */
+/* #define BOARD_HAS_POWER_CONTROL      1 */  /* Enable when power control is implemented */
 
 /****************************************************************************************************
  * Board-Specific Features
