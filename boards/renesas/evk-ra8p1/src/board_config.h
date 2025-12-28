@@ -176,8 +176,8 @@
 #define PX4_SPI_IMU_SCK                 GPIO_ARDUINO_SPI_SCK   /* P102 */
 #define PX4_SPI_IMU_MOSI                GPIO_ARDUINO_SPI_MOSI  /* P101 */
 #define PX4_SPI_IMU_MISO                GPIO_ARDUINO_SPI_MISO  /* P100 */
-//#define PX4_SPI_IMU_CS0                 GPIO_ARDUINO_SPI_CS0 | GPIO_CFG_OUTPUT_HIGH   /* P103 - ICM-20948 */
-#define PX4_SPI_IMU_CS1                 GPIO_ARDUINO_SPI_CS1        /* P110 - BMP388 (not used) */
+//#define PX4_SPI_IMU_CS0                 GPIO_ARDUINO_SPI_CS0 | GPIO_CFG_OUTPUT_HIGH   /* P103 - HW CS */
+#define PX4_SPI_IMU_CS1                 GPIO_ARDUINO_SPI_CS1 | GPIO_CFG_OUTPUT_HIGH     /* P110 - GPIO CS */
 /* Sensor Data Ready Interrupt (from board.h) */
 #define PX4_SPI_IMU_DRDY                GPIO_ARDUINO_D2_INT    /* P011 - IRQ16 */
 

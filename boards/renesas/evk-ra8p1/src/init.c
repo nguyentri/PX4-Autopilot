@@ -146,7 +146,6 @@ static void evk_ra8p1_gpio_initialize(void)
     px4_arch_configgpio(PX4_SPI_IMU_CS0);   /* P103 - Hardware SSLB0 (SPI peripheral mode) */
 #else
     px4_arch_configgpio(PX4_SPI_IMU_CS1);
-    px4_arch_gpiowrite(PX4_SPI_IMU_CS1, true);
 #endif
     /* Configure IMU data ready pin */
     px4_arch_configgpio(PX4_SPI_IMU_DRDY);

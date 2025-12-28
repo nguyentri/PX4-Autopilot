@@ -85,7 +85,7 @@ extern "C" {
     /* Static device configuration for ICM20948 - shared by bus init and device probe */
     static const struct ra_spi_ext_dev_config_s icm20948_config = {
         .devid = DRV_IMU_DEVTYPE_ICM20948,
-        .max_frequency = 4000000,              /* 4 MHz - ICM20948 (datasheet supports up to 7 MHz) */
+        .max_frequency = 1000000,              /* 1 MHz - ICM20948 (datasheet supports up to 7 MHz) */
         .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) */
         .cur_bits = 8,                         /* 8-bit transfers */
         .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - ICM20948 datasheet */
@@ -124,7 +124,16 @@ extern "C" {
     void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
     {
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
-        (void)dev; /* Unused when using hardware CS */
+
+        if (selected) {
+            /* Get device-specific configuration and calculate SPI parameters */
+            const struct ra_spi_ext_dev_config_s *config = ra_spi_get_dev_config(dev, devid);
+            /* Overwrite the PX4 settings*/
+            if (config != nullptr) {
+                /* Write to hardware registers immediately */
+                SPI_SETFREQUENCY(dev, config->max_frequency);
+            }
+        }
 
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948:

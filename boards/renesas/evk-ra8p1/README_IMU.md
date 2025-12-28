@@ -51,9 +51,11 @@ constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 **File:** `boards/renesas/evk-ra8p1/src/board_config.h`
 
 ```c
-#define PX4_SPI_BUS_SENSORS             0
-#define PX4_SPI_IMU_CS0                 GPIO_ARDUINO_SPI_CS0   /* P103 */
-#define PX4_SPI_IMU_DRDY                GPIO_ARDUINO_D2_INT    /* P011 - IRQ16 */
+#define IMU_SCL                P102 (Arduino D13)
+#define IMU_SDA                P100 (Arduino D12)
+#define IMU_SDO                P101 (Arduino D11)
+#define IMU_CS                 PB0  (Arduino D9)
+#define IMU_RDY                P011 (Arduino D2)
 ```
 
 ### ICM-20948 SPI Settings
