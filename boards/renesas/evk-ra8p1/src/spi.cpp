@@ -61,7 +61,8 @@
 #endif
 
 // Debug macro for SPI operations
-#define SPI_DEBUG(fmt, ...) syslog(LOG_INFO, "SPI_DBG: " fmt "\n", ##__VA_ARGS__)
+//#define SPI_DEBUG(fmt, ...) syslog(LOG_INFO, "SPI_DBG: " fmt "\n", ##__VA_ARGS__)
+#define SPI_DEBUG(fmt, ...)
 
 // SPI bus configuration - uses centralized defines from board_config.h
 // PX4_SPI_BUS_SENSORS_ENUM is set based on PX4_SPI_BUS_SENSORS (0 or 1)
@@ -69,7 +70,9 @@
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
         initSPIBus(PX4_SPI_BUS_SENSORS_ENUM, {
                 // ICM-20948: 9DOF IMU (gyroscope, accelerometer, magnetometer)
-                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{PX4_SPI_IMU_CS_PORT, PX4_SPI_IMU_CS_PIN}, SPI::DRDY{PX4_SPI_IMU_DRDY_PORT, PX4_SPI_IMU_DRDY_PIN}),
+                initSPIDevice(DRV_IMU_DEVTYPE_ICM20948,
+                    SPI::CS{PX4_SPI_IMU_CS_PORT, PX4_SPI_IMU_CS_PIN},
+                    SPI::DRDY{PX4_SPI_IMU_DRDY_PORT, PX4_SPI_IMU_DRDY_PIN, PX4_SPI_IMU_DRDY_IRQ}),
         }),
 };
 

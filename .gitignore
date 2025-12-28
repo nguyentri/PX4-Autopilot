@@ -130,10 +130,11 @@ git config advice.addIgnoredFile false
 .vscode/settings.json
 .vscode/targets.log
 
-*.md
 *.py
 *.csv
 .refs
 .backup
 *log
 *log*
+platforms/nuttx/NuttX/*.svd
+platforms/nuttx/NuttX/*.h

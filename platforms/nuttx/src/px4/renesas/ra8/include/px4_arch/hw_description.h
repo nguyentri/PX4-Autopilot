@@ -141,7 +141,16 @@ enum Bus : int {
 };
 
 using CS = GPIO::GPIOPin;
-using DRDY = GPIO::GPIOPin;
+
+/**
+ * DRDY (Data Ready) pin configuration for RA8
+ * Includes IRQ number for proper interrupt routing
+ */
+struct DRDY {
+	GPIO::Port port{GPIO::PortInvalid};
+	GPIO::Pin pin{GPIO::Pin0};
+	uint32_t irq{0};  ///< IRQ number (0-31) for this pin, 0 if not used
+};
 
 } // namespace SPI
 

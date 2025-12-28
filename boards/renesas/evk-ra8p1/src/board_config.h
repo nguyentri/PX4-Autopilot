@@ -197,6 +197,7 @@
 #endif
 #define PX4_SPI_IMU_DRDY_PORT           GPIO::Port0
 #define PX4_SPI_IMU_DRDY_PIN            GPIO::Pin11
+#define PX4_SPI_IMU_DRDY_IRQ            (16)  /* IRQ16 for P011 */
 
 /****************************************************************************************************
  * I2C Configuration

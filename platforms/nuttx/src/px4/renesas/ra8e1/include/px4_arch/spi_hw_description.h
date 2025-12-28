@@ -85,12 +85,17 @@ static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::
 	              GPIO_OUTPUT |       // R_PFS_PDR - output direction
 	              GPIO_OUTPUT_HIGH;   // R_PFS_PODR - output high (CS inactive)
 
-	// DRDY pin configuration - input with pull-up and IRQ enable
+	// DRDY pin configuration - input with pull-up, IRQ number, and IRQ enable
 	// Uses GPIO macros: GPIO_PULLUP (R_PFS_PCR), GPIO_IRQ (R_PFS_ISEL)
+	// IRQ number encoding: IRQ 0-15 use bits 0-3 directly, IRQ 16-31 use (0x20 | (irq-16))
+	// This avoids conflict with R_PFS_PCR (bit 4) - see GPIO_IRQ_MASK = 0x2F
 	if (drdy_gpio.port != GPIO::PortInvalid) {
+		// Encode IRQ number to avoid bit 4 conflict with GPIO_PULLUP (R_PFS_PCR)
+		uint32_t encoded_irq = (drdy_gpio.irq < 16) ? drdy_gpio.irq : (0x20 | (drdy_gpio.irq - 16));
 		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) |
-		                GPIO_PULLUP |  // R_PFS_PCR - pull-up control
-		                GPIO_IRQ;      // R_PFS_ISEL - IRQ input enable
+		                encoded_irq |    // Encoded IRQ number (e.g., 0x20 for IRQ16)
+		                GPIO_PULLUP |    // R_PFS_PCR - pull-up control
+		                GPIO_IRQ;        // R_PFS_ISEL - IRQ input enable
 	}
 
 	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)
