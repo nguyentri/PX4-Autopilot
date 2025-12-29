@@ -311,7 +311,7 @@ CDev::poll(file_t *filep, px4_pollfd_struct_t *fds, bool setup)
 void
 CDev::poll_notify(px4_pollevent_t events)
 {
-	PX4_DEBUG("CDev::poll_notify events = %0x", events);
+	PX4_DEBUG("CDev::poll_notify events = %lx", (unsigned long)events);
 
 	/* lock against poll() as well as other wakeups */
 	ATOMIC_ENTER;
@@ -333,7 +333,7 @@ CDev::poll_notify_one(px4_pollfd_struct_t *fds, px4_pollevent_t events)
 	/* update the reported event set */
 	fds->revents |= fds->events & events;
 
-	PX4_DEBUG(" Events fds=%p %0x %0x %0x", fds, fds->revents, fds->events, events);
+	PX4_DEBUG(" Events fds=%p %lx %lx %lx", fds, (unsigned long)fds->revents, (unsigned long)fds->events, (unsigned long)events);
 
 	if (fds->revents != 0) {
 		px4_sem_post(fds->sem);

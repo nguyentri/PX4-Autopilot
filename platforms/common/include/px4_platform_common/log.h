@@ -377,7 +377,11 @@ __END_DECLS
  * Messages that should never be filtered or compiled out
  ****************************************************************************/
 #if defined(PRINTF_LOG)
-#define PX4_INFO(FMT, ...) 	printf(FMT "\n", ##__VA_ARGS__)
+#define PX4_INFO(FMT, ...) \
+	do { \
+		printf(FMT, ##__VA_ARGS__); \
+		printf("\n"); \
+	} while (0)
 #else
 #define PX4_INFO(FMT, ...) 	__px4_log_modulename(_PX4_LOG_LEVEL_INFO, FMT, ##__VA_ARGS__)
 #endif
@@ -389,13 +393,33 @@ __END_DECLS
 #endif
 
 #if defined(PRINTF_LOG)
-/****************************************************************************
- * Direct printf output for minimized dependencies
- ****************************************************************************/
-#define PX4_PANIC(FMT, ...)	printf("Panic: " FMT "\n", ##__VA_ARGS__)
-#define PX4_ERR(FMT, ...)	printf("Error: " FMT "\n", ##__VA_ARGS__)
-#define PX4_WARN(FMT, ...) 	printf("Warn: " FMT "\n", ##__VA_ARGS__)
-#define PX4_DEBUG(FMT, ...) 	printf(FMT "\n", ##__VA_ARGS__)
+/* Direct printf output for minimized dependencies.
+ * Use separate printf calls to avoid concatenating a newline to a non-literal
+ * format string (which is invalid when the format is a variable).
+ */
+#define PX4_PANIC(FMT, ...) \
+	do { \
+		printf("Panic: "); \
+		printf(FMT, ##__VA_ARGS__); \
+		printf("\n"); \
+	} while (0)
+#define PX4_ERR(FMT, ...) \
+	do { \
+		printf("Error: "); \
+		printf(FMT, ##__VA_ARGS__); \
+		printf("\n"); \
+	} while (0)
+#define PX4_WARN(FMT, ...) \
+	do { \
+		printf("Warn: "); \
+		printf(FMT, ##__VA_ARGS__); \
+		printf("\n"); \
+	} while (0)
+#define PX4_DEBUG(FMT, ...) \
+	do { \
+		printf(FMT, ##__VA_ARGS__); \
+		printf("\n"); \
+	} while (0)
 
 #elif defined(TRACE_BUILD)
 /****************************************************************************

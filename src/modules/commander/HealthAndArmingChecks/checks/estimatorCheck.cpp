@@ -462,11 +462,11 @@ void EstimatorChecks::checkEstimatorStatus(const Context &context, Report &repor
 
 				/* FALLTHROUGH */
 				case GnssArmingCheck::DenyArming:
-					mavlink_log_critical(reporter.mavlink_log_pub(), message, " Fail");
+					mavlink_log_critical(reporter.mavlink_log_pub(), "%s Fail", message);
 					break;
 
 				case GnssArmingCheck::WarningOnly:
-					mavlink_log_warning(reporter.mavlink_log_pub(), message, "");
+					mavlink_log_warning(reporter.mavlink_log_pub(), "%s", message);
 					break;
 
 				case GnssArmingCheck::Disabled:

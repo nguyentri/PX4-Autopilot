@@ -647,7 +647,7 @@ int I2CSPIDriverBase::module_start(const BusCLIArguments &cli, BusInstanceIterat
 		I2CSPIDriverBase *instance = initializer_data.instance;
 
 		if (!instance) {
-			PX4_DEBUG("instantiate failed (no device on bus %i (devid 0x%x)?)", iterator.bus(), iterator.devid());
+			PX4_DEBUG("instantiate failed (no device on bus %i (devid 0x%" PRIx32 ")?)", iterator.bus(), iterator.devid());
 			continue;
 		}
 

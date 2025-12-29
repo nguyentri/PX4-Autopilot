@@ -850,7 +850,7 @@ do_set_custom_default(const char *name, const char *val, bool silent_fail)
 				int32_t newval = strtol(val, &end, 10);
 
 				if ((i != newval) && (param_set_default_value(param, &newval) == PX4_OK)) {
-					PX4_DEBUG(" parameter default: %s %d -> %d", param_name(param), i, newval);
+					PX4_DEBUG(" parameter default: %s %ld -> %ld", param_name(param), (long)i, (long)newval);
 				}
 			}
 		}
