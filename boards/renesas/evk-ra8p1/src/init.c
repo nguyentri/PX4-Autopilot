@@ -163,6 +163,14 @@ static void evk_ra8p1_gpio_initialize(void)
 
     /* Configure safety button */
     px4_arch_configgpio(GPIO_BTN_SAFETY);
+
+    /* Configure LED GPIOs for output */
+    px4_arch_configgpio(GPIO_LED1);
+    px4_arch_configgpio(GPIO_LED2);
+    px4_arch_configgpio(GPIO_LED3);
+    px4_arch_gpiowrite(GPIO_LED1, true);
+    px4_arch_gpiowrite(GPIO_LED2, true);
+    px4_arch_gpiowrite(GPIO_LED3, true);
 }
 
 /************************************************************************************

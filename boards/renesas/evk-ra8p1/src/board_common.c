@@ -56,6 +56,7 @@
 extern void led_init(void);
 extern void led_on(int led);
 extern void led_off(int led);
+extern void led_toggle(int led);
 
 /************************************************************************************
  * Power management functions
@@ -122,11 +123,25 @@ __EXPORT void board_autoled_initialize(void)
 __EXPORT void board_autoled_on(int led)
 {
 	/* Turn on LED for system indication */
+    if (led >= NLEDS) {
+        return;
+    }
 	led_on(led);
 }
 
 __EXPORT void board_autoled_off(int led)
 {
 	/* Turn off LED for system indication */
+    if (led >= NLEDS) {
+        return;
+    }
 	led_off(led);
+}
+__EXPORT void board_autoled_toggle(int led)
+{
+	/* Turn off LED for system indication */
+    if (led >= NLEDS) {
+        return;
+    }
+	led_toggle(led);
 }

@@ -317,6 +317,7 @@
 #define BOARD_HAS_CONTROL_STATUS_LEDS   1
 #define BOARD_OVERLOAD_LED              0  /* Blue LED for overload */
 #define BOARD_ARMED_STATE_LED           1  /* Green LED for armed state */
+#define BOARD_FAILED_STATE_LED          2  /* Red LED for failure */
 #define BOARD_MAX_LEDS                  3
 
 /****************************************************************************************************

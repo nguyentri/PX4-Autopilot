@@ -58,25 +58,32 @@ extern void led_on(int led);
 extern void led_off(int led);
 extern void led_toggle(int led);
 
-static bool _led_inited = false;
+/* Active high, false = off */
+static bool _led_inited;
+static bool _led_state[NLEDS] = {false};
 
 __EXPORT void led_init()
 {
-	/* Configure LED1 & LED2 GPIOs for output */
-	px4_arch_configgpio(BOARD_OVERLOAD_LED);
-	px4_arch_configgpio(BOARD_ARMED_STATE_LED);
 	_led_inited = true;
 }
 
 static void phy_set_led(int led, bool state)
 {
-	if (led == 0) {
-		px4_arch_gpiowrite(BOARD_OVERLOAD_LED, state);
-	}
+    switch (led)
+    {
+    case LED_1:
+        px4_arch_gpiowrite(GPIO_nLED_BLUE, state);
+        break;
+    case LED_2:
+        px4_arch_gpiowrite(GPIO_nLED_GREEN, state);
+        break;
+    case LED_3:
+        px4_arch_gpiowrite(GPIO_nLED_RED, state);
+        break;
+    default:
+        break;
+    }
 
-	if (led == 1) {
-		px4_arch_gpiowrite(BOARD_ARMED_STATE_LED, state);
-	}
 }
 
 __EXPORT void led_on(int led)
@@ -103,11 +110,6 @@ __EXPORT void led_toggle(int led)
 		led_init();
 	}
 
-	if (led == 0) {
-		phy_set_led(led, !px4_arch_gpioread(BOARD_OVERLOAD_LED));
-	}
-
-	if (led == 1) {
-		phy_set_led(led, !px4_arch_gpioread(BOARD_ARMED_STATE_LED));
-	}
+    phy_set_led(led, _led_state[led]);
+    _led_state[led] = !_led_state[led];
 }
