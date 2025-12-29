@@ -37,6 +37,16 @@
 
 using namespace time_literals;
 
+// Debug macro - uncomment to enable verbose FIFO diagnostics
+//#define ICM20948_FIFO_DEBUG
+
+#ifdef ICM20948_FIFO_DEBUG
+#include <px4_platform_common/log.h>
+#define FIFO_DEBUG(...) PX4_INFO(__VA_ARGS__)
+#else
+#define FIFO_DEBUG(...)
+#endif
+
 static constexpr int16_t combine(uint8_t msb, uint8_t lsb)
 {
 	return (msb << 8u) | lsb;
@@ -120,6 +130,17 @@ void ICM20948::print_status()
 	I2CSPIDriverBase::print_status();
 
 	PX4_INFO("FIFO empty interval: %d us (%.1f Hz)", _fifo_empty_interval_us, 1e6 / _fifo_empty_interval_us);
+
+	// Print key FIFO configuration registers for diagnostics
+	PX4_INFO("Registers: WHO_AM_I=0x%02X, USER_CTRL=0x%02X, PWR_MGMT_1=0x%02X",
+		 RegisterRead(Register::BANK_0::WHO_AM_I),
+		 RegisterRead(Register::BANK_0::USER_CTRL),
+		 RegisterRead(Register::BANK_0::PWR_MGMT_1));
+	PX4_INFO("FIFO config: FIFO_EN_2=0x%02X, FIFO_MODE=0x%02X, FIFO_CFG=0x%02X",
+		 RegisterRead(Register::BANK_0::FIFO_EN_2),
+		 RegisterRead(Register::BANK_0::FIFO_MODE),
+		 RegisterRead(Register::BANK_0::FIFO_CFG));
+	PX4_INFO("FIFO count: %u bytes", FIFOReadCount());
 
 	perf_print_counter(_bad_register_perf);
 	perf_print_counter(_bad_transfer_perf);
@@ -270,6 +291,43 @@ void ICM20948::RunImpl()
 
 			} else if (fifo_count == 0) {
 				perf_count(_fifo_empty_perf);
+
+				// FIFO empty: fallback to direct register reads and publish non-FIFO samples
+				// Read gyro (BANK 0)
+				const int16_t gx = combine(RegisterRead(static_cast<Register::BANK_0>(0x33)), // GYRO_XOUT_H
+											RegisterRead(static_cast<Register::BANK_0>(0x34))); // GYRO_XOUT_L
+				const int16_t gy = combine(RegisterRead(static_cast<Register::BANK_0>(0x35)), // GYRO_YOUT_H
+											RegisterRead(static_cast<Register::BANK_0>(0x36))); // GYRO_YOUT_L
+				const int16_t gz = combine(RegisterRead(static_cast<Register::BANK_0>(0x37)), // GYRO_ZOUT_H
+											RegisterRead(static_cast<Register::BANK_0>(0x38))); // GYRO_ZOUT_L
+
+				// Read accel
+				const int16_t ax = combine(RegisterRead(static_cast<Register::BANK_0>(0x2D)), // ACCEL_XOUT_H
+											RegisterRead(static_cast<Register::BANK_0>(0x2E))); // ACCEL_XOUT_L
+				const int16_t ay = combine(RegisterRead(static_cast<Register::BANK_0>(0x2F)), // ACCEL_YOUT_H
+											RegisterRead(static_cast<Register::BANK_0>(0x30))); // ACCEL_YOUT_L
+				const int16_t az = combine(RegisterRead(static_cast<Register::BANK_0>(0x31)), // ACCEL_ZOUT_H
+											RegisterRead(static_cast<Register::BANK_0>(0x32))); // ACCEL_ZOUT_L
+
+				// Publish gyro (apply same axis flips as ProcessGyro)
+				{
+					float gx_f = static_cast<float>(gx);
+					float gy_f = static_cast<float>(gy == INT16_MIN ? INT16_MAX : -gy);
+					float gz_f = static_cast<float>(gz == INT16_MIN ? INT16_MAX : -gz);
+
+					_px4_gyro.update(timestamp_sample, gx_f, gy_f, gz_f);
+				}
+
+				// Publish accel (apply same axis flips as ProcessAccel)
+				{
+					float ax_f = static_cast<float>(ax);
+					float ay_f = static_cast<float>(ay == INT16_MIN ? INT16_MAX : -ay);
+					float az_f = static_cast<float>(az == INT16_MIN ? INT16_MAX : -az);
+
+					_px4_accel.update(timestamp_sample, ax_f, ay_f, az_f);
+				}
+
+				success = true;
 
 			} else {
 				// FIFO count (size in bytes) should be a multiple of the FIFO::DATA structure
@@ -464,6 +522,12 @@ bool ICM20948::Configure()
 
 	ConfigureAccel();
 	ConfigureGyro();
+
+	FIFO_DEBUG("Configure: USER_CTRL=0x%02X, FIFO_EN_2=0x%02X, FIFO_MODE=0x%02X, PWR_MGMT_1=0x%02X",
+		   RegisterRead(Register::BANK_0::USER_CTRL),
+		   RegisterRead(Register::BANK_0::FIFO_EN_2),
+		   RegisterRead(Register::BANK_0::FIFO_MODE),
+		   RegisterRead(Register::BANK_0::PWR_MGMT_1));
 
 	return success;
 }

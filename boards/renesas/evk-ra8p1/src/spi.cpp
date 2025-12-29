@@ -128,16 +128,16 @@ extern "C" {
     {
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
 
-        if (selected) {
-            /* Get device-specific configuration and calculate SPI parameters */
-            const struct ra_spi_ext_dev_config_s *config = ra_spi_get_dev_config(dev, devid);
-            /* Overwrite the PX4 settings*/
-            if (config != nullptr) {
-                /* Write to hardware registers immediately */
-                SPI_SETFREQUENCY(dev, config->max_frequency);
-            }
-        }
-
+        //if (selected) {
+        //    /* Get device-specific configuration and calculate SPI parameters */
+        //    const struct ra_spi_ext_dev_config_s *config = ra_spi_get_dev_config(dev, devid);
+        //    /* Overwrite the PX4 settings*/
+        //    if (config != nullptr) {
+        //        /* Write to hardware registers immediately */
+        //        SPI_SETFREQUENCY(dev, config->max_frequency);
+        //    }
+        //}
+        //
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948:
 #if defined(PX4_SPI_IMU_CS0)
