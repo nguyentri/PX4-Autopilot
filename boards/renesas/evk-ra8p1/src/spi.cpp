@@ -85,29 +85,6 @@ static const bool unused = validateSPIConfig(px4_spi_buses);
 extern "C" {
     #include "ra_spi.h"
 
-    /* Static device configuration for ICM20948 - shared by bus init and device probe */
-    static const struct ra_spi_ext_dev_config_s icm20948_config = {
-        .devid = DRV_IMU_DEVTYPE_ICM20948,
-        .max_frequency = 1000000,              /* 1 MHz - ICM20948 (datasheet supports up to 7 MHz) */
-        .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) */
-        .cur_bits = 8,                         /* 8-bit transfers */
-        .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - ICM20948 datasheet */
-#if defined(PX4_SPI_IMU_CS0)
-            .cs_gpio = PX4_SPI_IMU_CS0,            /* P103 (SSLB0 peripheral function) */
-            .cs_type = RA_SPI_CS_HARDWARE,         /* Hardware SSL0 control */
-
-#else // to check with GPIO
-            .cs_gpio = PX4_SPI_IMU_CS1,            /* P110 (GPIO CS) */
-            .cs_type = RA_SPI_CS_GPIO,         /* GPIO control */
-#endif
-        .ssl_select = 0,                       /* SSL0 (SSLB0 pin P103) */
-        .setup_delay = 2,                      /* 2 RSPCK cycles CS setup delay */
-        .hold_delay = 2,                       /* 2 RSPCK cycles CS hold delay */
-        .negation_delay = 0,                   /* 0 RSPCK cycles CS negation delay */
-        .active_low = true,                    /* CS active low */
-        .name = "ICM20948"
-    };
-
     /**
      * Name: ra_spi_select
      *
@@ -128,22 +105,13 @@ extern "C" {
     {
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
 
-        //if (selected) {
-        //    /* Get device-specific configuration and calculate SPI parameters */
-        //    const struct ra_spi_ext_dev_config_s *config = ra_spi_get_dev_config(dev, devid);
-        //    /* Overwrite the PX4 settings*/
-        //    if (config != nullptr) {
-        //        /* Write to hardware registers immediately */
-        //        SPI_SETFREQUENCY(dev, config->max_frequency);
-        //    }
-        //}
-        //
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948:
 #if defined(PX4_SPI_IMU_CS0)
             /* Hardware CS (SSLB0) is controlled automatically by SPI_B peripheral */
             /* No GPIO control needed - SSL0 assertion/deassertion is automatic */
             SPI_DEBUG("  -> ICM20948 %s (Hardware SSL0)", selected ? "SELECTED" : "DESELECTED");
+            ra_spi_setssl(dev, 0);
 #else
             px4_arch_gpiowrite(PX4_SPI_IMU_CS1, !selected);  /* Active low CS */
             SPI_DEBUG("  -> ICM20948 %s (GPIO Control)", selected ? "SELECTED" : "DESELECTED");
@@ -204,38 +172,6 @@ extern "C" {
     {
         /* GY-912 sensors don't use CMD/DATA line */
         return 0;
-    }
-
-    /**
-     * Name: ra_spi_get_dev_config
-     *
-     * Description:
-     *   Get device-specific configuration for GY-912 sensor board
-     *   Returns configuration with frequency, mode, and CS pin settings
-     *
-     * Input Parameters:
-     *   dev - SPI device structure
-     *   devid - Device ID (encoded with PX4_SPIDEV_ID)
-     *
-     * Returned Value:
-     *   Pointer to device configuration structure, or NULL for default settings
-     */
-    const struct ra_spi_ext_dev_config_s *ra_spi_get_dev_config(struct spi_dev_s *dev, uint32_t devid)
-    {
-
-        /* Extract device type from encoded devid */
-        uint16_t devtype = PX4_SPI_DEV_ID(devid);
-
-        /* Return configuration based on device type */
-        switch (devtype) {
-        case DRV_IMU_DEVTYPE_ICM20948:
-            SPI_DEBUG("ra_spi_get_dev_config: Returning ICM20948 config (4MHz, Mode3)");
-            return &icm20948_config;
-
-        default:
-            SPI_DEBUG("ra_spi_get_dev_config: No config for devtype 0x%04x, using defaults", devtype);
-            return nullptr;  /* Use driver defaults */
-        }
     }
 
 } /* extern "C" */

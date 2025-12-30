@@ -78,7 +78,7 @@ constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 ```bash
 # Start IMU on SPI1 - ICM20948 9-axis sensor with integrated magnetometer
 # -s: SPI mode, -b 1: SPI bus 1, -R 0: no rotation, -M 1: enable magnetometer
-icm20948 start -s -b 1 -R 0 -M 1
+icm20948 start -s -b 1 -M 1
 
 # Start Barometer on I2C0 - BMP388 (try 0x76 then 0x77)
 bmp388 start -X -b 0 -a 0x76

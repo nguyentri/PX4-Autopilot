@@ -20,7 +20,7 @@ usleep 100000
 # Start IMU on SPI - ICM20948 9-axis sensor with integrated magnetometer
 # -s: SPI mode, -b: SPI bus (from config), -R 0: no rotation, -M 1: enable magnetometer (AK09916)
 # Note: Device will auto-detect on configured SPI bus, CS0 (P103), DRDY on P011 (Arduino D2/IRQ16)
-if icm20948 start -s -b ${SENSOR_SPI_BUS} -M
+if icm20948 start -s -b ${SENSOR_SPI_BUS} -M 1
 then
         echo "ICM20948 IMU initialized successfully on SPI bus ${SENSOR_SPI_BUS}"
 else

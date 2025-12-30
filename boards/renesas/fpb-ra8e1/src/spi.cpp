@@ -105,9 +105,6 @@ extern "C" {
      *   Handles device-specific configuration (frequency, mode, bits) and CS control
      *   for GY-912 sensor board.
      *
-     *   This function is called by PX4 AFTER SPI_SETFREQUENCY/SETMODE/SETBITS,
-     *   so we override those settings with device-specific values from ra_spi_get_dev_config().
-     *
      * Input Parameters:
      *   dev - SPI device structure
      *   devid - Device ID (encoded with PX4_SPIDEV_ID)
@@ -115,34 +112,17 @@ extern "C" {
      */
     void ra_spi_select(struct spi_dev_s *dev, uint32_t devid, bool selected)
     {
+        (void)dev; /* Unused parameter */
         /* Handle chip select for GY-912 SPI devices using predefined GPIO macros */
         /* Device ID determines which CS pin to control */
         /* Note: devid is encoded with PX4_SPIDEV_ID, extract lower 16 bits for device type */
         uint16_t devtype = PX4_SPI_DEV_ID(devid);
 
-        if (selected) {
-            /* Get device-specific configuration and calculate SPI parameters */
-            const struct ra_spi_ext_dev_config_s *config = ra_spi_get_dev_config(dev, devid);
-            /* Overwrite the PX4 settings*/
-            if (config != nullptr) {
-                /* Calculate device-specific settings (writes immediately to hardware) */
-                SPI_DEBUG("Applying config for devtype 0x%04x: freq=%lu, mode=%u, bits=%u, dir=%s",
-                          devtype, (unsigned long)config->max_frequency, config->cur_mode, config->cur_bits,
-                          config->cur_dir == RA_SPI_DIR_LSB_FIRST ? "LSB" : "MSB");
-
-                /* Write to hardware registers immediately */
-                SPI_SETFREQUENCY(dev, config->max_frequency);
-                SPI_SETMODE(dev, (enum spi_mode_e)config->cur_mode);
-                SPI_SETBITS(dev, config->cur_bits);
-
-                /* Set bit order (MSB-first or LSB-first) */
-                ra_spi_setbitorder(dev, config->cur_dir == RA_SPI_DIR_LSB_FIRST);
-            }
-        }
-
         switch (devtype) {
         case DRV_IMU_DEVTYPE_ICM20948: /* First SPI device - ICM20948 on CS0 (P408) */
             SPI_DEBUG("  -> Controlling CS0 (P408) for ICM20948 %s", selected ? "SELECTED" : "DESELECTED");
+            /* Set SSL if needed, valid 0, 1, 2 */
+            //ra_spi_setssl(dev, 1);
             px4_arch_gpiowrite(GPIO_SPI1_CS0, !selected);  /* Active low CS */
             break;
 
@@ -215,81 +195,4 @@ extern "C" {
         /* GY-912 sensors don't use CMD/DATA line */
         return 0;
     }
-
-    /**
-     * Name: ra_spi_get_dev_config
-     *
-     * Description:
-     *   Get device-specific configuration for GY-912 sensor board
-     *   Returns configuration with frequency, mode, and CS pin settings
-     *
-     * Input Parameters:
-     *   dev - SPI device structure
-     *   devid - Device ID (encoded with PX4_SPIDEV_ID)
-     *
-     * Returned Value:
-     *   Pointer to device configuration structure, or NULL for default settings
-     */
-#if defined(__PX4_NUTTX)
-    const struct ra_spi_ext_dev_config_s *ra_spi_get_dev_config(struct spi_dev_s *dev, uint32_t devid)
-#else
-    const struct ra_spi_ext_dev_config_s *ra_spi_get_dev_config(struct spi_dev_s *dev, uint32_t devid)
-    {
-        (void)dev; (void)devid;
-        return nullptr;
-    }
-#endif
-    {
-        /* Static configuration structures for each sensor */
-        static const struct ra_spi_ext_dev_config_s icm20948_config = {
-            .devid = DRV_IMU_DEVTYPE_ICM20948,
-            .max_frequency = 4000000,              /* 4 MHz - ICM20948 (datasheet supports up to 7 MHz) */
-            .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) */
-            .cur_bits = 8,                         /* 8-bit transfers */
-            .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - ICM20948 datasheet */
-            .cs_gpio = GPIO_SPI1_CS0,              /* P408 - CS pin */
-            .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
-            .ssl_select = 0xFF,                    /* Use GPIO */
-            .setup_delay = 2,                      /* 2 RSPCK cycles CS setup delay */
-            .hold_delay = 2,                       /* 2 RSPCK cycles CS hold delay */
-            .negation_delay = 0,                   /* 0 RSPCK cycles CS negation delay */
-            .active_low = true,                    /* CS active low */
-            .name = "ICM20948"
-        };
-
-        static const struct ra_spi_ext_dev_config_s bmp388_config = {
-            .devid = DRV_BARO_DEVTYPE_BMP388,
-            .max_frequency = 5000000,              /* 5 MHz - BMP388 (datasheet supports up to 10 MHz) */
-            .cur_mode = SPIDEV_MODE3,              /* SPI Mode 3 (CPOL=1, CPHA=1) - BMP388 datasheet */
-            .cur_bits = 8,                         /* 8-bit transfers */
-            .cur_dir = RA_SPI_DIR_MSB_FIRST,       /* MSB first - BMP388 datasheet */
-            .cs_gpio = GPIO_SPI1_CS1,              /* P407 - CS pin */
-            .cs_type = RA_SPI_CS_GPIO,             /* Use GPIO control for CS */
-            .ssl_select = 0xFF,                    /* Use GPIO */
-            .setup_delay = 1,                      /* 1 RSPCK cycle CS setup (datasheet: min 6ns @ 5MHz = 200ns period) */
-            .hold_delay = 1,                       /* 1 RSPCK cycle CS hold (datasheet: min 6ns) */
-            .negation_delay = 1,                   /* 1 RSPCK cycle between transactions */
-            .active_low = true,                    /* CS active low */
-            .name = "BMP388"
-        };
-
-        /* Extract device type from encoded devid */
-        uint16_t devtype = PX4_SPI_DEV_ID(devid);
-
-        /* Return configuration based on device type */
-        switch (devtype) {
-        case DRV_IMU_DEVTYPE_ICM20948:
-            SPI_DEBUG("ra_spi_get_dev_config: Returning ICM20948 config (4MHz, Mode3)");
-            return &icm20948_config;
-
-        case DRV_BARO_DEVTYPE_BMP388:
-            SPI_DEBUG("ra_spi_get_dev_config: Returning BMP388 config (5MHz, Mode3)");
-            return &bmp388_config;
-
-        default:
-            SPI_DEBUG("ra_spi_get_dev_config: No config for devtype 0x%04x, using defaults", devtype);
-            return nullptr;  /* Use driver defaults */
-        }
-    }
-
 } /* extern "C" */
