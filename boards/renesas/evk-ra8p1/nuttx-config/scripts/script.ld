@@ -51,7 +51,7 @@
  *
  * Internal Sip-Flash (8MB):
  * ===================================================
- *   -  0x0800_0000 - 0x0807_FFFF: 8MB Sip-Flash (not applicable for the part number in the EK-RA8P1)
+ *   -  0x0800_0000 - 0x0807_FFFF: 8MB Sip-Flash (not applicable for the RA8P1 part number in the EK-RA8P1)
  */
 
 /* Include Renesas OFS register definitions */
