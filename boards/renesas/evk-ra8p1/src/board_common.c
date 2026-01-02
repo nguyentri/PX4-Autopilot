@@ -89,11 +89,11 @@ __EXPORT bool board_has_bus(enum board_bus_types type, uint32_t bus)
 	case BOARD_SPI_BUS:
 		/* Check against configured SPI bus from board_config.h */
 		return (bus == PX4_SPI_BUS_SENSORS);
-
+#ifdef CONFIG_I2C
 	case BOARD_I2C_BUS:
 		/* Check against configured I2C bus from board_config.h */
 		return (bus == PX4_I2C_BUS_EXPANSION);
-
+#endif
 	case BOARD_INVALID_BUS:
 	default:
 		return false;

@@ -1,29 +1,27 @@
 #!/bin/sh
 #
 # Renesas EVK-RA8P1 board sensors init
+# Minimal configuration: ICM20948 IMU on SPI + PWM output
 #------------------------------------------------------------------------------
 
-echo "========================================"
-echo "EVK-RA8P1 Board Sensors Initialization"
-echo "========================================"
+echo ========================================
+echo EVK-RA8P1 Board Sensors Initialization
+echo ========================================
 
 # Wait for sensor power stabilization
 usleep 100000
 
-# Start ICM20948 IMU on SPI1 with magnetometer
+# Start ICM20948 IMU on SPI1 with internal magnetometer (AK09916)
+# -s: SPI interface
+# -b 1: SPI bus 1
+# -M 1: Enable internal magnetometer
+echo icm20948 on SPI bus 1
 icm20948 start -s -b 1 -M 1
 usleep 50000
 
-# Start BMP388 barometer on I2C0
-bmp388 start -X -b 0 -a 0x76
+# PWM output driver - start without arguments
+# Motor outputs on GPT3, GPT5, GPT11, GPT13
+pwm_out start
 usleep 10000
 
-# Start ADC for battery monitoring
-board_adc start
-
-# Start PWM output driver
-pwm_out start
-pwm_out mode_pwm
-pwm_out rate -a -r 400
-
-echo "Board sensor initialization complete"
+echo Board sensor initialization complete

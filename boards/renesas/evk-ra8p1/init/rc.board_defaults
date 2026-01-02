@@ -1,43 +1,53 @@
 #!/bin/sh
 #
 # Renesas EVK-RA8P1 board defaults
+# Minimal configuration for RC + Telemetry flight
 #------------------------------------------------------------------------------
 
 # Set the default system autostart for a quadrotor X configuration
 param set-default SYS_AUTOSTART 4001
 
-# Disable system supply checks (no power sensing on this board yet)
+# Disable all circuit breaker checks for minimal config
 param set-default CBRK_SUPPLY_CHK 894281
-
-# Disable USB check
 param set-default CBRK_USB_CHK 197848
+param set-default CBRK_BUZZER 782090
 
-# Enable arming without GPS
+# Enable arming without GPS (no GPS on this board)
 param set-default COM_ARM_WO_GPS 1
 
-# Set RC input mode
-param set-default COM_RC_IN_MODE 1
+# Disable GPS requirement in EKF2
+param set-default EKF2_GPS_CTRL 0
 
-# Sensor configuration
+# Use RAM-only dataman backend (no filesystem/SD card)
+param set-default SYS_DM_BACKEND 1
+
+# RC input mode - RC receiver
+param set-default COM_RC_IN_MODE 0
+
+# Disable external I2C sensor probing
 param set-default SENS_EXT_I2C_PRB 0
 
-# EKF2 settings
-param set-default EKF2_REQ_GPS_H 10.0
-param set-default EKF2_GPS_V_NOISE 5.0
+# EKF2 settings for no-GPS and no-barometer operation
+param set-default EKF2_HGT_REF 0
+param set-default EKF2_BARO_CTRL 0
 
-# Navigator settings
-param set-default NAV_ACC_RAD 2.0
+# Disable magnetometer requirement (no compass on board)
+param set-default SYS_HAS_MAG 0
+param set-default EKF2_MAG_TYPE 5
 
-# RC mapping
+# Disable SD card check
+param set-default COM_ARM_SDCARD 0
+
+# Override GPS parameter that doesn't apply (from rc.mc_defaults)
+param set-default GPS_UBX_DYNMODEL 0
+
+# RC channel mapping (standard mode)
 param set-default RC_MAP_THROTTLE 3
 param set-default RC_MAP_ROLL 1
 param set-default RC_MAP_PITCH 2
 param set-default RC_MAP_YAW 4
 param set-default RC_MAP_FLTMODE 5
-param set-default RC_MAP_MODE_SW 5
 
-# MAVLink configuration
-param set-default MAV_0_CONFIG 101
-param set-default MAV_0_MODE 2
-param set-default MAV_0_RATE 57600
-param set-default MAV_0_FORWARD 1
+# Disable unused features
+param set-default NAV_DLL_ACT 0
+param set-default NAV_RCL_ACT 0
