@@ -3,32 +3,16 @@
 # Renesas EVK-RA8P1 board main initialization
 #------------------------------------------------------------------------------
 
-# Load default parameters specific to this board
-if [ -f /etc/init.d/rc.board_defaults ]
-then
-	. /etc/init.d/rc.board_defaults
-fi
+# Load board-specific parameters
+. /etc/init.d/rc.board_defaults
 
-# Start the board-specific sensors and drivers
-if [ -f /etc/init.d/rc.board_sensors ]
-then
-	# run board-specific sensor startup (if present)
-	echo "Running rc.board_sensors"
-	. /etc/init.d/rc.board_sensors
-fi
+# Start board sensors
+. /etc/init.d/rc.board_sensors
 
-# Set up I2C bus for expansion (if needed)
-# i2c -b 3 start
-
-# Set up LED driver for status indication
+# Start LED driver
 led_control start
 
-# Start Commander (required for arming and mode switching)
-if commander start
-then
-	echo "Commander started"
-else
-	echo "ERROR: Commander failed to start"
-fi
+# Start Commander
+commander start
 
 echo "EVK-RA8P1 board initialization complete"
