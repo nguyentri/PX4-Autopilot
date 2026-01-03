@@ -85,8 +85,12 @@
  ****************************************************************************************************/
 
 #define BOARD_OVERRIDE_UUID             "RZV2H0000000000" /* 16 characters */
-#ifndef PX4_SOC_ARCH_ID
-#  define PX4_SOC_ARCH_ID               PX4_SOC_ARCH_ID_RZV2H
+
+/* System architecture ID */
+#if !defined(PX4_SOC_ARCH_ID) && defined(PX4_SOC_ARCH_ID_RZV2H)
+#define PX4_SOC_ARCH_ID         PX4_SOC_ARCH_ID_RZV2H
+#else
+#define PX4_SOC_ARCH_ID         0xFFFF  /* Unknown SOC */
 #endif
 
 #define BOARD_HAS_NO_RESET              1  /* No dedicated external reset */
