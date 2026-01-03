@@ -3,34 +3,8 @@
 # Renesas EVK-RA8P1 board main initialization
 # Minimal startup - no LED drivers, no extra peripherals
 #------------------------------------------------------------------------------
-# CRITICAL: Disable file-based parameter storage (no filesystem available)
-# Force volatile RAM-only parameter storage
-set PARAM_FILE ""
-set PARAM_BACKUP_FILE ""
 
-# Disable parameter autosave to prevent file write attempts
-param set SYS_AUTOCONFIG 0 2>/dev/null || true
-
-# Ensure a RAM-backed params file exists so `param save` and autosave can succeed
-# This creates /fs/mtd_params in RAM (if not present) and makes it writable by all
-if [ ! -e /fs/mtd_params ]
-then
-	# Create the container directory if necessary
-	if [ ! -d /fs ]
-	then
-		mkdir -p /fs || true
-	fi
-	# Create the RAM file and set permissive permissions
-	touch /fs/mtd_params || true
-	chmod 666 /fs/mtd_params || true
-fi
-
-# Small validation output for debugging
-if [ -w /fs/mtd_params ]
-then
-	echo "INFO [init] /fs/mtd_params created (RAM)"
-else
-	echo "WARN [init] /fs/mtd_params not writable"
-fi
+# No filesystem available - disable all file-based parameter storage
+# Parameters will be volatile (RAM only)
 
 echo "EVK-RA8P1 board initialization complete"
