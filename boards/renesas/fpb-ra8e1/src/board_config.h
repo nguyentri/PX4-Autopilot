@@ -190,7 +190,12 @@
 
 /* Bootloader Configuration */
 #define BOARD_TYPE_COMPLETE     88          /* Board type ID */
-#define PX4_SOC_ARCH_ID         PX4_SOC_ARCH_ID_NUTTX
+
+#if !defined(PX4_SOC_ARCH_ID) && defined(PX4_SOC_ARCH_ID_RA8E1 )
+#define PX4_SOC_ARCH_ID         PX4_SOC_ARCH_ID_RA8E1
+#else
+#define PX4_SOC_ARCH_ID         0xFFFF  /* Unknown SOC */
+#endif
 
 /* Flash Configuration */
 #define BOARD_FLASH_SIZE        (1024 * 1024)   /* 1MB flash */

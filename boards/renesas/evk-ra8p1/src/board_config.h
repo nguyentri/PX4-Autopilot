@@ -75,7 +75,11 @@
 #define BOARD_HAS_NO_RESET              1  /* No dedicated external reset */
 #define BOARD_HAS_NO_BOOTLOADER         1  /* No bootloader support initially */
 #define BOARD_TYPE_COMPLETE             88 /* Board type ID */
-#define PX4_SOC_ARCH_ID                 PX4_SOC_ARCH_ID_RENESAS_RA8
+#if !defined(PX4_SOC_ARCH_ID) && defined(PX4_SOC_ARCH_ID_RA8P1)
+#define PX4_SOC_ARCH_ID         PX4_SOC_ARCH_ID_RA8P1
+#else
+#define PX4_SOC_ARCH_ID         0xFFFF  /* Unknown SOC */
+#endif
 
 /****************************************************************************************************
  * Board Hardware Info (used by platforms/nuttx/src/px4/renesas/ra8/board_hw_info/)

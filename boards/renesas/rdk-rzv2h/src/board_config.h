@@ -86,7 +86,7 @@
 
 #define BOARD_OVERRIDE_UUID             "RZV2H0000000000" /* 16 characters */
 #ifndef PX4_SOC_ARCH_ID
-#  define PX4_SOC_ARCH_ID               PX4_SOC_ARCH_ID_NUTTX
+#  define PX4_SOC_ARCH_ID               PX4_SOC_ARCH_ID_RZV2H
 #endif
 
 #define BOARD_HAS_NO_RESET              1  /* No dedicated external reset */
