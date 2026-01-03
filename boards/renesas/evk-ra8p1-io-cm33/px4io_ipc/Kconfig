@@ -1,5 +1,235 @@
+############################################################################
+# PX4IO IPC Firmware Configuration
+#
+# Configuration options for the RA8P1 CM33 IO processor firmware
+############################################################################
+
 menuconfig MODULES_PX4IOFIRMWARE
-	bool "px4iofirmware"
+	bool "PX4IO IPC Firmware"
 	default n
 	---help---
-		Enable support for px4iofirmware
+		Enable the PX4IO IPC firmware for RA8P1 CM33 core.
+		This firmware replaces the traditional PX4IO board by running
+		on the Cortex-M33 core of the dual-core RA8P1 MCU.
+
+if MODULES_PX4IOFIRMWARE
+
+config PX4IO_IPC_TRANSPORT
+	int "IPC Transport Backend"
+	default 0
+	range 0 2
+	---help---
+		Select the IPC transport backend:
+		0 = Shared memory with doorbell IRQ (default)
+		1 = OpenAMP/RPMsg (requires CONFIG_OPENAMP)
+		2 = Custom (user-provided)
+
+config PX4IO_IPC_BUFFER_SIZE
+	int "IPC Ring Buffer Size"
+	default 4096
+	range 1024 16384
+	---help---
+		Size of each IPC ring buffer (TX and RX) in bytes.
+		Larger buffers reduce overflow risk but consume more memory.
+
+config PX4IO_IPC_HEARTBEAT_RATE
+	int "IPC Heartbeat Rate (Hz)"
+	default 10
+	range 1 100
+	---help---
+		Rate at which heartbeat messages are exchanged between cores.
+
+config PX4IO_IPC_HEARTBEAT_TIMEOUT_MS
+	int "FMU Heartbeat Timeout (ms)"
+	default 100
+	range 50 1000
+	---help---
+		Timeout for FMU heartbeat. If no heartbeat is received within
+		this time, the IO processor enters failsafe mode and may
+		trigger POEG motor kill.
+
+menu "Motor Control"
+
+config PX4IO_MOTOR_COUNT
+	int "Number of Motor Outputs"
+	default 4
+	range 1 8
+	---help---
+		Number of motor outputs. Each motor uses one GPT timer channel.
+
+config PX4IO_PWM_FREQUENCY
+	int "PWM Frequency (Hz)"
+	default 400
+	range 50 2000
+	---help---
+		PWM output frequency for motors and servos.
+		Standard ESCs: 50-400 Hz
+		Fast ESCs: 400-1000 Hz
+
+config PX4IO_DSHOT_ENABLE
+	bool "Enable DShot Protocol"
+	default y
+	---help---
+		Enable DShot digital protocol for ESC communication.
+		DShot provides higher resolution and bidirectional telemetry.
+
+config PX4IO_DSHOT_BITRATE
+	int "DShot Bitrate"
+	default 600000
+	range 150000 1200000
+	depends on PX4IO_DSHOT_ENABLE
+	---help---
+		DShot bitrate:
+		150000 = DShot150
+		300000 = DShot300
+		600000 = DShot600
+		1200000 = DShot1200
+
+config PX4IO_DSHOT_TELEMETRY
+	bool "Enable DShot Telemetry"
+	default n
+	depends on PX4IO_DSHOT_ENABLE
+	---help---
+		Enable bidirectional DShot telemetry (RPM, temperature, current).
+
+endmenu # Motor Control
+
+menu "RC Input"
+
+config PX4IO_RC_SBUS
+	bool "Enable S.Bus RC Protocol"
+	default y
+	---help---
+		Enable S.Bus RC receiver protocol (inverted UART @ 100kbps).
+
+config PX4IO_RC_CRSF
+	bool "Enable CRSF/ELRS RC Protocol"
+	default y
+	---help---
+		Enable Crossfire/ELRS RC protocol (UART @ 420kbps).
+
+config PX4IO_RC_DSM
+	bool "Enable DSM/Spektrum RC Protocol"
+	default y
+	---help---
+		Enable Spektrum DSM RC protocol (UART @ 115.2kbps).
+
+config PX4IO_RC_PPM
+	bool "Enable PPM RC Protocol"
+	default y
+	---help---
+		Enable legacy CPPM (pulse position modulation) RC input.
+
+config PX4IO_RC_TIMEOUT_MS
+	int "RC Loss Timeout (ms)"
+	default 100
+	range 50 500
+	---help---
+		Time without valid RC frames before declaring RC loss.
+
+endmenu # RC Input
+
+menu "Safety Features"
+
+config PX4IO_SAFETY_BUTTON
+	bool "Enable Safety Button"
+	default y
+	---help---
+		Enable safety button for arming gate.
+
+config PX4IO_SAFETY_DEBOUNCE_MS
+	int "Safety Button Debounce (ms)"
+	default 50
+	depends on PX4IO_SAFETY_BUTTON
+	---help---
+		Debounce time for safety button press detection.
+
+config PX4IO_SAFETY_HOLD_MS
+	int "Safety Button Hold Time (ms)"
+	default 1000
+	depends on PX4IO_SAFETY_BUTTON
+	---help---
+		Required hold time to toggle safety state.
+
+config PX4IO_POEG_ENABLE
+	bool "Enable POEG Emergency Kill"
+	default y
+	---help---
+		Enable POEG (Port Output Enable for GPT) for hardware motor kill.
+		This provides microsecond-level emergency motor shutdown.
+
+config PX4IO_WATCHDOG_ENABLE
+	bool "Enable Watchdog Supervision"
+	default y
+	---help---
+		Enable independent watchdog to reset on main loop hang.
+
+config PX4IO_WATCHDOG_TIMEOUT_MS
+	int "Watchdog Timeout (ms)"
+	default 500
+	depends on PX4IO_WATCHDOG_ENABLE
+	---help---
+		Watchdog timeout period.
+
+endmenu # Safety Features
+
+menu "ADC Telemetry"
+
+config PX4IO_ADC_VBAT
+	bool "Enable Battery Voltage Monitoring"
+	default y
+	---help---
+		Monitor battery voltage via ADC.
+
+config PX4IO_ADC_VBAT_DIVIDER
+	int "Battery Voltage Divider Ratio (x10)"
+	default 110
+	depends on PX4IO_ADC_VBAT
+	---help---
+		Voltage divider ratio multiplied by 10.
+		Example: 110 = 11:1 divider ratio.
+
+config PX4IO_ADC_CURRENT
+	bool "Enable Battery Current Monitoring"
+	default y
+	---help---
+		Monitor battery current via ADC + current sense amp.
+
+config PX4IO_ADC_SERVO_RAIL
+	bool "Enable Servo Rail Monitoring"
+	default y
+	---help---
+		Monitor servo rail voltage via ADC.
+
+config PX4IO_ADC_BROWNOUT_MV
+	int "Brownout Threshold (mV)"
+	default 12000
+	depends on PX4IO_ADC_VBAT
+	---help---
+		Battery voltage below this threshold triggers brownout failsafe.
+
+endmenu # ADC Telemetry
+
+menu "Debug Options"
+
+config PX4IO_DEBUG
+	bool "Enable Debug Output"
+	default n
+	---help---
+		Enable debug logging to console.
+
+config PX4IO_PERF
+	bool "Enable Performance Counters"
+	default n
+	---help---
+		Enable performance monitoring counters.
+
+config PX4IO_IPC_LATENCY_MEASURE
+	bool "Measure IPC Latency"
+	default n
+	---help---
+		Measure and report IPC round-trip latency.
+
+endmenu # Debug Options
+
+endif # MODULES_PX4IOFIRMWARE

@@ -35,8 +35,10 @@
  * @file px4io.h
  *
  * General defines and structures for the PX4IO module firmware.
+ * Updated for RA8P1 CM33 IO processor.
  *
  * @author Lorenz Meier <lorenz@px4.io>
+ * @author PX4 Development Team
  */
 
 #pragma once
@@ -49,6 +51,20 @@
 #include <board_config.h>
 
 #include "protocol.h"
+
+/* Forward declaration for output mode type */
+#ifdef __cplusplus
+#include "pwm_out.h"
+#else
+typedef enum {
+	OUTPUT_MODE_NONE = 0,
+	OUTPUT_MODE_PWM,
+	OUTPUT_MODE_DSHOT150,
+	OUTPUT_MODE_DSHOT300,
+	OUTPUT_MODE_DSHOT600,
+	OUTPUT_MODE_DSHOT1200,
+} output_mode_t;
+#endif
 
 __BEGIN_DECLS
 
@@ -147,12 +163,17 @@ extern void	mixer_tick(void);
  */
 extern void	safety_button_init(void);
 extern void	failsafe_led_init(void);
+extern void	heartbeat_blink(void);
+extern void	ring_blink(void);
 
 /**
  * FMU communications
  */
 extern void	interface_init(void);
 extern void	interface_tick(void);
+extern void	interface_get_stats(uint32_t *rx_msgs, uint32_t *tx_msgs,
+				    uint32_t *crc_errors, uint32_t *sync_errors);
+extern bool	interface_fmu_ok(void);
 
 /**
  * Register space
@@ -164,7 +185,13 @@ extern int	registers_get(uint8_t page, uint8_t offset, uint16_t **values, unsign
  * Sensors/misc inputs
  */
 extern int	adc_init(void);
+extern void	adc_tick(void);
 extern uint16_t	adc_measure(unsigned channel);
+extern uint16_t	adc_get_vbat_mv(void);
+extern int16_t	adc_get_current_ma(void);
+extern uint16_t	adc_get_vservo_mv(void);
+extern uint16_t	adc_get_temperature_cdeg(void);
+extern bool	adc_is_brownout(void);
 
 /**
  * R/C receiver handling.
@@ -173,6 +200,35 @@ extern uint16_t	adc_measure(unsigned channel);
  */
 extern void	controls_init(void);
 extern void	controls_tick(void);
+
+/**
+ * Mixer
+ */
+extern void	mixer_init(void);
+extern int	mixer_set_mode(output_mode_t mode);
+extern int	mixer_set_pwm_rate(uint32_t rate_hz);
+extern void	mixer_emergency_stop(void);
+extern void	mixer_clear_emergency(void);
+extern bool	mixer_is_armed(void);
+
+/**
+ * Servo min/max values
+ */
+extern uint16_t	r_page_servo_control_min[];
+extern uint16_t	r_page_servo_control_max[];
+
+/**
+ * Watchdog
+ */
+extern void	watchdog_init(void);
+extern void	watchdog_pet(void);
+
+/**
+ * Memory/System
+ */
+extern void	update_mem_usage(void);
+extern void	check_reboot(void);
+extern void	show_debug_messages(void);
 
 /** global debug level for isr_debug() */
 extern volatile uint8_t debug_level;

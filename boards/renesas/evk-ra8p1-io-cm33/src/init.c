@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2012-2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,8 +34,9 @@
 /**
  * @file init.c
  *
- * PX4FMU-specific early startup code.  This file implements the
- * stm32_boardinitialize() function that is called during cpu startup.
+ * RA8P1 CM33 IO processor early startup code.
+ * This file implements board initialization for the Cortex-M33 core
+ * running as PX4IO coprocessor.
  *
  * Code here is run before the rcS script is invoked; it should start required
  * subsystems and perform board-specific initialization.
@@ -53,11 +54,10 @@
 #include <errno.h>
 #include <syslog.h>
 
+#include <nuttx/config.h>
 #include <nuttx/board.h>
 
-#include <stm32.h>
 #include "board_config.h"
-
 #include <arch/board/board.h>
 
 /****************************************************************************
@@ -73,91 +73,68 @@
  ****************************************************************************/
 
 /************************************************************************************
- * Name: stm32_boardinitialize
+ * Name: ra_board_initialize
  *
  * Description:
- *   All STM32 architectures must provide the following entry point.  This entry point
+ *   All RA8 architectures must provide the following entry point. This entry point
  *   is called early in the initialization -- after all memory has been configured
  *   and mapped but before any devices have been initialized.
  *
  ************************************************************************************/
 
-__EXPORT void stm32_boardinitialize(void)
+__EXPORT void ra_board_initialize(void)
 {
-	/* configure GPIOs */
+/* Configure GPIOs for LEDs */
+#ifdef CONFIG_ARCH_LEDS
+/* LED configurations would go here using RA8 GPIO API */
+#endif
 
-	/* Set up for sensing HW */
-	stm32_configgpio(GPIO_SENSE_PC14_DN);
-	stm32_configgpio(GPIO_SENSE_PC15_UP);
+/* Configure GPIO for safety button */
+#ifdef GPIO_BTN_SAFETY
+/* Safety button GPIO config using RA8 GPIO API */
+#endif
 
-	/* some boards such as Pixhawk 2.1 made
-	the unfortunate choice to combine the blue led channel with
-	the IMU heater. We need a software hack to fix the hardware hack
-	by allowing to disable the LED / heater.
-	*/
-	if (SENSE_PIXHAWK2()) {
-		stm32_configgpio(GPIO_HEATER_OUTPUT);
+/* PWM outputs will be configured by the pwm_out driver */
 
-	} else {
-		stm32_configgpio(GPIO_LED_BLUE);
-	}
-
-	stm32_configgpio(GPIO_PC14);
-	stm32_configgpio(GPIO_PC15);
-
-
-	/* LEDS - default to off */
-	stm32_configgpio(GPIO_LED_AMBER);
-	stm32_configgpio(GPIO_LED_SAFETY);
-	stm32_configgpio(GPIO_LED_GREEN);
-
-	stm32_configgpio(GPIO_BTN_SAFETY);
-
-	/* spektrum power enable is active high - enable it by default */
-	stm32_configgpio(GPIO_SPEKTRUM_PWR_EN);
-
-	stm32_configgpio(GPIO_SERVO_FAULT_DETECT);
-
-	/* RSSI inputs */
-	stm32_configgpio(GPIO_TIM_RSSI); /* xxx alternate function */
-	stm32_configgpio(GPIO_ADC_RSSI);
-
-	/* servo rail voltage */
-	stm32_configgpio(GPIO_ADC_VSERVO);
-
-	stm32_configgpio(GPIO_SBUS_INPUT); /* xxx alternate function */
-	stm32_configgpio(GPIO_SBUS_OUTPUT);
-
-	/* sbus output enable is active low - disable it by default */
-	stm32_gpiowrite(GPIO_SBUS_OENABLE, true);
-	stm32_configgpio(GPIO_SBUS_OENABLE);
-
-	stm32_configgpio(GPIO_PPM); /* xxx alternate function */
-
-	stm32_gpiowrite(GPIO_PWM1, true);
-	stm32_configgpio(GPIO_PWM1);
-
-	stm32_gpiowrite(GPIO_PWM2, true);
-	stm32_configgpio(GPIO_PWM2);
-
-	stm32_gpiowrite(GPIO_PWM3, true);
-	stm32_configgpio(GPIO_PWM3);
-
-	stm32_gpiowrite(GPIO_PWM4, true);
-	stm32_configgpio(GPIO_PWM4);
-
-	stm32_gpiowrite(GPIO_PWM5, true);
-	stm32_configgpio(GPIO_PWM5);
-
-	stm32_gpiowrite(GPIO_PWM6, true);
-	stm32_configgpio(GPIO_PWM6);
-
-	stm32_gpiowrite(GPIO_PWM7, true);
-	stm32_configgpio(GPIO_PWM7);
-
-	stm32_gpiowrite(GPIO_PWM8, true);
-	stm32_configgpio(GPIO_PWM8);
-
-	/* disable heater */
-	HEATER_OUTPUT_EN(false);
+/* IPC shared memory is configured via linker script and MPU */
 }
+
+/************************************************************************************
+ * Name: board_app_initialize
+ *
+ * Description:
+ *   Perform application-specific initialization. This function is called after
+ *   basic initialization is complete.
+ *
+ ************************************************************************************/
+
+__EXPORT int board_app_initialize(uintptr_t arg)
+{
+syslog(LOG_INFO, "[init] RA8P1 CM33 IO processor board initialization\n");
+
+#ifdef IPC_SHMEM_BASE
+syslog(LOG_INFO, "[init] IPC shared memory at 0x%08x (size: %d bytes)\n",
+       IPC_SHMEM_BASE, IPC_SHMEM_SIZE);
+#endif
+
+return OK;
+}
+
+/************************************************************************************
+ * Name: board_late_initialize
+ *
+ * Description:
+ *   If CONFIG_BOARD_LATE_INITIALIZE is selected, then an additional
+ *   initialization call will be performed in the boot-up sequence to a function
+ *   called board_late_initialize().  board_late_initialize() will be called
+ *   immediately after up_initialize() is called and just before the initial
+ *   application is started.
+ *
+ ************************************************************************************/
+
+#ifdef CONFIG_BOARD_LATE_INITIALIZE
+__EXPORT void board_late_initialize(void)
+{
+/* Additional late initialization can go here */
+}
+#endif

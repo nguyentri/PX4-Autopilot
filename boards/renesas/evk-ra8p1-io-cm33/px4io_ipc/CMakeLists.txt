@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015-2017 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2015-2025 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,20 +31,36 @@
 #
 ############################################################################
 
-option(PX4IO_PERF "Enable px4io perf counters" OFF)
+# PX4IO firmware library for RA8P1 CM33 IO processor
+# Supports: PWM/DShot output, RC input, ADC telemetry, IPC transport
 
-add_library(px4iofirmware
+option(PX4IO_PERF "Enable px4io perf counters" OFF)
+option(PX4IO_DEBUG "Enable px4io debug output" OFF)
+
+# Source files
+set(PX4IO_SRCS
 	adc.cpp
 	controls.cpp
+	ipc.cpp
 	mixer.cpp
+	pwm_out.cpp
 	px4io.cpp
 	registers.c
 	safety_button.cpp
 	transport_sharedmem.cpp
-	ipc.cpp
 )
 
+add_library(px4iofirmware ${PX4IO_SRCS})
+
 set_property(GLOBAL APPEND PROPERTY PX4_MODULE_LIBRARIES px4iofirmware)
+
+# Include directories
+target_include_directories(px4iofirmware
+	PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Link dependencies
 target_link_libraries(px4iofirmware
 	PUBLIC
 		arch_io_pins
@@ -56,7 +72,36 @@ target_link_libraries(px4iofirmware
 		rc
 )
 
+# Optional: DMA support for DShot
+if(CONFIG_RA_DMAC)
+	target_compile_definitions(px4iofirmware PRIVATE CONFIG_RA_DMAC=1)
+endif()
+
+# Optional: GPT timer support
+if(CONFIG_RA_GPT)
+	target_compile_definitions(px4iofirmware PRIVATE CONFIG_RA_GPT=1)
+endif()
+
+# Optional: POEG support for emergency stop
+if(CONFIG_RA_POEG)
+	target_compile_definitions(px4iofirmware PRIVATE CONFIG_RA_POEG=1)
+endif()
+
+# Performance counters
 if(PX4IO_PERF)
 	target_compile_definitions(px4iofirmware PRIVATE PX4IO_PERF)
 	target_link_libraries(px4iofirmware PRIVATE perf)
 endif()
+
+# Debug output
+if(PX4IO_DEBUG)
+	target_compile_definitions(px4iofirmware PRIVATE PX4IO_DEBUG)
+endif()
+
+# Compiler optimizations for real-time performance
+target_compile_options(px4iofirmware
+	PRIVATE
+		-O2
+		-ffunction-sections
+		-fdata-sections
+)

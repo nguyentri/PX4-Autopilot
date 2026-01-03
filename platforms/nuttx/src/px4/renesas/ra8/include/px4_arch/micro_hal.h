@@ -35,11 +35,13 @@
 #include <px4_platform/micro_hal.h>
 
 /* NuttX includes */
-#include "hardware/ra_clock.h"
 #include <nuttx/config.h>
 #include <nuttx/irq.h>
 #include <nuttx/spi/spi.h>
 #include <nuttx/i2c/i2c_master.h>
+
+#include "hardware/ra_clock.h"
+#include "ra_gpio.h"
 
 #ifdef __cplusplus
 extern "C" {
