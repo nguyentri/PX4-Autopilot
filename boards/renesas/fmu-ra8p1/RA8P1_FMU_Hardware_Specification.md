@@ -77,31 +77,32 @@ This document specifies the complete hardware architecture for a delivery drone 
 
 ### 1.4 System Block Diagram
 
-
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                R7JA8P1JSLSAJ FMU System Architecture            │
 │             (2× Hardware SPI, I2C0/I2C1/I2C2, I3C)              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ┌─────────────────────┐          ┌───────────────────────┐     │
-│  │ Cortex-M85 @ 1GHz   │◄───IPC──►│ Cortex-M33 @ 250MHz   │     │
-│  │ (Primary/FMU)       │ <1ms RTT │ (Secondary/IO)        │     │
-│  │ • PX4 Autopilot     │          │ • RC Input Handler    │     │
-│  │ • NuttX RTOS        │          │ • PWM/DShot Output    │     │
-│  │ • Sensor Fusion     │          │ • Watchdog on CM85    │     │
-│  │ • Navigation        │          │ • POEG Emergency Kill │     │
-│  │ • Edge AI (NPU)     │          │ • Arming Logic        │     │
-│  │ • Telemetry         │          │ • Safety Interlock    │     │
-│  └─────────────────────┘          └───────────────────────┘     │
+│  ┌─────────────────────┐          ┌──────────────────────────┐  │
+│  │ Cortex-M85 @ 1GHz   │◄──IPC──►│ Cortex-M33 @ 250MHz       │  │
+│  │ (Primary / FMU)     │ <1 ms   │ (Secondary / IO & Safety) │  │
+│  │ • PX4 Autopilot     │  RTT    │ • RC Input Handler        │  │
+│  │ • NuttX RTOS        │         │ • PWM / DShot Output      │  │
+│  │ • Sensor Fusion     │         │ • Watchdog on CM85        │  │
+│  │ • Navigation        │         │ • POEG Emergency Kill     │  │
+│  │ • Edge AI (NPU)     │         │ • Arming Logic            │  │
+│  │ • Telemetry         │         │ • Safety Interlock        │  │
+│  │                     │         │ • Battery Monitoring      │  │
+│  │                     │         │    (ADC, SMBus )          │  │
+│  └─────────────────────┘         └───────────────────────────┘  │
 │           │                                  │                  │
 │           └──────────┬───────────────────────┘                  │
 │                      │                                          │
 │   ┌──────────────────┴────────────┬──────────────┬──────────┐   │
 │   │ Sensors (Dual IMU)            │ Memory       │ NPU      │   │
-│   │ • IMU1: SPI0 (BMI088)        │ • SRAM: 2MB  │ Ethos     │   │
-│   │ • IMU2: SPI1 (ICM-42688-P)   │ • SDRAM: 32MB│ U55       │   │
-│   │ • Baro1: I2C0 (BMP390)        │ • NVRAM: 1MB │ 256 GOPS │   │
+│   │ • IMU1: SPI0 (BMI088)         │ • SRAM: 2MB  │ Ethos    │   │
+│   │ • IMU2: SPI1 (ICM42688-P)     │ • SDRAM:32MB │ U55      │   │
+│   │ • Baro1: I2C0 (BMP390)        │ • NVRAM:1MB  │ 256 GOPS │   │
 │   │ • Baro2: I2C1 (BMP390)        │ • Flash: 8MB │ INT8     │   │
 │   │ • Mag: I2C2 (BMM150)          │ • FRAM: 32KB │          │   │
 │   │ • GPS: UART                   │ • SD: SDHI   │          │   │
