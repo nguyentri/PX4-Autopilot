@@ -477,8 +477,8 @@
  * Latency target: <100µs round-trip (50× better than serial FMU-IO)
  */
 
-#define IPC_SRAM_BASE           0x201A0000UL
-#define IPC_SRAM_SIZE           0x00010000UL  /* 64 KB */
+#define IPC_SRAM_BASE           0x22008000UL
+#define IPC_SRAM_SIZE           0x00008000UL  /* 32 KB */
 
 /* Message region offsets (must match ipc_protocol.h) */
 #define IPC_ACTUATOR_CMD_OFFSET     0x0000
