@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2026 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,32 +31,13 @@
  *
  ****************************************************************************/
 
-/**
- * @file board_common.c
- *
- * RDK-RZV2H board common functions
- */
-
 #include <px4_platform_common/px4_config.h>
-#include <nuttx/board.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <px4_arch/io_timer_hw_description.h>
 
-#include "board_config.h"
-/* board_config.h includes board_common.h at the end, so no need to include it again */
+constexpr io_timers_t io_timers[MAX_IO_TIMERS] = {
+	/* GPT4-11 for 8 channels */
+};
 
-/* Undefine macros from board_common.h so we can implement the functions */
-#undef board_get_hw_version
-#undef board_get_hw_revision
-
-/**
- * board_rc_input - check if RC input is available
- */
-__EXPORT bool board_rc_input(uint16_t *rssi)
-{
-#ifdef BOARD_HAS_RC_INPUT
-	return true;
-#else
-	return false;
-#endif
-}
+constexpr timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
+	/* Channel mapping */
+};

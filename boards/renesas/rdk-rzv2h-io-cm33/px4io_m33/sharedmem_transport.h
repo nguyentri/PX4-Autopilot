@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,32 +31,41 @@
  *
  ****************************************************************************/
 
-/**
- * @file board_common.c
- *
- * RDK-RZV2H board common functions
- */
+#pragma once
 
+#include "protocol.h"
 #include <px4_platform_common/px4_config.h>
-#include <nuttx/board.h>
-#include <stdbool.h>
-#include <stdint.h>
 
-#include "board_config.h"
-/* board_config.h includes board_common.h at the end, so no need to include it again */
+class SharedMemTransport {
+public:
+	SharedMemTransport(uintptr_t base_addr);
+	~SharedMemTransport() = default;
 
-/* Undefine macros from board_common.h so we can implement the functions */
-#undef board_get_hw_version
-#undef board_get_hw_revision
+	// Initialization
+	void init(bool is_master); // is_master=true for CR8 (initializes memory)
 
-/**
- * board_rc_input - check if RC input is available
- */
-__EXPORT bool board_rc_input(uint16_t *rssi)
-{
-#ifdef BOARD_HAS_RC_INPUT
-	return true;
-#else
-	return false;
-#endif
-}
+	// CR8 -> M33
+	bool send_actuator_cmd(const ActuatorCommand &cmd);
+	bool receive_actuator_cmd(ActuatorCommand &cmd);
+
+	// M33 -> CR8
+	bool send_pwm_feedback(const PWMFeedback &feedback);
+	bool receive_pwm_feedback(PWMFeedback &feedback);
+
+	bool send_fault_status(const FaultStatus &status);
+	bool receive_fault_status(FaultStatus &status);
+
+private:
+	SharedMemoryLayout *_layout;
+	uint16_t _tx_seq_actuator{0};
+	uint16_t _tx_seq_feedback{0};
+	uint16_t _tx_seq_fault{0};
+
+	uint32_t calculate_crc32(const uint8_t *data, size_t len);
+
+	template <typename T, int Size>
+	bool push(RingBuffer<T, Size> &rb, const T &item);
+
+	template <typename T, int Size>
+	bool pop(RingBuffer<T, Size> &rb, T &item);
+};

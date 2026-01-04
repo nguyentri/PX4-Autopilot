@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2026 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,31 +32,55 @@
  ****************************************************************************/
 
 /**
- * @file board_common.c
+ * @file init.c
  *
- * RDK-RZV2H board common functions
+ * Renesas RDK-RZV2H IO Processor (CM33) initialization
  */
 
 #include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/init.h>
 #include <nuttx/board.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <nuttx/arch.h>
+#include <nuttx/leds/userled.h>
 
 #include "board_config.h"
-/* board_config.h includes board_common.h at the end, so no need to include it again */
 
-/* Undefine macros from board_common.h so we can implement the functions */
-#undef board_get_hw_version
-#undef board_get_hw_revision
+/****************************************************************************************************
+ * Public Functions
+ ****************************************************************************************************/
 
-/**
- * board_rc_input - check if RC input is available
- */
-__EXPORT bool board_rc_input(uint16_t *rssi)
+/****************************************************************************************************
+ * Name: board_app_initialize
+ ****************************************************************************************************/
+int board_app_initialize(uintptr_t arg)
 {
-#ifdef BOARD_HAS_RC_INPUT
-	return true;
-#else
-	return false;
+    /* Initialize peripherals */
+
+    /* Initialize PWM/DShot */
+#ifdef CONFIG_PWM
+    /* board_pwm_initialize(); */
 #endif
+
+    return 0;
+}
+
+
+/****************************************************************************
+ * Name: rzv_board_initialize
+ *
+ * Description:
+ *   All RZV architectures must provide the following entry point.  This
+ *   entry point is called early in the initialization -- after clocks and
+ *   memory have been configured but before any devices have been
+ *   initialized.
+ *
+ ****************************************************************************/
+
+void rzv_board_initialize(void)
+{
+  /* Minimal initialization for CM33 IO processor */
+
+  /* No LEDs to configure - CONFIG_ARCH_LEDS is disabled */
+
+  /* GPIO and peripheral initialization will be done in board_app_initialize() */
 }

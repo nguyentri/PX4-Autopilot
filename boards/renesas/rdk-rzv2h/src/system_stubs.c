@@ -38,13 +38,13 @@
  */
 
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/board_common.h>
 #include <nuttx/board.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <errno.h>
 
 #include "board_config.h"
+/* board_config.h includes board_common.h at the end, so redundant include removed */
 
 /* USB stubs - USB not available on this board */
 

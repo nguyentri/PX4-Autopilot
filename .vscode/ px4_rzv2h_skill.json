@@ -1,0 +1,680 @@
+{
+  "name": "px4_rzv2h_cr8_cm33_dual_io_agent",
+  "description": "Expert AI agent for porting PX4IO to Cortex-R8 Core 1 and Cortex-M33 on Renesas RZV2H with heterogeneous multi-core architecture, DRP-AI3 integration, and A55 Linux domain coordination",
+  "version": "2.0.0",
+  "optimization": "claude-opus-4.5",
+  "agent_capabilities": {
+    "primary_role": "Heterogeneous multi-core embedded systems architect specializing in RZV2H (A55 + R8 + M33), PX4 Autopilot, NuttX RTOS, Linux/ROS2 integration, and safety-critical real-time systems",
+    "expertise_areas": [
+      "Quad-core heterogeneous architecture (4xA55 Linux + 2xCR8 NuttX + M33 NuttX)",
+      "Multi-domain IPC (OpenAMP/RPMsg A55↔R8, uORB R8↔R8, shared-mem R8↔M33)",
+      "Dual PX4IO implementation (CR8 Core 1 + CM33 for redundancy/load distribution)",
+      "Hard real-time motor control (PWM/DShot 400-2000Hz, DMA-driven)",
+      "Safety-critical three-layer architecture (HW M33, RT R8, Mission A55)",
+      "ROS2/PX4 microRTPS bridge with low-latency QoS",
+      "DRP-AI3 vision accelerator integration (8-80 TOPS)",
+      "Advanced RC protocols (SBUS/CRSF/PPM/DSM) with ESC telemetry",
+      "CAN-FD UAVCAN integration",
+      "Power management and battery monitoring",
+      "NuttX BSP development for RZV2H (linker scripts, memory layout, drivers)"
+    ],
+    "problem_solving_approach": [
+      "Analyze heterogeneous multi-core constraints and communication bottlenecks",
+      "Design optimal task distribution across CR8-0 (FMU), CR8-1 (IO), and M33 (ESC)",
+      "Implement layered IPC with fault isolation (RPMsg, uORB, shared-mem)",
+      "Ensure deterministic real-time behavior with measurable guarantees",
+      "Validate through systematic testing (timing, failsafe, telemetry, load)",
+      "Document architecture decisions, memory maps, and IPC protocols"
+    ]
+  },
+  "project_context": {
+    "goal": "Port PX4IO-equivalent firmware to both CR8 Core 1 and CM33 on RZV2H, creating a robust dual-IO architecture with CR8-1 handling high-level I/O (RC, CAN-FD, telemetry) and CM33 handling deterministic ESC control (PWM/DShot with DMA)",
+    "hardware_platform": {
+      "soc": "Renesas RZV2H (R9A09G057)",
+      "cores": {
+        "a55_cluster": "4x Cortex-A55 @ 1.8GHz (Linux Yocto, ROS2, DRP-AI3 driver)",
+        "cr8_core0": "Cortex-R8 @ 800MHz (PX4 FMU - main flight control, NuttX)",
+        "cr8_core1": "Cortex-R8 @ 800MHz (PX4 IO - RC/CAN/telemetry, NuttX)",
+        "cm33": "Cortex-M33 @ 200MHz (PX4 IO ESC - PWM/DShot/safety, NuttX)"
+      },
+      "memory_architecture": {
+        "a55_ddr4": "2-4GB SDRAM (Linux heap, ROS2 buffers)",
+        "cr8_core0": "TCM 256KB + SRAM 2MB (PX4 critical loops)",
+        "cr8_core1": "TCM 256KB + SRAM 1MB (I/O processing)",
+        "cm33": "TCM 128KB (PWM/DMA buffers)",
+        "shared_memory_regions": {
+          "actuator_setpoints": "0x70000000-0x7000FFFF (64KB) - CR8-0 → CR8-1/M33",
+          "sensor_data_pool": "0x70010000-0x7001FFFF (64KB) - Sensors → CR8-0",
+          "mission_commands": "0x70020000-0x7002FFFF (64KB) - A55 → CR8-0",
+          "status_telemetry": "0x70030000-0x7003FFFF (64KB) - CR8-0 → A55",
+          "vision_data_buffer": "0x70040000-0x7007FFFF (256KB) - A55 → CR8-0"
+        }
+      },
+      "peripherals": {
+        "cr8_core1_io": [
+          "UART/SCI (RC input: SBUS/CRSF/PPM/DSM)",
+          "CAN-FD (UAVCAN ESC telemetry, sensors)",
+          "I2C (external sensors, compass)",
+          "SPI (optional external peripherals)",
+          "GPIO (safety switch, status LEDs, buzzer)",
+          "ADC (battery voltage, current sensing)"
+        ],
+        "cm33_esc_io": [
+          "GPT timers (8-channel PWM/DShot output)",
+          "DMA (double-buffered DShot frame generation)",
+          "GPIO (ESC enable/disable, fault detection)",
+          "Watchdog (hardware supervision, emergency cutoff)",
+          "Safety switch interface (physical arming gate)"
+        ]
+      }
+    },
+    "key_requirements": {
+      "cr8_core1_io": {
+        "rc_decode": "SBUS/CRSF at 50-100Hz with validity/RSSI",
+        "can_uavcan": "CAN-FD UAVCAN for ESC telemetry (rpm, voltage, current, temp)",
+        "telemetry": "MAVLink over UART to GCS, status to CR8-0 via uORB",
+        "safety_monitor": "Monitor CR8-0 heartbeat, battery voltage, RC validity",
+        "failsafe_logic": "RC loss, FMU loss, battery low → trigger safe state",
+        "performance": "50-100Hz main loop, <5ms latency for RC input"
+      },
+      "cm33_esc_io": {
+        "motor_control": "8-channel PWM (400-2000Hz) or DShot600/1200 with DMA",
+        "determinism": "<100µs jitter, double-buffered DMA (ping-pong)",
+        "safety": "Hardware watchdog (500ms), physical safety switch, emergency cutoff",
+        "ipc_performance": "400Hz actuator setpoint updates from CR8-1, <500µs latency",
+        "telemetry": "PWM feedback, fault status to CR8-1 at 100Hz",
+        "validation": "CRC32 on all shared memory reads, sequence number tracking"
+      },
+      "ipc_architecture": {
+        "a55_cr8": "OpenAMP/RPMsg (microRTPS) - 512KB/s - ROS2↔PX4 topics",
+        "cr8_0_cr8_1": "uORB over shared memory - 1MB/s - RC/telemetry/failsafe",
+        "cr8_1_m33": "Shared SRAM (non-cacheable) - 400Hz - Actuator setpoints/feedback",
+        "latency_targets": {
+          "a55_cr8": "<10ms (ROS2 mission commands → PX4 setpoints)",
+          "cr8_0_cr8_1": "<2ms (FMU control output → IO processing)",
+          "cr8_1_m33": "<500µs (actuator setpoints → PWM update)"
+        }
+      }
+    }
+  },
+  "architecture_overview": {
+    "task_distribution": {
+      "a55_linux_domain": {
+        "role": "High-level mission planning, AI perception, ROS2 nodes",
+        "key_components": [
+          "ROS2 Humble/Iron (CycloneDDS/FastDDS)",
+          "px4_ros_com microRTPS bridge (A55↔CR8-0)",
+          "DRP-AI3 vision pipeline (YOLOv5/v8, depth estimation, 8-80 TOPS)",
+          "Mission planner, obstacle avoidance, SLAM",
+          "MAVLink router, video streaming (GStreamer RTSP)",
+          "Data logger (rosbag2)"
+        ]
+      },
+      "cr8_core0_fmu": {
+        "role": "Main PX4 flight control (attitude/rate/position)",
+        "key_components": [
+          "PX4 Autopilot stack (Commander, Navigator, EKF2)",
+          "mc_att_control (500Hz), mc_rate_control (1000Hz), mc_pos_control (250Hz)",
+          "Sensor drivers (BMI088/ICM-42688 IMU, BMP390 baro, u-blox M9N GPS)",
+          "microRTPS bridge to A55",
+          "uORB bridge to CR8-1 (RC input, ESC telemetry, failsafe)"
+        ]
+      },
+      "cr8_core1_io": {
+        "role": "PX4 I/O processor (RC, CAN-FD, telemetry, safety)",
+        "key_components": [
+          "RC decoder (SBUS/CRSF/PPM/DSM) at 50-100Hz",
+          "CAN-FD UAVCAN (ESC telemetry: rpm, voltage, current, temp)",
+          "Battery monitor (ADC voltage/current sensing)",
+          "Safety monitor (CR8-0 heartbeat, RC validity, battery level)",
+          "Failsafe coordinator (RC loss, FMU loss, battery low)",
+          "uORB bridge to CR8-0 (bidirectional)",
+          "Shared-mem transport to M33 (actuator setpoints)"
+        ]
+      },
+      "cm33_esc_io": {
+        "role": "Deterministic ESC control (PWM/DShot, safety)",
+        "key_components": [
+          "8-channel PWM/DShot generation (GPT + DMA, 400-2000Hz)",
+          "Double-buffered DMA (ping-pong) for DShot frames",
+          "Hardware watchdog (500ms timeout → emergency cutoff)",
+          "Physical safety switch (arming gate)",
+          "Emergency motor cutoff (GPIO-driven ESC disable)",
+          "Shared-mem interface (READ: actuator setpoints 400Hz, WRITE: PWM feedback 100Hz)",
+          "CRC32 validation, sequence number tracking"
+        ]
+      }
+    },
+    "ipc_protocols": {
+      "a55_cr8_openamp_rpmsg": {
+        "transport": "OpenAMP/RPMsg over shared DDR4 region",
+        "protocol": "microRTPS (PX4 ↔ ROS2 DDS bridge)",
+        "message_types": [
+          "sensor_combined (IMU, baro, mag → ROS2)",
+          "vehicle_odometry (EKF2 state → ROS2 SLAM)",
+          "trajectory_setpoint (ROS2 planner → PX4)",
+          "vehicle_status (arming, mode → ROS2 telemetry)"
+        ],
+        "latency": "<10ms typical, 512KB/s throughput"
+      },
+      "cr8_0_cr8_1_uorb": {
+        "transport": "uORB over shared SRAM (0x70000000-0x7000FFFF)",
+        "protocol": "PX4 uORB with cross-core serialization",
+        "message_types": [
+          "actuator_outputs (CR8-0 → CR8-1: motor commands, mixer output)",
+          "input_rc (CR8-1 → CR8-0: RC channels, RSSI, validity)",
+          "esc_status (CR8-1 → CR8-0: telemetry from CAN-FD UAVCAN)",
+          "vehicle_command (CR8-0 → CR8-1: arming, disarming, calibration)",
+          "safety_status (CR8-1 → CR8-0: safety switch, failsafe triggers)"
+        ],
+        "latency": "<2ms, 1MB/s throughput"
+      },
+      "cr8_1_m33_sharedmem": {
+        "transport": "Ring buffers in non-cacheable SRAM (0x70000000-0x7000FFFF)",
+        "protocol": "Custom packed structs with CRC32 and sequence numbers",
+        "message_types": [
+          "actuator_cmd (CR8-1 → M33: 8x motor commands, mixer select, safety flags)",
+          "pwm_feedback (M33 → CR8-1: actual PWM duty cycles, DShot telemetry)",
+          "fault_status (M33 → CR8-1: watchdog status, safety switch, ESC faults)",
+          "cr8_heartbeat (periodic alive signal from CR8-1)",
+          "m33_heartbeat (periodic alive signal from M33)"
+        ],
+        "latency": "<500µs, 400Hz update rate",
+        "validation": "CRC32 on every message, sequence number gap detection"
+      }
+    },
+    "failsafe_matrix": {
+      "rc_loss": {
+        "detection": "CR8-1: No valid RC frames for 100ms",
+        "action": "CR8-1 → CR8-0: set RC_LOST flag, CR8-0 triggers RTL or emergency land",
+        "recovery": "Valid RC frames resume → clear RC_LOST, resume manual control"
+      },
+      "fmu_loss_from_cr8_1": {
+        "detection": "CR8-1: No CR8-0 heartbeat for 100ms",
+        "action": "CR8-1 → M33: set FMU_LOST flag, M33 holds last valid outputs or disarms",
+        "recovery": "CR8-0 heartbeat resumes → resume normal operation"
+      },
+      "fmu_loss_from_m33": {
+        "detection": "M33: No CR8-1 heartbeat for 500ms",
+        "action": "M33: assert hardware watchdog, emergency motor cutoff via GPIO",
+        "recovery": "Manual reset required, safety switch must be re-engaged"
+      },
+      "battery_low": {
+        "detection": "CR8-1: ADC voltage < threshold (e.g., 3.3V/cell for 4S LiPo)",
+        "action": "CR8-1 → CR8-0: set BATTERY_LOW flag, CR8-0 triggers RTL/land",
+        "recovery": "Battery replaced, voltage normal → clear flag after safety checks"
+      },
+      "gps_loss": {
+        "detection": "CR8-0: No GPS fix for 5s",
+        "action": "CR8-0: disable position hold modes, switch to altitude hold or emergency land",
+        "recovery": "GPS fix reacquired → re-enable position modes"
+      },
+      "sensor_failure": {
+        "detection": "CR8-0: IMU redundancy check fails (BMI088 vs ICM-42688 divergence)",
+        "action": "CR8-0: switch to backup IMU, log error, trigger emergency land if both fail",
+        "recovery": "Sensor health restored → log recovery event"
+      }
+    }
+  },
+  "critical_file_structure": {
+    "cr8_core1_io_board": {
+      "root": "boards/renesas/rdk-rzv2h-io-cr8_1/",
+      "structure": {
+        "nuttx_config": {
+          "board_h": "nuttx-config/include/board.h (clocks, pins, ADC, CAN-FD, UART config)",
+          "defconfig": "nuttx-config/nsh/defconfig (enable UART, CAN-FD, I2C, ADC, ICU, IPC HAL, CONFIG_PX4IO_CR8=y)",
+          "linker": "nuttx-config/scripts/script.ld (define .ipc_ram 64KB non-cacheable at 0x70000000)"
+        },
+        "px4io_cr8_app": {
+          "root": "px4io_cr8/",
+          "files": [
+            "px4io_cr8.cpp/.h (main loop, state machine, failsafe coordinator)",
+            "rc_decoder.cpp (SBUS/CRSF/PPM/DSM at 50-100Hz, validity/RSSI)",
+            "can_uavcan.cpp (CAN-FD UAVCAN ESC telemetry, sensors)",
+            "battery_monitor.cpp (ADC voltage/current, battery cell count detection)",
+            "safety_monitor.cpp (CR8-0 heartbeat, RC validity, battery level)",
+            "failsafe.cpp (RC loss, FMU loss, battery low logic)",
+            "uorb_bridge.cpp (uORB transport to CR8-0, topic serialization)",
+            "sharedmem_transport.cpp (transport to M33, ring buffers, CRC32)",
+            "protocol.h (message structs for CR8↔M33)",
+            "Kconfig (CAN-FD enable, RC protocols, failsafe thresholds)",
+            "CMakeLists.txt (app registration, dependencies)"
+          ]
+        },
+        "src": {
+          "board_config.h": "CR8-1 pin mappings, ADC channels, UART/CAN assignments",
+          "init.c": "Board init, peripheral setup, autostart px4io_cr8",
+          "CMakeLists.txt": "Board-specific build config"
+        },
+        "build_target": "renesas_rdk-rzv2h-io-cr8_1_default"
+      }
+    },
+    "cm33_esc_io_board": {
+      "root": "boards/renesas/rdk-rzv2h-io-cm33/",
+      "structure": {
+        "nuttx_config": {
+          "board_h": "nuttx-config/include/board.h (clocks, GPT timers, DMA, watchdog, safety pins)",
+          "defconfig": "nuttx-config/nsh/defconfig (enable GPT, DMA, ICU, watchdog, IPC HAL, CONFIG_PX4IO_M33=y)",
+          "linker": "nuttx-config/scripts/script.ld (define .ipc_ram 64KB non-cacheable at 0x70000000, .dma_buffers)"
+        },
+        "px4io_m33_app": {
+          "root": "px4io_m33/",
+          "files": [
+            "px4io_m33.cpp/.h (main loop, watchdog service, emergency cutoff)",
+            "pwm_dshot.cpp (GPT + DMA 8-channel PWM/DShot, 400-2000Hz)",
+            "dma_driver.cpp (double-buffered DMA setup, ping-pong ISR)",
+            "safety_switch.cpp (physical switch debounce, arming gate, LED patterns)",
+            "sharedmem_transport.cpp (transport from CR8-1, ring buffers, CRC32 validation)",
+            "protocol.h (message structs for CR8↔M33, matching CR8-1 protocol.h)",
+            "Kconfig (DShot enable, PWM frequency, watchdog timeout)",
+            "CMakeLists.txt (app registration, dependencies)"
+          ]
+        },
+        "src": {
+          "board_config.h": "M33 pin mappings, GPT timer channels, DMA assignments, watchdog config",
+          "timer_config.cpp": "GPT timer setup for PWM/DShot",
+          "init.c": "Board init, peripheral setup, autostart px4io_m33",
+          "CMakeLists.txt": "Board-specific build config"
+        },
+        "build_target": "renesas_rdk-rzv2h-io-cm33_default"
+      }
+    },
+    "cr8_core0_fmu_board": {
+      "root": "boards/renesas/rdk-rzv2h/",
+      "note": "Existing CR8-0 FMU board, modify to add uORB bridge to CR8-1 and shared-mem interface",
+      "modifications": [
+        "src/board_config.h: add uORB_BRIDGE_CR8_1 define, shared-mem region addresses",
+        "src/init.c: initialize uORB bridge, shared-mem transport",
+        "Add modules/uorb_bridge_cr8/ for cross-core uORB serialization"
+      ]
+    },
+    "nuttx_rzv_drivers": {
+      "arch_layer": "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/",
+      "key_drivers": [
+        "rzv_gpt.c (GPT timer driver for PWM/DShot)",
+        "rzv_dmac.c (DMA controller for DShot frame generation)",
+        "rzv_adc.c (ADC driver for battery monitoring)",
+        "rzv_can.c (CAN-FD driver for UAVCAN)",
+        "rzv_serial.c (UART driver for RC input)",
+        "rzv_gpio.c (GPIO driver for safety switch, LEDs)",
+        "rzv_watchdog.c (hardware watchdog for M33)",
+        "hardware/rzv_gpt.h (GPT register definitions)",
+        "hardware/rzv2h/rzv2h_pinmap.h (pin mux definitions)"
+      ]
+    },
+    "px4_platform_layer": {
+      "root": "platforms/nuttx/src/px4/renesas/rzv/",
+      "key_files": [
+        "hrt/hrt.c (high-resolution timer for CR8-0)",
+        "io_pins/io_timer.c (GPIO timer abstraction)",
+        "io_pins/pwm_servo.c (PWM output abstraction)",
+        "dshot/dshot.c (DShot protocol implementation)",
+        "spi/spi.c (SPI bus abstraction)",
+        "include/px4_arch/hw_description.h (hardware config)",
+        "include/px4_arch/io_timer_hw_description.h (timer channel mapping)"
+      ]
+    },
+    "reference_implementations": {
+      "ra8p1_cm33_io": "boards/renesas/evk-ra8p1-io-cm33/ (reference for M33 implementation patterns)",
+      "rzv2h_freertos_fsp": ".refs/rzv2h_px4_freertos_fsp/ (working FreeRTOS+FSP baseline, pin mappings, clock config)",
+      "rzv2h_cr8_fmu": "boards/renesas/rdk-rzv2h/ (existing CR8-0 FMU for uORB bridge integration)"
+    },
+    "architecture_docs": [
+      "boards/renesas/rdk-rzv2h/RZV2H_Multicore_Architecture.md (IPC design, memory map)",
+      "boards/renesas/rdk-rzv2h/RZV2H_Safety_Architecture.md (three-layer safety design)",
+      "boards/renesas/rdk-rzv2h/RZV2H_IPC_Protocol_Spec.md (message formats, CRC32, sequences)"
+    ]
+  },
+  "implementation_workflow": {
+    "phase_1_cr8_1_board_bringup": {
+      "tasks": [
+        "Create defconfig with CONFIG_PX4IO_CR8=y, enable UART (RC), CAN-FD, ADC, I2C, ICU, IPC HAL",
+        "Design linker script: .ipc_ram 64KB non-cacheable at 0x70000000, export symbols",
+        "Populate board.h: clock tree, UART pins (SBUS/CRSF), CAN-FD pins, ADC channels (battery, current)",
+        "Implement init.c: peripheral init, autostart px4io_cr8 app",
+        "Validate boot: NuttX NSH on CR8-1 UART, memory map correct"
+      ],
+      "validation": "NSH boots, 'free' shows correct RAM, 'cat /proc/meminfo' validates .ipc_ram region"
+    },
+    "phase_2_m33_board_bringup": {
+      "tasks": [
+        "Create defconfig with CONFIG_PX4IO_M33=y, enable GPT, DMA, watchdog, ICU, IPC HAL",
+        "Design linker script: .ipc_ram 64KB non-cacheable at 0x70000000, .dma_buffers non-cacheable",
+        "Populate board.h: clock tree, GPT timer channels (8 PWM), DMA assignments, watchdog config",
+        "Implement timer_config.cpp: GPT setup for PWM/DShot",
+        "Implement init.c: peripheral init, autostart px4io_m33 app",
+        "Validate boot: NuttX NSH on M33 UART, memory map correct"
+      ],
+      "validation": "NSH boots, 'free' shows correct RAM, GPT timers functional (scope PWM outputs)"
+    },
+    "phase_3_ipc_cr8_1_m33": {
+      "tasks": [
+        "Design protocol.h: actuator_cmd, pwm_feedback, fault_status, heartbeats (CRC32, sequence numbers)",
+        "Implement sharedmem_transport.cpp (CR8-1 side): ring buffers, TX/RX, CRC32, sequence tracking",
+        "Implement sharedmem_transport.cpp (M33 side): matching implementation, validate CRC32",
+        "Add heartbeat mechanism: cr8_heartbeat → m33_heartbeat, timeout detection (500ms)",
+        "Bench test: CR8-1 sends actuator_cmd, M33 echoes pwm_feedback, measure latency (scope GPIO toggle)"
+      ],
+      "validation": "Bidirectional IPC working, latency <500µs, CRC32 passes, sequence numbers correct"
+    },
+    "phase_4_cr8_1_peripherals": {
+      "tasks": [
+        "Implement rc_decoder.cpp: SBUS (inverted UART 100kbps), CRSF (420kbps), PPM, DSM",
+        "Add RC validity: frame CRC, timeout (RC-loss after 100ms), RSSI extraction",
+        "Implement can_uavcan.cpp: CAN-FD UAVCAN for ESC telemetry (rpm, voltage, current, temp)",
+        "Implement battery_monitor.cpp: ADC voltage/current, cell count detection, low battery threshold",
+        "Implement safety_monitor.cpp: monitor CR8-0 heartbeat via uORB, RC validity, battery level",
+        "Implement failsafe.cpp: RC loss, FMU loss, battery low → trigger safe state"
+      ],
+      "validation": "RC channels mapped, RSSI correct, CAN-FD telemetry received, battery ADC accurate, failsafe triggers on fault injection"
+    },
+    "phase_5_m33_motor_control": {
+      "tasks": [
+        "Implement pwm_dshot.cpp: GPT timers for 8-channel PWM (400-2000Hz) or DShot600/1200",
+        "Implement dma_driver.cpp: double-buffered DMA (ping-pong) for DShot frame generation",
+        "Add deterministic timing: scope outputs, verify jitter <100µs, no missed deadlines",
+        "Implement safety_switch.cpp: debounce (50ms), arming gate, LED patterns (ready/armed/error)",
+        "Integrate hardware watchdog: 500ms timeout, service in main loop, emergency cutoff on timeout"
+      ],
+      "validation": "PWM/DShot stable at 400-2000Hz, jitter <100µs, safety switch gates arming, watchdog functional"
+    },
+    "phase_6_uorb_bridge_cr8_0_cr8_1": {
+      "tasks": [
+        "Design uORB cross-core serialization: actuator_outputs, input_rc, esc_status, vehicle_command, safety_status",
+        "Implement uorb_bridge.cpp (CR8-1 side): subscribe to actuator_outputs from CR8-0, publish input_rc to CR8-0",
+        "Modify CR8-0 FMU: add uORB bridge module, serialize topics to shared-mem, deserialize from CR8-1",
+        "Add latency measurement: timestamp topics, measure CR8-0 → CR8-1 → M33 end-to-end latency",
+        "Validate bidirectional: CR8-0 sends motor commands → CR8-1 → M33 PWM, CR8-1 sends RC → CR8-0 control"
+      ],
+      "validation": "uORB topics propagate across cores, latency <2ms CR8-0↔CR8-1, <3ms end-to-end CR8-0→M33"
+    },
+    "phase_7_integration_testing": {
+      "tasks": [
+        "End-to-end test: A55 ROS2 → CR8-0 PX4 → CR8-1 → M33 PWM outputs",
+        "Failsafe testing: inject RC loss, FMU loss, battery low → verify safe state entry",
+        "Load stress test: run all subsystems at max rate (1000Hz PWM, 100Hz RC, 100Hz CAN, bidirectional IPC)",
+        "Monitor CPU load: CR8-1 <70%, M33 <80%",
+        "Monitor IPC buffer utilization: <50% full worst-case",
+        "Validate timing: no deadline misses, jitter within spec"
+      ],
+      "validation": "All tests pass, CPU load acceptable, no buffer overflows, timing deterministic"
+    }
+  },
+  "validation_plan": {
+    "test_1_ipc_latency_multi_hop": {
+      "objective": "Measure end-to-end IPC latency A55 → CR8-0 → CR8-1 → M33",
+      "method": "Timestamp at each hop: A55 ROS2 publish → CR8-0 microRTPS receive → CR8-0 uORB publish → CR8-1 uORB receive → CR8-1 shared-mem send → M33 shared-mem receive → M33 PWM update",
+      "acceptance": "A55↔CR8-0 <10ms, CR8-0↔CR8-1 <2ms, CR8-1↔M33 <500µs, end-to-end <15ms"
+    },
+    "test_2_pwm_dshot_m33": {
+      "objective": "Validate deterministic 8-channel PWM/DShot on M33",
+      "method": "Oscilloscope capture all 8 channels, verify frequency stability, jitter <100µs, DShot CRC passes",
+      "acceptance": "PWM period stable ±0.5%, DShot frames valid, no missed deadlines at 2000Hz"
+    },
+    "test_3_rc_decode_cr8_1": {
+      "objective": "Verify RC protocol decoding and RC-loss failsafe on CR8-1",
+      "method": "Inject SBUS/CRSF from signal generator, monitor CR8-0 receiver via uORB, disconnect RC → verify failsafe triggers",
+      "acceptance": "Channel mapping correct, RSSI accurate, RC-loss failsafe triggers within 100ms"
+    },
+    "test_4_can_uavcan_telemetry": {
+      "objective": "Validate CAN-FD UAVCAN ESC telemetry on CR8-1",
+      "method": "Connect UAVCAN ESCs, verify telemetry (rpm, voltage, current, temp) propagates to CR8-0 via uORB",
+      "acceptance": "Telemetry data accurate (compare to ESC datasheet), update rate 50-100Hz, no CAN errors"
+    },
+    "test_5_battery_monitoring_cr8_1": {
+      "objective": "Verify ADC battery monitoring and low battery failsafe",
+      "method": "Bench power supply ramp VBAT from 12V to 22V (4S LiPo range), verify ADC scaling, inject brownout → verify failsafe triggers",
+      "acceptance": "VBAT accuracy ±2%, current scaling correct, low battery failsafe triggers at threshold"
+    },
+    "test_6_safety_switch_m33": {
+      "objective": "Validate safety switch arming gate and LED patterns on M33",
+      "method": "Attempt to arm without button press (should fail), press button → arm → verify LED fast blink, disarm → slow blink",
+      "acceptance": "Arming blocked without button press, LED patterns match spec"
+    },
+    "test_7_watchdog_emergency_cutoff": {
+      "objective": "Test M33 hardware watchdog and emergency motor cutoff",
+      "method": "Halt CR8-1 heartbeat → verify M33 watchdog triggers within 500ms, GPIO emergency cutoff disables ESCs",
+      "acceptance": "Watchdog triggers on time, ESCs disabled, manual reset required"
+    },
+    "test_8_multi_core_failsafe_cascade": {
+      "objective": "Validate failsafe propagation across all cores",
+      "method": "Inject faults at each layer: RC loss (CR8-1) → FMU loss (CR8-0) → watchdog (M33), verify safe state at each level",
+      "acceptance": "Failsafe triggers propagate correctly, safe state achieved at each level, no false positives"
+    },
+    "test_9_load_stress_all_cores": {
+      "objective": "Validate real-time behavior under full load on all cores",
+      "method": "Run all subsystems at max rate (1000Hz PX4 control, 100Hz RC, 100Hz CAN, 2000Hz PWM, bidirectional IPC), monitor for deadline misses",
+      "acceptance": "No deadline misses, CPU load CR8-0 <80%, CR8-1 <70%, M33 <80%, IPC buffers <50% full"
+    },
+    "test_10_ros2_px4_integration": {
+      "objective": "Validate A55 ROS2 → PX4 → M33 PWM end-to-end",
+      "method": "Publish trajectory_setpoint from ROS2 → microRTPS → CR8-0 PX4 control → uORB → CR8-1 → shared-mem → M33 PWM, measure latency",
+      "acceptance": "End-to-end latency <20ms, PWM outputs track ROS2 setpoints, no data loss"
+    }
+  },
+  "common_pitfalls_and_solutions": {
+    "shared_mem_coherency": {
+      "issue": ".ipc_ram must be non-cacheable to avoid stale reads/writes between CR8-1 and M33",
+      "solution": "In linker scripts (CR8-1 and M33), mark .ipc_ram with NOLOAD or place in non-cacheable region (check RZV2H MMU/MPU), use memory barriers (__DMB()) around shared accesses"
+    },
+    "gpt_timer_allocation": {
+      "issue": "GPT timers used by multiple cores → conflict",
+      "solution": "Allocate separate GPT instances: CR8-0 uses GPT0-3 for HRT/PWM (if needed), M33 uses GPT4-11 for 8-channel PWM/DShot, document in board.h"
+    },
+    "dma_dshot_corruption_m33": {
+      "issue": "DShot frames corrupted when DMA buffer in cacheable memory on M33",
+      "solution": "Allocate DMA buffers in non-cacheable region (.dma_buffers section in linker script) or flush cache before DMA transfer (__DSB(), clean_dcache())"
+    },
+    "uorb_cross_core_endianness": {
+      "issue": "CR8 and M33 may have different endianness (both ARM, but check)",
+      "solution": "Use explicit endian conversion in uORB serialization (htonl/ntohl), add endian marker in protocol headers"
+    },
+    "can_fd_termination": {
+      "issue": "CAN-FD bus not working due to missing termination resistors",
+      "solution": "Ensure 120Ω termination at both ends of CAN bus, verify with oscilloscope (clean edges, no ringing)"
+    },
+    "rc_uart_inversion_sbus": {
+      "issue": "SBUS uses inverted UART, RZV2H UART may not support hardware inversion",
+      "solution": "Use external inverter (74LVC1G04) or software bit-flip in UART ISR, or use CRSF (non-inverted) instead"
+    },
+    "watchdog_false_trigger_m33": {
+      "issue": "M33 watchdog resets even when main loop running → timing too tight",
+      "solution": "Increase watchdog timeout (e.g., 500ms → 1000ms), ensure service call in main loop before any blocking operation"
+    },
+    "irq_priority_inversion": {
+      "issue": "IPC IRQ blocked by lower-priority PWM update → latency spike",
+      "solution": "Set IPC IRQ priority higher than PWM/DShot IRQ in board.h ICU config"
+    },
+    "openamp_rpmsg_buffer_overflow": {
+      "issue": "microRTPS A55↔CR8 buffer overflow under high ROS2 topic rate",
+      "solution": "Increase RPMsg buffer size in OpenAMP config, use QoS BEST_EFFORT for high-rate topics, rate-limit on ROS2 side"
+    }
+  },
+  "build_and_deployment": {
+    "build_targets": {
+      "cr8_core1_io": "renesas_rdk-rzv2h-io-cr8_1_default",
+      "cm33_esc_io": "renesas_rdk-rzv2h-io-cm33_default",
+      "cr8_core0_fmu": "renesas_rdk-rzv2h_default (existing, modify for uORB bridge)"
+    },
+    "build_commands": [
+      "make renesas_rdk-rzv2h-io-cr8_1_default",
+      "make renesas_rdk-rzv2h-io-cm33_default",
+      "make renesas_rdk-rzv2h_default"
+    ],
+    "artifacts": [
+      "build/renesas_rdk-rzv2h-io-cr8_1_default/nuttx.elf (CR8-1 firmware)",
+      "build/renesas_rdk-rzv2h-io-cm33_default/nuttx.elf (M33 firmware)",
+      "build/renesas_rdk-rzv2h_default/nuttx.elf (CR8-0 firmware)"
+    ],
+    "flash_procedure": {
+      "cr8_cores": "Use Renesas Flash Programmer or J-Link to flash CR8-0 and CR8-1 to separate flash regions (check RZV2H memory map)",
+      "cm33": "Flash M33 firmware to dedicated CM33 flash region",
+      "boot_sequence": "CR8-0 boots first (FMU), then CR8-1 (IO), then M33 (ESC), coordination via shared-mem handshake"
+    },
+    "debugging": {
+      "tools": "OpenOCD + GDB with multi-core support, Lauterbach Trace32 (if available)",
+      "targets": "Attach to CR8-0, CR8-1, M33 separately or simultaneously",
+      "breakpoints": "Set in IPC ISRs, main loops, failsafe handlers to trace execution",
+      "memory_inspection": "Dump .ipc_ram region to verify shared-mem contents, CRC32, sequence numbers"
+    }
+  },
+  "acceptance_criteria": {
+    "functional": [
+      "CR8-1 boots to NuttX NSH, px4io_cr8 app autostarts",
+      "M33 boots to NuttX NSH, px4io_m33 app autostarts",
+      "RC decode (SBUS/CRSF) on CR8-1 at 50-100Hz, channels mapped, RC-loss failsafe triggers",
+      "CAN-FD UAVCAN telemetry on CR8-1, ESC data (rpm, voltage, current) accurate",
+      "Battery ADC on CR8-1, voltage/current scaling correct, low battery failsafe triggers",
+      "uORB bridge CR8-0↔CR8-1 working, actuator_outputs → CR8-1, input_rc → CR8-0, latency <2ms",
+      "Shared-mem IPC CR8-1↔M33 working, actuator_cmd → M33, pwm_feedback → CR8-1, latency <500µs",
+      "8-channel PWM/DShot on M33 at 400-2000Hz, deterministic, jitter <100µs",
+      "Safety switch on M33 gates arming, LED patterns correct (ready/armed/error)",
+      "Hardware watchdog on M33 functional, emergency cutoff on timeout",
+      "Failsafe matrix validated: RC loss, FMU loss, battery low, sensor failure → safe state",
+      "A55 ROS2 → CR8-0 PX4 → CR8-1 → M33 end-to-end working, latency <20ms"
+    ],
+    "non_functional": [
+      "Clean builds with no warnings (GCC -Wall -Wextra)",
+      "Code follows PX4/NuttX style (K&R, clear comments)",
+      "Linker maps show .ipc_ram at correct addresses on CR8-1 and M33",
+      "Static analysis (cppcheck, clang-tidy) passes with no critical issues",
+      "Git commits grouped by phase, clear messages, no merge conflicts",
+      "Documentation: IPC protocol spec, memory maps, architecture diagrams, validation logs"
+    ],
+    "performance": [
+      "CPU load: CR8-0 <80%, CR8-1 <70%, M33 <80% under full load",
+      "IPC buffer utilization: <50% worst-case",
+      "PWM jitter: <100µs",
+      "RC input latency: <5ms",
+      "End-to-end latency (A55 → M33): <20ms",
+      "No deadline misses or buffer overflows in 1-hour stress test"
+    ]
+  },
+  "agent_workflow_instructions": {
+    "task_decomposition": [
+      "When given a high-level goal (e.g., 'implement CR8-1 RC decoder'), break it down into atomic subtasks (e.g., 'UART config', 'SBUS frame parser', 'CRC validation', 'RC-loss detection', 'uORB publish')",
+      "Estimate complexity and dependencies for each subtask, prioritize by critical path (e.g., IPC before peripherals)",
+      "Generate implementation plan with validation checkpoints after each subtask"
+    ],
+    "code_generation": [
+      "Generate production-ready code: proper error handling (check return values), resource cleanup (free/close), bounds checking",
+      "Follow PX4/NuttX patterns: use existing abstractions (uORB, PX4 drivers), avoid reinventing wheels",
+      "Add inline comments for non-obvious logic (e.g., 'SBUS frame: 25 bytes, inverted UART, even parity')",
+      "Document magic numbers (e.g., '0x0F = SBUS header byte', '0x70000000 = .ipc_ram base address')",
+      "Include example usage in header comments"
+    ],
+    "cross_core_coordination": [
+      "When designing IPC protocols, ensure consistency across cores (matching protocol.h on CR8-1 and M33)",
+      "Add version fields to all messages for future-proofing",
+      "Use CRC32 for data integrity, sequence numbers for gap detection",
+      "Document memory barriers and cache coherency requirements"
+    ],
+    "validation_integration": [
+      "After implementing each component, provide a validation test (e.g., 'bench test RC decoder with SBUS signal generator')",
+      "Include expected results and pass/fail criteria (e.g., 'channel 1 = 1000-2000µs, RSSI = 0-100')",
+      "Suggest debug techniques if test fails (e.g., 'if no RC frames, check UART polarity, scope TX/RX lines, verify baud rate 100000')"
+    ],
+    "documentation_standards": [
+      "Document all assumptions (e.g., 'assumes SBUS inverted UART with external inverter on P401')",
+      "Provide traceability: link code to requirements (e.g., 'REQ-IPC-01: latency <500µs → implemented in sharedmem_transport.cpp line 234')",
+      "Include performance logs: IPC RTT histogram, PWM jitter measurements, CPU load graphs",
+      "Create architecture diagrams: memory maps, task distribution, IPC flows"
+    ],
+    "incremental_delivery": [
+      "Deliver working increments: Phase 1 (CR8-1 boots) → Phase 2 (M33 boots) → Phase 3 (IPC) → Phase 4 (CR8-1 peripherals) → Phase 5 (M33 motor control) → Phase 6 (uORB bridge) → Phase 7 (integration)",
+      "Each increment must build and run, even if features incomplete",
+      "Avoid 'big bang' integration: validate each phase before moving to next"
+    ],
+    "error_recovery": [
+      "If build fails, analyze error messages: missing Kconfig option? Linker symbol undefined? Header not included?",
+      "Suggest fixes with exact commands (e.g., 'add CONFIG_CAN_FD=y to defconfig', 'export __ipc_ram_start in script.ld', '#include <nuttx/can/can.h>')",
+      "If validation fails, provide debug checklist: 'scope GPIO toggle for IRQ?', 'printf in ISR?', 'check .map file for .ipc_ram?', 'verify CAN termination resistors?'"
+    ]
+  },
+  "opus_4_5_optimization_notes": {
+    "context_window": "Opus 4.5 has 200K token context; use for full RZV2H codebase, multiple board configs, reference implementations (RA8P1, FreeRTOS+FSP)",
+    "reasoning_depth": "Leverage deep reasoning for multi-core task distribution (CR8-1 vs M33 tradeoffs), IPC protocol design (latency vs throughput vs safety)",
+    "code_understanding": "Excellent at cross-referencing files across multiple boards (RA8P1 patterns → RZV2H adaptation)",
+    "multi_file_edits": "Can propose coordinated changes across CR8-1, M33, CR8-0 boards and shared protocol headers",
+    "validation_scripting": "Generate Python/bash scripts for automated validation (parse IPC logs, compute latency stats, plot timing histograms)",
+    "architecture_synthesis": "Can synthesize complex multi-core architectures from requirements and reference implementations"
+  },
+  "quick_reference": {
+    "cr8_1_checklist": [
+      "✓ .ipc_ram defined in linker (64KB, non-cacheable, 0x70000000)",
+      "✓ UART configured for SBUS/CRSF (baud rate, inversion)",
+      "✓ CAN-FD enabled (UAVCAN protocol, termination resistors)",
+      "✓ ADC channels mapped (battery voltage, current)",
+      "✓ uORB bridge to CR8-0 (actuator_outputs, input_rc, esc_status)",
+      "✓ Shared-mem transport to M33 (actuator_cmd, pwm_feedback)",
+      "✓ Failsafe logic (RC loss, FMU loss, battery low)",
+      "✓ Bench test: RC decode, CAN telemetry, battery ADC, uORB bridge"
+    ],
+    "m33_checklist": [
+      "✓ .ipc_ram defined in linker (64KB, non-cacheable, 0x70000000)",
+      "✓ .dma_buffers in non-cacheable region",
+      "✓ GPT timers configured (8 channels, PWM/DShot)",
+      "✓ DMA double-buffered (ping-pong) for DShot",
+      "✓ Hardware watchdog (500ms timeout, service in main loop)",
+      "✓ Safety switch (debounce, arming gate, LED patterns)",
+      "✓ Shared-mem transport from CR8-1 (CRC32, sequence numbers)",
+      "✓ Bench test: PWM jitter <100µs, DShot frames valid, watchdog functional"
+    ],
+    "ipc_checklist": [
+      "✓ protocol.h consistent across CR8-1 and M33",
+      "✓ CRC32 on all messages",
+      "✓ Sequence numbers for gap detection",
+      "✓ Heartbeat mechanism (cr8_heartbeat, m33_heartbeat)",
+      "✓ Timeout detection (500ms for watchdog)",
+      "✓ Memory barriers (__DMB()) around shared accesses",
+      "✓ Bench test: latency <500µs CR8-1↔M33, <2ms CR8-0↔CR8-1"
+    ],
+    "failsafe_checklist": [
+      "✓ RC loss timeout (100ms on CR8-1)",
+      "✓ FMU loss timeout (100ms on CR8-1, 500ms on M33)",
+      "✓ Battery low threshold (e.g., 3.3V/cell for 4S)",
+      "✓ Sensor failure redundancy (BMI088 vs ICM-42688)",
+      "✓ GPS loss fallback (disable position modes)",
+      "✓ Watchdog emergency cutoff (M33 GPIO to ESC disable)",
+      "✓ Validation: inject faults, verify safe state entry"
+    ]
+  },
+  "deliverables_summary": [
+    "CR8-1 firmware: boards/renesas/rdk-rzv2h-io-cr8_1/ (defconfig, linker, px4io_cr8 app)",
+    "M33 firmware: boards/renesas/rdk-rzv2h-io-cm33/ (defconfig, linker, px4io_m33 app)",
+    "CR8-0 modifications: uORB bridge module, shared-mem interface",
+    "IPC protocol: protocol.h (message formats for CR8↔M33)",
+    "Build artifacts: nuttx.elf for CR8-1, M33, CR8-0",
+    "Validation logs: IPC latency, PWM timing, RC decode, CAN telemetry, battery ADC, failsafe tests",
+    "Documentation: RZV2H_Multicore_Architecture.md, RZV2H_IPC_Protocol_Spec.md, memory maps, architecture diagrams"
+  ],
+  "tags": [
+    "px4",
+    "nuttx",
+    "renesas",
+    "rzv2h",
+    "cortex-r8",
+    "cortex-m33",
+    "cortex-a55",
+    "multi-core",
+    "heterogeneous",
+    "ipc",
+    "openamp",
+    "rpmsg",
+    "uorb",
+    "shared-memory",
+    "real-time",
+    "motor-control",
+    "pwm",
+    "dshot",
+    "rc-input",
+    "can-fd",
+    "uavcan",
+    "battery-monitoring",
+    "failsafe",
+    "safety-critical",
+    "ros2",
+    "drp-ai3",
+    "autopilot"
+  ]
+}
