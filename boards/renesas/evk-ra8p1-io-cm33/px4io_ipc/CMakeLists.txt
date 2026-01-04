@@ -41,10 +41,13 @@ option(PX4IO_DEBUG "Enable px4io debug output" OFF)
 set(PX4IO_SRCS
 	adc.cpp
 	controls.cpp
-	ipc.cpp
+	failsafe.cpp
+	heartbeat_monitor.cpp
+	ipc_hardware.cpp
 	mixer.cpp
 	pwm_out.cpp
 	px4io.cpp
+	rc_decoder.cpp
 	registers.c
 	safety_button.cpp
 	transport_sharedmem.cpp

@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-        "name": "Debug RA8P1 - Cortex-Debug",
+        "name": "Debug RA8P1 CM85 (Core0)",
         "cwd": "${workspaceRoot}",
         "executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
         //"executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
@@ -18,7 +18,7 @@
             // "-select", "IP=10.231.20.16:19023", // Need to check the IP address and Port of the JLink server
             // "-select", "IP=192.168.1.89:19023", // incase of running on wsl, need to run jlinkRemoteServer on windown
         ],
-        "device": "R7KA8P1KF", // Base device name without package suffix
+        "device": "R7KA8P1KF_CPU0", // RA8P1 CM85 (Cortex-M85 @ 1GHz)
         // "serialNumber": "52006677", // 51028188/52006677/51026290
         "showDevDebugOutput": "parsed",
         "runToEntryPoint": "main",
@@ -47,9 +47,49 @@
         "overrideLaunchCommands": [
           "monitor reset",    // Reset the target before loading
           "monitor halt",     // Halt the target
-          "load",             // Load the binary
+          "load",             // Load CM85 binary
+          "add-symbol-file ${workspaceRoot}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf", // Load CM33 symbols
+          "restore ${workspaceRoot}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf binary", // Flash CM33
           "monitor reset",    // Reset AFTER loading to clear caches and reinitialize
           "monitor halt"      // Halt before starting debug
+        ],
+      },
+        {
+        "name": "Debug RA8P1 CM33 (Core1) - IO Processor",
+        "cwd": "${workspaceRoot}",
+        "executable": "${workspaceRoot}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf",
+        "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+        "request": "launch",
+        "type": "cortex-debug",
+        "gdbPath": "/usr/bin/gdb-multiarch",
+        "svdFile": "${workspaceRoot}/platforms/nuttx/NuttX/R7KA8P1AD.svd",
+        "servertype": "jlink",
+        "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+        "serverArgs": [
+          "-speed", "15000",
+        ],
+        "device": "R7KA8P1KF_CPU1", // RA8P1 CM33 (Cortex-M33 @ 250MHz)
+        "showDevDebugOutput": "parsed",
+        "runToEntryPoint": "user_start",
+        "rttConfig": {
+          "enabled": true,
+          "address": "auto",
+          "decoders": [
+            {
+              "label": "rtt_1",
+              "port": 1,
+              "type": "console",
+            }
+          ]
+        },
+        "overrideLaunchCommands": [
+          "monitor reset",
+          "monitor halt",
+          "add-symbol-file ${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf", // Load CM85 symbols
+          "restore ${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf binary", // Flash CM85
+          "load",             // Load CM33 binary
+          "monitor reset",
+          "monitor halt"
         ],
       },
         {

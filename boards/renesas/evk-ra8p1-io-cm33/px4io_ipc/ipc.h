@@ -36,8 +36,9 @@
  *
  * RA8P1 CM33 IPC (Inter-Processor Communication) Interface
  *
- * This module provides the transport layer for CM85 ↔ CM33 communication
- * using shared memory ring buffers and hardware doorbell interrupts.
+ * Provides both low-level transport (ring buffers, message passing) and
+ * high-level application functions (heartbeat monitoring, RC decoding,
+ * failsafe coordination) for CM85 ↔ CM33 communication.
  */
 
 #pragma once
@@ -237,6 +238,132 @@ void ipc_doorbell_isr(void);
  * @return Number of messages processed, or negative error code
  */
 int ipc_poll(void);
+
+/*******************************************************************************
+ * High-Level IPC Functions (Application Layer)
+ ******************************************************************************/
+
+/**
+ * @brief Initialize heartbeat monitoring
+ */
+void heartbeat_monitor_init(void);
+
+/**
+ * @brief Monitor CM85 heartbeat and trigger POEG on timeout
+ * @return true if heartbeat OK, false if timeout
+ */
+bool heartbeat_monitor_check(void);
+
+/**
+ * @brief Publish CM33 heartbeat to CM85
+ */
+void heartbeat_publish_cm33(uint32_t sequence, uint8_t system_state,
+                            uint8_t cpu_load, int16_t temperature,
+                            uint32_t error_flags);
+
+/**
+ * @brief Get CM85 heartbeat timeout count
+ */
+uint32_t heartbeat_get_timeout_count(void);
+
+/**
+ * @brief Check if CM85 heartbeat timeout is active
+ */
+bool heartbeat_is_timeout_active(void);
+
+/**
+ * @brief Force POEG kill for testing
+ */
+void heartbeat_force_poeg_kill(void);
+
+/**
+ * @brief Initialize RC decoder
+ */
+void rc_decoder_init(void);
+
+/**
+ * @brief Check for RC timeout and set failsafe
+ */
+void rc_decoder_check_timeout(void);
+
+/**
+ * @brief Process incoming RC frame
+ * @param protocol RC protocol (SBUS, DSM, CRSF, PPM)
+ * @param frame Pointer to frame buffer
+ * @param len Frame length in bytes
+ */
+void rc_decoder_process_frame(uint8_t protocol, const uint8_t *frame, uint8_t len);
+
+/**
+ * @brief Publish RC data to IPC
+ */
+void rc_decoder_publish(void);
+
+/**
+ * @brief Get RC frame count
+ */
+uint32_t rc_decoder_get_frame_count(void);
+
+/**
+ * @brief Get RC lost frame count
+ */
+uint32_t rc_decoder_get_lost_frame_count(void);
+
+/**
+ * @brief Check if RC failsafe is active
+ */
+bool rc_decoder_is_failsafe_active(void);
+
+/**
+ * @brief Set RSSI value
+ */
+void rc_decoder_set_rssi(uint8_t rssi);
+
+/**
+ * @brief Set link quality value (for CRSF)
+ */
+void rc_decoder_set_link_quality(uint8_t quality);
+
+/**
+ * @brief Initialize failsafe system
+ */
+void failsafe_init(void);
+
+/**
+ * @brief Update failsafe state (call every 1ms)
+ */
+void failsafe_update(void);
+
+/**
+ * @brief Process battery status and check thresholds
+ * @param voltage_mv Battery voltage in millivolts
+ * @param current_ma Battery current in milliamps
+ * @param cell_count Number of cells
+ * @return Warning flags bitmask
+ */
+uint8_t failsafe_process_battery(uint16_t voltage_mv, int16_t current_ma,
+                                  uint8_t cell_count);
+
+/**
+ * @brief Get current failsafe flags
+ * @return Bitmask: 0x01=RC, 0x02=FMU, 0x04=Actuator, 0x08=Battery
+ */
+uint8_t failsafe_get_flags(void);
+
+/**
+ * @brief Check if any failsafe condition is active
+ */
+bool failsafe_is_active(void);
+
+/**
+ * @brief Force failsafe for testing
+ */
+void failsafe_force_test(const char *reason);
+
+/**
+ * @brief Print failsafe status
+ */
+void failsafe_print_status(void);
 
 #ifdef __cplusplus
 }

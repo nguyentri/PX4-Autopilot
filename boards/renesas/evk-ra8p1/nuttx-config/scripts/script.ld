@@ -40,15 +40,15 @@
  * Internal Code MRAM (1MB total):
  * ===================================================
  * Memory Allocation:
- *   - CM85: 0x02000000 - 0x0207FFFF (512KB) - Boot, NuttX kernel, XIP code
- *   - CM33: 0x02080000 - 0x02097FFF (96KB)  - CM33 firmware (copied to ITCM)
- *   - Free: 0x02098000 - 0x020FFFFF (416KB) - Available for future use
+ *   - CM85: 0x02000000 - 0x020E7FFF (928KB) - Boot, NuttX kernel, XIP code
+ *   - CM33: 0x020E8000 - 0x020FFFFF (96KB)  - CM33 firmware (copied to ITCM)
+ *   - Free: None - All 1MB MRAM allocated
  *
  * CM33 Dual-Core Support:
  * ===================================================
  * CM33 cannot execute from MRAM directly. Boot sequence:
- *   1. CM85 boots from MRAM, initializes system
- *   2. CM85 copies CM33 firmware from .cm33_code section to CM33_ITCM
+ *   1. CM85 boots from MRAM @ 0x02000000, initializes system
+ *   2. CM85 copies CM33 firmware from MRAM @ 0x020E8000 to CM33_ITCM @ 0x20100000
  *   3. CM85 releases CM33 reset via SYSC registers
  *   4. CM33 starts executing from its ITCM @ 0x00000000 (CM33 view)
  *

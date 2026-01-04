@@ -460,6 +460,43 @@
  */
 
 /****************************************************************************************************
+ * IPC (Inter-Processor Communication) Configuration
+ ****************************************************************************************************/
+
+/* Shared Memory IPC between CM85 (FMU) and CM33 (IO Processor)
+ *
+ * Memory Region: 64KB non-cacheable SRAM @ 0x201A0000
+ * - actuator_cmd:    0x201A0000 (128 B, CM85→CM33)
+ * - rc_input:        0x201A0080 (128 B, CM33→CM85)
+ * - battery_status:  0x201A0100 (128 B, CM33→CM85)
+ * - heartbeat_cm85:  0x201A0180 (32 B,  CM85→CM33)
+ * - heartbeat_cm33:  0x201A01A0 (32 B,  CM33→CM85)
+ * - perf_counters:   0x201A1000 (60 KB)
+ *
+ * Protocol: CRC16-CCITT validation, sequence numbers, memory barriers
+ * Latency target: <100µs round-trip (50× better than serial FMU-IO)
+ */
+
+#define IPC_SRAM_BASE           0x201A0000UL
+#define IPC_SRAM_SIZE           0x00010000UL  /* 64 KB */
+
+/* Message region offsets (must match ipc_protocol.h) */
+#define IPC_ACTUATOR_CMD_OFFSET     0x0000
+#define IPC_RC_INPUT_OFFSET         0x0080
+#define IPC_BATTERY_STATUS_OFFSET   0x0100
+#define IPC_HEARTBEAT_CM85_OFFSET   0x0180
+#define IPC_HEARTBEAT_CM33_OFFSET   0x01A0
+#define IPC_PERF_COUNTERS_OFFSET    0x1000
+
+/* Computed addresses */
+#define IPC_ACTUATOR_CMD_ADDR       (IPC_SRAM_BASE + IPC_ACTUATOR_CMD_OFFSET)
+#define IPC_RC_INPUT_ADDR           (IPC_SRAM_BASE + IPC_RC_INPUT_OFFSET)
+#define IPC_BATTERY_STATUS_ADDR     (IPC_SRAM_BASE + IPC_BATTERY_STATUS_OFFSET)
+#define IPC_HEARTBEAT_CM85_ADDR     (IPC_SRAM_BASE + IPC_HEARTBEAT_CM85_OFFSET)
+#define IPC_HEARTBEAT_CM33_ADDR     (IPC_SRAM_BASE + IPC_HEARTBEAT_CM33_OFFSET)
+#define IPC_PERF_COUNTERS_ADDR      (IPC_SRAM_BASE + IPC_PERF_COUNTERS_OFFSET)
+
+/****************************************************************************************************
  * Camera Interface Configuration
  ****************************************************************************************************/
 

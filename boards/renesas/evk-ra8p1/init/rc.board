@@ -7,4 +7,16 @@
 # No filesystem available - disable all file-based parameter storage
 # Parameters will be volatile (RAM only)
 
+# Start CM85 IPC driver for CM33 (IO processor) communication
+# This replaces the traditional serial PX4IO protocol with shared-memory IPC
+# Wait briefly for sensors to initialize before starting IPC
+usleep 50000
+
+if px4io_cm85 start
+then
+	echo "CM85 IPC driver started"
+else
+	echo "ERROR: CM85 IPC driver failed to start"
+fi
+
 echo "EVK-RA8P1 board initialization complete"

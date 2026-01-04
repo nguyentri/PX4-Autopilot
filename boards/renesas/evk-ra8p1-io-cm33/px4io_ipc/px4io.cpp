@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2022 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2026 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,7 +59,7 @@
 # include <lib/perf/perf_counter.h>
 #endif
 
-//#include <stm32_uart.h>
+#include "ipc_hardware.h"
 
 #define DEBUG
 #include "px4io.h"
@@ -283,6 +283,14 @@ extern "C" __EXPORT int user_start(int argc, char *argv[])
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
 
+	/* initialize hardware IPC for interrupt-driven CM85 communication */
+	if (ipc_hw_init() < 0) {
+		syslog(LOG_ERR, "IPC hardware initialization failed\n");
+		/* Continue anyway - will fall back to polling if needed */
+	} else {
+		syslog(LOG_INFO, "IPC hardware initialized (CM33 core)\n");
+	}
+
 	/* calculate our fw CRC so FMU can decide if we need to update */
 	calculate_fw_crc();
 
@@ -342,6 +350,11 @@ extern "C" __EXPORT int user_start(int argc, char *argv[])
 	/* Start the failsafe led init */
 	failsafe_led_init();
 
+	/* Initialize IPC-enhanced modules for CM85 communication */
+	heartbeat_monitor_init();
+	rc_decoder_init();
+	failsafe_init();
+
 	/*
 	 * Run everything in a tight loop.
 	 */
@@ -376,6 +389,11 @@ extern "C" __EXPORT int user_start(int argc, char *argv[])
 #if defined(PX4IO_PERF)
 		perf_end(controls_perf);
 #endif
+
+		/* IPC-enhanced module updates */
+		heartbeat_monitor_check();  /* Check CM85 heartbeat, trigger POEG on timeout */
+		rc_decoder_check_timeout(); /* Check RC timeout, set failsafe flag */
+		failsafe_update();          /* Update aggregate failsafe state */
 
 		interface_tick();
 

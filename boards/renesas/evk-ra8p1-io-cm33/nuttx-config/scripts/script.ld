@@ -4,7 +4,7 @@
  * RA8P1 CM33 IO Processor - Linker Script
  *
  * Memory Layout (CM33 system view):
- * - MRAM:    0x02080000, 96KB  - Non-volatile code storage (XIP or copied to ITCM by CM85)
+ * - MRAM:    0x020E8000, 96KB  - Non-volatile code storage (XIP or copied to ITCM by CM85)
  * - ITCM:    0x20100000, 64KB  - Critical code: ISRs, DShot, GPT (fast execution)
  * - DTCM:    0x20110000, 64KB  - Data, stacks (fast access)
  * - SRAM:    0x22000000, 32KB  - Dynamic heap (NuttX malloc)
@@ -12,7 +12,7 @@
  *
  * Boot Sequence:
  * 1. CM85 boots from MRAM @ 0x02000000
- * 2. CM85 copies CM33 firmware from MRAM @ 0x02080000 to CM33_ITCM @ 0x20100000
+ * 2. CM85 copies CM33 firmware from MRAM @ 0x020E8000 to CM33_ITCM @ 0x20100000
  * 3. CM85 releases CM33 reset
  * 4. CM33 executes from ITCM (vectors + critical code) and MRAM (general code)
  *
@@ -21,8 +21,8 @@
 MEMORY
 {
     /* CM33 Code MRAM - 96KB allocated from 1MB MRAM */
-    /* CM85 uses 0x02000000-0x0207FFFF (512KB), CM33 uses 0x02080000-0x02097FFF (96KB) */
-    mram (rx)   : ORIGIN = 0x02080000, LENGTH = 96K    /* General code, rodata (XIP) */
+    /* CM85 uses 0x02000000-0x020E7FFF (928KB), CM33 uses 0x020E8000-0x020FFFFF (96KB) */
+    mram (rx)   : ORIGIN = 0x020E8000, LENGTH = 96K    /* General code, rodata (XIP) */
 
     /* Tightly-Coupled Memory for CM33 (system view addresses) */
     itcm (rx)   : ORIGIN = 0x20100000, LENGTH = 64K    /* Critical code: ISRs, DShot, GPT */
