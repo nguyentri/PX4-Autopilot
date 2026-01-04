@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+export GIT_SUBMODULES_ARE_EVIL=1
+
+echo "==========================================="
+echo "Building RA8P1 Dual-Core Firmware"
+echo "==========================================="
+
+cd ./platforms/nuttx/NuttX/nuttx
+make distclean
+cd ../../../..
+
+echo ""
+echo "Building CM85 (Core0) FMU firmware..."
+echo "y" | make renesas_evk-ra8p1_default
+
+echo ""
+echo "Building CM33 (Core1) IO firmware..."
+echo "y" | make renesas_evk-ra8p1-io-cm33_default
+
+echo ""
+echo "==========================================="
+echo "Build completed successfully!"
+echo "==========================================="
+echo "CM85: build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf"
+echo "CM33: build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf"
+echo ""
+echo "To flash both cores:"
+echo "  ./flash_dualcore.sh"
+echo "==========================================="
+
