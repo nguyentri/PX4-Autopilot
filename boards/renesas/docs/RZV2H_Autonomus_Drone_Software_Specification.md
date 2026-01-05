@@ -1,14 +1,250 @@
-System and Software Architecture for Autonomous Drone Using Renesas RZ/V2H
-Executive Summary
+# System and Software Architecture for Autonomous Drone Using Renesas RZ/V2H
+
+## Executive Summary
+
 This document presents a production-ready system and software architecture for an advanced autonomous drone platform leveraging the Renesas RZ/V2H MPU's heterogeneous multi-core architecture. The design implements a clear separation of concerns across compute domains while maintaining robust real-time guarantees and safety-critical operation.
-Key Architecture Principles:
-•	Domain Isolation: Clear boundaries between AI/perception (A55), real-time flight control (R8), and deterministic I/O (M33)
-•	Safety-First Design: Hardware-enforced failsafes, redundant monitoring, and graceful degradation
-•	Standards Compliance: PX4 flight stack, ROS 2 middleware, MAVLink protocol
-•	Scalable Performance: Efficient use of DRP-AI3 accelerator for 8-80 TOPS vision processing
-________________________________________
-1. Hardware Platform Overview
-1.1 RZ/V2H Core Configuration
+
+### Key Architecture Principles:
+- **Domain Isolation**: Clear boundaries between AI/perception (A55), real-time flight control (R8), and deterministic I/O (M33)
+- **Safety-First Design**: Hardware-enforced failsafes, redundant monitoring, and graceful degradation
+- **Standards Compliance**: PX4 flight stack, ROS 2 middleware, MAVLink protocol
+- **Scalable Performance**: Efficient use of DRP-AI3 accelerator for 8-80 TOPS vision processing
+
+---
+
+## Table of Contents
+1. [Hardware Platform Overview](#1-hardware-platform-overview)
+2. [Software Stack Architecture](#2-software-stack-architecture)
+3. [Project Folder Structure](#3-project-folder-structure)
+4. [Inter-Core Communication Architecture](#4-inter-core-communication-architecture)
+5. [Safety and Failsafe Architecture](#5-safety-and-failsafe-architecture)
+6. [Build and Deployment](#6-build-and-deployment)
+
+---
+
+## 3. Project Folder Structure
+
+<a name="3-project-folder-structure"></a>
+
+The RZV2H PX4 implementation is organized into three primary board configurations for the heterogeneous multi-core architecture:
+
+### 3.1 Overview
+
+```
+boards/renesas/
+├── rdk-rzv2h/              # CR8-0: PX4 FMU (Main Flight Controller)
+├── rdk-rzv2h-io-cr8_1/     # CR8-1: PX4 I/O Processor (RC, CAN, Telemetry)
+└── rdk-rzv2h-io-cm33/      # CM33: ESC Controller (PWM/DShot, Safety)
+```
+
+### 3.2 CR8-0: Main Flight Management Unit (FMU)
+
+**Path**: `boards/renesas/rdk-rzv2h/`
+
+```
+rdk-rzv2h/
+├── default.px4board           # PX4 board configuration
+├── firmware.prototype         # Firmware metadata
+├── Kconfig                    # Board-specific kernel config
+├── init/                      # Initialization scripts
+│   ├── rc.board_defaults      # Default parameters
+│   ├── rc.board_defaults.cmds # Startup commands
+│   └── rc.offline_sensor_check # Sensor validation
+├── nuttx-config/              # NuttX RTOS configuration
+│   ├── include/
+│   │   └── board.h            # Hardware definitions
+│   ├── nsh/
+│   │   └── defconfig          # CR8-0 defconfig (CONFIG_RZV2H_BUILD_CR8_0=y)
+│   ├── scripts/
+│   │   └── rdk-rzv2h_cr8_0.ld # Linker script (TCM/SRAM/DDR layout)
+│   └── src/
+│       └── rzv2h_appinit.c    # Board initialization
+├── px4io_cr8_0/               # Optional: FMU-side PX4IO integration
+└── src/                       # Board support code
+    ├── board_config.h         # Pin mappings, peripheral config
+    ├── board_common.c         # Common board functions
+    ├── CMakeLists.txt         # Build configuration
+    ├── i2c.cpp                # I2C bus initialization
+    ├── init.c                 # Early hardware init
+    ├── led.c                  # LED control
+    ├── spi.cpp                # SPI bus initialization
+    ├── system_stubs.c         # System stubs
+    └── timer_config.cpp       # GPT timer configuration (HRT, PWM)
+```
+
+**Key Features**:
+- Real-time flight control (1000Hz rate, 500Hz attitude, 250Hz position)
+- Sensor drivers (BMI088, ICM-42688, BMP390, GPS)
+- EKF2 sensor fusion
+- microRTPS bridge to A55 Linux
+- uORB bridge to CR8-1
+
+### 3.3 CR8-1: I/O Processor (RC, CAN-FD, Battery)
+
+**Path**: `boards/renesas/rdk-rzv2h-io-cr8_1/`
+
+```
+rdk-rzv2h-io-cr8_1/
+├── default.px4board           # PX4 board config (CONFIG_PX4IO_CR8=y)
+├── firmware.prototype         # Firmware metadata
+├── nuttx-config/              # NuttX configuration
+│   ├── include/
+│   │   └── board.h            # Hardware definitions
+│   ├── nsh/
+│   │   └── defconfig          # CR8-1 defconfig (CONFIG_RZV2H_BUILD_CR8_1=y)
+│   ├── scripts/
+│   │   └── script.ld          # Linker script (.ipc_ram @ 0x70000000)
+│   └── src/
+├── px4io_cr8_1/               # PX4 I/O application
+│   ├── CMakeLists.txt         # App build config
+│   ├── protocol.h             # IPC protocol (CR8-1 ↔ M33)
+│   ├── px4io_cr8.cpp          # Main I/O loop (RC, CAN, Battery, Failsafe)
+│   ├── px4io_cr8.h            # App header
+│   ├── sharedmem_transport.cpp # Shared memory transport (CR8-1 ↔ M33)
+│   └── sharedmem_transport.h  # Transport interface
+└── src/                       # Board support
+    ├── board_config.h         # Pin mappings (UART, CAN, ADC, GPIO)
+    ├── CMakeLists.txt         # Board build config
+    └── init.c                 # Board initialization
+```
+
+**Key Features**:
+- RC input decoding (SBUS/CRSF/PPM/DSM at 50-100Hz)
+- CAN-FD UAVCAN (ESC telemetry: RPM, voltage, current, temp)
+- Battery monitoring (ADC voltage/current sensing)
+- Safety monitor (CR8-0 heartbeat, RC validity, battery level)
+- Failsafe coordinator (RC loss, FMU loss, battery low)
+- Shared memory transport to M33 (actuator setpoints at 400Hz)
+
+### 3.4 CM33: ESC Controller (PWM/DShot, Safety)
+
+**Path**: `boards/renesas/rdk-rzv2h-io-cm33/`
+
+```
+rdk-rzv2h-io-cm33/
+├── default.px4board           # PX4 board config (CONFIG_PX4IO_M33=y)
+├── firmware.prototype         # Firmware metadata
+├── nuttx-config/              # NuttX configuration
+│   ├── include/
+│   │   └── board.h            # Hardware definitions
+│   ├── nsh/
+│   │   └── defconfig          # CM33 defconfig (CONFIG_RZV2H_BUILD_CM33=y)
+│   ├── scripts/
+│   │   └── script.ld          # Linker script (.ipc_ram, .dma_buffers @ 0x70000000)
+│   └── src/
+├── px4io_m33/                 # PX4 ESC application
+│   ├── CMakeLists.txt         # App build config
+│   ├── protocol.h             # IPC protocol (CR8-1 ↔ M33, matching CR8-1)
+│   ├── px4io_m33.cpp          # Main ESC loop (PWM/DShot, Watchdog, Safety)
+│   ├── px4io_m33.h            # App header
+│   ├── pwm_dshot.cpp          # GPT + DMA PWM/DShot generation (8 channels)
+│   ├── pwm_dshot.h            # PWM interface
+│   ├── dma_driver.cpp         # Double-buffered DMA (ping-pong for DShot)
+│   ├── safety_switch.cpp      # Physical safety switch (debounce, arming gate)
+│   ├── sharedmem_transport.cpp # Shared memory transport (CR8-1 ↔ M33)
+│   └── sharedmem_transport.h  # Transport interface
+└── src/                       # Board support
+    ├── board_config.h         # Pin mappings (GPT timers, DMA, Watchdog, Safety)
+    ├── CMakeLists.txt         # Board build config
+    ├── init.c                 # Board initialization
+    └── timer_config.cpp       # GPT timer setup (8-channel PWM/DShot)
+```
+
+**Key Features**:
+- 8-channel PWM/DShot output (400-2000Hz, GPT timers + DMA)
+- Double-buffered DMA (ping-pong) for deterministic DShot frame generation
+- Hardware watchdog (500ms timeout → emergency motor cutoff)
+- Physical safety switch (arming gate, LED patterns)
+- Shared memory interface from CR8-1 (CRC32 validation, sequence tracking)
+- Deterministic timing (<100µs jitter)
+
+### 3.5 Platform Layer (Shared NuttX Drivers)
+
+**Path**: `platforms/nuttx/src/px4/renesas/rzv/`
+
+```
+platforms/nuttx/src/px4/renesas/rzv/
+├── adc/                       # ADC abstraction (battery monitoring)
+│   ├── adc.cpp
+│   └── adc.h
+├── board_critmon/             # Critical section monitoring
+├── board_hw_info/             # Hardware info reporting
+├── board_reset/               # Board reset handling
+├── dshot/                     # DShot protocol implementation
+│   ├── dshot.c
+│   └── dshot.h
+├── hrt/                       # High-resolution timer (HRT)
+│   ├── hrt.c
+│   └── hrt.h
+├── include/                   # Platform headers
+│   └── px4_arch/
+│       ├── hw_description.h   # Hardware config
+│       └── io_timer_hw_description.h # Timer channel mapping
+├── io_pins/                   # GPIO and timer abstraction
+│   ├── io_timer.c             # Timer abstraction
+│   └── pwm_servo.c            # PWM output abstraction
+├── led_pwm/                   # LED PWM control
+├── micro_hal/                 # Micro HAL abstraction
+├── spi/                       # SPI bus abstraction
+│   ├── spi.c
+│   └── spi.h
+└── version/                   # Version reporting
+```
+
+**Shared Components**:
+- Hardware abstraction layer (HAL) for all RZV2H boards
+- Common timer, PWM, SPI, ADC drivers
+- DShot protocol stack
+- High-resolution timer (HRT) for PX4 scheduling
+
+### 3.6 IPC Protocol Structure
+
+**Shared Header**: `protocol.h` (identical in CR8-1 and CM33)
+
+```c
+/* protocol.h - IPC message formats for CR8-1 ↔ M33 */
+
+#define IPC_MAGIC 0x525A5632  // "RZV2"
+#define IPC_VERSION 0x01
+
+/* Actuator command (CR8-1 → M33, 400Hz) */
+typedef struct {
+    uint32_t magic;           // IPC_MAGIC
+    uint8_t version;          // IPC_VERSION
+    uint8_t mixer_select;     // Quad-X, Hexa-X, Octa-X
+    uint16_t sequence;        // Sequence number (gap detection)
+    uint16_t motor[8];        // PWM values (1000-2000µs or DShot)
+    uint8_t safety_flags;     // Arm, disarm, emergency
+    uint32_t crc32;           // CRC32 of all fields
+} __attribute__((packed)) actuator_cmd_t;
+
+/* PWM feedback (M33 → CR8-1, 100Hz) */
+typedef struct {
+    uint32_t magic;
+    uint8_t version;
+    uint16_t sequence;
+    uint16_t pwm_duty[8];     // Actual PWM duty cycles
+    uint8_t fault_status;     // Watchdog, safety switch, ESC faults
+    uint32_t crc32;
+} __attribute__((packed)) pwm_feedback_t;
+
+/* Heartbeat (bidirectional, 10Hz) */
+typedef struct {
+    uint32_t magic;
+    uint8_t version;
+    uint64_t timestamp_us;
+    uint8_t core_id;          // 0=CR8-1, 1=M33
+    uint32_t crc32;
+} __attribute__((packed)) heartbeat_t;
+```
+
+---
+
+## 1. Hardware Platform Overview
+
+<a name="1-hardware-platform-overview"></a>
+
+### 1.1 RZ/V2H Core Configuration
 ┌─────────────────────────────────────────────────────────────┐
 │                    Renesas RZ/V2H MPU                       │
 ├─────────────────────────────────────────────────────────────┤
@@ -28,29 +264,43 @@ ________________________________________
 │  DRP-AI3 Accelerator                                        │
 │  └─ Vision AI Inference Engine                              │
 └─────────────────────────────────────────────────────────────┘
-1.2 Memory Architecture
-Shared Memory Regions (Non-Cacheable):
+
+### 1.2 Memory Architecture
+
+**Shared Memory Regions (Non-Cacheable)**:
+```
 0x70000000 - 0x7000FFFF: Actuator Setpoints (64KB)
 0x70010000 - 0x7001FFFF: Sensor Data Pool (64KB)
 0x70020000 - 0x7002FFFF: Mission Commands (64KB)
 0x70030000 - 0x7003FFFF: Status & Telemetry (64KB)
 0x70040000 - 0x7007FFFF: Vision Data Buffer (256KB)
-Core-Private Memory:
-•	A55: DDR4 SDRAM (2-4GB) - Linux heap, ROS 2 buffers
-•	R8-0: TCM (256KB) + SRAM (2MB) - PX4 critical loops
-•	R8-1: TCM (256KB) + SRAM (1MB) - I/O processing
-•	M33: TCM (128KB) - PWM/DMA buffers
-________________________________________
-2. Software Stack Architecture
-2.1 Cortex-A55 Cluster (Linux Domain)
-Operating System:
-yaml
+```
+
+**Core-Private Memory**:
+- **A55**: DDR4 SDRAM (2-4GB) - Linux heap, ROS 2 buffers
+- **R8-0**: TCM (256KB) + SRAM (2MB) - PX4 critical loops
+- **R8-1**: TCM (256KB) + SRAM (1MB) - I/O processing
+- **M33**: TCM (128KB) - PWM/DMA buffers
+
+---
+
+## 2. Software Stack Architecture
+
+<a name="2-software-stack-architecture"></a>
+
+### 2.1 Cortex-A55 Cluster (Linux Domain)
+
+**Operating System**:
+
+```yaml
 Base: Yocto Linux 4.0+ (kirkstone/langdale)
 Kernel: Linux 5.15+ with real-time patches (PREEMPT_RT)
 Init System: systemd with custom drone services
 Filesystem: ext4 root, tmpfs for logs
 Security: SELinux enforcing mode, secure boot
-Core Components:
+```
+
+**Core Components**:
 ┌─────────────────────────────────────────────────────────────┐
 │                  Application Layer (A55)                    │
 ├─────────────────────────────────────────────────────────────┤
@@ -63,8 +313,8 @@ Core Components:
 ├─────────────────────────────────────────────────────────────┤
 │  Middleware Layer                                           │
 │  ├─ ROS 2 DDS (CycloneDDS/FastDDS)                          │
-│  ├─ OpenAMP/RPMsg (R8 ↔ A55)                               │
-│  └─ DRP-AI3 SDK (vision accelerator)                       │
+│  ├─ OpenAMP/RPMsg (R8 ↔ A55)                                │
+│  └─ DRP-AI3 SDK (vision accelerator)                        │
 ├─────────────────────────────────────────────────────────────┤
 │  System Services                                            │
 │  ├─ MAVLink Router (TCP/UDP/Serial)                         │
@@ -72,8 +322,10 @@ Core Components:
 │  ├─ Data Logger (rosbag2)                                   │
 │  └─ Configuration Manager (YAML/JSON)                       │
 └─────────────────────────────────────────────────────────────┘
-ROS 2 Node Graph:
-mermaid
+
+**ROS 2 Node Graph**:
+
+```mermaid
 graph LR
     Camera[camera_node] -->|Image| Perception[perception_node]
     IMU[imu_node] -->|IMU Data| SLAM[slam_node]
@@ -85,8 +337,11 @@ graph LR
     Planner -->|Setpoints| Bridge[px4_ros_com_bridge]
     Bridge -->|microRTPS| PX4[PX4 on R8]
     PX4 -->|Telemetry| Bridge
-DRP-AI3 Integration:
-c
+```
+
+**DRP-AI3 Integration**:
+
+```c
 // DRP-AI3 Vision Pipeline
 typedef struct {
     drp_ai3_context_t ai_ctx;
@@ -112,9 +367,14 @@ public:
         publish_detections(detections);
     }
 };
-________________________________________
-2.2 Cortex-R8 Core 0 (PX4 FMU - Flight Management Unit)
-Operating System: NuttX RTOS 12.x
+```
+
+---
+
+### 2.2 Cortex-R8 Core 0 (PX4 FMU - Flight Management Unit)
+
+**Operating System**: NuttX RTOS 12.x
+
 ┌─────────────────────────────────────────────────────────────┐
 │            PX4 Autopilot v1.14+ (NuttX on R8-0)             │
 ├─────────────────────────────────────────────────────────────┤
@@ -142,8 +402,10 @@ Operating System: NuttX RTOS 12.x
 │  ├─ Sensor Fusion Output (→ A55, 100 Hz)                    │
 │  └─ Mission Commands (← A55, async)                         │
 └─────────────────────────────────────────────────────────────┘
-Critical Control Loops:
-c
+
+**Critical Control Loops**:
+
+```c
 // R8-0 Real-Time Scheduling
 // Priority levels: 0 (highest) → 255 (lowest)
 
@@ -188,7 +450,8 @@ void ekf2_thread(void *arg) {
     }
 }
 Sensor Redundancy:
-c
+
+```c
 // Dual IMU configuration with cross-validation
 typedef struct {
     imu_data_t primary_imu;    // BMI088
@@ -222,14 +485,14 @@ Operating System: NuttX RTOS 12.x (Separate Instance)
 ├─────────────────────────────────────────────────────────────┤
 │  I/O Management                                             │
 │  ├─ RC Input Processing (SBUS/CRSF/PPM)                     │
-│  ├─ ESC Telemetry (DShot, UART)                            │
-│  ├─ CAN-FD Interface (UAVCAN v1)                           │
-│  └─ Safety Switch & LED Driver                             │
+│  ├─ ESC Telemetry (DShot, UART)                             │
+│  ├─ CAN-FD Interface (UAVCAN v1)                            │
+│  └─ Safety Switch & LED Driver                              │
 ├─────────────────────────────────────────────────────────────┤
 │  Power Management                                           │
 │  ├─ Battery Monitor (ADC, current sensor)                   │
-│  ├─ Voltage Regulator Control                              │
-│  └─ Power Domain Sequencing                                │
+│  ├─ Voltage Regulator Control                               │
+│  └─ Power Domain Sequencing                                 │
 ├─────────────────────────────────────────────────────────────┤
 │  Failsafe Logic                                             │
 │  ├─ RC Loss Detection                                       │
@@ -238,11 +501,12 @@ Operating System: NuttX RTOS 12.x (Separate Instance)
 │  └─ Emergency Landing Trigger                               │
 ├─────────────────────────────────────────────────────────────┤
 │  Inter-Core Communication                                   │
-│  ├─ uORB Bridge (R8-0 ↔ R8-1)                              │
+│  ├─ uORB Bridge (R8-0 ↔ R8-1)                               │
 │  └─ Shared Memory Status (→ A55)                            │
 └─────────────────────────────────────────────────────────────┘
 RC Input Processing:
-c
+
+```c
 // SBUS protocol decoder (100 kbps inverted serial)
 #define SBUS_FRAME_SIZE 25
 #define SBUS_UPDATE_RATE_HZ 100
@@ -270,8 +534,11 @@ void sbus_decode_thread(void *arg) {
         }
     }
 }
+```
+
 CAN-FD UAVCAN Integration:
-c
+
+```c
 // UAVCAN v1 node configuration
 #define UAVCAN_NODE_ID 42
 #define CANFD_BITRATE 1000000  // 1 Mbps nominal
@@ -299,9 +566,11 @@ void esc_status_callback(const uavcan_esc_status_t *msg) {
 
     orb_publish(ORB_ID(esc_status), &telem);
 }
+```
+
 ________________________________________
 2.4 Cortex-M33 (Bare-Metal ESC Controller)
-Nuttx RTOS - Ultra-Deterministic Bare-Metal Implementation
+NuttX RTOS - Ultra-Deterministic Bare-Metal Implementation
 ┌─────────────────────────────────────────────────────────────┐
 │        Bare-Metal ESC Controller (M33)                      │
 ├─────────────────────────────────────────────────────────────┤
@@ -321,7 +590,8 @@ Nuttx RTOS - Ultra-Deterministic Bare-Metal Implementation
 │  └─ Write: PWM feedback & fault status                      │
 └─────────────────────────────────────────────────────────────┘
 Memory Layout:
-c
+
+```c
 // Shared memory structures (aligned, non-cacheable)
 typedef struct __attribute__((aligned(64))) {
     uint32_t sequence;           // Monotonic counter
@@ -343,8 +613,11 @@ volatile actuator_setpoints_t *g_setpoints =
     (actuator_setpoints_t *)0x70000000;
 volatile pwm_feedback_t *g_feedback =
     (pwm_feedback_t *)0x70000100;
+```
+
 DMA-Driven PWM Architecture:
-c
+
+```c
 // Double-buffered DMA for PWM duty cycle updates
 #define PWM_CHANNELS 8
 #define PWM_FREQUENCY_HZ 400
@@ -392,8 +665,11 @@ void TIM1_UP_IRQHandler(void) {
 
     TIM1->SR &= ~TIM_SR_UIF;  // Clear interrupt flag
 }
+```
+
 Arming State Machine:
-c
+
+```c
 typedef enum {
     ARMING_STATE_DISARMED = 0,
     ARMING_STATE_PREARMED,
@@ -462,28 +738,31 @@ void arming_state_machine(void) {
             break;
     }
 }
+```
+
 ________________________________________
 3. Inter-Core Communication Architecture
 3.1 Communication Channels
 ┌──────────────────────────────────────────────────────────────┐
 │                  Communication Matrix                        │
 ├──────────────┬───────────────────────────────────────────────┤
-│ A55 ↔ R8-0   │ OpenAMP/RPMsg (512 KB/s bidirectional)       │
-│              │ - microRTPS bridge for ROS 2 ↔ PX4           │
-│              │ - Shared memory for sensor data              │
+│ A55 ↔ R8-0   │ OpenAMP/RPMsg (512 KB/s bidirectional)        │
+│              │ - microRTPS bridge for ROS 2 ↔ PX4            │
+│              │ - Shared memory for sensor data               │
 ├──────────────┼───────────────────────────────────────────────┤
-│ R8-0 ↔ R8-1  │ uORB over shared memory (1 MB/s)             │
-│              │ - RC inputs, ESC telemetry                   │
-│              │ - Failsafe triggers                          │
+│ R8-0 ↔ R8-1  │ uORB over shared memory (1 MB/s)              │
+│              │ - RC inputs, ESC telemetry                    │
+│              │ - Failsafe triggers                           │
 ├──────────────┼───────────────────────────────────────────────┤
-│ R8-0 ↔ M33   │ Shared SRAM (actuator setpoints, 400 Hz)     │
-│              │ - Write: motor outputs                       │
-│              │ - Read: PWM feedback, faults                 │
+│ R8-0 ↔ M33   │ Shared SRAM (actuator setpoints, 400 Hz)      │
+│              │ - Write: motor outputs                        │
+│              │ - Read: PWM feedback, faults                  │
 ├──────────────┼───────────────────────────────────────────────┤
-│ A55 ↔ M33    │ Indirect via R8-0 (no direct channel)        │
+│ A55 ↔ M33    │ Indirect via R8-0 (no direct channel)         │
 └──────────────┴───────────────────────────────────────────────┘
 3.2 Boot Sequence
-mermaid
+
+```mermaid
 sequenceDiagram
     participant M33 as Cortex-M33
     participant R8_0 as Cortex-R8 #0
@@ -522,9 +801,12 @@ sequenceDiagram
     R8_0->>M33: Continuous heartbeat (100 Hz)
     R8_0->>M33: Actuator setpoints (400 Hz)
     M33->>R8_0: PWM feedback (100 Hz)
+```
+
 3.3 microRTPS Bridge (A55 ↔ R8-0)
 Configuration:
-yaml
+
+```yaml
 # micrortps_bridge.yaml
 transport: shared_memory
 shmem_path: /dev/shm/px4_ros2_bridge
@@ -550,7 +832,8 @@ topics:
     qos: reliable
     rate_hz: 50
 Implementation:
-cpp
+
+```cpp
 // ROS 2 node on A55
 class PX4BridgeNode : public rclcpp::Node {
 public:
@@ -575,21 +858,7 @@ public:
 private:
     void trajectory_callback(const px4_msgs::msg::TrajectorySetpoint::SharedPtr msg) {
         // Serialize and send to PX4
-        micrortps_send(&transport_, TOPIC_TRAJECTORY_
-Retry
-Claude does not have the ability to run the code it generates yet.
-TN
-Continue
-Edit
-Comprehensive System and Software Architecture for Autonomous Drone Using Renesas RZ/V2H
-3. Inter-Core Communication Architecture (Continued)
-3.3 microRTPS Bridge (A55 ↔ R8-0) - Implementation
-cpp
-// ROS 2 node on A55 (continued)
-class PX4BridgeNode : public rclcpp::Node {
-private:
-    void trajectory_callback(const px4_msgs::msg::TrajectorySetpoint::SharedPtr msg) {
-        // Serialize ROS 2 message to CDR format
+
         ucdrBuffer ub;
         uint8_t buffer[256];
         ucdr_init_buffer(&ub, buffer, sizeof(buffer));
@@ -612,8 +881,11 @@ private:
     rclcpp::Subscription<px4_msgs::msg::TrajectorySetpoint>::SharedPtr trajectory_sub_;
     micrortps_transport_t transport_;
 };
+```
+
 NuttX Side (R8-0):
-c
+
+```c
 // PX4 microRTPS agent on R8-0
 static int micrortps_agent_main(int argc, char *argv[])
 {
@@ -670,8 +942,12 @@ static void handle_trajectory_setpoint(uint8_t *buffer, size_t len)
     // Publish to PX4 control stack via uORB
     orb_publish(ORB_ID(trajectory_setpoint), &setpoint);
 }
+```
+
 ________________________________________
-4. DRP-AI3 Vision Processing Pipeline
+## 4. DRP-AI3 Vision Processing Pipeline
+
+<a name="4-drp-ai3-vision-processing-pipeline"></a>
 4.1 DRP-AI3 Architecture Overview
 ┌─────────────────────────────────────────────────────────────┐
 │                  DRP-AI3 Accelerator                        │
@@ -679,21 +955,22 @@ ________________________________________
 │  Input Layer                                                │
 │  ├─ MIPI-CSI Camera Interface (4K @ 30fps)                  │
 │  ├─ Preprocessing Pipeline (resize, normalize)              │
-│  └─ DMA transfer to AI memory                              │
+│  └─ DMA transfer to AI memory                               │
 ├─────────────────────────────────────────────────────────────┤
-│  Neural Network Engine (8-80 TOPS)                         │
-│  ├─ INT8/FP16 quantized models                             │
-│  ├─ YOLOv5/v8 object detection                             │
-│  ├─ Depth estimation (monocular/stereo)                    │
-│  └─ Semantic segmentation                                  │
+│  Neural Network Engine (8-80 TOPS)                          │
+│  ├─ INT8/FP16 quantized models                              │
+│  ├─ YOLOv5/v8 object detection                              │
+│  ├─ Depth estimation (monocular/stereo)                     │
+│  └─ Semantic segmentation                                   │
 ├─────────────────────────────────────────────────────────────┤
 │  Post-Processing                                            │
-│  ├─ NMS (Non-Maximum Suppression)                          │
-│  ├─ Object tracking (Kalman filter)                        │
-│  └─ Coordinate transformation                              │
+│  ├─ NMS (Non-Maximum Suppression)                           │
+│  ├─ Object tracking (Kalman filter)                         │
+│  └─ Coordinate transformation                               │
 └─────────────────────────────────────────────────────────────┘
 4.2 Vision Pipeline Implementation
-cpp
+
+```cpp
 // DRP-AI3 Vision Node on A55
 class VisionPerceptionNode : public rclcpp::Node {
 public:
@@ -922,9 +1199,12 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr obstacle_pub_;
 };
 ________________________________________
-5. Mission Planning and Autonomous Navigation
+## 5. Mission Planning and Autonomous Navigation
+
+<a name="5-mission-planning-and-autonomous-navigation"></a>
 5.1 High-Level Mission Planner (A55 - ROS 2)
-cpp
+
+```cpp
 class MissionPlannerNode : public rclcpp::Node {
 public:
     MissionPlannerNode() : Node("mission_planner") {
@@ -1057,7 +1337,9 @@ private:
     rclcpp::TimerBase::SharedPtr planning_timer_;
 };
 ________________________________________
-6. Safety and Fault Tolerance
+## 6. Safety and Fault Tolerance
+
+<a name="6-safety-and-fault-tolerance"></a>
 6.1 Multi-Level Safety Architecture
 ┌─────────────────────────────────────────────────────────────┐
 │                 Safety Layer Hierarchy                      │
@@ -1072,17 +1354,18 @@ ________________________________________
 │  ├─ Sensor health monitoring (timeout detection)            │
 │  ├─ IMU cross-validation (dual redundancy)                  │
 │  ├─ Geofence enforcement (100 Hz check)                     │
-│  ├─ Battery voltage monitoring (critical threshold)          │
+│  ├─ Battery voltage monitoring (critical threshold)         │
 │  └─ RC loss detection (1 second timeout)                    │
 ├─────────────────────────────────────────────────────────────┤
 │  Level 3: Mission Safety (A55)                              │
-│  ├─ Obstacle collision prediction (future trajectory)        │
+│  ├─ Obstacle collision prediction (future trajectory)       │
 │  ├─ Mission feasibility check (battery/range)               │
-│  ├─ Communication link quality monitoring                    │
+│  ├─ Communication link quality monitoring                   │
 │  └─ Return-to-home path planning                            │
 └─────────────────────────────────────────────────────────────┘
 6.2 Failsafe Implementation (R8-0)
-c
+
+```c
 // PX4 failsafe manager on R8-0
 typedef enum {
     FAILSAFE_NONE = 0,
@@ -1225,10 +1508,13 @@ static void initiate_emergency_landing(void)
     // Switch to AUTO.LAND mode
     commander_set_flight_mode(vehicle_status_s::NAVIGATION_STATE_AUTO_LAND);
 }
+```
+
 ________________________________________
 7. System Integration and Testing
 7.1 Hardware-in-the-Loop (HIL) Testing
-yaml
+
+```yaml
 # HIL test configuration
 simulation:
   physics_engine: gazebo_classic
@@ -1284,16 +1570,11 @@ test_scenarios:
         action: set_battery_capacity
         value: 20_percent
     expected_behavior: immediate_rtl
+```
+
 7.2 Integration Test Suite
-Retry
-Claude does not have the ability to run the code it generates yet.
-TN
-Continue
-Edit
-Comprehensive System and Software Architecture for Autonomous Drone Using Renesas RZ/V2H (Continued)
-7. System Integration and Testing (Continued)
-7.2 Integration Test Suite
-python
+
+```python
 #!/usr/bin/env python3
 """
 Integration test suite for RZ/V2H autonomous drone
@@ -1571,10 +1852,13 @@ class RZV2HIntegrationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+```
+
 ________________________________________
 8. Performance Optimization Strategies
 8.1 Real-Time Optimization (R8 Cores)
-c
+
+```c
 // Cache optimization for R8 flight control loops
 #define CACHE_LINE_SIZE 64
 
@@ -1631,7 +1915,8 @@ void imu_spi_dma_init(void) {
     DMA_Cmd(DMA2_Stream0, ENABLE);
 }
 8.2 Linux Real-Time Tuning (A55)
-bash
+
+```bash
 #!/bin/bash
 # Real-time optimization script for A55 Linux
 
@@ -1678,8 +1963,10 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export CYCLONEDDS_URI=file:///opt/cyclonedds_rt.xml
 
 echo "Real-time optimizations applied"
+
 CycloneDDS Configuration for Low Latency:
-xml
+
+```xml
 <!-- /opt/cyclonedds_rt.xml -->
 <CycloneDDS>
   <Domain>
@@ -1719,10 +2006,14 @@ xml
     </Scheduling>
   </Domain>
 </CycloneDDS>
+```
+
 ________________________________________
 9. Power Management and Thermal Optimization
-9.1 Dynamic Power Scaling
-c
+
+### 9.1 Dynamic Power Scaling
+
+```c
 // Power management on A55 (Linux sysfs interface)
 typedef enum {
     POWER_MODE_PERFORMANCE = 0,  // All cores at max frequency
@@ -1806,10 +2097,13 @@ void battery_monitor_thread(void) {
         sleep(5);  // Check every 5 seconds
     }
 }
+```
+
 ________________________________________
 10. Deployment and Production Considerations
 10.1 Yocto Build Configuration
-bitbake
+
+```bitbake
 # meta-rzv2h-drone/recipes-core/images/rzv2h-drone-image.bb
 DESCRIPTION = "Custom Yocto image for RZ/V2H autonomous drone"
 LICENSE = "MIT"
@@ -1871,8 +2165,11 @@ setup_shared_memory() {
     mknod ${IMAGE_ROOTFS}/dev/shm_actuators c 240 0
     mknod ${IMAGE_ROOTFS}/dev/shm_sensors c 240 1
 }
+```
+
 10.2 System Monitoring Dashboard
-python
+
+```python
 #!/usr/bin/env python3
 """
 Real-time system monitoring dashboard for RZ/V2H drone
@@ -1970,6 +2267,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
+
 ________________________________________
 11. Summary and Recommendations
 11.1 Architecture Benefits
@@ -2015,25 +2314,25 @@ This architecture provides a production-ready foundation for commercial autonomo
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                        RENESAS RZ/V2H AUTONOMOUS DRONE PLATFORM                         │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
-┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                    HARDWARE LAYER (RZ/V2H MPU)                                     │
-├────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │ Cortex-A55   │  │ Cortex-R8    │  │ Cortex-R8    │  │ Cortex-M33   │  │   DRP-AI3        │   │
-│  │   Cluster    │  │   Core 1     │  │   Core 0     │  │     Core     │  │  Accelerator     │   │
-│  │   (x4 cores) │  │  @ 800 MHz   │  │  @ 800 MHz   │  │  @ 200 MHz   │  │  8-80 TOPS       │   │
-│  │  @ 1.8 GHz   │  │              │  │              │  │              │  │                  │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘   │
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    HARDWARE LAYER (RZ/V2H MPU)                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐    │
+│  │ Cortex-A55   │  │ Cortex-R8    │  │ Cortex-R8    │  │ Cortex-M33   │  │   DRP-AI3        │    │
+│  │   Cluster    │  │   Core 1     │  │   Core 0     │  │     Core     │  │  Accelerator     │    │
+│  │   (x4 cores) │  │  @ 800 MHz   │  │  @ 800 MHz   │  │  @ 200 MHz   │  │  8-80 TOPS       │    │
+│  │  @ 1.8 GHz   │  │              │  │              │  │              │  │                  │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘    │
 │         │                 │                 │                 │                   │              │
 └─────────┼─────────────────┼─────────────────┼─────────────────┼───────────────────┼──────────────┘
           │                 │                 │                 │                   │
 ┌─────────┴─────────────────┴─────────────────┴─────────────────┴───────────────────┴──────────────┐
-│                           SHARED MEMORY ARCHITECTURE (Non-Cacheable SRAM)                         │
-├────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                           SHARED MEMORY ARCHITECTURE (Non-Cacheable SRAM)                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │  0x70000000: Actuator Setpoints (64KB) │ 0x70010000: Sensor Data Pool (64KB)                     │
 │  0x70020000: Mission Commands (64KB)   │ 0x70030000: Status/Telemetry (64KB)                     │
-│  0x70040000: Vision Data Buffer (256KB) │ CRC32 validation + Sequence numbers                     │
-└────────────────────────────────────────────────────────────────────────────────────────────────────┘
+│  0x70040000: Vision Data Buffer (256KB) │ CRC32 validation + Sequence numbers                    │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                      SOFTWARE ARCHITECTURE                                         │
 └────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -2050,7 +2349,7 @@ This architecture provides a production-ready foundation for commercial autonomo
 │ ┌──────────────────────────────┐ │ │ └──────────────────────────────┘ │ │ └─────────────────────┘ │
 │ │      ROS 2 Middleware        │ │ │ ┌──────────────────────────────┐ │ │ ┌─────────────────────┐ │
 │ │  • CycloneDDS/FastDDS        │◄┼─┼►│    microRTPS Bridge          │◄┼─┼►│   uORB Bridge       │ │
-│ │  • px4_ros_com bridge        │ │ │ │  • Shared Memory Transport   │ │ │ │  (R8-1 ↔ R8-0)     │ │
+│ │  • px4_ros_com bridge        │ │ │ │  • Shared Memory Transport   │ │ │ │  (R8-1 ↔ R8-0)      │ │
 │ │  • Low-latency QoS           │ │ │ │  • Topic serialization       │ │ │ │                     │ │
 │ └──────────────────────────────┘ │ │ └──────────────────────────────┘ │ │ └─────────────────────┘ │
 │ ┌──────────────────────────────┐ │ │ ┌──────────────────────────────┐ │ │ ┌─────────────────────┐ │
@@ -2069,22 +2368,22 @@ This architecture provides a production-ready foundation for commercial autonomo
 └──────────────────────────────────┘ └──────────────────────────────────┘ └─────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                          CORTEX-M33 (PX4 I/O ESC Controller)                                    │
+│                          CORTEX-M33 (PX4 I/O ESC Controller)                                       │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ┌──────────────────────────────────┐  ┌──────────────────────────────────┐                        │
-│ │   PWM/DShot Generation Engine    │  │      Safety Monitoring System     │                        │
-│ │  • 8-channel DMA-driven PWM      │  │  • Hardware watchdog (500ms)      │                        │
-│ │  • DShot600/1200 bidirectional   │  │  • Heartbeat validation (R8)      │                        │
-│ │  • Double-buffered DMA (ping-pong│  │  • Physical safety switch         │                        │
-│ │  • 400-2000 Hz update rate       │  │  • Arming state machine           │                        │
-│ │  • Timer ISR + DMA automation    │  │  • Emergency motor cutoff         │                        │
-│ └──────────────────────────────────┘  └──────────────────────────────────┘                        │
-│ ┌──────────────────────────────────────────────────────────────────────────────────┐              │
-│ │                    Shared Memory Interface (Read/Write)                          │              │
-│ │  READ:  Actuator Setpoints (400 Hz) ← R8-1 PX4                                   │              │
-│ │  WRITE: PWM Feedback & Fault Status (100 Hz) → R8-1 PX4                          │              │
-│ │  • CRC32 validation on all reads  • Sequence number detection                    │              │
-│ └──────────────────────────────────────────────────────────────────────────────────┘              │
+│ ┌──────────────────────────────────┐  ┌──────────────────────────────────┐                         │
+│ │   PWM/DShot Generation Engine    │  │      Safety Monitoring System    │                         │
+│ │  • 8-channel DMA-driven PWM      │  │  • Hardware watchdog (500ms)     │                         │
+│ │  • DShot600/1200 bidirectional   │  │  • Heartbeat validation (R8)     │                         │
+│ │  • Double-buffered DMA(ping-pong)│  │  • Physical safety switch        │                         │
+│ │  • 400-2000 Hz update rate       │  │  • Arming state machine          │                         │
+│ │  • Timer ISR + DMA automation    │  │  • Emergency motor cutoff        │                         │
+│ └──────────────────────────────────┘  └──────────────────────────────────┘                         │
+│ ┌──────────────────────────────────────────────────────────────────────────────────┐               │
+│ │                    Shared Memory Interface (Read/Write)                          │               │
+│ │  READ:  Actuator Setpoints (400 Hz) ← R8-1 PX4                                   │               │
+│ │  WRITE: PWM Feedback & Fault Status (100 Hz) → R8-1 PX4                          │               │
+│ │  • CRC32 validation on all reads  • Sequence number detection                    │               │
+│ └──────────────────────────────────────────────────────────────────────────────────┘               │
 └────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -2133,9 +2432,9 @@ This architecture provides a production-ready foundation for commercial autonomo
 │                                  SAFETY ARCHITECTURE                                               │
 └────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
-Level 1 (Hardware - M33):  Watchdog timer | Physical safety switch | Immediate cutoff | CRC validation
-Level 2 (Real-Time - R8):  Sensor health | IMU redundancy | Geofence | Battery monitor | RC loss detect
-Level 3 (Mission - A55):   Collision prediction | Feasibility check | Comm quality | RTL path planning
+Level 1 (Hardware - M33): Watchdog timer | Physical safety switch | Immediate cutoff | CRC validation
+Level 2 (Real-Time - R8): Sensor health | IMU redundancy | Geofence | Battery monitor | RC loss detect
+Level 3 (Mission - A55): Collision prediction | Feasibility check | Comm quality | RTL path planning
 
 FAILSAFE TRIGGERS: RC Loss → Auto RTL | GPS Loss → Emergency Land | Battery Low → RTL/Land
                    Geofence Breach → RTL | Sensor Failure → Emergency Land | Manual Override

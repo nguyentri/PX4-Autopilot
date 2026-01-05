@@ -137,13 +137,14 @@ SECTIONS
         _ebss = ABSOLUTE(.);
     } > sram
 
-    /* Heap */
-    .heap (NOLOAD) :
-    {
-        . = ALIGN(8);
-        _sheap = ABSOLUTE(.);
-        . = . + (ORIGIN(sram) + LENGTH(sram) - .);
-        _eheap = ABSOLUTE(.);
+    /* Heap in SRAM (for malloc, etc.) */
+    /* Note: NuttX uses _sheap and _eheap as heap boundaries.
+     * The heap grows dynamically - we just mark the available region.
+     * Don't pre-allocate the entire SRAM space in the linker script. */
+    .heap (NOLOAD) : {
+        . = ALIGN(4);
+        _sheap = .;
+        /* Heap extends to end of SRAM, calculated at runtime by NuttX */
     } > sram
 
     /* IPC RAM Section */
