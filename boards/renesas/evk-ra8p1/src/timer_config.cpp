@@ -104,13 +104,13 @@ CONFIG_RA_DMAC_GPT13_CHANNEL;
 #endif
 
 constexpr timer_io_channels_t kTimerChannelsRaw[MAX_TIMER_IO_CHANNELS] = {
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::Channel1}, {GPIO::Port9, GPIO::Pin12},
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::ChannelA}, {GPIO::Port9, GPIO::Pin12},
                            makeDshotConf(3, 0, kDmaGpt3, -1)),   // Motor 1: GPT3A/P912
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer5, Timer::Channel1}, {GPIO::Port9, GPIO::Pin15},
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer5, Timer::ChannelA}, {GPIO::Port9, GPIO::Pin15},
                            makeDshotConf(5, 0, kDmaGpt5, -1)),   // Motor 2: GPT5A/P915
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer11, Timer::Channel1}, {GPIO::Port9, GPIO::Pin3},
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer11, Timer::ChannelA}, {GPIO::Port9, GPIO::Pin3},
                            makeDshotConf(11, 0, kDmaGpt11, -1)), // Motor 3: GPT11A/P903
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer13, Timer::Channel1}, {GPIO::Port5, GPIO::Pin15},
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer13, Timer::ChannelA}, {GPIO::Port5, GPIO::Pin15},
                            makeDshotConf(13, 0, kDmaGpt13, -1)), // Motor 4: GPT13A/P515
 };
 

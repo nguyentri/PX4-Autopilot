@@ -42,10 +42,10 @@
  * The FPB-RA8E1 uses 4 GPT channels mapped to specific pins for ESC control.
  *
  * Hardware Configuration (verified from datasheet):
- * - Motor 1 (Channel 0): GPT3A on P912 (PORT9, PIN12)
- * - Motor 2 (Channel 1): GPT5A on P915 (PORT9, PIN15)
- * - Motor 3 (Channel 2): GPT11A on P903 (PORT9, PIN3)
- * - Motor 4 (Channel 3): GPT13A on P515 (PORT5, PIN15)
+ * - Motor 1 (Channel 0): GPT3A on P300 (PORT3, PIN0)
+ * - Motor 2 (Channel 1): GPT0A on P415 (PORT4, PIN15)
+ * - Motor 3 (Channel 2): GPT2A on P113 (PORT1, PIN13)
+ * - Motor 4 (Channel 3): GPT4A on P302 (PORT3, PIN2)
  *
  * Timer Settings:
  * - Frequency: 400 Hz (configurable via startup script)
@@ -69,9 +69,9 @@ namespace
 // Initialize the 4 GPT timers used for PWM motor control
 constexpr io_timers_t kIOTimersRaw[MAX_IO_TIMERS] = {
         initIOTimer(Timer::Timer3),   // Motor 1 - GPT3
-        initIOTimer(Timer::Timer5),   // Motor 2 - GPT5
-        initIOTimer(Timer::Timer11),  // Motor 3 - GPT11
-        initIOTimer(Timer::Timer13),  // Motor 4 - GPT13
+        initIOTimer(Timer::Timer0),   // Motor 2 - GPT0
+        initIOTimer(Timer::Timer2),   // Motor 3 - GPT2
+        initIOTimer(Timer::Timer4),   // Motor 4 - GPT4
 };
 
 // Map each timer to its hardware pin (verified from RA8E1 datasheet)
@@ -82,36 +82,36 @@ CONFIG_RA_DMAC_GPT3_CHANNEL;
 -1;
 #endif
 
-constexpr int8_t kDmaGpt5 =
-#ifdef CONFIG_RA_DMAC_GPT5_CHANNEL
-CONFIG_RA_DMAC_GPT5_CHANNEL;
+constexpr int8_t kDmaGpt0 =
+#ifdef CONFIG_RA_DMAC_GPT0_CHANNEL
+CONFIG_RA_DMAC_GPT0_CHANNEL;
 #else
 -1;
 #endif
 
-constexpr int8_t kDmaGpt11 =
-#ifdef CONFIG_RA_DMAC_GPT11_CHANNEL
-CONFIG_RA_DMAC_GPT11_CHANNEL;
+constexpr int8_t kDmaGpt2 =
+#ifdef CONFIG_RA_DMAC_GPT2_CHANNEL
+CONFIG_RA_DMAC_GPT2_CHANNEL;
 #else
 -1;
 #endif
 
-constexpr int8_t kDmaGpt13 =
-#ifdef CONFIG_RA_DMAC_GPT13_CHANNEL
-CONFIG_RA_DMAC_GPT13_CHANNEL;
+constexpr int8_t kDmaGpt4 =
+#ifdef CONFIG_RA_DMAC_GPT4_CHANNEL
+CONFIG_RA_DMAC_GPT4_CHANNEL;
 #else
 -1;
 #endif
 
 constexpr timer_io_channels_t kTimerChannelsRaw[MAX_TIMER_IO_CHANNELS] = {
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::Channel1}, {GPIO::Port9, GPIO::Pin12},
-                           makeDshotConf(3, 0, kDmaGpt3, -1)),   // Motor 1: GPT3A/P912
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer5, Timer::Channel1}, {GPIO::Port9, GPIO::Pin15},
-                           makeDshotConf(5, 0, kDmaGpt5, -1)),   // Motor 2: GPT5A/P915
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer11, Timer::Channel1}, {GPIO::Port9, GPIO::Pin3},
-                           makeDshotConf(11, 0, kDmaGpt11, -1)), // Motor 3: GPT11A/P903
-        initIOTimerChannel(kIOTimersRaw, {Timer::Timer13, Timer::Channel1}, {GPIO::Port5, GPIO::Pin15},
-                           makeDshotConf(13, 0, kDmaGpt13, -1)), // Motor 4: GPT13A/P515
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer3, Timer::ChannelA}, {GPIO::Port3, GPIO::Pin0},
+                           makeDshotConf(3, 0, kDmaGpt3, -1)),   // Motor 1: GPT3A/P300
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer0, Timer::ChannelA}, {GPIO::Port4, GPIO::Pin15},
+                           makeDshotConf(0, 0, kDmaGpt0, -1)),   // Motor 2: GPT0A/P415
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer2, Timer::ChannelA}, {GPIO::Port1, GPIO::Pin13},
+                           makeDshotConf(2, 0, kDmaGpt2, -1)), // Motor 3: GPT2A/P113
+        initIOTimerChannel(kIOTimersRaw, {Timer::Timer4, Timer::ChannelA}, {GPIO::Port3, GPIO::Pin2},
+                           makeDshotConf(4, 0, kDmaGpt4, -1)), // Motor 4: GPT4A/P302
 };
 
 template<typename TimerType>
@@ -140,18 +140,18 @@ extern "C" {
 // These are referenced by the pwm_out driver to control motor outputs
 const io_timers_t io_timers[MAX_IO_TIMERS] = {
         makeTimer(kIOTimersRaw[0], 0),  // GPT3 - Motor 1
-        makeTimer(kIOTimersRaw[1], 1),  // GPT5 - Motor 2
-        makeTimer(kIOTimersRaw[2], 2),  // GPT11 - Motor 3
-        makeTimer(kIOTimersRaw[3], 3),  // GPT13 - Motor 4
+        makeTimer(kIOTimersRaw[1], 1),  // GPT0 - Motor 2
+        makeTimer(kIOTimersRaw[2], 2),  // GPT2 - Motor 3
+        makeTimer(kIOTimersRaw[3], 3),  // GPT4 - Motor 4
 };
 
 // Export timer channel configurations with GPIO mappings
 // GPIO_TIMx_CH1OUT macros are defined in board_config.h and map to GPTxA pins
 const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS] = {
-        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM3_CH1OUT),   // Motor 1: P912 (GPIO_GTIOC3A)
-        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM5_CH1OUT),   // Motor 2: P915 (GPIO_GTIOC5A)
-        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM11_CH1OUT),  // Motor 3: P903 (GPIO_GTIOC11A_2)
-        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM13_CH1OUT),  // Motor 4: P515 (GPIO_GTIOC13A)
+        makeChannel(kTimerChannelsRaw[0], 0, GPIO_TIM3_CH1OUT),   // P300 - GPT3A - Motor 1
+        makeChannel(kTimerChannelsRaw[1], 1, GPIO_TIM0_CH1OUT),   // P415 - GPT0A - Motor 2
+        makeChannel(kTimerChannelsRaw[2], 2, GPIO_TIM2_CH1OUT),   // P113 - GPT2A - Motor 3
+        makeChannel(kTimerChannelsRaw[3], 3, GPIO_TIM4_CH1OUT),   // P302 - GPT4A - Motor 4
 };
 
 void fpb_ra8e1_timer_initialize()
