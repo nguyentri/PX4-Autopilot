@@ -52,6 +52,7 @@
 #include <stdint.h>
 
 /* RA8 pin/function definitions for GPIO_FUNC_GPT and port/pin masks */
+#include <ra_gpio.h>
 #include <hardware/ra_pinmap.h>
 
 /******************************************************************************
@@ -61,23 +62,6 @@
 /* CM33 Clock Configuration (set by CM85 bootloader or hardware) */
 #define BOARD_CM33_CLOCK_HZ         250000000   /* 250 MHz PCLKD domain */
 #define BOARD_PCLKD_HZ              BOARD_CM33_CLOCK_HZ
-
-/* Memory Configuration */
-#define BOARD_CM33_ITCM_BASE        0x20100000
-#define BOARD_CM33_ITCM_SIZE        (64 * 1024)
-#define BOARD_CM33_DTCM_BASE        0x20110000
-#define BOARD_CM33_DTCM_SIZE        (64 * 1024)
-#define BOARD_CM33_SRAM_BASE        0x22000000
-#define BOARD_CM33_SRAM_SIZE        (896 * 1024)    /* Available SRAM for CM33 */
-
-/* IPC Shared Memory Region (non-cacheable, 4KB aligned) */
-/* Note: These may be defined by NuttX board.h, so check first */
-#ifndef BOARD_IPC_SHMEM_BASE
-#define BOARD_IPC_SHMEM_BASE        0x220E0000
-#endif
-#ifndef BOARD_IPC_SHMEM_SIZE
-#define BOARD_IPC_SHMEM_SIZE        (64 * 1024)
-#endif
 
 /******************************************************************************
  * Inter-Core Communication (IPC)
@@ -216,10 +200,10 @@
 #define GPIO_LED_GREEN              GPIO_P303_OUTPUT_LOW   /* P303 - Green LED (same as amber) */
 
 /* LED Control Macros (active low for open-drain) */
-#define LED_BLUE(on_true)           ra8_gpiowrite(GPIO_LED_BLUE, !(on_true))
-#define LED_AMBER(on_true)          ra8_gpiowrite(GPIO_LED_AMBER, !(on_true))
-#define LED_SAFETY(on_true)         ra8_gpiowrite(GPIO_LED_SAFETY, !(on_true))
-#define LED_GREEN(on_true)          ra8_gpiowrite(GPIO_LED_GREEN, (on_true))
+#define LED_BLUE(on_true)           ra_gpiowrite(GPIO_LED_BLUE, !(on_true))
+#define LED_AMBER(on_true)          ra_gpiowrite(GPIO_LED_AMBER, !(on_true))
+#define LED_SAFETY(on_true)         ra_gpiowrite(GPIO_LED_SAFETY, !(on_true))
+#define LED_GREEN(on_true)          ra_gpiowrite(GPIO_LED_GREEN, (on_true))
 
 /* LED Patterns (16-bit patterns at 8Hz) */
 #define LED_PATTERN_DISARMED        0x0003  /* Slow blink: ....XXXX....XXXX */
@@ -271,8 +255,8 @@
  ******************************************************************************/
 
 #define GPIO_BUZZER                 (GPIO_OUTPUT | GPIO_PUSHPULL | GPIO_PORT1 | GPIO_PIN6)
-#define BUZZER_ON()                 ra8_gpiowrite(GPIO_BUZZER, 1)
-#define BUZZER_OFF()                ra8_gpiowrite(GPIO_BUZZER, 0)
+#define BUZZER_ON()                 ra_gpiowrite(GPIO_BUZZER, 1)
+#define BUZZER_OFF()                ra_gpiowrite(GPIO_BUZZER, 0)
 
 /******************************************************************************
  * High-Resolution Timer (HRT) for CM33
@@ -308,9 +292,9 @@ void board_watchdog_init(void);
 void board_watchdog_refresh(void);
 
 /* GPIO access functions (RA8-specific) */
-void ra8_gpiowrite(uint32_t pinset, bool value);
-bool ra8_gpioread(uint32_t pinset);
-void ra8_configgpio(uint32_t pinset);
+void ra_gpiowrite(gpio_pinset_t pinset, bool value);
+bool ra_gpioread(gpio_pinset_t pinset);
+int ra_gpioconfig(gpio_pinset_t pinset);
 
 #endif /* __ASSEMBLY__ */
 

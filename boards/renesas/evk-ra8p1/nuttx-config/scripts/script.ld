@@ -63,8 +63,11 @@ INCLUDE renesas_ofs_defs.ld
 /* Memory regions */
 MEMORY
 {
-  /* Internal Code MRAM - 1MB */
-  mram (rx)   : ORIGIN = 0x02000000, LENGTH = 928K /* 1M - 96K (CM33) */
+  /* Internal Code MRAM - CM85 code (912KB) */
+  mram (rx)   : ORIGIN = 0x02000000, LENGTH = 912K
+
+  /* Internal MRAM - CM85 data (8KB) */
+  mram_data (rw) : ORIGIN = 0x020E4000, LENGTH = 8K
 
   /* User SRAM - 1664KB total, partitioned:
    * CM33: 0x22000000-0x22007FFF (32KB)
@@ -80,6 +83,12 @@ MEMORY
   /* Note: CM33 sees its ITCM at 0x00000000, but CM85 accesses it via system bus */
   cm33_itcm (rwx) : ORIGIN = 0x20100000, LENGTH = 64K   /* CM85 view of CM33 ITCM */
   cm33_dtcm (rwx) : ORIGIN = 0x20110000, LENGTH = 64K   /* CM85 view of CM33 DTCM */
+
+  /* CM33 code in MRAM (96KB) - CM85 copies this to CM33 ITCM */
+  cm33_mram (rx) : ORIGIN = 0x020E6000, LENGTH = 96K
+
+  /* CM33 data in MRAM (4KB) */
+  cm33_mram_data (rw) : ORIGIN = 0x020FE000, LENGTH = 4K
 
   /* IPC Shared Memory - 32KB within User SRAM (shared with CM33) */
   ipc_shmem (rw) : ORIGIN = 0x22008000, LENGTH = 32K

@@ -21,8 +21,15 @@
 MEMORY
 {
     /* CM33 Code MRAM - 96KB allocated from 1MB MRAM */
-    /* CM85 uses 0x02000000-0x020E7FFF (928KB), CM33 uses 0x020E8000-0x020FFFFF (96KB) */
-    mram (rx)   : ORIGIN = 0x020E8000, LENGTH = 96K    /* General code, rodata (XIP) */
+    /* CM85 code: 0x02000000-0x020E3FFF (912KB)
+     * CM85 data: 0x020E4000-0x020E5FFF (8KB)
+     * CM33 code: 0x020E6000-0x020FBFFF (96KB)
+     * CM33 data: 0x020FE000-0x020FEFFF (4KB)
+     * Free:      0x020FF000-0x020FFFFF (4KB) */
+    mram (rx)   : ORIGIN = 0x020E6000, LENGTH = 96K    /* General code, rodata (XIP) */
+
+    /* CM33 Data in MRAM - 4KB */
+    mram_data (rw) : ORIGIN = 0x020FE000, LENGTH = 4K
 
     /* Tightly-Coupled Memory for CM33 (system view addresses) */
     itcm (rx)   : ORIGIN = 0x20100000, LENGTH = 64K    /* Critical code: ISRs, DShot, GPT */

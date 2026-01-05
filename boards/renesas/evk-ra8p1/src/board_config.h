@@ -465,20 +465,24 @@
 
 /* Shared Memory IPC between CM85 (FMU) and CM33 (IO Processor)
  *
- * Memory Region: 64KB non-cacheable SRAM @ 0x201A0000
- * - actuator_cmd:    0x201A0000 (128 B, CM85→CM33)
- * - rc_input:        0x201A0080 (128 B, CM33→CM85)
- * - battery_status:  0x201A0100 (128 B, CM33→CM85)
- * - heartbeat_cm85:  0x201A0180 (32 B,  CM85→CM33)
- * - heartbeat_cm33:  0x201A01A0 (32 B,  CM33→CM85)
- * - perf_counters:   0x201A1000 (60 KB)
+ * Memory Region: 32KB non-cacheable SRAM @ 0x22008000
+ * - actuator_cmd:    0x22008000 (128 B, CM85→CM33)
+ * - rc_input:        0x22008080 (128 B, CM33→CM85)
+ * - battery_status:  0x22008100 (128 B, CM33→CM85)
+ * - heartbeat_cm85:  0x22008180 (32 B,  CM85→CM33)
+ * - heartbeat_cm33:  0x220081A0 (32 B,  CM33→CM85)
+ * - perf_counters:   0x22009000 (28 KB)
  *
  * Protocol: CRC16-CCITT validation, sequence numbers, memory barriers
  * Latency target: <100µs round-trip (50× better than serial FMU-IO)
  */
 
-#define IPC_SRAM_BASE           0x22008000UL
-#define IPC_SRAM_SIZE           0x00008000UL  /* 32 KB */
+/* IPC shared memory symbols from linker script */
+extern uint8_t _sipc_shmem[];
+extern uint8_t _eipc_shmem[];
+
+#define IPC_SRAM_BASE           ((uintptr_t)_sipc_shmem)
+#define IPC_SRAM_SIZE           ((size_t)((uintptr_t)_eipc_shmem - (uintptr_t)_sipc_shmem))
 
 /* Message region offsets (must match ipc_protocol.h) */
 #define IPC_ACTUATOR_CMD_OFFSET     0x0000
