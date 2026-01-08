@@ -1,15 +1,38 @@
-// jlink_flash_nuttx.jlink - Flash NuttX to RA8E1
-si 1
-speed 4000
-device R7FA8E1AF
-connect
+/*********************************************
+ * J-Link Script for RA8P1 Dual-Core Flash
+ * Flashes both CM85 (Core0) and CM33 (Core1)
+ *
+ * Note: Both cores share the same flash memory.
+ * CM85 and CM33 code are placed at different addresses.
+ *********************************************/
 
-r        // reset
-h        // halt
+// Connect to target
+si SWD
+speed 15000
+device R7KA8P1KF_CPU0
 
-erase    // chip erase
-loadfile build/renesas_fpb-ra8e1_default/renesas_fpb-ra8e1_default.elf
-
+// Initial reset and halt
 r
-g
-exit
+h
+
+// Disable auto-reset for subsequent loads
+ExecCommand("SetResetType", "0");
+ExecCommand("SetResetPulseLen", "0");
+
+// Flash CM85 (Core0) firmware to its flash region
+loadfile build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf
+
+// Flash CM33 (Core1) firmware to its flash region (no reset between loads)
+// CM33 will be triggered start by RA8P1
+loadfile build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf
+
+// Verify programming
+verifybin build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.bin 0x02000000
+verifybin build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.bin 0x02100000
+
+// Final reset and run
+r
+go
+
+// Exit
+qc

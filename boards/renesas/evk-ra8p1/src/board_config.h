@@ -59,13 +59,38 @@
 
 /*
  * EVK-RA8P1 Hardware Features:
- * - Renesas R7KA8P1KFLCAC MCU
- * - ARM Cortex-M85 @ 1GHz
- * - 1024KB SRAM, 2MB Code Flash, 2MB MRAM
- * - 128MB external SDRAM (32-bit bus)
- * - Ethernet (RGMII), USB HS, CAN-FD
- * - Multiple expansion connectors: Arduino, mikroBUS, Pmod, Grove, Qwiic
- * - Custom sensor board GY-912 with ICM-20948 + BMP388 (via Arduino/Pmod SPI)
+ * - Renesas R7KA8P1KFLCAC MCU (RA8P1)
+ *   • 1 GHz ARM Cortex-M85 core
+ *   • 250 MHz ARM Cortex-M33 core
+ *   • 1 MB MRAM, 2 MB SRAM with ECC
+ *   • 289 pins, BGA package
+ * - Memory:
+ *   • 64 MB (512 Mb) external Octo-SPI Flash
+ *   • 64 MB (512 Mb) external SDRAM (32-bit bus)
+ * - Connectivity:
+ *   • Ethernet (RJ45 RGMII interface)
+ *   • USB Full Speed (USB-C)
+ *   • USB High Speed (USB-C)
+ *   • CAN-FD (2 channels)
+ * - User Interface:
+ *   • Three User LEDs (red, blue, green)
+ *   • Two User Switches, One Reset Switch
+ *   • Power LED (white), Debug LED (yellow), Ethernet LEDs
+ * - Expansion Connectors:
+ *   • Arduino (Uno R3)
+ *   • mikroBUS (not populated)
+ *   • Two Pmod (SPI, UART, I2C)
+ *   • Two Grove (I2C/I3C/Analog, not populated)
+ *   • Qwiic (not populated)
+ * - Special Features:
+ *   • Parallel Graphics Expansion Port
+ *   • Camera Expansion Port (underside)
+ *   • MIPI Graphics Expansion Port (underside)
+ *   • PDM MEMS Microphones (underside)
+ *   • Audio CODEC with speaker connections
+ * - Custom Sensor Board:
+ *   • GY-912 with ICM-20948 (9-axis IMU) + BMP388 (barometer)
+ *   • Connected via Arduino/Pmod SPI interface
  */
 
 /****************************************************************************************************
@@ -445,7 +470,7 @@
  ****************************************************************************************************/
 
 /* SDRAM Configuration (from board.h - 32-bit bus)
- * IS42S32800J: 32MB SDRAM
+ * IS42S32160F-6BLI: 64MB SDRAM
  * Address: A0-A23, Data: DQ0-DQ31, Control: CKE, CLK, CS, WE, CAS, RAS
  * Data Mask: DQM0-DQM3
  * Note: SDRAM support not enabled initially
