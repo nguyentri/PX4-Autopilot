@@ -57,22 +57,31 @@ endif
 # in that directory with the target upload.
 
 # explicity set default build target
-all: ensure_nuttx_ra8p1_branch px4_sitl_default
+# Note: 'all' target now depends only on branch check, allowing make to build the current/last board config
+all: ensure_nuttx_ra8p1_branch
 
 # Ensure NuttX submodule uses the nuttx ra8p1 branch
 # This will automatically switch the NuttX submodule to the correct branch
-#.PHONY: ensure_nuttx_ra8p1_branch
-#ensure_nuttx_ra8p1_branch:
-#	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8_Refactoring branch..."; \
-#	cd platforms/nuttx/NuttX/nuttx && \
-#	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8_Refactoring" ]; then \
-#		echo "Switching NuttX submodule to NuttX_Px4_RA8_Refactoring branch..."; \
-#		git fetch origin && \
-#		git checkout NuttX_Px4_RA8_Refactoring && \
-#		git pull; \
-#	else \
-#		echo "NuttX submodule already on NuttX_Px4_RA8_Refactoring branch"; \
-#	fi
+# but will preserve local changes
+.PHONY: ensure_nuttx_ra8p1_branch
+ensure_nuttx_ra8p1_branch:
+	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8_Refactoring branch..."; \
+	cd platforms/nuttx/NuttX/nuttx && \
+	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8_Refactoring" ] && [ "$$(git rev-parse --abbrev-ref HEAD)" != "HEAD" ]; then \
+		if [ -n "$$(git status --porcelain)" ]; then \
+			echo "⚠️  NuttX has local changes - keeping current state to preserve your work"; \
+		else \
+			echo "Switching NuttX submodule to NuttX_Px4_RA8_Refactoring branch..."; \
+			git fetch origin && \
+			git checkout NuttX_Px4_RA8_Refactoring; \
+		fi \
+	else \
+		if [ "$$(git rev-parse --abbrev-ref HEAD)" = "NuttX_Px4_RA8_Refactoring" ]; then \
+			echo "✓ NuttX submodule already on NuttX_Px4_RA8_Refactoring branch"; \
+		else \
+			echo "✓ NuttX submodule is in detached HEAD state (build artifact)"; \
+		fi \
+	fi
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )
@@ -537,18 +546,12 @@ validate_module_configs:
 
 # Cleanup
 # --------------------------------------------------------------------
-.PHONY: clean  submodulesupdate submodulesupdate_safe distclean
+.PHONY: clean submodulesupdate submodulesupdate_safe distclean
 
-clean: distclean
-# use distrclean to wipe the build directory only
-#	@[ ! -d "$(SRC_DIR)/build" ] || find "$(SRC_DIR)/build" -mindepth 1 -maxdepth 1 -type d -exec sh -c "echo {}; cmake --build {} -- clean || rm -rf {}" \; # use generated build system to clean, wipe build directory if it fails
-#	@# By default do NOT run destructive cleaning on submodules. Set FORCE_SUBMODULE_CLEAN=1 to enable full submodule clean.
-#	@if [ "$$FORCE_SUBMODULE_CLEAN" = "1" ]; then \
-#		git submodule foreach git clean -dX --force; \
-#		echo "Submodule trees cleaned (FORCE_SUBMODULE_CLEAN=1)"; \
-#	else \
-#		echo "Skipping destructive submodule cleaning (set FORCE_SUBMODULE_CLEAN=1 to enable)"; \
-#	fi
+clean:
+	@echo "Cleaning build directories..."
+	@[ ! -d "$(SRC_DIR)/build" ] || find "$(SRC_DIR)/build" -mindepth 1 -maxdepth 1 -type d -exec sh -c "echo 'Cleaning {}'; cmake --build {} -- clean 2>/dev/null || rm -rf {}" \;
+	@echo "Build directories cleaned."
 
 #submodulesclean:
 #	@# By default do NOT run destructive cleaning on submodules. Use FORCE_SUBMODULE_CLEAN=1 to enable.

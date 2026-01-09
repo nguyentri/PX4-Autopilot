@@ -7,7 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JLINK_CMD="/opt/SEGGER/JLink/JLinkExe"
-JLINK_SCRIPT="${SCRIPT_DIR}/f.jlink"
+JLINK_SCRIPT="${SCRIPT_DIR}/flash.jlink"
 
 CM85_ELF="${SCRIPT_DIR}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf"
 CM33_ELF="${SCRIPT_DIR}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf"
