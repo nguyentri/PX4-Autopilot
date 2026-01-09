@@ -41,13 +41,13 @@
 #include <nuttx/timers/timer.h>
 #include <stdint.h>
 
-/* RA8E1 NuttX HAL-based IO Timer implementation
+/* NuttX HAL-based IO Timer implementation
  *
  * This implementation uses NuttX PWM and Timer HAL instead of direct hardware register access.
  * The RA8 GPT timers are accessed through the ra_gpt.c driver which provides proper abstraction.
  */
 
-/* DMA configuration structure for RA8E1 GPT */
+/* DMA configuration structure for RA8 GPT */
 struct DMA {
     enum Index : uint8_t { Invalid = 0 };
     Index index;
@@ -60,7 +60,7 @@ struct io_timers_channel_mapping_t {
     uint32_t element[MAX_IO_TIMERS];
 };
 
-/* PWM device handles for RA8E1 GPT timers */
+/* PWM device handles for RA8 GPT timers */
 struct ra8_pwm_device_t {
     struct pwm_lowerhalf_s *pwm_dev;
     uint8_t gpt_channel;

@@ -38,8 +38,9 @@ echo "CM85 (Core0): $CM85_ELF"
 echo "CM33 (Core1): $CM33_ELF"
 echo "==========================================="
 
-# Execute J-Link script
-"$JLINK_CMD" -CommandFile "$JLINK_SCRIPT"
+# Execute J-Link script (force SWD, device and speed to avoid interactive probe selection)
+# Add -if SWD and -autoconnect 1 to auto-select the SWD interface and skip prompts
+"$JLINK_CMD" -device R7KA8P1KF_CPU0 -if SWD -speed 15000 -autoconnect 1 -CommandFile "$JLINK_SCRIPT"
 
 echo "==========================================="
 echo "Flash completed successfully!"

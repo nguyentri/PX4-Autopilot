@@ -50,7 +50,7 @@
 __EXPORT void led_init(void)
 {
 	/* Initialize LED PWM for RA8 */
-	/* LEDs are typically handled by simple GPIO on RA8E1 */
+	/* LEDs are typically handled by simple GPIO configuration */
 }
 
 __EXPORT void led_on(int led)

@@ -54,9 +54,7 @@ struct i2c_master_s;
 /* GPIO pinset type for RA8 - use uint32_t for PX4 compatibility */
 typedef uint32_t gpio_pinset_t;
 
-/* Renesas RA8 defines the 128 bit UUID
- * Based on RA8E1 datasheet unique ID structure
- */
+/* Renesas RA8 defines the 128 bit UUID */
 #define PX4_CPU_UUID_BYTE_LENGTH                16
 #define PX4_CPU_UUID_WORD32_LENGTH              (PX4_CPU_UUID_BYTE_LENGTH/sizeof(uint32_t))
 

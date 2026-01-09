@@ -157,19 +157,19 @@ The PX4 platform layer provides hardware abstraction between NuttX BSP and PX4 m
 
 | Directory        | Key Files         | Description                                             | Status         |
 |:-----------------|:------------------|:--------------------------------------------------------|:---------------|
+| `version/`       | -                 | Firmware version information                            | ✅ Working     |
+| `board_hw_info/` | -                 | Hardware revision detection                             | ✅ Working     |
 | `hrt/`           | `hrt.c`           | High-resolution timer using GPT0 for microsecond timing | ✅ Working     |
 | `spi/`           | `spi.cpp`         | SPI bus initialization wrapper for sensor drivers       | ✅ Working     |
 | `io_pins/`       | `io_timer_impl.c` | PWM/Timer implementation for actuators                  | ✅ Working     |
 | `micro_hal/`     | `gpio.c`          | GPIO abstraction layer for pin control                  | ✅ Working     |
 | `adc/`           | -                 | ADC voltage/current monitoring (battery, RSSI)          | 🔨 Build Only  |
 | `board_critmon/` | -                 | Critical section monitoring for debugging               | ❌ Not Started |
-| `board_hw_info/` | -                 | Hardware revision detection                             | 🔨 ✅ Working  |
 | `board_reset/`   | -                 | Software reset implementation                           | ❌ Not Started |
 | `cpuload/`       | -                 | CPU utilization measurement                             | ❌ Not Started |
 | `dshot/`         | -                 | DShot ESC protocol implementation                       | 🔨 Build Only  |
 | `led_pwm/`       | -                 | LED brightness control via PWM                          | ❌ Not Started |
 | `tone_alarm/`    | -                 | Buzzer/tone generation                                  | ❌ Not Started |
-| `version/`       | -                 | Firmware version information                            | ✅ Working     |
 
 ### 1.5.2 RA8P1-Specific Platform Code
 
@@ -985,8 +985,8 @@ The NuttX BSP includes comprehensive hardware register definitions for the RA8P1
 | **WDT**     | WDT        | `ra_wdt.c`         | `ra_wdt.h`          | 🔨 Build Only | 🔨 Build Only      | CM85 WDT                |
 | **WDT**     | IWDT       | `ra_iwdt.c`        | `ra_iwdt.h`         | 🔨 Build Only | ❌ Not Used        | Independent             |
 | **Storage** | SDHI       | `ra_sdhi.c`        | `ra_sdhi.h`         | 🔨 Build Only | ❌ Not Started     | SD card                 |
-| **Storage** | OSPI-B     | `ra_ospi_b.c`      | `ra_ospi_b.h`       | 🔨 Build Only | ❌ Not Started     | Flash XIP               |
-| **Storage** | MRAM       | `ra_mram.c`        | `ra_mram.h`         | 🔨 Build Only | ❌ Not Used        | Boot code               |
+| **Storage** | OSPI-B     | `ra_ospi_b.c`      | `ra_ospi_b.h`       | 🔨 Build Only | ❌ Not Used        | Flash XIP               |
+| **Storage** | MRAM       | `ra_mram.c`        | `ra_mram.h`         | 🔨 Build Only | ❌ Not Used        | Code Storage            |
 | **Storage** | SDRAM      | `ra_sdram.c`       | `ra_sdram.h`        | 🔨 Build Only | ❌ Not Started     | External                |
 | **DMA**     | DMAC       | `ra_dmac.c`        | `ra_dmac.h`         | 🔨 Build Only | ❌ Not Used        | DMA engine              |
 | **DMA**     | DTC        | `ra_dtc.c`         | `ra_dtc.h`          | 🔨 Build Only | ❌ Not Used        | Lightweight             |
@@ -1034,6 +1034,7 @@ The NuttX BSP includes comprehensive hardware register definitions for the RA8P1
 #### Test Commands
 
 ```bash
+
 # List sensors
 nsh> px4-info sensors
 
@@ -1087,6 +1088,7 @@ Key Repositories:
 ### Build CM85 FMU Firmware
 
 ```bash
+
 # Default configuration (IMU + PWM)
 make renesas_evk-ra8p1_default
 
@@ -1104,9 +1106,11 @@ make renesas_evk-ra8p1-io-cm33_default
 ### Erase Chip
 
 ```bash
-use erase command with Jlink connection
+
+# use erase command with Jlink connection
 
 ```bash
+
 # Or Erase using renesas-flash-programmer if the Chip could not be erased with jlink because there were security option settings in the flash
 rfp-cli -d RA -tool jlink:<JLINK ID> -if swd -erase-chip
 ```
@@ -1114,21 +1118,17 @@ rfp-cli -d RA -tool jlink:<JLINK ID> -if swd -erase-chip
 ### Flash Firmware
 
 ```bash
-# Flash CM85 only
-make renesas_evk-ra8p1_default upload
 
-# Flash CM33 only
-make renesas_evk-ra8p1-io-cm33_default upload
-
-# Flash both cores (if flash script exists)
-./f.sh
+# Flash both cores
+./f
 ```
-
 
 ### Debug via J-Link
 
 ```bash
+
 # Download Cortex-Debug extension
+
 # Run .vscode/launch.json
 ```
 
@@ -1242,5 +1242,6 @@ arm-none-eabi-addr2line -e build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_def
 - [Renesas RA8P1 Product Page](https://www.renesas.com/en/products/ra8p1)
 - [EVK-RA8P1 Development Kit](https://www.renesas.com/en/design-resources/boards-kits/ek-ra8p1)
 - [SEGGER J-Link Downloads](https://www.segger.com/downloads/jlink/)
-- [Renesas Flash Programmer](https://www.renesas.com/en/document/swe/renesas-flash-programmer-v32100-linuxx64?r=488871)
+- [Renesas Flash Programmer](https://www.renesas.com/en/document/swe/renesas-flash-programmer-v32100-linuxx64?r=488871),
+
 ---

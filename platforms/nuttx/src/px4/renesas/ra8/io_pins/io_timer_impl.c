@@ -34,7 +34,7 @@
 /**
  * @file io_timer_impl.c
  *
- * GPT Timer Implementation for RA8E1 ESC Control using NuttX HAL
+ * GPT Timer Implementation for ESC Control using NuttX HAL
  *
  * This module provides GPT timer initialization and PWM control for ESC outputs
  * using NuttX Hardware Abstraction Layer instead of direct register access.
@@ -80,7 +80,7 @@
 #endif
 
 #ifndef BOARD_NUM_IO_TIMERS
-#define BOARD_NUM_IO_TIMERS  4  /* 4 timers for FPB-RA8E1 */
+#define BOARD_NUM_IO_TIMERS  4  /* 4 timers for RA8 */
 #endif
 
 #ifndef PWM_DEFAULT_FREQUENCY_HZ
