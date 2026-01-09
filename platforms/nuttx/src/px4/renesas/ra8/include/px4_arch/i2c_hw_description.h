@@ -99,6 +99,16 @@ constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX
 #else
 		false,
 #endif
+#ifdef CONFIG_RA_I2C2
+        true,
+#else
+        false,
+#endif
+#ifdef CONFIG_RA_I3C
+        true,
+#else
+        false,
+#endif
 	};
 
 	for (unsigned i = 0; i < sizeof(nuttx_enabled_i2c_buses) / sizeof(nuttx_enabled_i2c_buses[0]); ++i) {

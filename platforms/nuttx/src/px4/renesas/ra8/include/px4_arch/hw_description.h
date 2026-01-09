@@ -136,8 +136,7 @@ namespace SPI
 
 enum Bus : int {
 	SPI0 = 0,
-	SPI1 = 1,
-	SPI2 = 2
+	SPI1 = 1
 };
 
 using CS = GPIO::GPIOPin;
@@ -181,11 +180,9 @@ enum Timer : uint32_t {
     Timer15
 };
 
-enum Channel : uint32_t {
-	Channel1 = 1,
-	Channel2,
-	Channel3,
-	Channel4
+enum Channel : uint32_t { // Output compare channels
+	ChannelA = 1,
+	ChannelB,
 };
 
 struct TimerChannel {
@@ -202,10 +199,11 @@ struct TimerChannel {
 
 namespace I2C
 {
-
 enum Bus : int {
 	I2C0 = 0,
-	I2C1 = 1
+	I2C1 = 1,
+    I2C2 = 2,
+    I3C = 3
 };
 
 } // namespace I2C

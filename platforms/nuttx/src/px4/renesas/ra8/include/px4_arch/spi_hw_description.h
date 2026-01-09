@@ -33,4 +33,10 @@
 
 #pragma once
 
+#if (CONFIG_RA8P1_GROUP)
+#include "../../../ra8p1/include/px4_arch/spi_hw_description.h"
+#elif (CONFIG_RA8E1_GROUP)
 #include "../../../ra8e1/include/px4_arch/spi_hw_description.h"
+#else
+#error "Unsupported RA8 sub-family for SPI HW description"
+#endif

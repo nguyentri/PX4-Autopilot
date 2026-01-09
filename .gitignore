@@ -118,9 +118,6 @@ keys/
 **/*.b
 **/*.f
 **/*.j
-px4_ra8.md
-pin_map.h
-ra8_nuttx_architecture.md
 
 git config advice.addIgnoredFile false
 .vscode/.gitignore
@@ -136,5 +133,5 @@ git config advice.addIgnoredFile false
 .backup
 *log
 *log*
-platforms/nuttx/NuttX/*.svd
-platforms/nuttx/NuttX/*.h
+*.svd
+.codex

@@ -38,12 +38,12 @@
  */
 
 #include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/board_common.h>
 #include <nuttx/board.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "board_config.h"
+/* board_config.h includes board_common.h at the end, so no need to include it again */
 
 /* Undefine macros from board_common.h so we can implement the functions */
 #undef board_get_hw_version

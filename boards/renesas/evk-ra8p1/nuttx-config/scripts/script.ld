@@ -27,7 +27,9 @@
  *   - CM85 TCM RAM: 256KB (128KB ITCM + 128KB DTCM)
  *   - CM33 TCM RAM: 128KB (64KB ITCM + 64KB DTCM)
  *   - User SRAM: 1664KB @ 0x22000000 - 0x2219FFFF
- *   - IPC Shared Memory: 32KB @ 0x220E2000 - 0x220E7FFF (from User SRAM)
+ *     - CM33 SRAM: 32KB @ 0x22000000 - 0x22007FFF (private to CM33)
+ *     - IPC Shared: 32KB @ 0x22008000 - 0x2200FFFF (shared CM85/CM33)
+ *     - CM85 SRAM: 1600KB @ 0x22010000 - 0x2219FFFF (CM85 use)
  *
  * External Flash (EK-RA8P1 Board):
  * ================================
@@ -35,17 +37,18 @@
  * OSPI0_CS1: 64MB Macronix MX25LW51245GXDI00 @ 0x90000000 (not used due to conflicts with other peripherals))
  * OSPI1: Not populated on this board
  *
- * Internal Code MRAM:
+ * Internal Code MRAM (1MB total):
  * ===================================================
- * INTERNAL MRAM (1MB) - Boot, NuttX kernel, and critical data
- *   - CM85 executes directly from MRAM (XIP)
- *   - CM33 code stored in MRAM, copied to CM33_ITCM by CM85 at boot
+ * Memory Allocation:
+ *   - CM85: 0x02000000 - 0x020E7FFF (928KB) - Boot, NuttX kernel, XIP code
+ *   - CM33: 0x020E8000 - 0x020FFFFF (96KB)  - CM33 firmware (copied to ITCM)
+ *   - Free: None - All 1MB MRAM allocated
  *
  * CM33 Dual-Core Support:
  * ===================================================
  * CM33 cannot execute from MRAM directly. Boot sequence:
- *   1. CM85 boots from MRAM, initializes system
- *   2. CM85 copies CM33 firmware from .cm33_code section to CM33_ITCM
+ *   1. CM85 boots from MRAM @ 0x02000000, initializes system
+ *   2. CM85 copies CM33 firmware from MRAM @ 0x020E8000 to CM33_ITCM @ 0x20100000
  *   3. CM85 releases CM33 reset via SYSC registers
  *   4. CM33 starts executing from its ITCM @ 0x00000000 (CM33 view)
  *
@@ -60,11 +63,17 @@ INCLUDE renesas_ofs_defs.ld
 /* Memory regions */
 MEMORY
 {
-  /* Internal Code MRAM - 1MB */
-  flash (rx)   : ORIGIN = 0x02000000, LENGTH = 1M
+  /* Internal Code MRAM - CM85 code (912KB) */
+  mram (rx)   : ORIGIN = 0x02000000, LENGTH = 912K
 
-  /* User SRAM - 1664KB total */
-  sram (rwx)   : ORIGIN = 0x22000000, LENGTH = 1664K
+  /* Internal MRAM - CM85 data (8KB) */
+  mram_data (rw) : ORIGIN = 0x020E4000, LENGTH = 8K
+
+  /* User SRAM - 1664KB total, partitioned:
+   * CM33: 0x22000000-0x22007FFF (32KB)
+   * IPC:  0x22008000-0x2200FFFF (32KB)
+   * CM85: 0x22010000-0x2219FFFF (1600KB) */
+  sram (rwx)   : ORIGIN = 0x22010000, LENGTH = 1600K
 
   /* Tightly-Coupled Memory - CM85 (local view) */
   itcm (rwx)   : ORIGIN = 0x00000000, LENGTH = 128K
@@ -75,8 +84,14 @@ MEMORY
   cm33_itcm (rwx) : ORIGIN = 0x20100000, LENGTH = 64K   /* CM85 view of CM33 ITCM */
   cm33_dtcm (rwx) : ORIGIN = 0x20110000, LENGTH = 64K   /* CM85 view of CM33 DTCM */
 
-  /* IPC Shared Memory - 32KB within User SRAM */
-  ipc_shmem (rw) : ORIGIN = 0x220E2000, LENGTH = 32K
+  /* CM33 code in MRAM (96KB) - CM85 copies this to CM33 ITCM */
+  cm33_mram (rx) : ORIGIN = 0x020E6000, LENGTH = 96K
+
+  /* CM33 data in MRAM (4KB) */
+  cm33_mram_data (rw) : ORIGIN = 0x020FE000, LENGTH = 4K
+
+  /* IPC Shared Memory - 32KB within User SRAM (shared with CM33) */
+  ipc_shmem (rw) : ORIGIN = 0x22008000, LENGTH = 32K
 
   /* Renesas OFS Registers - defined in renesas_ofs_defs.ld */
   OPTION_SETTING_OFS0 (r)         : ORIGIN = OPTION_SETTING_OFS0_START, LENGTH = OPTION_SETTING_OFS0_LENGTH
@@ -113,7 +128,7 @@ ENTRY(_stext)
 
 SECTIONS
 {
-  /* Vector table must be at start of flash, 512-byte aligned for Cortex-M85 */
+  /* Vector table must be at start of mram, 512-byte aligned for Cortex-M85 */
   .text : ALIGN(512)
   {
     _stext = ABSOLUTE(.);
@@ -130,7 +145,7 @@ SECTIONS
     *(.gcc_except_table)
     *(.gnu.linkonce.r.*)
     _etext = ABSOLUTE(.);
-  } > flash
+  } > mram
 
   /* C++ Static constructors/destructors */
   .init_section :
@@ -138,24 +153,24 @@ SECTIONS
     _sinit = ABSOLUTE(.);
     KEEP(*(.init_array .init_array.*))
     _einit = ABSOLUTE(.);
-  } > flash
+  } > mram
 
   /* ARM exception handling */
   .ARM.extab :
   {
     *(.ARM.extab*)
-  } > flash
+  } > mram
 
   __exidx_start = ABSOLUTE(.);
   .ARM.exidx :
   {
     *(.ARM.exidx*)
-  } > flash
+  } > mram
   __exidx_end = ABSOLUTE(.);
 
   _eronly = ABSOLUTE(.);
 
-  /* Initialized data section - loaded from flash to SRAM */
+  /* Initialized data section - loaded from mram to SRAM */
   .data :
   {
     _sdata = ABSOLUTE(.);
@@ -164,7 +179,7 @@ SECTIONS
     CONSTRUCTORS
     . = ALIGN(4);
     _edata = ABSOLUTE(.);
-  } > sram AT > flash
+  } > sram AT > mram
 
   /* Functions to be executed from RAM for performance */
   .ramfunc ALIGN(4):
@@ -172,7 +187,7 @@ SECTIONS
     _sramfuncs = ABSOLUTE(.);
     *(.ramfunc .ramfunc.*)
     _eramfuncs = ABSOLUTE(.);
-  } > sram AT > flash
+  } > sram AT > mram
 
   _framfuncs = LOADADDR(.ramfunc);
 
@@ -210,7 +225,7 @@ SECTIONS
     *(.cm33_rodata .cm33_rodata.*)
     . = ALIGN(4);
     _ecm33_text = ABSOLUTE(.);
-  } > cm33_itcm AT > flash
+  } > cm33_itcm AT > mram
 
   _fcm33_text = LOADADDR(.cm33_text);  /* Flash location of CM33 code */
 
@@ -221,7 +236,7 @@ SECTIONS
     *(.cm33_data .cm33_data.*)
     . = ALIGN(4);
     _ecm33_data = ABSOLUTE(.);
-  } > cm33_dtcm AT > flash
+  } > cm33_dtcm AT > mram
 
   _fcm33_data = LOADADDR(.cm33_data);  /* Flash location of CM33 data */
 

@@ -46,7 +46,7 @@
 #include "board_config.h"
 
 /* SOC architecture ID */
-static const uint16_t soc_arch_id = PX4_SOC_ARCH_ID;
+static const uint16_t soc_arch_id = PX4_SOC_ARCH_ID_RA8P1;
 
 /* Board UUID string (16 chars + null) */
 static const char board_uuid[17] = "RA8P1EVK00000000";
@@ -233,7 +233,7 @@ __EXPORT int board_get_px4_guid_formated(char *format_buffer, int size)
 __EXPORT int board_mcu_version(char *rev, const char **revstr, const char **errata)
 {
     static const char mcu_rev[] = "1";
-    static const char mcu_revstr[] = "RA8";
+    static const char mcu_revstr[] = "RA8P1";
     static const char mcu_errata[] = "";
 
     if (rev) {

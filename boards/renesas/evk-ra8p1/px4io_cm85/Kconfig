@@ -1,0 +1,46 @@
+menuconfig BOARD_PX4IO_CM85
+	bool "Enable PX4IO CM85 IPC driver"
+	default y
+	---help---
+		Enable the CM85 (FMU) side driver for shared-memory IPC
+		communication with the CM33 (IO processor). This replaces
+		the traditional serial PX4IO protocol with sub-100µs latency
+		shared-memory communication.
+
+if BOARD_PX4IO_CM85
+
+config PX4IO_CM85_SCHEDULE_INTERVAL_US
+	int "IPC update interval (microseconds)"
+	default 1000
+	range 500 10000
+	---help---
+		Main loop update interval for the px4io_cm85 driver.
+		Default: 1000 µs (1kHz)
+
+config PX4IO_CM85_CM33_READY_TIMEOUT_MS
+	int "CM33 ready timeout (milliseconds)"
+	default 2000
+	range 500 10000
+	---help---
+		Timeout waiting for CM33 to signal ready during boot.
+		Default: 2000 ms
+
+config PX4IO_CM85_CM33_HEARTBEAT_TIMEOUT_MS
+	int "CM33 heartbeat timeout (milliseconds)"
+	default 200
+	range 50 1000
+	---help---
+		Timeout for CM33 heartbeat monitoring. If no heartbeat
+		is received within this time, CM85 declares IO failure
+		and initiates emergency landing.
+		Default: 200 ms
+
+config PX4IO_CM85_HEARTBEAT_PUBLISH_INTERVAL_MS
+	int "CM85 heartbeat publish interval (milliseconds)"
+	default 100
+	range 10 500
+	---help---
+		Interval for publishing CM85 heartbeat to CM33.
+		Default: 100 ms (10 Hz)
+
+endif # BOARD_PX4IO_CM85

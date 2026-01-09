@@ -34,7 +34,7 @@
 /**
  * @file cpuload.h
  *
- * RA8E1 CPU load monitoring wrapper - includes RA8 implementation
+ * CPU load monitoring wrapper - includes RA8 implementation
  */
 
 #pragma once

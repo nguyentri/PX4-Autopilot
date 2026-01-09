@@ -40,7 +40,6 @@
 #include <px4_platform_common/init.h>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/console_buffer.h>
-#include <px4_platform_common/board_common.h>
 #include <px4_arch/io_timer.h>
 
 #include <stdbool.h>
@@ -62,6 +61,7 @@ static const char hw_type[] = "RDK-RZV2H";
 #endif
 
 #include "board_config.h"
+/* board_config.h includes board_common.h at the end, so redundant include removed */
 /* Undefine macros from board_common.h so we can implement the functions */
 #undef board_get_hw_type_name
 

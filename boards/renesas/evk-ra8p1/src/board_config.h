@@ -59,13 +59,38 @@
 
 /*
  * EVK-RA8P1 Hardware Features:
- * - Renesas R7KA8P1KFLCAC MCU
- * - ARM Cortex-M85 @ 1GHz
- * - 1024KB SRAM, 2MB Code Flash, 2MB MRAM
- * - 128MB external SDRAM (32-bit bus)
- * - Ethernet (RGMII), USB HS, CAN-FD
- * - Multiple expansion connectors: Arduino, mikroBUS, Pmod, Grove, Qwiic
- * - Custom sensor board GY-912 with ICM-20948 + BMP388 (via Arduino/Pmod SPI)
+ * - Renesas R7KA8P1KFLCAC MCU (RA8P1)
+ *   • 1 GHz ARM Cortex-M85 core
+ *   • 250 MHz ARM Cortex-M33 core
+ *   • 1 MB MRAM, 2 MB SRAM with ECC
+ *   • 289 pins, BGA package
+ * - Memory:
+ *   • 64 MB (512 Mb) external Octo-SPI Flash
+ *   • 64 MB (512 Mb) external SDRAM (32-bit bus)
+ * - Connectivity:
+ *   • Ethernet (RJ45 RGMII interface)
+ *   • USB Full Speed (USB-C)
+ *   • USB High Speed (USB-C)
+ *   • CAN-FD (2 channels)
+ * - User Interface:
+ *   • Three User LEDs (red, blue, green)
+ *   • Two User Switches, One Reset Switch
+ *   • Power LED (white), Debug LED (yellow), Ethernet LEDs
+ * - Expansion Connectors:
+ *   • Arduino (Uno R3)
+ *   • mikroBUS (not populated)
+ *   • Two Pmod (SPI, UART, I2C)
+ *   • Two Grove (I2C/I3C/Analog, not populated)
+ *   • Qwiic (not populated)
+ * - Special Features:
+ *   • Parallel Graphics Expansion Port
+ *   • Camera Expansion Port (underside)
+ *   • MIPI Graphics Expansion Port (underside)
+ *   • PDM MEMS Microphones (underside)
+ *   • Audio CODEC with speaker connections
+ * - Custom Sensor Board:
+ *   • GY-912 with ICM-20948 (9-axis IMU) + BMP388 (barometer)
+ *   • Connected via Arduino/Pmod SPI interface
  */
 
 /****************************************************************************************************
@@ -75,7 +100,11 @@
 #define BOARD_HAS_NO_RESET              1  /* No dedicated external reset */
 #define BOARD_HAS_NO_BOOTLOADER         1  /* No bootloader support initially */
 #define BOARD_TYPE_COMPLETE             88 /* Board type ID */
-#define PX4_SOC_ARCH_ID                 PX4_SOC_ARCH_ID_RENESAS_RA8
+#if !defined(PX4_SOC_ARCH_ID) && defined(PX4_SOC_ARCH_ID_RA8P1)
+#define PX4_SOC_ARCH_ID         PX4_SOC_ARCH_ID_RA8P1
+#else
+#define PX4_SOC_ARCH_ID         0xFFFF  /* Unknown SOC */
+#endif
 
 /****************************************************************************************************
  * Board Hardware Info (used by platforms/nuttx/src/px4/renesas/ra8/board_hw_info/)
@@ -441,7 +470,7 @@
  ****************************************************************************************************/
 
 /* SDRAM Configuration (from board.h - 32-bit bus)
- * IS42S32800J: 32MB SDRAM
+ * IS42S32160F-6BLI: 64MB SDRAM
  * Address: A0-A23, Data: DQ0-DQ31, Control: CKE, CLK, CS, WE, CAS, RAS
  * Data Mask: DQM0-DQM3
  * Note: SDRAM support not enabled initially
@@ -454,6 +483,47 @@
  * Clock: P808=SCLK, P801=DQS
  * Note: QSPI support not enabled initially
  */
+
+/****************************************************************************************************
+ * IPC (Inter-Processor Communication) Configuration
+ ****************************************************************************************************/
+
+/* Shared Memory IPC between CM85 (FMU) and CM33 (IO Processor)
+ *
+ * Memory Region: 32KB non-cacheable SRAM @ 0x22008000
+ * - actuator_cmd:    0x22008000 (128 B, CM85→CM33)
+ * - rc_input:        0x22008080 (128 B, CM33→CM85)
+ * - battery_status:  0x22008100 (128 B, CM33→CM85)
+ * - heartbeat_cm85:  0x22008180 (32 B,  CM85→CM33)
+ * - heartbeat_cm33:  0x220081A0 (32 B,  CM33→CM85)
+ * - perf_counters:   0x22009000 (28 KB)
+ *
+ * Protocol: CRC16-CCITT validation, sequence numbers, memory barriers
+ * Latency target: <100µs round-trip (50× better than serial FMU-IO)
+ */
+
+/* IPC shared memory symbols from linker script */
+extern uint8_t _sipc_shmem[];
+extern uint8_t _eipc_shmem[];
+
+#define IPC_SRAM_BASE           ((uintptr_t)_sipc_shmem)
+#define IPC_SRAM_SIZE           ((size_t)((uintptr_t)_eipc_shmem - (uintptr_t)_sipc_shmem))
+
+/* Message region offsets (must match ipc_protocol.h) */
+#define IPC_ACTUATOR_CMD_OFFSET     0x0000
+#define IPC_RC_INPUT_OFFSET         0x0080
+#define IPC_BATTERY_STATUS_OFFSET   0x0100
+#define IPC_HEARTBEAT_CM85_OFFSET   0x0180
+#define IPC_HEARTBEAT_CM33_OFFSET   0x01A0
+#define IPC_PERF_COUNTERS_OFFSET    0x1000
+
+/* Computed addresses */
+#define IPC_ACTUATOR_CMD_ADDR       (IPC_SRAM_BASE + IPC_ACTUATOR_CMD_OFFSET)
+#define IPC_RC_INPUT_ADDR           (IPC_SRAM_BASE + IPC_RC_INPUT_OFFSET)
+#define IPC_BATTERY_STATUS_ADDR     (IPC_SRAM_BASE + IPC_BATTERY_STATUS_OFFSET)
+#define IPC_HEARTBEAT_CM85_ADDR     (IPC_SRAM_BASE + IPC_HEARTBEAT_CM85_OFFSET)
+#define IPC_HEARTBEAT_CM33_ADDR     (IPC_SRAM_BASE + IPC_HEARTBEAT_CM33_OFFSET)
+#define IPC_PERF_COUNTERS_ADDR      (IPC_SRAM_BASE + IPC_PERF_COUNTERS_OFFSET)
 
 /****************************************************************************************************
  * Camera Interface Configuration

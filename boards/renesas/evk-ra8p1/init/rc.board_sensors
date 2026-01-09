@@ -1,12 +1,22 @@
 #!/bin/sh
 #
 # Renesas EVK-RA8P1 board sensors init
-# Minimal configuration: ICM20948 IMU on SPI + PWM output
+# Minimal configuration: ICM20948 IMU on SPI only
 #------------------------------------------------------------------------------
 
 echo ========================================
 echo EVK-RA8P1 Board Sensors Initialization
 echo ========================================
+
+# Start CM85 IPC driver FIRST (before sensors)
+# This enables communication with CM33 (IO processor) for RC input, battery, etc.
+echo Starting CM85 IPC driver...
+if px4io_cm85 start
+then
+	echo CM85 IPC driver started
+else
+	echo ERROR: CM85 IPC driver failed to start
+fi
 
 # Wait for sensor power stabilization
 usleep 100000
@@ -19,9 +29,6 @@ echo icm20948 on SPI bus 1
 icm20948 start -s -b 1 -M 1
 usleep 50000
 
-# PWM output driver - start without arguments
-# Motor outputs on GPT3, GPT5, GPT11, GPT13
-pwm_out start
-usleep 10000
+# Note: pwm_out is started by the main init scripts, not here
 
 echo Board sensor initialization complete

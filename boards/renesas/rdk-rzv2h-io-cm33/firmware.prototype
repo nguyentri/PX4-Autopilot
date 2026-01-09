@@ -1,0 +1,13 @@
+{
+    "board_id": 13,
+    "magic": "PX4FWv2",
+    "description": "Firmware for the RZV2H CM33 IO board",
+    "image": "",
+    "build_time": 0,
+    "summary": "RZV2H_IO_CM33",
+    "version": "2.0",
+    "image_size": 0,
+    "image_maxsize": 524288,
+    "git_identity": "",
+    "board_revision": 0
+}

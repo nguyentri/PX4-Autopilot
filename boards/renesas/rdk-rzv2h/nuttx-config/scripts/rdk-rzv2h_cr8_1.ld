@@ -1,1 +1,0 @@
-/home/tringuyen/px4_ra8/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_1.ld

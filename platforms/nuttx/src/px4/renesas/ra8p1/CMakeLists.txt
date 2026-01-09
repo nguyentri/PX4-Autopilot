@@ -31,5 +31,5 @@
 #
 ############################################################################
 
-# RA8E1-specific modules (if any)
-# This directory can be used for RA8E1-specific extensions in the future
+# RA8P1-specific modules (if any)
+# This directory can be used for RA8P1-specific extensions in the future

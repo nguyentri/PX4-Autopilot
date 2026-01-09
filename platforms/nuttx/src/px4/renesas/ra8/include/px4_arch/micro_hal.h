@@ -35,11 +35,13 @@
 #include <px4_platform/micro_hal.h>
 
 /* NuttX includes */
-#include "hardware/ra_clock.h"
 #include <nuttx/config.h>
 #include <nuttx/irq.h>
 #include <nuttx/spi/spi.h>
 #include <nuttx/i2c/i2c_master.h>
+
+#include "hardware/ra_clock.h"
+#include "ra_gpio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,9 +54,7 @@ struct i2c_master_s;
 /* GPIO pinset type for RA8 - use uint32_t for PX4 compatibility */
 typedef uint32_t gpio_pinset_t;
 
-/* Renesas RA8 defines the 128 bit UUID
- * Based on RA8E1 datasheet unique ID structure
- */
+/* Renesas RA8 defines the 128 bit UUID */
 #define PX4_CPU_UUID_BYTE_LENGTH                16
 #define PX4_CPU_UUID_WORD32_LENGTH              (PX4_CPU_UUID_BYTE_LENGTH/sizeof(uint32_t))
 

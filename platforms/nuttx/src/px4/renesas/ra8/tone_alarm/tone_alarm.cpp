@@ -44,7 +44,6 @@
 extern "C" {
 
 /* Tone alarm interface for RA8 */
-/* Currently stubbed as RA8E1 board doesn't have a buzzer */
 
 int px4_arch_tone_alarm_init()
 {
