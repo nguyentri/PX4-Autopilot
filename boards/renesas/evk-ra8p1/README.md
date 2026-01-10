@@ -847,7 +847,8 @@ The NuttX BSP includes comprehensive hardware register definitions for the RA8P1
 | `ra_sdram.c`                | `ra_sdram.h`         | SDRAM      | External SDRAM                               |
 | `ra_serial.c`               | -                    | UART       | Serial port driver                           |
 | `ra_spi.c`                  | `ra_spi.h`           | SPI        | SPI driver                                   |
-| `ra_start.c`                | `ra_start.h`         | STARTUP    | Boot sequence                                |
+| `ra_start.c`                | `ra_start.h`         | STARTUP    | Boot sequence CM85                           |
+| `ra_start_cm33.c`           | `ra_start.h`         | STARTUP    | Boot sequence CM33                           |
 | `ra_timerisr.c`             | -                    | TICK       | System tick timer                            |
 | `ra_ulpt.c`                 | `ra_ulpt.h`          | ULPT       | Ultra Low-Power Timer                        |
 | `ra_usbdev.c`               | `ra_usbdev.h`        | USB        | USB device controller                        |
