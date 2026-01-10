@@ -327,6 +327,48 @@ typedef struct {
 	uint8_t  _reserved[3904];               /* Pad to 4KB */
 } ipc_perf_counters_t;
 
+/**
+ * @brief Setup/Configuration (CM85 → CM33)
+ *
+ * PWM setup, arming configuration, failsafe values.
+ * Like PX4IO_PAGE_SETUP and PX4IO_PAGE_FAILSAFE_PWM combined.
+ *
+ * Total size: 128 bytes
+ */
+typedef struct {
+	uint32_t sequence;
+	uint64_t timestamp_us;
+
+	/* Arming setup (matches PX4IO_P_SETUP_ARMING flags) */
+	uint16_t arming_flags;                  /* PX4IO_P_SETUP_ARMING_* */
+	uint16_t features;                      /* PX4IO_P_SETUP_FEATURES_* */
+
+	/* PWM failsafe values (applied when FMU dies) */
+	uint16_t failsafe_pwm[IPC_MAX_MOTORS];  /* Failsafe PWM values (µs) */
+
+	/* PWM disarmed values */
+	uint16_t disarmed_pwm[IPC_MAX_MOTORS];  /* Disarmed PWM values (µs) */
+
+	/* Flight termination */
+	uint8_t  flighttermination_enabled;     /* 1=enable termination on FMU death */
+	uint8_t  force_failsafe;                /* 1=force failsafe mode now */
+	uint8_t  lockdown;                      /* 1=lockdown mode (no outputs) */
+	uint8_t  _reserved2;
+
+	/* PWM rate configuration */
+	uint16_t pwm_rate_hz;                   /* PWM update rate (50-400Hz) */
+	uint8_t  output_protocol;               /* ipc_output_protocol_t */
+	uint8_t  _reserved3;
+
+	uint8_t  _reserved[52];                 /* Pad to 124 bytes */
+	uint16_t crc16;
+	uint16_t _pad_align;
+} __attribute__((aligned(128))) ipc_setup_config_t;
+
+/* Memory offset for setup config */
+#define IPC_SETUP_CONFIG_OFFSET     0x01C0
+#define IPC_SETUP_CONFIG_ADDR       (IPC_SRAM_BASE + IPC_SETUP_CONFIG_OFFSET)
+
 #pragma pack(pop)
 
 /*******************************************************************************
@@ -352,5 +394,6 @@ _Static_assert(sizeof(ipc_rc_input_t) == 128, "rc_input must be 128 bytes");
 _Static_assert(sizeof(ipc_battery_status_t) == 128, "battery_status must be 128 bytes");
 _Static_assert(sizeof(ipc_heartbeat_cm85_t) == 32, "heartbeat_cm85 must be 32 bytes");
 _Static_assert(sizeof(ipc_heartbeat_cm33_t) == 32, "heartbeat_cm33 must be 32 bytes");
+_Static_assert(sizeof(ipc_setup_config_t) == 128, "setup_config must be 128 bytes");
 
 __END_DECLS

@@ -209,4 +209,64 @@ void ipc_hw_cm85_get_stats(struct ipc_hw_cm85_stats_s *stats);
  */
 void ipc_hw_cm85_reset_stats(void);
 
+/*******************************************************************************
+ * CRC Validation Functions for Shared Memory Messages
+ ******************************************************************************/
+
+/**
+ * Read and validate RC input from shared memory with CRC check
+ *
+ * This function reads the rc_input structure from shared memory, validates
+ * its CRC16-CCITT checksum, and copies it to the provided buffer.
+ *
+ * @param rc_input  Pointer to destination buffer for validated RC input
+ * @return 0 on success with valid CRC, -EBADMSG if CRC invalid,
+ *         -EAGAIN if no new data, negative errno on other errors
+ */
+int ipc_hw_cm85_read_rc_input_validated(struct ipc_rc_input_t *rc_input);
+
+/**
+ * Read and validate battery status from shared memory with CRC check
+ *
+ * @param battery  Pointer to destination buffer for validated battery status
+ * @return 0 on success with valid CRC, -EBADMSG if CRC invalid,
+ *         negative errno on other errors
+ */
+int ipc_hw_cm85_read_battery_validated(struct ipc_battery_status_t *battery);
+
+/**
+ * Read and validate CM33 heartbeat from shared memory with CRC check
+ *
+ * @param heartbeat  Pointer to destination buffer for validated heartbeat
+ * @return 0 on success with valid CRC, -EBADMSG if CRC invalid,
+ *         negative errno on other errors
+ */
+int ipc_hw_cm85_read_heartbeat_cm33_validated(struct ipc_heartbeat_cm33_t *heartbeat);
+
+/**
+ * Write actuator command to shared memory with CRC generation
+ *
+ * This function calculates CRC16-CCITT, stores it in the message,
+ * and writes to shared memory with proper synchronization.
+ *
+ * @param actuator  Pointer to actuator command to send
+ * @return 0 on success, negative errno on failure
+ */
+int ipc_hw_cm85_write_actuator_cmd(struct ipc_actuator_cmd_t *actuator);
+
+/**
+ * Write CM85 heartbeat to shared memory with CRC generation
+ *
+ * @param heartbeat  Pointer to heartbeat message to send
+ * @return 0 on success, negative errno on failure
+ */
+int ipc_hw_cm85_write_heartbeat_cm85(struct ipc_heartbeat_cm85_t *heartbeat);
+
+/**
+ * Get CRC error count for diagnostics
+ *
+ * @return Number of CRC validation failures since initialization
+ */
+uint32_t ipc_hw_cm85_get_crc_error_count(void);
+
 __END_DECLS

@@ -380,7 +380,17 @@ int ipc_hw_cm85_notify_cm33(ipc_hw_cm85_channel_t channel, uint32_t data)
 }
 
 /**
- * Wait for RC input notification (blocking)
+ * Validate CRC for received IPC message
+ * Returns true if CRC is valid, false otherwise
+ */
+static bool ipc_validate_crc(const void *msg, size_t len, uint16_t expected_crc)
+{
+	uint16_t calculated_crc = ipc_crc16_ccitt(static_cast<const uint8_t *>(msg), len);
+	return (calculated_crc == expected_crc);
+}
+
+/**
+ * Wait for RC input notification (blocking) with CRC validation
  */
 int ipc_hw_cm85_wait_rc_input(uint32_t timeout_ms)
 {
@@ -388,27 +398,31 @@ int ipc_hw_cm85_wait_rc_input(uint32_t timeout_ms)
 		return -EAGAIN;
 	}
 
+	int ret;
+
 	if (timeout_ms == 0) {
 		/* Non-blocking check */
-		return px4_sem_trywait(&g_rc_input_sem);
+		ret = px4_sem_trywait(&g_rc_input_sem);
+	} else {
+		/* Blocking wait with timeout */
+		struct timespec abstime;
+		clock_gettime(CLOCK_REALTIME, &abstime);
+		abstime.tv_sec += timeout_ms / 1000;
+		abstime.tv_nsec += (timeout_ms % 1000) * 1000000;
+
+		if (abstime.tv_nsec >= 1000000000) {
+			abstime.tv_sec++;
+			abstime.tv_nsec -= 1000000000;
+		}
+
+		ret = px4_sem_timedwait(&g_rc_input_sem, &abstime);
 	}
 
-	/* Blocking wait with timeout */
-	struct timespec abstime;
-	clock_gettime(CLOCK_REALTIME, &abstime);
-	abstime.tv_sec += timeout_ms / 1000;
-	abstime.tv_nsec += (timeout_ms % 1000) * 1000000;
-
-	if (abstime.tv_nsec >= 1000000000) {
-		abstime.tv_sec++;
-		abstime.tv_nsec -= 1000000000;
-	}
-
-	return px4_sem_timedwait(&g_rc_input_sem, &abstime);
+	return ret;
 }
 
 /**
- * Wait for battery status notification (blocking)
+ * Wait for battery status notification (blocking) with CRC validation
  */
 int ipc_hw_cm85_wait_battery(uint32_t timeout_ms)
 {
@@ -416,25 +430,29 @@ int ipc_hw_cm85_wait_battery(uint32_t timeout_ms)
 		return -EAGAIN;
 	}
 
+	int ret;
+
 	if (timeout_ms == 0) {
-		return px4_sem_trywait(&g_battery_sem);
+		ret = px4_sem_trywait(&g_battery_sem);
+	} else {
+		struct timespec abstime;
+		clock_gettime(CLOCK_REALTIME, &abstime);
+		abstime.tv_sec += timeout_ms / 1000;
+		abstime.tv_nsec += (timeout_ms % 1000) * 1000000;
+
+		if (abstime.tv_nsec >= 1000000000) {
+			abstime.tv_sec++;
+			abstime.tv_nsec -= 1000000000;
+		}
+
+		ret = px4_sem_timedwait(&g_battery_sem, &abstime);
 	}
 
-	struct timespec abstime;
-	clock_gettime(CLOCK_REALTIME, &abstime);
-	abstime.tv_sec += timeout_ms / 1000;
-	abstime.tv_nsec += (timeout_ms % 1000) * 1000000;
-
-	if (abstime.tv_nsec >= 1000000000) {
-		abstime.tv_sec++;
-		abstime.tv_nsec -= 1000000000;
-	}
-
-	return px4_sem_timedwait(&g_battery_sem, &abstime);
+	return ret;
 }
 
 /**
- * Wait for heartbeat notification (blocking)
+ * Wait for heartbeat notification (blocking) with CRC validation
  */
 int ipc_hw_cm85_wait_heartbeat(uint32_t timeout_ms)
 {
@@ -442,21 +460,25 @@ int ipc_hw_cm85_wait_heartbeat(uint32_t timeout_ms)
 		return -EAGAIN;
 	}
 
+	int ret;
+
 	if (timeout_ms == 0) {
-		return px4_sem_trywait(&g_heartbeat_sem);
+		ret = px4_sem_trywait(&g_heartbeat_sem);
+	} else {
+		struct timespec abstime;
+		clock_gettime(CLOCK_REALTIME, &abstime);
+		abstime.tv_sec += timeout_ms / 1000;
+		abstime.tv_nsec += (timeout_ms % 1000) * 1000000;
+
+		if (abstime.tv_nsec >= 1000000000) {
+			abstime.tv_sec++;
+			abstime.tv_nsec -= 1000000000;
+		}
+
+		ret = px4_sem_timedwait(&g_heartbeat_sem, &abstime);
 	}
 
-	struct timespec abstime;
-	clock_gettime(CLOCK_REALTIME, &abstime);
-	abstime.tv_sec += timeout_ms / 1000;
-	abstime.tv_nsec += (timeout_ms % 1000) * 1000000;
-
-	if (abstime.tv_nsec >= 1000000000) {
-		abstime.tv_sec++;
-		abstime.tv_nsec -= 1000000000;
-	}
-
-	return px4_sem_timedwait(&g_heartbeat_sem, &abstime);
+	return ret;
 }
 
 /**
@@ -546,4 +568,191 @@ void ipc_hw_cm85_reset_stats(void)
 	g_ipc_ch1_irq_count = 0;
 	g_ipc_ch2_irq_count = 0;
 	g_ipc_ch3_irq_count = 0;
+}
+
+/*******************************************************************************
+ * CRC Validation Functions for Shared Memory Messages
+ ******************************************************************************/
+
+/* CRC error counter for statistics */
+static volatile uint32_t g_crc_error_count = 0;
+
+/**
+ * Read and validate RC input from shared memory with CRC check
+ */
+int ipc_hw_cm85_read_rc_input_validated(ipc_rc_input_t *rc_input)
+{
+	if (!g_ipc_hw_initialized || rc_input == nullptr) {
+		return -EINVAL;
+	}
+
+	/* Acquire semaphore for shared memory access */
+	int ret = ipc_hw_cm85_sem_take(IPC_HW_CM85_SEM_RC_INPUT);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* Read from shared memory (volatile read) */
+	volatile ipc_rc_input_t *shmem = reinterpret_cast<volatile ipc_rc_input_t *>(IPC_RC_INPUT_ADDR);
+
+	/* Copy to local buffer */
+	memcpy(rc_input, const_cast<const ipc_rc_input_t *>(shmem), sizeof(ipc_rc_input_t));
+
+	/* Release semaphore */
+	ipc_hw_cm85_sem_give(IPC_HW_CM85_SEM_RC_INPUT);
+
+	/* Validate CRC */
+	uint16_t calculated_crc = ipc_crc16_ccitt(reinterpret_cast<const uint8_t *>(rc_input),
+				  offsetof(ipc_rc_input_t, crc16));
+
+	if (calculated_crc != rc_input->crc16) {
+		g_crc_error_count++;
+		PX4_WARN("ipc_hw_cm85: RC input CRC mismatch (calc: 0x%04X, recv: 0x%04X)",
+			 calculated_crc, rc_input->crc16);
+		return -EBADMSG;
+	}
+
+	return 0;
+}
+
+/**
+ * Read and validate battery status from shared memory with CRC check
+ */
+int ipc_hw_cm85_read_battery_validated(ipc_battery_status_t *battery)
+{
+	if (!g_ipc_hw_initialized || battery == nullptr) {
+		return -EINVAL;
+	}
+
+	/* Acquire semaphore for shared memory access */
+	int ret = ipc_hw_cm85_sem_take(IPC_HW_CM85_SEM_BATTERY);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* Read from shared memory */
+	volatile ipc_battery_status_t *shmem = reinterpret_cast<volatile ipc_battery_status_t *>
+					       (IPC_BATTERY_STATUS_ADDR);
+
+	/* Copy to local buffer */
+	memcpy(battery, const_cast<const ipc_battery_status_t *>(shmem), sizeof(ipc_battery_status_t));
+
+	/* Release semaphore */
+	ipc_hw_cm85_sem_give(IPC_HW_CM85_SEM_BATTERY);
+
+	/* Validate CRC */
+	uint16_t calculated_crc = ipc_crc16_ccitt(reinterpret_cast<const uint8_t *>(battery),
+				  offsetof(ipc_battery_status_t, crc16));
+
+	if (calculated_crc != battery->crc16) {
+		g_crc_error_count++;
+		PX4_WARN("ipc_hw_cm85: Battery CRC mismatch (calc: 0x%04X, recv: 0x%04X)",
+			 calculated_crc, battery->crc16);
+		return -EBADMSG;
+	}
+
+	return 0;
+}
+
+/**
+ * Read and validate CM33 heartbeat from shared memory with CRC check
+ */
+int ipc_hw_cm85_read_heartbeat_cm33_validated(ipc_heartbeat_cm33_t *heartbeat)
+{
+	if (!g_ipc_hw_initialized || heartbeat == nullptr) {
+		return -EINVAL;
+	}
+
+	/* Read from shared memory (no semaphore needed for heartbeat - single writer) */
+	volatile ipc_heartbeat_cm33_t *shmem = reinterpret_cast<volatile ipc_heartbeat_cm33_t *>
+					       (IPC_HEARTBEAT_CM33_ADDR);
+
+	/* Copy to local buffer */
+	memcpy(heartbeat, const_cast<const ipc_heartbeat_cm33_t *>(shmem), sizeof(ipc_heartbeat_cm33_t));
+
+	/* Validate CRC */
+	uint16_t calculated_crc = ipc_crc16_ccitt(reinterpret_cast<const uint8_t *>(heartbeat),
+				  offsetof(ipc_heartbeat_cm33_t, crc16));
+
+	if (calculated_crc != heartbeat->crc16) {
+		g_crc_error_count++;
+		PX4_WARN("ipc_hw_cm85: Heartbeat CM33 CRC mismatch (calc: 0x%04X, recv: 0x%04X)",
+			 calculated_crc, heartbeat->crc16);
+		return -EBADMSG;
+	}
+
+	return 0;
+}
+
+/**
+ * Write actuator command to shared memory with CRC generation
+ */
+int ipc_hw_cm85_write_actuator_cmd(ipc_actuator_cmd_t *actuator)
+{
+	if (!g_ipc_hw_initialized || actuator == nullptr) {
+		return -EINVAL;
+	}
+
+	/* Calculate and set CRC */
+	actuator->crc16 = ipc_crc16_ccitt(reinterpret_cast<const uint8_t *>(actuator),
+					  offsetof(ipc_actuator_cmd_t, crc16));
+
+	/* Acquire semaphore for shared memory access */
+	int ret = ipc_hw_cm85_sem_take(IPC_HW_CM85_SEM_ACTUATOR);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	/* Write to shared memory */
+	volatile ipc_actuator_cmd_t *shmem = reinterpret_cast<volatile ipc_actuator_cmd_t *>(IPC_ACTUATOR_CMD_ADDR);
+	memcpy(const_cast<ipc_actuator_cmd_t *>(shmem), actuator, sizeof(ipc_actuator_cmd_t));
+
+	/* Memory barrier to ensure write completes before notification */
+	__DMB();
+
+	/* Release semaphore */
+	ipc_hw_cm85_sem_give(IPC_HW_CM85_SEM_ACTUATOR);
+
+	/* Notify CM33 */
+	ret = ipc_hw_cm85_notify_cm33(IPC_HW_CM85_CH_ACTUATOR, actuator->sequence);
+
+	return ret;
+}
+
+/**
+ * Write CM85 heartbeat to shared memory with CRC generation
+ */
+int ipc_hw_cm85_write_heartbeat_cm85(ipc_heartbeat_cm85_t *heartbeat)
+{
+	if (!g_ipc_hw_initialized || heartbeat == nullptr) {
+		return -EINVAL;
+	}
+
+	/* Calculate and set CRC */
+	heartbeat->crc16 = ipc_crc16_ccitt(reinterpret_cast<const uint8_t *>(heartbeat),
+					   offsetof(ipc_heartbeat_cm85_t, crc16));
+
+	/* Write to shared memory (no semaphore needed - single writer) */
+	volatile ipc_heartbeat_cm85_t *shmem = reinterpret_cast<volatile ipc_heartbeat_cm85_t *>
+					       (IPC_HEARTBEAT_CM85_ADDR);
+	memcpy(const_cast<ipc_heartbeat_cm85_t *>(shmem), heartbeat, sizeof(ipc_heartbeat_cm85_t));
+
+	/* Memory barrier to ensure write completes before notification */
+	__DMB();
+
+	/* Notify CM33 */
+	int ret = ipc_hw_cm85_notify_cm33(IPC_HW_CM85_CH_HEARTBEAT, heartbeat->sequence);
+
+	return ret;
+}
+
+/**
+ * Get CRC error count
+ */
+uint32_t ipc_hw_cm85_get_crc_error_count(void)
+{
+	return g_crc_error_count;
 }

@@ -72,6 +72,7 @@ typedef ipc_battery_status_t  IpcBatteryStatus;
 typedef ipc_heartbeat_cm85_t  IpcCm85Heartbeat;
 typedef ipc_heartbeat_cm33_t  IpcCm33Heartbeat;
 typedef ipc_perf_counters_t   IpcPerfCounters;
+typedef ipc_setup_config_t    IpcSetupConfig;
 
 /* CRC helper to match previous API shape */
 template<typename T>

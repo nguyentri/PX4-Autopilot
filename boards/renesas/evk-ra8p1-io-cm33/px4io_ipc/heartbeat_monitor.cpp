@@ -53,27 +53,35 @@
 
 extern "C" {
 #include <nuttx/arch.h>
+#include "arm_internal.h"
+
+/* Use NuttX POEG driver for hardware-enforced motor kill */
+#include "ra_poeg.h"
 }
 
-/* POEG (Port Output Enable for GPT) registers - RA8P1 specific */
-#define POEG_BASE               0x40044000UL
-#define POEGA_OFFSET            0x0000
-#define POEGB_OFFSET            0x0100
-#define POEGC_OFFSET            0x0200
-#define POEGD_OFFSET            0x0300
+/*
+ * POEG (Port Output Enable for GPT) - Hardware Safety Mechanism
+ *
+ * This module uses the NuttX POEG driver (ra_poeg.c) for hardware-enforced
+ * PWM output disable. When CM85 heartbeat times out, we trigger POEG to
+ * immediately kill all motor outputs regardless of CPU state.
+ *
+ * POEG Groups used:
+ * - Group A (RA_POEG_CHANNEL_A): Motors 1-2 (GPT3, GPT5)
+ * - Group B (RA_POEG_CHANNEL_B): Motors 3-4 (GPT11, GPT13)
+ *
+ * The POEG driver provides:
+ * - ra_poeg_initialize(): Configure POEG group with triggers
+ * - ra_poeg_software_disable(): Trigger software stop (kill motors)
+ * - ra_poeg_reset(): Clear stop flags and re-enable outputs
+ */
 
-#define POEG_POEGGA_OFFSET      0x00    /* POEG Group A Control */
-#define POEG_POEGSA_OFFSET      0x04    /* POEG Group A Status */
-#define POEG_POEGSS_OFFSET      0x08    /* POEG Group A Software Start */
+/* POEG groups used for motor control */
+#define MOTOR_POEG_GROUP_A    RA_POEG_CHANNEL_A
+#define MOTOR_POEG_GROUP_B    RA_POEG_CHANNEL_B
 
-#define POEG_PIDF               (1 << 0)  /* Port Input Detection Flag */
-#define POEG_IOCF               (1 << 1)  /* I/O Level Detection Flag */
-#define POEG_OSTPF              (1 << 2)  /* Oscillation Stop Detection Flag */
-#define POEG_SSF                (1 << 3)  /* Software Stop Flag */
-#define POEG_PIDE               (1 << 4)  /* Port Input Detection Enable */
-#define POEG_IOCE               (1 << 5)  /* I/O Level Detection Enable */
-#define POEG_OSTPE              (1 << 6)  /* Oscillation Stop Detection Enable */
-#define POEG_ST                 (1 << 16) /* POEG Trigger */
+/* Track if POEG has been initialized */
+static bool g_poeg_initialized = false;
 
 /* Heartbeat monitoring state */
 static uint32_t last_cm85_heartbeat_seq = 0;
@@ -94,52 +102,94 @@ extern volatile uint16_t r_status_flags;
 #define POEG_REASON_EMERGENCY_KILL  0x04
 
 /**
- * @brief Trigger POEG emergency motor kill
+ * @brief Initialize POEG for motor safety
+ *
+ * Configures POEG groups to support software-triggered motor kill.
+ * Called from heartbeat_monitor_init().
+ */
+static void poeg_safety_init(void)
+{
+	if (g_poeg_initialized) {
+		return;
+	}
+
+	struct ra_poeg_config_s config;
+
+	/* Configure POEG Group A for motors 1-2 */
+	memset(&config, 0, sizeof(config));
+	config.channel = MOTOR_POEG_GROUP_A;
+	config.trigger = RA_POEG_TRIGGER_SOFTWARE;  /* Software trigger only */
+	config.noise_filter = RA_POEG_FILTER_PCLKB_DIV_8;
+	config.priority = 1;  /* High priority */
+	config.callback = NULL;  /* No callback needed for software trigger */
+
+	int ret = ra_poeg_initialize(&config);
+	if (ret < 0) {
+		PX4_ERR("POEG Group A init failed: %d", ret);
+	} else {
+		PX4_INFO("POEG Group A initialized for motor safety");
+	}
+
+	/* Configure POEG Group B for motors 3-4 */
+	config.channel = MOTOR_POEG_GROUP_B;
+
+	ret = ra_poeg_initialize(&config);
+	if (ret < 0) {
+		PX4_ERR("POEG Group B init failed: %d", ret);
+	} else {
+		PX4_INFO("POEG Group B initialized for motor safety");
+	}
+
+	g_poeg_initialized = true;
+}
+
+/**
+ * @brief Trigger POEG emergency motor kill using NuttX driver
  *
  * @param reason Reason code for kill (for logging/telemetry)
  */
 static void trigger_poeg_kill(uint32_t reason)
 {
-	/* Set POEG software trigger for all GPT groups */
-	volatile uint32_t *poega_ss = (volatile uint32_t *)(POEG_BASE + POEGA_OFFSET + POEG_POEGSS_OFFSET);
-	volatile uint32_t *poegb_ss = (volatile uint32_t *)(POEG_BASE + POEGB_OFFSET + POEG_POEGSS_OFFSET);
-	volatile uint32_t *poegc_ss = (volatile uint32_t *)(POEG_BASE + POEGC_OFFSET + POEG_POEGSS_OFFSET);
-	volatile uint32_t *poegd_ss = (volatile uint32_t *)(POEG_BASE + POEGD_OFFSET + POEG_POEGSS_OFFSET);
+	int ret;
 
-	/* Memory barrier before triggering */
-	ARM_DMB();
+	PX4_ERR("POEG KILL triggered, reason=0x%02X", (unsigned)reason);
 
-	/* Trigger software stop for all POEG groups */
-	*poega_ss = POEG_ST;
-	*poegb_ss = POEG_ST;
-	*poegc_ss = POEG_ST;
-	*poegd_ss = POEG_ST;
+	/* Trigger software stop for all motor POEG groups */
+	ret = ra_poeg_software_disable(MOTOR_POEG_GROUP_A);
+	if (ret < 0) {
+		PX4_ERR("POEG Group A disable failed: %d", ret);
+	}
 
-	/* Memory barrier after triggering */
-	ARM_DMB();
-
-	PX4_ERR("POEG KILL triggered, reason=0x%02X", reason);
+	ret = ra_poeg_software_disable(MOTOR_POEG_GROUP_B);
+	if (ret < 0) {
+		PX4_ERR("POEG Group B disable failed: %d", ret);
+	}
 
 	/* Update status flags */
 	r_status_flags |= PX4IO_P_STATUS_FLAGS_FAILSAFE;
 	r_status_flags &= ~PX4IO_P_STATUS_FLAGS_FMU_OK;
 
-	/* Log event */
-	syslog(LOG_CRIT, "[px4io] EMERGENCY MOTOR KILL - reason 0x%02X\n", reason);
+	/* Log critical event */
+	syslog(LOG_CRIT, "[px4io] EMERGENCY MOTOR KILL - reason 0x%02X\n", (unsigned)reason);
 }
 
 /**
  * @brief Initialize heartbeat monitoring
  *
- * Called during px4io initialization.
+ * Called during px4io initialization. Sets up POEG for motor safety
+ * and initializes heartbeat tracking state.
  */
 void heartbeat_monitor_init()
 {
+	/* Initialize POEG for motor safety kill */
+	poeg_safety_init();
+
 	last_cm85_heartbeat_time = hrt_absolute_time();
 	cm85_heartbeat_timeout_occurred = false;
 	cm85_heartbeat_timeout_count = 0;
 
-	PX4_INFO("Heartbeat monitor initialized, timeout=%u ms", PX4IO_IPC_HEARTBEAT_TIMEOUT_US / 1000);
+	PX4_INFO("Heartbeat monitor initialized, timeout=%u ms",
+	         (unsigned)(PX4IO_IPC_HEARTBEAT_TIMEOUT_US / 1000));
 }
 
 /**
@@ -180,8 +230,16 @@ bool heartbeat_monitor_check()
 			cm85_heartbeat_timeout_occurred = false;
 			PX4_INFO("CM85 heartbeat restored after timeout");
 
-			/* Try to clear POEG (may require power cycle depending on configuration) */
-			// Note: RA8P1 POEG may latch and require explicit reset
+			/* Try to clear POEG and re-enable outputs */
+			int ret = ra_poeg_reset(MOTOR_POEG_GROUP_A);
+			if (ret < 0) {
+				PX4_WARN("POEG Group A reset failed: %d (may need power cycle)", ret);
+			}
+
+			ret = ra_poeg_reset(MOTOR_POEG_GROUP_B);
+			if (ret < 0) {
+				PX4_WARN("POEG Group B reset failed: %d (may need power cycle)", ret);
+			}
 		}
 
 		/* Update status flag */

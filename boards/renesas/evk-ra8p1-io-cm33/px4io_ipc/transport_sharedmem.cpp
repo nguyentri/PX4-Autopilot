@@ -62,9 +62,11 @@ volatile IpcBatteryStatus *g_battery_status = nullptr;
 volatile IpcCm85Heartbeat *g_cm85_heartbeat = nullptr;
 volatile IpcCm33Heartbeat *g_cm33_heartbeat = nullptr;
 volatile IpcPerfCounters  *g_perf_counters  = nullptr;
+volatile IpcSetupConfig   *g_setup_config   = nullptr;
 
 /* Internal state */
 static uint32_t last_actuator_seq = 0;
+static uint32_t last_setup_seq = 0;
 static hrt_abstime last_actuator_time = 0;
 static uint32_t actuator_crc_errors = 0;
 static bool interface_ready = false;
@@ -86,6 +88,7 @@ static void map_shared_region(void)
 	g_cm85_heartbeat = (volatile IpcCm85Heartbeat *)IPC_HEARTBEAT_CM85_ADDR;
 	g_cm33_heartbeat = (volatile IpcCm33Heartbeat *)IPC_HEARTBEAT_CM33_ADDR;
 	g_perf_counters  = (volatile IpcPerfCounters *)IPC_PERF_COUNTERS_ADDR;
+	g_setup_config   = (volatile IpcSetupConfig *)IPC_SETUP_CONFIG_ADDR;
 }
 
 /* Safe copy with barriers */
@@ -136,6 +139,9 @@ static void handle_actuator_cmd()
 	last_actuator_time = hrt_absolute_time();
 	rx_messages++;
 
+	/* Update FMU data timestamp for mixer */
+	system_state.fmu_data_received_time = last_actuator_time;
+
 	/* Update motor outputs */
 	for (int i = 0; i < PX4IO_SERVO_COUNT && i < IPC_MAX_MOTORS; i++) {
 		r_page_servos[i] = cmd.motor[i];
@@ -151,10 +157,88 @@ static void handle_actuator_cmd()
 		atomic_modify_clear(&r_status_flags, PX4IO_P_STATUS_FLAGS_OUTPUTS_ARMED);
 	}
 
+	/* Handle failsafe flag from CM85 */
+	if (cmd.failsafe_active) {
+		atomic_modify_or(&r_setup_arming, PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE);
+	} else {
+		atomic_modify_clear(&r_setup_arming, PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE);
+	}
+
+	/* Handle emergency kill request */
+	if (cmd.emergency_kill) {
+		mixer_emergency_stop();
+	}
+
 	/* Mode changes only allowed when disarmed */
 	if (!pwm_out_is_armed()) {
 		pwm_out_set_mode((output_mode_t)cmd.protocol);
 	}
+}
+
+/**
+ * @brief Handle setup configuration from CM85
+ *
+ * Reads IpcSetupConfig and applies:
+ * - Arming flags
+ * - Failsafe PWM values
+ * - Disarmed PWM values
+ * - Flight termination settings
+ */
+static void handle_setup_config()
+{
+	if (!g_setup_config) {
+		return;
+	}
+
+	IpcSetupConfig cfg{};
+	ipc_read(&cfg, g_setup_config);
+
+	uint16_t crc = ipc_calculate_message_crc(&cfg, nullptr);
+
+	if (cfg.crc16 != crc) {
+		return;  /* Invalid CRC, ignore */
+	}
+
+	/* Check for new config */
+	if (cfg.sequence == last_setup_seq) {
+		return;
+	}
+
+	last_setup_seq = cfg.sequence;
+
+	/* Update arming flags */
+	r_setup_arming = cfg.arming_flags;
+
+	/* Update failsafe PWM values */
+	for (int i = 0; i < PX4IO_SERVO_COUNT && i < IPC_MAX_MOTORS; i++) {
+		r_page_servo_failsafe[i] = cfg.failsafe_pwm[i];
+	}
+
+	/* Update disarmed PWM values */
+	for (int i = 0; i < PX4IO_SERVO_COUNT && i < IPC_MAX_MOTORS; i++) {
+		r_page_servo_disarmed[i] = cfg.disarmed_pwm[i];
+	}
+
+	/* Flight termination setting */
+	r_setup_flighttermination = cfg.flighttermination_enabled;
+
+	/* Force failsafe if requested */
+	if (cfg.force_failsafe) {
+		atomic_modify_or(&r_setup_arming, PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE);
+	}
+
+	/* Lockdown mode */
+	if (cfg.lockdown) {
+		atomic_modify_or(&r_setup_arming, PX4IO_P_SETUP_ARMING_LOCKDOWN);
+	}
+
+	/* PWM rate update (if not armed) */
+	if (!pwm_out_is_armed() && cfg.pwm_rate_hz > 0) {
+		pwm_out_set_frequency(cfg.pwm_rate_hz);
+	}
+
+	syslog(LOG_DEBUG, "Setup config updated: arming=0x%04X, failsafe[0]=%u\n",
+	       (unsigned)cfg.arming_flags, (unsigned)cfg.failsafe_pwm[0]);
 }
 
 /* Publish CM33 heartbeat (10Hz) */
@@ -176,7 +260,10 @@ static void publish_cm33_heartbeat()
 	hb.system_state = (r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED) ? IPC_STATE_ACTIVE : IPC_STATE_STANDBY;
 	hb.cpu_load_percent = 0; /* TODO: wire real CPU load */
 	hb.temperature_degC = 0;
-	hb.error_flags = 0;
+
+	/* Error flags from status alarms */
+	hb.error_flags = r_status_alarms;
+
 	hb.crc16 = IPC_CALC_CRC(&hb, ipc_heartbeat_cm33_t);
 
 	ipc_write(g_cm33_heartbeat, &hb);
@@ -213,7 +300,12 @@ void interface_init(void)
 		memset((void *)g_perf_counters, 0, sizeof(IpcPerfCounters));
 	}
 
+	if (g_setup_config) {
+		memset((void *)g_setup_config, 0, sizeof(IpcSetupConfig));
+	}
+
 	last_actuator_seq = 0;
+	last_setup_seq = 0;
 	last_actuator_time = hrt_absolute_time();
 	interface_ready = true;
 
@@ -227,6 +319,7 @@ void interface_tick(void)
 	}
 
 	handle_actuator_cmd();
+	handle_setup_config();
 	publish_cm33_heartbeat();
 }
 
