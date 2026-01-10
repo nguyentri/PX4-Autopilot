@@ -1,6 +1,36 @@
 CONFIG:
-  default: px4_sitl_default
+  default: renesas_evk-ra8p1_default
   choices:
+    renesas_evk-ra8p1_default:
+      short: renesas_evk-ra8p1_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: renesas_evk-ra8p1_default
+    renesas_evk-ra8p1-io-cm33_default:
+      short: renesas_evk-ra8p1-io-cm33_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: renesas_evk-ra8p1-io-cm33_default
+    renesas_rdk-rzv2h_default:
+      short: renesas_rdk-rzv2h_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: renesas_rdk-rzv2h_default
+    renesas_rdk-rzv2h-io-cr8_1_default:
+      short: renesas_rdk-rzv2h-io-cr8_1_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: renesas_rdk-rzv2h-io-cr8_1_default
+    renesas_rdk-rzv2h-io-cm33_default:
+      short: renesas_rdk-rzv2h-io-cm33_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: renesas_rdk-rzv2h-io-cm33_default
+    renesas_fpb-ra8e1_default:
+      short: renesas_fpb-ra8e1_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: renesas_fpb-ra8e1_default
     px4_sitl_default:
       short: px4_sitl_default
       buildType: RelWithDebInfo

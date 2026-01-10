@@ -473,6 +473,14 @@ if(NOT NUTTX_DIR MATCHES "external")
 	elseif(CONFIG_ARCH_CHIP_STM32H753II)
 		set(DEBUG_DEVICE "STM32H753II")
 		set(DEBUG_SVD_FILE "STM32H7x3.svd")
+	elseif(CONFIG_ARCH_CHIP_R7KA8P1KFLCAC)
+		set(DEBUG_DEVICE "R7KA8P1KF_CPU0")
+		set(DEBUG_SVD_FILE "R7KA8P1AD.svd")
+		set(RENESAS_DEBUG_CONFIG TRUE)
+	elseif(CONFIG_ARCH_CHIP_RZV2H)
+		set(DEBUG_DEVICE "R9A09G057H_CR8_0")
+		set(DEBUG_SVD_FILE "R9A09G057H.svd")
+		set(RENESAS_DEBUG_CONFIG TRUE)
 	else()
 		set(DEBUG_DEVICE "")
 		set(DEBUG_SVD_FILE "unknown")
@@ -482,6 +490,8 @@ if(NOT NUTTX_DIR MATCHES "external")
 		LIST_DIRECTORIES false
 		${CMAKE_SOURCE_DIR}/../cmsis-svd/data/*/${DEBUG_SVD_FILE}
 		${CMAKE_SOURCE_DIR}/../svd/${DEBUG_SVD_FILE}
+		${CMAKE_SOURCE_DIR}/${DEBUG_SVD_FILE}
+		${NUTTX_DIR}/${DEBUG_SVD_FILE}
 	)
 
 	if(CONFIG_DEBUG_TCBINFO)
@@ -512,7 +522,13 @@ if(NOT NUTTX_DIR MATCHES "external")
 	endif()
 
 	if(DEBUG_DEVICE)
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/launch.json.in ${PX4_SOURCE_DIR}/.vscode/launch.json @ONLY)
+		# Use Renesas-specific launch configuration if building for Renesas boards
+		if(RENESAS_DEBUG_CONFIG)
+			configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/launch_renesas.json.in ${PX4_SOURCE_DIR}/.vscode/launch.json @ONLY)
+			message(STATUS "Generated Renesas debug configuration for ${DEBUG_DEVICE}")
+		else()
+			configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/launch.json.in ${PX4_SOURCE_DIR}/.vscode/launch.json @ONLY)
+		endif()
 	endif()
 endif()
 
