@@ -1,0 +1,142 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug RA8P1 CM85 (Core0)",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
+            //"executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+            //"executable": "${workspaceRoot}/.refs/renesas_fsp_ra8p1/ek_ra8p1_dualcore/ek_ra8p1_dualcore_CPU0/Debug/ek_ra8p1_dualcore_CPU0.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/R7KA8P1AD.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": [
+                "-speed", "15000"
+            ],
+            "device": "R7KA8P1KF_CPU0",
+            "showDevDebugOutput": "parsed",
+            "runToEntryPoint": "main",
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "label": "rtt_0",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "overrideLaunchCommands": [
+                "monitor reset",
+                "monitor halt",
+                "load",
+                // Enable to load the IO CM33 core binary
+                "add-symbol-file ${workspaceRoot}/.refs/renesas_fsp_ra8p1/ek_ra8p1_dualcore/ek_ra8p1_dualcore_CPU1/Debug/ek_ra8p1_dualcore_CPU1.elf",
+                "restore ${workspaceRoot}/.refs/renesas_fsp_ra8p1/ek_ra8p1_dualcore/ek_ra8p1_dualcore_CPU1/Debug/ek_ra8p1_dualcore_CPU1.bin binary 0x02080000",
+                "monitor reset",
+                "monitor halt",
+                "monitor exec SetRTTSearchRanges 0x20000000 0x10000 0x22000000 0x10000",
+                "monitor exec SetRTTChannel 0 Terminal"
+            ],
+            "preLaunchCommands": [
+                "source ${workspaceFolder}/platforms/nuttx/Debug/PX4",
+                "source ${workspaceFolder}/platforms/nuttx/Debug/NuttX",
+                "set mem inaccessible-by-default off",
+                "set print pretty"
+            ]
+        },
+        {
+            "name": "Debug RA8P1 CM33 (Core1) - IO Processor",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/R7KA8P1AD.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": [
+                "-speed", "15000"
+            ],
+            "device": "R7KA8P1KF_CPU1",
+            "showDevDebugOutput": "parsed",
+            "runToEntryPoint": "user_start",
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "label": "rtt_1",
+                        "port": 1,
+                        "type": "console"
+                    }
+                ]
+            },
+            "overrideLaunchCommands": [
+                "monitor reset",
+                "monitor halt",
+                // Enable to load the Main CM85 core binary
+                //"add-symbol-file ${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
+                //"restore ${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.bin binary 0x20000000",
+                "load",
+                "monitor reset",
+                "monitor halt"
+            ],
+            "preLaunchCommands": [
+                "source ${workspaceFolder}/platforms/nuttx/Debug/PX4",
+                "source ${workspaceFolder}/platforms/nuttx/Debug/NuttX",
+                "set mem inaccessible-by-default off",
+                "set print pretty"
+            ]
+        },
+        {
+            "name": "Debug RZV2H CR8 (Core0) - Main Processor",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/platforms/nuttx/NuttX/R9A09G057H.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": [
+                "-speed", "15000"
+            ],
+            "device": "R9A09G057H_CR8_0",
+            "showDevDebugOutput": "parsed",
+            "runToEntryPoint": "main",
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "label": "rtt_0",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "preLaunchCommands": [
+                "source ${workspaceFolder}/platforms/nuttx/Debug/PX4",
+                "source ${workspaceFolder}/platforms/nuttx/Debug/NuttX",
+                "set mem inaccessible-by-default off",
+                "set print pretty"
+            ]
+        }
+    ]
+}
