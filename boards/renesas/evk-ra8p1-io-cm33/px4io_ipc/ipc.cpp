@@ -78,8 +78,8 @@
  * Linker-Defined Symbols for IPC Shared Memory
  ******************************************************************************/
 
-extern uint8_t _sipc_ram[];
-extern uint8_t _eipc_ram[];
+extern uint8_t __ipc_ram_start[];
+extern uint8_t __ipc_ram_end[];
 
 /*******************************************************************************
  * Ring Buffer Structure
@@ -303,13 +303,13 @@ static int ring_skip(IpcRingBuffer *ring, size_t len)
 int ipc_init(void)
 {
 	/* Validate shared memory region */
-	size_t shmem_size = static_cast<size_t>(_eipc_ram - _sipc_ram);
+	size_t shmem_size = static_cast<size_t>(__ipc_ram_end - __ipc_ram_start);
 
 	if (shmem_size < sizeof(IpcSharedMemory)) {
 		return IPC_ERR_NOT_INITIALIZED;
 	}
 
-	g_shmem = reinterpret_cast<IpcSharedMemory *>(_sipc_ram);
+	g_shmem = reinterpret_cast<IpcSharedMemory *>(__ipc_ram_start);
 
 	/* Initialize shared memory structure */
 	/* Note: CM33 initializes; CM85 checks for magic before use */

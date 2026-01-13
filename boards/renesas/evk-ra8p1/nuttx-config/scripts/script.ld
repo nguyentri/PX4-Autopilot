@@ -27,9 +27,10 @@
  *   - CM85 TCM RAM: 256KB (128KB ITCM + 128KB DTCM)
  *   - CM33 TCM RAM: 128KB (64KB ITCM + 64KB DTCM)
  *   - User SRAM: 1664KB @ 0x22000000 - 0x2219FFFF
- *     - CM33 SRAM: 32KB @ 0x22000000 - 0x22007FFF (private to CM33)
- *     - IPC Shared: 32KB @ 0x22008000 - 0x2200FFFF (shared CM85/CM33)
- *     - CM85 SRAM: 1600KB @ 0x22010000 - 0x2219FFFF (CM85 use)
+ *     - CM85 SRAM: 1536KB @ 0x22000000 - 0x2217FFFF (CM85 use)
+ *     - Reserved:    32KB @ 0x22180000 - 0x22187FFF (reserved)
+ *     - IPC Shared:  64KB @ 0x22188000 - 0x22197FFF (shared CM85/CM33)
+ *     - CM33 SRAM:   32KB @ 0x22198000 - 0x2219FFFF (private to CM33)
  *
  * External Flash (EK-RA8P1 Board):
  * ================================
@@ -70,10 +71,11 @@ MEMORY
   mram_data (rw) : ORIGIN = 0x020E4000, LENGTH = 8K
 
   /* User SRAM - 1664KB total, partitioned:
-   * CM33: 0x22000000-0x22007FFF (32KB)
-   * IPC:  0x22008000-0x2200FFFF (32KB)
-   * CM85: 0x22010000-0x2219FFFF (1600KB) */
-  sram (rwx)   : ORIGIN = 0x22010000, LENGTH = 1600K
+   * CM85: 0x22000000-0x2217FFFF (1536KB)
+   * Rsv:  0x22180000-0x22187FFF (32KB)
+   * IPC:  0x22188000-0x22197FFF (64KB)
+   * CM33: 0x22198000-0x2219FFFF (32KB) */
+  sram (rwx)   : ORIGIN = 0x22000000, LENGTH = 1536K
 
   /* Tightly-Coupled Memory - CM85 (local view) */
   itcm (rwx)   : ORIGIN = 0x00000000, LENGTH = 128K
@@ -90,8 +92,8 @@ MEMORY
   /* CM33 data in MRAM (4KB) */
   cm33_mram_data (rw) : ORIGIN = 0x020FE000, LENGTH = 4K
 
-  /* IPC Shared Memory - 32KB within User SRAM (shared with CM33) */
-  ipc_shmem (rw) : ORIGIN = 0x22008000, LENGTH = 32K
+  /* IPC Shared Memory - 64KB within User SRAM (shared with CM33) */
+  ipc_ram (rw) : ORIGIN = 0x22188000, LENGTH = 64K
 
   /* Renesas OFS Registers - defined in renesas_ofs_defs.ld */
   OPTION_SETTING_OFS0 (r)         : ORIGIN = OPTION_SETTING_OFS0_START, LENGTH = OPTION_SETTING_OFS0_LENGTH
@@ -125,6 +127,19 @@ MEMORY
 OUTPUT_ARCH(arm)
 EXTERN(_vectors)
 ENTRY(_stext)
+
+/* Export memory region symbols for runtime use */
+__itcm_start = ORIGIN(itcm);
+__itcm_end   = ORIGIN(itcm) + LENGTH(itcm);
+__dtcm_start = ORIGIN(dtcm);
+__dtcm_end   = ORIGIN(dtcm) + LENGTH(dtcm);
+__sram_start = ORIGIN(sram);
+__sram_end   = ORIGIN(sram) + LENGTH(sram);
+
+/* Exported symbols for runtime use */
+__ipc_ram_start = ORIGIN(ipc_ram);
+__ipc_ram_end   = ORIGIN(ipc_ram) + LENGTH(ipc_ram);
+__ipc_ram_size  = LENGTH(ipc_ram);
 
 SECTIONS
 {
@@ -202,15 +217,6 @@ SECTIONS
     _ebss = ABSOLUTE(.);
   } > sram
 
-  /* IPC Shared Memory - non-cacheable, no-init */
-  .ipc_shmem (NOLOAD) :
-  {
-    _sipc_shmem = ABSOLUTE(.);
-    *(.ipc_shmem .ipc_shmem.*)
-    . = ALIGN(32); /* Cache line alignment */
-    _eipc_shmem = ABSOLUTE(.);
-  } > ipc_shmem
-
   /* =========================================================
    * CM33 Dual-Core Support Sections
    * CM85 copies these sections to CM33 TCM at boot
@@ -248,6 +254,24 @@ SECTIONS
     . = ALIGN(4);
     _ecm33_bss = ABSOLUTE(.);
   } > cm33_dtcm
+
+  /* IPC Shared Memory Region */
+  /* This section is NOLOAD because both cores access it directly */
+  /* Memory barriers (DMB/DSB) must be used around all accesses */
+  .ipc_ram (NOLOAD) : {
+      . = ALIGN(4096);    /* 4KB alignment for MPU configuration */
+      _sipc_ram = .;
+
+      /* Ring buffers for inter-core messaging */
+      *(.ipc_ram .ipc_ram.*)
+      *(.ipc_buffer .ipc_buffer.*)
+
+      /* Reserve full 32KB to prevent overlap with CM85 SRAM */
+      . = ORIGIN(ipc_ram) + LENGTH(ipc_ram);
+
+      . = ALIGN(4);
+      _eipc_ram = .;
+  } > ipc_ram
 
   /* Stabs debugging sections */
   .stab 0 : { *(.stab) }

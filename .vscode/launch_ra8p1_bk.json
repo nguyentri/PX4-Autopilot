@@ -21,7 +21,7 @@
             "device": "R7KA8P1KF_CPU0", // RA8P1 CM85 (Cortex-M85 @ 1GHz)
             // "serialNumber": "52006677", // 51028188/52006677/51026290
             "showDevDebugOutput": "parsed",
-            "runToEntryPoint": "main",
+            "runToEntryPoint": "__start",
             "rttConfig": {
             "enabled": true,
             "address": "auto",

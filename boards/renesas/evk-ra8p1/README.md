@@ -214,7 +214,8 @@ The NuttX BSP for RA8P1 provides hardware abstraction for peripheral drivers, in
 
 ```text
 platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/
-├── ra_start.c                        # Boot sequence, vector table setup
+├── ra_start_cm85.c                   # CM85 Boot sequence, vector table setup
+├── ra_start_cm33.c                   # CM33 Boot sequence, vector table setup
 ├── ra_start.h                        # Startup declarations
 ├── ra_idle.c                         # Idle task implementation
 ├── ra_irq.c                          # Generic IRQ handling
@@ -847,7 +848,7 @@ The NuttX BSP includes comprehensive hardware register definitions for the RA8P1
 | `ra_sdram.c`                | `ra_sdram.h`         | SDRAM      | External SDRAM                               |
 | `ra_serial.c`               | -                    | UART       | Serial port driver                           |
 | `ra_spi.c`                  | `ra_spi.h`           | SPI        | SPI driver                                   |
-| `ra_start.c`                | `ra_start.h`         | STARTUP    | Boot sequence CM85                           |
+| `ra_start_cm85.c`                | `ra_start.h`         | STARTUP    | Boot sequence CM85                           |
 | `ra_start_cm33.c`           | `ra_start.h`         | STARTUP    | Boot sequence CM33                           |
 | `ra_timerisr.c`             | -                    | TICK       | System tick timer                            |
 | `ra_ulpt.c`                 | `ra_ulpt.h`          | ULPT       | Ultra Low-Power Timer                        |
@@ -1154,7 +1155,7 @@ rfp-cli -d RA -tool jlink:<JLINK ID> -if swd -erase-chip
       ],
       "device": "R7KA8P1KF_CPU0",
       "showDevDebugOutput": "parsed",
-      "runToEntryPoint": "main",
+      "runToEntryPoint": "__start",
       "rttConfig": {
         "enabled": true,
         "address": "auto",

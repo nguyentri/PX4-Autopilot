@@ -503,11 +503,11 @@
  */
 
 /* IPC shared memory symbols from linker script */
-extern uint8_t _sipc_shmem[];
-extern uint8_t _eipc_shmem[];
+extern uint8_t __ipc_ram_start[];
+extern uint8_t __ipc_ram_end[];
 
-#define IPC_SRAM_BASE           ((uintptr_t)_sipc_shmem)
-#define IPC_SRAM_SIZE           ((size_t)((uintptr_t)_eipc_shmem - (uintptr_t)_sipc_shmem))
+#define IPC_SRAM_BASE           ((uintptr_t)__ipc_ram_start)
+#define IPC_SRAM_SIZE           ((size_t)((uintptr_t)__ipc_ram_end - (uintptr_t)__ipc_ram_start))
 
 /* Message region offsets (must match ipc_protocol.h) */
 #define IPC_ACTUATOR_CMD_OFFSET     0x0000

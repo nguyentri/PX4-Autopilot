@@ -219,20 +219,6 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	/* Initialize timers for PWM/IO */
 	evk_ra8p1_timer_initialize();
 
-	/* Initialize IPC shared memory region for CM85<->CM33 communication */
-	/* Zero out IPC region and set magic numbers */
-	volatile uint32_t *ipc_base = (volatile uint32_t *)IPC_SRAM_BASE;
-	memset((void *)ipc_base, 0, IPC_SRAM_SIZE);
-
-	/* Set initialization magic to signal CM33 that region is ready */
-	ipc_base[0] = 0xDEADBEEF;  /* IPC_INIT_MAGIC */
-
-	syslog(LOG_INFO, "IPC shared memory initialized @ 0x%08lx (%lu KB)\n",
-	       (unsigned long)IPC_SRAM_BASE, (unsigned long)(IPC_SRAM_SIZE / 1024));
-
-	/* TODO: Release CM33 from reset if held in reset during boot */
-	/* This is hardware-specific and may require clock/power control setup */
-
 	/* Initialize SPI bus for sensors - uses PX4_SPI_BUS_SENSORS from board_config.h */
 	struct spi_dev_s *spi_sensors = px4_spibus_initialize(PX4_SPI_BUS_SENSORS);
 	if (spi_sensors == NULL) {

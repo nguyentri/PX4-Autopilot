@@ -7,8 +7,8 @@
  * - MRAM:    0x020E8000, 96KB  - Non-volatile code storage (XIP or copied to ITCM by CM85)
  * - ITCM:    0x20100000, 64KB  - Critical code: ISRs, DShot, GPT (fast execution)
  * - DTCM:    0x20110000, 64KB  - Data, stacks (fast access)
- * - SRAM:    0x22000000, 32KB  - Dynamic heap (NuttX malloc)
- * - IPC_RAM: 0x22008000, 32KB  - Shared memory (non-cacheable)
+ * - SRAM:    0x22198000, 32KB  - Dynamic heap (NuttX malloc)
+ * - IPC_RAM: 0x22188000, 64KB  - Shared memory (non-cacheable)
  *
  * Boot Sequence:
  * 1. CM85 boots from MRAM @ 0x02000000
@@ -36,16 +36,24 @@ MEMORY
     dtcm (rwx)  : ORIGIN = 0x20110000, LENGTH = 64K    /* Data, stacks */
 
     /* User SRAM (partitioned for CM33 use) */
-    sram (rwx)  : ORIGIN = 0x22000000, LENGTH = 32K    /* Dynamic heap */
+    sram (rwx)  : ORIGIN = 0x22198000, LENGTH = 32K    /* Dynamic heap */
 
     /* IPC Shared Memory Region (non-cacheable, 4KB aligned) */
     /* This region is shared between CM85 and CM33 for inter-core communication */
-    ipc_ram (rw) : ORIGIN = 0x22008000, LENGTH = 32K
+    ipc_ram (rw) : ORIGIN = 0x22188000, LENGTH = 64K
 }
 
 /* Entry point */
 OUTPUT_ARCH(arm)
 ENTRY(__start)
+
+/* Export memory region symbols for runtime use */
+__itcm_start = ORIGIN(itcm);
+__itcm_end   = ORIGIN(itcm) + LENGTH(itcm);
+__dtcm_start = ORIGIN(dtcm);
+__dtcm_end   = ORIGIN(dtcm) + LENGTH(dtcm);
+__sram_start = ORIGIN(sram);
+__sram_end   = ORIGIN(sram) + LENGTH(sram);
 
 /* Exported symbols for runtime use */
 __ipc_ram_start = ORIGIN(ipc_ram);
@@ -230,19 +238,6 @@ SECTIONS
         _eirqstack = .;
     } > dtcm
 
-    /* Heap in SRAM (for malloc, etc.) */
-    /* Note: NuttX uses _sheap and _eheap as heap boundaries.
-     * The heap grows dynamically - we just mark the available region.
-     * Don't pre-allocate the entire SRAM space in the linker script. */
-    .heap (NOLOAD) : {
-        . = ALIGN(4);
-        _sheap = .;
-        /* Heap extends to end of SRAM, calculated at runtime by NuttX */
-    } > sram
-
-    /* Mark end of SRAM for heap calculation */
-    _eheap = ORIGIN(sram) + LENGTH(sram);
-
     /* DMA buffers in SRAM (non-cacheable region for DShot) */
     .dma_buffers (NOLOAD) : {
         . = ALIGN(32);  /* Cache line alignment */
@@ -262,6 +257,9 @@ SECTIONS
         /* Ring buffers for inter-core messaging */
         *(.ipc_ram .ipc_ram.*)
         *(.ipc_buffer .ipc_buffer.*)
+
+        /* Reserve full 32KB to prevent overlap with other memory */
+        . = ORIGIN(ipc_ram) + LENGTH(ipc_ram);
 
         . = ALIGN(4);
         _eipc_ram = .;
@@ -303,5 +301,3 @@ PROVIDE(_sdata = _sdata);
 PROVIDE(_edata = _edata);
 PROVIDE(_sbss = _sbss);
 PROVIDE(_ebss = _ebss);
-PROVIDE(_sheap = _sheap);
-PROVIDE(_eheap = _eheap);

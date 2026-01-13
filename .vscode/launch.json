@@ -5,6 +5,7 @@
             "name": "Debug RA8P1 CM85 (Core0)",
             "cwd": "${workspaceRoot}",
             "executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
+            //"executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
             "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
             "request": "launch",
             "type": "cortex-debug",
@@ -17,7 +18,7 @@
             ],
             "device": "R7KA8P1KF_CPU0",
             "showDevDebugOutput": "parsed",
-            "runToEntryPoint": "main",
+            "runToEntryPoint": "__start",
             "rttConfig": {
                 "enabled": true,
                 "address": "auto",
@@ -111,7 +112,7 @@
             ],
             "device": "R9A09G057H_CR8_0",
             "showDevDebugOutput": "parsed",
-            "runToEntryPoint": "main",
+            "runToEntryPoint": "__start",
             "rttConfig": {
                 "enabled": true,
                 "address": "auto",
