@@ -23,12 +23,12 @@ make -j$(nproc)
 
 # Save CM85 binaries
 echo "Saving CM85 binaries..."
-cp nuttx nuttx_ra8p1_mini_cm85.elf
-cp nuttx.hex nuttx_ra8p1_mini_cm85.hex
-cp nuttx.bin nuttx_ra8p1_mini_cm85.bin
-echo "  ✓ nuttx_ra8p1_mini_cm85.elf"
-echo "  ✓ nuttx_ra8p1_mini_cm85.hex"
-echo "  ✓ nuttx_ra8p1_mini_cm85.bin"
+cp nuttx nuttx_ra8p1_cm85.elf
+cp nuttx.hex nuttx_ra8p1_cm85.hex
+cp nuttx.bin nuttx_ra8p1_cm85.bin
+echo "  ✓ nuttx_ra8p1_cm85.elf"
+echo "  ✓ nuttx_ra8p1_cm85.hex"
+echo "  ✓ nuttx_ra8p1_cm85.bin"
 
 # Clean for next build
 echo "Cleaning for CM33 build..."
@@ -40,7 +40,7 @@ echo ""
 echo "========================================="
 echo "Building CM33 (Core 1) configuration..."
 echo "========================================="
-./tools/configure.sh evk-ra8p1:ipc-cm33
+./tools/configure.sh evk-ra8p1:nsh-cm33
 make -j$(nproc)
 
 # Save CM33 binaries
