@@ -139,12 +139,34 @@
  * SCI4 (ttyS1): TELEM1/GPS on J1 (P715=RXD4_C, P714=TXD4_C)
  * SCI5 (ttyS2): TELEM2 on J1 (PB02=RXD5_C, PB03=TXD5_C)
  * SCI8 (ttyS3): RC input RX-only on P806 (RXD8_A)
- * SCI9 (ttyS4): spare UART on P208/P209 (RXD9_B/TXD9_B)
+ * SCI7 (ttyS4): TELEM3 on Arduino J23 (P808=RXD7_B, P809=TXD7_B)
+ * SCI9 (ttyS5): spare UART on P208/P209 (RXD9_B/TXD9_B)
  */
 #define PX4_UART_CONSOLE                "ttyS0"  /* SCI0 - Console */
 #define PX4_UART_GPS1                   "ttyS1"  /* SCI4 - Primary telemetry/GPS */
 #define PX4_UART_TELEM1                 "ttyS1"  /* SCI4 - Primary telemetry */
 #define PX4_UART_TELEM2                 "ttyS2"  /* SCI5 - Secondary telemetry */
+#define PX4_UART_TELEM3                 "ttyS4"  /* SCI7 - Arduino telemetry */
+
+/* UART GPIO Pin Macros (aliases from board.h for initialization in init.c) */
+/* SCI0 - Console */
+#define PX4_UART_CONSOLE_RX             GPIO_SCI0_RX  /* P602 - RXD0_B */
+#define PX4_UART_CONSOLE_TX             GPIO_SCI0_TX  /* P603 - TXD0_B */
+
+/* SCI4 - TELEM1 */
+#define PX4_UART_TELEM1_RX              GPIO_SCI4_RX  /* P715 - RXD4_C */
+#define PX4_UART_TELEM1_TX              GPIO_SCI4_TX  /* P714 - TXD4_C */
+
+/* SCI5 - TELEM2 */
+#define PX4_UART_TELEM2_RX              GPIO_SCI5_RX  /* PB02 - RXD5_C */
+#define PX4_UART_TELEM2_TX              GPIO_SCI5_TX  /* PB03 - TXD5_C */
+
+/* SCI7 - TELEM3 (Arduino J23) */
+#define PX4_UART_TELEM3_RX              GPIO_SCI7_RX  /* P808 - RXD7_B */
+#define PX4_UART_TELEM3_TX              GPIO_SCI7_TX  /* P809 - TXD7_B */
+
+/* SCI8 - RC Input (RX only) */
+#define PX4_UART_RC_RX                  GPIO_SCI8_RX  /* P806 - RXD8_A */
 
 /* RC Input Configuration */
 #define RC_SERIAL_PORT                  "/dev/ttyS3"  /* SCI8 RX-only on P806 */

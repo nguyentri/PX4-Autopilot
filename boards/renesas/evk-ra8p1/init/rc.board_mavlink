@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# Renesas EVK-RA8P1 board MAVLink configuration
+# Start MAVLink on TELEM3 (SCI7) for QGroundControl
+#------------------------------------------------------------------------------
+
+# Start MAVLink on TELEM3 (SCI7 - /dev/ttyS4)
+# This provides telemetry to QGroundControl via serial
+# Mode is determined by MAV_0_MODE parameter (0 = Normal/Default for GCS)
+if mavlink start -d /dev/ttyS4 -b 57600 -r 1200
+then
+	echo "MAVLink started on /dev/ttyS4 (TELEM3)"
+else
+	echo "ERROR: MAVLink failed to start"
+fi

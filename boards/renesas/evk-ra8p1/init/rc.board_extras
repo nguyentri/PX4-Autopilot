@@ -18,5 +18,3 @@ then
 else
 	echo "ERROR: CM85 IPC driver failed to start"
 fi
-
-echo "EVK-RA8P1 board initialization complete"

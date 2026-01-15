@@ -21,6 +21,14 @@ param set-default EKF2_GPS_CTRL 0
 # Use RAM-only dataman backend (no filesystem/SD card)
 param set-default SYS_DM_BACKEND 1
 
+# MAVLink configuration for TELEM3 (SCI7 - Arduino J23 - /dev/ttyS4)
+# MAV_0_CONFIG: 104 = TELEM3 port (/dev/ttyS4)
+# MAV_0_MODE: 0 = Normal (default streaming mode for QGroundControl)
+# MAV_0_RATE: 1200 = 1200 B/s (sufficient for telemetry at 57600 baud)
+param set-default MAV_0_CONFIG 104
+param set-default MAV_0_MODE 0
+param set-default MAV_0_RATE 1200
+
 # RC input mode - RC receiver
 param set-default COM_RC_IN_MODE 0
 

@@ -160,6 +160,14 @@ static void evk_ra8p1_gpio_initialize(void)
     px4_arch_configgpio(PX4_GPIO_MOTOR_FRONT_LEFT);   /* P903 - Motor 3 Front Left */
     px4_arch_configgpio(PX4_GPIO_MOTOR_REAR_RIGHT);   /* P515 - Motor 4 Rear Right */
 
+    /* Configure serial ports without console port (already configured in ra_start)*/
+    px4_arch_configgpio(PX4_UART_TELEM1_TX);
+    px4_arch_configgpio(PX4_UART_TELEM1_RX);
+    px4_arch_configgpio(PX4_UART_TELEM2_TX);
+    px4_arch_configgpio(PX4_UART_TELEM2_RX);
+    px4_arch_configgpio(PX4_UART_TELEM3_TX);
+    px4_arch_configgpio(PX4_UART_TELEM3_RX);
+    px4_arch_configgpio(PX4_UART_RC_RX);
 
     /* Configure safety button */
     px4_arch_configgpio(GPIO_BTN_SAFETY);
