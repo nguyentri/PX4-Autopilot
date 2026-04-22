@@ -1,62 +1,190 @@
-# PX4 Drone Autopilot
+# PX4 Autopilot for Renesas RA8E1/RA8P1/RZV2H
 
-[![Releases](https://img.shields.io/github/release/PX4/PX4-Autopilot.svg)](https://github.com/PX4/PX4-Autopilot/releases) [![DOI](https://zenodo.org/badge/22634/PX4/PX4-Autopilot.svg)](https://zenodo.org/badge/latestdoi/22634/PX4/PX4-Autopilot)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
-[![Build Targets](https://github.com/PX4/PX4-Autopilot/actions/workflows/build_all_targets.yml/badge.svg?branch=main)](https://github.com/PX4/PX4-Autopilot/actions/workflows/build_all_targets.yml) [![SITL Tests](https://github.com/PX4/PX4-Autopilot/workflows/SITL%20Tests/badge.svg?branch=master)](https://github.com/PX4/PX4-Autopilot/actions?query=workflow%3A%22SITL+Tests%22)
+## Overview
 
-[![Discord Shield](https://discordapp.com/api/guilds/1022170275984457759/widget.png?style=shield)](https://discord.gg/dronecode)
-
-This repository holds the [PX4](http://px4.io) flight control solution for drones, with the main applications located in the [src/modules](https://github.com/PX4/PX4-Autopilot/tree/main/src/modules) directory. It also contains the PX4 Drone Middleware Platform, which provides drivers and middleware to run drones.
-
-PX4 is highly portable, OS-independent and supports Linux, NuttX and MacOS out of the box.
-
-* Official Website: http://px4.io (License: BSD 3-clause, [LICENSE](https://github.com/PX4/PX4-Autopilot/blob/main/LICENSE))
-* [Supported airframes](https://docs.px4.io/main/en/airframes/airframe_reference.html) ([portfolio](https://px4.io/ecosystem/commercial-systems/)):
-  * [Multicopters](https://docs.px4.io/main/en/frames_multicopter/)
-  * [Fixed wing](https://docs.px4.io/main/en/frames_plane/)
-  * [VTOL](https://docs.px4.io/main/en/frames_vtol/)
-  * [Autogyro](https://docs.px4.io/main/en/frames_autogyro/)
-  * [Rover](https://docs.px4.io/main/en/frames_rover/)
-  * many more experimental types (Blimps, Boats, Submarines, High Altitude Balloons, Spacecraft, etc)
-* Releases: [Downloads](https://github.com/PX4/PX4-Autopilot/releases)
-
-## Releases
-
-Release notes and supporting information for PX4 releases can be found on the [Developer Guide](https://docs.px4.io/main/en/releases/).
-
-## Building a PX4 based drone, rover, boat or robot
-
-The [PX4 User Guide](https://docs.px4.io/main/en/) explains how to assemble [supported vehicles](https://docs.px4.io/main/en/airframes/airframe_reference.html) and fly drones with PX4. See the [forum and chat](https://docs.px4.io/main/en/#getting-help) if you need help!
-
-
-## Changing Code and Contributing
-
-This [Developer Guide](https://docs.px4.io/main/en/development/development.html) is for software developers who want to modify the flight stack and middleware (e.g. to add new flight modes), hardware integrators who want to support new flight controller boards and peripherals, and anyone who wants to get PX4 working on a new (unsupported) airframe/vehicle.
-
-Developers should read the [Guide for Contributions](https://docs.px4.io/main/en/contribute/).
-See the [forum and chat](https://docs.px4.io/main/en/#getting-help) if you need help!
-
-
-## Weekly Dev Call
-
-The PX4 Dev Team syncs up on a [weekly dev call](https://docs.px4.io/main/en/contribute/).
-
-> **Note** The dev call is open to all interested developers (not just the core dev team). This is a great opportunity to meet the team and contribute to the ongoing development of the platform. It includes a QA session for newcomers. All regular calls are listed in the [Dronecode calendar](https://www.dronecode.org/calendar/).
-
-
-## Maintenance Team
-
-See the latest list of maintainers on [MAINTAINERS](MAINTAINERS.md) file at the root of the project.
-
-For the latest stats on contributors please see the latest stats for the Dronecode ecosystem in our project dashboard under [LFX Insights](https://insights.lfx.linuxfoundation.org/foundation/dronecode). For information on how to update your profile and affiliations please see the following support link on how to [Complete Your LFX Profile](https://docs.linuxfoundation.org/lfx/my-profile/complete-your-lfx-profile). Dronecode publishes a yearly snapshot of contributions and achievements on its [website under the Reports section](https://dronecode.org).
+This fork of PX4 Autopilot provides support for Renesas microcontroller and microprocessor families, bringing the powerful PX4 flight stack to Renesas-based drone platforms.
 
 ## Supported Hardware
 
-For the most up to date information, please visit [PX4 User Guide > Autopilot Hardware](https://docs.px4.io/main/en/flight_controller/).
+### Currently Supported
 
-## Project Governance
+- ⏸ **Renesas EVK-RA8P1 PX4 CM85**  - Basic Support
+- ⏸ **Renesas EVK-RA8P1 PX4 CM33**  - Build Only
+- ⏸ **Renesas FPB-RA8E1 PX4 CR8_0** - Basic Support
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0** - Build Only
+- ⏸ **Renesas RDK-RZV2H IO  CR8_1** - Build Only
+- ⏸ **Renesas RDK-RZV2H IO  CM33**  - Build Only
 
-The PX4 Autopilot project including all of its trademarks is hosted under [Dronecode](https://www.dronecode.org/), part of the Linux Foundation.
+## Quick Start
 
-<a href="https://www.dronecode.org/" style="padding:20px" ><img src="https://dronecode.org/wp-content/uploads/sites/24/2020/08/dronecode_logo_default-1.png" alt="Dronecode Logo" width="110px"/></a>
-<div style="padding:10px">&nbsp;</div>
+### Clone the Repository
+
+```bash
+git clone -b px4_ra8_rz https://github.com/nguyentri/PX4-Autopilot.git
+cd PX4-Autopilot
+```
+
+### Initialize Submodules
+
+```bash
+git submodule update --init --recursive
+```
+
+### Build and Flash
+
+```bash
+# Set required environment variable
+export GIT_SUBMODULES_ARE_EVIL=1
+
+# Build for RA8P1 EVK
+make renesas_evk-ra8p1_default
+
+# Or use the convenience script
+./make
+```
+
+## Prerequisites
+
+### System Requirements
+
+- Ubuntu 18.04 or later (recommended) or macOS
+- Minimum 8GB RAM, 50GB free disk space
+- ARM GCC toolchain
+- Python 3.6+
+
+### Dependencies
+
+Install the required dependencies following the [PX4 Development Environment Setup](https://docs.px4.io/main/en/dev_setup/dev_env.html).
+
+Key dependencies include:
+- CMake 3.20+
+- Ninja build system
+- ARM GCC 9+
+- Python packages (pip install -r requirements.txt)
+
+## Building PX4
+
+### Environment Setup
+
+```bash
+# Set required environment variable for custom NuttX reports
+export GIT_SUBMODULES_ARE_EVIL=1
+```
+
+### Clean Build (if needed)
+
+If a previous build failed for a different target, clean the NuttX artifacts:
+
+```bash
+cd platforms/nuttx/NuttX/nuttx
+make distclean
+cd ../../../..
+```
+
+### Build Commands
+
+Build for specific Renesas targets:
+
+```bash
+# RA8P1 EVK
+make renesas_evk-ra8p1_default
+
+# RA8P1 IO CM33
+make renesas_evk-ra8p1-io-cm33_default
+
+# Other targets (when enabled)
+# make renesas_fpb-ra8e1_default
+# make renesas_rdk-rzv2h_default
+```
+
+### Automated Build Script
+
+Use the provided `make` script for batch building:
+
+```bash
+./make
+```
+
+This script builds all currently supported targets.
+
+## Flashing
+
+After building, flash the firmware to your target board using the appropriate flashing tool for your Renesas development board.
+
+## Running and Testing
+
+### Simulation
+
+PX4 supports various simulation environments. For hardware-in-the-loop testing:
+
+```bash
+# SITL simulation
+make px4_sitl_default
+
+# Gazebo simulation
+make px4_sitl_default sitl_gazebo-classic
+```
+
+### Hardware Testing
+
+1. Flash the firmware to your Renesas board
+2. Connect via MAVLink (USB or serial)
+3. Use QGroundControl for configuration and flight control
+4. Perform pre-flight checks and calibration
+
+## Development
+
+### Code Structure
+
+- `src/` - PX4 source code
+- `platforms/nuttx/` - NuttX platform-specific code
+- `boards/renesas/` - Renesas board configurations
+- `msg/` - MAVLink message definitions
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+Please follow the [PX4 Contributing Guidelines](https://docs.px4.io/main/en/contribute/) and ensure all tests pass.
+
+### Testing
+
+```bash
+# Run unit tests
+make tests
+
+# Run integration tests
+make integration_tests
+```
+
+## Documentation
+
+- [PX4 User Guide](https://docs.px4.io/main/en/)
+- [PX4 Developer Guide](https://docs.px4.io/main/en/development/development.html)
+- [Renesas RA Family Documentation](https://www.renesas.com/us/en/products/microcontrollers-microprocessors/ra-cortex-m-mcus)
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Build fails with NuttX errors**: Clean NuttX artifacts and rebuild
+2. **Missing dependencies**: Follow the development environment setup
+3. **Flash failures**: Check board connections and power supply
+
+### Getting Help
+
+- [PX4 Discuss Forum](https://discuss.px4.io/)
+- [PX4 Slack](https://slack.px4.io/)
+- [GitHub Issues](https://github.com/nguyentri/PX4-Autopilot/issues)
+
+## License
+
+This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICENSE) file for details.
+
+PX4 is open source under BSD 3-Clause license.
