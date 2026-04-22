@@ -101,87 +101,13 @@ make renesas_evk-ra8p1-io-cm33_default
 
 ### Automated Build Script
 
-Use the provided `make` script for batch building:
+Use the provided `build` script for batch building:
 
 ```bash
-./make
+./build
 ```
 
 This script builds all currently supported targets.
-
-## Flashing
-
-After building, flash the firmware to your target board using the appropriate flashing tool for your Renesas development board.
-
-## Running and Testing
-
-### Simulation
-
-PX4 supports various simulation environments. For hardware-in-the-loop testing:
-
-```bash
-# SITL simulation
-make px4_sitl_default
-
-# Gazebo simulation
-make px4_sitl_default sitl_gazebo-classic
-```
-
-### Hardware Testing
-
-1. Flash the firmware to your Renesas board
-2. Connect via MAVLink (USB or serial)
-3. Use QGroundControl for configuration and flight control
-4. Perform pre-flight checks and calibration
-
-## Development
-
-### Code Structure
-
-- `src/` - PX4 source code
-- `platforms/nuttx/` - NuttX platform-specific code
-- `boards/renesas/` - Renesas board configurations
-- `msg/` - MAVLink message definitions
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-Please follow the [PX4 Contributing Guidelines](https://docs.px4.io/main/en/contribute/) and ensure all tests pass.
-
-### Testing
-
-```bash
-# Run unit tests
-make tests
-
-# Run integration tests
-make integration_tests
-```
-
-## Documentation
-
-- [PX4 User Guide](https://docs.px4.io/main/en/)
-- [PX4 Developer Guide](https://docs.px4.io/main/en/development/development.html)
-- [Renesas RA Family Documentation](https://www.renesas.com/us/en/products/microcontrollers-microprocessors/ra-cortex-m-mcus)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Build fails with NuttX errors**: Clean NuttX artifacts and rebuild
-2. **Missing dependencies**: Follow the development environment setup
-3. **Flash failures**: Check board connections and power supply
-
-### Getting Help
-
-- [PX4 Discuss Forum](https://discuss.px4.io/)
-- [PX4 Slack](https://slack.px4.io/)
-- [GitHub Issues](https://github.com/nguyentri/PX4-Autopilot/issues)
 
 ## License
 
