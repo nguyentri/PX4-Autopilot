@@ -38,38 +38,33 @@ echo "Building PX4 for Renesas targets..."
 echo
 
 # Build currently supported targets
-echo "Building renesas_evk-ra8p1_default..."
-echo "y" | make renesas_evk-ra8p1_default
-echo "✓ renesas_evk-ra8p1_default build completed"
-echo
+#echo "Building renesas_evk-ra8p1_default..."
+#echo "y" | make renesas_evk-ra8p1_default
+#echo "✓ renesas_evk-ra8p1_default build completed"
+#echo
 
-echo "Building renesas_evk-ra8p1-io-cm33_default..."
-echo "y" | make renesas_evk-ra8p1-io-cm33_default
-echo "✓ renesas_evk-ra8p1-io-cm33_default build completed"
-echo
+#echo "Building renesas_evk-ra8p1-io-cm33_default..."
+#echo "y" | make renesas_evk-ra8p1-io-cm33_default
+#echo "✓ renesas_evk-ra8p1-io-cm33_default build completed"
+#echo
 
-# Development/In-progress targets (currently disabled)
-# Uncomment when these targets are ready for building
-#
-# echo "Building renesas_fpb-ra8e1_default..."
-# echo "y" | make renesas_fpb-ra8e1_default
-# echo "✓ renesas_fpb-ra8e1_default build completed"
-# echo
-#
-# echo "Building renesas_rdk-rzv2h_default..."
-# echo "y" | make renesas_rdk-rzv2h_default
-# echo "✓ renesas_rdk-rzv2h_default build completed"
-# echo
-#
-# echo "Building renesas_rdk-rzv2h-io-cr8_1_default..."
-# echo "y" | make renesas_rdk-rzv2h-io-cr8_1_default
-# echo "✓ renesas_rdk-rzv2h-io-cr8_1_default build completed"
-# echo
-#
-# echo "Building renesas_rdk-rzv2h-io-cm33_default..."
-# echo "y" | make renesas_rdk-rzv2h-io-cm33_default
-# echo "✓ renesas_rdk-rzv2h-io-cm33_default build completed"
-# echo
+#echo "Building renesas_fpb-ra8e1_default..."
+#echo "y" | make renesas_fpb-ra8e1_default
+#echo "✓ renesas_fpb-ra8e1_default build completed"
+#echo
+
+echo "Building renesas_rdk-rzv2h_default..."
+echo "y" | make renesas_rdk-rzv2h_default
+echo "✓ renesas_rdk-rzv2h_default build completed"
+echo
+echo "Building renesas_rdk-rzv2h-io-cr8_1_default..."
+echo "y" | make renesas_rdk-rzv2h-io-cr8_1_default
+echo "✓ renesas_rdk-rzv2h-io-cr8_1_default build completed"
+echo
+echo "Building renesas_rdk-rzv2h-io-cm33_default..."
+echo "y" | make renesas_rdk-rzv2h-io-cm33_default
+echo "✓ renesas_rdk-rzv2h-io-cm33_default build completed"
+echo
 
 echo "=========================================="
 echo "All builds completed successfully!"
