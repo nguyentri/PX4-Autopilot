@@ -512,6 +512,10 @@ MavlinkFTP::_workOpen(PayloadHeader *payload, int oflag)
 
 	PX4_DEBUG("FTP: open '%s'", _work_buffer1);
 
+	if ((oflag & (O_WRONLY | O_RDWR | O_CREAT | O_TRUNC | O_APPEND)) && !_validatePathIsWritable(_work_buffer1)) {
+		return kErrFailFileProtected;
+	}
+
 	uint32_t fileSize = 0;
 	struct stat st;
 
@@ -837,7 +841,7 @@ MavlinkFTP::_workRename(PayloadHeader *payload)
 	_constructPath(_work_buffer1, _work_buffer1_len, ptr);
 	_constructPath(_work_buffer2, _work_buffer2_len, ptr + oldpath_sz + 1);
 
-	if (!_validatePathIsWritable(_work_buffer2)) {
+	if (!_validatePathIsWritable(_work_buffer1) || !_validatePathIsWritable(_work_buffer2)) {
 		return kErrFailFileProtected;
 	}
 
@@ -1150,11 +1154,21 @@ void MavlinkFTP::send()
 bool MavlinkFTP::_validatePathIsWritable(const char *path)
 {
 #ifdef __PX4_NUTTX
+	static constexpr const char writable_root[] = CONFIG_BOARD_ROOT_PATH "/";
 
 	// Don't allow writes to system paths as they are in RAM
 	// Ideally we'd canonicalize the path (with 'realpath'), but it might not exist, so realpath() would fail.
 	// The next simpler thing is to check there's no reference to a parent dir.
-	if (strncmp(path, CONFIG_BOARD_ROOT_PATH "/", 12) != 0 || strstr(path, "/../") != nullptr) {
+	bool has_parent_dir_reference = false;
+
+	for (const char *segment = path; (segment = strstr(segment, "/..")) != nullptr; segment += 3) {
+		if (segment[3] == '/' || segment[3] == '\0') {
+			has_parent_dir_reference = true;
+			break;
+		}
+	}
+
+	if (strncmp(path, writable_root, strlen(writable_root)) != 0 || has_parent_dir_reference) {
 		PX4_ERR("Disallowing write to %s", path);
 		return false;
 	}

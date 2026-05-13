@@ -148,31 +148,11 @@ static void rdk_rzv2h_gpio_initialize(void)
 	px4_arch_configgpio(BOARD_MPU9250_DRDY_GPIO);
 #endif
 
-	/* Configure UART pins */
-#ifdef BOARD_SCI0_TXD_GPIO
-	px4_arch_configgpio(BOARD_SCI0_TXD_GPIO);
-#endif
-#ifdef BOARD_SCI0_RXD_GPIO
-	px4_arch_configgpio(BOARD_SCI0_RXD_GPIO);
-#endif
-#ifdef BOARD_SCI1_TXD_GPIO
-	px4_arch_configgpio(BOARD_SCI1_TXD_GPIO);
-#endif
-#ifdef BOARD_SCI1_RXD_GPIO
-	px4_arch_configgpio(BOARD_SCI1_RXD_GPIO);
-#endif
-#ifdef BOARD_SCI2_TXD_GPIO
-	px4_arch_configgpio(BOARD_SCI2_TXD_GPIO);
-#endif
-#ifdef BOARD_SCI2_RXD_GPIO
-	px4_arch_configgpio(BOARD_SCI2_RXD_GPIO);
-#endif
-#ifdef BOARD_SCI3_TXD_GPIO
-	px4_arch_configgpio(BOARD_SCI3_TXD_GPIO);
-#endif
-#ifdef BOARD_SCI3_RXD_GPIO
-	px4_arch_configgpio(BOARD_SCI3_RXD_GPIO);
-#endif
+	/* Serial pins are owned by the NuttX RZ/V2H board serial setup.
+	 * Do not configure stale low-numbered SCI macros here: the first
+	 * channel's TX alternate overlaps MPU9250 DRDY on P50, and the PX4
+	 * flight UART map uses sparse SCI4/5/6/9.
+	 */
 
 	/* Configure I2C7 pins for barometer */
 #ifdef BOARD_I2C7_SDA_GPIO

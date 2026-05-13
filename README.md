@@ -99,6 +99,11 @@ make renesas_evk-ra8p1-io-cm33_default
 # make renesas_rdk-rzv2h_default
 ```
 
+The `renesas_rdk-rzv2h_default` target is CR8-only and does not depend on
+CA55/Linux, SD, or RPMsg services. Production console is SEGGER RTT, and
+parameters are stored at `/fs/params` on the board-mounted XSPI LittleFS
+volume.
+
 ### Automated Build Script
 
 Use the provided `build` script for batch building:

@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cm33_nuttx.ld
+ * boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cm33.ld
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with

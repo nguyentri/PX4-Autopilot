@@ -2,7 +2,7 @@
 # Simple sensor snapshot for standalone CR8 boots
 # Use this script to verify sensor connectivity without full flight stack
 
-bmp388 -I -b 7 -a 0x76 start
+bmp280 -I -b 7 -a 0x76 start
 ? sleep 1
 mpu9250 -s -M -b 0 -R 0 start
 ? sleep 1

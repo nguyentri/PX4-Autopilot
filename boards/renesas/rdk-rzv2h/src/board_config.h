@@ -64,17 +64,15 @@
  * - ARM Cortex-A55 cores for Linux/application processing
  * - 24 MHz crystal oscillator
  *
- * PX4 Sensor Configuration (from hardware table):
- * - MPU9250 IMU on SPI6 (P90=MOSI, P91=MISO, P92=SCK, P93=CS0) with INT on P50
- * - ICM20948 IMU on SPI6 (P94=CS1) with INT on PA0
- * - BMP280 barometer on I2C7 at address 0x76 (P76=SDA, P77=SCL)
+ * PX4 Sensor Configuration (matches FSP rzv_gen/pin_data.c + configuration.xml RDK pinconfig):
+ * - MPU9250 IMU on RSPI0 (P90=MOSI, P91=MISO, P92=SCK, P93=SSLA0/CS) with INT on P50 (TINT)
+ * - BMP280 barometer on RSCI7 SCI-mode I2C (P76=SDA, P77=SCL) at address 0x76
  *
- * Serial Ports:
- * - SCI3 (/dev/ttyS3): NSH Console
- * - SCI4 (/dev/ttyS4): TFminiPlux LiDAR (P70=TXD, P71=RXD)
- * - SCI5 (/dev/ttyS5): Sik Telemetry v3 (P72=TXD, P73=RXD)
- * - SCI6 (/dev/ttyS6): fs-a8s RC receiver (P75=RXD)
- * - SCI9 (/dev/ttyS9): GPS M10 module (P82=TXD, P83=RXD)
+ * Serial Ports (sparse numbering matches SCI channel; no debug UART, console = SEGGER RTT):
+ * - RSCI4 (/dev/ttyS4): TFminiPlus LiDAR (P70=TXD, P71=RXD)
+ * - RSCI5 (/dev/ttyS5): Sik Telemetry v3 (P72=TXD, P73=RXD)
+ * - RSCI6 (/dev/ttyS6): fs-a8s RC receiver (P75=RXD only)
+ * - RSCI9 (/dev/ttyS9): GPS M10 module (P82=TXD, P83=RXD)
  *
  * PWM Outputs (ESC control):
  * - 4 channels using GPT timers: GPT6A(PA4), GPT7B(PA7), GPT9A(P96), GPT10B(P53)
@@ -116,18 +114,17 @@
  * UART/Serial Configuration
  ****************************************************************************************************/
 
-/* UART Device Mapping (aligned with hardware table)
- * SCI3 (ttyS3): NSH Console
- * SCI4 (ttyS4): TFminiPlux LiDAR (P70=TXD4, P71=RXD4)
- * SCI5 (ttyS5): Sik Telemetry v3 (P72=TXD5, P73=RXD5)
- * SCI6 (ttyS6): fs-a8s RC receiver (P75=RXD6)
- * SCI9 (ttyS9): GPS M10 (P82=TXD9, P83=RXD9)
+/* UART Device Mapping (matches FSP RSCI channel numbering; console = RTT, no debug UART)
+ * RSCI4 (ttyS4): TFminiPlus LiDAR  (P70=TXD4, P71=RXD4)
+ * RSCI5 (ttyS5): Sik Telemetry v3  (P72=TXD5, P73=RXD5)
+ * RSCI6 (ttyS6): fs-a8s RC input   (P75=RXD6 only)
+ * RSCI9 (ttyS9): GPS M10           (P82=TXD9, P83=RXD9)
  */
-#define PX4_UART_CONSOLE                "ttyS3"  /* SCI3 - Console */
-#define PX4_UART_GPS1                   "ttyS9"  /* SCI9 - GPS M10 */
-#define PX4_UART_TELEM1                 "ttyS5"  /* SCI5 - Sik Telemetry v3 */
-#define PX4_UART_RANGEFINDER            "ttyS4"  /* SCI4 - TFminiPlux */
-#define PX4_UART_RC                     "ttyS6"  /* SCI6 - fs-a8s RC Input */
+/* PX4_UART_CONSOLE intentionally undefined: console routed via SEGGER RTT (J-Link). */
+#define PX4_UART_GPS1                   "ttyS9"  /* RSCI9 - GPS M10 */
+#define PX4_UART_TELEM1                 "ttyS5"  /* RSCI5 - Sik Telemetry v3 */
+#define PX4_UART_RANGEFINDER            "ttyS4"  /* RSCI4 - TFminiPlus */
+#define PX4_UART_RC                     "ttyS6"  /* RSCI6 - fs-a8s RC input */
 
 /* RC Input Configuration */
 #ifndef RC_SERIAL_PORT
@@ -143,7 +140,8 @@
  ****************************************************************************************************/
 
 /* I2C Bus Configuration
- * I2C7 (RIIC7): BMP280 barometer (P76=SDA7, P77=SCL7)
+ * I2C7 = RSCI7 in SCI-mode I2C (NOT a standalone RIIC peripheral): BMP280 barometer
+ * (P76=SDA, P77=SCL). Driver: rzv_sci_i2c.c. PIO mode (DMAC disabled per FSP).
  */
 #define PX4_NUMBER_I2C_BUSES            1
 #define BOARD_NUMBER_I2C_BUSES          1
@@ -152,49 +150,41 @@
 
 /* I2C Bus Assignment */
 #define PX4_I2C_BUS_EXPANSION           7  /* I2C7 for external devices (barometer) */
-#define PX4_I2C_BUS_MTD                 PX4_I2C_BUS_EXPANSION
+/* Parameters are intended for CR8-owned XSPI + LittleFS. Do not map MTD to
+ * the sensor I2C bus; add a real XSPI MTD manifest before enabling PX4 MTD
+ * persistence on this board.
+ */
 #define PX4_I2C_OBDEV_BMP280            0x76  /* BMP280 I2C address */
 
 /****************************************************************************************************
  * SPI Configuration
  ****************************************************************************************************/
 
-/* SPI Bus Configuration
- * SPI6: MPU9250 and ICM20948 IMU sensors
- * P90 = MOSI6, P91 = MISO6, P92 = SCK6
- * P93 = SS0 (MPU9250 NCS), P94 = SS1 (ICM20948 NCS)
+/* SPI Bus Configuration (matches FSP module.driver.spi_b.channel = 0)
+ * RSPI0: MPU9250 IMU only (single-IMU per HARDWARE.md BOM).
+ * P90 = MOSI A, P91 = MISO A, P92 = SCK A, P93 = SSLA0 (CS, hardware chip-select).
+ * P94 (SSLA1) is FSP-configured but unused (no second IMU wired).
  */
-#define PX4_NUMBER_SPI_BUSES            2
+#define PX4_NUMBER_SPI_BUSES            1
 #define BOARD_NUMBER_SPI_BUSES          1
-#define BOARD_SPI_BUS_SENSORS           6  /* SPI6 for IMU sensors */
-#define PX4_SPI_BUS_SENSORS             6
+#define BOARD_SPI_BUS_SENSORS           0  /* RSPI0 for IMU */
+#define PX4_SPI_BUS_SENSORS             0
 #define PX4_SPI_BUS_MEMORY              PX4_SPI_BUS_SENSORS
 
 /* SPI Bus Limits */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS     1
-#define BOARD_SPI_BUS_MAX_DEVICES       2  /* MPU9250 + ICM20948 */
+#define BOARD_SPI_BUS_MAX_DEVICES       1  /* MPU9250 only */
 #define SPI_BUS_MAX_BUS_ITEMS           BOARD_SPI_BUS_MAX_BUS_ITEMS
 
-/* MPU9250 IMU on SPI6 */
+/* MPU9250 IMU on RSPI0 */
 #ifndef BOARD_MPU9250_BUS
-#  define BOARD_MPU9250_BUS             6       /* SPI bus 6 */
+#  define BOARD_MPU9250_BUS             0  /* RSPI0 */
 #endif
 #ifndef BOARD_MPU9250_CS_GPIO
-#  define BOARD_MPU9250_CS_GPIO         GPIO_P9_3_OUTPUT_HIGH  /* P93 = RSPI6_SSL0 */
+#  define BOARD_MPU9250_CS_GPIO         GPIO_P9_3_OUTPUT_HIGH  /* P93 = RSPI0 SSLA0 */
 #endif
 #ifndef BOARD_MPU9250_DRDY_GPIO
-#  define BOARD_MPU9250_DRDY_GPIO       GPIO_IRQ0_P5_0  /* P50 = IRQ0 input */
-#endif
-
-/* ICM20948 IMU on SPI6 */
-#ifndef BOARD_ICM20948_BUS
-#  define BOARD_ICM20948_BUS            6       /* SPI bus 6 */
-#endif
-#ifndef BOARD_ICM20948_CS_GPIO
-#  define BOARD_ICM20948_CS_GPIO        GPIO_P9_4_OUTPUT_HIGH  /* P94 = RSPI6_SSL1 */
-#endif
-#ifndef BOARD_ICM20948_DRDY_GPIO
-#  define BOARD_ICM20948_DRDY_GPIO      GPIO_IRQ10_PA_2  /* PA0 = IRQ10 input */
+#  define BOARD_MPU9250_DRDY_GPIO       GPIO_IRQ0_P5_0  /* P50 (FSP TINT_ENABLE - verify ICU routing) */
 #endif
 
 /****************************************************************************************************
@@ -206,24 +196,24 @@
  *
  * Timer-to-Channel-to-Pin Mapping (Single Source of Truth):
  * Based on RDK-RZV2H pin mapping table:
- * ┌─────────┬───────────┬─────────┬──────────────────────────┬───────────┐
- * │ PX4 Ch  │ GPT Timer │ Output  │ GPIO Pin                 │ Mode      │
- * ├─────────┼───────────┼─────────┼──────────────────────────┼───────────┤
- * │ PWM0    │ GPT6      │ GTIOC6A │ PA4 (Port10, Pin4)       │ Mode 11   │
- * │ PWM1    │ GPT7      │ GTIOC7B │ PA7 (Port10, Pin7)       │ Mode 11   │
- * │ PWM2    │ GPT9      │ GTIOC9A │ P96 (Port9, Pin6)        │ Mode 9    │
- * │ PWM3    │ GPT10     │ GTIOC10B│ P53 (Port5, Pin3)        │ Mode 11   │
- * └─────────┴───────────┴─────────┴──────────────────────────┴───────────┘
+ * +--------+-----------+----------+--------------------+---------+
+ * | PX4 Ch | GPT Timer | Output   | GPIO Pin           | Mode    |
+ * +--------+-----------+----------+--------------------+---------+
+ * | PWM0   | GPT6      | GTIOC6A  | PA4 (Port10, Pin4) | Mode 11 |
+ * | PWM1   | GPT7      | GTIOC7B  | PA7 (Port10, Pin7) | Mode 11 |
+ * | PWM2   | GPT9      | GTIOC9A  | P96 (Port9, Pin6)  | Mode 9  |
+ * | PWM3   | GPT10     | GTIOC10B | P53 (Port5, Pin3)  | Mode 11 |
+ * +--------+-----------+----------+--------------------+---------+
  *
  * GPIO Header Pin Assignment:
- * - GPIO12/PWM0 → PA4 → ESC1 (GPT6A)
- * - GPIO13/PWM1 → PA7 → ESC2 (GPT7B)
- * - GPIO19      → P96 → ESC3 (GPT9A)
- * - GPIO06      → P53 → ESC4 (GPT10B)
+ * - GPIO12/PWM0 -> PA4 -> ESC1 (GPT6A)
+ * - GPIO13/PWM1 -> PA7 -> ESC2 (GPT7B)
+ * - GPIO19      -> P96 -> ESC3 (GPT9A)
+ * - GPIO06      -> P53 -> ESC4 (GPT10B)
  *
  * PWM Settings:
  * - Frequency: 400 Hz (default ESC rate, configurable to 50-500 Hz)
- * - Pulse Width: 1000-2000 µs (standard PWM servo range)
+ * - Pulse Width: 1000-2000 us (standard PWM servo range)
  * - Resolution: ~10-bit at 400Hz with 120MHz PCLK
  *
  * Reference: NuttX arch/arm/src/rzv/hardware/rzv2h/rzv2h_pinmap.h
@@ -272,15 +262,15 @@
  ****************************************************************************************************/
 
 /**
- * HRT Configuration using GPT
+ * HRT Configuration using GTM0
  *
  * The High-Resolution Timer provides microsecond-accurate timing for PX4.
- * Uses GPT0 which is separate from the PWM output timers (GPT1-4).
+ * Uses GTM0, separate from the GPT6/7/9/10 PWM output timers.
  *
- * Note: HRT_TIMER_FREQUENCY should match CONFIG_RZV_PCLK_FREQUENCY (120MHz)
+ * Note: HRT_TIMER_FREQUENCY should match the measured GTM clock
  * for accurate timing calculations.
  */
-#define HRT_TIMER                       0   /* Use GPT0 for HRT */
+#define HRT_TIMER                       0   /* Use GTM0 for HRT */
 #define HRT_TIMER_CHANNEL               0   /* Channel A */
 #define HRT_TIMER_FREQUENCY             120000000  /* 120MHz PCLKD for RZV2H GPT */
 
@@ -346,10 +336,10 @@
  ****************************************************************************************************/
 
 /* Sensor Availability */
-#define BOARD_HAS_SENSOR_IMU            2  /* MPU9250 + ICM20948 (dual 9-axis IMU) */
-#define BOARD_HAS_SENSOR_MAG            2  /* AK8963 (MPU9250) + AK09916 (ICM20948) */
+#define BOARD_HAS_SENSOR_IMU            1  /* MPU9250 (single 9-axis IMU per HARDWARE.md BOM) */
+#define BOARD_HAS_SENSOR_MAG            1  /* AK8963 internal to MPU9250 */
 #define BOARD_HAS_SENSOR_BARO           1  /* BMP280 */
-#define BOARD_HAS_SENSOR_RANGEFINDER    1  /* TFminiPlux LiDAR */
+#define BOARD_HAS_SENSOR_RANGEFINDER    1  /* TFminiPlus LiDAR */
 
 /* Default Sensor Orientation */
 #define BOARD_ROTATION_DEFAULT          ROTATION_NONE
@@ -364,7 +354,7 @@
  * Hardfault Log Configuration
  ****************************************************************************************************/
 
-#define HARDFAULT_ULOG_PATH             "/fs/microsd/fault.log"
+#define HARDFAULT_ULOG_PATH             "/fs/fault.log"
 #define HARDFAULT_MAX_ULOG_FILE_LEN     64
 
 /****************************************************************************************************

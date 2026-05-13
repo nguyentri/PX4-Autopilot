@@ -21,7 +21,7 @@ config BOARD_RDK_RZV2H_HAS_BARO
 	bool "Enable barometer support"
 	default y
 	---help---
-		Enable BMP388/BMP280 barometer sensor on I2C bus 7.
+		Enable BMP280 barometer sensor on SCI-mode I2C bus 7.
 
 config BOARD_RDK_RZV2H_HAS_IMU
 	bool "Enable IMU support"

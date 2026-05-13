@@ -37,7 +37,10 @@
  * RDK-RZV2H I2C bus configuration for PX4 sensor drivers
  *
  * Sensor Configuration:
- * - I2C7 (RIIC7): BMP388/BMP280 barometer at address 0x76
+ * - I2C7: BMP280 barometer at address 0x76.
+ *   Hardware wiring is P76/P77; current board_config.h tracks this as
+ *   RSCI7 simple-I2C, while current NuttX RIIC/SCI-I2C support still needs
+ *   hardware validation before flight use.
  */
 
 #include <px4_platform_common/px4_config.h>
@@ -57,4 +60,4 @@ constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
 };
 
 /* I2C device configuration (managed separately from buses for RZV) */
-// BMP388 barometer on I2C7 at address 0x76
+// BMP280 barometer on I2C7 at address 0x76

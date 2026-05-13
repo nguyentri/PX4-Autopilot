@@ -9,14 +9,15 @@ CONFIG_BOARD_CONSTRAINED_FLASH=y
 CONFIG_BOARD_CONSTRAINED_MEMORY=y
 CONFIG_BOARD_NO_HELP=y
 
-# Serial port configuration (matching NuttX board.h and FSP configuration)
-# SCI0: RC Input (/dev/ttyS0)
-# SCI1: MAVLink Telemetry (/dev/ttyS1)
-# SCI2: GPS (/dev/ttyS2)
-# SCI3: NSH Console (/dev/ttyS3)
-CONFIG_BOARD_SERIAL_GPS1="/dev/ttyS2"
-CONFIG_BOARD_SERIAL_TEL1="/dev/ttyS1"
-CONFIG_BOARD_SERIAL_RC="/dev/ttyS0"
+# Serial port configuration (matches FSP RSCI channel numbering; sparse ttyS{4,5,6,9}).
+# Console = SEGGER RTT (no debug UART pin per HARDWARE.md).
+# RSCI4 (ttyS4): TFmini LiDAR
+# RSCI5 (ttyS5): Sik MAVLink telemetry
+# RSCI6 (ttyS6): fs-a8s SBUS RC (RX-only)
+# RSCI9 (ttyS9): GPS M10
+CONFIG_BOARD_SERIAL_GPS1="/dev/ttyS9"
+CONFIG_BOARD_SERIAL_TEL1="/dev/ttyS5"
+CONFIG_BOARD_SERIAL_RC="/dev/ttyS6"
 CONFIG_COMMON_SERIAL_PORT_MAPPING=y
 
 # NuttX specific configuration
@@ -25,8 +26,10 @@ CONFIG_ARCH_BOARD="rdk-rzv2h"
 CONFIG_ARCH_BOARD_CUSTOM_DIR="boards/renesas/rdk-rzv2h"
 CONFIG_ARCH_BOARD_CUSTOM_NAME="rdk-rzv2h"
 
-# Parameter storage location
-CONFIG_BOARD_PARAM_FILE="/fs/microsd/params"
+# CR8 v1 must boot without CA55/Linux, SD, or RPMsg storage services.
+# The NuttX board mounts CR8-owned XSPI as LittleFS at /fs for params.
+CONFIG_BOARD_ROOT_PATH="/fs"
+CONFIG_BOARD_PARAM_FILE="/fs/params"
 
 # Interface configuration
 CONFIG_I2C=y
@@ -34,20 +37,16 @@ CONFIG_SPI=y
 CONFIG_UART=y
 
 # Common sensor configurations
-CONFIG_COMMON_BAROMETERS=y
 CONFIG_COMMON_RC=y
 
 # Driver configurations - Sensors
 CONFIG_DRIVERS_BAROMETER=y
-CONFIG_DRIVERS_BAROMETER_BMP388=y
 CONFIG_DRIVERS_BAROMETER_BMP280=y
 CONFIG_DRIVERS_GPS=y
 CONFIG_DRIVERS_IMU=y
 CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=y
-CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948=y
+# ICM20948 disabled: not present on RDK-RZV2H drone BOM (single-IMU per HARDWARE.md).
 CONFIG_DRIVERS_MAGNETOMETER=y
-# Disable I2C passthrough since sensors use SPI
-CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948_I2C_PASSTHROUGH=n
 
 # Driver configurations - Outputs
 CONFIG_DRIVERS_PWM_OUT=y

@@ -17,15 +17,14 @@ The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV
 ### Sensors
 | Sensor | Interface | Configuration |
 |--------|-----------|---------------|
-| MPU9250 (IMU) | SPI6 | CS=P93, INT=P50 (GPIO25) |
-| ICM20948 (IMU) | SPI6 | CS=P94, INT=PA0 (GPIO05) |
-| BMP280 (Baro) | I2C7 | Address 0x76, P76/P77 (GPIO02/03) |
+| MPU9250 (IMU) | RSPI0 | CS=P93, INT=P50 (GPIO25) |
+| BMP280 (Baro) | SCI-mode I2C7 | Address 0x76, P76/P77 (GPIO02/03) |
 
 ### Serial Ports
 | Port | SCI | Pins        | Device      | Function |
 |------|-----|-------------|-------------|----------|
-| ttyS3 | SCI3 | -           | /dev/ttyS3  | NSH Console |
-| ttyS4 | SCI4 | P70/P71     | /dev/ttyS4  | TFminiPlux LiDAR |
+| ttyS3 | SCI3 | -           | /dev/ttyS3  | NuttX standalone NSH console |
+| ttyS4 | SCI4 | P70/P71     | /dev/ttyS4  | TFminiPlus LiDAR |
 | ttyS5 | SCI5 | P72/P73     | /dev/ttyS5  | Sik Telemetry v3 |
 | ttyS6 | SCI6 | P75         | /dev/ttyS6  | fs-a8s RC Input |
 | ttyS9 | SCI9 | P82/P83     | /dev/ttyS9  | GPS M10 |
@@ -33,16 +32,14 @@ The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV
 ### I2C Buses
 | Bus | SCI | Pins     | Device      |
 |-----|-----|----------|-------------|
-| I2C7 | RIIC7 | P76/P77 | BMP280 Barometer (0x76) |
+| I2C7 | SCI-I2C7 | P76/P77 | BMP280 Barometer (0x76) |
 
 ### SPI Buses
 | Bus  | Pins              | Device        |
 |------|-------------------|---------------|
-| SPI6 | P90/P91/P92       | IMU sensors   |
-|      | P93 (SS0)         | MPU9250 NCS   |
-|      | P94 (SS1)         | ICM20948 NCS  |
+| RSPI0 | P90/P91/P92      | MPU9250 IMU   |
+|       | P93 (SSLA0)      | MPU9250 NCS   |
 | INT  | P50               | MPU9250 INT   |
-| INT  | PA0               | ICM20948 INT  |
 
 ### PWM Outputs (4 ESC channels)
 
@@ -62,9 +59,7 @@ PWM outputs use the RZV2H GPT (General Purpose Timer) peripheral for ESC control
 - Resolution: ~120 ticks/µs (sufficient for 1µs precision)
 
 **DShot Support:**
-- DShot150/300/600/1200 supported when DMAC is enabled
-- Requires `CONFIG_RZV_DMAC` in NuttX configuration
-- Configure via `dshot start` command instead of `pwm_out start`
+- Deferred for v1 until DMAC/cache coherency and GPT event generation are validated.
 
 ### LEDs
 | LED | Port | Pin | Function |
@@ -151,7 +146,7 @@ make renesas_rdk-rzv2h_default
 
 ### Key PX4board Options
 - Flight modules: EKF2, Commander, Navigator, MC attitude/position control
-- Sensors: MPU9250, BMP388, BMP280
+- Sensors: MPU9250, BMP280
 - Outputs: PWM (4 channels), RC input (SBUS)
 - Interfaces: MAVLink, GPS
 
@@ -197,8 +192,13 @@ param set-default MC_YAWRATE_P 0.100
 - ITCM: 16KB (for fast code)
 
 ### DMA
-- Not currently implemented for SPI/I2C
-- Future enhancement for sensor data acquisition
+- Disabled for v1 flight-critical SPI/I2C/DShot paths until cache coherency is validated.
+- Future enhancement for sensor data acquisition.
+
+### Parameter Storage
+- Target backend: CR8-owned XSPI flash mounted with LittleFS at `/fs`.
+- Current build path: `/fs/params`.
+- Runtime persistence still requires an RZV2H XSPI MTD lower-half and mount hook.
 
 ## ESC/PWM Validation
 
@@ -224,7 +224,7 @@ pwm_out disarm
 
 | Command | Expected Behavior |
 |---------|-------------------|
-| `pwm_out test -c 1 -p 1100` | PWM0 (P7_1) outputs 1100µs pulse at 400Hz |
+| `pwm_out test -c 1 -p 1100` | PWM0 (PA4) outputs 1100µs pulse at 400Hz |
 | `pwm_out test -c 1 -p 1000` | PWM0 outputs minimum 1000µs pulse |
 | `pwm_out arm` | All 4 channels output armed value |
 | `pwm_out disarm` | All channels return to 1000µs (disarmed) |

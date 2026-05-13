@@ -7,21 +7,22 @@
 # ============================================================================
 # Processor: RZV2H Cortex-R8 @ 800MHz
 # IMU:       MPU9250 on SPI0 (DRDY on P5_0)
-# Baro:      BMP388/BMP280 on I2C7 @ 0x76
-# RC:        SBUS on SCI0 (/dev/ttyS0)
-# GPS:       SCI2 (/dev/ttyS2) @ 115200 baud
-# MAVLink:   SCI1 (/dev/ttyS1) @ 57600 baud
-# Console:   SCI3 (/dev/ttyS3)
+# Baro:      BMP280 on SCI-I2C7 @ 0x76
+# LiDAR:     TFminiPlus on SCI4 (/dev/ttyS4)
+# MAVLink:   Sik telemetry on SCI5 (/dev/ttyS5) @ 57600 baud
+# RC:        SBUS on SCI6 (/dev/ttyS6)
+# GPS:       M10 on SCI9 (/dev/ttyS9) @ 115200 baud
+# Console:   SCI3 (/dev/ttyS3) for NuttX bring-up; PX4 logs also use console buffer.
 #
 # PWM Outputs (4 ESC channels):
-# ┌─────────┬───────────┬─────────┬─────────────────────┐
-# │ Channel │ GPT Timer │ Output  │ GPIO Pin            │
-# ├─────────┼───────────┼─────────┼─────────────────────┤
-# │ PWM0    │ GPT1      │ GTIOC0B │ P7_1                │
-# │ PWM1    │ GPT2      │ GTIOC2B │ P7_2                │
-# │ PWM2    │ GPT3      │ GTIOC3A │ P7_5                │
-# │ PWM3    │ GPT4      │ GTIOC4B │ P7_6                │
-# └─────────┴───────────┴─────────┴─────────────────────┘
+# +---------+-----------+---------+----------+
+# | Channel | GPT Timer | Output  | GPIO Pin |
+# +---------+-----------+---------+----------+
+# | PWM0    | GPT6      | GTIOC6A | PA4      |
+# | PWM1    | GPT7      | GTIOC7B | PA7      |
+# | PWM2    | GPT9      | GTIOC9A | P96      |
+# | PWM3    | GPT10     | GTIOC10B| P53      |
+# +---------+-----------+---------+----------+
 #
 # ============================================================================
 
@@ -134,7 +135,7 @@ param set PWM_MAIN_FUNC2 102
 param set PWM_MAIN_FUNC3 103
 param set PWM_MAIN_FUNC4 104
 
-# PWM pulse range (µs): 1100-1900 with 1000 disarmed
+# PWM pulse range (us): 1100-1900 with 1000 disarmed
 param set PWM_MAIN_MIN1 1100
 param set PWM_MAIN_MIN2 1100
 param set PWM_MAIN_MIN3 1100
@@ -164,22 +165,22 @@ dataman start -r
 load_mon start
 ? sleep 1
 
-# Start RC input (SBUS on SCI0)
-rc_input start -d /dev/ttyS0
+# Start RC input (SBUS on SCI6)
+rc_input start -d /dev/ttyS6
 ? sleep 1
 rc_update start
 ? sleep 1
 
 # Start sensors
-bmp388 -I -b 7 -a 0x76 start
+bmp280 -I -b 7 -a 0x76 start
 ? sleep 1
 mpu9250 -s -M -b 0 -R 0 start
 ? sleep 1
 sensors start
 ? sleep 1
 
-# Start GPS on SCI2
-gps start -d /dev/ttyS2 -b 115200
+# Start GPS on SCI9
+gps start -d /dev/ttyS9 -b 115200
 ? sleep 1
 
 # Start land detector
@@ -207,7 +208,7 @@ manual_control start
 commander start
 ? sleep 1
 
-# Start MAVLink on SCI1 (57600 baud for telemetry)
-mavlink start -d /dev/ttyS1 -b 57600
+# Start MAVLink on SCI5 (57600 baud for first-link stability)
+mavlink start -d /dev/ttyS5 -b 57600 -r 4000
 ? sleep 1
 mavlink boot_complete

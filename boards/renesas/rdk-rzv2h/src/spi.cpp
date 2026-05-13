@@ -54,7 +54,9 @@
 
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 	initSPIBus(SPI::Bus(PX4_SPI_BUS_SENSORS), {
-		initSPIDevice(DRV_IMU_DEVTYPE_MPU9250, SPI::CS{GPIO::PortA, GPIO::Pin7}, SPI::DRDY{GPIO::Port5, GPIO::Pin0}),
+		// CS = P93 (RSPI0 SSLA0, hardware chip-select). DRDY = P50 (MPU9250 INT, FSP TINT).
+		// Do not use PA7; that pin is GPT7B/ESC2 PWM (see timer_config.cpp:154).
+		initSPIDevice(DRV_IMU_DEVTYPE_MPU9250, SPI::CS{GPIO::Port9, GPIO::Pin3}, SPI::DRDY{GPIO::Port5, GPIO::Pin0}),
 	}),
 };
 
