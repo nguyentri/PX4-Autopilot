@@ -271,6 +271,8 @@ else()
 		-Wl,--warn-common
 		-Wl,--gc-sections
 
+		$<$<BOOL:${CONFIG_ARCH_CHIP_RZV}>:${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o>
+
 		-Wl,--start-group
 			${nuttx_libs}
 		-Wl,--end-group
@@ -290,10 +292,27 @@ else()
 		target_link_libraries(px4 PRIVATE romfs)
 	endif()
 
-	add_custom_command(OUTPUT ${PX4_BINARY_OUTPUT}
-		COMMAND ${CMAKE_OBJCOPY} -O binary ${PX4_BINARY_DIR_REL}/${FW_NAME} ${PX4_BINARY_OUTPUT}
-		DEPENDS px4
-	)
+	if(CONFIG_ARCH_CHIP_RZV)
+		string(REPLACE ".bin" "_header.bin" rzv_header_binary ${PX4_BINARY_OUTPUT})
+		string(REPLACE ".bin" "_itcm.bin" rzv_itcm_binary ${PX4_BINARY_OUTPUT})
+		string(REPLACE ".bin" "_sram.bin" rzv_sram_binary ${PX4_BINARY_OUTPUT})
+		string(REPLACE ".bin" "_sdram.bin" rzv_sdram_binary ${PX4_BINARY_OUTPUT})
+
+		add_custom_command(OUTPUT ${PX4_BINARY_OUTPUT}
+			COMMAND ${CMAKE_OBJCOPY} -O binary -j .header -j .header_reserved ${PX4_BINARY_DIR_REL}/${FW_NAME} ${rzv_header_binary}
+			COMMAND ${CMAKE_OBJCOPY} -O binary -j .itcm_load_section0 -j .itcm_load_section1 ${PX4_BINARY_DIR_REL}/${FW_NAME} ${rzv_itcm_binary}
+			COMMAND ${CMAKE_OBJCOPY} -O binary -j .sram_load_section0 -j .sram_load_section1 ${PX4_BINARY_DIR_REL}/${FW_NAME} ${rzv_sram_binary}
+			COMMAND ${CMAKE_OBJCOPY} -O binary -j .sdram_text_section -j .sdram_data_section ${PX4_BINARY_DIR_REL}/${FW_NAME} ${rzv_sdram_binary}
+			COMMAND ${CMAKE_COMMAND} -E cat ${rzv_header_binary} ${rzv_itcm_binary} ${rzv_sram_binary} ${rzv_sdram_binary} > ${PX4_BINARY_OUTPUT}
+			BYPRODUCTS ${rzv_header_binary} ${rzv_itcm_binary} ${rzv_sram_binary} ${rzv_sdram_binary}
+			DEPENDS px4
+		)
+	else()
+		add_custom_command(OUTPUT ${PX4_BINARY_OUTPUT}
+			COMMAND ${CMAKE_OBJCOPY} -O binary ${PX4_BINARY_DIR_REL}/${FW_NAME} ${PX4_BINARY_OUTPUT}
+			DEPENDS px4
+		)
+	endif()
 
 endif()
 

@@ -130,6 +130,49 @@ unsigned up_pwm_servo_get_rate(void)
 	return pwm_rate;
 }
 
+int up_pwm_servo_set_rate_group_update(unsigned group, unsigned rate)
+{
+	uint32_t channel_mask = io_timer_get_group(group);
+
+	if (rate > 10000) {
+		return -ERANGE;
+	}
+
+	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+		if ((channel_mask & (1 << i)) &&
+		    io_timer_get_channel_mode(i) == IOTimerChanMode_PWMOut) {
+			int ret = io_timer_set_pwm_rate(i, rate);
+
+			if (ret != 0) {
+				return ret;
+			}
+		}
+	}
+
+	pwm_rate = rate;
+	return 0;
+}
+
+uint32_t up_pwm_servo_get_rate_group(unsigned group)
+{
+	uint32_t channel_mask = io_timer_get_group(group);
+	uint32_t pwm_mask = 0;
+
+	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+		if ((channel_mask & (1 << i)) &&
+		    io_timer_get_channel_mode(i) == IOTimerChanMode_PWMOut) {
+			pwm_mask |= (1 << i);
+		}
+	}
+
+	return pwm_mask;
+}
+
+void up_pwm_update(unsigned channel_mask)
+{
+	(void)channel_mask;
+}
+
 /**
  * Set PWM pulse width for a channel
  */

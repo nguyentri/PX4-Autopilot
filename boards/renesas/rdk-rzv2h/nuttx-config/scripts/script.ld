@@ -122,7 +122,7 @@ SECTIONS
     {
         _itcm_load_start = .;
         /* vector */
-        _fvector_start = .; _VECTORS = .;
+        _fvector_start = .; _VECTORS = .; _vectors = .;
         KEEP(*(.vectors))
         _fvector_end = .;
 

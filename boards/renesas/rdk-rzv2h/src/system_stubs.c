@@ -42,6 +42,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "board_config.h"
 /* board_config.h includes board_common.h at the end, so redundant include removed */
@@ -77,4 +78,11 @@ void rzv_save_panic(int fileno, void *context, int length)
 	(void)context;
 	(void)length;
 	/* Not implemented - could save to backup RAM or external storage */
+}
+
+__EXPORT int pipe(int pipefd[2])
+{
+	(void)pipefd;
+	errno = ENOSYS;
+	return -1;
 }

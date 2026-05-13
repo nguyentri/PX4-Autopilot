@@ -60,14 +60,15 @@ endif
 # Note: 'all' target now depends only on branch check, allowing make to build the current/last board config
 all: ensure_nuttx_ra8p1_branch
 
-# Ensure NuttX submodule uses the nuttx ra8p1 branch
-# This will automatically switch the NuttX submodule to the correct branch
-# but will preserve local changes
+# Ensure NuttX submodule uses the expected RZV/RA NuttX branch.
+# This will automatically switch the NuttX submodule to the default branch
+# unless it is already on an approved local compatibility branch.
 .PHONY: ensure_nuttx_ra8p1_branch
 ensure_nuttx_ra8p1_branch:
-	@echo "Ensuring NuttX submodule is on NuttX_Px4_RA8_Refactoring branch..."; \
+	@echo "Ensuring NuttX submodule is on an approved RZV/RA NuttX branch..."; \
 	cd platforms/nuttx/NuttX/nuttx && \
-	if [ "$$(git rev-parse --abbrev-ref HEAD)" != "NuttX_Px4_RA8_Refactoring" ] && [ "$$(git rev-parse --abbrev-ref HEAD)" != "HEAD" ]; then \
+	current_branch="$$(git rev-parse --abbrev-ref HEAD)" && \
+	if [ "$$current_branch" != "NuttX_Px4_RA8_Refactoring" ] && [ "$$current_branch" != "rzv2h-freertos-drone-compat" ] && [ "$$current_branch" != "HEAD" ]; then \
 		if [ -n "$$(git status --porcelain)" ]; then \
 			echo "⚠️  NuttX has local changes - keeping current state to preserve your work"; \
 		else \
@@ -76,8 +77,8 @@ ensure_nuttx_ra8p1_branch:
 			git checkout NuttX_Px4_RA8_Refactoring; \
 		fi \
 	else \
-		if [ "$$(git rev-parse --abbrev-ref HEAD)" = "NuttX_Px4_RA8_Refactoring" ]; then \
-			echo "✓ NuttX submodule already on NuttX_Px4_RA8_Refactoring branch"; \
+		if [ "$$current_branch" = "NuttX_Px4_RA8_Refactoring" ] || [ "$$current_branch" = "rzv2h-freertos-drone-compat" ]; then \
+			echo "✓ NuttX submodule already on $$current_branch branch"; \
 		else \
 			echo "✓ NuttX submodule is in detached HEAD state (build artifact)"; \
 		fi \

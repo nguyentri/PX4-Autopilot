@@ -87,7 +87,7 @@ int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices)
 /**
  * Save panic information
  */
-void rzv_save_panic(int fileno, void *context, int length)
+__attribute__((weak)) void rzv_save_panic(int fileno, void *context, int length)
 {
 	/* Panic save not implemented - could save to backup RAM or flash */
 	(void)fileno;
