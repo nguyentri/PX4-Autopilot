@@ -48,6 +48,7 @@
 
 /* Include GPT hardware definitions */
 #include "hardware/rzv_gpt.h"
+#include "rzv_clock.h"
 
 /* Include timer configuration structures */
 #include "../include/px4_arch/io_timer.h"
@@ -70,21 +71,18 @@
 /**
  * GPT Clock Configuration
  *
- * The RZV2H GPT timers are clocked from PCLKD. The frequency should be
- * defined in the NuttX configuration (CONFIG_RZV_PCLK_FREQUENCY).
- * Default: 120 MHz for RZV2H GPT peripheral clock domain.
+ * The RZV2H GPT timers use the runtime PCLK reported by the NuttX clock
+ * driver. The current RZ/V2H clock table reports nominal P0CLK at 100 MHz.
  *
  * PWM Frequency Calculation:
- *   PWM_freq = PCLKD / (prescaler * period)
- *   For 400Hz @ 120MHz: period = 120000000 / 400 = 300000 ticks
+ *   PWM_freq = PCLK / (prescaler * period)
+ *   For 400Hz @ 100MHz: period = 100000000 / 400 = 250000 ticks
  *
  * Duty Cycle Resolution:
- *   At 400Hz with 120MHz clock: 300000 ticks per period
- *   Resolution per µs: 120 ticks (sufficient for 1µs PWM precision)
+ *   At 400Hz with 100MHz clock: 250000 ticks per period
+ *   Resolution per µs: 100 ticks (sufficient for 1µs PWM precision)
  */
-#ifndef CONFIG_RZV_PCLK_FREQUENCY
-#define CONFIG_RZV_PCLK_FREQUENCY 120000000  /* 120MHz PCLKD for RZV2H GPT */
-#endif
+#define GPT_INVALID_CLOCK_ID       UINT32_MAX
 
 /* PWM Configuration Constants */
 #define PWM_DEFAULT_FREQUENCY_HZ    400      /* Default 400Hz for ESCs */
@@ -112,6 +110,8 @@ extern const timer_io_channels_t timer_io_channels[];
 /* GPT timer state tracking */
 static struct {
 	bool initialized;
+	bool enabled;
+	uint32_t pclk;        /* GPT clock in Hz */
 	uint32_t period;      /* PWM period in timer ticks */
 	uint16_t ccr_value;   /* Current compare value (pulse width in µs) */
 } gpt_state[MAX_TIMER_IO_CHANNELS];
@@ -148,16 +148,71 @@ static uint32_t get_gpt_base(uint8_t timer_id)
 	}
 }
 
-/* Helper function to read 32-bit register */
-static inline uint32_t io_timer_getreg32(uint32_t addr)
-{
-	return *(volatile uint32_t *)(uintptr_t)addr;
-}
-
 /* Helper function to write 32-bit register */
 static inline void io_timer_putreg32(uint32_t val, uint32_t addr)
 {
 	*(volatile uint32_t *)(uintptr_t)addr = val;
+}
+
+static inline void gpt_unlock(uint32_t base)
+{
+	io_timer_putreg32(GPT_GTWP_UNLOCK, base + RZV_GPT_GTWP_OFFSET);
+}
+
+static inline void gpt_lock(uint32_t base)
+{
+	io_timer_putreg32(GPT_GTWP_LOCK, base + RZV_GPT_GTWP_OFFSET);
+}
+
+static inline uint32_t gpt_channel_mask(uint8_t timer_id)
+{
+	return RZV_GPT_CHANNEL_MASK(timer_id);
+}
+
+static uint32_t get_gpt_clock_id(uint8_t timer_id)
+{
+	switch (timer_id) {
+	case 0:  return RZV_CPG_CLK_GPT0;
+	case 1:  return RZV_CPG_CLK_GPT1;
+	case 2:  return RZV_CPG_CLK_GPT2;
+	case 3:  return RZV_CPG_CLK_GPT3;
+	case 4:  return RZV_CPG_CLK_GPT4;
+	case 5:  return RZV_CPG_CLK_GPT5;
+	case 6:  return RZV_CPG_CLK_GPT6;
+	case 7:  return RZV_CPG_CLK_GPT7;
+	case 8:  return RZV_CPG_CLK_GPT8;
+	case 9:  return RZV_CPG_CLK_GPT9;
+	case 10: return RZV_CPG_CLK_GPT10;
+	default: return GPT_INVALID_CLOCK_ID;
+	}
+}
+
+static bool is_configured_channel(unsigned channel)
+{
+	return channel < MAX_TIMER_IO_CHANNELS &&
+	       timer_io_channels[channel].timer_index < MAX_IO_TIMERS &&
+	       (timer_io_channels[channel].timer_channel == 1 ||
+		timer_io_channels[channel].timer_channel == 2);
+}
+
+static uint32_t pulse_width_to_ticks(unsigned channel, uint16_t value)
+{
+	uint64_t ticks = (uint64_t)value * gpt_state[channel].pclk / 1000000ULL;
+
+	if (ticks >= gpt_state[channel].period) {
+		ticks = gpt_state[channel].period ? gpt_state[channel].period - 1 : 0;
+	}
+
+	return (uint32_t)ticks;
+}
+
+static uint32_t gpt_output_control(unsigned channel, bool enable)
+{
+	if (timer_io_channels[channel].timer_channel == 1) {
+		return GPT_GTIOR_GTIOA_HIGH_CMP_LOW | (enable ? GPT_GTIOR_OAE : 0);
+	}
+
+	return GPT_GTIOR_GTIOB_HIGH_CMP_LOW | (enable ? GPT_GTIOR_OBE : 0);
 }
 
 /**
@@ -169,55 +224,74 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 		return -EINVAL;
 	}
 
-	uint8_t timer_idx = timer_io_channels[channel].timer_index;
-	if (timer_idx >= MAX_IO_TIMERS) {
+	if (!is_configured_channel(channel)) {
 		return -EINVAL;
 	}
 
+	uint8_t timer_idx = timer_io_channels[channel].timer_index;
+	uint8_t timer_id = io_timers[timer_idx].timer_id;
 	uint32_t base = get_gpt_base(io_timers[timer_idx].timer_id);
 	if (base == 0) {
 		return -EINVAL;
 	}
 
+	uint32_t clock_id = get_gpt_clock_id(timer_id);
+	if (clock_id == GPT_INVALID_CLOCK_ID) {
+		return -EINVAL;
+	}
+
+	int ret = rzv_clock_enable(clock_id);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = rzv_module_reset(clock_id);
+	if (ret < 0) {
+		return ret;
+	}
+
+	uint32_t pclk = rzv_get_pclk_frequency();
+	if (pclk == 0) {
+		return -EINVAL;
+	}
+
 	/* Stop timer before configuration */
-	io_timer_putreg32(0, base + RZV_GPT_GTSTR_OFFSET);
+	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
 
 	/* Clear timer counter */
-	io_timer_putreg32(1, base + RZV_GPT_GTCLR_OFFSET);
+	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTCLR_OFFSET);
+
+	gpt_unlock(base);
 
 	/* Configure GPT control register for PWM mode */
-	uint32_t gtcr = 0;
-	gtcr |= (0 << 0);  /* MD[2:0] = 0: Saw-wave mode */
-	gtcr |= (0 << 16); /* TPCS[3:0] = 0: PCLK/1 */
-	io_timer_putreg32(gtcr, base + RZV_GPT_GTCR_OFFSET);
+	io_timer_putreg32(GPT_GTCR_MD_SAW | ((uint32_t)GPT_TPCS_DIV1 << GPT_GTCR_TPCS_SHIFT),
+			  base + RZV_GPT_GTCR_OFFSET);
 
 	/* Configure up-count direction */
-	io_timer_putreg32(0x01, base + RZV_GPT_GTUDDTYC_OFFSET);
+	io_timer_putreg32(GPT_GTUDDTYC_UD, base + RZV_GPT_GTUDDTYC_OFFSET);
 
 	/* Calculate period for 400Hz (default PWM frequency)
 	 * Period = PCLK / frequency
 	 */
-	uint32_t period = CONFIG_RZV_PCLK_FREQUENCY / 400;
-	io_timer_putreg32(period, base + RZV_GPT_GTPR_OFFSET);
+	uint32_t period = pclk / PWM_DEFAULT_FREQUENCY_HZ;
+	io_timer_putreg32(period - 1, base + RZV_GPT_GTPR_OFFSET);
+	gpt_state[channel].pclk = pclk;
 	gpt_state[channel].period = period;
 
 	/* Set initial duty cycle to 0 (off) */
 	gpt_state[channel].ccr_value = 0;
+	gpt_state[channel].enabled = false;
 
-	/* Configure I/O control for PWM output
-	 * Based on channel (GTIOCA or GTIOCB)
-	 */
-	uint32_t gtior = 0;
 	if (timer_io_channels[channel].timer_channel == 1) {
-		/* GTIOCA */
-		gtior |= (0x09 << 0);  /* Initial low, toggle on match A, low at cycle end */
 		io_timer_putreg32(0, base + RZV_GPT_GTCCRA_OFFSET);
 	} else {
-		/* GTIOCB */
-		gtior |= (0x09 << 8);  /* Initial low, toggle on match B, low at cycle end */
 		io_timer_putreg32(0, base + RZV_GPT_GTCCRB_OFFSET);
 	}
-	io_timer_putreg32(gtior, base + RZV_GPT_GTIOR_OFFSET);
+
+	/* Keep timer output disabled until PX4 arms/enables PWM. */
+	io_timer_putreg32(gpt_output_control(channel, false), base + RZV_GPT_GTIOR_OFFSET);
+	io_timer_putreg32(0, base + RZV_GPT_GTST_OFFSET);
+	gpt_lock(base);
 
 	gpt_state[channel].initialized = true;
 
@@ -241,7 +315,7 @@ int io_timer_init(void)
 
 	/* Initialize all configured GPT channels */
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		if (timer_io_channels[i].timer_index < MAX_IO_TIMERS) {
+		if (is_configured_channel(i)) {
 			int ret = rzv2h_gpt_init_channel(i);
 			if (ret != 0) {
 				return ret;
@@ -336,24 +410,43 @@ int io_timer_get_channel_mode(unsigned channel)
  */
 int io_timer_set_pwm_rate(unsigned channel, unsigned rate)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized ||
+	    rate < PWM_MIN_FREQUENCY_HZ || rate > PWM_MAX_FREQUENCY_HZ) {
 		return -EINVAL;
 	}
 
 	uint8_t timer_idx = timer_io_channels[channel].timer_index;
-	uint32_t base = get_gpt_base(io_timers[timer_idx].timer_id);
+	uint8_t timer_id = io_timers[timer_idx].timer_id;
+	uint32_t base = get_gpt_base(timer_id);
 	if (base == 0) {
 		return -EINVAL;
 	}
 
 	/* Calculate new period */
-	uint32_t period = CONFIG_RZV_PCLK_FREQUENCY / rate;
+	uint32_t period = gpt_state[channel].pclk / rate;
+	if (period == 0) {
+		return -ERANGE;
+	}
 
-	/* Stop timer, update period, restart */
-	io_timer_putreg32(0, base + RZV_GPT_GTSTR_OFFSET);
-	io_timer_putreg32(period, base + RZV_GPT_GTPR_OFFSET);
+	irqstate_t flags = px4_enter_critical_section();
+	gpt_unlock(base);
+	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
+	io_timer_putreg32(period - 1, base + RZV_GPT_GTPR_OFFSET);
 	gpt_state[channel].period = period;
-	io_timer_putreg32(1, base + RZV_GPT_GTSTR_OFFSET);
+
+	uint32_t ticks = pulse_width_to_ticks(channel, gpt_state[channel].ccr_value);
+	if (timer_io_channels[channel].timer_channel == 1) {
+		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRA_OFFSET);
+	} else {
+		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRB_OFFSET);
+	}
+
+	if (gpt_state[channel].enabled) {
+		io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
+	}
+
+	gpt_lock(base);
+	px4_leave_critical_section(flags);
 
 	return 0;
 }
@@ -367,13 +460,24 @@ int io_timer_set_enable(bool enable, io_timer_channel_mode_t mode, io_timer_chan
 		if (masks & (1 << i)) {
 			if (gpt_state[i].initialized) {
 				uint8_t timer_idx = timer_io_channels[i].timer_index;
-				uint32_t base = get_gpt_base(io_timers[timer_idx].timer_id);
+				uint8_t timer_id = io_timers[timer_idx].timer_id;
+				uint32_t base = get_gpt_base(timer_id);
 				if (base != 0) {
+					irqstate_t flags = px4_enter_critical_section();
+					gpt_unlock(base);
+
 					if (enable) {
-						io_timer_putreg32(1, base + RZV_GPT_GTSTR_OFFSET);
+						io_timer_putreg32(gpt_output_control(i, true), base + RZV_GPT_GTIOR_OFFSET);
+						io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
+						gpt_state[i].enabled = true;
 					} else {
-						io_timer_putreg32(0, base + RZV_GPT_GTSTP_OFFSET);
+						io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
+						io_timer_putreg32(gpt_output_control(i, false), base + RZV_GPT_GTIOR_OFFSET);
+						gpt_state[i].enabled = false;
 					}
+
+					gpt_lock(base);
+					px4_leave_critical_section(flags);
 				}
 			}
 		}
@@ -396,24 +500,20 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
 		return -EINVAL;
 	}
 
-	/* Scale value to timer period
-	 * Input: value in microseconds (1000-2000 typical)
-	 * Output: timer ticks
-	 */
-	uint64_t ticks = (uint64_t)value * CONFIG_RZV_PCLK_FREQUENCY / 1000000ULL;
-
-	/* Limit to period and clamp to valid range */
-	if (ticks > gpt_state[channel].period) {
-		ticks = gpt_state[channel].period;
-	}
+	uint32_t ticks = pulse_width_to_ticks(channel, value);
 
 	/* Write to appropriate compare register */
+	irqstate_t flags = px4_enter_critical_section();
+	gpt_unlock(base);
+
 	if (timer_io_channels[channel].timer_channel == 1) {
-		io_timer_putreg32((uint32_t)ticks, base + RZV_GPT_GTCCRA_OFFSET);
+		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRA_OFFSET);
 	} else {
-		io_timer_putreg32((uint32_t)ticks, base + RZV_GPT_GTCCRB_OFFSET);
+		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRB_OFFSET);
 	}
 
+	gpt_lock(base);
+	px4_leave_critical_section(flags);
 	gpt_state[channel].ccr_value = value;
 
 	return 0;

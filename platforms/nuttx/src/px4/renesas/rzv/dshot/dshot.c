@@ -145,6 +145,24 @@ static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
  * Private Functions
  ****************************************************************************/
 
+static uintptr_t dshot_get_gpt_base(uint8_t gpt_channel)
+{
+	switch (gpt_channel) {
+	case 0:  return RZV_GPT0_BASE;
+	case 1:  return RZV_GPT1_BASE;
+	case 2:  return RZV_GPT2_BASE;
+	case 3:  return RZV_GPT3_BASE;
+	case 4:  return RZV_GPT4_BASE;
+	case 5:  return RZV_GPT5_BASE;
+	case 6:  return RZV_GPT6_BASE;
+	case 7:  return RZV_GPT7_BASE;
+	case 8:  return RZV_GPT8_BASE;
+	case 9:  return RZV_GPT9_BASE;
+	case 10: return RZV_GPT10_BASE;
+	default: return 0;
+	}
+}
+
 static bool dshot_map_channel(uint8_t logical_channel, dshot_channel_t *ch)
 {
 	if (logical_channel >= MAX_TIMER_IO_CHANNELS) {
@@ -159,20 +177,34 @@ static bool dshot_map_channel(uint8_t logical_channel, dshot_channel_t *ch)
 	ch->gpt_channel = timer->timer_id;
 	ch->timer_channel = timer_channel->timer_channel;
 	ch->dma_channel = timer_channel->dshot.dma_channel;
-	ch->gpt_base = timer->base;
+	ch->gpt_base = dshot_get_gpt_base(ch->gpt_channel);
+
+	if (ch->gpt_base == 0) {
+		return false;
+	}
 
 	return true;
 }
 
 static inline void gpt_putreg32(uint8_t ch, uint32_t offset, uint32_t val)
 {
-	uintptr_t base = RZV_GPT0_BASE + (ch * 0x100);
+	uintptr_t base = dshot_get_gpt_base(ch);
+
+	if (base == 0) {
+		return;
+	}
+
 	putreg32(val, base + offset);
 }
 
 static inline uint32_t gpt_getreg32(uint8_t ch, uint32_t offset)
 {
-	uintptr_t base = RZV_GPT0_BASE + (ch * 0x100);
+	uintptr_t base = dshot_get_gpt_base(ch);
+
+	if (base == 0) {
+		return 0;
+	}
+
 	return getreg32(base + offset);
 }
 
@@ -313,6 +345,14 @@ int up_dshot_init(uint32_t channel_mask, unsigned dshot_pwm_freq,
 		  bool enable_bidirectional_dshot)
 {
 	int ret = OK;
+
+#ifdef CONFIG_RZV2H_EXPERIMENTAL_DSHOT
+	PX4_ERR("RZ/V2H DShot is not implemented for production use; use standard PWM");
+	return -ENOSYS;
+#else
+	PX4_ERR("RZ/V2H DShot is disabled; use standard PWM");
+	return -ENOSYS;
+#endif
 
 #ifndef CONFIG_RZV_DMAC
 	PX4_ERR("DShot requires CONFIG_RZV_DMAC");

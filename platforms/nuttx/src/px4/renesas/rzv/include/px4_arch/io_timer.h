@@ -46,11 +46,19 @@
 
 /* Maximum number of IO timers and channels */
 #ifndef MAX_IO_TIMERS
-#define MAX_IO_TIMERS           8
+#  ifdef BOARD_NUM_IO_TIMERS
+#    define MAX_IO_TIMERS       BOARD_NUM_IO_TIMERS
+#  else
+#    define MAX_IO_TIMERS       8
+#  endif
 #endif
 
 #ifndef MAX_TIMER_IO_CHANNELS
-#define MAX_TIMER_IO_CHANNELS   8
+#  ifdef DIRECT_PWM_OUTPUT_CHANNELS
+#    define MAX_TIMER_IO_CHANNELS DIRECT_PWM_OUTPUT_CHANNELS
+#  else
+#    define MAX_TIMER_IO_CHANNELS 8
+#  endif
 #endif
 
 /* Timer channel modes */

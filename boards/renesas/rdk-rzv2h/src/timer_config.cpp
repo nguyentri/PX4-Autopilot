@@ -60,7 +60,7 @@
  * Timer Settings:
  * - Frequency: 400 Hz (configurable via startup script, range 50-500 Hz)
  * - Mode: Standard PWM (1000-2000 µs pulse width)
- * - Clock: PCLKD = 120 MHz (from CONFIG_RZV_PCLK_FREQUENCY)
+ * - Clock: runtime PCLK from NuttX rzv_get_pclk_frequency()
  *
  * Pin assignments from rzv2h_pinmap.h
  */
@@ -70,12 +70,11 @@
 #include <syslog.h>
 
 #include <drivers/drv_pwm_output.h>
+#include "board_config.h"
 #include <px4_arch/io_timer_hw_description.h>
 #include <px4_platform_common/px4_config.h>
 
 #include "rzv_gpio.h"
-
-#include "board_config.h"
 
 namespace
 {
@@ -84,10 +83,10 @@ namespace
  * GPT Timer Instances for PWM Output
  *
  * Each timer controls one PWM channel. Timer IDs map to:
- * - Timer6 = GPT6 (base 0x13010600) - PWM0/PA4
- * - Timer7 = GPT7 (base 0x13010700) - PWM1/PA7
- * - Timer9 = GPT9 (base 0x13010900) - PWM2/P96
- * - Timer10 = GPT10 (base 0x13010A00) - PWM3/P53
+ * - Timer6 = GPT6 - PWM0/PA4
+ * - Timer7 = GPT7 - PWM1/PA7
+ * - Timer9 = GPT9 - PWM2/P96
+ * - Timer10 = GPT10 - PWM3/P53
  *
  * Note: These timers were chosen to match the RDK-RZV2H
  * header pin mapping for ESC connections.

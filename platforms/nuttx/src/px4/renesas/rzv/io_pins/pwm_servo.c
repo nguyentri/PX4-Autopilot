@@ -49,8 +49,10 @@
 
 /* Default PWM parameters */
 #define PWM_DEFAULT_RATE      400     /* Hz */
-#define PWM_MIN_PULSE_WIDTH   900     /* us */
-#define PWM_MAX_PULSE_WIDTH   2100    /* us */
+#define PWM_MIN_RATE          50      /* Hz */
+#define PWM_MAX_RATE          500     /* Hz */
+#define PWM_MIN_PULSE_WIDTH   1000    /* us */
+#define PWM_MAX_PULSE_WIDTH   2000    /* us */
 #define PWM_DISARMED_WIDTH    1000    /* us */
 
 static bool pwm_initialized = false;
@@ -62,7 +64,7 @@ static uint32_t pwm_rate = PWM_DEFAULT_RATE;
 int up_pwm_servo_init(uint32_t channel_mask)
 {
 	if (pwm_initialized) {
-		return 0;
+		return channel_mask;
 	}
 
 	/* Initialize IO timer system */
@@ -82,7 +84,7 @@ int up_pwm_servo_init(uint32_t channel_mask)
 	}
 
 	pwm_initialized = true;
-	return 0;
+	return channel_mask;
 }
 
 /**
@@ -106,7 +108,7 @@ void up_pwm_servo_deinit(uint32_t channel_mask)
  */
 int up_pwm_servo_set_rate(unsigned rate)
 {
-	if (rate < 50 || rate > 500) {
+	if (rate < PWM_MIN_RATE || rate > PWM_MAX_RATE) {
 		return -EINVAL;
 	}
 
@@ -134,7 +136,7 @@ int up_pwm_servo_set_rate_group_update(unsigned group, unsigned rate)
 {
 	uint32_t channel_mask = io_timer_get_group(group);
 
-	if (rate > 10000) {
+	if (rate < PWM_MIN_RATE || rate > PWM_MAX_RATE) {
 		return -ERANGE;
 	}
 
@@ -180,6 +182,10 @@ int up_pwm_servo_set(unsigned channel, uint16_t value)
 {
 	if (channel >= MAX_TIMER_IO_CHANNELS) {
 		return -EINVAL;
+	}
+
+	if (value == 0) {
+		return io_timer_set_ccr(channel, 0);
 	}
 
 	/* Clamp value to valid range */

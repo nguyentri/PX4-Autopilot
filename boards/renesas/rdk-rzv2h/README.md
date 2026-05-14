@@ -55,11 +55,13 @@ PWM outputs use the RZV2H GPT (General Purpose Timer) peripheral for ESC control
 **PWM Configuration:**
 - Default Frequency: 400 Hz (configurable 50-500 Hz)
 - Pulse Width Range: 1000-2000 µs (standard PWM servo range)
-- Timer Clock: 120 MHz (PCLKD)
-- Resolution: ~120 ticks/µs (sufficient for 1µs precision)
+- Timer Clock: runtime PCLK from NuttX `rzv_get_pclk_frequency()`; nominal P0CLK is 100 MHz in the current RZ/V2H clock table
+- Resolution: nominal ~100 ticks/µs at 100 MHz
 
 **DShot Support:**
-- Deferred for v1 until DMAC/cache coherency and GPT event generation are validated.
+- Disabled by default and experimental only.
+- Do not use for ESC testing until GPT compare timing, DMAC trigger routing,
+  cache coherency, and logic-analyzer waveform validation are complete.
 
 ### LEDs
 | LED | Port | Pin | Function |
@@ -183,7 +185,7 @@ param set-default MC_YAWRATE_P 0.100
 
 ### Clock Configuration
 - External crystal: 24MHz
-- PCLKD for GPT timers: 120MHz
+- GPT timer clock: runtime PCLK from NuttX; nominal P0CLK is 100MHz
 - HRT resolution: 1µs
 
 ### Memory Map
@@ -227,7 +229,7 @@ pwm_out disarm
 | `pwm_out test -c 1 -p 1100` | PWM0 (PA4) outputs 1100µs pulse at 400Hz |
 | `pwm_out test -c 1 -p 1000` | PWM0 outputs minimum 1000µs pulse |
 | `pwm_out arm` | All 4 channels output armed value |
-| `pwm_out disarm` | All channels return to 1000µs (disarmed) |
+| `pwm_out disarm` | All channels are disabled; 1000µs is retained as the stored disarmed compare value |
 
 ### Signal Verification with Oscilloscope
 
@@ -237,28 +239,19 @@ Connect oscilloscope to PWM pins and verify:
 - Rising/falling edge: Clean, no ringing
 - Signal level: 3.3V logic
 
-### DShot Mode (Optional)
+### DShot Mode
 
-To use DShot instead of PWM:
-
-```bash
-# Stop PWM output first
-pwm_out stop
-
-# Start DShot at 600kHz
-dshot start -m 600
-
-# Test motor spin (throttle 0-2047)
-dshot motor_test -m 1 -p 100
-```
+DShot is not enabled for `renesas_rdk-rzv2h_default`. Treat the RZ/V2H
+DShot source as experimental reference code only until hardware waveform
+validation proves the GPT/DMAC timing path.
 
 ## Troubleshooting
 
 ### PWM Not Working
 
-1. **Check GPIO configuration**: Verify pins are configured in Mode 1 (GPT peripheral)
+1. **Check GPIO configuration**: Verify pins are configured for the listed GTIOC peripheral function
 2. **Check timer initialization**: `rdk_rzv2h_timer_initialize()` should complete without errors
-3. **Verify clock**: PCLKD should be 120MHz for correct PWM timing
+3. **Verify clock**: `rzv_get_pclk_frequency()` should report the clock used for PWM period calculation
 
 ### Motor Spin at Boot
 

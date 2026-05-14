@@ -47,5 +47,8 @@ if(DEFINED CONFIG_ADC)
 	add_subdirectory(adc)
 endif()
 
-# DShot support (stub for now)
-add_subdirectory(dshot)
+# DShot for RZ/V2H is experimental and must stay opt-in until GPT/DMA
+# waveform timing is validated on hardware.
+if(CONFIG_DRIVERS_DSHOT AND CONFIG_RZV2H_EXPERIMENTAL_DSHOT)
+	add_subdirectory(dshot)
+endif()
