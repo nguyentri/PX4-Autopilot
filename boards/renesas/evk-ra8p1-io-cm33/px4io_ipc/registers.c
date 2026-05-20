@@ -44,10 +44,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
-#include <stm32_pwr.h>
 #include <rc/dsm.h>
 #include <rc/sbus.h>
 
@@ -426,7 +426,11 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 			break;
 
 		case PX4IO_P_SETUP_DSM:
+#ifdef SPEKTRUM_POWER
 			dsm_bind(value & 0x0f, (value >> 4) & 0xF);
+#else
+			syslog(LOG_WARNING, "DSM bind unsupported on RA8P1 IO\n");
+#endif
 			break;
 
 		case PX4IO_P_SETUP_SAFETY_BUTTON_ACK:

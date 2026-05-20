@@ -149,6 +149,14 @@
 #define PX4_UART_TELEM3                 "ttyS4"  /* SCI7 - Arduino telemetry */
 
 /* UART GPIO Pin Macros (aliases from board.h for initialization in init.c) */
+#ifndef GPIO_SCI7_RX
+#define GPIO_SCI7_RX                    GPIO_RXD7_B
+#endif
+
+#ifndef GPIO_SCI7_TX
+#define GPIO_SCI7_TX                    GPIO_TXD7_B
+#endif
+
 /* SCI0 - Console */
 #define PX4_UART_CONSOLE_RX             GPIO_SCI0_RX  /* P602 - RXD0_B */
 #define PX4_UART_CONSOLE_TX             GPIO_SCI0_TX  /* P603 - TXD0_B */

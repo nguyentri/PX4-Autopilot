@@ -65,6 +65,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include <arch/board/board.h>
 

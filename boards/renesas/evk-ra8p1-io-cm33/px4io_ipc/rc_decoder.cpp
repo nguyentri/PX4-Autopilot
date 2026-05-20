@@ -50,6 +50,8 @@
 #include <lib/rc/sbus.h>
 #include <lib/rc/dsm.h>
 
+void rc_decoder_publish(void);
+
 extern "C" {
 #include <nuttx/arch.h>
 }
@@ -101,11 +103,13 @@ void rc_decoder_init()
 static bool rc_decode_sbus(const uint8_t *frame)
 {
 	uint16_t channels[18];
-	bool failsafe, frame_drop;
-	unsigned channel_count = 18;
+	bool failsafe = false;
+	bool frame_drop = false;
+	uint16_t channel_count = 18;
 
 	/* Parse S.Bus frame using PX4 library */
-	if (sbus_parse(hrt_absolute_time(), frame, 25, channels, &channel_count, &failsafe, &frame_drop, nullptr) == 0) {
+	if (sbus_parse(hrt_absolute_time(), const_cast<uint8_t *>(frame), 25, channels, &channel_count, &failsafe, &frame_drop,
+		       nullptr, PX4IO_MAX_RC_CHANNELS)) {
 		/* Valid frame */
 		rc_channel_count = channel_count;
 
@@ -150,11 +154,13 @@ static bool rc_decode_sbus(const uint8_t *frame)
 static bool rc_decode_dsm(const uint8_t *frame)
 {
 	uint16_t channels[18];
-	bool failsafe;
-	unsigned channel_count = 18;
+	bool failsafe = false;
+	bool dsm_11_bit = false;
+	uint16_t channel_count = 18;
 
 	/* Parse DSM frame using PX4 library */
-	if (dsm_parse(hrt_absolute_time(), frame, 16, channels, &channel_count, &failsafe, nullptr, nullptr) == 0) {
+	if (dsm_parse(hrt_absolute_time(), frame, 16, channels, &channel_count, &dsm_11_bit, nullptr, nullptr,
+		      PX4IO_MAX_RC_CHANNELS)) {
 		rc_channel_count = channel_count;
 
 		for (unsigned i = 0; i < channel_count && i < PX4IO_MAX_RC_CHANNELS; i++) {

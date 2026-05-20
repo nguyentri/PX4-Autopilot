@@ -108,6 +108,38 @@ static inline void ipc_write(volatile T *dst, const T *src)
 	ARM_DMB();
 }
 
+static bool ipc_output_protocol_to_mode(uint8_t protocol, output_mode_t *mode)
+{
+	if (mode == nullptr) {
+		return false;
+	}
+
+	switch ((ipc_output_protocol_t)protocol) {
+	case IPC_OUTPUT_PWM:
+		*mode = OUTPUT_MODE_PWM;
+		return true;
+
+	case IPC_OUTPUT_DSHOT150:
+		*mode = OUTPUT_MODE_DSHOT150;
+		return true;
+
+	case IPC_OUTPUT_DSHOT300:
+		*mode = OUTPUT_MODE_DSHOT300;
+		return true;
+
+	case IPC_OUTPUT_DSHOT600:
+		*mode = OUTPUT_MODE_DSHOT600;
+		return true;
+
+	case IPC_OUTPUT_DSHOT1200:
+		*mode = OUTPUT_MODE_DSHOT1200;
+		return true;
+
+	default:
+		return false;
+	}
+}
+
 /* Handle actuator command from CM85 */
 static void handle_actuator_cmd()
 {
@@ -124,7 +156,7 @@ static void handle_actuator_cmd()
 		actuator_crc_errors++;
 
 		if (g_perf_counters) {
-			px4::atomic_fetch_add(&g_perf_counters->ipc_crc_errors, 1u);
+			g_perf_counters->ipc_crc_errors++;
 		}
 
 		return;
@@ -143,7 +175,9 @@ static void handle_actuator_cmd()
 	system_state.fmu_data_received_time = last_actuator_time;
 
 	/* Update motor outputs */
-	for (int i = 0; i < PX4IO_SERVO_COUNT && i < IPC_MAX_MOTORS; i++) {
+	const int output_count = (PX4IO_SERVO_COUNT < IPC_MAX_MOTORS) ? PX4IO_SERVO_COUNT : IPC_MAX_MOTORS;
+
+	for (int i = 0; i < output_count; i++) {
 		r_page_servos[i] = cmd.motor[i];
 		r_page_direct_pwm[i] = cmd.motor[i];
 	}
@@ -171,7 +205,20 @@ static void handle_actuator_cmd()
 
 	/* Mode changes only allowed when disarmed */
 	if (!pwm_out_is_armed()) {
-		pwm_out_set_mode((output_mode_t)cmd.protocol);
+		output_mode_t mode;
+
+		if (ipc_output_protocol_to_mode(cmd.protocol, &mode)) {
+			int ret = pwm_out_set_mode(mode);
+
+			if (ret < 0) {
+				syslog(LOG_WARNING, "Failed to set output mode protocol %u: %d\n",
+				       (unsigned)cmd.protocol, ret);
+			}
+
+		} else {
+			syslog(LOG_WARNING, "Ignoring invalid output protocol %u\n",
+			       (unsigned)cmd.protocol);
+		}
 	}
 }
 
@@ -210,12 +257,14 @@ static void handle_setup_config()
 	r_setup_arming = cfg.arming_flags;
 
 	/* Update failsafe PWM values */
-	for (int i = 0; i < PX4IO_SERVO_COUNT && i < IPC_MAX_MOTORS; i++) {
+	const int output_count = (PX4IO_SERVO_COUNT < IPC_MAX_MOTORS) ? PX4IO_SERVO_COUNT : IPC_MAX_MOTORS;
+
+	for (int i = 0; i < output_count; i++) {
 		r_page_servo_failsafe[i] = cfg.failsafe_pwm[i];
 	}
 
 	/* Update disarmed PWM values */
-	for (int i = 0; i < PX4IO_SERVO_COUNT && i < IPC_MAX_MOTORS; i++) {
+	for (int i = 0; i < output_count; i++) {
 		r_page_servo_disarmed[i] = cfg.disarmed_pwm[i];
 	}
 

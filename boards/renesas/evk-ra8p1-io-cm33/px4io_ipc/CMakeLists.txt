@@ -67,7 +67,6 @@ target_include_directories(px4iofirmware
 target_link_libraries(px4iofirmware
 	PUBLIC
 		arch_io_pins
-		arch_watchdog_iwdg
 		nuttx_apps
 		nuttx_arch
 		nuttx_c
@@ -107,4 +106,9 @@ target_compile_options(px4iofirmware
 		-O2
 		-ffunction-sections
 		-fdata-sections
+		-Wno-error=array-bounds
+		-Wno-error=unused-function
+		-Wno-error=shadow
 )
+
+target_compile_definitions(px4iofirmware PRIVATE MODULE_NAME="px4io")

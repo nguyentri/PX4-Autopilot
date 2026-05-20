@@ -61,6 +61,7 @@
 
 #ifdef CONFIG_RA_DMAC
 #include "ra_dmac.h"
+#include <arch/ra8/ra8p1_irq.h>
 #endif
 
 #ifdef CONFIG_RA_GPT
@@ -80,16 +81,16 @@
 #define PWM_OUT_MAX_CHANNELS    4
 
 /* GPT timer assignments for motors (CM33 uses GPT3, GPT5, GPT11, GPT13) */
-#define MOTOR1_GPT_CHANNEL      3
-#define MOTOR2_GPT_CHANNEL      5
-#define MOTOR3_GPT_CHANNEL      11
-#define MOTOR4_GPT_CHANNEL      13
+#define MOTOR1_GPT_CHANNEL      BOARD_GPT_MOTOR1
+#define MOTOR2_GPT_CHANNEL      BOARD_GPT_MOTOR2
+#define MOTOR3_GPT_CHANNEL      BOARD_GPT_MOTOR3
+#define MOTOR4_GPT_CHANNEL      BOARD_GPT_MOTOR4
 
 /* DMAC1 channels for CM33 DShot (channels 10-17 available) */
-#define DSHOT_DMA_CH_MOTOR1     10
-#define DSHOT_DMA_CH_MOTOR2     11
-#define DSHOT_DMA_CH_MOTOR3     12
-#define DSHOT_DMA_CH_MOTOR4     13
+#define DSHOT_DMA_CH_MOTOR1     BOARD_DSHOT_DMA_CHANNEL_M1
+#define DSHOT_DMA_CH_MOTOR2     BOARD_DSHOT_DMA_CHANNEL_M2
+#define DSHOT_DMA_CH_MOTOR3     BOARD_DSHOT_DMA_CHANNEL_M3
+#define DSHOT_DMA_CH_MOTOR4     BOARD_DSHOT_DMA_CHANNEL_M4
 
 /* GPT clock frequency (PCLKD = 250MHz for CM33) */
 #ifndef BOARD_PCLKD_FREQUENCY
@@ -165,16 +166,6 @@
 /****************************************************************************
  * Private Types
  ****************************************************************************/
-
-/* Output mode enumeration */
-typedef enum {
-	OUTPUT_MODE_NONE = 0,
-	OUTPUT_MODE_PWM,
-	OUTPUT_MODE_DSHOT150,
-	OUTPUT_MODE_DSHOT300,
-	OUTPUT_MODE_DSHOT600,
-	OUTPUT_MODE_DSHOT1200,
-} output_mode_t;
 
 /* Motor channel state */
 typedef struct {
@@ -265,7 +256,7 @@ static const ra_mstp_module_t g_gpt_mstp_map[] = {
 static void gpt_enable_clock(uint8_t channel)
 {
 	if (channel < 14) {
-		ra_mstp_enable(g_gpt_mstp_map[channel]);
+		ra_mstp_start(g_gpt_mstp_map[channel]);
 	}
 }
 
@@ -275,7 +266,7 @@ static void gpt_enable_clock(uint8_t channel)
 static void gpt_disable_clock(uint8_t channel)
 {
 	if (channel < 14) {
-		ra_mstp_disable(g_gpt_mstp_map[channel]);
+		ra_mstp_stop(g_gpt_mstp_map[channel]);
 	}
 }
 
@@ -546,16 +537,68 @@ static void dshot_fill_buffer(motor_channel_t *ch, uint16_t frame)
 /**
  * @brief DMA completion callback for DShot
  */
-static void dshot_dma_callback(ra_dmac_handle_t handle, void *arg, int result)
+static void dshot_dma_callback(void *handle, int event, void *user_data)
 {
-	motor_channel_t *ch = (motor_channel_t *)arg;
+	motor_channel_t *ch = (motor_channel_t *)user_data;
 
-	if (result == 0) {
+	(void)handle;
+
+	if (ch == nullptr) {
+		return;
+	}
+
+	if (event == RA_DMAC_EVENT_COMPLETE) {
 		/* Frame transmitted successfully */
 		gpt_stop(ch->gpt_channel);
 	} else {
 		syslog(LOG_ERR, "DShot DMA error on channel %d\n", ch->gpt_channel);
 	}
+}
+
+static int dshot_gpt_elc_source(uint8_t gpt_channel)
+{
+	switch (gpt_channel) {
+	case 3:
+		return RA_ELC_GPT3_CAPTURE_COMPARE_A;
+
+	case 5:
+		return RA_ELC_GPT5_CAPTURE_COMPARE_A;
+
+	case 11:
+		return RA_ELC_GPT11_CAPTURE_COMPARE_A;
+
+	case 13:
+		return RA_ELC_GPT13_CAPTURE_COMPARE_A;
+
+	default:
+		return -EINVAL;
+	}
+}
+
+static int dshot_dma_end_elc_event(uint8_t dma_channel)
+{
+	if (dma_channel <= 7) {
+		return RA_ELC_DMAC0_INT + dma_channel;
+	}
+
+	if (dma_channel >= 10 && dma_channel <= 17) {
+		return RA_ELC_DMAC10_INT + (dma_channel - 10);
+	}
+
+	return -EINVAL;
+}
+
+static int dshot_dma_error_elc_event(uint8_t dma_channel)
+{
+	if (dma_channel <= 7) {
+		return RA_ELC_DMA_TRANSERR;
+	}
+
+	if (dma_channel >= 10 && dma_channel <= 17) {
+		return RA_ELC_DMA1_TRANSERR;
+	}
+
+	return -EINVAL;
 }
 
 /**
@@ -565,22 +608,36 @@ static int dshot_configure_dma(motor_channel_t *ch)
 {
 	ra_dmac_config_t config;
 	int ret;
+	int elc_src = dshot_gpt_elc_source(ch->gpt_channel);
+	int elc_end = dshot_dma_end_elc_event(ch->dma_channel);
+	int elc_err = dshot_dma_error_elc_event(ch->dma_channel);
+
+	if (elc_src < 0 || elc_end < 0 || elc_err < 0) {
+		syslog(LOG_ERR, "Invalid DShot DMA routing GPT%u DMA%u\n",
+		       (unsigned)ch->gpt_channel, (unsigned)ch->dma_channel);
+		return -EINVAL;
+	}
 
 	memset(&config, 0, sizeof(config));
 
-	config.channel = ch->dma_channel;
 	config.src_addr = (uint32_t)ch->dshot_buffer;
-	config.dst_addr = GPT_CH_BASE(ch->gpt_channel) + R_GPT32_GTCCRA_OFFSET;
-	config.transfer_size = DSHOT_FRAME_BITS + 1;
-	config.src_width = RA_DMAC_WIDTH_32BIT;
-	config.dst_width = RA_DMAC_WIDTH_32BIT;
-	config.src_inc = RA_DMAC_ADDR_INC;
-	config.dst_inc = RA_DMAC_ADDR_FIXED;
+	config.dest_addr = GPT_CH_BASE(ch->gpt_channel) + R_GPT32_GTCCRA_OFFSET;
+	config.transfer_count = DSHOT_FRAME_BITS + 1;
+	config.block_count = 1;
+	config.size = RA_DMAC_SIZE_32BIT;
+	config.src_addr_mode = RA_DMAC_ADDR_INCR;
+	config.dest_addr_mode = RA_DMAC_ADDR_FIXED;
 	config.mode = RA_DMAC_MODE_BLOCK;
+	config.repeat_area = RA_DMAC_REPEAT_AREA_NONE;
+	config.trigger = RA_DMAC_TRIGGER_HW;
+	config.elc_src = elc_src;
+	config.elc_end = elc_end;
+	config.elc_err = elc_err;
+	config.priority = RA_DMAC_CHANNEL_PRIORITY_CRITICAL;
 	config.callback = dshot_dma_callback;
-	config.arg = ch;
+	config.user_data = ch;
 
-	ret = ra_dmac_open(&ch->dma_handle, &config);
+	ret = ra_dmac_open_channel(&ch->dma_handle, &config, ch->dma_channel);
 
 	if (ret < 0) {
 		syslog(LOG_ERR, "Failed to configure DMA for DShot ch%d: %d\n",
@@ -598,12 +655,24 @@ static void dshot_trigger_dma(motor_channel_t *ch)
 {
 	if (ch->dma_handle != NULL) {
 		/* Reset source address */
-		ra_dmac_reload(ch->dma_handle, (uint32_t)ch->dshot_buffer,
-			       GPT_CH_BASE(ch->gpt_channel) + R_GPT32_GTCCRA_OFFSET,
-			       DSHOT_FRAME_BITS + 1);
+		int ret = ra_dmac_reset(ch->dma_handle, (uint32_t)ch->dshot_buffer,
+					GPT_CH_BASE(ch->gpt_channel) + R_GPT32_GTCCRA_OFFSET,
+					DSHOT_FRAME_BITS + 1);
+
+		if (ret < 0) {
+			syslog(LOG_ERR, "DShot DMA reset failed GPT%u: %d\n",
+			       (unsigned)ch->gpt_channel, ret);
+			return;
+		}
 
 		/* Start DMA transfer */
-		ra_dmac_start(ch->dma_handle);
+		ret = ra_dmac_enable(ch->dma_handle);
+
+		if (ret < 0) {
+			syslog(LOG_ERR, "DShot DMA enable failed GPT%u: %d\n",
+			       (unsigned)ch->gpt_channel, ret);
+			return;
+		}
 
 		/* Start GPT timer */
 		gpt_start(ch->gpt_channel);
@@ -617,7 +686,13 @@ static void dshot_trigger_dma(motor_channel_t *ch)
 static void poeg_configure(uint8_t group)
 {
 	/* Enable POEG module clock */
-	ra_mstp_enable(RA_MSTP_POEG);
+	static const ra_mstp_module_t poeg_mstp[] = {
+		RA_MSTP_POEG0, RA_MSTP_POEG1, RA_MSTP_POEG2, RA_MSTP_POEG3
+	};
+
+	if (group < sizeof(poeg_mstp) / sizeof(poeg_mstp[0])) {
+		ra_mstp_start(poeg_mstp[group]);
+	}
 
 	uint32_t poegg = R_GPT_POEG_POEGG_PIDE |   /* Port input detection enable */
 			 R_GPT_POEG_POEGG_IOCE |   /* GPT output disable enable */
@@ -1051,7 +1126,7 @@ int pwm_out_dshot_command(unsigned channel, uint8_t command, bool telemetry)
 /**
  * @brief up_pwm_servo_init - Initialize PWM outputs (PX4IO interface)
  */
-unsigned up_pwm_servo_init(uint32_t channel_mask)
+int up_pwm_servo_init(uint32_t channel_mask)
 {
 	int ret = pwm_out_init();
 
@@ -1079,9 +1154,9 @@ void up_pwm_servo_deinit(uint32_t channel_mask)
 /**
  * @brief up_pwm_servo_arm - Arm/disarm PWM outputs (PX4IO interface)
  */
-int up_pwm_servo_arm(bool arm, uint32_t channel_mask)
+void up_pwm_servo_arm(bool arm, uint32_t channel_mask)
 {
-	return pwm_out_arm(arm);
+	pwm_out_arm(arm);
 }
 
 /**

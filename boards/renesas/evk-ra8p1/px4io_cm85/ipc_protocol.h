@@ -191,7 +191,7 @@ typedef struct {
 	uint8_t  protocol;                      /* ipc_output_protocol_t */
 	uint8_t  failsafe_active;               /* 1=failsafe mode */
 
-	uint8_t  _reserved[84];                 /* Pad to 124 bytes */
+	uint8_t  _reserved[76];                 /* Pad to 124 bytes */
 	uint16_t crc16;                         /* CRC16-CCITT of bytes 0-125 */
 	uint16_t _pad_align;                    /* Align to 128 bytes */
 } __attribute__((aligned(128))) ipc_actuator_cmd_t;
@@ -219,7 +219,7 @@ typedef struct {
 	uint16_t frame_count;                   /* Total frames received */
 	uint16_t lost_frame_count;              /* Lost frames */
 
-	uint8_t  _reserved[70];                 /* Pad to 124 bytes */
+	uint8_t  _reserved[66];                 /* Pad to 124 bytes */
 	uint16_t crc16;
 	uint16_t _pad_align;
 } __attribute__((aligned(128))) ipc_rc_input_t;
@@ -247,7 +247,7 @@ typedef struct {
 	uint8_t  warning_flags;                 /* Bit 0: low voltage, Bit 1: overcurrent */
 	int8_t   temperature_degC;              /* Battery temperature */
 
-	uint8_t  _reserved[68];                 /* Pad to 124 bytes */
+	uint8_t  _reserved[78];                 /* Pad to 124 bytes */
 	uint16_t crc16;
 	uint16_t _pad_align;
 } __attribute__((aligned(128))) ipc_battery_status_t;
@@ -360,7 +360,7 @@ typedef struct {
 	uint8_t  output_protocol;               /* ipc_output_protocol_t */
 	uint8_t  _reserved3;
 
-	uint8_t  _reserved[52];                 /* Pad to 124 bytes */
+	uint8_t  _reserved[68];                 /* Pad to 124 bytes */
 	uint16_t crc16;
 	uint16_t _pad_align;
 } __attribute__((aligned(128))) ipc_setup_config_t;
@@ -389,11 +389,17 @@ typedef struct {
  ******************************************************************************/
 
 /* Ensure structures are correctly sized */
-_Static_assert(sizeof(ipc_actuator_cmd_t) == 128, "actuator_cmd must be 128 bytes");
-_Static_assert(sizeof(ipc_rc_input_t) == 128, "rc_input must be 128 bytes");
-_Static_assert(sizeof(ipc_battery_status_t) == 128, "battery_status must be 128 bytes");
-_Static_assert(sizeof(ipc_heartbeat_cm85_t) == 32, "heartbeat_cm85 must be 32 bytes");
-_Static_assert(sizeof(ipc_heartbeat_cm33_t) == 32, "heartbeat_cm33 must be 32 bytes");
-_Static_assert(sizeof(ipc_setup_config_t) == 128, "setup_config must be 128 bytes");
+#ifdef __cplusplus
+#  define IPC_STATIC_ASSERT static_assert
+#else
+#  define IPC_STATIC_ASSERT _Static_assert
+#endif
+
+IPC_STATIC_ASSERT(sizeof(ipc_actuator_cmd_t) == 128, "actuator_cmd must be 128 bytes");
+IPC_STATIC_ASSERT(sizeof(ipc_rc_input_t) == 128, "rc_input must be 128 bytes");
+IPC_STATIC_ASSERT(sizeof(ipc_battery_status_t) == 128, "battery_status must be 128 bytes");
+IPC_STATIC_ASSERT(sizeof(ipc_heartbeat_cm85_t) == 32, "heartbeat_cm85 must be 32 bytes");
+IPC_STATIC_ASSERT(sizeof(ipc_heartbeat_cm33_t) == 32, "heartbeat_cm33 must be 32 bytes");
+IPC_STATIC_ASSERT(sizeof(ipc_setup_config_t) == 128, "setup_config must be 128 bytes");
 
 __END_DECLS

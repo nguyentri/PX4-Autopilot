@@ -101,7 +101,6 @@ static void failsafe_check_actuator_timeout()
 	}
 
 	/* Read actuator command sequence with memory barrier */
-	IpcActuatorCmd cmd;
 	ARM_DMB();
 	uint32_t current_seq = g_actuator_cmd->sequence;
 	ARM_DMB();

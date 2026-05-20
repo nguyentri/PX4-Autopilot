@@ -40,3 +40,5 @@ target_link_libraries(drivers_board
 	PRIVATE
 		nuttx_arch
 )
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../px4io_ipc px4io_ipc)

@@ -135,3 +135,12 @@ git config advice.addIgnoredFile false
 *log*
 *.svd
 .codex
+.opencode
+.claude
+refs
+plan
+plans
+.repomixignore
+AGENTS.md
+CLAUDE.md
+CODEX.md

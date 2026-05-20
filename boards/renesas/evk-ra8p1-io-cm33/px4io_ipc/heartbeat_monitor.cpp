@@ -50,6 +50,7 @@
 
 #include <drivers/drv_hrt.h>
 #include <px4_platform_common/log.h>
+#include <syslog.h>
 
 extern "C" {
 #include <nuttx/arch.h>
@@ -274,7 +275,7 @@ bool heartbeat_monitor_check()
  *
  * Should be called at 10Hz from main loop.
  */
-void heartbeat_publish_cm33(uint32_t sequence, uint8_t system_state, uint8_t cpu_load, int16_t temperature,
+void heartbeat_publish_cm33(uint32_t sequence, uint8_t state, uint8_t cpu_load, int16_t temperature,
                             uint32_t error_flags)
 {
 	if (!g_cm33_heartbeat) {
@@ -284,7 +285,7 @@ void heartbeat_publish_cm33(uint32_t sequence, uint8_t system_state, uint8_t cpu
 	IpcCm33Heartbeat hb;
 	hb.sequence = sequence;
 	hb.timestamp_us = hrt_absolute_time();
-	hb.system_state = system_state;
+	hb.system_state = state;
 	hb.cpu_load_percent = cpu_load;
 	hb.temperature_degC = temperature;
 	hb.error_flags = error_flags;

@@ -16,7 +16,9 @@ CONFIG_COMMON_SERIAL_PORT_MAPPING=y
 CONFIG_ARCH_BOARD_CUSTOM=y
 CONFIG_ARCH_BOARD="evk-ra8p1"
 CONFIG_ARCH_BOARD_CUSTOM_DIR="boards/renesas/evk-ra8p1"
-CONFIG_ARCH_BOARD_CUSTOM_NAME="evk-ra8p1"# Test modules - minimal for hardware validation
+CONFIG_ARCH_BOARD_CUSTOM_NAME="evk-ra8p1"
+
+# Test modules - minimal for hardware validation
 CONFIG_MODULES_COMMANDER=y
 CONFIG_MODULES_MAVLINK=y
 CONFIG_MODULES_SENSORS=y

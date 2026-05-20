@@ -50,6 +50,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <nuttx/analog/adc.h>
 
 #include <drivers/drv_hrt.h>
 
@@ -196,9 +197,9 @@ static uint16_t adc_read_channel(unsigned channel)
 	 * For now, use the NuttX ADC driver interface.
 	 */
 
+#if 0  /* Placeholder for actual implementation */
 	struct adc_msg_s sample;
 
-#if 0  /* Placeholder for actual implementation */
 	/* Select channel and trigger conversion */
 	int ret = ioctl(g_adc_fd, ANIOC_TRIGGER, 0);
 
@@ -346,7 +347,7 @@ uint16_t adc_get_vbat_mv(void)
 /**
  * @brief Get battery current in milliamps
  */
-uint16_t adc_get_current_ma(void)
+int16_t adc_get_current_ma(void)
 {
 	return g_current_ma;
 }

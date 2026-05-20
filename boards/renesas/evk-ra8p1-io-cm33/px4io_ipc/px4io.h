@@ -52,6 +52,10 @@
 
 #include "protocol.h"
 
+#ifndef ARM_DMB
+#define ARM_DMB() __asm__ __volatile__ ("dmb sy" ::: "memory")
+#endif
+
 /* Forward declaration for output mode type */
 #ifdef __cplusplus
 #include "pwm_out.h"
@@ -77,6 +81,10 @@ __BEGIN_DECLS
 
 #define PX4IO_RC_INPUT_CHANNELS		18
 #define PX4IO_RC_MAPPED_CONTROL_CHANNELS		8 /**< This is the maximum number of channels mapped/used */
+
+#ifndef PX4IO_P_STATUS_FLAGS_RC_CRSF
+# define PX4IO_P_STATUS_FLAGS_RC_CRSF 0
+#endif
 
 /*
  * Debug logging
@@ -139,11 +147,17 @@ struct sys_state_s {
 
 extern struct sys_state_s system_state;
 
+#ifdef GPIO_SBUS_OENABLE
 # define ENABLE_SBUS_OUT(_s)		px4_arch_gpiowrite(GPIO_SBUS_OENABLE, !(_s))
+#else
+# define ENABLE_SBUS_OUT(_s)		do { (void)(_s); } while (0)
+#endif
 
 # define VDD_SERVO_FAULT		(!px4_arch_gpioread(GPIO_SERVO_FAULT_DETECT))
 
+#ifndef PX4IO_ADC_CHANNEL_COUNT
 # define PX4IO_ADC_CHANNEL_COUNT	2
+#endif
 # define ADC_VSERVO			4
 # define ADC_RSSI			5
 
@@ -226,7 +240,7 @@ extern void	watchdog_pet(void);
 /**
  * Memory/System
  */
-extern void	update_mem_usage(void);
+void	update_mem_usage(void);
 extern void	check_reboot(void);
 extern void	show_debug_messages(void);
 

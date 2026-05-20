@@ -227,7 +227,7 @@ int pwm_out_dshot_command(unsigned channel, uint8_t command, bool telemetry);
  * @param channel_mask Bitmask of channels to initialize
  * @return Number of channels initialized
  */
-unsigned up_pwm_servo_init(uint32_t channel_mask);
+int up_pwm_servo_init(uint32_t channel_mask);
 
 /**
  * @brief Deinitialize PWM servo outputs (PX4IO interface)
@@ -241,7 +241,7 @@ void up_pwm_servo_deinit(uint32_t channel_mask);
  * @param channel_mask Bitmask of channels to arm/disarm
  * @return 0 on success, negative errno on failure
  */
-int up_pwm_servo_arm(bool arm, uint32_t channel_mask);
+void up_pwm_servo_arm(bool arm, uint32_t channel_mask);
 
 /**
  * @brief Set PWM servo value (PX4IO interface)

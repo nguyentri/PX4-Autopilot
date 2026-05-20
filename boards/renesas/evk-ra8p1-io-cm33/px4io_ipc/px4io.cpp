@@ -64,9 +64,14 @@
 #define DEBUG
 #include "px4io.h"
 
-struct sys_state_s system_state;
+void heartbeat_monitor_init(void);
+bool heartbeat_monitor_check(void);
+void rc_decoder_init(void);
+void rc_decoder_check_timeout(void);
+void failsafe_init(void);
+void failsafe_update(void);
 
-static struct hrt_call serial_dma_call;
+struct sys_state_s system_state;
 
 /*
  * a set of debug buffers to allow us to send debug information from ISRs
@@ -83,11 +88,16 @@ static volatile uint8_t msg_next_in;
  * output.
  */
 #define NUM_MSG 1
-static char msg[NUM_MSG][CONFIG_USART1_TXBUFSIZE];
+#ifdef CONFIG_SCI5_TXBUFSIZE
+#  define PX4IO_DEBUG_TXBUFSIZE CONFIG_SCI5_TXBUFSIZE
+#else
+#  define PX4IO_DEBUG_TXBUFSIZE 128
+#endif
+static char msg[NUM_MSG][PX4IO_DEBUG_TXBUFSIZE];
 
-static void heartbeat_blink(void);
-static void ring_blink(void);
-static void update_mem_usage(void);
+void heartbeat_blink(void);
+void ring_blink(void);
+void update_mem_usage(void);
 
 void atomic_modify_or(volatile uint16_t *target, uint16_t modification)
 {
@@ -131,7 +141,7 @@ isr_debug(uint8_t level, const char *fmt, ...)
 /*
  * show all pending debug messages
  */
-static void
+void
 show_debug_messages(void)
 {
 	if (msg_counter != last_msg_counter) {
@@ -151,7 +161,7 @@ show_debug_messages(void)
 /*
  * Get the memory usage at 2 Hz while not armed
  */
-static void
+void
 update_mem_usage(void)
 {
 	if (/* FMU is armed */ (r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED)) {
@@ -168,7 +178,7 @@ update_mem_usage(void)
 	}
 }
 
-static void
+void
 heartbeat_blink(void)
 {
 #if defined(LED_BLUE)
@@ -177,7 +187,7 @@ heartbeat_blink(void)
 #endif /* LED_BLUE */
 }
 
-static void
+void
 ring_blink(void)
 {
 #if defined(LED_GREEN)
@@ -248,7 +258,7 @@ void schedule_reboot(uint32_t time_delta_usec)
 /**
    check for a scheduled reboot
  */
-static void check_reboot(void)
+void check_reboot(void)
 {
 	if (reboot_time != 0 && hrt_absolute_time() > reboot_time) {
 		up_systemreset();
@@ -298,9 +308,6 @@ extern "C" __EXPORT int user_start(int argc, char *argv[])
 	 * Poll at 1ms intervals for received bytes that have not triggered
 	 * a DMA event.
 	 */
-#ifdef CONFIG_ARCH_DMA
-	hrt_call_every(&serial_dma_call, 1000, 1000, (hrt_callout)stm32_serial_dma_poll, NULL);
-#endif
 
 	/* print some startup info */
 	syslog(LOG_INFO, "\nPX4IO: starting\n");

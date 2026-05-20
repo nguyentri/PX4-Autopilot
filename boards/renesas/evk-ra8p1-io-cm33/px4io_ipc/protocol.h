@@ -44,8 +44,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/* PX4IO register page definitions used by the compatibility layer. */
+#include "../../../../src/modules/px4iofirmware/protocol.h"
+
 /* Single-source protocol definition */
-#include "../evk-ra8p1/px4io_cm85/ipc_protocol.h"
+#include "../../evk-ra8p1/px4io_cm85/ipc_protocol.h"
 
 /* Compatibility aliases for existing CM33 code */
 #define PX4IO_IPC_PROTOCOL_VERSION   IPC_PROTOCOL_VERSION
@@ -74,6 +77,7 @@ typedef ipc_heartbeat_cm33_t  IpcCm33Heartbeat;
 typedef ipc_perf_counters_t   IpcPerfCounters;
 typedef ipc_setup_config_t    IpcSetupConfig;
 
+#ifdef __cplusplus
 /* CRC helper to match previous API shape */
 template<typename T>
 static inline uint16_t ipc_calculate_message_crc(const T *msg, const void *payload_unused = nullptr)
@@ -81,3 +85,4 @@ static inline uint16_t ipc_calculate_message_crc(const T *msg, const void *paylo
 	(void)payload_unused;
 	return IPC_CALC_CRC(msg, T);
 }
+#endif
