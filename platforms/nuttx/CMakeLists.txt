@@ -130,6 +130,10 @@ if(CONFIG_NET)
 	target_link_libraries(nuttx_fs INTERFACE nuttx_net)
 endif()
 
+if(CONFIG_OPENAMP)
+	list(APPEND nuttx_libs nuttx_openamp)
+endif()
+
 file(RELATIVE_PATH PX4_BINARY_DIR_REL ${CMAKE_CURRENT_BINARY_DIR} ${PX4_BINARY_DIR})
 
 # only in the cygwin environment: convert absolute linker script path to mixed windows (C:/...)
@@ -251,6 +255,19 @@ else()
 			arch_board_reset
 	)
 
+	if(CONFIG_OPENAMP)
+		target_link_libraries(nuttx_sched
+			INTERFACE
+				-Wl,--start-group
+					$<TARGET_FILE:nuttx_openamp>
+					$<TARGET_FILE:nuttx_arch>
+					$<TARGET_FILE:nuttx_drivers>
+					$<TARGET_FILE:nuttx_c>
+					$<TARGET_FILE:nuttx_mm>
+				-Wl,--end-group
+		)
+	endif()
+
 	target_link_libraries(nuttx_c INTERFACE nuttx_drivers)
 	target_link_libraries(nuttx_drivers INTERFACE nuttx_c)
 	target_link_libraries(nuttx_xx INTERFACE nuttx_c)
@@ -271,7 +288,7 @@ else()
 		-Wl,--warn-common
 		-Wl,--gc-sections
 
-		$<$<BOOL:${CONFIG_ARCH_CHIP_RZV}>:${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o>
+		$<$<BOOL:${CONFIG_ARCH_ARMV7R}>:${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o>
 
 		-Wl,--start-group
 			${nuttx_libs}

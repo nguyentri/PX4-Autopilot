@@ -134,8 +134,12 @@ static uint32_t get_gpt_base(uint8_t timer_id)
 	case 5:  return RZV_GPT5_BASE;
 	case 6:  return RZV_GPT6_BASE;
 	case 7:  return RZV_GPT7_BASE;
+#ifdef RZV_GPT8_BASE
 	case 8:  return RZV_GPT8_BASE;
+#endif
+#ifdef RZV_GPT9_BASE
 	case 9:  return RZV_GPT9_BASE;
+#endif
 	case 10: return RZV_GPT10_BASE;
 	case 11: return RZV_GPT11_BASE;
 	case 12: return RZV_GPT12_BASE;
@@ -166,7 +170,9 @@ static inline void gpt_lock(uint32_t base)
 
 static inline uint32_t gpt_channel_mask(uint8_t timer_id)
 {
-	return RZV_GPT_CHANNEL_MASK(timer_id);
+	uint8_t unit_channel = timer_id >= 10 ? timer_id - 10 : timer_id;
+
+	return RZV_GPT_UNIT_BIT(unit_channel);
 }
 
 static uint32_t get_gpt_clock_id(uint8_t timer_id)
@@ -180,8 +186,12 @@ static uint32_t get_gpt_clock_id(uint8_t timer_id)
 	case 5:  return RZV_CPG_CLK_GPT5;
 	case 6:  return RZV_CPG_CLK_GPT6;
 	case 7:  return RZV_CPG_CLK_GPT7;
+#ifdef RZV_CPG_CLK_GPT8
 	case 8:  return RZV_CPG_CLK_GPT8;
+#endif
+#ifdef RZV_CPG_CLK_GPT9
 	case 9:  return RZV_CPG_CLK_GPT9;
+#endif
 	case 10: return RZV_CPG_CLK_GPT10;
 	default: return GPT_INVALID_CLOCK_ID;
 	}

@@ -4,7 +4,7 @@ This document describes the PX4 Board Support Package (BSP) created for the Rene
 
 ## Overview
 
-The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV2H MPU using the Cortex-R8 (CR8_0) core for real-time flight control.
+The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV2H MPU using the Cortex-R8 (CR8_0) core for real-time flight control. The CR8_0 image also enables the RZ/V2H OpenAMP/RPMsg transport to CA55 Linux and exposes the `rpmsg-service-0` channel through NuttX IPCC as `/dev/ipcc0`.
 
 ## Hardware Configuration
 
@@ -13,6 +13,24 @@ The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV
 - **Core**: ARM Cortex-R8 (CR8_0) @ 800MHz
 - **Architecture**: ARMv7-R with FPU
 - **Memory**: 524KB RAM at 0x22060000
+
+### Inter-core Topology
+| Role | Processor | Image | Communication |
+|------|-----------|-------|---------------|
+| Primary PX4 | CR8_0 | `renesas_rdk-rzv2h_default` | OpenAMP/RPMsg slave to CA55 |
+| Linux/OpenAMP host | CA55 | External Linux image | MHU channel 3 + resource table at `0x42f00000` |
+| Optional PX4IO | CM33 | `renesas_rdk-rzv2h-io-cm33_default` | Standalone shared-memory PX4IO image |
+| Optional PX4IO | CR8_1 | `renesas_rdk-rzv2h-io-cr8_1_default` | Standalone shared-memory PX4IO image |
+
+The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
+
+| Resource | Address / Name |
+|----------|----------------|
+| Resource table | `0x42f00000` |
+| MHU shared memory | `0x42f01000` |
+| RPMsg memory window | `0x43000000` size `0x00800000` |
+| Vring0 / Vring1 | `0x43000000` / `0x43050000` |
+| RPC endpoint | `rpmsg-service-0`, CR8 local address `0x0` |
 
 ### Sensors
 | Sensor | Interface | Configuration |
@@ -152,14 +170,31 @@ make renesas_rdk-rzv2h_default
 - Outputs: PWM (4 channels), RC input (SBUS)
 - Interfaces: MAVLink, GPS
 
+### OpenAMP / IPCC Options
+
+The CR8_0 NuttX defconfig enables:
+
+```
+CONFIG_OPENAMP=y
+CONFIG_RPTUN=y
+CONFIG_RPTUN_THREAD=y
+CONFIG_RZV_OPENAMP=y
+CONFIG_RZV_IPC_IPCC=y
+CONFIG_IPCC=y
+CONFIG_IPCC_BUFFERED=y
+```
+
+The PX4 board startup calls `rzv_ipc_initialize()` and `rzv_ipcc_initialize()` before `px4_platform_init()` as a fallback for PX4 boot paths that do not use the NuttX board bring-up hook. `rzv_ipc_initialize()` registers the CA55 RPTUN device used by NuttX RPMsg before IPCC exposes `/dev/ipcc0`.
+
 ## Initialization Sequence
 
 1. `rzv_board_initialize()` - Early hardware init
-2. `board_app_initialize()` - PX4 platform init
-3. `rdk_rzv2h_gpio_initialize()` - GPIO configuration
-4. `rdk_rzv2h_timer_initialize()` - GPT timer setup
-5. SPI/I2C bus initialization
-6. Sensor driver startup (via rc.board_defaults.cmds)
+2. `rzv_ipc_initialize()` / `rzv_ipcc_initialize()` - CR8_0 to CA55 OpenAMP/IPCC setup when enabled
+3. `board_app_initialize()` - PX4 platform init
+4. `rdk_rzv2h_gpio_initialize()` - GPIO configuration
+5. `rdk_rzv2h_timer_initialize()` - GPT timer setup
+6. SPI/I2C bus initialization
+7. Sensor driver startup (via rc.board_defaults.cmds)
 
 ## Default Parameters (rc.board_defaults.cmds)
 

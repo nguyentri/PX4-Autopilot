@@ -45,6 +45,11 @@
 
 #if defined(__PX4_NUTTX)
 #include <nuttx/config.h>
+#include "rzv_gpio.h"
+#endif
+
+#if defined(__PX4_NUTTX)
+#include <nuttx/config.h>
 #endif
 
 /* Board identification */
@@ -59,6 +64,11 @@
 
 /* Console is SCI1 (/dev/ttyS0) */
 #define BOARD_CONSOLE_UART_BAUDRATE 115200
+
+#if defined(__PX4_NUTTX)
+#define BOARD_SCI1_TXD_GPIO GPIO_TXD1_MOSI1_SDA1_P5_2_M1
+#define BOARD_SCI1_RXD_GPIO GPIO_RXD1_MISO1_SCL1_P5_3_M1
+#endif
 
 /* RC Input on SCI2 (/dev/ttyS1) */
 #ifndef RC_SERIAL_PORT

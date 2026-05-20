@@ -174,11 +174,18 @@ function(add_nuttx_dir nuttx_lib nuttx_lib_dir kernel extra target)
 		${CMAKE_CURRENT_SOURCE_DIR}/nuttx/${nuttx_lib_dir}/*.h
 	)
 
+	set(nuttx_lib_byproducts)
+	if(CONFIG_ARCH_ARMV7R AND "${nuttx_lib_dir}" STREQUAL "arch/${CONFIG_ARCH}/src")
+		list(APPEND nuttx_lib_byproducts ${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o)
+	endif()
+
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/nuttx/${nuttx_lib_dir}/lib${nuttx_lib}.a
 		COMMAND ${CMAKE_COMMAND} -E remove -f ${NUTTX_DIR}/${nuttx_lib_dir}/lib${nuttx_lib}.a
 		COMMAND find ${nuttx_lib_dir} -type f -name \*.o -delete
 		COMMAND make -C ${nuttx_lib_dir} --no-print-directory --silent ${nuttx_lib_target} TOPDIR="${NUTTX_DIR}" KERNEL=${kernel} EXTRAFLAGS=${extra}
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NUTTX_DIR}/${nuttx_lib_dir}/lib${nuttx_lib}.a ${CMAKE_CURRENT_BINARY_DIR}/nuttx/${nuttx_lib_dir}/lib${nuttx_lib}.a
+		BYPRODUCTS
+			${nuttx_lib_byproducts}
 		DEPENDS
 			${nuttx_lib_files}
 			nuttx_context ${NUTTX_DIR}/include/nuttx/config.h
@@ -200,6 +207,9 @@ add_nuttx_dir(fs fs y -D__KERNEL__ all)
 add_nuttx_dir(sched sched y -D__KERNEL__ all)
 add_nuttx_dir(xx libs/libxx n "" all)
 add_nuttx_dir(crypto crypto y -D__KERNEL__ all)
+if(CONFIG_OPENAMP)
+	add_nuttx_dir(openamp openamp y -D__KERNEL__ all)
+endif()
 
 if (NOT CONFIG_BUILD_FLAT)
 	add_nuttx_dir(arch arch/${CONFIG_ARCH}/src n "" arch)

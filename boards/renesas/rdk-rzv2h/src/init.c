@@ -58,6 +58,9 @@ static const char hw_type[] = "RDK-RZV2H";
 #include <drivers/drv_sensor.h>
 #include "rzv_gpio.h"
 #include <arch/board/board.h>
+#ifdef CONFIG_RZV_OPENAMP
+#include "rzv_ipc.h"
+#endif
 #endif
 
 #include "board_config.h"
@@ -68,6 +71,60 @@ static const char hw_type[] = "RDK-RZV2H";
 /* External function declarations */
 extern struct spi_dev_s *px4_spibus_initialize(int bus);
 extern struct i2c_master_s *px4_i2cbus_initialize(int bus);
+
+#if defined(__PX4_NUTTX)
+void rzv2h_serial_setup(void)
+{
+#if defined(CONFIG_RZV_SCI3) || defined(CONFIG_SCI3_SERIAL_CONSOLE)
+	px4_arch_configgpio(BOARD_SCI3_TXD_GPIO);
+	px4_arch_configgpio(BOARD_SCI3_RXD_GPIO);
+#endif
+
+#if defined(CONFIG_RZV_SCI4)
+	px4_arch_configgpio(BOARD_P7_0_GPIO);
+	px4_arch_configgpio(BOARD_P7_1_GPIO);
+#endif
+
+#if defined(CONFIG_RZV_SCI5)
+	px4_arch_configgpio(BOARD_P7_2_GPIO);
+	px4_arch_configgpio(BOARD_P7_3_GPIO);
+#endif
+
+#if defined(CONFIG_RZV_SCI6)
+	px4_arch_configgpio(BOARD_P7_5_GPIO);
+#endif
+
+#if defined(CONFIG_RZV_SCI9)
+	px4_arch_configgpio(BOARD_P8_2_GPIO);
+	px4_arch_configgpio(BOARD_P8_3_GPIO);
+#endif
+}
+#endif
+
+#if defined(CONFIG_RZV_OPENAMP)
+static int rdk_rzv2h_openamp_initialize(void)
+{
+	int ret = rzv_ipc_initialize();
+
+	if (ret < 0) {
+		syslog(LOG_ERR, "board_app_initialize: rzv_ipc_initialize() failed: %d\n", ret);
+		return ret;
+	}
+
+#if defined(CONFIG_RZV_IPC_IPCC)
+	ret = rzv_ipcc_initialize();
+
+	if (ret < 0) {
+		syslog(LOG_ERR, "board_app_initialize: rzv_ipcc_initialize() failed: %d\n", ret);
+		return ret;
+	}
+
+	syslog(LOG_INFO, "board_app_initialize: RZ/V2H OpenAMP IPCC ready at /dev/ipcc0\n");
+#endif
+
+	return OK;
+}
+#endif
 
 /****************************************************************************
  * Protected Functions
@@ -190,9 +247,22 @@ static void rdk_rzv2h_gpio_initialize(void)
 
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
+	int ret;
+
+#if defined(CONFIG_RZV_OPENAMP)
+	/* Bring up CR8-0 <-> CA55 RPMsg before PX4 services start so board
+	 * scripts and modules can open /dev/ipcc0 without racing transport init.
+	 */
+	ret = rdk_rzv2h_openamp_initialize();
+
+	if (ret != OK) {
+		return ret;
+	}
+#endif
+
 	/* Initialize PX4 platform FIRST - this sets up all core infrastructure */
 	/* This includes: HRT, console buffer, work queues, params, uORB */
-	int ret = px4_platform_init();
+	ret = px4_platform_init();
 
 	if (ret != OK) {
 		syslog(LOG_ERR, "board_app_initialize: px4_platform_init() failed with error %d\n", ret);

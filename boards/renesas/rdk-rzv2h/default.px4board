@@ -26,8 +26,10 @@ CONFIG_ARCH_BOARD="rdk-rzv2h"
 CONFIG_ARCH_BOARD_CUSTOM_DIR="boards/renesas/rdk-rzv2h"
 CONFIG_ARCH_BOARD_CUSTOM_NAME="rdk-rzv2h"
 
-# CR8 v1 must boot without CA55/Linux, SD, or RPMsg storage services.
-# The NuttX board mounts CR8-owned XSPI as LittleFS at /fs for params.
+# CR8-0 boots as the primary PX4 core. NuttX enables the RZ/V2H
+# OpenAMP/RPMsg transport to CA55 and exposes rpmsg-service-0 at /dev/ipcc0.
+# Parameter storage remains CR8-owned XSPI LittleFS until a CA55 remote
+# storage backend is wired on the PX4 side.
 CONFIG_BOARD_ROOT_PATH="/fs"
 CONFIG_BOARD_PARAM_FILE="/fs/params"
 
