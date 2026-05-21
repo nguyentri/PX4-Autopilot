@@ -32,12 +32,18 @@ cd PX4-Autopilot
 git submodule update --init --recursive
 ```
 
+The Makefile defaults `GIT_SUBMODULES_ARE_EVIL=1`, so normal PX4 builds do
+not auto-update submodules. To refresh the custom NuttX submodule URLs before
+manual updates, run:
+
+```bash
+git submodule sync -- platforms/nuttx/NuttX/nuttx
+git submodule sync -- platforms/nuttx/NuttX/apps
+```
+
 ### Build and Flash
 
 ```bash
-# Set required environment variable
-export GIT_SUBMODULES_ARE_EVIL=1
-
 # Build for RA8P1 EVK
 make renesas_evk-ra8p1_default
 
@@ -68,10 +74,8 @@ Key dependencies include:
 
 ### Environment Setup
 
-```bash
-# Set required environment variable for custom NuttX reports
-export GIT_SUBMODULES_ARE_EVIL=1
-```
+The Makefile exports `GIT_SUBMODULES_ARE_EVIL=1` by default to preserve
+workspace edits in the custom NuttX submodules during normal builds.
 
 ### Clean Build (if needed)
 
