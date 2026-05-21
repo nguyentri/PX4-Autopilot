@@ -39,6 +39,8 @@ ifeq ($(wildcard .git),)
     $(error YOU HAVE TO USE GIT TO DOWNLOAD THIS REPOSITORY. ABORTING.)
 endif
 
+export GIT_SUBMODULES_ARE_EVIL ?= 1
+
 # Help
 # --------------------------------------------------------------------
 # Don't be afraid of this makefile, it is just passing
@@ -60,29 +62,47 @@ endif
 # Note: 'all' target now depends only on branch check, allowing make to build the current/last board config
 all: ensure_nuttx_ra8p1_branch
 
-# Ensure NuttX submodule uses the expected RZV/RA NuttX branch.
-# This will automatically switch the NuttX submodule to the default branch
-# unless it is already on an approved local compatibility branch.
+# Ensure NuttX submodules use the repositories configured in .gitmodules.
+# Existing submodule branches are preserved so local NuttX work can continue in-tree.
 .PHONY: ensure_nuttx_ra8p1_branch
 ensure_nuttx_ra8p1_branch:
-	@echo "Ensuring NuttX submodule is on an approved RZV/RA NuttX branch..."; \
-	cd platforms/nuttx/NuttX/nuttx && \
-	current_branch="$$(git rev-parse --abbrev-ref HEAD)" && \
-	if [ "$$current_branch" != "NuttX_Px4_RA8_Refactoring" ] && [ "$$current_branch" != "rzv2h-freertos-drone-compat" ] && [ "$$current_branch" != "HEAD" ]; then \
-		if [ -n "$$(git status --porcelain)" ]; then \
-			echo "⚠️  NuttX has local changes - keeping current state to preserve your work"; \
+	@echo "Ensuring NuttX submodules match .gitmodules repositories..."; \
+	for submodule_path in platforms/nuttx/NuttX/nuttx platforms/nuttx/NuttX/apps; do \
+		expected_url="$$(git config -f .gitmodules --get submodule.$$submodule_path.url)"; \
+		expected_branch="$$(git config -f .gitmodules --get submodule.$$submodule_path.branch)"; \
+		if [ -n "$$expected_url" ]; then \
+			current_url="$$(git config --get submodule.$$submodule_path.url || true)"; \
+			if [ "$$current_url" != "$$expected_url" ]; then \
+				echo "Updating $$submodule_path URL to $$expected_url"; \
+				git config submodule.$$submodule_path.url "$$expected_url"; \
+			fi; \
+		fi; \
+		if [ -z "$$expected_branch" ]; then \
+			echo "No .gitmodules branch configured for $$submodule_path - skipping"; \
+			continue; \
+		fi; \
+		if [ ! -d "$$submodule_path/.git" ] && [ ! -f "$$submodule_path/.git" ]; then \
+			echo "$$submodule_path is not initialized - cloning from $$expected_url"; \
+			git submodule sync -- "$$submodule_path" && \
+			git submodule update --init -- "$$submodule_path"; \
+			continue; \
+		fi; \
+		if [ -n "$$expected_url" ]; then \
+			current_remote_url="$$(git -C "$$submodule_path" remote get-url origin || true)"; \
+			if [ "$$current_remote_url" != "$$expected_url" ]; then \
+				echo "Updating $$submodule_path origin to $$expected_url"; \
+				git -C "$$submodule_path" remote set-url origin "$$expected_url"; \
+			fi; \
+		fi; \
+		current_branch="$$(git -C "$$submodule_path" rev-parse --abbrev-ref HEAD)"; \
+		if [ "$$current_branch" = "$$expected_branch" ]; then \
+			echo "$$submodule_path already on $$current_branch"; \
+		elif [ "$$current_branch" = "HEAD" ]; then \
+			echo "$$submodule_path is in detached HEAD state"; \
 		else \
-			echo "Switching NuttX submodule to NuttX_Px4_RA8_Refactoring branch..."; \
-			git fetch origin && \
-			git checkout NuttX_Px4_RA8_Refactoring; \
-		fi \
-	else \
-		if [ "$$current_branch" = "NuttX_Px4_RA8_Refactoring" ] || [ "$$current_branch" = "rzv2h-freertos-drone-compat" ]; then \
-			echo "✓ NuttX submodule already on $$current_branch branch"; \
-		else \
-			echo "✓ NuttX submodule is in detached HEAD state (build artifact)"; \
-		fi \
-	fi
+			echo "$$submodule_path is on $$current_branch, expected $$expected_branch - preserving current branch"; \
+		fi; \
+	done
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )

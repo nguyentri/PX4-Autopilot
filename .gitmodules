@@ -5,13 +5,13 @@
 
 [submodule "platforms/nuttx/NuttX/nuttx"]
 	path = platforms/nuttx/NuttX/nuttx
-	url = https://github.com/nguyentri/NuttX_Px4.git
-	branch = NuttX_Px4_RA8_Refactoring
+	url = https://github.com/nguyentri/NuttX_Px4
+	branch = px4_firmware_nuttx-10.3.0+
 
 [submodule "platforms/nuttx/NuttX/apps"]
 	path = platforms/nuttx/NuttX/apps
-	url = https://github.com/PX4/NuttX-apps.git
-	branch = px4_firmware_nuttx-10.3.0+
+	url = https://github.com/nguyentri/nuttx-apps
+	branch = main
 
 [submodule "src/lib/events/libevents"]
 	path = src/lib/events/libevents
