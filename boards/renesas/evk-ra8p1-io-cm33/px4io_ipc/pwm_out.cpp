@@ -261,16 +261,6 @@ static void gpt_enable_clock(uint8_t channel)
 }
 
 /**
- * @brief Disable GPT module clock via MSTP
- */
-static void gpt_disable_clock(uint8_t channel)
-{
-	if (channel < 14) {
-		ra_mstp_stop(g_gpt_mstp_map[channel]);
-	}
-}
-
-/**
  * @brief Calculate prescaler for desired frequency
  */
 static uint32_t gpt_calculate_prescaler(uint32_t frequency)

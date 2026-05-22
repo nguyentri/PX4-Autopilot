@@ -424,6 +424,13 @@ SECTIONS
         *(vtable)
         __ram_from_flash$$Limit = .;
     }> RAM AT > FLASH
+    __ramfunc_from_flash$$ ALIGN(4) :
+    {
+        _sramfuncs = ABSOLUTE(.);
+        *(.ramfunc .ramfunc.*)
+        _eramfuncs = ABSOLUTE(.);
+    }> RAM AT > FLASH
+    _framfuncs = LOADADDR(__ramfunc_from_flash$$);
     /* Non-initialized, non-cached ram */
     __ram_noinit_nocache$$ ALIGN(.,32) (NOLOAD) :
     {

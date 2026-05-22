@@ -94,9 +94,6 @@ static uint32_t cm85_heartbeat_timeout_count = 0;
 extern volatile IpcCm85Heartbeat *g_cm85_heartbeat;
 extern volatile IpcCm33Heartbeat *g_cm33_heartbeat;
 
-/* Performance tracking */
-extern volatile uint16_t r_status_flags;
-
 /* POEG kill reason codes */
 #define POEG_REASON_CM85_TIMEOUT    0x01
 #define POEG_REASON_ACTUATOR_TIMEOUT 0x02

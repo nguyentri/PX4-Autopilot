@@ -61,8 +61,8 @@
 #include "ra_gpt.h"
 #include "ra_gpio.h"
 #include "ra_mstp.h"
-#include <arch/ra8/ra8p1_irq.h>
-#include "hardware/ra8p1/ra_gpt32.h"
+#include <arch/ra8/irq.h>
+#include "hardware/ra_memorymap.h"
 #include "hardware/ra_pinmap.h"
 
 extern const io_timers_t io_timers[MAX_IO_TIMERS];
@@ -206,7 +206,9 @@ static bool g_dma_available =
 static bool g_bdshot_enabled = false;
 static uint32_t g_active_channels = 0;
 static uint32_t g_dshot_frequency = 0;
+#ifdef CONFIG_RA_DMAC
 static bool g_dmac_initialized = false;
+#endif
 
 static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
 
@@ -215,23 +217,6 @@ static const ra_mstp_module_t kGptMstpMap[] = {
   RA_MSTP_GPT4,  RA_MSTP_GPT5,  RA_MSTP_GPT6,  RA_MSTP_GPT7,
   RA_MSTP_GPT8,  RA_MSTP_GPT9,  RA_MSTP_GPT10, RA_MSTP_GPT11,
   RA_MSTP_GPT12, RA_MSTP_GPT13
-};
-
-static const uint16_t kGptElcCaptureA[] = {
-  RA_ELC_GPT0_CAPTURE_COMPARE_A,
-  RA_ELC_GPT1_CAPTURE_COMPARE_A,
-  RA_ELC_GPT2_CAPTURE_COMPARE_A,
-  RA_ELC_GPT3_CAPTURE_COMPARE_A,
-  RA_ELC_GPT4_CAPTURE_COMPARE_A,
-  RA_ELC_GPT5_CAPTURE_COMPARE_A,
-  RA_ELC_GPT6_CAPTURE_COMPARE_A,
-  RA_ELC_GPT7_CAPTURE_COMPARE_A,
-  RA_ELC_GPT8_CAPTURE_COMPARE_A,
-  RA_ELC_GPT9_CAPTURE_COMPARE_A,
-  RA_ELC_GPT10_CAPTURE_COMPARE_A,
-  RA_ELC_GPT11_CAPTURE_COMPARE_A,
-  RA_ELC_GPT12_CAPTURE_COMPARE_A,
-  RA_ELC_GPT13_CAPTURE_COMPARE_A
 };
 
 static bool dshot_map_channel(uint8_t logical_channel, dshot_channel_t *ch)
@@ -551,6 +536,7 @@ static int gpt_setup_channel(uint8_t gpt_channel,
   return 0;
 }
 
+#ifdef CONFIG_RA_DMAC
 static void gpt_start(uint8_t gpt_channel)
 {
   gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET, GPT_GTWP_PRKEY);
@@ -566,23 +552,65 @@ static void gpt_stop(uint8_t gpt_channel)
   gpt_putreg32(gpt_channel, R_GPT32_GTWP_OFFSET,
                GPT_GTWP_PRKEY | GPT_GTWP_WP);
 }
+#endif
 
 
-static inline uint16_t dshot_get_elc_event(uint8_t gpt_channel)
+#ifdef CONFIG_RA_DMAC
+static int dshot_get_elc_event(uint8_t gpt_channel)
 {
-  if (gpt_channel < (sizeof(kGptElcCaptureA) / sizeof(kGptElcCaptureA[0])))
+  switch (gpt_channel)
     {
-      return kGptElcCaptureA[gpt_channel];
+#ifdef RA_ELC_GPT0_CAPTURE_COMPARE_A
+    case 0: return RA_ELC_GPT0_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT1_CAPTURE_COMPARE_A
+    case 1: return RA_ELC_GPT1_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT2_CAPTURE_COMPARE_A
+    case 2: return RA_ELC_GPT2_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT3_CAPTURE_COMPARE_A
+    case 3: return RA_ELC_GPT3_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT4_CAPTURE_COMPARE_A
+    case 4: return RA_ELC_GPT4_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT5_CAPTURE_COMPARE_A
+    case 5: return RA_ELC_GPT5_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT6_CAPTURE_COMPARE_A
+    case 6: return RA_ELC_GPT6_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT7_CAPTURE_COMPARE_A
+    case 7: return RA_ELC_GPT7_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT8_CAPTURE_COMPARE_A
+    case 8: return RA_ELC_GPT8_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT9_CAPTURE_COMPARE_A
+    case 9: return RA_ELC_GPT9_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT10_CAPTURE_COMPARE_A
+    case 10: return RA_ELC_GPT10_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT11_CAPTURE_COMPARE_A
+    case 11: return RA_ELC_GPT11_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT12_CAPTURE_COMPARE_A
+    case 12: return RA_ELC_GPT12_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT13_CAPTURE_COMPARE_A
+    case 13: return RA_ELC_GPT13_CAPTURE_COMPARE_A;
+#endif
+    default:
+      return -EINVAL;
     }
-
-  return RA_ELC_GPT0_CAPTURE_COMPARE_A;
 }
 
 /**
  * DMA completion callback - called from interrupt context when DMA transfer completes
  * Implements ping-pong buffer swap for continuous low-jitter motor control.
  */
-#ifdef CONFIG_RA_DMAC
 static void dshot_dma_callback(void *handle, int event, void *user_data)
 {
   dshot_channel_t *ch = (dshot_channel_t *)user_data;
@@ -622,7 +650,6 @@ static void dshot_dma_callback(void *handle, int event, void *user_data)
       gpt_stop(ch->gpt_channel);
     }
 }
-#endif
 
 static void gpt_enable_overflow_dma_request(uint8_t gpt_channel)
 {
@@ -642,6 +669,7 @@ static void gpt_enable_overflow_dma_request(uint8_t gpt_channel)
 
   leave_critical_section(flags);
 }
+#endif
 
 static int dshot_dma_setup(dshot_channel_t *ch)
 {
@@ -695,7 +723,14 @@ static int dshot_dma_setup(dshot_channel_t *ch)
   dma_config.dest_addr = ch->dma_dest;
   dma_config.transfer_count = DSHOT_FRAME_BITS;
   dma_config.block_count = 1;
-  dma_config.elc_src = dshot_get_elc_event(ch->gpt_channel);
+  int elc_src = dshot_get_elc_event(ch->gpt_channel);
+
+  if (elc_src < 0)
+    {
+      return elc_src;
+    }
+
+  dma_config.elc_src = elc_src;
 
   /* Set critical priority for motor control DMA */
 
@@ -730,6 +765,7 @@ static int dshot_dma_setup(dshot_channel_t *ch)
 #endif
 }
 
+#ifdef CONFIG_RA_DMAC
 static inline void dshot_prepare_buffer(dshot_channel_t *ch)
 {
   /* Prepare frame in the inactive buffer for ping-pong operation */
@@ -746,7 +782,6 @@ static inline void dshot_prepare_buffer(dshot_channel_t *ch)
 
 static int dshot_dma_start(dshot_channel_t *ch)
 {
-#ifdef CONFIG_RA_DMAC
   if (dshot_dma_setup(ch) < 0 || ch->dma_handle == NULL)
     {
       return -ENODEV;
@@ -805,10 +840,8 @@ static int dshot_dma_start(dshot_channel_t *ch)
     }
 
   return OK;
-#else
-  return -ENODEV;
-#endif
 }
+#endif
 
 static inline void dshot_dma_stop(dshot_channel_t *ch)
 {

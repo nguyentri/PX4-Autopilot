@@ -73,9 +73,6 @@ static uint8_t rc_link_quality = 255;  /* 255 = unknown */
 /* IPC pointers (initialized by interface_init) */
 extern volatile IpcRcInput *g_rc_input;
 
-/* Performance tracking */
-extern volatile uint16_t r_status_flags;
-
 /**
  * @brief Initialize RC decoder
  */

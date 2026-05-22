@@ -116,12 +116,13 @@ execute_process(
 	COMMAND git describe --exclude ext/* --tags --match "v[0-9]*"
 	OUTPUT_VARIABLE PX4_GIT_TAG
 	OUTPUT_STRIP_TRAILING_WHITESPACE
-	RESULTS_VARIABLE GIT_DESCRIBE_RESULT
+	ERROR_QUIET
+	RESULT_VARIABLE GIT_DESCRIBE_RESULT
 	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 	)
 
 # if proper git tag unavilable default to v0.0.0
-if(NOT ${GIT_DESCRIBE_RESULT} MATCHES "0")
+if(NOT GIT_DESCRIBE_RESULT EQUAL 0)
 	set(PX4_GIT_TAG "v0.0.0")
 endif()
 
@@ -173,6 +174,9 @@ set(config_module_list)
 set(config_kernel_list)
 
 # Find Python
+if(POLICY CMP0148)
+	cmake_policy(SET CMP0148 OLD)
+endif()
 find_package(PythonInterp 3)
 # We have a custom error message to tell users how to install python3.
 if(NOT PYTHONINTERP_FOUND)
@@ -191,6 +195,66 @@ include(px4_config)
 include(kconfig)
 message(STATUS "PX4 config: ${PX4_CONFIG}")
 message(STATUS "PX4 platform: ${PX4_PLATFORM}")
+
+function(px4_validate_custom_nuttx_submodule submodule_path expected_url expected_branch)
+	execute_process(
+		COMMAND git config -f .gitmodules --get submodule.${submodule_path}.url
+		OUTPUT_VARIABLE configured_url
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		RESULT_VARIABLE configured_url_result
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		)
+	execute_process(
+		COMMAND git config -f .gitmodules --get submodule.${submodule_path}.branch
+		OUTPUT_VARIABLE configured_branch
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		RESULT_VARIABLE configured_branch_result
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		)
+
+	if(configured_url_result)
+		message(FATAL_ERROR "${submodule_path} must define a url in .gitmodules")
+	endif()
+	if(NOT configured_url STREQUAL expected_url)
+		message(FATAL_ERROR "${submodule_path} must use ${expected_url} in .gitmodules")
+	endif()
+	if(configured_branch_result)
+		message(FATAL_ERROR "${submodule_path} must define a branch in .gitmodules")
+	endif()
+	if(NOT configured_branch STREQUAL expected_branch)
+		message(FATAL_ERROR "${submodule_path} must track ${expected_branch} in .gitmodules")
+	endif()
+	if(NOT EXISTS "${PX4_SOURCE_DIR}/${submodule_path}/.git")
+		message(FATAL_ERROR "${submodule_path} is not initialized. Run: make sync_nuttx_submodules")
+	endif()
+	execute_process(
+		COMMAND git -C ${submodule_path} remote get-url origin
+		OUTPUT_VARIABLE actual_url
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		RESULT_VARIABLE actual_url_result
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		)
+	if(actual_url_result)
+		message(FATAL_ERROR "${submodule_path} must have an origin remote. Run: make sync_nuttx_submodules")
+	endif()
+	if(NOT actual_url STREQUAL expected_url)
+		message(FATAL_ERROR "${submodule_path} origin must use ${expected_url}. Run: make sync_nuttx_submodules")
+	endif()
+endfunction()
+
+if(${PX4_PLATFORM} STREQUAL "nuttx" AND ${PX4_BOARD_VENDOR} STREQUAL "renesas")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-warn-rwx-segments")
+	px4_validate_custom_nuttx_submodule(
+		platforms/nuttx/NuttX/nuttx
+		https://github.com/nguyentri/NuttX_Px4.git
+		nuttx_ra_rzv
+		)
+	px4_validate_custom_nuttx_submodule(
+		platforms/nuttx/NuttX/apps
+		https://github.com/nguyentri/nuttx-apps.git
+		main
+		)
+endif()
 
 if($ENV{CLION_IDE})
 	# CLion automatically executes some compiler commands after configuring the

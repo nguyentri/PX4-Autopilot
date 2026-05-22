@@ -40,6 +40,7 @@ ifeq ($(wildcard .git),)
 endif
 
 export GIT_SUBMODULES_ARE_EVIL ?= 1
+NUTTX_SUBMODULES := platforms/nuttx/NuttX/nuttx platforms/nuttx/NuttX/apps
 
 # Help
 # --------------------------------------------------------------------
@@ -59,50 +60,51 @@ export GIT_SUBMODULES_ARE_EVIL ?= 1
 # in that directory with the target upload.
 
 # explicity set default build target
-# Note: 'all' target now depends only on branch check, allowing make to build the current/last board config
-all: ensure_nuttx_ra8p1_branch
+# Note: 'all' validates custom NuttX submodules, then builds the current/last board config.
+all: ensure_custom_nuttx_submodules
 
-# Ensure NuttX submodules use the repositories configured in .gitmodules.
-# Existing submodule branches are preserved so local NuttX work can continue in-tree.
-.PHONY: ensure_nuttx_ra8p1_branch
-ensure_nuttx_ra8p1_branch:
-	@echo "Ensuring NuttX submodules match .gitmodules repositories..."; \
-	for submodule_path in platforms/nuttx/NuttX/nuttx platforms/nuttx/NuttX/apps; do \
+# Keep custom NuttX submodule remotes aligned with .gitmodules without moving
+# normal builds to live branch tips.
+.PHONY: sync_nuttx_submodules ensure_custom_nuttx_submodules ensure_nuttx_ra8p1_branch
+sync_nuttx_submodules:
+	@echo "Syncing custom NuttX submodule remotes from .gitmodules..."
+	@git submodule sync --recursive -- $(NUTTX_SUBMODULES)
+	@git submodule update --init --recursive -- $(NUTTX_SUBMODULES)
+	@set -e; \
+	for submodule_path in $(NUTTX_SUBMODULES); do \
 		expected_url="$$(git config -f .gitmodules --get submodule.$$submodule_path.url)"; \
 		expected_branch="$$(git config -f .gitmodules --get submodule.$$submodule_path.branch)"; \
-		if [ -n "$$expected_url" ]; then \
-			current_url="$$(git config --get submodule.$$submodule_path.url || true)"; \
-			if [ "$$current_url" != "$$expected_url" ]; then \
-				echo "Updating $$submodule_path URL to $$expected_url"; \
-				git config submodule.$$submodule_path.url "$$expected_url"; \
-			fi; \
+		if [ -z "$$expected_url" ] || [ -z "$$expected_branch" ]; then \
+			echo "Missing .gitmodules url or branch for $$submodule_path"; \
+			exit 1; \
 		fi; \
-		if [ -z "$$expected_branch" ]; then \
-			echo "No .gitmodules branch configured for $$submodule_path - skipping"; \
-			continue; \
+		git config submodule.$$submodule_path.url "$$expected_url"; \
+		git -C "$$submodule_path" remote set-url origin "$$expected_url"; \
+		echo "$$submodule_path uses $$expected_url ($$expected_branch)"; \
+	done
+
+ensure_custom_nuttx_submodules:
+	@set -e; \
+	for submodule_path in $(NUTTX_SUBMODULES); do \
+		expected_url="$$(git config -f .gitmodules --get submodule.$$submodule_path.url)"; \
+		expected_branch="$$(git config -f .gitmodules --get submodule.$$submodule_path.branch)"; \
+		if [ -z "$$expected_url" ] || [ -z "$$expected_branch" ]; then \
+			echo "Missing .gitmodules url or branch for $$submodule_path"; \
+			exit 1; \
 		fi; \
 		if [ ! -d "$$submodule_path/.git" ] && [ ! -f "$$submodule_path/.git" ]; then \
-			echo "$$submodule_path is not initialized - cloning from $$expected_url"; \
-			git submodule sync -- "$$submodule_path" && \
-			git submodule update --init -- "$$submodule_path"; \
-			continue; \
+			echo "$$submodule_path is not initialized; run: make sync_nuttx_submodules"; \
+			exit 1; \
 		fi; \
-		if [ -n "$$expected_url" ]; then \
-			current_remote_url="$$(git -C "$$submodule_path" remote get-url origin || true)"; \
-			if [ "$$current_remote_url" != "$$expected_url" ]; then \
-				echo "Updating $$submodule_path origin to $$expected_url"; \
-				git -C "$$submodule_path" remote set-url origin "$$expected_url"; \
-			fi; \
-		fi; \
-		current_branch="$$(git -C "$$submodule_path" rev-parse --abbrev-ref HEAD)"; \
-		if [ "$$current_branch" = "$$expected_branch" ]; then \
-			echo "$$submodule_path already on $$current_branch"; \
-		elif [ "$$current_branch" = "HEAD" ]; then \
-			echo "$$submodule_path is in detached HEAD state"; \
-		else \
-			echo "$$submodule_path is on $$current_branch, expected $$expected_branch - preserving current branch"; \
+		current_remote_url="$$(git -C "$$submodule_path" remote get-url origin || true)"; \
+		if [ "$$current_remote_url" != "$$expected_url" ]; then \
+			echo "$$submodule_path origin is $$current_remote_url, expected $$expected_url"; \
+			echo "Run: make sync_nuttx_submodules"; \
+			exit 1; \
 		fi; \
 	done
+
+ensure_nuttx_ra8p1_branch: ensure_custom_nuttx_submodules
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )
@@ -268,13 +270,17 @@ ALL_CONFIG_TARGETS := $(shell find boards -maxdepth 3 -mindepth 3 -name '*.px4bo
 #  Do not put any spaces between function arguments.
 
 # All targets.
-$(ALL_CONFIG_TARGETS): ensure_nuttx_ra8p1_branch
+$(ALL_CONFIG_TARGETS):
 	@$(call cmake-build,$@$(BUILD_DIR_SUFFIX))
 
 # Filter for only default targets to allow omiting the "_default" postfix
 CONFIG_TARGETS_DEFAULT := $(patsubst %_default,%,$(filter %_default,$(ALL_CONFIG_TARGETS)))
-$(CONFIG_TARGETS_DEFAULT): ensure_nuttx_ra8p1_branch
+$(CONFIG_TARGETS_DEFAULT):
 	@$(call cmake-build,$@_default$(BUILD_DIR_SUFFIX))
+
+RENESAS_CONFIG_TARGETS := $(filter renesas_%,$(ALL_CONFIG_TARGETS))
+RENESAS_CONFIG_TARGETS_DEFAULT := $(patsubst %_default,%,$(filter %_default,$(RENESAS_CONFIG_TARGETS)))
+$(RENESAS_CONFIG_TARGETS) $(RENESAS_CONFIG_TARGETS_DEFAULT): ensure_custom_nuttx_submodules
 
 all_config_targets: $(ALL_CONFIG_TARGETS)
 all_default_targets: $(CONFIG_TARGETS_DEFAULT)

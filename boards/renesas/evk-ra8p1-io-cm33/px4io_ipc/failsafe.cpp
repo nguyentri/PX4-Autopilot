@@ -75,9 +75,6 @@ extern volatile IpcActuatorCmd *g_actuator_cmd;
 extern void heartbeat_force_poeg_kill();
 extern bool rc_decoder_is_failsafe_active();
 
-/* Performance tracking */
-extern volatile uint16_t r_status_flags;
-
 /**
  * @brief Initialize failsafe system
  */

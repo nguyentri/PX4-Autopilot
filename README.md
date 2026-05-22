@@ -30,16 +30,12 @@ cd PX4-Autopilot
 
 ```bash
 git submodule update --init --recursive
+make sync_nuttx_submodules
 ```
 
-The Makefile defaults `GIT_SUBMODULES_ARE_EVIL=1`, so normal PX4 builds do
-not auto-update submodules. To refresh the custom NuttX submodule URLs before
-manual updates, run:
-
-```bash
-git submodule sync -- platforms/nuttx/NuttX/nuttx
-git submodule sync -- platforms/nuttx/NuttX/apps
-```
+The first command initializes all PX4 submodules. The second command syncs the
+custom Renesas NuttX submodule remotes from `.gitmodules` while keeping their
+superproject-pinned commits.
 
 ### Build and Flash
 
@@ -75,7 +71,11 @@ Key dependencies include:
 ### Environment Setup
 
 The Makefile exports `GIT_SUBMODULES_ARE_EVIL=1` by default to preserve
-workspace edits in the custom NuttX submodules during normal builds.
+PX4's normal submodule behavior. Renesas builds validate that the custom NuttX
+repositories use:
+
+- `platforms/nuttx/NuttX/nuttx` -> `https://github.com/nguyentri/NuttX_Px4.git`, branch `nuttx_ra_rzv`
+- `platforms/nuttx/NuttX/apps` -> `https://github.com/nguyentri/nuttx-apps.git`, branch `main`
 
 ### Clean Build (if needed)
 

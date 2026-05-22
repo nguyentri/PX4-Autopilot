@@ -193,6 +193,56 @@ static int gpt_configure_gpio(uint32_t gpio_pinset)
 	return px4_arch_configgpio(gpio_pinset);
 }
 
+static int gpt_capture_a_event(uint8_t gpt_channel)
+{
+	switch (gpt_channel) {
+#ifdef RA_ELC_GPT0_CAPTURE_COMPARE_A
+	case 0: return RA_ELC_GPT0_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT1_CAPTURE_COMPARE_A
+	case 1: return RA_ELC_GPT1_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT2_CAPTURE_COMPARE_A
+	case 2: return RA_ELC_GPT2_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT3_CAPTURE_COMPARE_A
+	case 3: return RA_ELC_GPT3_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT4_CAPTURE_COMPARE_A
+	case 4: return RA_ELC_GPT4_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT5_CAPTURE_COMPARE_A
+	case 5: return RA_ELC_GPT5_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT6_CAPTURE_COMPARE_A
+	case 6: return RA_ELC_GPT6_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT7_CAPTURE_COMPARE_A
+	case 7: return RA_ELC_GPT7_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT8_CAPTURE_COMPARE_A
+	case 8: return RA_ELC_GPT8_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT9_CAPTURE_COMPARE_A
+	case 9: return RA_ELC_GPT9_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT10_CAPTURE_COMPARE_A
+	case 10: return RA_ELC_GPT10_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT11_CAPTURE_COMPARE_A
+	case 11: return RA_ELC_GPT11_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT12_CAPTURE_COMPARE_A
+	case 12: return RA_ELC_GPT12_CAPTURE_COMPARE_A;
+#endif
+#ifdef RA_ELC_GPT13_CAPTURE_COMPARE_A
+	case 13: return RA_ELC_GPT13_CAPTURE_COMPARE_A;
+#endif
+	default:
+		return -EINVAL;
+	}
+}
+
 static int gpt_select_timing(unsigned frequency_hz, uint32_t *prescaler_idx, uint32_t *period_ticks)
 {
 	if (frequency_hz == 0u || !prescaler_idx || !period_ticks) {
@@ -618,34 +668,29 @@ int gpt_configure_input_capture(unsigned channel, bool rising_edge, bool falling
 
 	gpt_wp_end(base);
 
-	/* Attach ICU interrupt for capture events
-	 * Use GPT capture compare A event
-	 */
-	static const uint16_t kGptCaptureAEvents[] = {
-		RA_ELC_GPT0_CAPTURE_COMPARE_A, RA_ELC_GPT1_CAPTURE_COMPARE_A,
-		RA_ELC_GPT2_CAPTURE_COMPARE_A, RA_ELC_GPT3_CAPTURE_COMPARE_A,
-		RA_ELC_GPT4_CAPTURE_COMPARE_A, RA_ELC_GPT5_CAPTURE_COMPARE_A,
-		RA_ELC_GPT6_CAPTURE_COMPARE_A, RA_ELC_GPT7_CAPTURE_COMPARE_A,
-		RA_ELC_GPT8_CAPTURE_COMPARE_A, RA_ELC_GPT9_CAPTURE_COMPARE_A,
-		RA_ELC_GPT10_CAPTURE_COMPARE_A, RA_ELC_GPT11_CAPTURE_COMPARE_A,
-		RA_ELC_GPT12_CAPTURE_COMPARE_A, RA_ELC_GPT13_CAPTURE_COMPARE_A
-	};
+	/* Attach ICU interrupt for capture events using GPT capture compare A event. */
+	int capture_event = gpt_capture_a_event(gpt_ch);
 
-	if (gpt_ch < ARRAY_SIZE(kGptCaptureAEvents)) {
-		int icu_irq = ra_icu_attach(kGptCaptureAEvents[gpt_ch],
-					    gpt_capture_isr,
-					    (void *)(uintptr_t)channel,
-					    true);
-		if (icu_irq < 0) {
-			/* Failed to attach interrupt - disable capture */
-			gpt_wp_begin(base);
-			putreg32(0, base + R_GPT32_GTICASR_OFFSET);
-			gpt_wp_end(base);
-			return icu_irq;
-		}
-
-		gpt_state[channel].icu_irq = icu_irq;
+	if (capture_event < 0) {
+		gpt_wp_begin(base);
+		putreg32(0, base + R_GPT32_GTICASR_OFFSET);
+		gpt_wp_end(base);
+		return capture_event;
 	}
+
+	int icu_irq = ra_icu_attach(capture_event,
+				    gpt_capture_isr,
+				    (void *)(uintptr_t)channel,
+				    true);
+	if (icu_irq < 0) {
+		/* Failed to attach interrupt - disable capture */
+		gpt_wp_begin(base);
+		putreg32(0, base + R_GPT32_GTICASR_OFFSET);
+		gpt_wp_end(base);
+		return icu_irq;
+	}
+
+	gpt_state[channel].icu_irq = icu_irq;
 
 	/* Store capture configuration */
 	gpt_state[channel].capture_enabled = true;

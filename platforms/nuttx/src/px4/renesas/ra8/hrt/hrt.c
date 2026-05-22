@@ -71,8 +71,8 @@
 #include "arm_internal.h"
 #include "ra_icu.h"
 #include "ra_mstp.h"
-#include "hardware/ra8p1/ra_gpt32.h"
-#include <arch/ra8/ra8p1_irq.h>
+#include "hardware/ra_memorymap.h"
+#include <arch/ra8/irq.h>
 #include "board_config.h"
 
 #ifndef LATENCY_BUCKET_COUNT
@@ -91,8 +91,12 @@
  * - Counter period = 2^32 / 3.90625 MHz = ~1100 seconds
  * - Microsecond conversion: us = counts * 1000000 / HRT_TIMER_CLOCK
  */
+#if !defined(BOARD_PCLKD_FREQUENCY) && defined(RA_PCLKD_FREQUENCY)
+#  define BOARD_PCLKD_FREQUENCY RA_PCLKD_FREQUENCY
+#endif
+
 #define HRT_PRESCALER_DIV       64u
-#define HRT_TIMER_CLOCK         (BOARD_PCLKD_FREQUENCY / HRT_PRESCALER_DIV)  /* 3.90625 MHz */
+#define HRT_TIMER_CLOCK         (BOARD_PCLKD_FREQUENCY / HRT_PRESCALER_DIV)
 
 /* Minimum scheduling delta in microseconds - must be larger than ISR latency */
 #define HRT_MIN_DELTA_US        5u
@@ -125,8 +129,22 @@
 
 /* GPT GTCR control register bits - use correct RA8P1 definitions */
 #define HRT_GTCR_CST            (1 << 0)                           /* Count start */
-#define HRT_GTCR_MD_SAW_UP      R_GPT32_GTCR_MD_0000               /* Saw-wave PWM mode 1 (up-count) */
-#define HRT_GTCR_TPCS_DIV64     R_GPT32_GTCR_TPCS_0110             /* PCLKD/64 prescaler */
+
+#if defined(R_GPT32_GTCR_MD_0000)
+#  define HRT_GTCR_MD_SAW_UP    R_GPT32_GTCR_MD_0000               /* RA8P1 saw-wave PWM mode 1 */
+#elif defined(R_GPT32_GTCR_MD_000)
+#  define HRT_GTCR_MD_SAW_UP    R_GPT32_GTCR_MD_000                /* RA8E1 saw-wave PWM mode */
+#else
+#  error Unsupported RA8 GPT mode definitions
+#endif
+
+#if defined(R_GPT32_GTCR_TPCS_0110)
+#  define HRT_GTCR_TPCS_DIV64   R_GPT32_GTCR_TPCS_0110             /* RA8P1 PCLKD/64 prescaler */
+#elif defined(R_GPT32_GTCR_TPCS_0X6)
+#  define HRT_GTCR_TPCS_DIV64   R_GPT32_GTCR_TPCS_0X6              /* RA8E1 PCLKD/64 prescaler */
+#else
+#  error Unsupported RA8 GPT prescaler definitions
+#endif
 
 /* GPT GTWP write protect key */
 #define HRT_GTWP_PRKEY          (0xA500 << 8)

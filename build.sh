@@ -1,70 +1,108 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# PX4 Build Script for Renesas RA8/RZ Targets
+# PX4 Build Script for Renesas RA8 and RZV Targets
 #
-# This script builds PX4 firmware for supported Renesas microcontroller targets.
-# It sets the required environment variables and builds multiple targets sequentially.
-#
-# Usage: ./make
-#
-# Requirements:
-# - PX4 development environment set up
-# - Git submodules initialized
-# - Required dependencies installed
-#
+# Builds all Renesas PX4 board configurations found under boards/renesas.
 
-set -e  # Exit on any error
+set -Eeuo pipefail
 
-# Set environment variable required for custom NuttX reports
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
 export GIT_SUBMODULES_ARE_EVIL=1
 
+clean_nuttx_artifacts()
+{
+	echo "Cleaning NuttX build artifacts..."
+	make -C platforms/nuttx/NuttX/nuttx distclean
+	echo "NuttX artifacts cleaned."
+	echo
+}
+
+collect_renesas_targets()
+{
+	find boards/renesas -maxdepth 2 -name '*.px4board' ! -name '*_bk.px4board' -print \
+		| sed -e 's|^boards/||' -e 's|\.px4board$||' -e 's|/|_|g' \
+		| sort
+}
+
+print_usage()
+{
+	cat <<'EOF'
+Usage: ./build.sh [options] [target ...]
+
+Options:
+  --list      Print Renesas targets and exit.
+  --no-clean  Skip NuttX distclean before building.
+  -h, --help  Show this help.
+
+With no targets, the script builds every Renesas .px4board target except
+backup configs ending in _bk.
+EOF
+}
+
+DO_CLEAN=1
+LIST_ONLY=0
+TARGETS=()
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--list)
+			LIST_ONLY=1
+			;;
+		--no-clean)
+			DO_CLEAN=0
+			;;
+		-h|--help)
+			print_usage
+			exit 0
+			;;
+		-*)
+			echo "Unknown option: $1" >&2
+			print_usage >&2
+			exit 2
+			;;
+		*)
+			TARGETS+=("$1")
+			;;
+	esac
+
+	shift
+done
+
+if [ "${#TARGETS[@]}" -eq 0 ]; then
+	mapfile -t TARGETS < <(collect_renesas_targets)
+fi
+
+if [ "${#TARGETS[@]}" -eq 0 ]; then
+	echo "No Renesas targets found." >&2
+	exit 1
+fi
+
+if [ "$LIST_ONLY" -eq 1 ]; then
+	printf '%s\n' "${TARGETS[@]}"
+	exit 0
+fi
+
 echo "=========================================="
-echo "PX4 Build Script for Renesas RA8/RZ Targets"
+echo "PX4 Build Script for Renesas RA8/RZV Targets"
 echo "=========================================="
 echo
-
-# Optional: Clean NuttX build artifacts if previous build failed
-# Uncomment the following lines if you encounter build issues due to
-# previous failed builds for different targets
-#
-# echo "Cleaning NuttX build artifacts..."
-# cd platforms/nuttx/NuttX/nuttx
-# make distclean
-# cd ../../../..
-# echo "NuttX artifacts cleaned."
-# echo
 
 echo "Building PX4 for Renesas targets..."
+printf '  %s\n' "${TARGETS[@]}"
 echo
 
-# Build currently supported targets
-#echo "Building renesas_evk-ra8p1_default..."
-#echo "y" | make renesas_evk-ra8p1_default
-#echo "✓ renesas_evk-ra8p1_default build completed"
-#echo
+for target in "${TARGETS[@]}"; do
+	if [ "$DO_CLEAN" -eq 1 ]; then
+		clean_nuttx_artifacts
+	fi
 
-#echo "Building renesas_evk-ra8p1-io-cm33_default..."
-#echo "y" | make renesas_evk-ra8p1-io-cm33_default
-#echo "✓ renesas_evk-ra8p1-io-cm33_default build completed"
-#echo
-
-#echo "Building renesas_fpb-ra8e1_default..."
-#echo "y" | make renesas_fpb-ra8e1_default
-#echo "✓ renesas_fpb-ra8e1_default build completed"
-#echo
-
-echo "Building renesas_rdk-rzv2h_default..."
-echo "y" | make renesas_rdk-rzv2h_default
-echo "✓ renesas_rdk-rzv2h_default build completed"
-echo
-echo "Building renesas_rdk-rzv2h-io-cr8_1_default..."
-echo "y" | make renesas_rdk-rzv2h-io-cr8_1_default
-echo "✓ renesas_rdk-rzv2h-io-cr8_1_default build completed"
-echo
-echo "Building renesas_rdk-rzv2h-io-cm33_default..."
-echo "y" | make renesas_rdk-rzv2h-io-cm33_default
-echo "✓ renesas_rdk-rzv2h-io-cm33_default build completed"
-echo
+	echo "Building ${target}..."
+	make "$target"
+	echo "OK: ${target} build completed"
+	echo
+done
 
 echo "=========================================="
 echo "All builds completed successfully!"
