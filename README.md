@@ -10,12 +10,34 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 
 ### Currently Supported
 
-- ⏸ **Renesas EVK-RA8P1 PX4 CM85**  - Basic Support
-- ⏸ **Renesas EVK-RA8P1 PX4 CM33**  - Build Only
-- ⏸ **Renesas FPB-RA8E1 PX4 CR8_0** - Basic Support
+- ⏸ **Renesas FPB-RA8E1 PX4 CM85**  - Basic Test (BSP, SHELL and SPI)
+
+- ⏸ **Renesas EVK-RA8P1 PX4 CM85**  - Basic Test (BSP, SHELL, SPI and PWM)
+
+- ⏸ **Renesas EVK-RA8P1 IO  CM33**  - Build Only
+
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0** - Build Only
+
 - ⏸ **Renesas RDK-RZV2H IO  CR8_1** - Build Only
+
 - ⏸ **Renesas RDK-RZV2H IO  CM33**  - Build Only
+
+### Build Targets
+
+`./build.sh --list` currently reports these Renesas targets:
+
+```text
+renesas_evk-ra8p1_default
+renesas_evk-ra8p1_dshot
+renesas_evk-ra8p1-io-cm33_default
+renesas_evk-ra8p1_test
+renesas_fpb-ra8e1_default
+renesas_fpb-ra8e1_dshot
+renesas_fpb-ra8e1_test
+renesas_rdk-rzv2h_default
+renesas_rdk-rzv2h-io-cm33_default
+renesas_rdk-rzv2h-io-cr8_1_default
+```
 
 ## Quick Start
 
