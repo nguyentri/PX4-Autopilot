@@ -9,6 +9,27 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
+# Belt-and-braces: scrub leaked toolchain env vars (e2studio FSP env, etc.)
+# that would override platforms/nuttx/cmake/Toolchain-arm-none-eabi.cmake and
+# fail the CMake compiler test. Same set as build_setup.sh.
+_hostile_vars=(
+	CMAKE_C_COMPILER CMAKE_CXX_COMPILER CMAKE_ASM_COMPILER
+	CC CXX LD AR AS NM OBJCOPY OBJDUMP STRIP RANLIB
+	CFLAGS CXXFLAGS LDFLAGS ASFLAGS CPPFLAGS
+)
+_scrubbed=()
+for _v in "${_hostile_vars[@]}"; do
+	if [ -n "${!_v-}" ]; then
+		_scrubbed+=("$_v")
+		unset "$_v"
+	fi
+done
+if [ "${#_scrubbed[@]}" -gt 0 ]; then
+	echo "[build.sh] Unset leaked toolchain env vars: ${_scrubbed[*]}" >&2
+	echo "[build.sh] Tip: source ./build_setup.sh to scrub them in your shell too." >&2
+fi
+unset _hostile_vars _scrubbed _v
+
 export GIT_SUBMODULES_ARE_EVIL=1
 
 clean_nuttx_artifacts()

@@ -18,6 +18,12 @@ set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
 # needed for test compilation
 set(CMAKE_EXE_LINKER_FLAGS_INIT "--specs=nosys.specs")
 
+# Compile-only compiler check — never link a hosted-mode test program.
+# Robust against leaked CMAKE_*_COMPILER / CC / CXX env vars that would otherwise
+# bypass CMAKE_EXE_LINKER_FLAGS_INIT and fail on _exit/_write/_sbrk during the
+# CMake compiler probe.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
 # compiler tools
 find_program(CMAKE_AR ${TOOLCHAIN_PREFIX}-gcc-ar)
 find_program(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)

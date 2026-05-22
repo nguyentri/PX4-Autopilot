@@ -610,7 +610,7 @@ distclean:
 	@rm -rf "$(SRC_DIR)/build"
 
 # WARNING: DO NOT UNCOMMENT THESE LINES - They will reset submodules to default branches
-# and potentially lose custom branch configurations (like NuttX_Px4_RA8_Refactoring)
+# and potentially lose custom branch configurations
 # The Makefile now guards destructive operations behind FORCE_SUBMODULE_CLEAN.
 #@git submodule deinit --force $(SRC_DIR)
 #@git clean --force -X "$(SRC_DIR)/msg/" "$(SRC_DIR)/platforms/" "$(SRC_DIR)/posix-configs/" "$(SRC_DIR)/ROMFS/" "$(SRC_DIR)/src/" "$(SRC_DIR)/test/" "$(SRC_DIR)/Tools/"

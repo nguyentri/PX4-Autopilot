@@ -19,104 +19,50 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 
 ## Quick Start
 
-### Clone the Repository
-
 ```bash
-git clone -b px4_ra8_rz https://github.com/nguyentri/PX4-Autopilot.git
+git clone -b px4_ra_rzv https://github.com/nguyentri/PX4-Autopilot.git
 cd PX4-Autopilot
+
+# One-time setup: scrubs hostile env vars, checks deps, inits submodules.
+# Use `source` so the env scrub propagates into your shell.
+source ./build_setup.sh
+
+# Build one target...
+./build.sh renesas_evk-ra8p1_default
+# ...or build every Renesas target
+./build.sh
 ```
 
-### Initialize Submodules
-
-```bash
-git submodule update --init --recursive
-make sync_nuttx_submodules
-```
-
-The first command initializes all PX4 submodules. The second command syncs the
-custom Renesas NuttX submodule remotes from `.gitmodules` while keeping their
-superproject-pinned commits.
-
-### Build and Flash
-
-```bash
-# Build for RA8P1 EVK
-make renesas_evk-ra8p1_default
-
-# Or use the convenience script
-./make
-```
+`./build.sh --list` enumerates every supported target. `make <target>` works too
+and is equivalent to `./build.sh <target>`.
 
 ## Prerequisites
 
-### System Requirements
+`build_setup.sh` validates every requirement; install whatever it flags missing.
+For background, see the [PX4 Development Environment Setup](https://docs.px4.io/main/en/dev_setup/dev_env.html).
 
-- Ubuntu 18.04 or later (recommended) or macOS
-- Minimum 8GB RAM, 50GB free disk space
-- ARM GCC toolchain
-- Python 3.6+
+Required: Linux/macOS host, ARM GCC 9+ (`arm-none-eabi-gcc` on `PATH`), CMake
+3.20+, Ninja, Python 3.6+ with `kconfiglib`.
 
-### Dependencies
+> **Heads-up:** if you sourced the e2studio FSP env script, it exports
+> `CMAKE_C_COMPILER` / `CMAKE_CXX_COMPILER` etc. which break the CMake compiler
+> test. `build_setup.sh` (sourced) and `build.sh` both unset these defensively.
 
-Install the required dependencies following the [PX4 Development Environment Setup](https://docs.px4.io/main/en/dev_setup/dev_env.html).
+## Repository Layout
 
-Key dependencies include:
-- CMake 3.20+
-- Ninja build system
-- ARM GCC 9+
-- Python packages (pip install -r requirements.txt)
+Renesas builds validate that the custom NuttX submodules track:
 
-## Building PX4
+- `platforms/nuttx/NuttX/nuttx` → `https://github.com/nguyentri/NuttX_Px4.git`, branch `nuttx_ra_rzv`
+- `platforms/nuttx/NuttX/apps` → `https://github.com/nguyentri/nuttx-apps.git`, branch `main`
 
-### Environment Setup
+The `renesas_rdk-rzv2h_default` target is CR8-only — no CA55/Linux, SD, or
+RPMsg dependency. Production console is SEGGER RTT and parameters live at
+`/fs/params` on the board-mounted XSPI LittleFS volume.
 
-The Makefile exports `GIT_SUBMODULES_ARE_EVIL=1` by default to preserve
-PX4's normal submodule behavior. Renesas builds validate that the custom NuttX
-repositories use:
+### Switching Targets
 
-- `platforms/nuttx/NuttX/nuttx` -> `https://github.com/nguyentri/NuttX_Px4.git`, branch `nuttx_ra_rzv`
-- `platforms/nuttx/NuttX/apps` -> `https://github.com/nguyentri/nuttx-apps.git`, branch `main`
-
-### Clean Build (if needed)
-
-If a previous build failed for a different target, clean the NuttX artifacts:
-
-```bash
-cd platforms/nuttx/NuttX/nuttx
-make distclean
-cd ../../../..
-```
-
-### Build Commands
-
-Build for specific Renesas targets:
-
-```bash
-# RA8P1 EVK
-make renesas_evk-ra8p1_default
-
-# RA8P1 IO CM33
-make renesas_evk-ra8p1-io-cm33_default
-
-# Other targets (when enabled)
-# make renesas_fpb-ra8e1_default
-# make renesas_rdk-rzv2h_default
-```
-
-The `renesas_rdk-rzv2h_default` target is CR8-only and does not depend on
-CA55/Linux, SD, or RPMsg services. Production console is SEGGER RTT, and
-parameters are stored at `/fs/params` on the board-mounted XSPI LittleFS
-volume.
-
-### Automated Build Script
-
-Use the provided `build` script for batch building:
-
-```bash
-./build
-```
-
-This script builds all currently supported targets.
+`./build.sh` runs `make distclean` in NuttX between targets automatically.
+Pass `--no-clean` to skip when iterating on a single target.
 
 ## License
 
