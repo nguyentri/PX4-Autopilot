@@ -65,7 +65,7 @@ all: ensure_custom_nuttx_submodules
 
 # Keep custom NuttX submodule remotes aligned with .gitmodules without moving
 # normal builds to live branch tips.
-.PHONY: sync_nuttx_submodules ensure_custom_nuttx_submodules ensure_nuttx_ra8p1_branch
+.PHONY: sync_nuttx_submodules ensure_custom_nuttx_submodules ensure_nuttx_ra8p1_branch recover_nuttx_submodules
 sync_nuttx_submodules:
 	@echo "Syncing custom NuttX submodule remotes from .gitmodules..."
 	@git submodule sync --recursive -- $(NUTTX_SUBMODULES)
@@ -105,6 +105,27 @@ ensure_custom_nuttx_submodules:
 	done
 
 ensure_nuttx_ra8p1_branch: ensure_custom_nuttx_submodules
+
+# Destructive recovery for "not our ref" / "did not contain <sha>" errors caused
+# by a stale URL cached in .git/modules/.../config from an older .gitmodules.
+#
+# WARNING: wipes .git/modules/<path>/ for the custom NuttX submodules. Any
+# uncommitted changes, local commits, stashes, or reflog entries inside those
+# submodules are lost. Opt-in only — never run from a normal build target.
+recover_nuttx_submodules:
+	@echo "WARNING: this will wipe .git/modules/ for:"
+	@printf '  %s\n' $(NUTTX_SUBMODULES)
+	@echo "Any uncommitted submodule work / local commits / stashes will be LOST."
+	@echo "Press Ctrl+C within 5s to abort..."
+	@sleep 5
+	@set -e; \
+	for submodule_path in $(NUTTX_SUBMODULES); do \
+		echo "Deinit $$submodule_path"; \
+		git submodule deinit -f "$$submodule_path" || true; \
+		echo "Remove .git/modules/$$submodule_path"; \
+		rm -rf ".git/modules/$$submodule_path"; \
+	done
+	@$(MAKE) sync_nuttx_submodules
 
 # define a space character to be able to explicitly find it in strings
 space := $(subst ,, )

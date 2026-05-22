@@ -115,10 +115,31 @@ fi
 # ---------------------------------------------------------------------------
 # 3. Submodules
 # ---------------------------------------------------------------------------
-log "Initializing PX4 submodules..."
-git submodule update --init --recursive
+log "Syncing submodule URLs from .gitmodules into .git/config..."
+# MUST run before 'submodule update' — otherwise an existing clone whose URL has
+# changed in .gitmodules (e.g. moved from upstream PX4 to a custom fork) will
+# fetch from the old URL and fail with "not our ref" on commits that only live
+# in the new remote.
+git submodule sync --recursive
 
-log "Syncing custom Renesas NuttX submodule remotes..."
+log "Initializing PX4 submodules..."
+submod_log="$(mktemp)"
+if ! git submodule update --init --recursive 2>&1 | tee "$submod_log"; then
+	if grep -qE "not our ref|did not contain [0-9a-f]{7,}" "$submod_log"; then
+		err "Submodule init failed with stale-URL signature."
+		err "A previous clone cached the old submodule URL in .git/modules/. To"
+		err "recover (destructive — wipes uncommitted work in those submodules):"
+		err "  make recover_nuttx_submodules"
+		rm -f "$submod_log"
+		if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 1; else exit 1; fi
+	fi
+	err "Submodule init failed for a non-recoverable reason. See log above."
+	rm -f "$submod_log"
+	if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 1; else exit 1; fi
+fi
+rm -f "$submod_log"
+
+log "Validating custom Renesas NuttX submodule remotes..."
 make sync_nuttx_submodules
 
 # ---------------------------------------------------------------------------
