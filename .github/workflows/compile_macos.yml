@@ -30,6 +30,8 @@ jobs:
         python-version: "3.10"
 
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
     - name: setup
       run: ./Tools/setup/macos.sh; ./Tools/setup/macos.sh

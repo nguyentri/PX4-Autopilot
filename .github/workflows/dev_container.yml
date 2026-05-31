@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-tags: true
-          submodules: false
+          submodules: recursive
           fetch-depth: 0
 
       - name: Set PX4 Tag

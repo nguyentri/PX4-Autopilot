@@ -43,6 +43,8 @@ jobs:
           git config --global --add safe.directory $(realpath .)
 
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Deps, Build, and Make Quick Check
         run: |
