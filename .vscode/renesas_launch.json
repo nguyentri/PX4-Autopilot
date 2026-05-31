@@ -6,7 +6,6 @@
             "cwd": "${workspaceRoot}",
             "executable": "${workspaceRoot}/build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf",
             //"executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
-            //"executable": "${workspaceRoot}/.refs/renesas_fsp_ra8p1/ek_ra8p1_dualcore/ek_ra8p1_dualcore_CPU0/Debug/ek_ra8p1_dualcore_CPU0.elf",
             "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
             "request": "launch",
             "type": "cortex-debug",
@@ -19,7 +18,7 @@
             ],
             "device": "R7KA8P1KF_CPU0",
             "showDevDebugOutput": "parsed",
-            "runToEntryPoint": "main",
+            "runToEntryPoint": "__start",
             "rttConfig": {
                 "enabled": true,
                 "address": "auto",
@@ -40,12 +39,10 @@
                 "monitor halt",
                 "load",
                 // Enable to load the IO CM33 core binary
-                "add-symbol-file ${workspaceRoot}/.refs/renesas_fsp_ra8p1/ek_ra8p1_dualcore/ek_ra8p1_dualcore_CPU1/Debug/ek_ra8p1_dualcore_CPU1.elf",
-                "restore ${workspaceRoot}/.refs/renesas_fsp_ra8p1/ek_ra8p1_dualcore/ek_ra8p1_dualcore_CPU1/Debug/ek_ra8p1_dualcore_CPU1.bin binary 0x02080000",
+                //"add-symbol-file ${workspaceRoot}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf",
+                //"restore ${workspaceRoot}/build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.bin binary 0x08000000",
                 "monitor reset",
-                "monitor halt",
-                "monitor exec SetRTTSearchRanges 0x20000000 0x10000 0x22000000 0x10000",
-                "monitor exec SetRTTChannel 0 Terminal"
+                "monitor halt"
             ],
             "preLaunchCommands": [
                 "source ${workspaceFolder}/platforms/nuttx/Debug/PX4",
@@ -115,7 +112,7 @@
             ],
             "device": "R9A09G057H_CR8_0",
             "showDevDebugOutput": "parsed",
-            "runToEntryPoint": "main",
+            "runToEntryPoint": "__start",
             "rttConfig": {
                 "enabled": true,
                 "address": "auto",
