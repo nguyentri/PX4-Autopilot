@@ -62,6 +62,19 @@ else()
 		set(lib_dir "lib")
 	endif()
 
+	# External static library configure checks provide their own main; do not link libFuzzer main there.
+	set(microxrceddsclient_exe_linker_flags "${CMAKE_EXE_LINKER_FLAGS}")
+	if(CMAKE_BUILD_TYPE STREQUAL FuzzTesting)
+		set(microxrceddsclient_exe_linker_flags "")
+		separate_arguments(microxrceddsclient_exe_linker_flags_list UNIX_COMMAND "${CMAKE_EXE_LINKER_FLAGS}")
+		foreach(linker_flag IN LISTS microxrceddsclient_exe_linker_flags_list)
+			if(linker_flag STREQUAL "-fsanitize=fuzzer")
+				set(linker_flag "-fsanitize=fuzzer-no-link")
+			endif()
+			string(APPEND microxrceddsclient_exe_linker_flags " ${linker_flag}")
+		endforeach()
+	endif()
+
 	include(ExternalProject)
 
 	ExternalProject_Add(
@@ -75,7 +88,7 @@ else()
 			-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
 			-DCMAKE_C_FLAGS:STRING=${c_flags_with_includes}
 			-DCMAKE_CXX_FLAGS:STRING=${cxx_flags_with_includes}
-			-DCMAKE_EXE_LINKER_FLAGS:STRING=${CMAKE_EXE_LINKER_FLAGS}
+			-DCMAKE_EXE_LINKER_FLAGS:STRING=${microxrceddsclient_exe_linker_flags}
 			-DUCLIENT_PIC:BOOL=OFF
 			-DUCLIENT_PROFILE_TCP:BOOL=OFF
 			-DUCLIENT_PROFILE_UDP:BOOL=ON
