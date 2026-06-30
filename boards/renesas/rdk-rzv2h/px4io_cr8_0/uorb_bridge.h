@@ -34,10 +34,13 @@
 /**
  * @file uorb_bridge.h
  *
- * uORB Bridge for CR8-0 (FMU) <-> CR8-1 (I/O) communication
+ * uORB Bridge for CR8-0 (FMU) <-> CR8-1 (I/O) communication.
  *
- * This module bridges PX4 uORB topics to the shared memory IPC layer,
- * enabling CR8-0 flight controller to communicate with CR8-1 I/O processor.
+ * Bridges PX4 uORB topics to the inter-core IPC. Transport is the NuttX IPCC
+ * character device (/dev/ipcc1), backed by the raw MHU doorbell + DDR
+ * shared-ring lower half. This replaces the legacy raw-pointer ring at
+ * 0x70000000. One protocol message per ring entry, framed by MessageHeader_t
+ * and validated by CRC32; the RX path reads frames and dispatches by msg_type.
  */
 
 #pragma once
@@ -48,7 +51,6 @@
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/esc_status.h>
 #include <uORB/topics/battery_status.h>
-#include <uORB/topics/safety.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/Subscription.hpp>
@@ -56,53 +58,25 @@
 
 #include "protocol.h"
 
-/**
- * @brief CR8-0 side of the uORB bridge
- *
- * This class runs on CR8-0 (FMU) and:
- * - Subscribes to actuator_outputs, vehicle_command, vehicle_status
- * - Publishes input_rc, esc_status, battery_status, safety
- * - Manages heartbeat exchange with CR8-1
- */
-class UorbBridgeCR8 {
+class UorbBridgeCR8
+{
 public:
 	/**
-	 * @brief Constructor
-	 * @param cr8_shm_base Base address of CR8-0 <-> CR8-1 shared memory (0x70000000)
+	 * @param dev_path IPCC character device for the CR8-0 <-> CR8-1 link
+	 *                 (e.g. "/dev/ipcc1").
 	 */
-	UorbBridgeCR8(uintptr_t cr8_shm_base);
-	~UorbBridgeCR8() = default;
+	explicit UorbBridgeCR8(const char *dev_path);
+	~UorbBridgeCR8();
 
-	/**
-	 * @brief Initialize shared memory and validate magic numbers
-	 * @return true if initialization successful
-	 */
+	/** Open the IPCC device. */
 	bool init();
 
-	/**
-	 * @brief Process one iteration of the bridge
-	 *
-	 * Should be called at 100-400Hz from main FMU loop.
-	 * - Reads new actuator_outputs and sends to CR8-1
-	 * - Reads new data from CR8-1 and publishes to uORB
-	 * - Sends heartbeat, checks CR8-1 heartbeat
-	 */
+	/** Process one iteration (TX uORB->IPC, RX IPC->uORB, heartbeat). */
 	void update();
 
-	/**
-	 * @brief Check if CR8-1 is alive
-	 * @return true if heartbeat received within FMU_LOSS_TIMEOUT_US
-	 */
 	bool is_io_alive() const { return _io_alive; }
-
-	/**
-	 * @brief Get last IO heartbeat timestamp
-	 */
 	uint64_t get_last_io_heartbeat() const { return _last_io_heartbeat_us; }
 
-	/**
-	 * @brief Get statistics
-	 */
 	struct Stats {
 		uint32_t tx_actuator_count;
 		uint32_t tx_vehicle_cmd_count;
@@ -118,10 +92,10 @@ public:
 	const Stats &get_stats() const { return _stats; }
 
 private:
-	/* Shared memory pointer */
-	SharedMemCR8_t *_shm;
+	const char *_dev_path;
+	int         _fd{-1};
 
-	/* Sequence numbers */
+	/* TX sequence numbers */
 	uint16_t _seq_actuator{0};
 	uint16_t _seq_vehicle_cmd{0};
 	uint16_t _seq_vehicle_status{0};
@@ -133,11 +107,9 @@ private:
 	uint16_t _expected_seq_battery{0};
 	uint16_t _expected_seq_safety{0};
 
-	/* Heartbeat tracking */
 	uint64_t _last_io_heartbeat_us{0};
 	bool _io_alive{false};
 
-	/* Statistics */
 	Stats _stats{};
 
 	/* uORB subscriptions (CR8-0 sources) */
@@ -149,27 +121,24 @@ private:
 	uORB::Publication<input_rc_s> _input_rc_pub{ORB_ID(input_rc)};
 	uORB::Publication<esc_status_s> _esc_status_pub{ORB_ID(esc_status)};
 	uORB::Publication<battery_status_s> _battery_status_pub{ORB_ID(battery_status)};
-	uORB::Publication<safety_s> _safety_pub{ORB_ID(safety)};
+	/* NOTE: the legacy `safety` uORB topic was removed upstream; SafetyStatus_t
+	 * frames are received but not republished (no current uORB equivalent). */
 
-	/* Private methods */
-	uint32_t calculate_crc32(const uint8_t *data, size_t len);
-	bool validate_message_crc(const MessageHeader_t *msg, size_t msg_size);
-	void fill_header(MessageHeader_t *header, uint8_t msg_type, uint16_t &seq);
+	static uint32_t calculate_crc32(const uint8_t *data, size_t len);
+	bool validate_message_crc(const void *frame, size_t msg_size);
 
-	template <typename T, int Size>
-	bool push(RingBuffer<T, Size> &rb, const T &item);
+	/* Stamp header (magic/version/type/seq/timestamp/crc) and write one frame. */
+	bool send_msg(MessageType_e type, uint16_t &seq, void *msg, size_t len);
 
-	template <typename T, int Size>
-	bool pop(RingBuffer<T, Size> &rb, T &item);
-
-	/* Process functions */
+	/* TX: CR8-0 -> CR8-1 */
 	void process_actuator_outputs();
 	void process_vehicle_command();
 	void process_vehicle_status();
-	void process_input_rc();
-	void process_esc_status();
-	void process_battery_status();
-	void process_safety_status();
 	void send_heartbeat();
-	void check_io_heartbeat();
+
+	/* RX: CR8-1 -> CR8-0 (single read+dispatch loop) + heartbeat liveness */
+	void process_rx();
+	void publish_input_rc(const InputRC_t &rc_msg);
+	void publish_esc_status(const ESCStatus_t &esc_msg);
+	void publish_battery_status(const BatteryStatus_t &batt_msg);
 };

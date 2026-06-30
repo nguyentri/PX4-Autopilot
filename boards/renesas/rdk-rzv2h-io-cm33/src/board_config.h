@@ -67,9 +67,7 @@
 #define BOARD_HAS_WATCHDOG 1
 #define WATCHDOG_TIMEOUT_MS 500
 
-/* IPC Shared Memory */
-#define PX4IO_IPC_RAM_BASE 0x70000000
-#define PX4IO_IPC_RAM_SIZE 0x10000
+/* Inter-core IPC uses the NuttX IPCC device /dev/ipcc3 (raw MHU + DDR ring) */
 
 /* Safety Switch */
 #define GPIO_SAFETY_SWITCH_IN (0) /* Placeholder */

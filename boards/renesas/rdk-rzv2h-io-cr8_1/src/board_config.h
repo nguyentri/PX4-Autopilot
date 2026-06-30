@@ -89,9 +89,7 @@
 /* CAN-FD */
 #define UAVCAN_DEVICE_PATH "/dev/can0"
 
-/* IPC Shared Memory */
-#define PX4IO_IPC_RAM_BASE 0x70000000
-#define PX4IO_IPC_RAM_SIZE 0x10000
+/* Inter-core IPC uses the NuttX IPCC devices /dev/ipcc1 (FMU) and /dev/ipcc3 */
 
 /* Safety Switch */
 #define GPIO_SAFETY_SWITCH_IN (0) /* Placeholder */

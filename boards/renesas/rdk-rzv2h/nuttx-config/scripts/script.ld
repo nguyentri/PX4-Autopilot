@@ -40,9 +40,9 @@ SRAM_UNCACHE_PRV_LENGTH = DEFINED(CR8_0) ? 0x0001FFFC : 0x0001FFFC;
 XSPIFLASH_PRV_START     = DEFINED(CR8_0) ? XSPIFLASH_CR8_0_START : XSPIFLASH_CR8_1_START;
 XSPIFLASH_PRV_LENGTH    = DEFINED(CR8_0) ? XSPIFLASH_CR8_0_LENGTH : XSPIFLASH_CR8_1_LENGTH;
 DDR_CACHE_PRV_START     = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x00800000 : DDR0_CR8_1_START + 0x01800000;
-/* FIX-107: FSP-aligned 15 MB (was 16 MB which overlapped DDR_UNCACHE by 8 MB). */
+/* FSP-aligned 15 MB (was 16 MB which overlapped DDR_UNCACHE by 8 MB). */
 DDR_CACHE_LENGTH        = DEFINED(CR8_0) ? 0x00F00000 : 0x00F00000;
-/* FIX-107: shift uncache start past cache end (CR8_0: DDR0+0x01800000, CR8_1: DDR0+0x02800000). */
+/* Shift uncache start past cache end (CR8_0: DDR0+0x01800000, CR8_1: DDR0+0x02800000). */
 DDR_UNCACHE_PRV_START   = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x01800000 : DDR0_CR8_1_START + 0x02800000;
 DDR_UNCACHE_LENGTH      = DEFINED(CR8_0) ? 0x00800000 : 0x00800000;
 
@@ -52,7 +52,14 @@ OPENAMP_RSCTBL_LENGTH   = 0x00001000;
 MHU_SHMEM_START         = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x02f01000 : DDR0_CR8_1_START + 0x02f01000;
 MHU_SHMEM_LENGTH        = 0x00001000;
 OPENAMP_VRING_START     = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x03000000 : DDR0_CR8_1_START + 0x03000000;
-OPENAMP_VRING_LENGTH    = 0x00F00000;
+/* Shrink VRING to 8 MiB (matches the rpmsg footprint).
+ * The original 0x00F00000 (15 MiB) reached 0x43EFFFFF, fully enclosing
+ * the IPC raw SHM carveout at 0x43800000-0x4381FFFF.
+ * 8 MiB ends at 0x43800000 exactly, leaving the SHM region clean.
+ */
+OPENAMP_VRING_LENGTH    = 0x00800000;
+IPC_RAW_SHM_START       = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x03800000 : DDR0_CR8_1_START + 0x03800000;
+IPC_RAW_SHM_LENGTH      = 0x00040000;  /* 256 KiB (CR8↔CR8 64K @+0 + CR8↔CM33 32K @+0x10000 + LB 16K @+0x18000 + pad + CR8_1↔CM33 32K @+0x20000 + headroom) */
 
 /* Flash header infomation */
 ITCM_HEADER_START  = DEFINED(CR8_0) ? SRAM_CR8_0_START + 0x0001FE00 : SRAM_CR8_1_START + 0x0001FE00;
@@ -82,6 +89,7 @@ MEMORY
     OPENAMP_RSCTBL(rw): ORIGIN = OPENAMP_RSCTBL_START,LENGTH = OPENAMP_RSCTBL_LENGTH
     MHU_SHMEM(rw)     : ORIGIN = MHU_SHMEM_START,     LENGTH = MHU_SHMEM_LENGTH
     OPENAMP_VRING(rw) : ORIGIN = OPENAMP_VRING_START, LENGTH = OPENAMP_VRING_LENGTH
+    IPC_RAW_SHM(rw)   : ORIGIN = IPC_RAW_SHM_START,   LENGTH = IPC_RAW_SHM_LENGTH
 
     HEADER_REGION(r) : ORIGIN = ITCM_HEADER_START, LENGTH = HEADER_LENGTH
 
@@ -89,14 +97,16 @@ MEMORY
     INIT_WAIT_AREA_OTHER_CORE(rw) : ORIGIN = INIT_WAIT_AREA_OTHER_CORE_START, LENGTH = INIT_WAIT_AREA_LENGTH
 
     DUMMY : ORIGIN = DUMMY_START, LENGTH = DUMMY_LENGTH
-
-    /* IPC RAM for CR8-0 <-> CR8-1 <-> M33 communication (non-cacheable) */
-    IPC_RAM (rw) : ORIGIN = 0x70000000, LENGTH = 64K
 }
 
-/* FIX-107: guard against future regressions overlapping DDR cache/uncache. */
+/* Guard against future regressions overlapping DDR cache/uncache. */
 ASSERT(DDR_UNCACHE_PRV_START >= DDR_CACHE_PRV_START + DDR_CACHE_LENGTH,
        "DDR_UNCACHE region overlaps DDR_CACHE - adjust DDR_CACHE_LENGTH or DDR_UNCACHE_PRV_START");
+ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= OPENAMP_RSCTBL_START,
+       "DDR_UNCACHE overruns OPENAMP_RSCTBL/MHU/VRING - reduce DDR_UNCACHE_LENGTH");
+/* HIGH-1 assertion: IPC_RAW_SHM must not overlap OPENAMP_VRING */
+ASSERT(IPC_RAW_SHM_START >= OPENAMP_VRING_START + OPENAMP_VRING_LENGTH,
+       "IPC_RAW_SHM overlaps OPENAMP_VRING - check SHM and VRING sizes");
 
 PHDRS
 {
@@ -489,6 +499,11 @@ SECTIONS
 
     __tz_MHU_SHMEM = ABSOLUTE ( MHU_SHMEM_START ) ;
     . = __tz_MHU_SHMEM;
+    /* NOLOAD: OPENAMP_RSCTBL lives outside the flashed load image (not covered
+     * by the ITCM/SRAM/SDRAM header descriptors), so it is never carried in the
+     * split .bin nor copied by the boot loader. rzv_openamp_resource_table_init()
+     * populates it at runtime before CA55 reads it. Matches the FSP baseline.
+     */
     .resource_table (NOLOAD) :
     {
         PROVIDE(__rsctbl_start = .);
@@ -511,18 +526,6 @@ SECTIONS
         . += OPENAMP_VRING_LENGTH;
         PROVIDE(__vring_end = .);
     } > OPENAMP_VRING : openamp_ph
-
-    /* IPC RAM Section for CR8-0 <-> CR8-1 communication (non-cacheable) */
-    .ipc_ram (NOLOAD) :
-    {
-        . = ALIGN(0x40);
-        PROVIDE(__ipc_ram_start = .);
-        PROVIDE(__ipc_cr8_cr8_base = .);
-        *(.ipc_ram)
-        *(.ipc_ram.*)
-        . = ALIGN(0x40);
-        PROVIDE(__ipc_ram_end = .);
-    } > IPC_RAM
 
     _itcm_load_addr = FLASH_DATA_START;
     _itcm_load_size = _itcm_load_end - _itcm_load_start;

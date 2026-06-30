@@ -39,16 +39,18 @@
 
 #include "sharedmem_transport.h"
 #include "board_config.h"
+#include <errno.h>
 
 extern "C" __EXPORT int px4io_cr8_main(int argc, char *argv[]);
 
 class Px4IoCr8 : public ModuleBase<Px4IoCr8>
 {
 public:
-	Px4IoCr8() : _transport(PX4IO_IPC_RAM_BASE) {}
+	Px4IoCr8() : _transport("/dev/ipcc3") {}
 	virtual ~Px4IoCr8() = default;
 
 	static int task_spawn(int argc, char *argv[]);
+	static Px4IoCr8 *instantiate(int argc, char *argv[]);
 	static int custom_command(int argc, char *argv[]);
 	static int print_usage(const char *reason = nullptr);
 
@@ -60,22 +62,24 @@ private:
 
 int Px4IoCr8::task_spawn(int argc, char *argv[])
 {
-	Px4IoCr8 *instance = new Px4IoCr8();
+	_task_id = px4_task_spawn_cmd("px4io_cr8",
+				      SCHED_DEFAULT,
+				      SCHED_PRIORITY_DEFAULT,
+				      2048,
+				      (px4_main_t)&run_trampoline,
+				      (char *const *)argv);
 
-	if (instance) {
-		_object.store(instance);
-		_task_id = task_id_is_work_queue;
-
-		if (instance->start() == PX4_OK) {
-			return PX4_OK;
-		} else {
-			delete instance;
-			_object.store(nullptr);
-			_task_id = -1;
-		}
+	if (_task_id < 0) {
+		_task_id = -1;
+		return -errno;
 	}
 
-	return PX4_ERROR;
+	return PX4_OK;
+}
+
+Px4IoCr8 *Px4IoCr8::instantiate(int argc, char *argv[])
+{
+	return new Px4IoCr8();
 }
 
 int Px4IoCr8::custom_command(int argc, char *argv[])
@@ -109,9 +113,9 @@ void Px4IoCr8::run()
 	// Initialize transport as Master (CR8)
 	_transport.init(true);
 
-	ActuatorCommand cmd{};
-	PWMFeedback feedback{};
-	FaultStatus fault{};
+	ActuatorCmdToM33_t cmd{};
+	PWMFeedback_t feedback{};
+	FaultStatus_t fault{};
 
 	while (!should_exit()) {
 		// 1. Prepare Actuator Command (Dummy for now)

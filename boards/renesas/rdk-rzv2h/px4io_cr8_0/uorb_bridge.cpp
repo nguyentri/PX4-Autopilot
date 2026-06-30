@@ -34,65 +34,62 @@
 /**
  * @file uorb_bridge.cpp
  *
- * uORB Bridge implementation for CR8-0 (FMU) <-> CR8-1 (I/O) communication
+ * uORB Bridge implementation for CR8-0 (FMU) <-> CR8-1 (I/O), over /dev/ipcc1.
  */
 
 #include "uorb_bridge.h"
 
+#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 #include <drivers/drv_hrt.h>
 #include <px4_platform_common/log.h>
 
-#ifndef ARM_DMB
-#define ARM_DMB() __asm__ __volatile__ ("dmb" : : : "memory")
-#endif
+/* IPCC ring entry payload size; every protocol message fits in one entry. */
+static constexpr size_t IPC_ENTRY_SIZE = 64;
 
-#ifndef ARM_DSB
-#define ARM_DSB() __asm__ __volatile__ ("dsb" : : : "memory")
-#endif
-
-UorbBridgeCR8::UorbBridgeCR8(uintptr_t cr8_shm_base)
-	: _shm(reinterpret_cast<SharedMemCR8_t *>(cr8_shm_base))
+UorbBridgeCR8::UorbBridgeCR8(const char *dev_path)
+	: _dev_path(dev_path)
 {
+}
+
+UorbBridgeCR8::~UorbBridgeCR8()
+{
+	if (_fd >= 0) {
+		close(_fd);
+		_fd = -1;
+	}
 }
 
 bool UorbBridgeCR8::init()
 {
-	// Initialize shared memory (CR8-0 is master for CR8 <-> CR8 region)
-	memset(_shm, 0, sizeof(SharedMemCR8_t));
+	if (_fd < 0) {
+		_fd = open(_dev_path, O_RDWR | O_NONBLOCK);
+	}
 
-	// Set magic markers
-	_shm->magic_start = IPC_MAGIC_CR8;
-	_shm->magic_end = IPC_MAGIC_CR8;
+	if (_fd < 0) {
+		PX4_ERR("uORB bridge: failed to open %s", _dev_path);
+		return false;
+	}
 
-	// Ensure writes are visible to CR8-1
-	ARM_DSB();
-	ARM_DMB();
-
-	PX4_INFO("uORB Bridge initialized at 0x%08lx, size=%zu bytes",
-		 (unsigned long)_shm, sizeof(SharedMemCR8_t));
-
+	PX4_INFO("uORB bridge transport open: %s", _dev_path);
 	return true;
 }
 
 void UorbBridgeCR8::update()
 {
-	// TX: CR8-0 -> CR8-1
+	/* TX: CR8-0 -> CR8-1 */
 	process_actuator_outputs();
 	process_vehicle_command();
 	process_vehicle_status();
 	send_heartbeat();
 
-	// RX: CR8-1 -> CR8-0
-	process_input_rc();
-	process_esc_status();
-	process_battery_status();
-	process_safety_status();
-	check_io_heartbeat();
+	/* RX: CR8-1 -> CR8-0 (multiplexed; one read+dispatch loop) */
+	process_rx();
 }
 
 /*===========================================================================
- * CRC32 Calculation (IEEE 802.3 polynomial)
+ * CRC32 (IEEE 802.3 polynomial) + framing helpers
  *===========================================================================*/
 
 uint32_t UorbBridgeCR8::calculate_crc32(const uint8_t *data, size_t len)
@@ -115,26 +112,20 @@ uint32_t UorbBridgeCR8::calculate_crc32(const uint8_t *data, size_t len)
 	return ~crc;
 }
 
-bool UorbBridgeCR8::validate_message_crc(const MessageHeader_t *msg, size_t msg_size)
+bool UorbBridgeCR8::validate_message_crc(const void *frame, size_t msg_size)
 {
-	// Copy message to temporary buffer with CRC field zeroed
-	uint8_t temp[256];
-
-	if (msg_size > sizeof(temp)) {
+	if (msg_size > IPC_ENTRY_SIZE) {
 		return false;
 	}
 
-	memcpy(temp, msg, msg_size);
+	uint8_t temp[IPC_ENTRY_SIZE];
+	memcpy(temp, frame, msg_size);
 
-	// Zero the CRC field
 	MessageHeader_t *temp_hdr = reinterpret_cast<MessageHeader_t *>(temp);
 	uint32_t received_crc = temp_hdr->crc32;
 	temp_hdr->crc32 = 0;
 
-	// Calculate and compare
-	uint32_t calculated_crc = calculate_crc32(temp, msg_size);
-
-	if (received_crc != calculated_crc) {
+	if (received_crc != calculate_crc32(temp, msg_size)) {
 		_stats.crc_errors++;
 		return false;
 	}
@@ -142,65 +133,23 @@ bool UorbBridgeCR8::validate_message_crc(const MessageHeader_t *msg, size_t msg_
 	return true;
 }
 
-void UorbBridgeCR8::fill_header(MessageHeader_t *header, uint8_t msg_type, uint16_t &seq)
+bool UorbBridgeCR8::send_msg(MessageType_e type, uint16_t &seq, void *msg, size_t len)
 {
+	if (_fd < 0 || len > IPC_ENTRY_SIZE) {
+		return false;
+	}
+
+	MessageHeader_t *header = reinterpret_cast<MessageHeader_t *>(msg);
 	header->magic = IPC_MAGIC;
 	header->version = IPC_PROTOCOL_VERSION;
-	header->msg_type = msg_type;
+	header->msg_type = static_cast<uint8_t>(type);
 	header->sequence = seq++;
 	header->timestamp_us = hrt_absolute_time();
-	header->crc32 = 0; // Will be filled after message is complete
-}
+	header->crc32 = 0;
+	header->crc32 = calculate_crc32(reinterpret_cast<const uint8_t *>(msg), len);
 
-/*===========================================================================
- * Ring Buffer Operations
- *===========================================================================*/
-
-template <typename T, int Size>
-bool UorbBridgeCR8::push(RingBuffer<T, Size> &rb, const T &item)
-{
-	uint32_t next_head = (rb.head + 1) % Size;
-
-	if (next_head == rb.tail) {
-		return false; // Buffer full
-	}
-
-	// Copy item to buffer
-	rb.buffer[rb.head] = item;
-
-	// Ensure data is written before updating head
-	ARM_DMB();
-
-	rb.head = next_head;
-
-	// Ensure head update is visible
-	ARM_DMB();
-
-	return true;
-}
-
-template <typename T, int Size>
-bool UorbBridgeCR8::pop(RingBuffer<T, Size> &rb, T &item)
-{
-	// Read indices with barrier
-	ARM_DMB();
-
-	if (rb.head == rb.tail) {
-		return false; // Buffer empty
-	}
-
-	// Copy item from buffer
-	item = rb.buffer[rb.tail];
-
-	// Ensure data is read before updating tail
-	ARM_DMB();
-
-	rb.tail = (rb.tail + 1) % Size;
-
-	// Ensure tail update is visible
-	ARM_DMB();
-
-	return true;
+	ssize_t n = write(_fd, msg, len);
+	return n == static_cast<ssize_t>(len);
 }
 
 /*===========================================================================
@@ -213,11 +162,8 @@ void UorbBridgeCR8::process_actuator_outputs()
 
 	if (_actuator_outputs_sub.update(&actuator_outputs)) {
 		ActuatorCommand_t cmd{};
-		fill_header(&cmd.header, MSG_TYPE_ACTUATOR_CMD, _seq_actuator);
 
-		// Copy actuator outputs
 		for (int i = 0; i < IPC_MAX_ACTUATORS && i < actuator_outputs_s::NUM_ACTUATOR_OUTPUTS; i++) {
-			// Convert from normalized (-1..1 or 0..1) to PWM (1000-2000us)
 			float output = actuator_outputs.output[i];
 
 			if (output >= 0.0f) {
@@ -231,11 +177,7 @@ void UorbBridgeCR8::process_actuator_outputs()
 		cmd.armed = 1; // TODO: Get from vehicle_status
 		cmd.safety_off = 1; // TODO: Get from safety topic
 
-		// Calculate CRC
-		cmd.header.crc32 = 0;
-		cmd.header.crc32 = calculate_crc32((const uint8_t *)&cmd, sizeof(cmd));
-
-		if (push(_shm->actuator_cmds, cmd)) {
+		if (send_msg(MSG_TYPE_ACTUATOR_CMD, _seq_actuator, &cmd, sizeof(cmd))) {
 			_stats.tx_actuator_count++;
 		}
 	}
@@ -246,14 +188,11 @@ void UorbBridgeCR8::process_vehicle_command()
 	vehicle_command_s vehicle_command;
 
 	if (_vehicle_command_sub.update(&vehicle_command)) {
-		// Only forward arming/disarming commands to I/O processor
 		if (vehicle_command.command == vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM ||
 		    vehicle_command.command == vehicle_command_s::VEHICLE_CMD_DO_SET_ACTUATOR ||
 		    vehicle_command.command == vehicle_command_s::VEHICLE_CMD_DO_MOTOR_TEST) {
 
 			VehicleCommand_t cmd{};
-			fill_header(&cmd.header, MSG_TYPE_VEHICLE_CMD, _seq_vehicle_cmd);
-
 			cmd.command = vehicle_command.command;
 			cmd.target_system = vehicle_command.target_system;
 			cmd.target_component = vehicle_command.target_component;
@@ -265,10 +204,7 @@ void UorbBridgeCR8::process_vehicle_command()
 			cmd.param6 = vehicle_command.param6;
 			cmd.param7 = vehicle_command.param7;
 
-			cmd.header.crc32 = 0;
-			cmd.header.crc32 = calculate_crc32((const uint8_t *)&cmd, sizeof(cmd));
-
-			if (push(_shm->vehicle_cmds, cmd)) {
+			if (send_msg(MSG_TYPE_VEHICLE_CMD, _seq_vehicle_cmd, &cmd, sizeof(cmd))) {
 				_stats.tx_vehicle_cmd_count++;
 			}
 		}
@@ -281,18 +217,12 @@ void UorbBridgeCR8::process_vehicle_status()
 
 	if (_vehicle_status_sub.update(&vehicle_status)) {
 		VehicleStatus_t status{};
-		fill_header(&status.header, MSG_TYPE_VEHICLE_STATUS, _seq_vehicle_status);
-
 		status.arming_state = vehicle_status.arming_state;
 		status.nav_state = vehicle_status.nav_state;
 		status.hil_state = vehicle_status.hil_state;
 		status.vehicle_type = vehicle_status.vehicle_type;
-		// status.system_status and failsafe_flags would need custom mapping
 
-		status.header.crc32 = 0;
-		status.header.crc32 = calculate_crc32((const uint8_t *)&status, sizeof(status));
-
-		push(_shm->vehicle_status, status);
+		send_msg(MSG_TYPE_VEHICLE_STATUS, _seq_vehicle_status, &status, sizeof(status));
 	}
 }
 
@@ -301,21 +231,15 @@ void UorbBridgeCR8::send_heartbeat()
 	static uint64_t last_heartbeat_us = 0;
 	uint64_t now = hrt_absolute_time();
 
-	// Send heartbeat at 10Hz
-	if (now - last_heartbeat_us >= 100000) { // 100ms
+	if (now - last_heartbeat_us >= 100000) { // 10Hz
 		Heartbeat_t hb{};
-		fill_header(&hb.header, MSG_TYPE_HEARTBEAT, _seq_heartbeat);
-
 		hb.source_core = CORE_ID_CR8_0;
 		hb.state = 1; // Running
 		hb.cpu_load_pct = 0; // TODO: Get actual CPU load
 		hb.uptime_ms = now / 1000;
 		hb.loop_count = _stats.tx_heartbeat_count;
 
-		hb.header.crc32 = 0;
-		hb.header.crc32 = calculate_crc32((const uint8_t *)&hb, sizeof(hb));
-
-		if (push(_shm->heartbeat_fmu, hb)) {
+		if (send_msg(MSG_TYPE_HEARTBEAT, _seq_heartbeat, &hb, sizeof(hb))) {
 			_stats.tx_heartbeat_count++;
 		}
 
@@ -324,156 +248,69 @@ void UorbBridgeCR8::send_heartbeat()
 }
 
 /*===========================================================================
- * RX: CR8-1 -> CR8-0 (I/O Processor to FMU)
+ * RX: CR8-1 -> CR8-0 (one read+dispatch loop over the multiplexed stream)
  *===========================================================================*/
 
-void UorbBridgeCR8::process_input_rc()
+void UorbBridgeCR8::process_rx()
 {
-	InputRC_t rc_msg;
+	uint8_t frame[IPC_ENTRY_SIZE];
+	ssize_t n;
 
-	while (pop(_shm->input_rc, rc_msg)) {
-		// Validate CRC
-		if (!validate_message_crc(&rc_msg.header, sizeof(rc_msg))) {
+	/* Bounded drain: cap frames processed per tick so a flooded ring cannot
+	 * starve the TX/heartbeat path on this flight-critical loop. */
+	for (int budget = 2 * IPC_BUFFER_SIZE;
+	     budget > 0 && (n = read(_fd, frame, sizeof(frame))) > 0;
+	     budget--) {
+		const MessageHeader_t *hdr = reinterpret_cast<const MessageHeader_t *>(frame);
+
+		if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION) {
 			continue;
 		}
 
-		// Check sequence
-		if (rc_msg.header.sequence != _expected_seq_rc) {
-			_stats.sequence_gaps++;
+		switch (hdr->msg_type) {
+		case MSG_TYPE_INPUT_RC:
+			if (validate_message_crc(frame, sizeof(InputRC_t))) {
+				publish_input_rc(*reinterpret_cast<const InputRC_t *>(frame));
+			}
+
+			break;
+
+		case MSG_TYPE_ESC_STATUS:
+			if (validate_message_crc(frame, sizeof(ESCStatus_t))) {
+				publish_esc_status(*reinterpret_cast<const ESCStatus_t *>(frame));
+			}
+
+			break;
+
+		case MSG_TYPE_BATTERY_STATUS:
+			if (validate_message_crc(frame, sizeof(BatteryStatus_t))) {
+				publish_battery_status(*reinterpret_cast<const BatteryStatus_t *>(frame));
+			}
+
+			break;
+
+		case MSG_TYPE_HEARTBEAT:
+			if (validate_message_crc(frame, sizeof(Heartbeat_t))) {
+				_last_io_heartbeat_us = hrt_absolute_time();
+				_stats.rx_heartbeat_count++;
+			}
+
+			break;
+
+		default:
+			break;
 		}
-
-		_expected_seq_rc = rc_msg.header.sequence + 1;
-
-		// Convert to uORB message
-		input_rc_s input_rc{};
-		input_rc.timestamp = hrt_absolute_time();
-		input_rc.timestamp_last_signal = rc_msg.header.timestamp_us;
-
-		for (int i = 0; i < rc_msg.channel_count && i < input_rc_s::RC_INPUT_MAX_CHANNELS; i++) {
-			input_rc.values[i] = rc_msg.channels[i];
-		}
-
-		input_rc.channel_count = rc_msg.channel_count;
-		input_rc.rssi = rc_msg.rssi;
-		input_rc.rc_lost = (rc_msg.failsafe != 0);
-		input_rc.rc_lost_frame_count = rc_msg.frame_drop_count;
-		input_rc.input_source = rc_msg.input_source;
-
-		_input_rc_pub.publish(input_rc);
-		_stats.rx_rc_count++;
-	}
-}
-
-void UorbBridgeCR8::process_esc_status()
-{
-	ESCStatus_t esc_msg;
-
-	while (pop(_shm->esc_status, esc_msg)) {
-		if (!validate_message_crc(&esc_msg.header, sizeof(esc_msg))) {
-			continue;
-		}
-
-		if (esc_msg.header.sequence != _expected_seq_esc) {
-			_stats.sequence_gaps++;
-		}
-
-		_expected_seq_esc = esc_msg.header.sequence + 1;
-
-		// Convert to uORB message
-		esc_status_s esc_status{};
-		esc_status.timestamp = hrt_absolute_time();
-		esc_status.esc_count = esc_msg.esc_count;
-		esc_status.esc_online_flags = esc_msg.online_mask;
-
-		for (int i = 0; i < esc_msg.esc_count && i < esc_status_s::CONNECTED_ESC_MAX; i++) {
-			esc_status.esc[i].timestamp = esc_status.timestamp;
-			esc_status.esc[i].esc_rpm = esc_msg.rpm[i];
-			esc_status.esc[i].esc_voltage = esc_msg.voltage_v[i] * 0.1f;
-			esc_status.esc[i].esc_current = esc_msg.current_a[i] * 0.5f;
-			esc_status.esc[i].esc_temperature = esc_msg.temperature_c[i];
-		}
-
-		_esc_status_pub.publish(esc_status);
-		_stats.rx_esc_count++;
-	}
-}
-
-void UorbBridgeCR8::process_battery_status()
-{
-	BatteryStatus_t batt_msg;
-
-	while (pop(_shm->battery_status, batt_msg)) {
-		if (!validate_message_crc(&batt_msg.header, sizeof(batt_msg))) {
-			continue;
-		}
-
-		if (batt_msg.header.sequence != _expected_seq_battery) {
-			_stats.sequence_gaps++;
-		}
-
-		_expected_seq_battery = batt_msg.header.sequence + 1;
-
-		// Convert to uORB message
-		battery_status_s battery_status{};
-		battery_status.timestamp = hrt_absolute_time();
-		battery_status.voltage_v = batt_msg.voltage_v;
-		battery_status.current_a = batt_msg.current_a;
-		battery_status.discharged_mah = batt_msg.discharged_mah;
-		battery_status.remaining = batt_msg.remaining_pct / 100.0f;
-		battery_status.cell_count = batt_msg.cell_count;
-		battery_status.source = batt_msg.source;
-		battery_status.warning = batt_msg.warning;
-
-		_battery_status_pub.publish(battery_status);
-		_stats.rx_battery_count++;
-	}
-}
-
-void UorbBridgeCR8::process_safety_status()
-{
-	SafetyStatus_t safety_msg;
-
-	while (pop(_shm->safety_status, safety_msg)) {
-		if (!validate_message_crc(&safety_msg.header, sizeof(safety_msg))) {
-			continue;
-		}
-
-		if (safety_msg.header.sequence != _expected_seq_safety) {
-			_stats.sequence_gaps++;
-		}
-
-		_expected_seq_safety = safety_msg.header.sequence + 1;
-
-		// Convert to uORB message
-		safety_s safety{};
-		safety.timestamp = hrt_absolute_time();
-		safety.safety_switch_available = true;
-		safety.safety_off = (safety_msg.safety_switch_state != 0);
-
-		_safety_pub.publish(safety);
-		_stats.rx_safety_count++;
-	}
-}
-
-void UorbBridgeCR8::check_io_heartbeat()
-{
-	Heartbeat_t hb;
-
-	while (pop(_shm->heartbeat_io, hb)) {
-		if (!validate_message_crc(&hb.header, sizeof(hb))) {
-			continue;
-		}
-
-		_last_io_heartbeat_us = hrt_absolute_time();
-		_stats.rx_heartbeat_count++;
 	}
 
-	// Check if CR8-1 is still alive
+	/* CR8-1 liveness. NOTE: the CR8_1 side of /dev/ipcc1 (the FMU leg) is not yet
+	 * implemented (px4io_cr8 only services the ESC leg /dev/ipcc3), so until that
+	 * peer exists no heartbeat is received: _last_io_heartbeat_us stays 0, the
+	 * `> 0` guard below suppresses the "lost" ERR, and is_io_alive() reads false.
+	 * This is a known milestone gap, not a regression. */
 	uint64_t now = hrt_absolute_time();
 	_io_alive = (now - _last_io_heartbeat_us) < FMU_LOSS_TIMEOUT_US;
 
 	if (!_io_alive && _last_io_heartbeat_us > 0) {
-		// CR8-1 has timed out - this should trigger failsafe handling
 		static bool reported = false;
 
 		if (!reported) {
@@ -481,4 +318,77 @@ void UorbBridgeCR8::check_io_heartbeat()
 			reported = true;
 		}
 	}
+}
+
+void UorbBridgeCR8::publish_input_rc(const InputRC_t &rc_msg)
+{
+	if (rc_msg.header.sequence != _expected_seq_rc) {
+		_stats.sequence_gaps++;
+	}
+
+	_expected_seq_rc = rc_msg.header.sequence + 1;
+
+	input_rc_s input_rc{};
+	input_rc.timestamp = hrt_absolute_time();
+	input_rc.timestamp_last_signal = rc_msg.header.timestamp_us;
+
+	for (int i = 0; i < rc_msg.channel_count && i < input_rc_s::RC_INPUT_MAX_CHANNELS; i++) {
+		input_rc.values[i] = rc_msg.channels[i];
+	}
+
+	input_rc.channel_count = rc_msg.channel_count;
+	input_rc.rssi = rc_msg.rssi;
+	input_rc.rc_lost = (rc_msg.failsafe != 0);
+	input_rc.rc_lost_frame_count = rc_msg.frame_drop_count;
+	input_rc.input_source = rc_msg.input_source;
+
+	_input_rc_pub.publish(input_rc);
+	_stats.rx_rc_count++;
+}
+
+void UorbBridgeCR8::publish_esc_status(const ESCStatus_t &esc_msg)
+{
+	if (esc_msg.header.sequence != _expected_seq_esc) {
+		_stats.sequence_gaps++;
+	}
+
+	_expected_seq_esc = esc_msg.header.sequence + 1;
+
+	esc_status_s esc_status{};
+	esc_status.timestamp = hrt_absolute_time();
+	esc_status.esc_count = esc_msg.esc_count;
+	esc_status.esc_online_flags = esc_msg.online_mask;
+
+	for (int i = 0; i < esc_msg.esc_count && i < esc_status_s::CONNECTED_ESC_MAX; i++) {
+		esc_status.esc[i].timestamp = esc_status.timestamp;
+		esc_status.esc[i].esc_rpm = esc_msg.rpm[i];
+		esc_status.esc[i].esc_voltage = esc_msg.voltage_v[i] * 0.1f;
+		esc_status.esc[i].esc_current = esc_msg.current_a[i] * 0.5f;
+		esc_status.esc[i].esc_temperature = esc_msg.temperature_c[i];
+	}
+
+	_esc_status_pub.publish(esc_status);
+	_stats.rx_esc_count++;
+}
+
+void UorbBridgeCR8::publish_battery_status(const BatteryStatus_t &batt_msg)
+{
+	if (batt_msg.header.sequence != _expected_seq_battery) {
+		_stats.sequence_gaps++;
+	}
+
+	_expected_seq_battery = batt_msg.header.sequence + 1;
+
+	battery_status_s battery_status{};
+	battery_status.timestamp = hrt_absolute_time();
+	battery_status.voltage_v = batt_msg.voltage_v;
+	battery_status.current_a = batt_msg.current_a;
+	battery_status.discharged_mah = batt_msg.discharged_mah;
+	battery_status.remaining = batt_msg.remaining_pct / 100.0f;
+	battery_status.cell_count = batt_msg.cell_count;
+	battery_status.source = batt_msg.source;
+	battery_status.warning = batt_msg.warning;
+
+	_battery_status_pub.publish(battery_status);
+	_stats.rx_battery_count++;
 }

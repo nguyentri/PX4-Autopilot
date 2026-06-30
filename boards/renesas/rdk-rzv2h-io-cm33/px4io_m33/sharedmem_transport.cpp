@@ -32,192 +32,131 @@
  ****************************************************************************/
 
 #include "sharedmem_transport.h"
+
+#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
-#include <nuttx/arch.h> // For ARM_DMB() if available, or define it
+#include <errno.h>
+#include <drivers/drv_hrt.h>
 
-#ifndef ARM_DMB
-#define ARM_DMB() __asm__ __volatile__ ("dmb" : : : "memory")
-#endif
+/* The IPCC ring entry payload is 64 bytes (RZV_IPC_*_RING_ENTRY_SZ); every
+ * protocol message fits in one entry. read() returns one entry; write()
+ * zero-pads a short message up to the entry size.
+ */
+static constexpr size_t IPC_ENTRY_SIZE = 64;
 
-SharedMemTransport::SharedMemTransport(uintptr_t base_addr) :
-	_layout(reinterpret_cast<SharedMemoryLayout *>(base_addr))
+SharedMemTransport::SharedMemTransport(const char *dev_path) :
+	_dev_path(dev_path)
 {
 }
 
-void SharedMemTransport::init(bool is_master)
+SharedMemTransport::~SharedMemTransport()
 {
-	if (is_master) {
-		// Zero out the memory region
-		memset(_layout, 0, sizeof(SharedMemoryLayout));
-
-		// Set magic numbers
-		_layout->magic_start = IPC_MAGIC;
-		_layout->magic_end = IPC_MAGIC;
-
-		// Ensure memory is written before other core sees it
-		ARM_DMB();
-	} else {
-		// Wait for magic number (with timeout ideally, but here we just check)
-		// In a real app, we'd poll or wait for an interrupt
+	if (_fd >= 0) {
+		close(_fd);
+		_fd = -1;
 	}
+}
+
+bool SharedMemTransport::init(bool is_master)
+{
+	(void)is_master;
+
+	if (_fd < 0) {
+		_fd = open(_dev_path, O_RDWR | O_NONBLOCK);
+	}
+
+	return _fd >= 0;
 }
 
 uint32_t SharedMemTransport::calculate_crc32(const uint8_t *data, size_t len)
 {
 	uint32_t crc = 0xFFFFFFFF;
+
 	for (size_t i = 0; i < len; i++) {
 		crc ^= data[i];
+
 		for (int j = 0; j < 8; j++) {
 			if (crc & 1) {
 				crc = (crc >> 1) ^ 0xEDB88320;
+
 			} else {
 				crc >>= 1;
 			}
 		}
 	}
+
 	return ~crc;
 }
 
-template <typename T, int Size>
-bool SharedMemTransport::push(RingBuffer<T, Size> &rb, const T &item)
+bool SharedMemTransport::send_framed(MessageType_e type, uint16_t &seq,
+				     void *msg, size_t len)
 {
-	uint32_t next_head = (rb.head + 1) % Size;
-
-	if (next_head == rb.tail) {
-		return false; // Buffer full
-	}
-
-	// Copy item to buffer
-	rb.buffer[rb.head] = item;
-
-	// Ensure data is written before updating head
-	ARM_DMB();
-
-	rb.head = next_head;
-
-	// Ensure head update is visible
-	ARM_DMB();
-
-	return true;
-}
-
-template <typename T, int Size>
-bool SharedMemTransport::pop(RingBuffer<T, Size> &rb, T &item)
-{
-	if (rb.head == rb.tail) {
-		return false; // Buffer empty
-	}
-
-	// Copy item from buffer
-	item = rb.buffer[rb.tail];
-
-	// Ensure data is read before updating tail
-	ARM_DMB();
-
-	rb.tail = (rb.tail + 1) % Size;
-
-	// Ensure tail update is visible
-	ARM_DMB();
-
-	return true;
-}
-
-bool SharedMemTransport::send_actuator_cmd(const ActuatorCommand &cmd)
-{
-	ActuatorCommand msg = cmd;
-	msg.header.magic = IPC_MAGIC;
-	msg.header.version = IPC_PROTOCOL_VERSION;
-	msg.header.type = MessageType::ACTUATOR_CMD;
-	msg.header.sequence = _tx_seq_actuator++;
-	msg.header.crc32 = 0;
-	msg.header.crc32 = calculate_crc32((const uint8_t *)&msg, sizeof(msg));
-
-	return push(_layout->actuator_cmds, msg);
-}
-
-bool SharedMemTransport::receive_actuator_cmd(ActuatorCommand &cmd)
-{
-	ActuatorCommand msg;
-	if (!pop(_layout->actuator_cmds, msg)) {
+	if (_fd < 0 || len > IPC_ENTRY_SIZE) {
 		return false;
 	}
 
-	// Verify CRC
-	uint32_t received_crc = msg.header.crc32;
-	msg.header.crc32 = 0;
-	uint32_t calculated_crc = calculate_crc32((const uint8_t *)&msg, sizeof(msg));
+	MessageHeader_t *hdr = reinterpret_cast<MessageHeader_t *>(msg);
+	hdr->magic    = IPC_MAGIC;
+	hdr->version  = IPC_PROTOCOL_VERSION;
+	hdr->msg_type = static_cast<uint8_t>(type);
+	hdr->sequence = seq++;
+	hdr->timestamp_us = (uint32_t)hrt_absolute_time();
+	hdr->crc32    = 0;
+	hdr->crc32    = calculate_crc32(reinterpret_cast<const uint8_t *>(msg), len);
 
-	if (received_crc != calculated_crc) {
-		return false; // CRC Error
+	ssize_t n = write(_fd, msg, len);
+	return n == static_cast<ssize_t>(len);
+}
+
+bool SharedMemTransport::receive_framed(MessageType_e want, void *msg, size_t len)
+{
+	if (_fd < 0 || len > IPC_ENTRY_SIZE) {
+		return false;
 	}
 
-	cmd = msg;
-	cmd.header.crc32 = received_crc; // Restore CRC
+	uint8_t frame[IPC_ENTRY_SIZE];
+	ssize_t n = read(_fd, frame, sizeof(frame));
+
+	if (n <= 0) {
+		return false;   /* empty ring or error */
+	}
+
+	const MessageHeader_t *hdr = reinterpret_cast<const MessageHeader_t *>(frame);
+
+	if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION ||
+	    hdr->msg_type != static_cast<uint8_t>(want)) {
+		return false;   /* wrong magic/version/type: drop */
+	}
+
+	/* Verify CRC over `len` bytes with the crc32 field zeroed. */
+	uint32_t received_crc = hdr->crc32;
+
+	uint8_t tmp[IPC_ENTRY_SIZE];
+	memcpy(tmp, frame, len);
+	reinterpret_cast<MessageHeader_t *>(tmp)->crc32 = 0;
+
+	if (calculate_crc32(tmp, len) != received_crc) {
+		return false;   /* CRC mismatch */
+	}
+
+	memcpy(msg, frame, len);
 	return true;
 }
 
-bool SharedMemTransport::send_pwm_feedback(const PWMFeedback &feedback)
+bool SharedMemTransport::receive_actuator_cmd(ActuatorCmdToM33_t &cmd)
 {
-	PWMFeedback msg = feedback;
-	msg.header.magic = IPC_MAGIC;
-	msg.header.version = IPC_PROTOCOL_VERSION;
-	msg.header.type = MessageType::PWM_FEEDBACK;
-	msg.header.sequence = _tx_seq_feedback++;
-	msg.header.crc32 = 0;
-	msg.header.crc32 = calculate_crc32((const uint8_t *)&msg, sizeof(msg));
-
-	return push(_layout->pwm_feedback, msg);
+	return receive_framed(MSG_TYPE_ACTUATOR_CMD, &cmd, sizeof(cmd));
 }
 
-bool SharedMemTransport::receive_pwm_feedback(PWMFeedback &feedback)
+bool SharedMemTransport::send_pwm_feedback(const PWMFeedback_t &feedback)
 {
-	PWMFeedback msg;
-	if (!pop(_layout->pwm_feedback, msg)) {
-		return false;
-	}
-
-	uint32_t received_crc = msg.header.crc32;
-	msg.header.crc32 = 0;
-	uint32_t calculated_crc = calculate_crc32((const uint8_t *)&msg, sizeof(msg));
-
-	if (received_crc != calculated_crc) {
-		return false;
-	}
-
-	feedback = msg;
-	feedback.header.crc32 = received_crc;
-	return true;
+	PWMFeedback_t msg = feedback;
+	return send_framed(MSG_TYPE_PWM_FEEDBACK, _tx_seq_feedback, &msg, sizeof(msg));
 }
 
-bool SharedMemTransport::send_fault_status(const FaultStatus &status)
+bool SharedMemTransport::send_fault_status(const FaultStatus_t &status)
 {
-	FaultStatus msg = status;
-	msg.header.magic = IPC_MAGIC;
-	msg.header.version = IPC_PROTOCOL_VERSION;
-	msg.header.type = MessageType::FAULT_STATUS;
-	msg.header.sequence = _tx_seq_fault++;
-	msg.header.crc32 = 0;
-	msg.header.crc32 = calculate_crc32((const uint8_t *)&msg, sizeof(msg));
-
-	return push(_layout->fault_status, msg);
-}
-
-bool SharedMemTransport::receive_fault_status(FaultStatus &status)
-{
-	FaultStatus msg;
-	if (!pop(_layout->fault_status, msg)) {
-		return false;
-	}
-
-	uint32_t received_crc = msg.header.crc32;
-	msg.header.crc32 = 0;
-	uint32_t calculated_crc = calculate_crc32((const uint8_t *)&msg, sizeof(msg));
-
-	if (received_crc != calculated_crc) {
-		return false;
-	}
-
-	status = msg;
-	status.header.crc32 = received_crc;
-	return true;
+	FaultStatus_t msg = status;
+	return send_framed(MSG_TYPE_FAULT_STATUS, _tx_seq_fault, &msg, sizeof(msg));
 }

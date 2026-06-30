@@ -33,39 +33,43 @@
 
 #pragma once
 
+/*
+ * CR8_1 (I/O) side of the CR8_1 <-> M33 relay leg (ESC).
+ *
+ * Transport is the NuttX IPCC character device (/dev/ipcc3), backed by the raw
+ * MHU doorbell + DDR shared-ring lower half (see rzv_ipc_channels.h). This
+ * replaces the legacy raw-pointer ring at 0x70000000. One protocol message per
+ * ring entry; each message is framed by MessageHeader_t and validated by CRC32.
+ * CR8_1 is the IPCC initiator for this link; M33 is the responder.
+ */
+
 #include "protocol.h"
 #include <px4_platform_common/px4_config.h>
+#include <stddef.h>
+#include <stdint.h>
 
-class SharedMemTransport {
+class SharedMemTransport
+{
 public:
-	SharedMemTransport(uintptr_t base_addr);
-	~SharedMemTransport() = default;
+	explicit SharedMemTransport(const char *dev_path);
+	~SharedMemTransport();
 
-	// Initialization
-	void init(bool is_master); // is_master=true for CR8 (initializes memory)
+	/* Open the IPCC device. is_master is accepted for source compatibility. */
+	bool init(bool is_master);
 
-	// CR8 -> M33
-	bool send_actuator_cmd(const ActuatorCommand &cmd);
-	bool receive_actuator_cmd(ActuatorCommand &cmd);
+	/* CR8_1 -> M33 */
+	bool send_actuator_cmd(const ActuatorCmdToM33_t &cmd);
 
-	// M33 -> CR8
-	bool send_pwm_feedback(const PWMFeedback &feedback);
-	bool receive_pwm_feedback(PWMFeedback &feedback);
-
-	bool send_fault_status(const FaultStatus &status);
-	bool receive_fault_status(FaultStatus &status);
+	/* M33 -> CR8_1 */
+	bool receive_pwm_feedback(PWMFeedback_t &feedback);
+	bool receive_fault_status(FaultStatus_t &status);
 
 private:
-	SharedMemoryLayout *_layout;
-	uint16_t _tx_seq_actuator{0};
-	uint16_t _tx_seq_feedback{0};
-	uint16_t _tx_seq_fault{0};
+	const char *_dev_path;
+	int         _fd{-1};
+	uint16_t    _tx_seq_actuator{0};
 
-	uint32_t calculate_crc32(const uint8_t *data, size_t len);
-
-	template <typename T, int Size>
-	bool push(RingBuffer<T, Size> &rb, const T &item);
-
-	template <typename T, int Size>
-	bool pop(RingBuffer<T, Size> &rb, T &item);
+	static uint32_t calculate_crc32(const uint8_t *data, size_t len);
+	bool send_framed(MessageType_e type, uint16_t &seq, void *msg, size_t len);
+	bool receive_framed(MessageType_e want, void *msg, size_t len);
 };

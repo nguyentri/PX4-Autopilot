@@ -47,6 +47,7 @@
 #include <px4_platform_common/getopt.h>
 #include <drivers/drv_hrt.h>
 #include <perf/perf_counter.h>
+#include <errno.h>
 
 #include "uorb_bridge.h"
 #include "board_config.h"
@@ -69,6 +70,9 @@ public:
 	static int task_spawn(int argc, char *argv[]);
 
 	/** @see ModuleBase */
+	static Px4IoBridge *instantiate(int argc, char *argv[]);
+
+	/** @see ModuleBase */
 	static int custom_command(int argc, char *argv[]);
 
 	/** @see ModuleBase */
@@ -85,16 +89,11 @@ private:
 
 	perf_counter_t _loop_perf;
 	perf_counter_t _loop_interval_perf;
-
-	/* Parameters */
-	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::PX4IO_ENABLED>) _param_px4io_enabled
-	)
 };
 
 Px4IoBridge::Px4IoBridge()
 	: ModuleParams(nullptr),
-	  _bridge(IPC_CR8_CR8_BASE),
+	  _bridge("/dev/ipcc1"),
 	  _loop_perf(perf_alloc(PC_ELAPSED, "px4io_bridge")),
 	  _loop_interval_perf(perf_alloc(PC_INTERVAL, "px4io_bridge_interval"))
 {
@@ -108,48 +107,43 @@ Px4IoBridge::~Px4IoBridge()
 
 int Px4IoBridge::task_spawn(int argc, char *argv[])
 {
-	Px4IoBridge *instance = new Px4IoBridge();
+	_task_id = px4_task_spawn_cmd("px4io_bridge",
+				      SCHED_DEFAULT,
+				      SCHED_PRIORITY_DEFAULT,
+				      2048,
+				      (px4_main_t)&run_trampoline,
+				      (char *const *)argv);
 
-	if (instance) {
-		_object.store(instance);
-		_task_id = task_id_is_work_queue;
-
-		if (instance->init()) {
-			return PX4_OK;
-		}
-
-	} else {
-		PX4_ERR("alloc failed");
+	if (_task_id < 0) {
+		_task_id = -1;
+		return -errno;
 	}
 
-	delete instance;
-	_object.store(nullptr);
-	_task_id = -1;
-
-	return PX4_ERROR;
+	return PX4_OK;
 }
 
-bool Px4IoBridge::init()
+Px4IoBridge *Px4IoBridge::instantiate(int argc, char *argv[])
 {
-	if (!_bridge.init()) {
-		PX4_ERR("Failed to initialize uORB bridge");
-		return false;
-	}
-
-	// Start the module
-	ScheduleOnInterval(2500); // 400Hz
-
-	return true;
+	return new Px4IoBridge();
 }
 
 void Px4IoBridge::run()
 {
-	perf_begin(_loop_perf);
-	perf_count(_loop_interval_perf);
+	if (!_bridge.init()) {
+		PX4_ERR("Failed to initialize uORB bridge");
+		return;
+	}
 
-	_bridge.update();
+	while (!should_exit()) {
+		perf_begin(_loop_perf);
+		perf_count(_loop_interval_perf);
 
-	perf_end(_loop_perf);
+		_bridge.update();
+
+		perf_end(_loop_perf);
+
+		px4_usleep(2500); // 400Hz
+	}
 }
 
 int Px4IoBridge::custom_command(int argc, char *argv[])
@@ -217,8 +211,8 @@ via shared memory IPC.
 - RX (CR8-1 -> CR8-0): input_rc, esc_status, battery_status, safety
 
 ### Implementation
-Runs at 400Hz on the high-priority work queue.
-Uses non-cacheable shared memory at 0x70000000 with CRC32 validation.
+Runs as a thread at 400Hz.
+Uses the NuttX IPCC device /dev/ipcc1 (raw MHU + DDR ring) with CRC32 validation.
 
 )DESCR_STR");
 

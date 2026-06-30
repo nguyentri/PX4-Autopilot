@@ -40,11 +40,9 @@
  * - CR8-0 (FMU) <-> CR8-1 (I/O Processor) via uORB-like messages
  * - CR8-1 (I/O Processor) <-> M33 (ESC Controller) via actuator commands
  *
- * Memory Layout (0x70000000 - 0x7000FFFF, 64KB):
- * - 0x70000000-0x70003FFF: CR8-0 <-> CR8-1 IPC region (16KB)
- * - 0x70004000-0x70007FFF: CR8-1 <-> M33 IPC region (16KB)
- * - 0x70008000-0x7000BFFF: Status/Telemetry region (16KB)
- * - 0x7000C000-0x7000FFFF: Reserved (16KB)
+ * Transport: NuttX IPCC devices /dev/ipcc1 (CR8-0<->CR8-1) and /dev/ipcc3
+ * (CR8-1<->M33), backed by the raw MHU doorbell + DDR ring (0x43800000 window).
+ *
  */
 
 #pragma once
@@ -65,11 +63,8 @@
 #define IPC_MAX_RC_CHANNELS     16
 #define IPC_BUFFER_SIZE         16   // Number of messages in ring buffer
 
-/* Memory region addresses (must match linker script) */
-#define IPC_CR8_CR8_BASE        0x70000000  // CR8-0 <-> CR8-1
-#define IPC_CR8_M33_BASE        0x70004000  // CR8-1 <-> M33
-#define IPC_STATUS_BASE         0x70008000  // Status/Telemetry
-#define IPC_RESERVED_BASE       0x7000C000  // Reserved
+/* Inter-core IPC uses NuttX IPCC character devices (/dev/ipccN) backed by the
+ * raw MHU doorbell + DDR shared ring. */
 
 /* Timeout definitions (in microseconds) */
 #define HEARTBEAT_TIMEOUT_US    500000   // 500ms - M33 watchdog trigger
@@ -425,5 +420,3 @@ typedef struct {
 static_assert(sizeof(SharedMemCR8_t) <= 16384, "SharedMemCR8_t exceeds 16KB limit");
 static_assert(sizeof(SharedMemM33_t) <= 16384, "SharedMemM33_t exceeds 16KB limit");
 static_assert(sizeof(MessageHeader_t) == 16, "MessageHeader_t must be 16 bytes");
-
-#endif // PROTOCOL_H

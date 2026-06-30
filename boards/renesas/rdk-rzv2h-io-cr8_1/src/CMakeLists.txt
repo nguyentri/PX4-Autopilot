@@ -39,3 +39,7 @@ target_link_libraries(drivers_board
 	PRIVATE
 		nuttx_arch
 )
+
+# Build the board-local px4io_cr8 module (I/O processor) so it is compiled into
+# the firmware. It was previously present but wired into no build.
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_1 px4io_cr8_1)

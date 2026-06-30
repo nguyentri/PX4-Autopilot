@@ -46,9 +46,6 @@ MEMORY
 
     /* System RAM - 512KB at 0x22000000 */
     sram (rwx) : ORIGIN = 0x22000000, LENGTH = 512K
-
-    /* IPC RAM - 64KB at 0x70000000 (Shared with CR8) */
-    IPC_RAM (rw) : ORIGIN = 0x70000000, LENGTH = 64K
 }
 
 OUTPUT_ARCH(arm)
@@ -146,25 +143,6 @@ SECTIONS
         _sheap = .;
         /* Heap extends to end of SRAM, calculated at runtime by NuttX */
     } > sram
-
-    /* IPC RAM Section */
-    .ipc_ram (NOLOAD) :
-    {
-        . = ALIGN(0x10);
-        PROVIDE(__ipc_ram_start = .);
-        *(.ipc_ram)
-        *(.ipc_ram.*)
-        . = ALIGN(0x10);
-        PROVIDE(__ipc_ram_end = .);
-    } > IPC_RAM
-
-    /* DMA Buffers (Non-cacheable) */
-    .dma_buffers (NOLOAD) :
-    {
-        . = ALIGN(0x10);
-        *(.dma_buffers)
-        *(.dma_buffers.*)
-    } > IPC_RAM
 
     /* Stabs debugging sections */
     .stab 0 : { *(.stab) }

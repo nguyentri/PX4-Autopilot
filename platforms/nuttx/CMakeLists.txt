@@ -309,7 +309,10 @@ else()
 		target_link_libraries(px4 PRIVATE romfs)
 	endif()
 
-	if(CONFIG_ARCH_CHIP_RZV)
+	if(CONFIG_ARCH_CHIP_RZV AND NOT CONFIG_RZV2H_BUILD_CM33)
+		# CR8 cores: split the multi-region load image (ITCM/SRAM/SDRAM) keyed
+		# by the flash header. The Cortex-M33 core has none of these sections
+		# (single contiguous image), so it takes the plain-objcopy branch below.
 		string(REPLACE ".bin" "_header.bin" rzv_header_binary ${PX4_BINARY_OUTPUT})
 		string(REPLACE ".bin" "_itcm.bin" rzv_itcm_binary ${PX4_BINARY_OUTPUT})
 		string(REPLACE ".bin" "_sram.bin" rzv_sram_binary ${PX4_BINARY_OUTPUT})

@@ -58,3 +58,8 @@ target_link_libraries(drivers_board
 )
 
 target_include_directories(drivers_board PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Build the board-local px4io_bridge module (FMU<->IO uORB bridge over /dev/ipcc1)
+# so it is compiled into the firmware. It was previously present but wired into
+# no build.
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
