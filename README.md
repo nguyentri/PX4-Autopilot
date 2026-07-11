@@ -39,6 +39,22 @@ renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
 ```
 
+## Documentation
+
+See [docs/](./docs/) for comprehensive guides:
+
+| Document | Purpose |
+|----------|---------|
+| [project-overview-pdr.md](./docs/project-overview-pdr.md) | Project scope, objectives, and requirements |
+| [system-architecture.md](./docs/system-architecture.md) | System design and component architecture |
+| [codebase-summary.md](./docs/codebase-summary.md) | Codebase structure and module overview |
+| [code-standards.md](./docs/code-standards.md) | Coding standards and conventions |
+| [design-guidelines.md](./docs/design-guidelines.md) | Design patterns and architectural decisions |
+| [deployment-guide.md](./docs/deployment-guide.md) | Build and deployment procedures |
+| [project-roadmap.md](./docs/project-roadmap.md) | Planned features and milestones |
+
+RZ/V2H-specific docs: [docs/renesas/README.md](./docs/renesas/README.md)
+
 ## Quick Start
 
 ```bash
@@ -57,6 +73,14 @@ source ./build_setup.sh
 
 `./build.sh --list` enumerates every supported target. `make <target>` works too
 and is equivalent to `./build.sh <target>`.
+
+## Quick Start for Contributors
+
+Extending the RZ/V2H port? Start here:
+
+- **[docs/renesas/porting-playbook.md](./docs/renesas/porting-playbook.md)** — Step-by-step guide for adding drivers and features
+- **[docs/renesas/prompt-recipes.md](./docs/renesas/prompt-recipes.md)** — Effective prompts to use with Claude for port development
+- **[docs/renesas/port-status-nuttx.md](./docs/renesas/port-status-nuttx.md)** — Current NuttX HAL coverage and next steps
 
 ## Prerequisites
 
