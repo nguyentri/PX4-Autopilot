@@ -23,7 +23,7 @@ CONFIG_IPCC=y
 CONFIG_IPCC_BUFFERED=y
 CONFIG_RZV_IPC_RAW=y
 CONFIG_RZV_IPC_CR8_1_CM33=y
-# CONFIG_RZV_MPU_PORT_FSP is not set
+# CONFIG_RZV_MPU is not set
 # M33 MPU: override the MHU region to Device/non-cacheable (see rzv_start_cm33.c).
 CONFIG_ARM_MPU=y
 CONFIG_ARCH_CORTEXM33=y

@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld
+ * boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h.ld
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -39,12 +39,22 @@ SRAM_UNCACHE_PRV_START  = DEFINED(CR8_0) ? SRAM_CR8_0_START + 0x081A0000 : SRAM_
 SRAM_UNCACHE_PRV_LENGTH = DEFINED(CR8_0) ? 0x0001FFFC : 0x0001FFFC;
 XSPIFLASH_PRV_START     = DEFINED(CR8_0) ? XSPIFLASH_CR8_0_START : XSPIFLASH_CR8_1_START;
 XSPIFLASH_PRV_LENGTH    = DEFINED(CR8_0) ? XSPIFLASH_CR8_0_LENGTH : XSPIFLASH_CR8_1_LENGTH;
+/* CR8-0 / CR8-1 private DDR partition (shared invariant with rdk-rzv2h_cr8_1.ld)
+ * Each core: 8 MiB cache + 8 MiB uncache, contiguous, non-overlapping.
+ *   CR8-0 cache   : 0x40800000..0x41000000
+ *   CR8-0 uncache : 0x41000000..0x41800000
+ *   CR8-1 cache   : 0x41800000..0x42000000
+ *   CR8-1 uncache : 0x42000000..0x42800000
+ * OpenAMP/MHU/VRING at 0x42F00000+ stay shared (unchanged).
+ * Keep in lockstep with rdk-rzv2h_cr8_1.ld; the ASSERTs below fail-fast on drift.
+ */
 DDR_CACHE_PRV_START     = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x00800000 : DDR0_CR8_1_START + 0x01800000;
-/* FSP-aligned 15 MB (was 16 MB which overlapped DDR_UNCACHE by 8 MB). */
-DDR_CACHE_LENGTH        = DEFINED(CR8_0) ? 0x00F00000 : 0x00F00000;
-/* Shift uncache start past cache end (CR8_0: DDR0+0x01800000, CR8_1: DDR0+0x02800000). */
-DDR_UNCACHE_PRV_START   = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x01800000 : DDR0_CR8_1_START + 0x02800000;
-DDR_UNCACHE_LENGTH      = DEFINED(CR8_0) ? 0x00800000 : 0x00800000;
+DDR_CACHE_LENGTH        = 0x00800000;
+DDR_UNCACHE_PRV_START   = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x01000000 : DDR0_CR8_1_START + 0x02000000;
+DDR_UNCACHE_LENGTH      = 0x00800000;
+
+/* Sibling core private DDR start (must match cr8_1.ld DDR_CACHE_PRV_START for CR8-1). */
+DDR_CR8_1_PRIV_START    = 0x41800000;
 
 /* Memory allocation OpenAMP using ddr. */
 OPENAMP_RSCTBL_START    = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x02f00000 : DDR0_CR8_1_START + 0x02f00000;
@@ -99,7 +109,6 @@ MEMORY
     DUMMY : ORIGIN = DUMMY_START, LENGTH = DUMMY_LENGTH
 }
 
-/* Guard against future regressions overlapping DDR cache/uncache. */
 ASSERT(DDR_UNCACHE_PRV_START >= DDR_CACHE_PRV_START + DDR_CACHE_LENGTH,
        "DDR_UNCACHE region overlaps DDR_CACHE - adjust DDR_CACHE_LENGTH or DDR_UNCACHE_PRV_START");
 ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= OPENAMP_RSCTBL_START,
@@ -107,6 +116,9 @@ ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= OPENAMP_RSCTBL_START,
 /* HIGH-1 assertion: IPC_RAW_SHM must not overlap OPENAMP_VRING */
 ASSERT(IPC_RAW_SHM_START >= OPENAMP_VRING_START + OPENAMP_VRING_LENGTH,
        "IPC_RAW_SHM overlaps OPENAMP_VRING - check SHM and VRING sizes");
+/* Cross-core: CR8-0 private DDR must end at or before CR8-1 private DDR start */
+ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= DDR_CR8_1_PRIV_START,
+       "CR8-0 private DDR overlaps CR8-1 private DDR - repartition rdk-rzv2h_cr8_0.ld/cr8_1.ld");
 
 PHDRS
 {
@@ -117,7 +129,9 @@ PHDRS
     sram_data_ph     PT_LOAD FLAGS(6); /* RW */
     sdram_text_ph    PT_LOAD FLAGS(5); /* R+X */
     sdram_data_ph    PT_LOAD FLAGS(6); /* RW */
+    sdram_bss_ph     PT_LOAD FLAGS(6); /* RW - NOLOAD, own segment so PT_LOAD memsz stays small */
     openamp_ph       PT_LOAD FLAGS(6); /* RW */
+    header_ph        PT_LOAD FLAGS(4); /* R  - Renesas flash-load descriptor */
     wait_ph          PT_LOAD FLAGS(6); /* RW */
     dummy_ph         PT_LOAD FLAGS(6); /* RW */
 }
@@ -488,7 +502,7 @@ SECTIONS
         KEEP(*(.cache_buffer*))
         _cbuffer_ddr_end = .;
         PROVIDE(_cbuffer_sdram_end = .);
-    } > DDR_SDRAM_CACHE
+    } > DDR_SDRAM_CACHE : sdram_bss_ph
     .sdram_uncache_section (NOLOAD) :
     {
         . = ALIGN ( 0x10 ) ;
@@ -558,14 +572,14 @@ SECTIONS
         LONG(INIT_WAIT_AREA_START)
         LONG(0x1234FEDC)
         _header_end = .;
-    } > HEADER_REGION
+    } > HEADER_REGION : header_ph
     /* Header reserved area (signature, padding) */
     _header_padding_size = HEADER_LENGTH - ((_header_end + 4)- _header_start);
     .header_reserved : {
         LONG(0x562F5A52)
         FILL(0x00)
         . += _header_padding_size;
-    } > HEADER_REGION
+    } > HEADER_REGION : header_ph
 
     /* Discard ARM exception tables that cause relocation overflow with split memory layout */
     /DISCARD/ :

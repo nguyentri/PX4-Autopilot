@@ -1,6 +1,6 @@
 # RDK-RZ/V2H Codebase Summary
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-11
 **Status:** Foundational (Phase 1)
 
 Directory-by-directory tour focused on RZ/V2H: what lives where, driver inventory, board configs, and reference sources.
@@ -209,7 +209,7 @@ Contains:
 
 **Root:** `refs/`
 
-### px4-freertos-posix-renesas-fsp
+### px4-freertos-posix-renesas-fsp  (cr8_0/CR8 core0 only)
 
 Complete FreeRTOS + POSIX + Renesas FSP reference.
 
