@@ -33,6 +33,7 @@
 
 add_library(drivers_board
 	init.c
+	led.c
 )
 
 target_link_libraries(drivers_board

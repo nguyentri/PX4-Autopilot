@@ -17,10 +17,10 @@
  * under the License.
  *
  ****************************************************************************/
-/* Place CR8_1 SRAM at a non-overlapping region: use 0x10000000 as base */
-SRAM_CR8_1_START = 0x10000000;
+/* CR8-1 has the same core-local ITCM/DTCM view as CR8-0. */
+SRAM_CR8_1_START = 0x00000000;
 SRAM_CR8_1_LENGTH = 0x10000000;
-/* CR8_1 ITCM AXI start moved accordingly */
+/* CR8-1 uses its own AXI alias for loader access. */
 ITCM_AXI_CR8_1_START = 0x12080000;
 ITCM_AXI_CR8_1_LENGTH = 0x20000;
 XSPIFLASH_CR8_1_START = 0x20000000;
@@ -127,7 +127,9 @@ PHDRS
     sram_data_ph     PT_LOAD FLAGS(6); /* RW */
     sdram_text_ph    PT_LOAD FLAGS(5); /* R+X */
     sdram_data_ph    PT_LOAD FLAGS(6); /* RW */
+    sdram_bss_ph     PT_LOAD FLAGS(6); /* RW */
     openamp_ph       PT_LOAD FLAGS(6); /* RW */
+    header_ph        PT_LOAD FLAGS(4); /* R */
     wait_ph          PT_LOAD FLAGS(6); /* RW */
     dummy_ph         PT_LOAD FLAGS(6); /* RW */
 }
@@ -498,7 +500,7 @@ SECTIONS
         KEEP(*(.cache_buffer*))
         _cbuffer_ddr_end = .;
         PROVIDE(_cbuffer_sdram_end = .);
-    } > DDR_SDRAM_CACHE
+    } > DDR_SDRAM_CACHE : sdram_bss_ph
     .sdram_uncache_section (NOLOAD) :
     {
         . = ALIGN ( 0x10 ) ;
@@ -568,14 +570,14 @@ SECTIONS
         LONG(INIT_WAIT_AREA_START)
         LONG(0x1234FEDC)
         _header_end = .;
-    } > HEADER_REGION
+    } > HEADER_REGION : header_ph
     /* Header reserved area (signature, padding) */
     _header_padding_size = HEADER_LENGTH - ((_header_end + 4)- _header_start);
     .header_reserved : {
         LONG(0x562F5A52)
         FILL(0x00)
         . += _header_padding_size;
-    } > HEADER_REGION
+    } > HEADER_REGION : header_ph
 
     /* Discard ARM exception tables that cause relocation overflow with split memory layout */
     /DISCARD/ :
