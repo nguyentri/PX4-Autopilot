@@ -10,11 +10,14 @@
 
 ### System Partition
 
-| Core | RTOS | Role | Memory Range | Boot Vector |
+| Core | RTOS | Role | Private DDR (CR8/CM33 view) | Boot Vector |
 |------|------|------|--------------|-------------|
-| **CR8-0** | NuttX | Flight stack (PX4) | 0x00000000–0x08000000 (primary SRAM + DRAM) | 0x00000000 (reset) |
-| **CR8-1** | NuttX | IO co-processor | 0x40000000–0x50000000 (shared DRAM) | 0x40000000 (mailbox wake) |
-| **CM33** | NuttX | IO co-processor (alt) | 0x40100000–0x50000000 (shared DRAM) | 0x40100000 (mailbox wake) |
+| **CR8-0** | NuttX | Flight stack (PX4) | 0x40800000–0x41800000 (SRAM$ 0x08180000; TCM local 0x0) | ITCM local 0x0 (reset) |
+| **CR8-1** | NuttX | IO co-processor | 0x41800000–0x42800000 (SRAM$ 0x081C0000; TCM local 0x0) | ITCM local 0x0 (reset) |
+| **CM33** | NuttX | IO co-proc / boot mgr | code SRAM 0x08002800 (CM33-S); DDR-S 0x80000000 | BOOTPARAM 0x08001E00 (ROM) |
+
+> Authoritative addresses: see [multicore-memory-map.md](./multicore-memory-map.md). The prior
+> 0x40000000 / 0x40100000 rows were placeholders and did not match linker/HWM truth.
 
 ### IPC Transport
 

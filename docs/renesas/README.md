@@ -20,6 +20,7 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 ### For IPC & Multi-Core
 
 6. **[ipc-architecture.md](./ipc-architecture.md)** (Phase 3) — IPCC/MHU, uORB bridge framing, CRC, sequence checks
+7. **[multicore-memory-map.md](./multicore-memory-map.md)** — Ratified CR8-0/CR8-1/CM33 unified memory map & per-core address aliases (single source of truth)
 
 ### For Validation & Debugging
 
