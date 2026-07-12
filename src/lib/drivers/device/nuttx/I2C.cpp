@@ -194,7 +194,9 @@ I2C::transfer(const uint8_t *send, const unsigned send_len, uint8_t *recv, const
 		if (send_len > 0) {
 			msgv[msgs].frequency = _bus_clocks[get_device_bus() - 1];
 			msgv[msgs].addr = get_device_address();
-			msgv[msgs].flags = 0;
+			/* A combined write+read is a repeated-start transaction under
+			 * the NuttX lower-half contract. */
+			msgv[msgs].flags = (recv_len > 0) ? I2C_M_NOSTOP : 0;
 			msgv[msgs].buffer = const_cast<uint8_t *>(send);
 			msgv[msgs].length = send_len;
 			msgs++;
