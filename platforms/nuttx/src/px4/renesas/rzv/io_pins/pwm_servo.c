@@ -219,12 +219,7 @@ void up_pwm_servo_arm(bool armed, uint32_t channel_mask)
 		/* Enable all channels in mask */
 		io_timer_set_enable(true, IOTimerChanMode_PWMOut, channel_mask);
 	} else {
-		/* Set all channels to disarmed value, then disable */
-		for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-			if (channel_mask & (1 << i)) {
-				io_timer_set_ccr(i, PWM_DISARMED_WIDTH);
-			}
-		}
+		/* io_timer_set_enable() forces the selected GTIOC outputs inactive. */
 		io_timer_set_enable(false, IOTimerChanMode_PWMOut, channel_mask);
 	}
 

@@ -147,20 +147,11 @@ static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
 
 static uintptr_t dshot_get_gpt_base(uint8_t gpt_channel)
 {
-	switch (gpt_channel) {
-	case 0:  return RZV_GPT0_BASE;
-	case 1:  return RZV_GPT1_BASE;
-	case 2:  return RZV_GPT2_BASE;
-	case 3:  return RZV_GPT3_BASE;
-	case 4:  return RZV_GPT4_BASE;
-	case 5:  return RZV_GPT5_BASE;
-	case 6:  return RZV_GPT6_BASE;
-	case 7:  return RZV_GPT7_BASE;
-	case 8:  return RZV_GPT8_BASE;
-	case 9:  return RZV_GPT9_BASE;
-	case 10: return RZV_GPT10_BASE;
-	default: return 0;
+	if (!RZV_GPT_LOGICAL_CHANNEL_VALID(gpt_channel)) {
+		return 0;
 	}
+
+	return RZV_GPT_LOGICAL_BASE(gpt_channel);
 }
 
 static bool dshot_map_channel(uint8_t logical_channel, dshot_channel_t *ch)

@@ -71,19 +71,17 @@
 /**
  * GPT Clock Configuration
  *
- * The RZV2H GPT timers use the runtime PCLK reported by the NuttX clock
- * driver. The current RZ/V2H clock table reports nominal P0CLK at 100 MHz.
+ * The RZV2H GPT timers use the P4CLK source reported by the NuttX clock
+ * driver.
  *
  * PWM Frequency Calculation:
  *   PWM_freq = PCLK / (prescaler * period)
- *   For 400Hz @ 100MHz: period = 100000000 / 400 = 250000 ticks
+ *   For 400Hz @ 200MHz: period = 200000000 / 400 = 500000 ticks
  *
  * Duty Cycle Resolution:
- *   At 400Hz with 100MHz clock: 250000 ticks per period
- *   Resolution per µs: 100 ticks (sufficient for 1µs PWM precision)
+ *   At 400Hz with 200MHz clock: 500000 ticks per period
+ *   Resolution per µs: 200 ticks (sufficient for 1µs PWM precision)
  */
-#define GPT_INVALID_CLOCK_ID       UINT32_MAX
-
 /* PWM Configuration Constants */
 #define PWM_DEFAULT_FREQUENCY_HZ    400      /* Default 400Hz for ESCs */
 #define PWM_MIN_FREQUENCY_HZ        50       /* Minimum supported frequency */
@@ -119,37 +117,16 @@ static struct {
 /**
  * Get GPT base address from timer ID
  *
- * RZV2H GPT Memory Map:
- * - GPT0-7:   0x13010000 + (channel * 0x100)
- * - GPT10-17: 0x13020000 + ((channel-10) * 0x100)
+ * FSP logical GPT channels 0-7 use physical GPT0-7.  Logical channels 8-15
+ * use physical GPT10-17.  RZV_GPT_LOGICAL_BASE() owns the translation.
  */
 static uint32_t get_gpt_base(uint8_t timer_id)
 {
-	switch (timer_id) {
-	case 0:  return RZV_GPT0_BASE;
-	case 1:  return RZV_GPT1_BASE;
-	case 2:  return RZV_GPT2_BASE;
-	case 3:  return RZV_GPT3_BASE;
-	case 4:  return RZV_GPT4_BASE;
-	case 5:  return RZV_GPT5_BASE;
-	case 6:  return RZV_GPT6_BASE;
-	case 7:  return RZV_GPT7_BASE;
-#ifdef RZV_GPT8_BASE
-	case 8:  return RZV_GPT8_BASE;
-#endif
-#ifdef RZV_GPT9_BASE
-	case 9:  return RZV_GPT9_BASE;
-#endif
-	case 10: return RZV_GPT10_BASE;
-	case 11: return RZV_GPT11_BASE;
-	case 12: return RZV_GPT12_BASE;
-	case 13: return RZV_GPT13_BASE;
-	case 14: return RZV_GPT14_BASE;
-	case 15: return RZV_GPT15_BASE;
-	case 16: return RZV_GPT16_BASE;
-	case 17: return RZV_GPT17_BASE;
-	default: return 0;
+	if (!RZV_GPT_LOGICAL_CHANNEL_VALID(timer_id)) {
+		return 0;
 	}
+
+	return (uint32_t)RZV_GPT_LOGICAL_BASE(timer_id);
 }
 
 /* Helper function to write 32-bit register */
@@ -170,31 +147,46 @@ static inline void gpt_lock(uint32_t base)
 
 static inline uint32_t gpt_channel_mask(uint8_t timer_id)
 {
-	uint8_t unit_channel = timer_id >= 10 ? timer_id - 10 : timer_id;
-
-	return RZV_GPT_UNIT_BIT(unit_channel);
+	return RZV_GPT_LOGICAL_UNIT_BIT(timer_id);
 }
 
-static uint32_t get_gpt_clock_id(uint8_t timer_id)
+static inline uint32_t gpt_compare_offset(unsigned channel, bool buffered)
 {
-	switch (timer_id) {
-	case 0:  return RZV_CPG_CLK_GPT0;
-	case 1:  return RZV_CPG_CLK_GPT1;
-	case 2:  return RZV_CPG_CLK_GPT2;
-	case 3:  return RZV_CPG_CLK_GPT3;
-	case 4:  return RZV_CPG_CLK_GPT4;
-	case 5:  return RZV_CPG_CLK_GPT5;
-	case 6:  return RZV_CPG_CLK_GPT6;
-	case 7:  return RZV_CPG_CLK_GPT7;
-#ifdef RZV_CPG_CLK_GPT8
-	case 8:  return RZV_CPG_CLK_GPT8;
-#endif
-#ifdef RZV_CPG_CLK_GPT9
-	case 9:  return RZV_CPG_CLK_GPT9;
-#endif
-	case 10: return RZV_CPG_CLK_GPT10;
-	default: return GPT_INVALID_CLOCK_ID;
+	if (timer_io_channels[channel].timer_channel == 1) {
+		return buffered ? RZV_GPT_GTCCRC_OFFSET : RZV_GPT_GTCCRA_OFFSET;
 	}
+
+	return buffered ? RZV_GPT_GTCCRE_OFFSET : RZV_GPT_GTCCRB_OFFSET;
+}
+
+static void gpt_set_compare(uint32_t base, unsigned channel, uint32_t ticks,
+			    bool buffered)
+{
+	io_timer_putreg32(ticks, base + gpt_compare_offset(channel, buffered));
+}
+
+static uint32_t gpt_duty_control(unsigned channel, uint32_t ticks)
+{
+	uint32_t duty = GPT_GTUDDTYC_UD;
+	uint32_t selected_duty = GPT_UDDTYC_DTY_REGISTER;
+
+	if (ticks == 0) {
+		selected_duty = GPT_UDDTYC_DTY_0_PERCENT;
+
+	} else if (ticks >= gpt_state[channel].period) {
+		selected_duty = GPT_UDDTYC_DTY_100_PERCENT;
+	}
+
+	if (timer_io_channels[channel].timer_channel == 1) {
+		duty |= selected_duty << GPT_GTUDDTYC_OADTY_SHIFT;
+		duty |= GPT_UDDTYC_DTY_0_PERCENT << GPT_GTUDDTYC_OBDTY_SHIFT;
+
+	} else {
+		duty |= GPT_UDDTYC_DTY_0_PERCENT << GPT_GTUDDTYC_OADTY_SHIFT;
+		duty |= selected_duty << GPT_GTUDDTYC_OBDTY_SHIFT;
+	}
+
+	return duty;
 }
 
 static bool is_configured_channel(unsigned channel)
@@ -245,23 +237,14 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 		return -EINVAL;
 	}
 
-	uint32_t clock_id = get_gpt_clock_id(timer_id);
-	if (clock_id == GPT_INVALID_CLOCK_ID) {
-		return -EINVAL;
-	}
-
-	int ret = rzv_clock_enable(clock_id);
+	int ret = rzv_gpt_module_start(timer_id);
 	if (ret < 0) {
 		return ret;
 	}
 
-	ret = rzv_module_reset(clock_id);
-	if (ret < 0) {
-		return ret;
-	}
-
-	uint32_t pclk = rzv_get_pclk_frequency();
+	uint32_t pclk = rzv_get_gpt_clock_hz();
 	if (pclk == 0) {
+		rzv_gpt_module_stop(timer_id);
 		return -EINVAL;
 	}
 
@@ -277,9 +260,6 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 	io_timer_putreg32(GPT_GTCR_MD_SAW | ((uint32_t)GPT_TPCS_DIV1 << GPT_GTCR_TPCS_SHIFT),
 			  base + RZV_GPT_GTCR_OFFSET);
 
-	/* Configure up-count direction */
-	io_timer_putreg32(GPT_GTUDDTYC_UD, base + RZV_GPT_GTUDDTYC_OFFSET);
-
 	/* Calculate period for 400Hz (default PWM frequency)
 	 * Period = PCLK / frequency
 	 */
@@ -292,11 +272,12 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 	gpt_state[channel].ccr_value = 0;
 	gpt_state[channel].enabled = false;
 
-	if (timer_io_channels[channel].timer_channel == 1) {
-		io_timer_putreg32(0, base + RZV_GPT_GTCCRA_OFFSET);
-	} else {
-		io_timer_putreg32(0, base + RZV_GPT_GTCCRB_OFFSET);
-	}
+	gpt_set_compare(base, channel, 0, false);
+	gpt_set_compare(base, channel, 0, true);
+	io_timer_putreg32(period - 1, base + RZV_GPT_GTPBR_OFFSET);
+	io_timer_putreg32(GPT_GTBER_FORCE_TRANSFER, base + RZV_GPT_GTBER_OFFSET);
+	io_timer_putreg32(gpt_duty_control(channel, 0),
+			  base + RZV_GPT_GTUDDTYC_OFFSET);
 
 	/* Keep timer output disabled until PX4 arms/enables PWM. */
 	io_timer_putreg32(gpt_output_control(channel, false), base + RZV_GPT_GTIOR_OFFSET);
@@ -445,11 +426,11 @@ int io_timer_set_pwm_rate(unsigned channel, unsigned rate)
 	gpt_state[channel].period = period;
 
 	uint32_t ticks = pulse_width_to_ticks(channel, gpt_state[channel].ccr_value);
-	if (timer_io_channels[channel].timer_channel == 1) {
-		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRA_OFFSET);
-	} else {
-		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRB_OFFSET);
-	}
+	gpt_set_compare(base, channel, ticks, false);
+	gpt_set_compare(base, channel, ticks, true);
+	io_timer_putreg32(period - 1, base + RZV_GPT_GTPBR_OFFSET);
+	io_timer_putreg32(gpt_duty_control(channel, ticks),
+			  base + RZV_GPT_GTUDDTYC_OFFSET);
 
 	if (gpt_state[channel].enabled) {
 		io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
@@ -477,10 +458,16 @@ int io_timer_set_enable(bool enable, io_timer_channel_mode_t mode, io_timer_chan
 					gpt_unlock(base);
 
 					if (enable) {
+						uint32_t ticks = pulse_width_to_ticks(i, gpt_state[i].ccr_value);
+						io_timer_putreg32(gpt_duty_control(i, ticks),
+								  base + RZV_GPT_GTUDDTYC_OFFSET);
 						io_timer_putreg32(gpt_output_control(i, true), base + RZV_GPT_GTIOR_OFFSET);
 						io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
 						gpt_state[i].enabled = true;
 					} else {
+						gpt_state[i].ccr_value = 0;
+						io_timer_putreg32(gpt_duty_control(i, 0),
+								  base + RZV_GPT_GTUDDTYC_OFFSET);
 						io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
 						io_timer_putreg32(gpt_output_control(i, false), base + RZV_GPT_GTIOR_OFFSET);
 						gpt_state[i].enabled = false;
@@ -512,19 +499,18 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
 
 	uint32_t ticks = pulse_width_to_ticks(channel, value);
 
-	/* Write to appropriate compare register */
 	irqstate_t flags = px4_enter_critical_section();
 	gpt_unlock(base);
-
-	if (timer_io_channels[channel].timer_channel == 1) {
-		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRA_OFFSET);
-	} else {
-		io_timer_putreg32(ticks, base + RZV_GPT_GTCCRB_OFFSET);
+	io_timer_putreg32(gpt_duty_control(channel, ticks),
+			  base + RZV_GPT_GTUDDTYC_OFFSET);
+	gpt_set_compare(base, channel, ticks, gpt_state[channel].enabled);
+	if (!gpt_state[channel].enabled) {
+		gpt_set_compare(base, channel, ticks, true);
 	}
+	gpt_state[channel].ccr_value = value;
 
 	gpt_lock(base);
 	px4_leave_critical_section(flags);
-	gpt_state[channel].ccr_value = value;
 
 	return 0;
 }
