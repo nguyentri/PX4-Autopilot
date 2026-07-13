@@ -161,7 +161,7 @@
  ****************************************************************************************************/
 
 /* SPI Bus Configuration (matches FSP module.driver.spi_b.channel = 0)
- * RSPI0: MPU9250 IMU only (single-IMU per HARDWARE.md BOM).
+ * RSPI0: MPU9250 IMU only (single-IMU per RDK-RZ/V2H pinout BOM).
  * P90 = MOSI A, P91 = MISO A, P92 = SCK A, P93 = SSLA0 (CS, hardware chip-select).
  * P94 (SSLA1) is FSP-configured but unused (no second IMU wired).
  */
@@ -336,7 +336,7 @@
  ****************************************************************************************************/
 
 /* Sensor Availability */
-#define BOARD_HAS_SENSOR_IMU            1  /* MPU9250 (single 9-axis IMU per HARDWARE.md BOM) */
+#define BOARD_HAS_SENSOR_IMU            1  /* MPU9250 (single 9-axis IMU per RDK-RZ/V2H pinout BOM) */
 #define BOARD_HAS_SENSOR_MAG            1  /* AK8963 internal to MPU9250 */
 #define BOARD_HAS_SENSOR_BARO           1  /* BMP280 */
 #define BOARD_HAS_SENSOR_RANGEFINDER    1  /* TFminiPlus LiDAR */

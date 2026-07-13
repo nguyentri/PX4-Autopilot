@@ -10,7 +10,7 @@ CONFIG_BOARD_CONSTRAINED_MEMORY=y
 CONFIG_BOARD_NO_HELP=y
 
 # Serial port configuration (matches FSP RSCI channel numbering; sparse ttyS{4,5,6,9}).
-# Console = SEGGER RTT (no debug UART pin per HARDWARE.md).
+# Console = SEGGER RTT.
 # RSCI4 (ttyS4): TFmini LiDAR
 # RSCI5 (ttyS5): Sik MAVLink telemetry
 # RSCI6 (ttyS6): fs-a8s SBUS RC (RX-only)
@@ -47,7 +47,7 @@ CONFIG_DRIVERS_BAROMETER_BMP280=y
 CONFIG_DRIVERS_GPS=y
 CONFIG_DRIVERS_IMU=y
 CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=y
-# ICM20948 disabled: not present on RDK-RZV2H drone BOM (single-IMU per HARDWARE.md).
+# ICM20948 disabled: not present on RDK-RZV2H drone BOM (single-IMU per RDK-RZ/V2H pinout).
 CONFIG_DRIVERS_MAGNETOMETER=y
 
 # Driver configurations - Outputs

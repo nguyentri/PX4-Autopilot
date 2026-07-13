@@ -216,9 +216,6 @@ Complete FreeRTOS + POSIX + Renesas FSP reference.
 **Key subdirs:**
 ```
 refs/px4-freertos-posix-renesas-fsp/
-├── docs/
-│   ├── HARDWARE.md        ← Canonical hardware guide (register maps, clocks, memory)
-│   └── ...
 ├── rzv_cfg/               ← FSP configuration files (pin_data.c source territory)
 ├── rzv_gen/               ← Generated headers from FSP
 │   └── pin_data.c         ← Authoritative pin ownership matrix (source for pinmap.md)
@@ -226,6 +223,8 @@ refs/px4-freertos-posix-renesas-fsp/
 ├── script/                ← BSP build scripts
 └── px4/boards/renesas/    ← Reference PX4 board layout
 ```
+
+**RDK board pinout:** `boards/renesas/rdk-rzv2h/src/pinout.md` — canonical board BOM, header assignments, and wiring.
 
 **Use:** When porting a driver, compare with `rzv/fsp/src/` implementation. Register names, bit widths, and sequences are canonical here.
 

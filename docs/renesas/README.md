@@ -66,7 +66,7 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 ## Key Reference Links
 
 - **Master Plan:** [../../plans/rzv2h_nuttx_px4_unified_port_plan.md](../../plans/rzv2h_nuttx_px4_unified_port_plan.md)
-- **Canonical Hardware Guide:** [../../refs/px4-freertos-posix-renesas-fsp/docs/HARDWARE.md](../../refs/px4-freertos-posix-renesas-fsp/docs/HARDWARE.md) (register-level detail)
+- **RDK-RZ/V2H Board Pinout:** [../../boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md) (BOM, header, peripheral pin assignments, and wiring)
 - **Pin Data Source:** [../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c) (authority for pinmap.md)
 - **NuttX Driver Port:** [../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/)
 - **PX4 Board Definition:** [../../boards/renesas/rdk-rzv2h/](../../boards/renesas/rdk-rzv2h/)

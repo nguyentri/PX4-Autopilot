@@ -2,9 +2,9 @@
 
 **Date:** 2026-07-11  
 **Status:** Foundational (Phase 1)  
-**Canonical Source:** [refs/px4-freertos-posix-renesas-fsp/docs/HARDWARE.md](../../refs/px4-freertos-posix-renesas-fsp/docs/HARDWARE.md)
+**RDK-RZ/V2H Board Pinout:** [boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md)
 
-This document summarizes key hardware blocks. For register-level detail and complete memory maps, see the canonical source above.
+This document summarizes key hardware blocks. For board BOM, header assignments, and wiring, see the board pinout above.
 
 ---
 
@@ -325,7 +325,7 @@ NuttX IPCC driver wraps MHU and provides:
 
 - **Pinmap Authority:** [pinmap.md](./pinmap.md)
 - **System Architecture:** [../system-architecture.md](../system-architecture.md)
-- **Canonical Reference:** [../../refs/px4-freertos-posix-renesas-fsp/docs/HARDWARE.md](../../refs/px4-freertos-posix-renesas-fsp/docs/HARDWARE.md)
+- **Board Pinout and Wiring:** [../../boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md)
 
 ---
 
