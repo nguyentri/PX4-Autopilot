@@ -133,7 +133,6 @@ git config advice.addIgnoredFile false
 .backup
 *log
 *log*
-*.svd
 .codex
 .opencode
 .claude
