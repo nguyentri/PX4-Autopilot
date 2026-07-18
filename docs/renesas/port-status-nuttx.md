@@ -1,6 +1,6 @@
 # NuttX Driver Port Status Matrix
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-18
 **Branch:** px4_ra_rzv  
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
@@ -10,6 +10,7 @@
 
 - **stub**: Driver file exists; no functional implementation (config hook only).
 - **build-clean**: Compiles without errors; architecture-level glue in place; validation pending.
+- **blocked**: Audit found correctness or integration defects that must be resolved before hardware validation.
 - **functional**: Passes basic validation (register init, ISR ack, DMA init order); ready for integration testing.
 - **production**: Functional + stress tested (≥10k cycles or 1h uptime); used in flight-qualified code.
 
@@ -22,7 +23,7 @@
 | 1 | ADC | rzv_adc.c | rzv_adc.h | functional | `refs/.../r_adc.c` | adc | (pending) | 12-bit SAR; ELC trigger support |
 | 2 | CAN-FD | rzv_canfd.c | rzv_canfd.h | functional | `refs/.../r_canfd.c` | canfd, canfd-dual | (pending) | Dual CAN0/CAN1; DMAC integration |
 | 3 | Clock/CPG | rzv_clock.c | rzv_cpg.h | functional | (internal) | nsh | (pending) | Clock divider init, PLL setup |
-| 4 | DMAC | rzv_dmac.c | rzv_dmac.h | functional | `refs/.../r_dmac.c` | (shared) | (pending) | 8-channel DMAC; cache sync; linked chains |
+| 4 | DMAC | rzv_dmac.c | rzv_dmac.h | build-clean | `refs/.../r_dmac_b.c` | dmac-memcpy | [2026-07-18 re-audit](../../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) | CR8-0 one-shot polling memory copy only; hardware proof and peripheral DMA pending |
 | 5 | Ether | rzv_ether.c | rzv_ether.h | functional | `refs/.../r_ether.c` | ether | (pending) | MAC controller; link-up polling |
 | 6 | Ether PHY | rzv_ether_phy.c | (via rzv_ether.h) | functional | (FSP integrated) | ether | (pending) | MDIO/MDC phy register access |
 | 7 | GPIO | rzv_gpio.c | rzv_gpio.h | functional | `refs/.../r_ioport.c` | nsh-leds | (pending) | Port 0–12; IRQ/edge config |
@@ -67,7 +68,7 @@
 
 - **Total drivers:** 41
 - **Functional:** 38
-- **Build-clean:** 1
+- **Build-clean:** 2
 - **Stub:** 2
 - **Production:** 0 (pending stress test)
 
@@ -88,3 +89,4 @@ When submitting a driver PR:
 - [Validation Checklist](validation-checklist.md) — per-driver bring-up steps.
 - [IPC Architecture](ipc-architecture.md) — MHU/IPCC integration.
 - [Deployment Guide](../deployment-guide.md) — build and test harness.
+- [DMAC Re-audit](../../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — blocking DMAC findings and remediation order.

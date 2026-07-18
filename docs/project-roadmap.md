@@ -1,6 +1,6 @@
 # RDK-RZ/V2H Port Roadmap
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-18
 **Scope:** Milestones and dependencies for NuttX + PX4 flight-stack port to RDK-RZ/V2H.  
 **Canonical Plan:** See `plans/rzv2h_nuttx_px4_unified_port_plan.md` for detailed implementation strategies and risk analysis.
 
@@ -55,6 +55,7 @@
 - [ ] All 41 drivers in [port-status-nuttx.md](renesas/port-status-nuttx.md) reach **functional** status.
 - [ ] Validation checklist completed per driver (link to [validation-checklist.md](renesas/validation-checklist.md)).
 - [ ] Sample configs tested (adc, canfd, ether, sdhi, spi-loopback, uart, pwm, wdt, etc.).
+- [ ] Resolve the [RZ/V2H DMAC audit FAIL](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) before enabling DMA-backed consumers.
 
 **Key Driver Groups:**
 
@@ -309,3 +310,4 @@ M7 (Autonomous flight modes)
 - [NuttX Port Status](renesas/port-status-nuttx.md) — Per-driver completion tracking.
 - [PX4 HAL Port Status](renesas/port-status-px4-hal.md) — HAL surface tracking.
 - [Canonical Plan](plans/rzv2h_nuttx_px4_unified_port_plan.md) — Detailed implementation strategies.
+- [DMAC Re-audit](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — M1 blocker; runtime DMA remains disabled.

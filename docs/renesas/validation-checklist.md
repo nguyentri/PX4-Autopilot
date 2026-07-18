@@ -165,6 +165,21 @@ For each supported peripheral instance, verify in order:
 
 ---
 
+### D.4 RZ/V2H CR8-0 DMAC polling memory-copy proof
+
+- [x] Build `rdk-rzv2h:dmac-memcpy` with `CONFIG_RZV_DMAC` and
+  `CONFIG_EXAMPLES_RZV_DMAC` enabled.
+- [ ] Flash and run `rzv_dmac` on CR8-0; this is deliberately deferred from
+  the build-only check.
+- [ ] Archive UART output containing CPU addresses, final status, and
+  `PASS: DMAC memcpy`.  If bus aliases are required as evidence, read N0SA
+  and N0DA through the hardware debugger; the supported application interface
+  deliberately exposes CPU addresses only.
+- [ ] Keep peripheral-triggered DMAC, DTC, serial, SPI, I2C, and DShot DMA
+  outside this proof until separately designed and validated.
+
+---
+
 ## SECTION E: Concurrency & Shared Register Access
 
 ### E.1 IRQSave Protection
