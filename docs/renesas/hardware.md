@@ -1,17 +1,57 @@
 # RZ/V2H Hardware Overview
 
-**Date:** 2026-07-11  
-**Status:** Foundational (Phase 1)  
+**Date:** 2026-07-11
+**Status:** Foundational (Phase 1)
 **RDK-RZ/V2H Board Pinout:** [boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md)
 
 This document summarizes key hardware blocks. For board BOM, header assignments, and wiring, see the board pinout above.
 
 ---
+## DSW1 Setting
+
+| DSW1 | RZ/V2H pin | Default setting | Operation |
+|------|------------|-----------------|-----------|
+| 1 | BTSEL (BOOSTSELCPU) | ON = High:1 | Select the coldboot CPU.
+• High: CA55 *default*
+• Low: CM33 |
+| 2 | BOOTLLCA_1 | — | See DSW1 switch 3 |
+| 3 | BOOTPLLCA_0 | ON = High:1 | Input the CA55 frequency at the CA55 coldboot.
+BOOT_PLLCA[1..0]:
+• Low/Low: 1.1 GHz
+• Low/High: 1.5 GHz (0.9 V)
+• High/Low: 1.6 GHz (0.9 V)
+• High/High: 1.7 GHz (0.9 V) *default* |
+| 4 | — | — | Reserved / no assign |
+| 5 | MD_BOOT1 / MD_BOOT0 | ON = Low:0 / OFF = Low:0 | Input the boot mode select signal.
+MD_BOOT[1..0]:
+• Low/Low: SD *default*
+• Low/High: eMMC
+• High/Low: xSPI
+• High/High: SCIF download |
+| 6 | MD_BOOT3 | OFF = Low:0 | Select JTAG debug mode.
+• Low: normal mode *default*
+• High: JTAG |
+
+> Note: Enable CA55 coldboot only.
+Additional Pin Settings
+•	MD_CLKS
+o	Select SSCG OFF or ON
+o	Low: OFF
+o	High: ON (default)
+•	MD_BOOT4
+o	Fix the pin to the low level
+•	MD_BOOT2
+o	Select the boot device IO voltage, High: 1.8 V
+o	Note: Enabled in boot mode 1 and boot mode 2 only
+
+
+
+
 
 ## 1. System Overview
 
-**SoC:** Renesas R9A09G057H (RZ/V2H family)  
-**Process:** 40 nm  
+**SoC:** Renesas R9A09G057H (RZ/V2H family)
+**Process:** 40 nm
 **Temperature Range:** 0–70°C (commercial)
 
 ### Core Complex
@@ -76,7 +116,7 @@ External Oscillator (24 MHz typical)
 | **Shared DRAM** | 0x40000000 | 2 MB | DRAM | Cached | IPC buffers, CR8-1/CM33 firmware |
 | **Peripheral I/O** | 0x41000000+ | — | Registers | Uncached | GIC, ICU, GPIO, UART, SPI, etc. |
 
-**Reset Vector:** 0x00000000 (SRAM)  
+**Reset Vector:** 0x00000000 (SRAM)
 **Linker Script:** [rdk-rzv2h_cr8_0.ld](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld)
 
 ---
@@ -299,7 +339,7 @@ NuttX IPCC driver wraps MHU and provides:
 └──────────────────────┘
 ```
 
-**Linker Script:** [rdk-rzv2h_cr8_0.ld](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld)  
+**Linker Script:** [rdk-rzv2h_cr8_0.ld](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld)
 **Key Files:**
 - [rzv_start.c](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_start.c) — CPU init, VBAR setup
 - [rzv_clock.c](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c) — CPG initialization
