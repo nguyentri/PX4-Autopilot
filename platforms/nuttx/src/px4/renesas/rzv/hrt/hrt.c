@@ -34,11 +34,15 @@
 /**
  * @file hrt.c
  *
- * High-resolution timer for RZV2H using GTM0 (OSTM0) as a free-running
- * counter plus compare-driven interrupts for PX4 call scheduling.
+ * PX4 high-resolution timer for RZ/V2H — queue manager only.
  *
- * This closely mirrors the FreeRTOS/FSP implementation (rzv_hrt.cpp) but
- * uses the NuttX GTM/ICU primitives.
+ * All register access to the timer counter lives in
+ * arch/arm/src/rzv/rzv_hrt.c (GTM7 free-run at P1CLK, runtime clock
+ * lookup). This file keeps the PX4 hrt_call queue and delegates
+ * counter reads and one-shot arming to the arch driver via
+ * rzv_hrt_absolute_time() and rzv_hrt_call_after().
+ *
+ * Requires CONFIG_RZV_HRT=y so the arch shim is linked.
  */
 
 #include <px4_platform_common/px4_config.h>
@@ -56,95 +60,25 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "hardware/rzv_gtm.h"
-#include "rzv_clock.h"
-#include "rzv_icu.h"
-#include "arm_internal.h"
-
-#ifndef CONFIG_RZV_GTM_CLOCK_FREQUENCY
-#  define CONFIG_RZV_GTM_CLOCK_FREQUENCY 120000000 /* match PCLKD default */
-#endif
-
-#define RZV_HRT_CHANNEL             0
-#define RZV_HRT_BASE                RZV_GTM0_BASE
-#define RZV_HRT_ELC_EVENT           RZV_ELC_GTM0_GTMTINT
-#define RZV_HRT_MIN_TICKS           10U
+#include "rzv_hrt.h"
 
 #ifndef USEC_PER_SEC
-#define USEC_PER_SEC                1000000ULL
+#define USEC_PER_SEC 1000000ULL
 #endif
 
-#ifndef getreg32
-#  define getreg32(a)    (*(volatile uint32_t *)(a))
-#endif
-#ifndef putreg32
-#  define putreg32(v,a)  (*(volatile uint32_t *)(a) = (v))
-#endif
-#ifndef putreg8
-#  define putreg8(v,a)   (*(volatile uint8_t *)(a) = (v))
-#endif
+/* Minimum re-arm delay in microseconds. rzv_hrt applies its own tick-level
+ * floor (HRT_MIN_TICKS = 10 ticks ≈ 100 ns at P1CLK 100 MHz); the µs-level
+ * floor here just avoids scheduling storms when many callouts land in the
+ * same tick.
+ */
+#define HRT_MIN_DELAY_US    1U
 
 static sq_queue_t g_callout_queue;
-static volatile uint32_t g_last_counter;
-static volatile uint64_t g_accumulated_counts;
-static uint32_t g_timer_freq_hz = CONFIG_RZV_GTM_CLOCK_FREQUENCY;
-static int g_hrt_irq = -1;
-static bool g_initialized = false;
+static bool       g_initialized;
 
-static inline uint32_t gtm_getreg32(unsigned int offset)
-{
-	return getreg32(RZV_HRT_BASE + offset);
-}
-
-static inline void gtm_putreg32(uint32_t val, unsigned int offset)
-{
-	putreg32(val, RZV_HRT_BASE + offset);
-}
-
-static inline void gtm_putreg8(uint8_t val, unsigned int offset)
-{
-	putreg8(val, RZV_HRT_BASE + offset);
-}
-
-static inline uint32_t gtm_read_counter(void)
-{
-	return gtm_getreg32(RZV_GTM_OSTMCNT_OFFSET);
-}
-
-static inline void gtm_start(void)
-{
-	gtm_putreg8(GTM_OSTMTS_OSTMTS, RZV_GTM_OSTMTS_OFFSET);
-}
-
-static inline void gtm_stop(void)
-{
-	gtm_putreg8(GTM_OSTMTT_OSTMTT, RZV_GTM_OSTMTT_OFFSET);
-}
-
-static inline uint64_t counts_to_time_us(uint64_t counts)
-{
-	if (g_timer_freq_hz == 0) {
-		return 0;
-	}
-
-	const uint64_t seconds = counts / g_timer_freq_hz;
-	const uint64_t remainder = counts % g_timer_freq_hz;
-	const uint64_t rounded = (remainder * USEC_PER_SEC + (g_timer_freq_hz / 2U)) / g_timer_freq_hz;
-	return seconds * USEC_PER_SEC + rounded;
-}
-
-static inline uint32_t time_to_ticks(hrt_abstime delta_us)
-{
-	if (g_timer_freq_hz == 0) {
-		return 0;
-	}
-
-	const uint64_t ticks = (delta_us * (uint64_t)g_timer_freq_hz + USEC_PER_SEC / 2ULL) / USEC_PER_SEC;
-	return (ticks > UINT32_MAX) ? UINT32_MAX : (uint32_t)ticks;
-}
-
-static void hrt_schedule(void);
+static void hrt_dispatch(void *arg);
 static void hrt_call_invoke(void);
+static void hrt_schedule_locked(void);
 
 static inline struct hrt_call *entry_to_call(struct sq_entry_s *entry)
 {
@@ -156,29 +90,17 @@ static inline struct hrt_call *entry_to_call(struct sq_entry_s *entry)
 
 hrt_abstime hrt_absolute_time(void)
 {
-	irqstate_t flags = enter_critical_section();
-
-	const uint32_t now = gtm_read_counter();
-	const uint32_t last = g_last_counter;
-	g_last_counter = now;
-
-	const uint32_t delta = now - last;
-	g_accumulated_counts += delta;
-
-	const uint64_t counts = g_accumulated_counts;
-	leave_critical_section(flags);
-
-	return counts_to_time_us(counts);
+	return (hrt_abstime)rzv_hrt_absolute_time();
 }
 
 hrt_abstime hrt_us_to_ticks(hrt_abstime us)
 {
-	return time_to_ticks(us);
+	return us;
 }
 
 hrt_abstime hrt_ticks_to_us(hrt_abstime ticks)
 {
-	return counts_to_time_us(ticks);
+	return ticks;
 }
 
 void hrt_store_absolute_time(volatile hrt_abstime *now)
@@ -186,34 +108,6 @@ void hrt_store_absolute_time(volatile hrt_abstime *now)
 	irqstate_t flags = enter_critical_section();
 	*now = hrt_absolute_time();
 	leave_critical_section(flags);
-}
-
-static void hrt_program_compare(hrt_abstime deadline)
-{
-	hrt_abstime now = hrt_absolute_time();
-
-	if (deadline <= now) {
-		deadline = now + 1;
-	}
-
-	const hrt_abstime delta_us = deadline - now;
-	uint32_t ticks = time_to_ticks(delta_us);
-
-	if (ticks < RZV_HRT_MIN_TICKS) {
-		ticks = RZV_HRT_MIN_TICKS;
-	}
-
-	const uint32_t current = gtm_read_counter();
-	gtm_putreg32(current + ticks, RZV_GTM_OSTMCMP_OFFSET);
-}
-
-static int hrt_interrupt(int irq, void *context, void *arg)
-{
-	(void)arg;
-	rzv_icu_clear_irq(irq);
-	hrt_call_invoke();
-	hrt_schedule();
-	return OK;
 }
 
 static void hrt_call_insert(struct hrt_call *entry)
@@ -244,19 +138,56 @@ static void hrt_call_insert(struct hrt_call *entry)
 	}
 }
 
+/* Program the arch HRT to fire when the next queued callout is due.
+ * Caller holds the critical section. Cancels any previous one-shot
+ * before scheduling so the dispatch fires against the current head.
+ */
+static void hrt_schedule_locked(void)
+{
+	struct hrt_call *next = entry_to_call(g_callout_queue.head);
+
+	rzv_hrt_cancel();
+
+	if (!next || next->deadline == 0) {
+		return;
+	}
+
+	hrt_abstime now = hrt_absolute_time();
+	uint32_t delay_us;
+
+	if (next->deadline <= now) {
+		delay_us = HRT_MIN_DELAY_US;
+
+	} else {
+		hrt_abstime diff = next->deadline - now;
+		delay_us = (diff > UINT32_MAX) ? UINT32_MAX : (uint32_t)diff;
+
+		if (delay_us < HRT_MIN_DELAY_US) {
+			delay_us = HRT_MIN_DELAY_US;
+		}
+	}
+
+	(void)rzv_hrt_call_after(delay_us, hrt_dispatch, NULL);
+}
+
 static void hrt_schedule(void)
 {
 	irqstate_t flags = enter_critical_section();
+	hrt_schedule_locked();
+	leave_critical_section(flags);
+}
 
-	struct hrt_call *next = entry_to_call(g_callout_queue.head);
+/* Called from rzv_hrt ISR context via rzv_hrt_call_after. Runs the
+ * expired head callouts, requeues periodic ones, and reprograms the
+ * arch HRT for the next deadline.
+ */
+static void hrt_dispatch(void *arg)
+{
+	(void)arg;
+	hrt_call_invoke();
 
-	if (next && next->deadline != 0) {
-		hrt_program_compare(next->deadline);
-	} else {
-		/* No pending callbacks: park the compare far in the future */
-		gtm_putreg32(UINT32_MAX, RZV_GTM_OSTMCMP_OFFSET);
-	}
-
+	irqstate_t flags = enter_critical_section();
+	hrt_schedule_locked();
 	leave_critical_section(flags);
 }
 
@@ -311,9 +242,8 @@ void hrt_call_after(struct hrt_call *entry, hrt_abstime delay, hrt_callout callo
 	entry->arg = arg;
 
 	hrt_call_insert(entry);
+	hrt_schedule_locked();
 	leave_critical_section(flags);
-
-	hrt_schedule();
 }
 
 void hrt_call_at(struct hrt_call *entry, hrt_abstime calltime, hrt_callout callout, void *arg)
@@ -338,9 +268,8 @@ void hrt_call_every(struct hrt_call *entry, hrt_abstime delay, hrt_abstime inter
 	entry->arg = arg;
 
 	hrt_call_insert(entry);
+	hrt_schedule_locked();
 	leave_critical_section(flags);
-
-	hrt_schedule();
 }
 
 bool hrt_called(struct hrt_call *entry)
@@ -360,8 +289,8 @@ void hrt_cancel(struct hrt_call *entry)
 		entry->arg = NULL;
 	}
 
+	hrt_schedule_locked();
 	leave_critical_section(flags);
-	hrt_schedule();
 }
 
 void hrt_call_init(struct hrt_call *entry)
@@ -372,11 +301,13 @@ void hrt_call_init(struct hrt_call *entry)
 void hrt_call_delay(struct hrt_call *entry, hrt_abstime delay)
 {
 	irqstate_t flags = enter_critical_section();
+
 	if (entry->deadline != 0) {
 		entry->deadline += delay;
 	}
+
+	hrt_schedule_locked();
 	leave_critical_section(flags);
-	hrt_schedule();
 }
 
 void hrt_init(void)
@@ -386,30 +317,14 @@ void hrt_init(void)
 	}
 
 	sq_init(&g_callout_queue);
-	g_last_counter = 0;
-	g_accumulated_counts = 0;
 
-	/* Enable clock and configure GTM0 as free-running up-counter */
-	(void)rzv_clock_enable(RZV_CPG_CLK_GTM0);
-	gtm_stop();
-	gtm_putreg8(GTM_MODE_FREERUN, RZV_GTM_OSTMCTL_OFFSET);
-	g_last_counter = gtm_read_counter();
-	g_accumulated_counts = 0;
-	gtm_putreg32(UINT32_MAX, RZV_GTM_OSTMCMP_OFFSET);
+	/* rzv_hrt_initialize is idempotent (returns OK if already up).
+	 * If the arch shim is not built (CONFIG_RZV_HRT=n), the symbol
+	 * will not link — that is the intended build-time enforcement.
+	 */
+	(void)rzv_hrt_initialize();
 
-	/* Attach interrupt */
-	g_hrt_irq = rzv_icu_attach(RZV_HRT_ELC_EVENT, hrt_interrupt, NULL, true);
-
-	if (g_hrt_irq < 0) {
-		/* Fail-safe: leave HRT initialized but without IRQ */
-		g_hrt_irq = -1;
-	}
-
-	gtm_start();
 	g_initialized = true;
-
-	/* Default to no pending callbacks */
-	hrt_schedule();
 }
 
 void hrt_work(void)
