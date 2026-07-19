@@ -28,8 +28,8 @@
 | 6 | Ether PHY | rzv_ether_phy.c | (via rzv_ether.h) | functional | (FSP integrated) | ether | (pending) | MDIO/MDC phy register access |
 | 7 | GPIO | rzv_gpio.c | rzv_gpio.h | functional | `refs/.../r_ioport.c` | nsh-leds | (pending) | Port 0–12; IRQ/edge config |
 | 8 | GPT (16-bit) | rzv_gpt.c | rzv_gpt.h | functional | `refs/.../r_gpt.c` | pwm | (pending) | Pulse generation; PWM mode |
-| 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | blocked | `refs/.../r_gtm.c` | gtm | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Verdict DONE_WITH_CONCERNS: `settimeout` race fixed; `next_interval_us` rearm still absent (APR-02); GTM0 collides with PX4 HRT under shipping defconfig (HRT-N-02) |
-| 10 | HRT | rzv_hrt.c + platforms/.../renesas/rzv/hrt/hrt.c | rzv_hrt.h | blocked | (split-brain — no single ref) | (none in nsh defconfig) | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Two disjoint HRT implementations (GTM7 shim vs GTM0 PX4-side); design decision required (HRT-N-01) |
+| 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | functional | `refs/.../r_gtm.c` | gtm | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Re-audit findings closed: `settimeout` race fixed, `next_interval_us` rearm honoured (APR-02), GTM0 collision resolved (PX4 HRT moved to GTM7). Build not yet re-verified. |
+| 10 | HRT | rzv_hrt.c (arch shim) + platforms/.../renesas/rzv/hrt/hrt.c (queue mgr) | rzv_hrt.h | functional | (GTM7 free-run, arch shim) | nsh (CONFIG_RZV_HRT=y) | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Consolidated: PX4 HRT queue delegates counter/arm to arch shim on GTM7 at P1CLK runtime lookup. Split-brain resolved (HRT-N-01, HRT-N-02). Build not yet re-verified. |
 | 11 | I2C (RIIC) | rzv_i2c.c | rzv_i2c.h | functional | `refs/.../r_riic.c` | (nsh default) | (pending) | Native I2C master; DMA optional |
 | 12 | ICU (CR8-0/1) | rzv_icu.c | rzv_icu.h | functional | (internal) | (framework) | (pending) | Interrupt control unit; priority routing |
 | 13 | ICU (CM33) | rzv_icu_cm33.c | rzv_icu.h | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33-specific ICU routing |
@@ -67,9 +67,9 @@
 ## Summary
 
 - **Total drivers:** 41
-- **Functional:** 35
+- **Functional:** 37
 - **Build-clean:** 1
-- **Blocked:** 3 (DMAC, GTM, HRT)
+- **Blocked:** 1 (DMAC)
 - **Stub:** 2
 - **Production:** 0 (pending stress test)
 
