@@ -28,8 +28,8 @@
 | 6 | Ether PHY | rzv_ether_phy.c | (via rzv_ether.h) | functional | (FSP integrated) | ether | (pending) | MDIO/MDC phy register access |
 | 7 | GPIO | rzv_gpio.c | rzv_gpio.h | functional | `refs/.../r_ioport.c` | nsh-leds | (pending) | Port 0–12; IRQ/edge config |
 | 8 | GPT (16-bit) | rzv_gpt.c | rzv_gpt.h | functional | `refs/.../r_gpt.c` | pwm | (pending) | Pulse generation; PWM mode |
-| 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | functional | `refs/.../r_gtm.c` | gtm | (pending) | General timer; cascade mode |
-| 10 | HRT | rzv_hrt.c | (via rzv_gpt.h) | functional | (derived from GPT) | pwm | (pending) | High-resolution timer backing; up-counter |
+| 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | blocked | `refs/.../r_gtm.c` | gtm | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Verdict DONE_WITH_CONCERNS: `settimeout` race fixed; `next_interval_us` rearm still absent (APR-02); GTM0 collides with PX4 HRT under shipping defconfig (HRT-N-02) |
+| 10 | HRT | rzv_hrt.c + platforms/.../renesas/rzv/hrt/hrt.c | rzv_hrt.h | blocked | (split-brain — no single ref) | (none in nsh defconfig) | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Two disjoint HRT implementations (GTM7 shim vs GTM0 PX4-side); design decision required (HRT-N-01) |
 | 11 | I2C (RIIC) | rzv_i2c.c | rzv_i2c.h | functional | `refs/.../r_riic.c` | (nsh default) | (pending) | Native I2C master; DMA optional |
 | 12 | ICU (CR8-0/1) | rzv_icu.c | rzv_icu.h | functional | (internal) | (framework) | (pending) | Interrupt control unit; priority routing |
 | 13 | ICU (CM33) | rzv_icu_cm33.c | rzv_icu.h | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33-specific ICU routing |
@@ -67,8 +67,9 @@
 ## Summary
 
 - **Total drivers:** 41
-- **Functional:** 38
-- **Build-clean:** 2
+- **Functional:** 35
+- **Build-clean:** 1
+- **Blocked:** 3 (DMAC, GTM, HRT)
 - **Stub:** 2
 - **Production:** 0 (pending stress test)
 
@@ -90,3 +91,4 @@ When submitting a driver PR:
 - [IPC Architecture](ipc-architecture.md) — MHU/IPCC integration.
 - [Deployment Guide](../deployment-guide.md) — build and test harness.
 - [DMAC Re-audit](../../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — blocking DMAC findings and remediation order.
+- [GTM + PX4 HRT Re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) — GTM lower-half + HRT split-brain findings and remediation order.
