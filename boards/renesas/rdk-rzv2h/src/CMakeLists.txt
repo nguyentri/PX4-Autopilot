@@ -49,7 +49,6 @@ target_link_libraries(drivers_board
 		arch_hrt
 		arch_io_pins
 		arch_led_pwm
-		arch_spi
 		arch_version
 		nuttx_arch
 		nuttx_drivers

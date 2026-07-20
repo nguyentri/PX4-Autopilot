@@ -39,7 +39,6 @@ add_subdirectory(hrt)
 add_subdirectory(io_pins)
 add_subdirectory(led_pwm)
 add_subdirectory(micro_hal)
-add_subdirectory(spi)
 add_subdirectory(version)
 
 # Optional features

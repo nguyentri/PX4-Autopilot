@@ -1,6 +1,6 @@
 # PX4 HAL Port Status Matrix
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-20  
 **Branch:** px4_ra_rzv  
 **Scope:** PX4 Hardware Abstraction Layer (HAL) surfaces for RDK-RZ/V2H; cross-referenced to NuttX driver dependencies.
 
@@ -10,8 +10,11 @@
 
 - **planned**: HAL surface identified; NuttX driver ready; implementation pending.
 - **in-progress**: Skeleton drafted; driver integration underway.
-- **functional**: Compiles; passes unit tests; integration tests pending.
-- **validated**: Integration tests pass; used in application code.
+- **build-clean**: HAL adapter implemented and wired into `renesas_rdk-rzv2h_default`; compiles/links. No on-target hardware validation yet.
+- **deferred**: HAL adapter present but the feature is intentionally disabled in the default build pending hardware enablement (documented in board defconfig).
+- **validated**: On-target integration tests pass; used in application code.
+
+> Evidence note: RDK-RZ/V2H is a build-only target today. No HAL surface has reached **validated** (on-target). `build-clean` is the strongest tier currently reachable.
 
 ---
 
@@ -19,13 +22,13 @@
 
 | # | Peripheral | PX4 HAL File | NuttX Driver Dep | PX4 Board Dir | Status | Migration Notes |
 |---|------------|--------------|------------------|---------------|--------|-----------------|
-| 1 | SPI | `src/drivers/spi/` | rzv_spi.c (RSPI) + rzv_sci_spi.c | boards/renesas/rdk-rzv2h/src/ | planned | Map PX4 SPI device numbering to /dev/spiN; DMA channel assignment |
-| 2 | I2C | `src/drivers/i2c/` | rzv_i2c.c (RIIC) + rzv_sci_i2c.c | boards/renesas/rdk-rzv2h/src/ | planned | DMA optional; clock stretching; multi-master probe |
-| 3 | UART/Serial | `src/drivers/serial/` | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/src/ | planned | Flow control (/dev/ttyS0–2); baud rate config |
-| 4 | GPIO | `src/drivers/gpio/` | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | planned | Port I/O mapping; IRQ/edge semantics; LED control |
-| 5 | PWM/ESC | `src/drivers/pwm_out/` | rzv_gpt.c (GPT) + rzv_hrt.c (HRT) | boards/renesas/rdk-rzv2h/src/ | planned | Frequency/duty cycle; multi-channel; dshot compatibility |
-| 6 | ADC | `src/drivers/adc/` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | planned | Channel mux config; sample rate; sensor integration (baro, airspeed) |
-| 7 | Timer/HRT | `src/drivers/timer/` | rzv_hrt.c + rzv_gpt.c | boards/renesas/rdk-rzv2h/src/ | planned | microsecond precision; latency measurement; scheduler backing |
+| 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | rzv_spi.c (RSPI, hardware CS) | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean | `CONFIG_RZV_SPI=y`. MPU9250 on SPI0 (CS P93/SSLA0, DRDY P50). Board select/status hooks not used (hardware CS). On-target sensor probe pending |
+| 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | deferred | BMP280 baro on SCI7 simple-I2C (P76/P77). SCI7 enablement/HW validation deferred in `nsh/defconfig` (baro init `#ifdef CONFIG_RZV_I2C`, unset). HAL I2C dispatch must target `rzv_sci_i2c_initialize`, not the RIIC path — see audit report 260720 |
+| 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | SCI4/5/6/9 → ttyS4/5/6/9 (LiDAR, telem, SBUS RC, GPS); FSP numbering calls these RSCI. Console = SEGGER RTT. SCIF path currently blocked (see port-status-nuttx.md) |
+| 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
+| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | rzv_gpt.c (GPT) | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | 4×ESC: FSP-logical GPT6/7/9/10 (logical 9→phys GPT11, 10→GPT12). 50–500 Hz. DShot experimental/opt-in. Waveform on-target pending |
+| 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred | `CONFIG_RZV_ADC=y` but battery ADC channels disabled in board_config.h for v1. Sensor integration pending |
+| 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (GTM7 free-run) | boards/renesas/rdk-rzv2h/src/ | build-clean | `CONFIG_RZV_HRT=y`. µs timebase on GTM7 (not GPT). Jitter/drift on-target pending |
 | 8 | CAN | `src/drivers/can/` | rzv_canfd.c | boards/renesas/rdk-rzv2h/src/ | planned | CAN0/CAN1; baud rate; SLCAN over UART alt |
 | 9 | Ether/MAVLink UDP | `src/modules/mavlink/` + network stack | rzv_ether.c + rzv_ether_phy.c | boards/renesas/rdk-rzv2h/src/ | planned | IP config; UDP MAVLink stream; link-up polling; LTE modem integration (TBD) |
 | 10 | xSPI/LittleFS | `src/modules/fs/littlefs/` | (planned: rzv_xspi.c) | boards/renesas/rdk-rzv2h/src/ | planned | Block device abstraction; wear-leveling; parameter storage |
@@ -39,10 +42,9 @@
 **NuttX Foundation:** `rzv_spi.c` (RSPI native) + `rzv_sci_spi.c` (SCI as SPI fallback).
 
 **PX4 HAL Interface:**
-- Register `struct spi_dev_s` via `spi_bus_initialize()`.
-- Implement `struct spi_ops_s`: select, setfrequency, setmode, send, exchange.
-- DMA channel assignment (reference `boards/renesas/rdk-rzv2h/src/rzv2h_spi.c`).
-- CS control: GPIO-backed (manual) or native (RSPI RSPnCS).
+- `px4_spibus_initialize()` → `rzv_spibus_initialize()` (`CONFIG_RZV_SPI=y`).
+- Bus/device table in `boards/renesas/rdk-rzv2h/src/spi.cpp` (`px4_spi_buses`).
+- CS control: native hardware chip-select (RSPI SSLA0). The STM32-style board select/status callbacks are NOT used by the RZV lower-half and have been removed from the HAL.
 
 **Validation:** Loopback test (configs/spi-loopback) before sensor attachment.
 
@@ -50,13 +52,13 @@
 
 ### I2C (Line 2)
 
-**NuttX Foundation:** `rzv_i2c.c` (RIIC native) + `rzv_sci_i2c.c` (SCI-B as I2C fallback).
+**NuttX Foundation:** `rzv_sci_i2c.c` (`rzv_sci_i2c_initialize`, SCI-mode simple-I2C — the BMP280 path) + `rzv_i2c.c` (RIIC native, unused on this board).
 
-**PX4 HAL Interface:**
-- Register `struct i2c_dev_s` via `i2c_initialize()`.
-- Implement `struct i2c_ops_s`: transfer, reset.
-- Multi-master arbitration (address conflict handling).
-- Clock stretching (timeout guard).
+**Status — deferred:** The BMP280 barometer is wired to SCI7 simple-I2C (P76/P77). In `nsh/defconfig` this is intentionally disabled pending hardware enablement, so baro bring-up in `init.c` (`#ifdef CONFIG_RZV_I2C`) is compiled out. The HAL `px4_i2cbus_initialize()` must dispatch to `rzv_sci_i2c_initialize()` for the SCI bus — it previously referenced an undefined RIIC symbol. See audit report `plans/reports/audit-260720-...`.
+
+**PX4 HAL Interface (target):**
+- `px4_i2cbus_initialize(bus)` → `rzv_sci_i2c_initialize(channel)` for SCI-I2C buses.
+- Bus/device table in `boards/renesas/rdk-rzv2h/src/i2c.cpp` (BMP280 @ 0x76, `PX4_I2C_BUS_EXPANSION=7`).
 
 **Validation:** I2C probe scan; known devices (IMU, baro, mag) enumeration.
 
@@ -64,7 +66,7 @@
 
 ### UART/Serial (Line 3)
 
-**NuttX Foundation:** `rzv_serial.c` (dispatcher) + `rzv_scif.c` (16-byte FIFO UART).
+**NuttX Foundation:** `rzv_serial.c` (dispatcher) + `rzv_scif.c` (SCIF driver). The SCIF path is currently blocked (see [port-status-nuttx.md](port-status-nuttx.md)); the board maps SCI4/5/6/9 → ttyS4/5/6/9 (FSP numbering calls these RSCI).
 
 **PX4 HAL Interface:**
 - Register `struct uart_dev_s` (NuttX native).

@@ -21,20 +21,26 @@
 
 **Card Slot Type:** SD v3.0 / eMMC support (mechanical slot with card-detect switch).
 
-**Pin Assignments:**
+**Pin Assignments (RDK-RZV2H SD0):**
 
-| Signal | Port | Pin | Alternate Function | Purpose |
-|--------|------|-----|-------------------|---------|
-| CLK | 4 | 0 | AF2 | Clock output |
-| CMD | 4 | 1 | AF2 | Command/Response |
-| DAT0 | 4 | 2 | AF2 | Data line 0 (bi-directional) |
-| DAT1 | 4 | 3 | AF2 | Data line 1 |
-| DAT2 | 4 | 4 | AF2 | Data line 2 |
-| DAT3 | 4 | 5 | AF2 | Data line 3 / CS (MMC) |
-| CD | 5 | 7 | GPIO (input) | Card Detect (active low) |
-| WP | (not used) | — | — | Write Protect (optional) |
+SD0 uses **dedicated I/O pins** on R9A09G057H (FSP encoding `0xFFFF09xx` /
+`0xFFFF0Axx`), not normal PORT/PSEL-muxed IOs. They are configured by the boot
+firmware (u-boot / TF-A) before NuttX starts; NuttX does not program them.
 
-**Verification:** Cross-reference `rzv_pinmap.h` and board schematics.
+| Signal | Pin | FSP dedicated-pin ID |
+|--------|-----|----------------------|
+| SD0CLK  | AN37 | 0xFFFF0900 |
+| SD0CMD  | AN36 | 0xFFFF0901 |
+| SD0DAT0 | AP35 | 0xFFFF0A00 |
+| SD0DAT1 | AN35 | 0xFFFF0A01 |
+| SD0DAT2 | AP37 | 0xFFFF0A02 |
+| SD0DAT3 | AR37 | 0xFFFF0A03 |
+
+**Card Detect:** via the SDHI controller (`SD_INFO1.SDCDIN`, bit 3 = card
+present), not a separate GPIO. See `rzv_sdhi_status()`.
+
+**Verification:** Dedicated-pin IDs from `refs/rz-fsp-master bsp_override.h`;
+card-detect path confirmed for RDK-RZV2H.
 
 **Pull-ups:** Standard SDHI spec requires 50 kΩ pull-ups on data/cmd lines (typically on carrier board).
 
@@ -62,12 +68,13 @@
 
 **Interrupt Controller:** ICU
 
-| Event | ICU IRQ | Handler |
-|-------|---------|---------|
-| SDHI0 Access End | 236 | `rzv_sdhi_interrupt()` |
-| SDHI0 Card Detect | 237 | `rzv_sdhi_cd_interrupt()` |
+| Event | NuttX INTID | GIC SPI | Handler |
+|-------|-------------|---------|---------|
+| SDHI0 CH0 OXMNIRQ (response/access/error/card-detect) | 767 | 735 | `rzv_sdhi_interrupt()` |
 
-(IRQ numbers from UM section Interrupt Controller; verify against `rzv_irq.h`.)
+A single combined ISR demuxes INFO1/INFO2 (response done, access end, PIO
+read/write, errors, and card-detect). There is no separate card-detect handler.
+Source: `refs/rzv2h_gb_ether/include/rzv2h_irq.h:681` (SPI 735 + base 32 = 767).
 
 ---
 

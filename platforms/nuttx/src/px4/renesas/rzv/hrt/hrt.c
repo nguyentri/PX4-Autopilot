@@ -170,13 +170,6 @@ static void hrt_schedule_locked(void)
 	(void)rzv_hrt_call_after(delay_us, hrt_dispatch, NULL);
 }
 
-static void hrt_schedule(void)
-{
-	irqstate_t flags = enter_critical_section();
-	hrt_schedule_locked();
-	leave_critical_section(flags);
-}
-
 /* Called from rzv_hrt ISR context via rzv_hrt_call_after. Runs the
  * expired head callouts, requeues periodic ones, and reprograms the
  * arch HRT for the next deadline.

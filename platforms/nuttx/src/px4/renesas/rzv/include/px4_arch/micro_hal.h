@@ -116,14 +116,13 @@ typedef int (*gpio_interrupt_t)(int irq, void *context, void *arg);
 
 /* Function declarations for RZV2H specific implementations */
 struct spi_dev_s *rzv_spibus_initialize(int bus);
-struct i2c_master_s *rzv_i2cbus_initialize(int bus);
-int rzv_i2cbus_uninitialize(struct i2c_master_s *dev);
+#ifdef CONFIG_RZV_SCI_I2C
+struct i2c_master_s *rzv_sci_i2c_initialize(int channel);
+#endif
 
 /* PX4 I2C functions */
 struct i2c_master_s *px4_i2cbus_initialize(int bus);
 int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
-int px4_i2cbus_set_bus_frequency(struct i2c_master_s *dev, uint32_t frequency);
-int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices);
 
 /* PX4 SPI functions */
 struct spi_dev_s *px4_spibus_initialize(int bus);

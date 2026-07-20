@@ -60,7 +60,7 @@
 | 38 | Startup (CR8) | rzv_start.c | (none) | functional | (internal) | (bootloader) | (pending) | CR8-0 boot; memory init; jump to main |
 | 39 | Startup (CM33) | rzv_start_cm33.c | (none) | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33 boot path; co-processor wake |
 | 40 | Timer ISR | rzv_timerisr.c | (none) | functional | (internal) | (framework) | (pending) | System tick; clock interrupt dispatch |
-| 41 | Watchdog | rzv_wdt.c | rzv_wdt.h | functional | `refs/.../r_wdt.c` | wdt | (pending) | Independent watchdog; refresh sequence |
+| 41 | Watchdog | rzv_wdt.c | rzv_wdt.h | functional | `refs/.../r_wdt.c` | wdt | [2026-07-20 audit](../../plans/reports/audit-260720-1152-rzv2h-wdt-fsp-vs-nuttx-report.md) | Independent watchdog; refresh sequence. Register model verified vs FSP (bases, CKS/TOPS, CPG CLKP/LOCO/RST, SYSC non-seq CTRL, ERRORRST, ELC). Fixes applied: SYSC bp_halted RMW (WDTSTOPMASK is not a WEN), CLKMON confirm bits correct for all channels. Reset-mode/WDT0 is the verified path; interrupt/NMI mode on WDT0/1 unproven (no CR8 WDTINT line); no on-target evidence |
 
 ---
 

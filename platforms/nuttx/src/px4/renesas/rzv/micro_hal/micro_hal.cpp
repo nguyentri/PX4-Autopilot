@@ -18,11 +18,17 @@
 #include "../include/px4_arch/micro_hal.h"
 #include "board_config.h"
 
-/* External NuttX RZV driver functions */
+/* External NuttX RZV driver functions.
+ *
+ * RDK-RZ/V2H I2C buses are SCI-mode simple-I2C (rzv_sci_i2c.c), not the RIIC
+ * native controller. The SCI-I2C initializer is only linked when
+ * CONFIG_RZV_SCI_I2C is enabled; guard every reference accordingly.
+ */
 extern "C" {
 	struct spi_dev_s *rzv_spibus_initialize(int bus);
-	struct i2c_master_s *rzv_i2cbus_initialize(int bus);
-	int rzv_i2cbus_uninitialize(struct i2c_master_s *dev);
+#ifdef CONFIG_RZV_SCI_I2C
+	struct i2c_master_s *rzv_sci_i2c_initialize(int channel);
+#endif
 }
 
 /**
@@ -42,45 +48,26 @@ struct spi_dev_s *px4_spibus_initialize(int bus)
  */
 struct i2c_master_s *px4_i2cbus_initialize(int bus)
 {
-#ifdef CONFIG_RZV_I2C
-	return rzv_i2cbus_initialize(bus);
+#ifdef CONFIG_RZV_SCI_I2C
+	/* The PX4 logical bus number maps directly to the SCI channel:
+	 * bus 7 == SCI7 == BMP280 barometer on RDK-RZ/V2H.
+	 */
+	return rzv_sci_i2c_initialize(bus);
 #else
+	(void)bus;
 	return nullptr;
 #endif
 }
 
 /**
  * Uninitialize I2C bus
+ *
+ * SCI-I2C masters use static per-channel state and are never torn down, so
+ * there is no lower-half uninitialize to call.
  */
 int px4_i2cbus_uninitialize(struct i2c_master_s *dev)
 {
-#ifdef CONFIG_RZV_I2C
-	return rzv_i2cbus_uninitialize(dev);
-#else
-	return -ENODEV;
-#endif
-}
-
-/**
- * Set I2C bus frequency
- */
-int px4_i2cbus_set_bus_frequency(struct i2c_master_s *dev, uint32_t frequency)
-{
-	/* Frequency is typically set during I2C transfer configuration */
 	(void)dev;
-	(void)frequency;
-	return 0;
-}
-
-/**
- * Scan I2C bus for devices
- */
-int px4_i2cbus_scan(int bus, uint8_t *devices, int max_devices)
-{
-	/* I2C scan not implemented - would require probing addresses */
-	(void)bus;
-	(void)devices;
-	(void)max_devices;
 	return 0;
 }
 
