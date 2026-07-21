@@ -10,7 +10,7 @@
 
 - **planned**: HAL surface identified; NuttX driver ready; implementation pending.
 - **in-progress**: Skeleton drafted; driver integration underway.
-- **build-clean**: HAL adapter implemented and wired into `renesas_rdk-rzv2h_default`; compiles/links. No on-target hardware validation yet.
+- **build-clean**: HAL adapter implemented and wired into its named board target; compiles/links. No on-target hardware validation yet.
 - **deferred**: HAL adapter present but the feature is intentionally disabled in the default build pending hardware enablement (documented in board defconfig).
 - **validated**: On-target integration tests pass; used in application code.
 
@@ -26,7 +26,8 @@
 | 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | deferred | BMP280 baro on SCI7 simple-I2C (P76/P77). SCI7 enablement/HW validation deferred in `nsh/defconfig` (baro init `#ifdef CONFIG_RZV_I2C`, unset). HAL I2C dispatch must target `rzv_sci_i2c_initialize`, not the RIIC path — see audit report 260720 |
 | 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | SCI4/5/6/9 → ttyS4/5/6/9 (LiDAR, telem, SBUS RC, GPS); FSP numbering calls these RSCI. Console = SEGGER RTT. SCIF path currently blocked (see port-status-nuttx.md) |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
-| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | rzv_gpt.c (GPT) | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | 4×ESC: FSP-logical GPT6/7/9/10 (logical 9→phys GPT11, 10→GPT12). 50–500 Hz. DShot experimental/opt-in. Waveform on-target pending |
+| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | rzv_gpt.c (GPT) | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | 4×ESC: FSP-logical GPT6/7/9/10 (logical 9→phys GPT11, 10→GPT12). 50–500 Hz. Waveform on-target pending |
+| 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | rzv_dmac.c (HW-trigger) + rzv_gpt.c | boards/renesas/rdk-rzv2h/dshot.px4board | build-clean (opt-in) | TX-only target `renesas_rdk-rzv2h_dshot` builds and links; default remains PWM and excludes DShot. Checked-in CMSIS/FSP sources verify DMkSEL offsets, unit mapping, and GPT-overflow DMAC activation IDs. GPT buffered compare + one-shot DMA path is not hardware-validated. BDShot capture/telemetry returns `-ENOTSUP`; the pure GCR/eRPM decoder is not a functional telemetry path. Waveform, transfer ordering, repeated trigger/re-arm, and ESC tests remain pending. |
 | 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred | `CONFIG_RZV_ADC=y` but battery ADC channels disabled in board_config.h for v1. Sensor integration pending |
 | 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (GTM7 free-run) | boards/renesas/rdk-rzv2h/src/ | build-clean | `CONFIG_RZV_HRT=y`. µs timebase on GTM7 (not GPT). Jitter/drift on-target pending |
 | 8 | CAN | `src/drivers/can/` | rzv_canfd.c | boards/renesas/rdk-rzv2h/src/ | planned | CAN0/CAN1; baud rate; SLCAN over UART alt |
@@ -99,9 +100,19 @@
 - Register PWM devices (`/dev/pwmN`).
 - Multi-channel support: up to 6 channels per GPT instance.
 - Frequency/duty cycle update atomicity.
-- Future: dshot protocol over SPI (external IC).
 
 **Validation:** Servo command response time <20 ms; frequency stability ±2%.
+
+### DShot (Line 5b)
+
+**NuttX Foundation:** `rzv_gpt.c` buffered compare output + `rzv_dmac.c` hardware-triggered, one-shot memory-to-peripheral transfers.
+
+**PX4 HAL Interface:**
+- `renesas_rdk-rzv2h_dshot` is an opt-in TX-only build through `dshot.px4board`.
+- `renesas_rdk-rzv2h_default` continues to link and start PWM output; it excludes DShot.
+- Bidirectional capture is intentionally unavailable and reports `-ENOTSUP`. The decoder is retained for future capture-front-end work only.
+
+**Validation:** Host build and artifact separation pass. Logic-analyzer waveform/ordering, repeated trigger and re-arm, multi-channel launch, cleanup paths, and ESC response remain on-target gates. See the [QA report](../../plans/reports/tester-260720-rzv2h-dshot-runtime-fixes.md) and [code review](../../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md).
 
 ---
 

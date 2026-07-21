@@ -186,8 +186,9 @@ gps start -d /dev/ttyS9 -b 115200
 # Start land detector
 land_detector start multicopter
 
-# Start PWM output driver
-pwm_out start
+# Start the default output driver when it is present. The opt-in DShot board
+# excludes pwm_out and starts DShot later from the common rcS path.
+? pwm_out start
 ? sleep 1
 
 # Start flight control stack

@@ -46,8 +46,9 @@ if(DEFINED CONFIG_ADC)
 	add_subdirectory(adc)
 endif()
 
-# DShot for RZ/V2H is experimental and must stay opt-in until GPT/DMA
-# waveform timing is validated on hardware.
-if(CONFIG_DRIVERS_DSHOT AND CONFIG_RZV2H_EXPERIMENTAL_DSHOT)
+# DShot for RZ/V2H is opt-in via the dedicated board target
+# (renesas_rdk-rzv2h_dshot), which sets CONFIG_DRIVERS_DSHOT. The default board
+# continues to use the PWM output driver.
+if(CONFIG_DRIVERS_DSHOT)
 	add_subdirectory(dshot)
 endif()

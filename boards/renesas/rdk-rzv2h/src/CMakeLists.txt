@@ -56,6 +56,13 @@ target_link_libraries(drivers_board
 		rzv2h_micro_hal
 )
 
+# DShot output variant (renesas_rdk-rzv2h_dshot) links the RZ/V2H DShot HAL.
+# Only built/linked when CONFIG_DRIVERS_DSHOT is set, so the default PWM build
+# is unaffected.
+if(CONFIG_DRIVERS_DSHOT)
+	target_link_libraries(drivers_board PRIVATE arch_dshot)
+endif()
+
 target_include_directories(drivers_board PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Build the board-local px4io_bridge module (FMU<->IO uORB bridge over /dev/ipcc1)

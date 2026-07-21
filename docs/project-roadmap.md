@@ -1,6 +1,6 @@
 # RDK-RZ/V2H Port Roadmap
 
-**Date:** 2026-07-18
+**Date:** 2026-07-20
 **Scope:** Milestones and dependencies for NuttX + PX4 flight-stack port to RDK-RZ/V2H.  
 **Canonical Plan:** See `plans/rzv2h_nuttx_px4_unified_port_plan.md` for detailed implementation strategies and risk analysis.
 
@@ -55,7 +55,8 @@
 - [ ] All 41 drivers in [port-status-nuttx.md](renesas/port-status-nuttx.md) reach **functional** status.
 - [ ] Validation checklist completed per driver (link to [validation-checklist.md](renesas/validation-checklist.md)).
 - [ ] Sample configs tested (adc, canfd, ether, sdhi, spi-loopback, uart, pwm, wdt, etc.).
-- [ ] Resolve the [RZ/V2H DMAC audit FAIL](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) before enabling DMA-backed consumers.
+- [x] Resolve the software findings from the [RZ/V2H DMAC re-audit](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md); memory copy and hardware-triggered memory-to-peripheral paths are build-clean.
+- [ ] Validate DMAC peripheral request routing and DMA-backed consumers on target before marking them functional.
 
 **Key Driver Groups:**
 
@@ -185,6 +186,7 @@ Sensor drivers integrated on CR8-1 co-processor:
 
 Servo/ESC driver stack:
 - **PWM/GPIO** — 6 PWM channels (for 6-DOF multirotor or fixed-wing control surfaces).
+- **DShot (optional)** — TX-only GPT+DMAC target remains opt-in; default board continues to use PWM until waveform and lifecycle validation pass.
 - **Safety pin** — Disarm detect via GPIO; failsafe on pin release.
 - **Failsafe** — ESC pulse to zero on loss of signal (PX4 watchdog → pwm_out driver).
 
@@ -309,5 +311,7 @@ M7 (Autonomous flight modes)
 - [Project Overview & PDR](project-overview-pdr.md) — Scope, boards, deliverables.
 - [NuttX Port Status](renesas/port-status-nuttx.md) — Per-driver completion tracking.
 - [PX4 HAL Port Status](renesas/port-status-px4-hal.md) — HAL surface tracking.
-- [Canonical Plan](plans/rzv2h_nuttx_px4_unified_port_plan.md) — Detailed implementation strategies.
-- [DMAC Re-audit](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — M1 blocker; runtime DMA remains disabled.
+- [Canonical Plan](../plans/rzv2h_nuttx_px4_unified_port_plan.md) — Detailed implementation strategies.
+- [DMAC Re-audit](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — Historical software findings; remediation is build-clean, with on-target validation still required.
+- [DShot Runtime Fix QA](../plans/reports/tester-260720-rzv2h-dshot-runtime-fixes.md) — Target separation, build, and static verification evidence.
+- [DShot Runtime Fix Review](../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md) — Final software review and hardware-only validation gaps.

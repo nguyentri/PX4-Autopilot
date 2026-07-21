@@ -171,7 +171,9 @@ constexpr TimerType makeTimer(TimerType base, uint8_t timer_index)
 template<typename ChannelType>
 constexpr ChannelType makeChannel(ChannelType base, uint8_t timer_index, uint32_t gpio_config)
 {
-	return ChannelType{gpio_config, base.gpio_in, timer_index, base.timer_channel, base.freq_basis};
+	base.gpio_out = gpio_config;
+	base.timer_index = timer_index;
+	return base;
 }
 
 } // namespace

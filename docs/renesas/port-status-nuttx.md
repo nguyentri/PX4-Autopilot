@@ -1,6 +1,6 @@
 # NuttX Driver Port Status Matrix
 
-**Date:** 2026-07-19
+**Date:** 2026-07-20
 **Branch:** px4_ra_rzv  
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
@@ -23,7 +23,7 @@
 | 1 | ADC | rzv_adc.c | rzv_adc.h | blocked | `.../adc_e_iodefine.h` (regs only; no FSP HAL driver) | adc | [2026-07-19 audit](../../plans/reports/audit-260719-1439-rzv2h-adc-fsp-vs-nuttx-report.md) | 12-bit SAR; ELC scan-end via ICU. F1 clock gate fixed (both CPG bits [1:0] via rzv_clock_enable). Open blockers: CLKON domain index unverified (F4), scan-end ADELCCR routing unverified (F5); no on-target evidence. |
 | 2 | CAN-FD | rzv_canfd.c | rzv_canfd.h | functional | `refs/.../r_canfd.c` | canfd, canfd-dual | (pending) | Dual CAN0/CAN1; DMAC integration |
 | 3 | Clock/CPG | rzv_clock.c | rzv_cpg.h | functional | (internal) | nsh | (pending) | Clock divider init, PLL setup |
-| 4 | DMAC | rzv_dmac.c | rzv_dmac.h | build-clean | `refs/.../r_dmac_b.c` | dmac-memcpy | [2026-07-18 re-audit](../../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) | CR8-0 one-shot polling memory copy only; hardware proof and peripheral DMA pending |
+| 4 | DMAC | rzv_dmac.c | rzv_dmac.h | build-clean | `refs/.../r_dmac_b.c` | dmac-memcpy | [2026-07-20 DShot review](../../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md) | CR8-0 polling one-shot memory copy plus hardware-triggered, one-shot memory-to-peripheral routing used by opt-in DShot. Checked-in CMSIS/FSP verifies DMkSEL offsets/unit mapping and activation IDs. Builds clean; on-target request routing, transfer ordering, and peripheral behavior remain unvalidated. |
 | 5 | Ether | rzv_ether.c | rzv_ether.h | blocked | `refs/.../r_ether.c` | ether | [2026-07-19 audit](../../plans/reports/audit-260719-1358-rzv2h-gbeth-fsp-vs-nuttx-report.md) | Group A audit fixes applied (RXQ0EN routing, cacheline-aligned descriptors, atomic ISR, RX tail fix, MAC baseline, PBLx8, PHY poll). Remaining blockers: RGMII pinmux stub (F2), GBETH1 clock IDs (F3), IRQ topology unverified (F6). |
 | 6 | Ether PHY | rzv_ether_phy.c | (via rzv_ether.h) | blocked | (FSP integrated) | ether | [2026-07-19 audit](../../plans/reports/audit-260719-1358-rzv2h-gbeth-fsp-vs-nuttx-report.md) | 1000BASE-T advertisement now written before autoneg (F14). Cannot reach MDIO until board pinmux (F2) is populated. |
 | 7 | GPIO | rzv_gpio.c | rzv_gpio.h | functional | `refs/.../r_ioport.c` | nsh-leds | (pending) | Port 0–12; IRQ/edge config |
@@ -90,5 +90,6 @@ When submitting a driver PR:
 - [Validation Checklist](validation-checklist.md) — per-driver bring-up steps.
 - [IPC Architecture](ipc-architecture.md) — MHU/IPCC integration.
 - [Deployment Guide](../deployment-guide.md) — build and test harness.
-- [DMAC Re-audit](../../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — blocking DMAC findings and remediation order.
+- [DMAC Re-audit](../../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — historical findings and remediation order.
+- [DShot Runtime Fix Review](../../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md) — current DMAC routing review and remaining hardware-only validation gaps.
 - [GTM + PX4 HRT Re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) — GTM lower-half + HRT split-brain findings and remediation order.

@@ -568,10 +568,14 @@ int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 }
 
 /**
- * Set DShot mode for a timer (stub - DShot not yet implemented for RZV2H)
+ * Set DShot mode for a timer.
+ *
+ * Unused on RZ/V2H: the DShot HAL (up_dshot_* in renesas/rzv/dshot/dshot.c)
+ * drives the GPT compare registers directly rather than through this io_timer
+ * hook, mirroring the RA8/imxrt DShot ports. Kept for io_timer.h API parity;
+ * returns -ENOSYS so any unexpected caller fails loudly.
  */
 int io_timer_set_dshot_mode(uint8_t timer, unsigned dshot_pwm_freq, uint8_t dma_burst_length)
 {
-	/* DShot requires DMA support - not yet implemented for RZV2H */
 	return -ENOSYS;
 }

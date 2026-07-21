@@ -33,6 +33,7 @@
 
 px4_add_library(arch_dshot
 	dshot.c
+	dshot_telemetry.c
 )
 
 # Optimize for speed

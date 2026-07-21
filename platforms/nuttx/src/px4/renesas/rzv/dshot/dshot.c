@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2025 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2025-2026 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,29 +24,28 @@
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
  * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
  *
  ****************************************************************************/
 
 /**
  * @file dshot.c
  *
- * DShot protocol implementation for Renesas RZV2H
- * Uses GPT timers with DMAC for bit-level generation
+ * RZ/V2H DShot TX using one GPT output and one hardware-triggered DMAC
+ * channel per motor. Bidirectional telemetry remains unsupported until a
+ * bounded interrupt or capture-DMA receive path is implemented.
  */
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
-#include <syslog.h>
 
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
-#include <nuttx/irq.h>
 
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/log.h>
@@ -55,543 +54,674 @@
 
 #include "dshot.h"
 #include "arm_internal.h"
-
-#ifdef CONFIG_RZV_DMAC
+#include "rzv_clock.h"
 #include "rzv_dmac.h"
-#endif
-
+#include "hardware/rzv_dmac.h"
 #include "hardware/rzv_gpt.h"
 
-extern const io_timers_t io_timers[MAX_IO_TIMERS];
-extern const timer_io_channels_t timer_io_channels[MAX_TIMER_IO_CHANNELS];
+#define DSHOT_MAX_CHANNELS        4u
+#define DSHOT_FRAME_BITS          16u
+#define DSHOT_DMA_WORDS           17u
+#define DSHOT_DMA_ALIGN           64u
+#define DSHOT_FRAME_TIMEOUT_US    20u
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+#define DSHOT150_FREQ             150000u
+#define DSHOT300_FREQ             300000u
+#define DSHOT600_FREQ             600000u
+#define DSHOT1200_FREQ            1200000u
 
-#define DSHOT_MAX_CHANNELS       4
-#define DSHOT_FRAME_BITS         16
-#define DSHOT_THROTTLE_BITS      11
-#define DSHOT_TELEMETRY_BIT      1
-#define DSHOT_CHECKSUM_BITS      4
+/* DMkSEL uses the DMAC activation-source numbering from Renesas bsp_dmac.h,
+ * not the ELC interrupt numbering in rzv2h_irq.h. */
 
-#define DSHOT150_FREQ            150000u
-#define DSHOT300_FREQ            300000u
-#define DSHOT600_FREQ            600000u
-#define DSHOT1200_FREQ           1200000u
+#define DSHOT_GPT_OVF_EVENT_U0_BASE  257u
+#define DSHOT_GPT_OVF_EVENT_U1_BASE  321u
 
-#define DSHOT_T0H_PERCENT        37.5f
-#define DSHOT_T1H_PERCENT        75.0f
-
-/**
- * GPT Clock Frequency
- *
- * Use the same clock definition as io_timer.c for consistency.
- * PCLKD is the peripheral clock for GPT timers on RZV2H.
- */
-#ifndef CONFIG_RZV_PCLK_FREQUENCY
-#define CONFIG_RZV_PCLK_FREQUENCY 120000000  /* 120MHz PCLKD for RZV2H GPT */
-#endif
-#define PCLKD_FREQUENCY          CONFIG_RZV_PCLK_FREQUENCY
-
-#define BDSHOT_OFFLINE_COUNT     400
-
-/****************************************************************************
- * Private Types
- ****************************************************************************/
-
-typedef struct {
-	uint8_t logical_channel;
-	uint8_t timer_index;
-	uint8_t gpt_channel;
-	uint8_t timer_channel;  /* A=1, B=2 */
-	int8_t  dma_channel;
-	uintptr_t gpt_base;
-
-	uint32_t bit_period_ticks;
-	uint32_t t0h_ticks;
-	uint32_t t1h_ticks;
-
-	uint16_t throttle_value;
-	bool telemetry_request;
-	uint32_t dma_buffer[DSHOT_FRAME_BITS];
-
-	/* BDShot telemetry */
-	uint32_t erpm;
-	uint32_t last_erpm_update;
-	uint32_t no_response_count;
-} dshot_channel_t;
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-__attribute__((unused))
-static bool g_dma_available =
-#ifdef CONFIG_RZV_DMAC
-	true;
-#else
-	false;
-#endif
-
-static bool g_bdshot_enabled = false;
-static uint32_t g_active_channels = 0;
-static uint32_t g_dshot_frequency = 0;
-static bool g_dmac_initialized = false;
+typedef struct
+{
+  uint8_t logical_channel;
+  uint8_t timer_index;
+  uint8_t gpt_channel;
+  bool channel_b;
+  int8_t dma_channel;
+  uintptr_t gpt_base;
+  uint32_t active_compare_offset;
+  uint32_t buffer_compare_offset;
+  uint32_t bit_period_ticks;
+  uint32_t t0h_compare;
+  uint32_t t1h_compare;
+  uint32_t first_compare;
+  uint32_t second_compare;
+  uint16_t throttle_value;
+  bool telemetry_request;
+  uint32_t dma_buffer[DSHOT_DMA_WORDS]
+    __attribute__((aligned(DSHOT_DMA_ALIGN)));
+} __attribute__((aligned(DSHOT_DMA_ALIGN))) dshot_channel_t;
 
 static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
+static uint32_t g_active_channels;
+static uint32_t g_frame_timeout_us;
+static bool g_armed;
 
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-static uintptr_t dshot_get_gpt_base(uint8_t gpt_channel)
+static inline void gpt_putreg32(const dshot_channel_t *channel,
+                                uint32_t offset, uint32_t value)
 {
-	if (!RZV_GPT_LOGICAL_CHANNEL_VALID(gpt_channel)) {
-		return 0;
-	}
-
-	return RZV_GPT_LOGICAL_BASE(gpt_channel);
+  putreg32(value, channel->gpt_base + offset);
 }
 
-static bool dshot_map_channel(uint8_t logical_channel, dshot_channel_t *ch)
+static inline uint32_t gpt_getreg32(const dshot_channel_t *channel,
+                                    uint32_t offset)
 {
-	if (logical_channel >= MAX_TIMER_IO_CHANNELS) {
-		return false;
-	}
-
-	const timer_io_channels_t *timer_channel = &timer_io_channels[logical_channel];
-	const io_timers_t *timer = &io_timers[timer_channel->timer_index];
-
-	ch->logical_channel = logical_channel;
-	ch->timer_index = timer_channel->timer_index;
-	ch->gpt_channel = timer->timer_id;
-	ch->timer_channel = timer_channel->timer_channel;
-	ch->dma_channel = timer_channel->dshot.dma_channel;
-	ch->gpt_base = dshot_get_gpt_base(ch->gpt_channel);
-
-	if (ch->gpt_base == 0) {
-		return false;
-	}
-
-	return true;
+  return getreg32(channel->gpt_base + offset);
 }
 
-static inline void gpt_putreg32(uint8_t ch, uint32_t offset, uint32_t val)
+static int dshot_gpt_overflow_event(uint8_t gpt_channel)
 {
-	uintptr_t base = dshot_get_gpt_base(ch);
+  if (gpt_channel < 8u)
+    {
+      return (int)(DSHOT_GPT_OVF_EVENT_U0_BASE + gpt_channel);
+    }
 
-	if (base == 0) {
-		return;
-	}
+  if (gpt_channel < 16u)
+    {
+      return (int)(DSHOT_GPT_OVF_EVENT_U1_BASE + gpt_channel - 8u);
+    }
 
-	putreg32(val, base + offset);
+  return -EINVAL;
 }
 
-static inline uint32_t gpt_getreg32(uint8_t ch, uint32_t offset)
+static void gpt_set_selected_duty(const dshot_channel_t *channel,
+                                  uint32_t duty_mode)
 {
-	uintptr_t base = dshot_get_gpt_base(ch);
+  uint32_t duty = gpt_getreg32(channel, RZV_GPT_GTUDDTYC_OFFSET);
+  uint32_t mask = channel->channel_b ? GPT_GTUDDTYC_OBDTY_MASK :
+                  GPT_GTUDDTYC_OADTY_MASK;
+  uint32_t shift = channel->channel_b ? GPT_GTUDDTYC_OBDTY_SHIFT :
+                   GPT_GTUDDTYC_OADTY_SHIFT;
 
-	if (base == 0) {
-		return 0;
-	}
+  duty &= ~mask;
+  duty |= (duty_mode << shift) & mask;
 
-	return getreg32(base + offset);
+  /* Latch the direction/duty update using the sequence required by GPT. */
+
+  gpt_putreg32(channel, RZV_GPT_GTUDDTYC_OFFSET,
+               duty | GPT_GTUDDTYC_UD | GPT_GTUDDTYC_UDF);
+  gpt_putreg32(channel, RZV_GPT_GTUDDTYC_OFFSET,
+               duty | GPT_GTUDDTYC_UD);
 }
 
-static void dshot_calculate_timing(uint32_t frequency, uint32_t *bit_period,
-					   uint32_t *t0h, uint32_t *t1h)
+static void gpt_force_safe_low(const dshot_channel_t *channel)
 {
-	*bit_period = PCLKD_FREQUENCY / frequency;
-	*t0h = (uint32_t)(*bit_period * DSHOT_T0H_PERCENT / 100.0f);
-	*t1h = (uint32_t)(*bit_period * DSHOT_T1H_PERCENT / 100.0f);
+  uint32_t mask = RZV_GPT_LOGICAL_UNIT_BIT(channel->gpt_channel);
+  uint32_t gtior;
+
+  gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_UNLOCK);
+  gpt_set_selected_duty(channel, GPT_UDDTYC_DTY_0_PERCENT);
+  gpt_putreg32(channel, RZV_GPT_GTSTP_OFFSET, mask);
+
+  gtior = gpt_getreg32(channel, RZV_GPT_GTIOR_OFFSET);
+  gtior &= channel->channel_b ? ~GPT_GTIOR_OBE : ~GPT_GTIOR_OAE;
+  gpt_putreg32(channel, RZV_GPT_GTIOR_OFFSET, gtior);
+  gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_LOCK);
+}
+
+static void gpt_setup_channel(const dshot_channel_t *channel)
+{
+  uint32_t mask = RZV_GPT_LOGICAL_UNIT_BIT(channel->gpt_channel);
+  uint32_t gtior;
+  uint32_t gtber;
+
+  gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_UNLOCK);
+  gpt_putreg32(channel, RZV_GPT_GTSTP_OFFSET, mask);
+  gpt_putreg32(channel, RZV_GPT_GTCR_OFFSET,
+               GPT_GTCR_MD_SAW | (GPT_TPCS_DIV1 << GPT_GTCR_TPCS_SHIFT));
+  gpt_putreg32(channel, RZV_GPT_GTPR_OFFSET,
+               channel->bit_period_ticks - 1u);
+  gpt_putreg32(channel, RZV_GPT_GTPBR_OFFSET,
+               channel->bit_period_ticks - 1u);
+
+  gtior = gpt_getreg32(channel, RZV_GPT_GTIOR_OFFSET);
+  gtber = gpt_getreg32(channel, RZV_GPT_GTBER_OFFSET);
+
+  if (channel->channel_b)
+    {
+      gtior &= ~(GPT_GTIOR_GTIOB_MASK | GPT_GTIOR_OBE);
+      gtior |= GPT_GTIOR_GTIOB_HIGH_CMP_LOW | GPT_GTIOR_OBE;
+      gtber &= ~GPT_GTBER_CCRB_MASK;
+      gtber |= 1u << GPT_GTBER_CCRB_SHIFT;
+    }
+  else
+    {
+      gtior &= ~(GPT_GTIOR_GTIOA_MASK | GPT_GTIOR_OAE);
+      gtior |= GPT_GTIOR_GTIOA_HIGH_CMP_LOW | GPT_GTIOR_OAE;
+      gtber &= ~GPT_GTBER_CCRA_MASK;
+      gtber |= 1u << GPT_GTBER_CCRA_SHIFT;
+    }
+
+  gpt_putreg32(channel, RZV_GPT_GTIOR_OFFSET, gtior);
+  gpt_putreg32(channel, RZV_GPT_GTBER_OFFSET, gtber);
+  gpt_putreg32(channel, channel->active_compare_offset, 0);
+  gpt_putreg32(channel, channel->buffer_compare_offset, 0);
+  gpt_set_selected_duty(channel, GPT_UDDTYC_DTY_0_PERCENT);
+  gpt_putreg32(channel, RZV_GPT_GTST_OFFSET, 0);
+  gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_LOCK);
+}
+
+static void gpt_prime_frame(const dshot_channel_t *channel)
+{
+  uint32_t gtior;
+
+  gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_UNLOCK);
+  gpt_putreg32(channel, RZV_GPT_GTSTP_OFFSET,
+               RZV_GPT_LOGICAL_UNIT_BIT(channel->gpt_channel));
+  gpt_putreg32(channel, RZV_GPT_GTCLR_OFFSET,
+               RZV_GPT_LOGICAL_UNIT_BIT(channel->gpt_channel));
+  gpt_putreg32(channel, channel->active_compare_offset,
+               channel->first_compare);
+  gpt_putreg32(channel, channel->buffer_compare_offset,
+               channel->second_compare);
+  gpt_set_selected_duty(channel, GPT_UDDTYC_DTY_REGISTER);
+
+  /* Disarm forces the selected pin low and disables its GPT output. Restore
+   * only that output after the first two compare values are safely primed. */
+
+  gtior = gpt_getreg32(channel, RZV_GPT_GTIOR_OFFSET);
+  gtior |= channel->channel_b ? GPT_GTIOR_OBE : GPT_GTIOR_OAE;
+  gpt_putreg32(channel, RZV_GPT_GTIOR_OFFSET, gtior);
+  gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_LOCK);
+}
+
+static void gpt_start(const dshot_channel_t *channel)
+{
+  gpt_putreg32(channel, RZV_GPT_GTSTR_OFFSET,
+               RZV_GPT_LOGICAL_UNIT_BIT(channel->gpt_channel));
 }
 
 static uint16_t dshot_encode_frame(uint16_t throttle, bool telemetry)
 {
-	uint16_t frame = (throttle & 0x7FF) << 5;
+  uint16_t payload = (uint16_t)(((throttle & 0x7ffu) << 1) |
+                                (telemetry ? 1u : 0u));
+  uint16_t checksum = (uint16_t)((payload ^ (payload >> 4) ^
+                                  (payload >> 8)) & 0x0fu);
 
-	if (telemetry) {
-		frame |= (1 << 4);
-	}
-
-	/* Calculate CRC */
-	uint16_t crc = (frame ^ (frame >> 4) ^ (frame >> 8)) & 0x0F;
-	frame |= crc;
-
-	return frame;
+  return (uint16_t)((payload << 4) | checksum);
 }
 
-/**
- * Setup GPT channel for DShot timing
- */
-static int gpt_setup_channel(uint8_t gpt_channel, uint32_t bit_period_ticks)
+static void dshot_prepare_frame(dshot_channel_t *channel)
 {
-	/* Stop timer */
-	gpt_putreg32(gpt_channel, RZV_GPT_GTSTR_OFFSET, 0);
+  uint16_t frame = dshot_encode_frame(channel->throttle_value,
+                                      channel->telemetry_request);
+  uint32_t compare[DSHOT_FRAME_BITS + 2u];
+  unsigned int i;
 
-	/* Set cycle period */
-	gpt_putreg32(gpt_channel, RZV_GPT_GTPR_OFFSET, bit_period_ticks - 1);
+  for (i = 0; i < DSHOT_FRAME_BITS; i++)
+    {
+      compare[i] = (frame & (1u << (15u - i))) != 0u ?
+                   channel->t1h_compare : channel->t0h_compare;
+    }
 
-	/* Configure timer control register */
-	uint32_t gtcr = 0;
-	gtcr |= (0 << 0);  /* MD: Saw-wave PWM mode */
-	gtcr |= (0 << 16); /* TPCS: P0CLK/1 */
-	gpt_putreg32(gpt_channel, RZV_GPT_GTCR_OFFSET, gtcr);
+  compare[DSHOT_FRAME_BITS] = 0;
+  compare[DSHOT_FRAME_BITS + 1u] = 0;
+  /* GTIOR 0x09 starts low and only drives high at the first cycle end. Use
+   * that initial cycle as a low preamble; bit 0 is transferred into the
+   * active compare register at the first overflow. */
 
-	/* Configure I/O control register for PWM output */
-	uint32_t gtior = 0;
-	gtior |= (0x6 << 0);  /* GTIOA: Low at cycle start, high at compare match */
-	gtior |= (0x1 << 4);  /* OAE: Output enabled */
-	gpt_putreg32(gpt_channel, RZV_GPT_GTIOR_OFFSET, gtior);
+  channel->first_compare = 0;
+  channel->second_compare = compare[0];
 
-	/* Clear status */
-	gpt_putreg32(gpt_channel, RZV_GPT_GTST_OFFSET, 0);
-
-	return OK;
+  for (i = 0; i < DSHOT_DMA_WORDS; i++)
+    {
+      channel->dma_buffer[i] = compare[i + 1u];
+    }
 }
 
-static void gpt_start(uint8_t gpt_channel)
+static int dshot_map_channel(unsigned int logical_channel,
+                             dshot_channel_t *channel)
 {
-	gpt_putreg32(gpt_channel, RZV_GPT_GTSTR_OFFSET, 1);
+  const timer_io_channels_t *timer_channel;
+  const io_timers_t *timer;
+
+  if (logical_channel >= MAX_TIMER_IO_CHANNELS || channel == NULL)
+    {
+      return -EINVAL;
+    }
+
+  timer_channel = &timer_io_channels[logical_channel];
+  if (timer_channel->timer_index >= MAX_IO_TIMERS ||
+      (timer_channel->timer_channel != 1u &&
+       timer_channel->timer_channel != 2u))
+    {
+      return -EINVAL;
+    }
+
+  timer = &io_timers[timer_channel->timer_index];
+  if (!RZV_GPT_LOGICAL_CHANNEL_VALID(timer->timer_id) ||
+      timer_channel->dshot.timer != timer->timer_id ||
+      timer_channel->dshot.channel != timer_channel->timer_channel - 1u ||
+      timer_channel->dshot.dma_channel < 0 ||
+      timer_channel->dshot.dma_channel >= RZV_DMAC_CHANNEL_COUNT)
+    {
+      return -EINVAL;
+    }
+
+  memset(channel, 0, sizeof(*channel));
+  channel->logical_channel = (uint8_t)logical_channel;
+  channel->timer_index = timer_channel->timer_index;
+  channel->gpt_channel = (uint8_t)timer->timer_id;
+  channel->channel_b = timer_channel->timer_channel == 2u;
+  channel->dma_channel = timer_channel->dshot.dma_channel;
+  channel->gpt_base = RZV_GPT_LOGICAL_BASE(timer->timer_id);
+  channel->active_compare_offset = channel->channel_b ?
+                                   RZV_GPT_GTCCRB_OFFSET :
+                                   RZV_GPT_GTCCRA_OFFSET;
+  channel->buffer_compare_offset = channel->channel_b ?
+                                   RZV_GPT_GTCCRE_OFFSET :
+                                   RZV_GPT_GTCCRC_OFFSET;
+  return dshot_gpt_overflow_event(channel->gpt_channel) < 0 ? -EINVAL : OK;
 }
 
-__attribute__((unused))
-static void gpt_stop(uint8_t gpt_channel)
+static int dshot_dma_setup(dshot_channel_t *channel)
 {
-	gpt_putreg32(gpt_channel, RZV_GPT_GTSTP_OFFSET, 1);
+  struct rzv_dmac_config_s config;
+
+  memset(&config, 0, sizeof(config));
+  config.src_size = RZV_DMAC_SIZE_4BYTE;
+  config.dst_size = RZV_DMAC_SIZE_4BYTE;
+  config.src_addr_mode = RZV_DMAC_ADDR_INCREMENT;
+  config.dst_addr_mode = RZV_DMAC_ADDR_FIXED;
+  config.trigger = RZV_DMAC_TRIGGER_HW;
+  config.src_addr = (uintptr_t)channel->dma_buffer;
+  config.dst_addr = channel->gpt_base + channel->buffer_compare_offset;
+  config.length = sizeof(channel->dma_buffer);
+  config.elc_event = dshot_gpt_overflow_event(channel->gpt_channel);
+
+  return rzv_dmac_channel_configure(channel->dma_channel, &config);
 }
 
-#ifdef CONFIG_RZV_DMAC
-static int dshot_dma_setup(dshot_channel_t *ch)
+static void dshot_cleanup(uint32_t allocated_mask, uint32_t gpt_mask,
+                          uint32_t dma_mask)
 {
-	if (ch->dma_channel < 0) {
-		return -EINVAL;
-	}
+  unsigned int i;
 
-	int ret = rzv_dmac_channel_initialize(ch->dma_channel);
-	if (ret < 0) {
-		return ret;
-	}
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      uint32_t bit = 1u << i;
 
-	/* Configure DMA transfer */
-	struct rzv_dmac_config_s dma_config;
-	memset(&dma_config, 0, sizeof(dma_config));
+      if ((dma_mask & bit) != 0u)
+        {
+          rzv_dmac_channel_stop(g_channels[i].dma_channel);
+        }
 
-	dma_config.mode = RZV_DMAC_MODE_REGISTER;
-	dma_config.src_size = RZV_DMAC_SIZE_4BYTE;
-	dma_config.dst_size = RZV_DMAC_SIZE_4BYTE;
-	dma_config.src_addr_mode = RZV_DMAC_ADDR_INCREMENT;
-	dma_config.dst_addr_mode = RZV_DMAC_ADDR_FIXED;
-	dma_config.trigger = RZV_DMAC_TRIGGER_HW;
-	dma_config.src_addr = (uintptr_t)ch->dma_buffer;
-	dma_config.dst_addr = ch->gpt_base + RZV_GPT_GTCCRA_OFFSET;
-	dma_config.length = DSHOT_FRAME_BITS * sizeof(uint32_t);
-	dma_config.callback = NULL;
-	dma_config.user_data = NULL;
+      if ((gpt_mask & bit) != 0u)
+        {
+          gpt_force_safe_low(&g_channels[i]);
+        }
 
-	ret = rzv_dmac_channel_configure(ch->dma_channel, &dma_config);
-	return ret;
+      if ((allocated_mask & bit) != 0u)
+        {
+          io_timer_unallocate_channel(i);
+        }
+
+      if ((allocated_mask & bit) != 0u || (gpt_mask & bit) != 0u ||
+          (dma_mask & bit) != 0u)
+        {
+          memset(&g_channels[i], 0, sizeof(g_channels[i]));
+        }
+    }
 }
 
-static void dshot_prepare_buffer(dshot_channel_t *ch)
+static void dshot_release_active(void)
 {
-	uint16_t frame = dshot_encode_frame(ch->throttle_value, ch->telemetry_request);
+  uint32_t active = g_active_channels;
 
-	for (int i = 0; i < DSHOT_FRAME_BITS; i++) {
-		if (frame & (1 << (15 - i))) {
-			ch->dma_buffer[i] = ch->t1h_ticks;
-		} else {
-			ch->dma_buffer[i] = ch->t0h_ticks;
-		}
-	}
+  dshot_cleanup(active, active, active);
+  g_active_channels = 0;
+  g_frame_timeout_us = 0;
+  g_armed = false;
 }
 
-static int dshot_dma_start(dshot_channel_t *ch)
+int up_dshot_init(uint32_t channel_mask, unsigned int dshot_pwm_freq,
+                  bool enable_bidirectional_dshot)
 {
-	if (ch->dma_channel < 0) {
-		return -EINVAL;
-	}
+  uint32_t allocated_mask = 0;
+  uint32_t gpt_mask = 0;
+  uint32_t dma_mask = 0;
+  uint32_t clock_hz;
+  uint32_t bit_period;
+  uint32_t t0h_ticks;
+  uint32_t t1h_ticks;
+  unsigned int i;
+  int ret;
 
-	dshot_prepare_buffer(ch);
-	return rzv_dmac_channel_start(ch->dma_channel);
+  if (enable_bidirectional_dshot)
+    {
+      PX4_ERR("BDShot is not supported on RZ/V2H");
+      return -ENOTSUP;
+    }
+
+  if (g_active_channels != 0u)
+    {
+      if (g_armed)
+        {
+          return -EBUSY;
+        }
+
+      dshot_release_active();
+    }
+
+  if (channel_mask == 0u ||
+      (channel_mask & ~((1u << DSHOT_MAX_CHANNELS) - 1u)) != 0u)
+    {
+      return -EINVAL;
+    }
+
+  if (dshot_pwm_freq != DSHOT150_FREQ && dshot_pwm_freq != DSHOT300_FREQ &&
+      dshot_pwm_freq != DSHOT600_FREQ && dshot_pwm_freq != DSHOT1200_FREQ)
+    {
+      PX4_ERR("Invalid DShot frequency: %u", dshot_pwm_freq);
+      return -EINVAL;
+    }
+
+  clock_hz = rzv_get_gpt_clock_hz();
+  bit_period = clock_hz / dshot_pwm_freq;
+  t0h_ticks = (bit_period * 3u) / 8u;
+  t1h_ticks = (bit_period * 3u) / 4u;
+
+  if (clock_hz == 0u || bit_period < 4u || t0h_ticks == 0u ||
+      t1h_ticks == 0u)
+    {
+      return -ERANGE;
+    }
+
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      unsigned int j;
+
+      if ((channel_mask & (1u << i)) == 0u)
+        {
+          continue;
+        }
+
+      ret = dshot_map_channel(i, &g_channels[i]);
+      if (ret < 0)
+        {
+          PX4_ERR("Invalid DShot channel %u", i);
+          goto fail;
+        }
+
+      g_channels[i].bit_period_ticks = bit_period;
+      g_channels[i].t0h_compare = t0h_ticks - 1u;
+      g_channels[i].t1h_compare = t1h_ticks - 1u;
+
+      for (j = 0; j < i; j++)
+        {
+          if ((channel_mask & (1u << j)) != 0u &&
+              (g_channels[j].gpt_channel == g_channels[i].gpt_channel ||
+               g_channels[j].dma_channel == g_channels[i].dma_channel))
+            {
+              PX4_ERR("Duplicate DShot resource on channel %u", i);
+              ret = -EINVAL;
+              goto fail;
+            }
+        }
+    }
+
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      uint32_t bit = 1u << i;
+
+      if ((channel_mask & bit) == 0u)
+        {
+          continue;
+        }
+
+      ret = io_timer_allocate_channel(i, IOTimerChanMode_Dshot);
+      if (ret < 0)
+        {
+          goto fail;
+        }
+
+      allocated_mask |= bit;
+    }
+
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      uint32_t bit = 1u << i;
+
+      if ((channel_mask & bit) == 0u)
+        {
+          continue;
+        }
+
+      gpt_setup_channel(&g_channels[i]);
+      gpt_mask |= bit;
+
+      ret = dshot_dma_setup(&g_channels[i]);
+      if (ret < 0)
+        {
+          PX4_ERR("DShot DMA setup failed on channel %u: %d", i, ret);
+          goto fail;
+        }
+
+      dma_mask |= bit;
+    }
+
+  g_active_channels = channel_mask;
+  g_frame_timeout_us =
+    (((DSHOT_FRAME_BITS + 2u) * 1000000u) + dshot_pwm_freq - 1u) /
+    dshot_pwm_freq + DSHOT_FRAME_TIMEOUT_US;
+  g_armed = false;
+  PX4_INFO("DShot TX initialized: %u Hz, channels 0x%lx",
+           dshot_pwm_freq, (unsigned long)channel_mask);
+  return (int)channel_mask;
+
+fail:
+  dshot_cleanup(allocated_mask, gpt_mask, dma_mask);
+  return ret;
 }
 
-static inline void dshot_dma_stop(dshot_channel_t *ch)
+void dshot_motor_data_set(unsigned int channel, uint16_t throttle,
+                          bool telemetry)
 {
-	if (ch->dma_channel >= 0) {
-		rzv_dmac_channel_stop(ch->dma_channel);
-	}
+  if (channel >= DSHOT_MAX_CHANNELS ||
+      (g_active_channels & (1u << channel)) == 0u)
+    {
+      return;
+    }
+
+  g_channels[channel].throttle_value = throttle;
+  g_channels[channel].telemetry_request = telemetry;
 }
-#endif /* CONFIG_RZV_DMAC */
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/**
- * Initialize DShot protocol
- */
-int up_dshot_init(uint32_t channel_mask, unsigned dshot_pwm_freq,
-		  bool enable_bidirectional_dshot)
+static int dshot_wait_frame_complete(void)
 {
-	int ret = OK;
+  uint32_t elapsed_us;
 
-#ifdef CONFIG_RZV2H_EXPERIMENTAL_DSHOT
-	PX4_ERR("RZ/V2H DShot is not implemented for production use; use standard PWM");
-	return -ENOSYS;
-#else
-	PX4_ERR("RZ/V2H DShot is disabled; use standard PWM");
-	return -ENOSYS;
-#endif
+  for (elapsed_us = 0; elapsed_us < g_frame_timeout_us; elapsed_us++)
+    {
+      bool all_complete = true;
+      unsigned int i;
 
-#ifndef CONFIG_RZV_DMAC
-	PX4_ERR("DShot requires CONFIG_RZV_DMAC");
-	return -ENODEV;
-#endif
+      for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+        {
+          uint32_t status;
 
-	if (g_active_channels != 0) {
-		PX4_WARN("DShot already initialized");
-		return -EBUSY;
-	}
+          if ((g_active_channels & (1u << i)) == 0u)
+            {
+              continue;
+            }
 
-	switch (dshot_pwm_freq) {
-	case DSHOT150_FREQ:
-	case DSHOT300_FREQ:
-	case DSHOT600_FREQ:
-	case DSHOT1200_FREQ:
-		g_dshot_frequency = dshot_pwm_freq;
-		break;
+          status = rzv_dmac_channel_status(g_channels[i].dma_channel);
+          if ((status & DMAC_CHSTAT_ER) != 0u)
+            {
+              return -EIO;
+            }
 
-	default:
-		PX4_ERR("Invalid DShot frequency: %u", dshot_pwm_freq);
-		return -EINVAL;
-	}
+          if ((status & DMAC_CHSTAT_END) == 0u)
+            {
+              all_complete = false;
+            }
+        }
 
-	g_bdshot_enabled = enable_bidirectional_dshot;
+      if (all_complete)
+        {
+          return OK;
+        }
 
-	/* Calculate timing parameters */
-	uint32_t bit_period, t0h, t1h;
-	dshot_calculate_timing(g_dshot_frequency, &bit_period, &t0h, &t1h);
+      up_udelay(1);
+    }
 
-	/* Initialize requested channels */
-	for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-		if (!(channel_mask & (1 << i))) {
-			continue;
-		}
-
-		dshot_channel_t *ch = &g_channels[i];
-		memset(ch, 0, sizeof(dshot_channel_t));
-
-		if (!dshot_map_channel(i, ch)) {
-			PX4_ERR("Failed to map channel %u", i);
-			continue;
-		}
-
-		ch->bit_period_ticks = bit_period;
-		ch->t0h_ticks = t0h;
-		ch->t1h_ticks = t1h;
-
-		/* Setup GPT timer */
-		ret = gpt_setup_channel(ch->gpt_channel, bit_period);
-		if (ret < 0) {
-			PX4_ERR("GPT setup failed: %d", ret);
-			continue;
-		}
-
-#ifdef CONFIG_RZV_DMAC
-		/* Setup DMA */
-		if (ch->dma_channel >= 0) {
-			ret = dshot_dma_setup(ch);
-			if (ret < 0) {
-				PX4_ERR("DMA setup failed: %d", ret);
-				continue;
-			}
-		}
-#endif
-
-		g_active_channels |= (1 << i);
-	}
-
-	if (g_active_channels == 0) {
-		PX4_ERR("No channels initialized");
-		return -ENXIO;
-	}
-
-	g_dmac_initialized = true;
-
-	PX4_INFO("DShot initialized: freq=%lu Hz, channels=0x%lx, BDShot=%s",
-		 (unsigned long)g_dshot_frequency, (unsigned long)g_active_channels,
-		 g_bdshot_enabled ? "enabled" : "disabled");
-
-	return OK;
+  return -ETIMEDOUT;
 }
 
-/**
- * Set motor throttle value
- */
-void dshot_motor_data_set(unsigned channel, uint16_t throttle, bool telemetry)
-{
-	if (channel >= DSHOT_MAX_CHANNELS) {
-		return;
-	}
-
-	if (!(g_active_channels & (1 << channel))) {
-		return;
-	}
-
-	dshot_channel_t *ch = &g_channels[channel];
-	ch->throttle_value = throttle;
-	ch->telemetry_request = telemetry;
-}
-
-/**
- * Trigger DShot output
- */
 void up_dshot_trigger(void)
 {
-#ifdef CONFIG_RZV_DMAC
-	if (!g_dmac_initialized) {
-		return;
-	}
+  uint32_t armed_mask = 0;
+  unsigned int i;
+  int ret;
 
-	/* Start DMA transfers for all active channels */
-	for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-		if (!(g_active_channels & (1 << i))) {
-			continue;
-		}
+  if (!g_armed)
+    {
+      return;
+    }
 
-		dshot_channel_t *ch = &g_channels[i];
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      if ((g_active_channels & (1u << i)) == 0u)
+        {
+          continue;
+        }
 
-		/* Prepare and start DMA */
-		if (dshot_dma_start(ch) == OK) {
-			/* Start timer to trigger DMA */
-			gpt_start(ch->gpt_channel);
-		}
-	}
-#else
-	/* Software bit-banging fallback (not optimal) */
-	for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-		if (!(g_active_channels & (1 << i))) {
-			continue;
-		}
+      if (rzv_dmac_channel_disable(g_channels[i].dma_channel) < 0)
+        {
+          goto fail;
+        }
 
-		dshot_channel_t *ch = &g_channels[i];
-		uint16_t frame = dshot_encode_frame(ch->throttle_value, ch->telemetry_request);
+      dshot_prepare_frame(&g_channels[i]);
+      gpt_prime_frame(&g_channels[i]);
+    }
 
-		/* Manually set compare values */
-		for (int bit = 0; bit < DSHOT_FRAME_BITS; bit++) {
-			uint32_t pulse_width = (frame & (1 << (15 - bit))) ? ch->t1h_ticks : ch->t0h_ticks;
-			gpt_putreg32(ch->gpt_channel, RZV_GPT_GTCCRA_OFFSET, pulse_width);
-			gpt_start(ch->gpt_channel);
-			up_udelay(ch->bit_period_ticks / 120);  /* Approximate delay */
-			gpt_stop(ch->gpt_channel);
-		}
-	}
-#endif
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      uint32_t bit = 1u << i;
+
+      if ((g_active_channels & bit) == 0u)
+        {
+          continue;
+        }
+
+      if (rzv_dmac_channel_start(g_channels[i].dma_channel) < 0)
+        {
+          goto fail;
+        }
+
+      armed_mask |= bit;
+    }
+
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      if ((g_active_channels & (1u << i)) != 0u)
+        {
+          gpt_start(&g_channels[i]);
+        }
+    }
+
+  ret = dshot_wait_frame_complete();
+
+  /* A zero compare still produces a one-clock pulse in buffered saw-wave
+   * mode. Once the complete data frame and tail values have transferred,
+   * stop and force the pins low so the inter-frame gap cannot contain narrow
+   * pulses. */
+
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      if ((g_active_channels & (1u << i)) != 0u)
+        {
+          gpt_force_safe_low(&g_channels[i]);
+          rzv_dmac_channel_disable(g_channels[i].dma_channel);
+        }
+    }
+
+  if (ret < 0)
+    {
+      PX4_ERR("DShot frame completion failed: %d", ret);
+    }
+
+  return;
+
+fail:
+  PX4_ERR("DShot frame arm failed");
+
+  for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+    {
+      uint32_t bit = 1u << i;
+
+      if ((armed_mask & bit) != 0u)
+        {
+          rzv_dmac_channel_disable(g_channels[i].dma_channel);
+        }
+
+      if ((g_active_channels & bit) != 0u)
+        {
+          gpt_force_safe_low(&g_channels[i]);
+        }
+    }
 }
 
-/**
- * Arm/disarm DShot outputs
- */
 int up_dshot_arm(bool armed)
 {
-	if (armed) {
-		for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-			if (g_active_channels & (1 << i)) {
-				g_channels[i].throttle_value = DSHOT_MIN_THROTTLE;
-			}
-		}
-	} else {
-		for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-			if (g_active_channels & (1 << i)) {
-				g_channels[i].throttle_value = DSHOT_DISARM_MOTOR;
-			}
-		}
-	}
+  unsigned int i;
 
-	return OK;
+  if (g_active_channels == 0u)
+    {
+      return -ENODEV;
+    }
+
+  if (!armed)
+    {
+      for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+        {
+          if ((g_active_channels & (1u << i)) != 0u)
+            {
+              g_channels[i].throttle_value = DSHOT_DISARM_MOTOR;
+              rzv_dmac_channel_disable(g_channels[i].dma_channel);
+              gpt_force_safe_low(&g_channels[i]);
+            }
+        }
+    }
+  else
+    {
+      for (i = 0; i < DSHOT_MAX_CHANNELS; i++)
+        {
+          if ((g_active_channels & (1u << i)) != 0u)
+            {
+              g_channels[i].throttle_value = DSHOT_DISARM_MOTOR;
+            }
+        }
+    }
+
+  g_armed = armed;
+  return OK;
 }
 
-/**
- * Get number of BDShot channels with telemetry ready
- */
 int up_bdshot_num_erpm_ready(void)
 {
-	if (!g_bdshot_enabled) {
-		return 0;
-	}
-
-	int ready_count = 0;
-
-	for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-		if (!(g_active_channels & (1 << i))) {
-			continue;
-		}
-
-		if (g_channels[i].erpm > 0 && g_channels[i].no_response_count < BDSHOT_OFFLINE_COUNT) {
-			ready_count++;
-		}
-	}
-
-	return ready_count;
+  return -ENOTSUP;
 }
 
 int up_bdshot_get_erpm(uint8_t channel, int *erpm)
 {
-	if (channel >= DSHOT_MAX_CHANNELS) {
-		return -EINVAL;
-	}
-
-	if (!(g_active_channels & (1 << channel))) {
-		return -EINVAL;
-	}
-
-	if (!g_bdshot_enabled) {
-		return -ENOSYS;
-	}
-
-	*erpm = (int)g_channels[channel].erpm;
-	return OK;
+  (void)channel;
+  (void)erpm;
+  return -ENOTSUP;
 }
 
 int up_bdshot_channel_status(uint8_t channel)
 {
-	if (channel >= DSHOT_MAX_CHANNELS) {
-		return -EINVAL;
-	}
-
-	if (!(g_active_channels & (1 << channel))) {
-		return -EINVAL;
-	}
-
-	if (!g_bdshot_enabled) {
-		return -ENOSYS;
-	}
-
-	if (g_channels[channel].no_response_count >= BDSHOT_OFFLINE_COUNT) {
-		return -ETIMEDOUT;
-	}
-
-	return OK;
+  (void)channel;
+  return -ENOTSUP;
 }
 
 void up_bdshot_status(void)
 {
-	if (!g_bdshot_enabled) {
-		PX4_INFO("BDShot not enabled");
-		return;
-	}
-
-	PX4_INFO("BDShot Status:");
-
-	for (unsigned i = 0; i < DSHOT_MAX_CHANNELS; i++) {
-		if (!(g_active_channels & (1 << i))) {
-			continue;
-		}
-
-		PX4_INFO("  Ch%u: eRPM=%lu, no_resp=%lu",
-			 i, (unsigned long)g_channels[i].erpm,
-			 (unsigned long)g_channels[i].no_response_count);
-	}
+  PX4_INFO("BDShot is not supported on RZ/V2H");
 }
