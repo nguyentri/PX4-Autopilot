@@ -1,0 +1,71 @@
+############################################################################
+#
+#   Copyright (c) 2025 PX4 Development Team. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
+#    the documentation and/or other materials provided with the
+#    distribution.
+# 3. Neither the name PX4 nor the names of its contributors may be
+#    used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+############################################################################
+
+add_library(drivers_board
+	board_common.c
+	i2c.cpp
+	init.c
+	led.c
+	spi.cpp
+	system_stubs.c
+	timer_config.cpp
+)
+
+target_link_libraries(drivers_board
+	PRIVATE
+		arch_board_critmon
+		arch_board_hw_info
+		arch_board_reset
+		arch_hrt
+		arch_io_pins
+		arch_led_pwm
+		arch_version
+		nuttx_arch
+		nuttx_drivers
+		px4_layer
+		rzv2h_micro_hal
+)
+
+# DShot output variant (renesas_rdk-rzv2h_dshot) links the RZ/V2H DShot HAL.
+# Only built/linked when CONFIG_DRIVERS_DSHOT is set, so the default PWM build
+# is unaffected.
+if(CONFIG_DRIVERS_DSHOT)
+	target_link_libraries(drivers_board PRIVATE arch_dshot)
+endif()
+
+target_include_directories(drivers_board PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Build the board-local px4io_bridge module (FMU<->IO uORB bridge over /dev/ipcc1)
+# so it is compiled into the firmware. It was previously present but wired into
+# no build.
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
