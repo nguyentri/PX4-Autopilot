@@ -246,12 +246,12 @@ if(${PX4_PLATFORM} STREQUAL "nuttx" AND ${PX4_BOARD_VENDOR} STREQUAL "renesas")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-warn-rwx-segments")
 	px4_validate_custom_nuttx_submodule(
 		platforms/nuttx/NuttX/nuttx
-		https://github.com/nguyentri/NuttX_Px4.git
-		nuttx_ra_rzv
+		https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx_px4.git
+		main
 		)
 	px4_validate_custom_nuttx_submodule(
 		platforms/nuttx/NuttX/apps
-		https://github.com/nguyentri/nuttx-apps.git
+		https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx-apps.git
 		main
 		)
 endif()
