@@ -39,7 +39,7 @@ Complete bill of materials, 40-pin GPIO pinout, and wiring for the RZ/V2H autono
 | Interface | Location | Usage |
 |-----------|----------|-------|
 | **40-pin GPIO Header** | Top edge (RPi-compatible) | All sensor I/O |
-| **UART Serial** | Edge | Debug console |
+| **UART Serial** | Edge | Payload or standalone NSH, selected by image profile |
 | **USB** | Rear | Firmware update, logs |
 | **SD Card** | Rear | U-Boot, Linux rootfs, flight logs |
 | **JTAG** | Center | J-Link debugging (SEGGER RTT) |
@@ -78,6 +78,16 @@ Complete bill of materials, 40-pin GPIO pinout, and wiring for the RZ/V2H autono
 - UART5 (P72/P73): Sik Telemetry → `/dev/ttyS5`
 - UART6 RX (P75): fs-a8s (SBUS) → `/dev/ttyS6`
 - UART9 (P82/P83): GPS M10 → `/dev/ttyS9`
+
+These assignments describe the integrated PX4 CR8-0 image. That image uses
+SEGGER RTT channel 0 for console/debug output; SCI5 carries MAVLink to
+QGroundControl through the SiK link. RTT0 is not a QGroundControl transport,
+and text logs must not share a channel with binary MAVLink.
+
+Standalone NuttX bring-up images temporarily own one physical UART for NSH:
+CR8-0 uses SCI4, CR8-1 targets SCI5, and CM33 targets SCI9. They are mutually
+exclusive with the integrated PX4 payload assignment on that channel. SCI3 is
+not available as an RDK console.
 
 ---
 

@@ -1,7 +1,7 @@
 # NuttX Driver Port Status Matrix
 
-**Date:** 2026-07-20
-**Branch:** px4_ra_rzv  
+**Date:** 2026-07-26
+**Branch:** px4_ra_rzv
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
 ---
@@ -37,9 +37,9 @@
 | 15 | IPC Dispatch | rzv_ipc.c | (none) | functional | (none) | (framework) | (pending) | IPC message dispatcher; no protocol |
 | 16 | IPC/IPCC | rzv_ipc_ipcc.c | (none) | functional | `nuttx/include/nuttx/ipcc.h` | ipcc, ipcc-multi | (pending) | NuttX IPCC character device; /dev/ipccN |
 | 17 | IPC Raw | rzv_ipc_raw.c | (none) | functional | (internal) | (framework) | (pending) | Low-level MHU mailbox access |
-| 18 | IRQ (CR8) | rzv_irq.c | (none) | functional | (internal) | (framework) | (pending) | Interrupt vector setup; CR8-0/1 GIC |
+| 18 | IRQ (CR8) | rzv_irq.c | (none) | functional | (internal) | (framework) | (pending) | Interrupt vector setup; CR8-0/1 GIC. On-target `nsh-rtt` pass validated SCI4 TX/RX interrupt delivery. |
 | 19 | IRQ (CM33) | rzv_irq_cm33.c | (none) | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33 Cortex-M33 NVIC setup |
-| 20 | Low-Level UART | rzv_lowputc.c | (none) | functional | (SCI-B based) | (bootloader) | (pending) | Early putc for debugging; no buffering. Console channel selected by CONFIG_SCIx_SERIAL_CONSOLE (defaults to SCI3); no SCIF branch |
+| 20 | Low-Level UART | rzv_lowputc.c | (none) | functional | (SCI-B based) | (bootloader) | (pending) | Early putc for debugging; no buffering. Current policy: standalone CR8-0 `nsh-rtt` uses SCI4 shell + RTT diagnostics; integrated PX4 CR8-0 uses RTT0 console/debug and keeps SCI3 unused on the RDK; `help\r` echo confirmed on SCI4. |
 | 21 | Memory Management | rzv_memmng.c | (none) | functional | (internal) | (framework) | (pending) | Heap, page alignment setup |
 | 22 | MHU Core | rzv_mhu_core.c | rzv_mhu.h | functional | (internal) | (framework) | (pending) | Register read/write; DSB ordering |
 | 23 | MPU Regions | rzv_mpu_regions.c | (none) | functional | (internal) | (framework) | (pending) | ARM MPU setup for memory protection |
@@ -55,9 +55,9 @@
 | 33 | SCI/SPI ISR | rzv_sci_spi_isr.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | FRSR-based FIFO drain build-validated; on-target transfer/error paths pending |
 | 34 | SCIF UART | rzv_scif.c | rzv_scifa.h | blocked | `refs/.../scifa_iodefine.h` (R9A09G057H) | nsh-scif (build) | [2026-07-20 audit](../../plans/reports/audit-260720-1112-rzv2h-scif-serial-port-report.md) | SCIFA0 16-byte FIFO UART. Register model + ELC events verified vs FSP. BLOCKED for functional: (F1) driver enables RSCI/SCI0 clock id, not SCIFA0's CPG_CLKON_8[15] + MCPU2_MSTOP → peripheral stays gated; (F2) SCIFA0 TXD/RXD pins never muxed. Safe fixes applied: up_putc readiness guard, dead TEI path removed, baud-failure bits cleared. Sample-only path (all shipping targets use SCI-B/RTT console) |
 | 35 | SDHI | rzv_sdhi.c | rzv_sdhi.h | build-clean | (none — no FSP `r_sdhi.c` in refs/) | sdhi | [2026-07-20 audit](../../plans/reports/audit-260720-1000-rzv2h-sdhi-fsp-vs-nuttx-report.md) | PIO 1/4-bit, IRQ-driven (combined ISR, INTID 767); compiles + wired to `/dev/mmcsd0`. Audit blockers resolved: boot FW (u-boot/TF-A) provides SDHI ACLK/CLK_HS + SD0 dedicated pin-mux (NuttX gates IMCLK only); IMCLK=200MHz and controller card-detect (INFO1.SDCDIN) confirmed. Pending functional tier: on-target register/command/PIO evidence. No FSP parity reference. |
-| 36 | Serial Framework | rzv_serial.c | (none) | functional | (NuttX core) | (framework) | (pending) | UART dispatcher; flow control |
+| 36 | Serial Framework | rzv_serial.c | (none) | functional | (NuttX core) | (framework) | (pending) | UART dispatcher; flow control. FIFO RX path validated on SCI4 under `nsh-rtt`; `uart_recvchars()` now reaches RX interrupt handling. |
 | 37 | SPI (RSPI) | rzv_spi.c | rzv_spi.h | functional | `refs/.../r_rspi.c` | spi-loopback | (pending) | Native SPI master; CS control; DMAC |
-| 38 | Startup (CR8) | rzv_start.c | (none) | functional | (internal) | (bootloader) | (pending) | CR8-0 boot; memory init; jump to main |
+| 38 | Startup (CR8) | rzv_start.c | (none) | functional | (internal) | (bootloader) | (pending) | CR8-0 boot; memory init; jump to main. RTT diagnostics stay usable before SCI init; `nsh-rtt` boots to a working SCI4 shell. |
 | 39 | Startup (CM33) | rzv_start_cm33.c | (none) | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33 boot path; co-processor wake |
 | 40 | Timer ISR | rzv_timerisr.c | (none) | functional | (internal) | (framework) | (pending) | System tick; clock interrupt dispatch |
 | 41 | Watchdog | rzv_wdt.c | rzv_wdt.h | functional | `refs/.../r_wdt.c` | wdt | [2026-07-20 audit](../../plans/reports/audit-260720-1152-rzv2h-wdt-fsp-vs-nuttx-report.md) | Independent watchdog; refresh sequence. Register model verified vs FSP (bases, CKS/TOPS, CPG CLKP/LOCO/RST, SYSC non-seq CTRL, ERRORRST, ELC). Fixes applied: SYSC bp_halted RMW (WDTSTOPMASK is not a WEN), CLKMON confirm bits correct for all channels. Reset-mode/WDT0 is the verified path; interrupt/NMI mode on WDT0/1 unproven (no CR8 WDTINT line); no on-target evidence |

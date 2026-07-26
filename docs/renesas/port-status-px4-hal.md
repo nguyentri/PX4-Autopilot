@@ -1,6 +1,6 @@
 # PX4 HAL Port Status Matrix
 
-**Date:** 2026-07-20  
+**Date:** 2026-07-26
 **Branch:** px4_ra_rzv  
 **Scope:** PX4 Hardware Abstraction Layer (HAL) surfaces for RDK-RZ/V2H; cross-referenced to NuttX driver dependencies.
 
@@ -24,7 +24,7 @@
 |---|------------|--------------|------------------|---------------|--------|-----------------|
 | 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | rzv_spi.c (RSPI, hardware CS) | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean | `CONFIG_RZV_SPI=y`. MPU9250 on SPI0 (CS P93/SSLA0, DRDY P50). Board select/status hooks not used (hardware CS). On-target sensor probe pending |
 | 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | deferred | BMP280 baro on SCI7 simple-I2C (P76/P77). SCI7 enablement/HW validation deferred in `nsh/defconfig` (baro init `#ifdef CONFIG_RZV_I2C`, unset). HAL I2C dispatch must target `rzv_sci_i2c_initialize`, not the RIIC path — see audit report 260720 |
-| 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | SCI4/5/6/9 → ttyS4/5/6/9 (LiDAR, telem, SBUS RC, GPS); FSP numbering calls these RSCI. Console = SEGGER RTT. SCIF path currently blocked (see port-status-nuttx.md) |
+| 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | Explicit policy: standalone CR8-0 NuttX = SCI4 shell + RTT diagnostics; target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics; integrated PX4 CR8-0 = RTT0 console/debug with SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS. SCIF path currently blocked (see port-status-nuttx.md) |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
 | 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | rzv_gpt.c (GPT) | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | 4×ESC: FSP-logical GPT6/7/9/10 (logical 9→phys GPT11, 10→GPT12). 50–500 Hz. Waveform on-target pending |
 | 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | rzv_dmac.c (HW-trigger) + rzv_gpt.c | boards/renesas/rdk-rzv2h/dshot.px4board | build-clean (opt-in) | TX-only target `renesas_rdk-rzv2h_dshot` builds and links; default remains PWM and excludes DShot. Checked-in CMSIS/FSP sources verify DMkSEL offsets, unit mapping, and GPT-overflow DMAC activation IDs. GPT buffered compare + one-shot DMA path is not hardware-validated. BDShot capture/telemetry returns `-ENOTSUP`; the pure GCR/eRPM decoder is not a functional telemetry path. Waveform, transfer ordering, repeated trigger/re-arm, and ESC tests remain pending. |
@@ -67,13 +67,13 @@
 
 ### UART/Serial (Line 3)
 
-**NuttX Foundation:** `rzv_serial.c` (dispatcher) + `rzv_scif.c` (SCIF driver). The SCIF path is currently blocked (see [port-status-nuttx.md](port-status-nuttx.md)); the board maps SCI4/5/6/9 → ttyS4/5/6/9 (FSP numbering calls these RSCI).
+**NuttX Foundation:** `rzv_serial.c` (dispatcher) + `rzv_scif.c` (SCIF driver). The SCIF path is currently blocked (see [port-status-nuttx.md](port-status-nuttx.md)). Board policy is mode-specific: standalone CR8-0 NuttX uses SCI4 shell + RTT diagnostics; CR8-1 target shell is SCI5; CM33 target shell is SCI9; integrated PX4 CR8-0 keeps RTT0 for console/debug and routes SCI4/5/6/9 to LiDAR, MAVLink/QGC, RC, and GPS respectively.
 
 **PX4 HAL Interface:**
 - Register `struct uart_dev_s` (NuttX native).
 - Flow control (RTS/CTS) if available on board.
-- MAVLink telemetry stream over /dev/ttyS0.
-- Debug console fallback.
+- MAVLink telemetry stream over /dev/ttyS5 for QGroundControl.
+- Debug console fallback via RTT0 on integrated PX4; SCI4 remains the standalone CR8-0 shell.
 
 **Validation:** MAVLink heartbeat reception; baud rate stability (115200, 230400, 460800).
 

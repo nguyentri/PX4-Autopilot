@@ -1,10 +1,20 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-26
 **Status:** Foundational (Phase 1, draft)  
 **Source of Truth:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
 
 Authoritative pin ownership matrix. Each row represents one GPIO pin and its configured alternate function. Cross-referenced against NuttX board configs and active FSP peripherals.
+
+## Serial Policy
+
+The RDK-RZV2H board does not use SCI3 as an active console. Current and target
+serial roles are split by mode:
+
+- Standalone CR8-0 NuttX: SCI4 shell + RTT diagnostics.
+- Standalone CR8-1 target: SCI5 shell + RTT diagnostics, not yet hardware validated.
+- Standalone CM33 target: SCI9 shell + RTT diagnostics, not yet hardware validated.
+- Integrated PX4 CR8-0: RTT0 console/debug, SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC, SCI9 GPS.
 
 ---
 
@@ -56,7 +66,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | SCI Channel | Pin TX | Pin RX | Pin Flow | Device | Function |
 |-------------|--------|--------|----------|--------|----------|
 | RSCI4 | P70 | P71 | None | TFminiPlus | LiDAR rangefinder (/dev/ttyS4) |
-| RSCI5 | P72 | P73 | None | Sik Telemetry | MAVLink (/dev/ttyS5) |
+| RSCI5 | P72 | P73 | None | Sik Telemetry | MAVLink / QGroundControl (/dev/ttyS5) |
 | RSCI6 | — | P75 | None | fs-a8s | RC input (/dev/ttyS6, SBUS) |
 | RSCI9 | P82 | P83 | None | u-blox M10 | GPS (/dev/ttyS9) |
 

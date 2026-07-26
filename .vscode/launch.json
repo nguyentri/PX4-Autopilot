@@ -11,7 +11,7 @@
         "cwd": "${workspaceRoot}",
         //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
         "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
-        //"executable" : "${workspaceRoot}/refs/sci_b_uart_rzv2h_evk_cr8_0_ep/e2studio/Debug/sci_b_uart_rzv2h_evk_cr8_0_ep.elf",
+        //"executable" : "${workspaceRoot}/refs/sci_b/sci_b_uart_rzv2h_evk_cr8_0_ep/e2studio/Debug/sci_b_uart_rzv2h_evk_cr8_0_ep.elf",
         "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
         "request": "launch",
         "type": "cortex-debug",
@@ -28,6 +28,7 @@
         // "serialNumber": "52006677", // 51028188/52006677/51026290
         "showDevDebugOutput": "parsed",
         "runToEntryPoint": "arm_boot",
+        //"runToEntryPoint": "SystemInit",
         "rttConfig": {
             "enabled": true,
             "address": "auto",

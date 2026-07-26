@@ -129,14 +129,12 @@ git config advice.addIgnoredFile false
 
 *.py
 *.csv
-.refs
 .backup
 *log
 *log*
 .codex
 .opencode
 .claude
-refs
 plan
 plans
 .repomixignore
@@ -147,3 +145,6 @@ release-manifest.json
 RZV2H_HWM_CPUs.md
 reformatted_cm33_address_space.md
 docs/journals
+!refs/sci_b/sci_b_uart_rzv2h_evk_cr8_0_ep
+refs
+RZV2H_MSTOP.md

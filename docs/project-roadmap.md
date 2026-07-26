@@ -1,6 +1,6 @@
 # RDK-RZ/V2H Port Roadmap
 
-**Date:** 2026-07-20
+**Date:** 2026-07-26
 **Scope:** Milestones and dependencies for NuttX + PX4 flight-stack port to RDK-RZ/V2H.  
 **Canonical Plan:** See `plans/rzv2h_nuttx_px4_unified_port_plan.md` for detailed implementation strategies and risk analysis.
 
@@ -34,7 +34,7 @@
   - [x] IPCC character device (rzv_ipc_ipcc.c, /dev/ipcc0).
   - [x] RPMsg/OpenAMP integration (rzv_rpmsg.c, rzv_rproc.c).
   - [x] uORB bridge frame format (commit 289f3203ec6).
-- [x] CR8-0 boots to NuttX shell (nsh console on SCIF0).
+- [x] CR8-0 boots to NuttX shell (`nsh-rtt`: SCI4 shell, RTT diagnostics).
 - [x] CR8-1 loads and synchronizes (remote processor via MHU).
 
 **Validation:**
@@ -68,10 +68,10 @@
 - Status: **functional** (blocking none; enables all others)
 
 ### G2: Serial & Debug
-- [ ] rzv_scif.c (UART16 FIFO — nsh-scif config)
+- [ ] rzv_scif.c (UART16 FIFO — legacy nsh-scif config)
 - [ ] rzv_lowputc.c (early boot console)
-- [ ] rzv_serial.c (framework dispatcher)
-- Status: **functional** (CR8-0 console ready; CR8-1 todo)
+- [ ] rzv_serial.c (mode-specific serial policy: CR8-0 SCI4 shell, CR8-1 SCI5 target shell, CM33 SCI9 target shell; integrated PX4 uses RTT0 console/debug)
+- Status: **functional** (CR8-0 standalone shell ready; CR8-1/CM33 target shells not yet HW validated)
 
 ### G3: GPIO & Pinmux
 - [ ] rzv_gpio.c (Port 0–12, IRQ/edge control)
@@ -142,7 +142,7 @@
 Complete HAL drivers for:
 1. **SPI** — Map PX4 device numbering to /dev/spiN; DMA channel assignment (SPI0 ch. 2, SPI1 ch. 3, etc.).
 2. **I2C** — Sensor enumeration; multi-master probe (IMU, mag, baro addresses).
-3. **UART/Serial** — MAVLink telemetry stream on /dev/ttyS0.
+3. **UART/Serial** — MAVLink telemetry stream on /dev/ttyS5 for QGroundControl.
 4. **GPIO** — LED control, button IRQ.
 5. **PWM/ESC** — Servo output via GPT channels; frequency/duty sync.
 6. **ADC** — Battery voltage monitor, airspeed differential.
@@ -216,7 +216,7 @@ Servo/ESC driver stack:
 
 **Deliverables:**
 
-- **MAVLink stream** — UART or Ether link to GCS (QGroundControl, Mission Planner).
+- **MAVLink stream** — SCI5 /dev/ttyS5 over SiK to QGroundControl; Ethernet is future/optional.
 - **Parameter set** — Load/save tuning params (PID gains, sensor scales, failsafe thresholds) via MAVLink.
 - **GCS connectivity** — Real-time attitude, GPS, battery telemetry.
 - **Flight log** — ULog recording to SD card (via SDHI0).

@@ -1,6 +1,6 @@
 # NuttX Driver Porting Playbook
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-26
 **Status:** Phase 2 (Workflow Enablement)  
 **Audience:** Developers porting FSP drivers to NuttX for RZ/V2H
 
@@ -321,10 +321,22 @@ Flash the image and verify:
 
 **Example (UART):**
 ```bash
-/dev/ttyS0 exists?
-echo "test" > /dev/ttyS0
-cat /dev/ttyS0  # (or serial monitor)
+# Select the physical channel owned by the image under test.
+CONSOLE_DEV=/dev/ttyS4
+test -e "${CONSOLE_DEV}"
+echo "test" > "${CONSOLE_DEV}"
+cat "${CONSOLE_DEV}"  # or use a serial monitor
 ```
+
+RDK-RZ/V2H keeps physical SCI numbering in device names; selecting a console
+does not rename it to `/dev/ttyS0`. Standalone NSH target ownership is SCI4
+(`/dev/ttyS4`) on CR8-0, SCI5 (`/dev/ttyS5`) on CR8-1, and SCI9
+(`/dev/ttyS9`) on CM33. CR8-1 and CM33 mappings remain hardware-validation
+targets until their sample configurations are aligned and tested.
+
+The integrated PX4 CR8-0 image uses RTT0 for console/debug output instead.
+Its UARTs retain payload ownership: SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
+SCI6 RC, and SCI9 GPS. Never mix text diagnostics and binary MAVLink on RTT0.
 
 ---
 

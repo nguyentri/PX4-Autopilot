@@ -41,11 +41,14 @@ The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
 ### Serial Ports
 | Port | SCI | Pins        | Device      | Function |
 |------|-----|-------------|-------------|----------|
-| ttyS3 | SCI3 | -           | /dev/ttyS3  | NuttX standalone NSH console |
 | ttyS4 | SCI4 | P70/P71     | /dev/ttyS4  | TFminiPlus LiDAR |
-| ttyS5 | SCI5 | P72/P73     | /dev/ttyS5  | Sik Telemetry v3 |
+| ttyS5 | SCI5 | P72/P73     | /dev/ttyS5  | Sik Telemetry v3 for MAVLink/QGroundControl |
 | ttyS6 | SCI6 | P75         | /dev/ttyS6  | fs-a8s RC Input |
 | ttyS9 | SCI9 | P82/P83     | /dev/ttyS9  | GPS M10 |
+
+SCI3 is not an active console on the RDK-RZV2H board. The board uses
+SCI4 for the standalone CR8-0 NuttX shell, and integrated PX4 diagnostics
+use RTT rather than SCI3.
 
 ### I2C Buses
 | Bus | SCI | Pins     | Device      |
@@ -218,6 +221,15 @@ param set-default MC_YAWRATE_P 0.100
 
 ## Integration Notes
 
+### Operating Modes
+
+| Mode | Console / Debug | Serial Policy | Validation State |
+|------|-----------------|---------------|------------------|
+| Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 is the interactive shell; RTT carries boot, syslog, and debug output | Validated by `nsh-rtt` |
+| Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 is the intended shell path for the CR8-1 IO target; not yet hardware validated | Target policy only |
+| Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 is the intended shell path for the CM33 IO target; not yet hardware validated | Target policy only |
+| Integrated PX4 CR8-0 | RTT0 console/debug + SCI4/5/6/9 peripheral links | RTT0 is the PX4 console/debug path; SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS | Current integrated policy |
+
 ### Clock Configuration
 - External crystal: 24MHz
 - GPT timer clock: runtime PCLK from NuttX; nominal P0CLK is 100MHz
@@ -299,7 +311,7 @@ validation proves the GPT/DMAC timing path.
 2. Verify `COM_ARM_WO_GPS 1` is set for GPS-less operation
 3. Check sensor calibration status
 
-1. No USB support (console via SCI3 only)
+1. No USB support; console/debug routes are mode-specific (SCI4 standalone CR8-0 shell, RTT0 for integrated PX4)
 2. No CAN bus support
 3. Battery monitoring ADC not implemented
 4. Single I2C bus (I2C7 only)

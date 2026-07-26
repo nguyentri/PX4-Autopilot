@@ -1,6 +1,6 @@
 # Deployment Guide: Build, Flash, Debug
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-26
 **Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, flash, and debug.
 
 ---
@@ -123,7 +123,8 @@ git submodule update --init --recursive
 
 5. Insert SD card into RDK-RZ/V2H and power on.
 
-**Verification:** Serial console (SCIF0) shows boot messages; CR8-0 reaches NuttX shell.
+**Verification:** The `nsh-rtt` configuration exposes the CR8-0 NuttX shell
+on SCI4 (115200 8N1); boot and syslog diagnostics appear on SEGGER RTT.
 
 ---
 
@@ -247,9 +248,13 @@ openocd -f .openocd/rdk-rzv2h.cfg
 
 ## 5. Serial Console (UART Debug)
 
-### SCIF0 Console
+### Serial Modes
 
-**Device:** `/dev/ttyUSB0` (USB-UART adapter on RDK carrier board).
+#### Standalone CR8-0 NuttX
+
+**Role:** SCI4 shell + RTT diagnostics.
+
+**Device:** `/dev/ttyUSB0` for the SCI4 adapter on the RDK carrier board.
 
 **Settings:** 115200 baud, 8 data bits, 1 stop bit, no parity.
 
@@ -268,6 +273,13 @@ nsh> help
 nsh> ps
 nsh> dmesg
 ```
+
+#### Integrated PX4 CR8-0
+
+**Role:** RTT0 console/debug with SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
+SCI6 RC, and SCI9 GPS.
+
+**Policy:** SCI3 is not an active console on the RDK-RZV2H board.
 
 ---
 
@@ -380,7 +392,8 @@ git submodule update --init --recursive
 Before flight qualification:
 
 - [ ] Build completes without warnings.
-- [ ] CR8-0 boots to NuttX shell (SCIF0 console).
+- [ ] CR8-0 boots to the standalone NuttX shell on SCI4; RTT shows boot diagnostics.
+- [ ] Integrated PX4 CR8-0 keeps console/debug on RTT0 and routes MAVLink/QGroundControl on SCI5, not RTT0.
 - [ ] CR8-1 loads and synchronizes (check IPC log messages).
 - [ ] GDB attaches via JLink; can set breakpoints and step.
 - [ ] ULog file created and readable post-flight.
