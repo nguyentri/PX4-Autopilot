@@ -98,6 +98,22 @@ else()
 	endif()
 endif()
 
+set(nuttx_linker_script
+	${NUTTX_CONFIG_DIR_CYG}/scripts/${SCRIPT_PREFIX}script.ld)
+
+if(CONFIG_ARCH_CHIP_RZV)
+	set(rzv_board_scripts
+		${NUTTX_DIR}/boards/arm/rzv/rdk-rzv2h/scripts)
+
+	if(CONFIG_RZV2H_BUILD_CR8_0)
+		set(nuttx_linker_script ${rzv_board_scripts}/rdk-rzv2h_cr8_0.ld)
+	elseif(CONFIG_RZV2H_BUILD_CR8_1)
+		set(nuttx_linker_script ${rzv_board_scripts}/rdk-rzv2h_cr8_1.ld)
+	elseif(CONFIG_RZV2H_BUILD_CM33)
+		set(nuttx_linker_script ${rzv_board_scripts}/rdk-rzv2h_cm33.ld)
+	endif()
+endif()
+
 list(APPEND nuttx_libs
 	nuttx_boards
 	nuttx_drivers
@@ -282,7 +298,7 @@ else()
 
 		-fno-exceptions
 		-fno-rtti
-		-Wl,--script=${NUTTX_CONFIG_DIR_CYG}/scripts/${SCRIPT_PREFIX}script.ld
+		-Wl,--script=${nuttx_linker_script}
 		-L${NUTTX_CONFIG_DIR_CYG}/scripts
 		-Wl,-Map=${PX4_CONFIG}.map
 		-Wl,--warn-common

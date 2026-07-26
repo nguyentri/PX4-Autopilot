@@ -92,8 +92,13 @@ CONFIG_RZV_GPT10=y
 CONFIG_RDK_RZV2H_XSPI_PARAMFS=y
 
 # Serial Configuration
-CONFIG_RZV_SCI3=y
-# SCI4: TFmini LiDAR (/dev/ttyS4)
+# NOTE: SCI3 is NOT routed on the RDK-RZV2H board (no pins assigned; see
+# docs/renesas/pinmap.md "Serial Policy"). Do not enable CONFIG_RZV_SCI3.
+#
+# SCI4: reserved for TFmini LiDAR (/dev/ttyS4) in the integrated PX4 build.
+#       Temporarily used as the NSH shell console during bring-up (see the
+#       console section below). Move the console off SCI4 when the LiDAR is
+#       wired in.
 # SCI5: MAVLink telemetry (/dev/ttyS5)
 # SCI6: SBUS RC input (/dev/ttyS6)
 # SCI9: GPS M10 (/dev/ttyS9)
@@ -104,13 +109,7 @@ CONFIG_RZV_SCI9=y
 CONFIG_SERIAL=y
 CONFIG_STANDARD_SERIAL=y
 
-CONFIG_SCI3_SERIALDRIVER=y
-CONFIG_SCI3_RXBUFSIZE=256
-CONFIG_SCI3_TXBUFSIZE=256
-CONFIG_SCI3_BAUD=115200
-CONFIG_SCI3_BITS=8
-CONFIG_SCI3_PARITY=0
-CONFIG_SCI3_2STOP=0
+# SCI3 driver intentionally omitted: SCI3 is not available on RDK-RZV2H.
 
 CONFIG_SCI4_SERIALDRIVER=y
 CONFIG_SCI4_RXBUFSIZE=256
@@ -146,14 +145,33 @@ CONFIG_SCI9_2STOP=0
 
 CONFIG_DEV_CONSOLE=y
 CONFIG_DEV_SIMPLE_ADDRENV=y
-CONFIG_SERIAL_RTT=y
-CONFIG_SERIAL_RTT0=y
-CONFIG_SERIAL_RTT_CONSOLE=y
-CONFIG_SERIAL_RTT_CONSOLE_CHANNEL=0
-CONFIG_SERIAL_RTT_POLLING_INTERVAL=1000
+
+# Console options (mutually exclusive). To move the console to RTT0 later
+# (integrated PX4 build, where SCI4 becomes the TFmini LiDAR), comment out
+# CONFIG_SCI4_SERIAL_CONSOLE below and uncomment this RTT0 console block.
+#CONFIG_SERIAL_RTT=y
+#CONFIG_SERIAL_RTT0=y
+#CONFIG_SERIAL_RTT_CONSOLE=y
+#CONFIG_SERIAL_RTT_CONSOLE_CHANNEL=0
+#CONFIG_SERIAL_RTT_POLLING_INTERVAL=1000
+#CONFIG_SERIAL_CONSOLE=y
+
+# Bring-up shell/console on SCI4 (115200 8N1): NSH prompt, input, and command
+# output route to /dev/console on SCI4.
+# NOTE: SCI4 is reserved for the TFmini LiDAR (/dev/ttyS4) in the integrated
+# PX4 build (see docs/renesas/pinmap.md "Serial Policy"). Change this when the
+# LiDAR is wired in.
+CONFIG_SCI4_SERIAL_CONSOLE=y
 CONFIG_SERIAL_CONSOLE=y
+
+# SEGGER RTT channel 0: logging only. Syslog plus boot progress, panic, and
+# architecture low-level diagnostics go to RTT; the SCI4 console is left for
+# shell traffic. RTT is not registered as a serial device or shell console.
 CONFIG_SYSLOG_RTT=y
+CONFIG_RZV_DIAGNOSTICS_RTT=y
 CONFIG_SEGGER_RTT=y
+# Link the RTT control block/buffers into uncached SRAM for debugger visibility.
+CONFIG_SEGGER_RTT_SECTION=".noncache_buffer"
 CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=8192
 CONFIG_SEGGER_RTT_BUFFER_SIZE_DOWN=1024
 CONFIG_SEGGER_RTT_PRINTF=y

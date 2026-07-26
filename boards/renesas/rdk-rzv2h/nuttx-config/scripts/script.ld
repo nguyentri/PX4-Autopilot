@@ -237,8 +237,6 @@ SECTIONS
 
         . = ALIGN(0x04);
 
-
-      /* Project/user data placed in ITCM when necessary */
         ./nuttx/**/*.obj (.data .data.*)
         ./nuttx/**/*.o    (.data .data.*)
         ./apps/**/*.obj   (.data .data.*)
@@ -501,8 +499,13 @@ SECTIONS
         _cbuffer_ddr_start = .;
         KEEP(*(.cache_buffer*))
         _cbuffer_ddr_end = .;
+        . = ALIGN(0x10);
+        __heap_start__ = .;
         PROVIDE(_cbuffer_sdram_end = .);
     } > DDR_SDRAM_CACHE : sdram_bss_ph
+    __heap_end__ = ORIGIN(DDR_SDRAM_CACHE) + LENGTH(DDR_SDRAM_CACHE);
+    ASSERT(__heap_start__ < __heap_end__,
+           "CR8-0 heap does not fit cacheable DDR MPU region 6")
     .sdram_uncache_section (NOLOAD) :
     {
         . = ALIGN ( 0x10 ) ;

@@ -376,6 +376,29 @@ Validation Command:
 
 ---
 
+## RZ/V2H Skill Workflow
+
+Use the project-local skills as a fixed evidence loop around each roadmap
+slice:
+
+```text
+audit-rzv2h-px4-nuttx-port
+  -> ck:debug (when a failure is reproducible)
+  -> gdb-jlink-debug (when on-target evidence is required)
+  -> implement and verify
+  -> ck:code-review --pending
+```
+
+| Need | Skill | Required output |
+|---|---|---|
+| Cross-layer parity and integration gap | `$audit-rzv2h-px4-nuttx-port <subsystem> <CR8_0|CR8_1|CM33>` | FSP/CMSIS, NuttX, board, PX4, build, and hardware-evidence trace. |
+| Reproducible build or runtime failure | `$ck:debug <symptom>` | Root cause before a fix. |
+| J-Link/GDB source, MMIO, or data-abort capture | `$gdb-jlink-debug` | ELF identity, probe/core, breakpoint, register/MMIO evidence, and conclusion. |
+| Completed patch | `$ck:code-review --pending` | Spec-compliance, quality, and verification review. |
+
+Use `gdb-jlink-debug` only after authorization for reset, load, continue, or
+target writes. A read-only attach is the default hardware action.
+
 ## How to Use These Recipes
 
 ### Via `/ck:plan` CLI

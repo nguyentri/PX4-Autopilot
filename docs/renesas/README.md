@@ -27,6 +27,19 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 7. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
 8. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
 
+### AI-Assisted Porting Workflow
+
+Use the project-local skills in this order for a bounded RZ/V2H change:
+
+1. **[audit-rzv2h-px4-nuttx-port](../../.claude/skills/audit-rzv2h-px4-nuttx-port/SKILL.md)** — FSP/CMSIS-to-PX4 cross-layer audit.
+2. **[ck-debug](../../.claude/skills/ck-debug/SKILL.md)** — root-cause proof for a build or runtime failure.
+3. **[gdb-jlink-debug](../../.claude/skills/gdb-jlink-debug/SKILL.md)** — J-Link/GDB hardware evidence when source tracing is insufficient.
+4. **[ck-code-review](../../.claude/skills/ck-code-review/SKILL.md)** — review the completed diff and its verification evidence.
+
+Do not use RTT, build success, or a static register comparison as a substitute
+for on-target evidence. GDB/J-Link reset, ELF load, and target writes require
+explicit authorization.
+
 ### For Future Status
 
 9. **[port-status-px4-hal.md](./port-status-px4-hal.md)** (Phase 3) — PX4 HAL integration status per peripheral
@@ -65,7 +78,8 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 
 ## Key Reference Links
 
-- **Master Plan:** [../../plans/rzv2h_nuttx_px4_unified_port_plan.md](../../plans/rzv2h_nuttx_px4_unified_port_plan.md)
+- **Master Plan:** [../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
+- **Historical Plan:** [../../plans/rzv2h_nuttx_px4_unified_port_plan.md](../../plans/rzv2h_nuttx_px4_unified_port_plan.md) (superseded 2026-07-26)
 - **RDK-RZ/V2H Board Pinout:** [../../boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md) (BOM, header, peripheral pin assignments, and wiring)
 - **Pin Data Source:** [../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c) (authority for pinmap.md)
 - **NuttX Driver Port:** [../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/)

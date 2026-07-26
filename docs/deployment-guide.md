@@ -37,6 +37,11 @@ git submodule update --init --recursive
 
 ## 2. Build Targets
 
+The current critical path builds and deploys CR8-0 only. CR8-1 and CM33
+artifacts are optional G11 work after the CR8-0 PX4 drone path and required
+reliability gates pass. Do not treat their absence as a CR8-0 deployment
+failure.
+
 ### Build Script
 
 **Primary build entry point:**
@@ -88,11 +93,12 @@ git submodule update --init --recursive
 
 ## 3. Flash Routes
 
-### Option A: SD Card Boot (Recommended)
+### Option A: SD Card Boot (Recommended for CR8-0)
 
 **Preparation:**
 
-1. Build all three cores (CR8-0, CR8-1, CM33).
+1. Build the CR8-0 image. Build CR8-1/CM33 only when executing the final
+   multicore milestone.
 2. Format microSD card (FAT32):
    ```bash
    sudo mkfs.vfat /dev/sdX1
@@ -108,10 +114,10 @@ git submodule update --init --recursive
    # Copy CR8-0 (primary)
    sudo cp build/renesas_rdk-rzv2h_default/nuttx/nuttx.bin /mnt/sd/nuttx_cr8_0.bin
    
-   # Copy CR8-1
+   # Optional G11 only: copy CR8-1
    sudo cp build/renesas_rdk-rzv2h-io-cr8_1/nuttx/nuttx.bin /mnt/sd/nuttx_cr8_1.bin
    
-   # Copy CM33 (optional fallback)
+   # Optional G11 only: copy CM33
    sudo cp build/renesas_rdk-rzv2h-io-cm33/nuttx/nuttx.bin /mnt/sd/nuttx_cm33.bin
    ```
 
@@ -147,13 +153,15 @@ on SCI4 (115200 8N1); boot and syslog diagnostics appear on SEGGER RTT.
 
 ---
 
-### Option C: xSPI/QSPI (Future)
+### Option C: xSPI/QSPI Parameter Storage
 
-**Status:** Not yet ported from FreeRTOS reference.
+**Status:** Board paramfs/MTD source exists; on-target persistence validation is pending.
 
-**Plan:** LittleFS on xSPI for parameter storage and ULog file recording.
+**Plan:** LittleFS on xSPI for parameter storage. Keep ULog on a separately
+validated SDHI mount.
 
-**Blocker:** xSPI driver (`rzv_xspi.c`) in development.
+**Blocker:** Partition-boundary proof, mount, parameter save/reboot/load, and
+power-loss recovery. Do not treat source presence as validated persistence.
 
 ---
 
@@ -281,6 +289,9 @@ SCI6 RC, and SCI9 GPS.
 
 **Policy:** SCI3 is not an active console on the RDK-RZV2H board.
 
+**First drone-equivalent serial gates:** GPS SCI9 = 115200 8N1. RC SCI6 =
+100000 8E2 with the board inversion path verified on target.
+
 ---
 
 ## 6. Real-Time Transfer (RTT) Console
@@ -313,6 +324,10 @@ arm-none-eabi-readelf -s build/.../nuttx.elf | grep _SEGGER_RTT
 ## 7. Log Collection
 
 ### ULog Format (PX4 Native)
+
+**Status:** Post-G9 optional. The first drone-equivalent CR8-0 image keeps
+SDHI/ULog disabled because the checked-in FSP drone reference has no SDHI
+driver. Use this procedure only after the separate SDHI track passes.
 
 **Path:** `/fs/microsd/` (SD card via SDHI0).
 
@@ -394,10 +409,12 @@ Before flight qualification:
 - [ ] Build completes without warnings.
 - [ ] CR8-0 boots to the standalone NuttX shell on SCI4; RTT shows boot diagnostics.
 - [ ] Integrated PX4 CR8-0 keeps console/debug on RTT0 and routes MAVLink/QGroundControl on SCI5, not RTT0.
-- [ ] CR8-1 loads and synchronizes (check IPC log messages).
+- [ ] CR8-0 boots and runs without CR8-1, CM33, or a remote endpoint.
+- [ ] CR8-1/CM33 load and synchronize only when validating optional G11.
 - [ ] GDB attaches via JLink; can set breakpoints and step.
-- [ ] ULog file created and readable post-flight.
-- [ ] MAVLink telemetry stream visible in GCS (if Ether configured).
+- [ ] xSPI parameter save/reboot/load passes.
+- [ ] SDHI/ULog remains disabled for the first drone-equivalent baseline.
+- [ ] MAVLink heartbeat and telemetry are visible in QGroundControl over SCI5.
 - [ ] Stress test: 1 hour continuous flight simulation without crash.
 
 ---

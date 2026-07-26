@@ -14,7 +14,16 @@
 - **deferred**: HAL adapter present but the feature is intentionally disabled in the default build pending hardware enablement (documented in board defconfig).
 - **validated**: On-target integration tests pass; used in application code.
 
-> Evidence note: RDK-RZ/V2H is a build-only target today. No HAL surface has reached **validated** (on-target). `build-clean` is the strongest tier currently reachable.
+> Evidence note: the standalone CR8-0 `nsh-rtt` sample has on-target SCI4
+> shell/IRQ and RTT diagnostic evidence. The integrated PX4 target remains
+> unvalidated: no PX4 HAL surface has reached **validated** on target.
+> `build-clean` is therefore the strongest integrated-HAL tier currently
+> supported.
+
+The execution authority is the
+[RDK-RZV2H PX4 NuttX Port Goal Plan](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md).
+CR8-0 is the only critical path. CR8-1, CM33, OpenAMP, and remoteproc are final
+milestone work.
 
 ---
 
@@ -24,15 +33,15 @@
 |---|------------|--------------|------------------|---------------|--------|-----------------|
 | 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | rzv_spi.c (RSPI, hardware CS) | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean | `CONFIG_RZV_SPI=y`. MPU9250 on SPI0 (CS P93/SSLA0, DRDY P50). Board select/status hooks not used (hardware CS). On-target sensor probe pending |
 | 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | deferred | BMP280 baro on SCI7 simple-I2C (P76/P77). SCI7 enablement/HW validation deferred in `nsh/defconfig` (baro init `#ifdef CONFIG_RZV_I2C`, unset). HAL I2C dispatch must target `rzv_sci_i2c_initialize`, not the RIIC path — see audit report 260720 |
-| 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | Explicit policy: standalone CR8-0 NuttX = SCI4 shell + RTT diagnostics; target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics; integrated PX4 CR8-0 = RTT0 console/debug with SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS. SCIF path currently blocked (see port-status-nuttx.md) |
+| 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | Explicit policy: standalone CR8-0 NuttX = SCI4 shell + RTT diagnostics; target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics; integrated PX4 CR8-0 = RTT0 console/debug with SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC at 100000 8E2 plus inversion, SCI9 GPS at 115200 8N1. GPS/RC framing is a G7-G9 hard gate. SCIF remains sample-only/blocked. |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
-| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | rzv_gpt.c (GPT) | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | 4×ESC: FSP-logical GPT6/7/9/10 (logical 9→phys GPT11, 10→GPT12). 50–500 Hz. Waveform on-target pending |
+| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | rzv_gpt.c (GPT) | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | FSP physical mapping: GPT6A/7B/9A/10B on PA4/PA7/P96/P53. Any logical/physical remap in the PX4/NuttX path must resolve to those four instances. Waveform, safe inactive state, and failsafe validation pending. |
 | 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | rzv_dmac.c (HW-trigger) + rzv_gpt.c | boards/renesas/rdk-rzv2h/dshot.px4board | build-clean (opt-in) | TX-only target `renesas_rdk-rzv2h_dshot` builds and links; default remains PWM and excludes DShot. Checked-in CMSIS/FSP sources verify DMkSEL offsets, unit mapping, and GPT-overflow DMAC activation IDs. GPT buffered compare + one-shot DMA path is not hardware-validated. BDShot capture/telemetry returns `-ENOTSUP`; the pure GCR/eRPM decoder is not a functional telemetry path. Waveform, transfer ordering, repeated trigger/re-arm, and ESC tests remain pending. |
-| 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred | `CONFIG_RZV_ADC=y` but battery ADC channels disabled in board_config.h for v1. Sensor integration pending |
-| 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (GTM7 free-run) | boards/renesas/rdk-rzv2h/src/ | build-clean | `CONFIG_RZV_HRT=y`. µs timebase on GTM7 (not GPT). Jitter/drift on-target pending |
+| 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred/non-gating | Battery/airspeed ADC consumers stay disabled for G3-G9. The checked-in drone reference has no active ADC driver; ADC sample/driver work is post-G9. |
+| 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (GTM7 free-run) | boards/renesas/rdk-rzv2h/src/ | build-clean | `CONFIG_RZV_HRT=y`. µs timebase uses GTM7 (not GPT). `board_config.h` still has a stale GTM0/120 MHz declaration that must be removed. Runtime P1CLK, monotonicity, callback, jitter, and drift validation pending. |
 | 8 | CAN | `src/drivers/can/` | rzv_canfd.c | boards/renesas/rdk-rzv2h/src/ | planned | CAN0/CAN1; baud rate; SLCAN over UART alt |
 | 9 | Ether/MAVLink UDP | `src/modules/mavlink/` + network stack | rzv_ether.c + rzv_ether_phy.c | boards/renesas/rdk-rzv2h/src/ | planned | IP config; UDP MAVLink stream; link-up polling; LTE modem integration (TBD) |
-| 10 | xSPI/LittleFS | `src/modules/fs/littlefs/` | (planned: rzv_xspi.c) | boards/renesas/rdk-rzv2h/src/ | planned | Block device abstraction; wear-leveling; parameter storage |
+| 10 | xSPI/LittleFS | PX4 parameter backend + NuttX LittleFS | `rzv2h_xspi_paramfs.c` board MTD/mount path | boards/renesas/rdk-rzv2h/src/ | in-progress | Board paramfs source and Kconfig exist, but partition bounds, mount, parameter round trip, reboot persistence, and power-loss behavior need on-target evidence. Keep separate from SDHI `/dev/mmcsd0` ULog storage. |
 
 ---
 
@@ -131,7 +140,8 @@
 
 ### Timer/HRT (Line 7)
 
-**NuttX Foundation:** `rzv_hrt.c` (high-resolution timer, typically GPT up-counter).
+**NuttX Foundation:** `rzv_hrt.c` uses dedicated GTM7 in free-running mode and
+derives its timebase from runtime P1CLK. GPT6/7/9/10 remain PWM resources.
 
 **PX4 HAL Interface:**
 - `px4_clock_gettime()` for µs-precision timestamps.
@@ -170,14 +180,34 @@
 
 ### xSPI/LittleFS (Line 10)
 
-**NuttX Foundation:** (planned `rzv_xspi.c` not yet ported from FreeRTOS).
+**NuttX Foundation:** board source
+`platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_xspi_paramfs.c`
+provides the current parameter-MTD/mount path. It is implemented in source but
+not yet proven as a persistent PX4 parameter backend on target.
 
 **PX4 HAL Interface:**
-- LittleFS mount on `/fs/microsd` (or `/fs/internal`).
-- Parameter storage in LittleFS.
-- ULog file recording.
+- LittleFS parameter mount under the board `/fs` contract.
+- Parameter storage uses the xSPI partition only after boundary and power-cycle proof.
+- ULog uses a separate SDHI-backed mount when SDHI is validated.
 
-**Validation:** File creation, read/write, power-loss resilience.
+**Validation:** Partition-boundary audit, mount, parameter save/reboot/load,
+controlled power-loss recovery, and proof that no executable/boot region is
+erased.
+
+---
+
+## CR8-0 Goal Reconciliation
+
+- Required first-drone HAL gates: SPI0 IMU, SCI7 I2C barometer, SCI4/5/6/9
+  serial, GPS SCI9 115200 8N1, RC SCI6 100000 8E2 plus inversion, GPIO/IRQ,
+  GTM7 HRT, GPT PWM, and parameter persistence.
+- Post-G9/non-gating: ADC, WDT integration, and SDHI/ULog. These are not active
+  in the checked-in drone reference.
+- Optional: CAN, Ethernet/UDP, DShot.
+- Default integrated PX4 must not fail because OpenAMP, IPCC, CR8-1, CM33, or a
+  CA55 endpoint is absent.
+- The integrated image uses RTT0 for text console/debug and SCI5 for binary
+  MAVLink/QGroundControl traffic.
 
 ---
 

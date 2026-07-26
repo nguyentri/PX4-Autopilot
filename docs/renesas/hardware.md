@@ -343,7 +343,7 @@ References:
 | Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 for the shell, RTT for boot/syslog/debug |
 | Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 intended for the IO target shell; not yet hardware validated |
 | Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 intended for the IO target shell; not yet hardware validated |
-| Integrated PX4 CR8-0 | RTT0 console/debug | SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC, SCI9 GPS |
+| Integrated PX4 CR8-0 | RTT0 console/debug | SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC 100000 8E2 + inversion, SCI9 GPS 115200 8N1 |
 
 SCI3 is not an active console on the RDK-RZV2H board.
 
@@ -353,8 +353,8 @@ SCI3 is not an active console on the RDK-RZV2H board.
 |---|---|
 | `/dev/ttyS4` | TFmini rangefinder |
 | `/dev/ttyS5` | Sik telemetry, MAVLink to QGroundControl |
-| `/dev/ttyS6` | RC input, FS-A8S SBUS |
-| `/dev/ttyS9` | GPS, u-blox M10 |
+| `/dev/ttyS6` | RC input, FS-A8S SBUS, 100000 8E2; inversion path requires target proof |
+| `/dev/ttyS9` | GPS, u-blox M10, 115200 8N1 |
 
 **Sources:**
 
@@ -372,13 +372,15 @@ SCI3 is not an active console on the RDK-RZV2H board.
 
 ## 11. SPI and I2C
 
-### 11.1 RSPI: Renesas SPI
+### 11.1 SPI-B: Renesas SPI
 
 - **Type:** SPI master/slave.
-- **Count:** 2 instances, RSPI0 and RSPI1.
-- **Speed:** Up to 25 MHz.
-- **Use:** IMU, MPU9250, barometer, flash-memory access.
-- **DMA:** Integrated with DMAC-B.
+- **SoC count:** Three SPI-B instances, SPI0 through SPI2.
+- **RDK-RZ/V2H routing:** SPI0 is the only verified board-routed instance.
+  SPI1 has no external pinmux or chip-select contract; SPI2 has no NuttX
+  lower-half implementation.
+- **Use:** SPI0 hosts the MPU9250 path; internal controller loopback is used
+  for bring-up tests and does not validate external routing.
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c`
 
@@ -471,9 +473,9 @@ POEG provides a safety interlock for PWM outputs.
 
 ### PX4/NuttX Development Notes
 
-- Do not enable destructive PWM or actuator output paths until POEG and watchdog behavior are understood.
-- Validate watchdog reset behavior intentionally during bring-up.
-- For PX4 actuator testing, confirm safe default output state during reset, boot, crash, watchdog timeout, and emergency kill.
+- Do not enable destructive PWM or actuator output paths until POEG and required reset/boot/disarm/process-failure behavior is understood.
+- The checked-in drone reference has no active WDT driver. Keep PX4 WDT integration post-G9/non-gating; validate the standalone sample separately.
+- For first-run PX4 actuator testing, confirm safe default output state during reset, boot, crash, disarm, and emergency kill.
 
 ---
 
@@ -520,7 +522,8 @@ Use this checklist as a practical board-port validation flow.
 - [ ] Sensor probing.
 - [ ] MAVLink startup.
 - [ ] PWM output using GPT.
-- [ ] Safety path using POEG/WDT.
+- [ ] Required safety path using POEG and safe GPT states.
+- [ ] Optional post-G9 WDT integration.
 
 ---
 

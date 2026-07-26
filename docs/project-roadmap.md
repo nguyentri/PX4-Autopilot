@@ -1,317 +1,165 @@
 # RDK-RZ/V2H Port Roadmap
 
 **Date:** 2026-07-26
-**Scope:** Milestones and dependencies for NuttX + PX4 flight-stack port to RDK-RZ/V2H.  
-**Canonical Plan:** See `plans/rzv2h_nuttx_px4_unified_port_plan.md` for detailed implementation strategies and risk analysis.
 
----
+**Scope:** RDK-RZV2H PX4-on-NuttX, CR8-0 first
+**Canonical plan:** [RDK-RZV2H PX4 NuttX Port Goal Plan](../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
+
+This file is the roadmap summary. The canonical plan owns detailed phases,
+matrices, commands, exit criteria, risks, and evidence requirements.
+
+## Goal
+
+Run PX4 drone software on RDK-RZV2H CR8-0 under NuttX with the FSP-backed
+pinmap, required HAL, sensors, actuators, MAVLink, parameters, and logs.
+CR8-1 and CM33 are optional final-milestone work only after CR8-0 is stable.
 
 ## Milestone Overview
 
-| Milestone | Status | Target | Key Deliverable | Blockers |
-|-----------|--------|--------|-----------------|----------|
-| **M0** | Done | 2026-06-01 | NuttX submodule, drivers build-clean, IPCC MHU baseline | None |
-| **M1** | In Progress | 2026-07-31 | All NuttX drivers functional | Driver validation (per-driver) |
-| **M2** | Planned | 2026-08-31 | PX4 HAL surfaces (SPI, I2C, UART, GPIO, PWM, ADC) | M1 completion; HAL porting |
-| **M3** | Planned | 2026-09-30 | Sensor drivers (IMU, mag, baro, GPS) up and integrated | M2 completion; sensor availability |
-| **M4** | Planned | 2026-10-31 | Actuator/ESC output functional | M3 completion; PWM validation |
-| **M5** | Planned | 2026-11-30 | Flight-stack integration, basic hover (manual, no autonomy) | M4 completion; flight testing |
-| **M6** | Planned | 2026-12-31 | MAVLink + telemetry + params, GCS connectivity | M5 completion; network integration |
-| **M7** | Planned | 2027-01-31 | Autonomous flight modes (guided, auto, mission) | M6 completion; flight validation |
-
----
-
-## M0: Foundational (DONE)
-
-**Status:** Completed 2026-06-30.
-
-**Deliverables:**
-
-- [x] NuttX submodule synced at `platforms/nuttx/NuttX/nuttx`.
-- [x] All 41 NuttX drivers compile without errors (build-clean).
-- [x] IPC infrastructure in place:
-  - [x] MHU register layer (rzv_mhu_core.c, rzv_mhu.h).
-  - [x] IPCC character device (rzv_ipc_ipcc.c, /dev/ipcc0).
-  - [x] RPMsg/OpenAMP integration (rzv_rpmsg.c, rzv_rproc.c).
-  - [x] uORB bridge frame format (commit 289f3203ec6).
-- [x] CR8-0 boots to NuttX shell (`nsh-rtt`: SCI4 shell, RTT diagnostics).
-- [x] CR8-1 loads and synchronizes (remote processor via MHU).
-
-**Validation:**
-- [x] CR8-0 reaches prompt: `nsh>`.
-- [x] CR8-1 boots without hang or reboot.
-- [x] IPC loopback message exchange (cr8_0 → mhu → cr8_1, acknowledge back).
-
-**Documentation:** See [Project Overview](project-overview-pdr.md), [System Architecture](system-architecture.md), [Codebase Summary](codebase-summary.md).
-
----
-
-## M1: Driver Bring-up (IN PROGRESS)
-
-**Target:** 2026-07-31 | **Status:** Driver validation in progress.
-
-**Deliverables:**
-
-- [ ] All 41 drivers in [port-status-nuttx.md](renesas/port-status-nuttx.md) reach **functional** status.
-- [ ] Validation checklist completed per driver (link to [validation-checklist.md](renesas/validation-checklist.md)).
-- [ ] Sample configs tested (adc, canfd, ether, sdhi, spi-loopback, uart, pwm, wdt, etc.).
-- [x] Resolve the software findings from the [RZ/V2H DMAC re-audit](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md); memory copy and hardware-triggered memory-to-peripheral paths are build-clean.
-- [ ] Validate DMAC peripheral request routing and DMA-backed consumers on target before marking them functional.
-
-**Key Driver Groups:**
-
-### G1: Clock, Memory, IRQ (Foundation)
-- [x] rzv_clock.c (CPG clock divider setup)
-- [x] rzv_memmng.c (heap, page alignment)
-- [x] rzv_irq.c, rzv_irq_cm33.c (GIC, NVIC vectors)
-- [x] rzv_icu.c (interrupt routing)
-- Status: **functional** (blocking none; enables all others)
-
-### G2: Serial & Debug
-- [ ] rzv_scif.c (UART16 FIFO — legacy nsh-scif config)
-- [ ] rzv_lowputc.c (early boot console)
-- [ ] rzv_serial.c (mode-specific serial policy: CR8-0 SCI4 shell, CR8-1 SCI5 target shell, CM33 SCI9 target shell; integrated PX4 uses RTT0 console/debug)
-- Status: **functional** (CR8-0 standalone shell ready; CR8-1/CM33 target shells not yet HW validated)
-
-### G3: GPIO & Pinmux
-- [ ] rzv_gpio.c (Port 0–12, IRQ/edge control)
-- [ ] rzv_pinmap.h (pin ownership database)
-- Sample config: nsh-leds (blink LED0 test)
-- Status: **functional** (basic I/O ready; edge timing validation pending)
-
-### G4: Timers (HRT, GPT, GTM)
-- [ ] rzv_hrt.c (high-resolution timer, system clock)
-- [ ] rzv_gpt.c (16-bit general purpose timer, PWM generation)
-- [ ] rzv_gtm.c (32-bit general timer)
-- [ ] rzv_timerisr.c (timer ISR dispatch)
-- Sample config: pwm (PWM frequency sweep test)
-- Status: **functional** (timing validation in progress)
-
-### G5: SPI & I2C
-- [ ] rzv_spi.c, rzv_sci_spi.c (SPI master, DMA integration)
-- [ ] rzv_i2c.c, rzv_sci_i2c.c (I2C master, RIIC + SCI fallback)
-- Sample configs: spi-loopback, (i2c TBD)
-- Status: **functional** (sensor attachment pending M2)
-
-### G6: ADC
-- [ ] rzv_adc.c (12-bit SAR, channel scanning)
-- Sample config: adc (battery voltage, airspeed test)
-- Status: **functional** (sensor integration at M3)
-
-### G7: Storage
-- [ ] rzv_sdhi.c (SD/MMC host, card-detect)
-- [ ] rzv_sdhi ULog path setup
-- Sample config: sdhi (file I/O stress test)
-- Status: **functional** (LittleFS mount verified)
-
-### G8: CAN
-- [ ] rzv_canfd.c (CAN-FD dual channel, message filtering)
-- Sample configs: canfd, canfd-dual (loopback test)
-- Status: **functional** (telemetry integration at M6)
-
-### G9: IPC & Co-processor
-- [ ] rzv_ipc.c (dispatcher)
-- [ ] rzv_ipc_ipcc.c (IPCC /dev/ipcc0)
-- [ ] rzv_rpmsg.c (RPMsg frame layer)
-- [ ] rzv_rproc.c (remote processor loader)
-- Sample config: ipcc, ipcc-multi
-- Status: **functional** (CR8-1 ↔ CR8-0 message validation)
-
-### G10: Utility & Housekeeping
-- [x] rzv_idle.c (CPU WFI, stub status acceptable)
-- [x] rzv_start.c, rzv_start_cm33.c (bootstrap)
-- [x] rzv_mpu_regions.c (ARM MPU setup)
-- [x] rzv_mhu_core.c (MHU register helpers)
-- [x] rzv_openamp.c (future; deprecated in current IPC path, stub status ok)
-
-**Completion Criteria:**
-- Row count in [port-status-nuttx.md](renesas/port-status-nuttx.md) ≥38 at "functional" status.
-- Validation checklists linked and signed-off.
-- Sample configs boot without panic.
-
-**Documentation:** See [NuttX Port Status](renesas/port-status-nuttx.md), [Validation Checklist](renesas/validation-checklist.md), [Peripheral Specs](renesas/peripherals/).
-
----
-
-## M2: PX4 HAL Port (PLANNED)
-
-**Target:** 2026-08-31 | **Depends on:** M1 completion.
-
-**Deliverables:**
-
-Complete HAL drivers for:
-1. **SPI** — Map PX4 device numbering to /dev/spiN; DMA channel assignment (SPI0 ch. 2, SPI1 ch. 3, etc.).
-2. **I2C** — Sensor enumeration; multi-master probe (IMU, mag, baro addresses).
-3. **UART/Serial** — MAVLink telemetry stream on /dev/ttyS5 for QGroundControl.
-4. **GPIO** — LED control, button IRQ.
-5. **PWM/ESC** — Servo output via GPT channels; frequency/duty sync.
-6. **ADC** — Battery voltage monitor, airspeed differential.
-7. **Timer/HRT** — System clock backing; µs-precision timestamps.
-8. **CAN** — CAN0/CAN1 frame RX/TX.
-9. **Ether/UDP** — MAVLink GCS link (optional; UART fallback).
-
-**Deliverable Artifact:** [port-status-px4-hal.md](renesas/port-status-px4-hal.md) updated to **functional** for all HAL surfaces.
-
-**Testing:** PX4 core bringup (no flight controller code yet; sensor discovery only).
-
-**Documentation:** See [PX4 HAL Port Status](renesas/port-status-px4-hal.md).
-
----
-
-## M3: Sensor Drivers (PLANNED)
-
-**Target:** 2026-09-30 | **Depends on:** M2 completion.
-
-**Deliverables:**
-
-Sensor drivers integrated on CR8-1 co-processor:
-- **IMU (6-axis)** — SPI/I2C attachment (MPU9250, ICM20649, or equiv); orientation calibration.
-- **Magnetometer** — I2C or SPI (HMC5883L, IST8310, or equiv); declination calib.
-- **Barometer** — I2C (BMP280, MS5611, or equiv); altitude reference.
-- **GPS** — UART attach (u-blox, SBAS); rtcm3 input (RTK-capable variant).
-
-**uORB Integration:**
-- CR8-1 reads sensors → publishes to uORB (sensor_accel, sensor_mag, sensor_baro, sensor_gps).
-- CR8-0 subscribes via IPC bridge (MHU/IPCC) → fused in extended Kalman filter.
-
-**Completion:** CR8-1 boots, enumerates sensors, logs to uORB ringbuffer; CR8-0 receives updates.
-
----
-
-## M4: Actuator Output (PLANNED)
-
-**Target:** 2026-10-31 | **Depends on:** M3 completion.
-
-**Deliverables:**
-
-Servo/ESC driver stack:
-- **PWM/GPIO** — 6 PWM channels (for 6-DOF multirotor or fixed-wing control surfaces).
-- **DShot (optional)** — TX-only GPT+DMAC target remains opt-in; default board continues to use PWM until waveform and lifecycle validation pass.
-- **Safety pin** — Disarm detect via GPIO; failsafe on pin release.
-- **Failsafe** — ESC pulse to zero on loss of signal (PX4 watchdog → pwm_out driver).
-
-**Testing:** Manual PWM command verification; no flight (manual control ground test only).
-
----
-
-## M5: Flight-Stack Integration & Manual Flight (PLANNED)
-
-**Target:** 2026-11-30 | **Depends on:** M4 completion.
-
-**Deliverables:**
-
-- CR8-0 PX4 flight controller app running (px4_main).
-- Sensor fusion (EKF) accepting IMU/mag/baro/GPS.
-- Attitude controller stabilizing roll/pitch/yaw.
-- **Flight mode:** Manual (RC stick → attitude setpoint) only.
-- **Failsafe:** Disarm on RC loss; return to home (GPS only).
-
-**Milestone Test:** Hand-held hover for 30 seconds on GPS-denied area; visual stability.
-
----
-
-## M6: Telemetry & Parameter System (PLANNED)
-
-**Target:** 2026-12-31 | **Depends on:** M5 completion.
-
-**Deliverables:**
-
-- **MAVLink stream** — SCI5 /dev/ttyS5 over SiK to QGroundControl; Ethernet is future/optional.
-- **Parameter set** — Load/save tuning params (PID gains, sensor scales, failsafe thresholds) via MAVLink.
-- **GCS connectivity** — Real-time attitude, GPS, battery telemetry.
-- **Flight log** — ULog recording to SD card (via SDHI0).
-
-**Milestone Test:** GCS receives telemetry; operator can change param; log playback in Fusion Engine.
-
----
-
-## M7: Autonomous Flight (PLANNED)
-
-**Target:** 2027-01-31 | **Depends on:** M6 completion.
-
-**Deliverables:**
-
-- **Flight modes:**
-  - **Guided** — Accept velocity/position setpoints from GCS or companion computer.
-  - **Auto** — Waypoint mission (takeoff, fly to WP, land) via MAVLink mission protocol.
-- **Position control** — GPS + barometer altitude hold; optical flow (optional) for indoor nav.
-- **Land detector** — Disarm on landing (accel/vertical velocity signature).
-
-**Milestone Test:** Autonomous square mission (4 waypoints) in outdoor GPS environment.
-
----
+| ID | Status | Deliverable | Hard gate |
+|---|---|---|---|
+| G0 | In planning | Baseline authority and evidence vocabulary frozen | FSP/source/doc conflicts recorded |
+| G1 | In planning | Pinmap and all 23 sample configs audited | Every config valid/invalid/conflict/deferred |
+| G2 | Pending | NuttX samples corrected and classified | Required config builds and runtime procedures |
+| G3 | Pending | Required blocked drivers closed or accepted fallback | SCI7, GTM7 HRT, SPI0, GPIO/IRQ, GPT PWM |
+| G4 | Pending | PX4 HAL dependency closure | Matching NuttX sample proof per required HAL |
+| G5 | Pending | CR8-0-only PX4 board image | No fatal CR8-1/CM33/CA55/OpenAMP dependency |
+| G6 | Pending | PX4 boot, RTT shell, HRT, work queues, uORB | Stable local CR8-0 core |
+| G7 | Pending | IMU, barometer, GPS, LiDAR, MAVLink | GPS SCI9 115200 8N1, topics update, QGC heartbeat |
+| G8 | Pending | RC, four PWM outputs, arming/disarming, failsafe | RC SCI6 100000 8E2 + inversion, scope, safe inactive state |
+| G9 | Pending | CR8-0 drone-equivalent bench run | GPS/RC remain clean under load; params persist; estimator/control bench path |
+| G10 | Pending | Reliability and stress validation | Boot/timing/failsafe/memory/long-run evidence |
+| G11 | Deferred | Optional CR8-1/CM33 multicore expansion | G9 plus required G10 subset |
+
+Current on-target evidence is narrower than the roadmap: standalone CR8-0
+`nsh-rtt` reaches a working SCI4 shell with RX/TX interrupts and RTT
+diagnostics. This does not promote the integrated PX4 HAL.
+
+## Engineering Evidence Loop
+
+Every RZ/V2H roadmap slice uses the same skill sequence:
+
+1. `$audit-rzv2h-px4-nuttx-port <subsystem> <CR8_0|CR8_1|CM33>` establishes FSP/CMSIS, NuttX, board, PX4, and consumer scope.
+2. `$ck:debug <symptom>` proves root cause for a build or runtime failure.
+3. `$gdb-jlink-debug` captures source, MMIO, and exception evidence on target when static tracing is insufficient; reset/load/write actions require authorization.
+4. Implement and run the narrowest relevant build or on-target validation.
+5. `$ck:code-review --pending` checks the diff against the audited trace before the status matrix advances.
+
+The local skill definitions are [audit](../.claude/skills/audit-rzv2h-px4-nuttx-port/SKILL.md),
+[J-Link debug](../.claude/skills/gdb-jlink-debug/SKILL.md),
+[debug](../.claude/skills/ck-debug/SKILL.md), and
+[code review](../.claude/skills/ck-code-review/SKILL.md).
+
+## CR8-0 Critical Path
+
+### Source and sample truth
+
+- FSP `pin_data.c` and generated peripheral config define reference-used pins
+  and instances.
+- Standalone CR8-0 samples use SCI4 shell + RTT diagnostics or RTT-only HIL.
+- SCI3 is not an active RDK console.
+- Board Make/CMake source-selection parity must be fixed.
+- CR8-1 SCI5 and CM33 SCI9 standalone configs may be statically corrected, but
+  runtime multicore work remains G11.
+
+### Required NuttX foundations
+
+| Area | Required first-drone proof |
+|---|---|
+| Startup/MPU/CPG | Repeatable boot, accessible peripheral MMIO, no pre-SCI UART logging |
+| Serial | SCI4/5/6/9 RX/TX/error handling; GPS SCI9 115200 8N1; RC SCI6 100000 8E2 plus inversion proof |
+| GPIO/IRQ | P50 DRDY event, bounded latency, clean re-enable |
+| SPI | SPI0 loopback plus MPU9250 WHOAMI/burst/DRDY |
+| I2C | SCI7 simple-I2C on P76/P77 plus BMP280 repeated reads/recovery |
+| HRT | GTM7 runtime P1CLK, monotonicity, callbacks, jitter/drift |
+| PWM | GPT6A/7B/9A/10B on PA4/PA7/P96/P53; safe inactive state |
+| Parameters | Proven xSPI partition/mount/save/reboot/load |
+
+### Conditional and optional paths
+
+| Area | Roadmap decision |
+|---|---|
+| ADC | Post-G9/non-gating. Disabled in the first image; no active driver in the checked-in drone reference. |
+| WDT | Post-G9/non-gating. Automatic NuttX sample only; no first-run command-registration requirement. |
+| SDHI | Post-G9/non-gating. ULog disabled; separate from required xSPI parameter storage. |
+| CAN-FD | Optional for first drone run. Needs board transceiver/pin/analyzer proof. |
+| Ethernet/PHY | Optional. SCI5 MAVLink is the first QGroundControl path. |
+| DMAC | PIO accepted where it meets first-run timing; DMA needs coherency/request proof. |
+| DShot | Opt-in only; standard PWM is the first actuator path. |
+| SCIF/SCI-SPI | Sample-only; not a shipping-console or sensor blocker. |
+| OpenAMP/IPCC | G11 only; absent or non-fatal in the default CR8-0 image. |
+
+## Integrated PX4 Ownership
+
+| Function | Assignment |
+|---|---|
+| Console/debug | RTT0 |
+| LiDAR | SCI4 `/dev/ttyS4` |
+| MAVLink/QGroundControl | SCI5 `/dev/ttyS5` |
+| RC/SBUS | SCI6 `/dev/ttyS6` |
+| GPS | SCI9 `/dev/ttyS9` |
+| IMU | SPI0 P90/P91/P92/P93, DRDY P50 |
+| Barometer | SCI7 simple-I2C P76/P77 |
+| HRT | GTM7 |
+| PWM1-4 | GPT6/7/9/10 on PA4/PA7/P96/P53 |
 
 ## Dependency Graph
 
-```
-M0 (Foundation: NuttX, IPCC, boot)
-  ↓
-M1 (Driver validation: 41 drivers → functional)
-  ├─ G1: Clock/IRQ (blocks all)
-  ├─ G2: Serial (debug, blocking none)
-  ├─ G3: GPIO (blocking PWM, sensor attach)
-  ├─ G4: Timers (blocking PWM, HRT)
-  ├─ G5: SPI/I2C (blocking sensors, HAL)
-  ├─ G6: ADC (blocking battery, airspeed)
-  ├─ G7: Storage (blocking ULog)
-  ├─ G8: CAN (blocking telemetry)
-  └─ G9: IPC (blocking CR8-1 sensor fusion)
-      ↓
-M2 (HAL port: 9 surfaces → functional)
-  ├─ Depends on: SPI, I2C, UART ready (G5, G2)
-  ├─ Depends on: GPIO, PWM, ADC, Timer ready (G3, G4, G6)
-  ├─ Depends on: CAN, Ether optional (G8)
-      ↓
-M3 (Sensors: IMU, mag, baro, GPS)
-  ├─ Depends on: I2C/SPI HAL (M2)
-  ├─ Depends on: UART HAL for GPS
-      ↓
-M4 (Actuator output: PWM channels, safety pin)
-  ├─ Depends on: Timer/PWM HAL (M2)
-      ↓
-M5 (Flight-stack integration & manual flight)
-  ├─ Depends on: Sensor fusion (M3), Actuator output (M4)
-      ↓
-M6 (Telemetry & params)
-  ├─ Depends on: MAVLink, ULog (M5)
-      ↓
-M7 (Autonomous flight modes)
-  ├─ Depends on: Guidance, position control (M6)
+```text
+G0 authority
+ -> G1 pin/config audit
+ -> G2 sample correction
+ -> G3 required NuttX driver proof
+ -> G4 required PX4 HAL proof
+ -> G5 CR8-0 board image
+ -> G6 PX4 core boot
+ -> G7 sensors + MAVLink
+ -> G8 actuator + safety
+ -> G9 drone-equivalent bench run
+ -> G10 reliability/stress
+ -> G11 optional CR8-1/CM33
 ```
 
----
-
-## Risk & Mitigation
-
-| Risk | Probability | Mitigation |
-|------|-------------|-----------|
-| Driver validation delays | Medium | Prioritize G1, G4, G5 (clock, timer, SPI/I2C); others in parallel. |
-| CR8-1 ↔ CR8-0 IPC sync issues | Medium | Extensive M1 testing; add seq number validation + CRC checks (commit 289f3203 done). |
-| Sensor calibration drift | Low | Per-platform calibration data stored in parameter system; sensor redundancy (M3 deliverable). |
-| PX4 tuning for new airframe | Medium | Retain example configs for known platforms (Quadcopter, fixed-wing). |
-| Flight-test infrastructure | Low | Use manual mode first (M5) before autonomous (M7); hand-launched test possible. |
-
----
+Optional drivers may proceed when resources allow, but cannot replace a missing
+hard-gate proof or move multicore work ahead of G9/G10.
 
 ## Status Tracking
 
-**Update Frequency:** Weekly during active work (M1–M2); bi-weekly thereafter.
+Use evidence tiers from the canonical plan:
 
-**Measurement:**
-- M1: % drivers at functional status (target ≥92% by EOJ).
-- M2: % HAL surfaces functional (target 100% by EOA).
-- M3–M7: Feature acceptance tests (TBD per milestone).
+1. configured;
+2. build-clean;
+3. hardware-ready;
+4. on-target functional;
+5. PX4-integrated;
+6. stress-validated.
 
-**Tracking Tool:** [port-status-nuttx.md](renesas/port-status-nuttx.md) + [port-status-px4-hal.md](renesas/port-status-px4-hal.md).
+Update weekly during active work:
 
----
+- [NuttX Port Status](renesas/port-status-nuttx.md)
+- [PX4 HAL Port Status](renesas/port-status-px4-hal.md)
+- milestone evidence under the canonical plan's `reports/` directory
+
+Missing target evidence is **needs on-target validation**, not done.
+
+## Key Risks
+
+| Risk | Mitigation milestone |
+|---|---|
+| Boot/debugger state masks missing startup setup | G0-G2 boot-mode matrix |
+| Pin or serial ownership conflict | G0-G2 source freeze and config audit |
+| SCI7 routed through RIIC or absent | G3-G4 SCI7 hard gate |
+| GTM0/GTM7 or hard-coded clock drift | G3-G4 GTM7/runtime P1CLK |
+| Unsafe PWM state | G4-G8 scope boot/disarm/reset/process failure |
+| Parameter/log storage conflation | G4-G10 require xSPI params; keep SDHI/ULog disabled |
+| Optional IPC blocks CR8-0 | G5-G6 no fatal OpenAMP dependency |
+| Multicore complexity starts early | G11 hard dependency on G9/G10 |
 
 ## Related Docs
 
-- [Project Overview & PDR](project-overview-pdr.md) — Scope, boards, deliverables.
-- [NuttX Port Status](renesas/port-status-nuttx.md) — Per-driver completion tracking.
-- [PX4 HAL Port Status](renesas/port-status-px4-hal.md) — HAL surface tracking.
-- [Canonical Plan](../plans/rzv2h_nuttx_px4_unified_port_plan.md) — Detailed implementation strategies.
-- [DMAC Re-audit](../plans/260718-2121-rzv2h-dmac-driver-reaudit/reports/review-rzv2h-dmac-260718-reaudit.md) — Historical software findings; remediation is build-clean, with on-target validation still required.
-- [DShot Runtime Fix QA](../plans/reports/tester-260720-rzv2h-dshot-runtime-fixes.md) — Target separation, build, and static verification evidence.
-- [DShot Runtime Fix Review](../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md) — Final software review and hardware-only validation gaps.
+- [Canonical Goal Plan](../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
+- [RZ/V2H Documentation Index](renesas/README.md)
+- [Pin Ownership](renesas/pinmap.md)
+- [Validation Checklist](renesas/validation-checklist.md)
+- [System Architecture](system-architecture.md)
+- [Deployment Guide](deployment-guide.md)

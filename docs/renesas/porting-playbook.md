@@ -336,7 +336,9 @@ targets until their sample configurations are aligned and tested.
 
 The integrated PX4 CR8-0 image uses RTT0 for console/debug output instead.
 Its UARTs retain payload ownership: SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
-SCI6 RC, and SCI9 GPS. Never mix text diagnostics and binary MAVLink on RTT0.
+SCI6 RC at 100000 8E2 with the inversion path proved, and SCI9 GPS at
+115200 8N1. These framing checks gate the first drone-equivalent run. Never
+mix text diagnostics and binary MAVLink on RTT0.
 
 ---
 

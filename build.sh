@@ -52,14 +52,73 @@ print_usage()
 	cat <<'EOF'
 Usage: ./build.sh [options] [target ...]
 
+Build one or more Renesas PX4 board configurations. With no target given,
+every Renesas .px4board config (except backups ending in _bk) is built.
+
 Options:
-  --list      Print Renesas targets and exit.
+  --list      Print available Renesas targets and exit.
   --no-clean  Skip NuttX distclean before building.
   -h, --help  Show this help.
 
-With no targets, the script builds every Renesas .px4board target except
-backup configs ending in _bk.
+Target selection:
+  A target may be given as a full PX4 make target, a board name, or any
+  unambiguous shortcut. These are all resolved to a canonical make target:
+
+    ./build.sh renesas_rdk-rzv2h_default   # full make target
+    ./build.sh rdk-rzv2h                    # board name -> _default config
+    ./build.sh rdk-rzv2h_dshot              # board + config
+    ./build.sh dshot                        # unambiguous shortcut (if unique)
+
+  Run './build.sh --list' to see the exact target names. If a shortcut
+  matches more than one target, the script lists the candidates and exits.
+
+Examples:
+  ./build.sh --list                         # list targets, build nothing
+  ./build.sh rdk-rzv2h                       # build a single board
+  ./build.sh --no-clean rdk-rzv2h            # rebuild without distclean
+  ./build.sh rdk-rzv2h fpb-ra8e1             # build several targets
 EOF
+}
+
+# Resolve a user-supplied target (full name, board name, or shortcut) to a
+# canonical PX4 make target from AVAILABLE. Prints the resolved target on
+# success. On ambiguity prints "ambiguous:<t1> <t2> ..." and returns 2; on no
+# match returns 1.
+resolve_target()
+{
+	local input="$1" t matches=()
+
+	# 1. Exact canonical make target (e.g. renesas_rdk-rzv2h_default).
+	for t in "${AVAILABLE[@]}"; do
+		[ "$t" = "$input" ] && { printf '%s\n' "$t"; return 0; }
+	done
+
+	# 2. Missing the renesas_ vendor prefix (e.g. rdk-rzv2h_dshot).
+	for t in "${AVAILABLE[@]}"; do
+		[ "$t" = "renesas_$input" ] && { printf '%s\n' "$t"; return 0; }
+	done
+
+	# 3. Board name shorthand -> its _default config (e.g. rdk-rzv2h).
+	for t in "${AVAILABLE[@]}"; do
+		[ "$t" = "renesas_${input}_default" ] && { printf '%s\n' "$t"; return 0; }
+	done
+
+	# 4. Fuzzy: any target containing the input; accept only if unique.
+	for t in "${AVAILABLE[@]}"; do
+		case "$t" in
+			*"$input"*) matches+=("$t") ;;
+		esac
+	done
+	if [ "${#matches[@]}" -eq 1 ]; then
+		printf '%s\n' "${matches[0]}"
+		return 0
+	fi
+	if [ "${#matches[@]}" -gt 1 ]; then
+		printf 'ambiguous:%s\n' "${matches[*]}"
+		return 2
+	fi
+
+	return 1
 }
 
 DO_CLEAN=1
@@ -91,18 +150,42 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 
-if [ "${#TARGETS[@]}" -eq 0 ]; then
-	mapfile -t TARGETS < <(collect_renesas_targets)
-fi
+mapfile -t AVAILABLE < <(collect_renesas_targets)
 
-if [ "${#TARGETS[@]}" -eq 0 ]; then
+if [ "${#AVAILABLE[@]}" -eq 0 ]; then
 	echo "No Renesas targets found." >&2
 	exit 1
 fi
 
 if [ "$LIST_ONLY" -eq 1 ]; then
-	printf '%s\n' "${TARGETS[@]}"
+	printf '%s\n' "${AVAILABLE[@]}"
 	exit 0
+fi
+
+if [ "${#TARGETS[@]}" -eq 0 ]; then
+	# No explicit target: build everything.
+	TARGETS=("${AVAILABLE[@]}")
+else
+	# Resolve each requested target (full name, board name, or shortcut) to a
+	# canonical make target before building, so nothing is cleaned or built
+	# until every target is known-good.
+	RESOLVED=()
+	for want in "${TARGETS[@]}"; do
+		if match="$(resolve_target "$want")"; then
+			RESOLVED+=("$match")
+		elif [ "${match#ambiguous:}" != "$match" ]; then
+			echo "Target '$want' is ambiguous. Candidates:" >&2
+			printf '  %s\n' ${match#ambiguous:} >&2
+			echo "Re-run with a more specific name (see './build.sh --list')." >&2
+			exit 2
+		else
+			echo "Unknown target: '$want'" >&2
+			echo "Available targets:" >&2
+			printf '  %s\n' "${AVAILABLE[@]}" >&2
+			exit 2
+		fi
+	done
+	TARGETS=("${RESOLVED[@]}")
 fi
 
 echo "=========================================="

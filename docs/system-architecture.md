@@ -144,7 +144,8 @@ boards/renesas/rdk-rzv2h/Kconfig
       └─> NuttX arch/arm/src/rzv/Kconfig
           ├─> Platform drivers (GPIO, UART, SPI, I2C, Timers, DMA, Clock)
           ├─> Board-specific pins & muxing
-          └─> FSP subsystem includes (DMAC, CANFD, SDHI, etc.)
+          └─> RZ/V2H NuttX drivers; ADC/WDT/CAN-FD/SDHI remain optional
+              and are not active in the checked-in drone FSP reference
 ```
 
 ---

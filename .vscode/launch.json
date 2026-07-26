@@ -28,7 +28,6 @@
         // "serialNumber": "52006677", // 51028188/52006677/51026290
         "showDevDebugOutput": "parsed",
         "runToEntryPoint": "arm_boot",
-        //"runToEntryPoint": "SystemInit",
         "rttConfig": {
             "enabled": true,
             "address": "auto",
