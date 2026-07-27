@@ -138,6 +138,7 @@ git config advice.addIgnoredFile false
 plan
 plans
 .repomixignore
+repomix-output.xml
 AGENTS.md
 CLAUDE.md
 CODEX.md

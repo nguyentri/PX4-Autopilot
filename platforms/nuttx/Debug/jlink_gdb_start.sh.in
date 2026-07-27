@@ -1,11 +1,26 @@
 #! /bin/sh
 
-killall JLinkGDBServerCLExe
+if [ -n "@JLINK_REQUIRE_SERIAL@" ]
+then
+	if [ -z "${JLINK_SERIAL:-}" ]
+	then
+		echo "JLINK_SERIAL must identify the authorized probe"
+		exit 1
+	fi
 
-@JLinkGDBServerCLExe_PATH@ -silent -device @DEBUG_DEVICE@ -rtos "@JLINK_RTOS_PATH@" -select usb -if SWD -speed auto -LocalhostOnly 1 -strict -vd -singlerun -timeout 3000 -powertarget 0 -nogui &
+	jlink_select="usb=${JLINK_SERIAL}"
+else
+	jlink_select="usb"
+fi
+
+@JLinkGDBServerCLExe_PATH@ -silent -device @DEBUG_DEVICE@ -rtos "@JLINK_RTOS_PATH@" -select "${jlink_select}" -if SWD -speed auto -LocalhostOnly 1 -strict -vd -singlerun -timeout 3000 -powertarget 0 -nogui &
+jlink_server_pid=$!
 sleep 2
 
-pgrep -i JLinkGDBServer
+if ! kill -0 "${jlink_server_pid}" 2>/dev/null
+then
+	echo "J-Link GDB server failed to stay running for the selected probe"
+	exit 1
+fi
 
-# exit with status of last command
-exit $?
+exit 0

@@ -353,7 +353,7 @@ SCI3 is not an active console on the RDK-RZV2H board.
 |---|---|
 | `/dev/ttyS4` | TFmini rangefinder |
 | `/dev/ttyS5` | Sik telemetry, MAVLink to QGroundControl |
-| `/dev/ttyS6` | RC input, FS-A8S SBUS, 100000 8E2; inversion path requires target proof |
+| `/dev/ttyS6` | RC input, FS-A8S SBUS, 100000 8E2; termios path build-clean; fixed external NPN inversion and frames require target proof |
 | `/dev/ttyS9` | GPS, u-blox M10, 115200 8N1 |
 
 **Sources:**
@@ -376,11 +376,13 @@ SCI3 is not an active console on the RDK-RZV2H board.
 
 - **Type:** SPI master/slave.
 - **SoC count:** Three SPI-B instances, SPI0 through SPI2.
-- **RDK-RZ/V2H routing:** SPI0 is the only verified board-routed instance.
+- **RDK-RZ/V2H routing:** SPI0 is the only board-routed instance identified
+  by the current source and pinmap. Schematic and target proof remain pending.
   SPI1 has no external pinmux or chip-select contract; SPI2 has no NuttX
   lower-half implementation.
-- **Use:** SPI0 hosts the MPU9250 path; internal controller loopback is used
-  for bring-up tests and does not validate external routing.
+- **Use:** Current board configuration assigns SPI0 to the MPU9250 path.
+  Internal controller loopback is used for bring-up tests and does not
+  validate external routing or the sensor.
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c`
 

@@ -1,0 +1,6 @@
+menuconfig SYSTEMCMDS_SERIAL_STATUS
+	bool "serial_status"
+	default n
+	depends on PLATFORM_NUTTX && BOARD_HAS_RZV_SERIAL_ICOUNT
+	---help---
+		Snapshot RZ/V2H SCI counters without opening the payload TTY

@@ -38,9 +38,8 @@
  *
  * Sensor Configuration:
  * - I2C7: BMP280 barometer at address 0x76.
- *   Hardware wiring is P76/P77; current board_config.h tracks this as
- *   RSCI7 simple-I2C, while current NuttX RIIC/SCI-I2C support still needs
- *   hardware validation before flight use.
+ *   Hardware wiring is P76/P77 through RSCI7 Simple-I2C. The lower-half is
+ *   build-proven; target transaction and recovery evidence remains required.
  */
 
 #include <px4_platform_common/px4_config.h>

@@ -103,14 +103,6 @@
 #endif
 
 /****************************************************************************************************
- * Interface Configuration
- ****************************************************************************************************/
-
-#define CONFIG_I2C                      1
-#define CONFIG_SPI                      1
-#define CONFIG_UART                     1
-
-/****************************************************************************************************
  * UART/Serial Configuration
  ****************************************************************************************************/
 
@@ -162,7 +154,8 @@
 
 /* SPI Bus Configuration (matches FSP module.driver.spi_b.channel = 0)
  * RSPI0: MPU9250 IMU only (single-IMU per RDK-RZ/V2H pinout BOM).
- * P90 = MOSI A, P91 = MISO A, P92 = SCK A, P93 = SSLA0 (CS, hardware chip-select).
+ * P90 = MOSI A, P91 = MISO A, P92 = SCK A. P93 is the SSLA0-capable pin,
+ * configured as an active-low GPIO chip select by the NuttX board layer.
  * P94 (SSLA1) is FSP-configured but unused (no second IMU wired).
  */
 #define PX4_NUMBER_SPI_BUSES            1
@@ -181,7 +174,7 @@
 #  define BOARD_MPU9250_BUS             0  /* RSPI0 */
 #endif
 #ifndef BOARD_MPU9250_CS_GPIO
-#  define BOARD_MPU9250_CS_GPIO         GPIO_P9_3_OUTPUT_HIGH  /* P93 = RSPI0 SSLA0 */
+#  define BOARD_MPU9250_CS_GPIO         GPIO_P9_3_OUTPUT_HIGH  /* P93 = active-low GPIO CS */
 #endif
 #ifndef BOARD_MPU9250_DRDY_GPIO
 #  define BOARD_MPU9250_DRDY_GPIO       GPIO_IRQ0_P5_0  /* P50 (FSP TINT_ENABLE - verify ICU routing) */
@@ -221,6 +214,10 @@
 
 /* ESC Channel Count */
 #define DIRECT_PWM_OUTPUT_CHANNELS      4
+#define BOARD_PWM_MOTOR_OUTPUTS_DISABLE_ON_STOP_MOTORS 1
+#ifndef CONFIG_DRIVERS_DSHOT
+#  define BOARD_PWM_OUTPUTS_REQUIRE_COMPLETE_INIT 1
+#endif
 #define DIRECT_INPUT_TIMER_CHANNELS     0
 #define BOARD_NUM_IO_TIMERS             4   /* 4 GPT timers for PWM */
 #ifndef BOARD_HAS_PWM
@@ -261,18 +258,10 @@
  * High-Resolution Timer (HRT)
  ****************************************************************************************************/
 
-/**
- * HRT Configuration using GTM0
- *
- * The High-Resolution Timer provides microsecond-accurate timing for PX4.
- * Uses GTM0, separate from the GPT6/7/9/10 PWM output timers.
- *
- * Note: HRT_TIMER_FREQUENCY should match the measured GTM clock
- * for accurate timing calculations.
+/* HRT is owned by the RZ/V2H NuttX lower-half on dedicated GTM7. Its timebase
+ * is derived from runtime P1CLK; board code must not publish a second timer
+ * number or hard-coded frequency contract.
  */
-#define HRT_TIMER                       0   /* Use GTM0 for HRT */
-#define HRT_TIMER_CHANNEL               0   /* Channel A */
-#define HRT_TIMER_FREQUENCY             120000000  /* 120MHz PCLKD for RZV2H GPT */
 
 /****************************************************************************************************
  * LED Configuration

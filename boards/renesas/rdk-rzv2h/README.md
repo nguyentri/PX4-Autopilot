@@ -4,7 +4,17 @@ This document describes the PX4 Board Support Package (BSP) created for the Rene
 
 ## Overview
 
-The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV2H MPU using the Cortex-R8 (CR8_0) core for real-time flight control. The CR8_0 image also enables the RZ/V2H OpenAMP/RPMsg transport to CA55 Linux and exposes the `rpmsg-service-0` channel through NuttX IPCC as `/dev/ipcc0`.
+The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas
+RZV2H MPU using the Cortex-R8 (CR8_0) core for real-time flight control. The
+default image is independent of CA55, CR8_1, CM33, OpenAMP, and IPCC.
+Multicore transports remain opt-in final-milestone features.
+
+The board also ships `renesas_rdk-rzv2h_core_only`, a deterministic rollback
+image built from `core_only.px4board`, `nuttx-config/core_only/defconfig`, and
+`ROMFS/rdk-rzv2h-core-only`. It retains RTT/HRT/work queues/parameters/uORB
+and the diagnostic commands needed to inspect failures, but excludes payload
+UARTs, SPI/I2C/RC/GPS/IMU/baro drivers, PWM outputs, flight modules, and
+output init.
 
 ## Hardware Configuration
 
@@ -17,7 +27,7 @@ The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas RZV
 ### Inter-core Topology
 | Role | Processor | Image | Communication |
 |------|-----------|-------|---------------|
-| Primary PX4 | CR8_0 | `renesas_rdk-rzv2h_default` | OpenAMP/RPMsg slave to CA55 |
+| Primary PX4 | CR8_0 | `renesas_rdk-rzv2h_default` | Independent local PX4; optional future OpenAMP/RPMsg |
 | Linux/OpenAMP host | CA55 | External Linux image | MHU channel 3 + resource table at `0x42f00000` |
 | Optional PX4IO | CM33 | `renesas_rdk-rzv2h-io-cm33_default` | Standalone shared-memory PX4IO image |
 | Optional PX4IO | CR8_1 | `renesas_rdk-rzv2h-io-cr8_1_default` | Standalone shared-memory PX4IO image |
@@ -43,12 +53,17 @@ The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
 |------|-----|-------------|-------------|----------|
 | ttyS4 | SCI4 | P70/P71     | /dev/ttyS4  | TFminiPlus LiDAR |
 | ttyS5 | SCI5 | P72/P73     | /dev/ttyS5  | Sik Telemetry v3 for MAVLink/QGroundControl |
-| ttyS6 | SCI6 | P75         | /dev/ttyS6  | fs-a8s RC Input |
+| ttyS6 | SCI6 | P75         | /dev/ttyS6  | FS-A8S SBUS, 100000 8E2; external NPN inverter |
 | ttyS9 | SCI9 | P82/P83     | /dev/ttyS9  | GPS M10 |
 
 SCI3 is not an active console on the RDK-RZV2H board. The board uses
 SCI4 for the standalone CR8-0 NuttX shell, and integrated PX4 diagnostics
 use RTT rather than SCI3.
+
+The integrated PX4 images expose SCI4 as the generated `EXT2` serial role and
+assign `SENS_TFMINI_CFG=401`, so common `rc.serial` starts TFmini on
+`/dev/ttyS4`. The standalone NuttX shell is a separate image that owns SCI4
+instead.
 
 ### I2C Buses
 | Bus | SCI | Pins     | Device      |
@@ -102,7 +117,8 @@ boards/renesas/rdk-rzv2h/
 ├── Kconfig                   # Board Kconfig options
 ├── init/
 │   ├── rc.board_defaults     # Boot defaults script
-│   ├── rc.board_defaults.cmds # Initialization commands
+│   ├── rc.board_defaults.cmds # Safe parameter defaults
+│   ├── rc.board_sensors      # Board-specific sensor probes
 │   └── rc.offline_sensor_check
 ├── nuttx-config/
 │   └── nsh/
@@ -152,6 +168,15 @@ platforms/nuttx/src/px4/renesas/rzv2h/
 make renesas_rdk-rzv2h_default
 ```
 
+### Core-Only Diagnostic Build
+```bash
+make renesas_rdk-rzv2h_core_only
+```
+
+Core-only artifacts are emitted under `build/renesas_rdk-rzv2h_core_only/`
+and include `renesas_rdk-rzv2h_core_only.elf` and
+`renesas_rdk-rzv2h_core_only.px4`.
+
 ### Clean Build
 ```bash
 make clean
@@ -175,7 +200,8 @@ make renesas_rdk-rzv2h_default
 
 ### OpenAMP / IPCC Options
 
-The CR8_0 NuttX defconfig enables:
+The default CR8_0 PX4 target excludes OpenAMP/IPCC so local startup does not
+depend on CA55, CR8-1, or CM33. An opt-in multicore variant may enable:
 
 ```
 CONFIG_OPENAMP=y
@@ -187,37 +213,46 @@ CONFIG_IPCC=y
 CONFIG_IPCC_BUFFERED=y
 ```
 
-The PX4 board startup calls `rzv_ipc_initialize()` and `rzv_ipcc_initialize()` before `px4_platform_init()` as a fallback for PX4 boot paths that do not use the NuttX board bring-up hook. `rzv_ipc_initialize()` registers the CA55 RPTUN device used by NuttX RPMsg before IPCC exposes `/dev/ipcc0`.
+When enabled, PX4 initializes its CR8-0-local services first, then attempts
+`rzv_ipc_initialize()` and `rzv_ipcc_initialize()` as best-effort optional
+services. Transport failure is logged and does not abort local PX4 startup.
 
 ## Initialization Sequence
 
 1. `rzv_board_initialize()` - Early hardware init
-2. `rzv_ipc_initialize()` / `rzv_ipcc_initialize()` - CR8_0 to CA55 OpenAMP/IPCC setup when enabled
-3. `board_app_initialize()` - PX4 platform init
+2. `board_app_initialize()` / `px4_platform_init()` - CR8-0-local PX4 services
+3. Optional `rzv_ipc_initialize()` / `rzv_ipcc_initialize()` when enabled
 4. `rdk_rzv2h_gpio_initialize()` - GPIO configuration
 5. `rdk_rzv2h_timer_initialize()` - GPT timer setup
 6. SPI/I2C bus initialization
-7. Sensor driver startup (via rc.board_defaults.cmds)
+7. Safe parameter defaults via `rc.board_defaults.cmds`
+8. Board sensor probes via `rc.board_sensors`, then common PX4 startup
 
 ## Default Parameters (rc.board_defaults.cmds)
 
 ```
-# Quadcopter X configuration
-param set-default SYS_AUTOSTART 4001
+# S500 quad-X configuration (matches the checked-in RZ/V2H reference)
+param set-default SYS_AUTOSTART 4014
 
-# Sensor parameters
-param set-default IMU_GYRO_CUTOFF 40
-param set-default IMU_DGYRO_CUTOFF 20
+# Volatile pre-G9 dataman backend
+param set-default SYS_DM_BACKEND 1
 
-# PWM Configuration
-pwm_out mode -p 400      # 400Hz ESC frequency
-param set-default PWM_MAIN_RATE 400
-
-# Rate controller tuning
-param set-default MC_ROLLRATE_P 0.130
-param set-default MC_PITCHRATE_P 0.130
-param set-default MC_YAWRATE_P 0.100
+# PWM configuration
+# Default target: 400 Hz PWM. DShot target: -3 (DShot600).
+param set-default PWM_MAIN_TIM0 400  # or -3
+param set-default PWM_MAIN_TIM1 400  # or -3
+param set-default PWM_MAIN_TIM2 400  # or -3
+param set-default PWM_MAIN_TIM3 400  # or -3
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
 ```
+
+The defaults script does not start core PX4 modules, install placeholder
+calibration IDs, or relax arming/circuit-breaker checks. Common `rcS` owns
+dataman, RC, estimator, control, output, GPS, and MAVLink startup. The board
+sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
 
 ## Integration Notes
 
@@ -225,10 +260,11 @@ param set-default MC_YAWRATE_P 0.100
 
 | Mode | Console / Debug | Serial Policy | Validation State |
 |------|-----------------|---------------|------------------|
+| Core-only diagnostic image | RTT0 console/debug only | RTT shell, HRT, work queues, params, uORB, `ver`, `dmesg`, `system_time`, `top`, `uorb`, `listener`, `perf` | build-clean; no hardware run |
 | Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 is the interactive shell; RTT carries boot, syslog, and debug output | Validated by `nsh-rtt` |
 | Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 is the intended shell path for the CR8-1 IO target; not yet hardware validated | Target policy only |
 | Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 is the intended shell path for the CM33 IO target; not yet hardware validated | Target policy only |
-| Integrated PX4 CR8-0 | RTT0 console/debug + SCI4/5/6/9 peripheral links | RTT0 is the PX4 console/debug path; SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS | Current integrated policy |
+| Integrated PX4 CR8-0 | RTT0 console/debug + SCI4/5/6/9 peripheral links | RTT0 `/dev/console` input/output is build-clean; SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS | Target shell I/O pending |
 
 ### Clock Configuration
 - External crystal: 24MHz
@@ -246,8 +282,12 @@ param set-default MC_YAWRATE_P 0.100
 
 ### Parameter Storage
 - Target backend: CR8-owned XSPI flash mounted with LittleFS at `/fs`.
-- Current build path: `/fs/params`.
-- Runtime persistence still requires an RZV2H XSPI MTD lower-half and mount hook.
+- Current default: volatile TMPFS at `/fs`; PX4 uses `/fs/params`, but values
+  reset on every reboot.
+- The experimental RZ/V2H XSPI lower-half is disabled. Controller
+  initialization, installed flash geometry, partition ownership, MPU/cache
+  handling, erase/program/readback, reboot persistence, and power-loss
+  recovery must pass before it can replace TMPFS.
 
 ## ESC/PWM Validation
 

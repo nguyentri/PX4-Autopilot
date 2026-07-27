@@ -34,24 +34,44 @@
 find_program(JLinkGDBServerCLExe_PATH JLinkGDBServerCLExe
 	HINTS /Applications/SEGGER/JLink
 )
-if(JLinkGDBServerCLExe_PATH)
-	# jlink_upload (flash binary)
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_gdb_start.sh.in ${PX4_BINARY_DIR}/jlink_gdb_start.sh @ONLY)
-	add_custom_target(jlink_upload
-		COMMAND ${PX4_BINARY_DIR}/jlink_gdb_start.sh
-		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/Debug/upload_jlink_gdb.sh $<TARGET_FILE:px4>
-		DEPENDS
-			px4
-			${PX4_BINARY_DIR}/jlink_gdb_start.sh
-			${CMAKE_CURRENT_SOURCE_DIR}/Debug/upload_jlink_gdb.sh
-		WORKING_DIRECTORY ${PX4_BINARY_DIR}
-		USES_TERMINAL
+
+if(CONFIG_ARCH_CHIP_RZV)
+	# These generated helpers reset, load, and run the target. Remove stale
+	# copies left by older build rules when configuring an attach-only RZ/V2H
+	# build, even though their custom targets are no longer generated.
+	file(REMOVE
+		${PX4_BINARY_DIR}/jlink_debug_gdb.sh
+		${PX4_BINARY_DIR}/jlink_debug_ozone.sh
 	)
+endif()
+
+if(JLinkGDBServerCLExe_PATH)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_gdb_start.sh.in ${PX4_BINARY_DIR}/jlink_gdb_start.sh @ONLY)
+
+	# RZ/V2H deployment is not yet an established board contract. Keep its
+	# generated command-line helpers attach-only; an authorized ELF load can
+	# still be performed explicitly with GDB when hardware work is approved.
+	if(NOT CONFIG_ARCH_CHIP_RZV)
+		add_custom_target(jlink_upload
+			COMMAND ${PX4_BINARY_DIR}/jlink_gdb_start.sh
+			COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/Debug/upload_jlink_gdb.sh $<TARGET_FILE:px4>
+			DEPENDS
+				px4
+				${PX4_BINARY_DIR}/jlink_gdb_start.sh
+				${CMAKE_CURRENT_SOURCE_DIR}/Debug/upload_jlink_gdb.sh
+			WORKING_DIRECTORY ${PX4_BINARY_DIR}
+			USES_TERMINAL
+		)
+	endif()
 
 	# jlink_gdb_backtrace (attach, print current tasks, back trace, exit)
 	add_custom_target(jlink_gdb_backtrace
 		COMMAND ${PX4_BINARY_DIR}/jlink_gdb_start.sh
-		COMMAND ${CMAKE_COMMAND} -E env WORKSPACE=${PX4_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_gdb_backtrace.sh $<TARGET_FILE:px4>
+		COMMAND ${CMAKE_COMMAND} -E env
+			WORKSPACE=${PX4_SOURCE_DIR}
+			GDB_ARCH_MACROS=${DEBUG_GDB_ARCH_MACROS}
+			GDB_ARCH_STATE_COMMAND=${DEBUG_GDB_ARCH_STATE_COMMAND}
+			${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_gdb_backtrace.sh $<TARGET_FILE:px4>
 		DEPENDS
 			px4
 			${PX4_BINARY_DIR}/jlink_gdb_start.sh
@@ -63,7 +83,11 @@ if(JLinkGDBServerCLExe_PATH)
 	# jlink_gdb_backtrace_simple (attach, print current tasks, back trace, exit)
 	add_custom_target(jlink_gdb_backtrace_simple
 		COMMAND ${PX4_BINARY_DIR}/jlink_gdb_start.sh
-		COMMAND ${CMAKE_COMMAND} -E env WORKSPACE=${PX4_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_gdb_backtrace_simple.sh $<TARGET_FILE:px4>
+		COMMAND ${CMAKE_COMMAND} -E env
+			WORKSPACE=${PX4_SOURCE_DIR}
+			GDB_ARCH_MACROS=${DEBUG_GDB_ARCH_MACROS}
+			GDB_ARCH_STATE_COMMAND=${DEBUG_GDB_ARCH_STATE_COMMAND}
+			${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_gdb_backtrace_simple.sh $<TARGET_FILE:px4>
 		DEPENDS
 			px4
 			${PX4_BINARY_DIR}/jlink_gdb_start.sh
@@ -75,7 +99,7 @@ if(JLinkGDBServerCLExe_PATH)
 
 	# jlink_upload_bootloader
 	#   board directory supplied bootloader.bin
-	if(TARGET bootloader_elf)
+	if(TARGET bootloader_elf AND NOT CONFIG_ARCH_CHIP_RZV)
 		# jlink_upload_bootloader
 		add_custom_target(jlink_upload_bootloader
 			COMMAND ${PX4_BINARY_DIR}/jlink_gdb_start.sh
@@ -95,7 +119,7 @@ endif()
 find_program(JLinkGDBServerExe_PATH JLinkGDBServerExe
 	HINTS /Applications/SEGGER/JLink
 )
-if(JLinkGDBServerExe_PATH AND CMAKE_GDB)
+if(JLinkGDBServerExe_PATH AND CMAKE_GDB AND NOT CONFIG_ARCH_CHIP_RZV)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_debug_gdb.sh.in ${PX4_BINARY_DIR}/jlink_debug_gdb.sh @ONLY)
 	add_custom_target(jlink_debug_gdb
 		COMMAND ${PX4_BINARY_DIR}/jlink_debug_gdb.sh
@@ -112,7 +136,7 @@ endif()
 find_program(Ozone_PATH Ozone ozone
 	HINTS /Applications/Ozone.app/Contents/MacOS/
 )
-if(Ozone_PATH)
+if(Ozone_PATH AND NOT CONFIG_ARCH_CHIP_RZV)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/jlink_debug_ozone.sh.in ${PX4_BINARY_DIR}/jlink_debug_ozone.sh @ONLY)
 	add_custom_target(jlink_debug_ozone
 		COMMAND ${PX4_BINARY_DIR}/jlink_debug_ozone.sh
@@ -126,7 +150,27 @@ endif()
 
 # .bin flashing
 find_program(JLinkExe_PATH JLinkExe)
-if(JLinkExe_PATH)
+# RZ/V2H CR8 binaries are composite header/ITCM/SRAM/SDRAM loader images, not
+# flat images for a generic MCU application address. ELF loading through GDB
+# remains available; raw flashing stays disabled until the boot-chain-owned
+# loader-visible address is part of the board contract.
+if(CONFIG_ARCH_CHIP_RZV)
+	# Overwrite any stale script left by an older build tree with a refusal
+	# command file. This prevents a previous 0x08008000 loadbin recipe from
+	# surviving after raw-flash targets are disabled.
+	configure_file(
+		${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_disabled_rzv.jlink.in
+		${PX4_BINARY_DIR}/flash_bin.jlink
+		@ONLY
+	)
+	configure_file(
+		${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_disabled_rzv.jlink.in
+		${PX4_BINARY_DIR}/flash_bootloader_bin.jlink
+		@ONLY
+	)
+endif()
+
+if(JLinkExe_PATH AND NOT CONFIG_ARCH_CHIP_RZV)
 
 	# jlink_flash_bootloader_bin
 	if(EXISTS ${PX4_BOARD_DIR}/extras/${PX4_BOARD_VENDOR}_${PX4_BOARD_MODEL}_bootloader.bin)

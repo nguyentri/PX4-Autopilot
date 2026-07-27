@@ -90,6 +90,7 @@ private:
 
 	bool		_pwm_on{false};
 	uint32_t	_pwm_mask{0};
+	uint32_t	_pwm_enabled_mask{0};
 	bool		_pwm_initialized{false};
 	bool		_first_update_cycle{true};
 

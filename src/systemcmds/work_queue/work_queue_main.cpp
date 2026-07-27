@@ -51,21 +51,18 @@ work_queue_main(int argc, char *argv[])
 	}
 
 	if (!strcmp(argv[1], "start")) {
-		px4::WorkQueueManagerStart();
-		return 0;
+		return px4::WorkQueueManagerStart();
 
 	} else if (!strcmp(argv[1], "stop")) {
-		px4::WorkQueueManagerStop();
-		return 0;
+		return px4::WorkQueueManagerStop();
 
 	} else if (!strcmp(argv[1], "status")) {
-		px4::WorkQueueManagerStatus();
-		return 0;
+		return px4::WorkQueueManagerStatus();
 	}
 
 	usage();
 
-	return 0;
+	return 1;
 }
 
 static void

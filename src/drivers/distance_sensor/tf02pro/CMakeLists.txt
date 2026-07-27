@@ -38,6 +38,7 @@ px4_add_module(
 		TF02PRO.hpp
 		tf02pro_main.cpp
 	DEPENDS
+		drivers__device
 		drivers_rangefinder
 		px4_work_queue
 	)

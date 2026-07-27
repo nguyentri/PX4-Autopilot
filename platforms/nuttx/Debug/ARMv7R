@@ -1,0 +1,44 @@
+#
+# Assorted ARMv7-R macros
+#
+
+echo Loading ARMv7-R GDB macros. Use 'help armv7r' for more information.\n
+
+define armv7r
+	echo Use 'help armv7r' for more information.\n
+end
+
+document armv7r
+. Helpers for inspecting ARMv7-R state without assuming Cortex-M exception
+. registers or exception-frame layout.
+.
+.    armv7rstate
+.        Print the live general-purpose registers and CPSR.
+.
+.    armv7rabort
+.        At arm_dataabort(), print its saved context, DFAR, and DFSR arguments.
+end
+
+define armv7rstate
+	printf "ARMv7-R live register state (not necessarily the fault context):\n"
+	info registers r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 sp lr pc cpsr
+end
+
+document armv7rstate
+.    armv7rstate
+.        Print live R0-R12, SP, LR, PC, and CPSR. For a data abort, stop at
+.        arm_dataabort and use armv7rabort to inspect the saved fault context.
+end
+
+define armv7rabort
+	printf "REGS=%p DFAR=%#x DFSR=%#x\n", regs, dfar, dfsr
+	x/17wx regs
+	printf "FAULT_PC=%#x\n", regs[15]
+	x/12i regs[15]-24
+end
+
+document armv7rabort
+.    armv7rabort
+.        Use only while stopped in arm_dataabort(), where regs, dfar, and dfsr
+.        are valid handler arguments. The saved context is R0-R15 plus CPSR.
+end

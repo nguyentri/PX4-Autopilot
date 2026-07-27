@@ -36,6 +36,8 @@ px4_add_library(arch_io_pins
 	pwm_servo.c
 )
 
+target_link_libraries(arch_io_pins PRIVATE nuttx_arch)
+
 target_include_directories(arch_io_pins PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../include
 )

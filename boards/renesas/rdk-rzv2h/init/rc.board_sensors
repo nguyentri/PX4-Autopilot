@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# RDK-RZ/V2H board-specific sensor startup.
+# The common rcS starts the sensor framework after this script returns.
+#------------------------------------------------------------------------------
+
+if bmp280 -I -b 7 -a 0x76 start
+then
+	echo "BMP280 started on SCI7 I2C bus 7"
+else
+	echo "ERROR [init] BMP280 failed on SCI7 I2C bus 7"
+fi
+
+if mpu9250 -s -M -b 0 -R 0 start
+then
+	echo "MPU9250 started on SPI bus 0"
+else
+	echo "ERROR [init] MPU9250 failed on SPI bus 0"
+fi

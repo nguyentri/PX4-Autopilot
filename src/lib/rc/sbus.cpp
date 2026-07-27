@@ -147,6 +147,7 @@ sbus_init(const char *device, bool singlewire)
 		return sbus_fd;
 
 	} else {
+		close(sbus_fd);
 		return -1;
 	}
 }
@@ -193,10 +194,20 @@ sbus_config(int sbus_fd, bool singlewire)
 		struct termios t;
 
 		/* 100000bps, even parity, two stop bits */
-		tcgetattr(sbus_fd, &t);
-		cfsetspeed(&t, 100000);
-		t.c_cflag |= (CSTOPB | PARENB);
-		tcsetattr(sbus_fd, TCSANOW, &t);
+		if (tcgetattr(sbus_fd, &t) != 0) {
+			return ret;
+		}
+
+		if (cfsetspeed(&t, 100000) != 0) {
+			return ret;
+		}
+
+		t.c_cflag &= ~(CSIZE | PARODD);
+		t.c_cflag |= (CS8 | CSTOPB | CLOCAL | PARENB | CREAD);
+
+		if (tcsetattr(sbus_fd, TCSANOW, &t) != 0) {
+			return ret;
+		}
 
 		if (singlewire) {
 			/* only defined in configs capable of IOCTL

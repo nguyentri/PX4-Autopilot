@@ -42,5 +42,6 @@ px4_add_module(
 
 		bmp280_main.cpp
 	DEPENDS
+		drivers__device
 		px4_work_queue
 	)

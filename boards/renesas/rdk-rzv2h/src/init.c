@@ -53,7 +53,6 @@ static const char hw_type[] = "RDK-RZV2H";
 
 #if defined(__PX4_NUTTX)
 #include <nuttx/board.h>
-#include <nuttx/spi/spi.h>
 #include <nuttx/i2c/i2c_master.h>
 #include <drivers/drv_sensor.h>
 #include "rzv_gpio.h"
@@ -69,8 +68,13 @@ static const char hw_type[] = "RDK-RZV2H";
 #undef board_get_hw_type_name
 
 /* External function declarations */
-extern struct spi_dev_s *px4_spibus_initialize(int bus);
 extern struct i2c_master_s *px4_i2cbus_initialize(int bus);
+#ifdef CONFIG_RDK_RZV2H_XSPI_PARAMFS
+extern int rzv2h_xspi_paramfs_initialize(void);
+#endif
+#ifdef CONFIG_RDK_RZV2H_VOLATILE_PARAMFS
+extern int rzv2h_volatile_paramfs_initialize(void);
+#endif
 
 #if defined(__PX4_NUTTX)
 void rzv2h_serial_setup(void)
@@ -200,8 +204,8 @@ static void rdk_rzv2h_gpio_initialize(void)
 	px4_arch_configgpio(GPIO_nLED_4);
 #endif
 
-	/* Configure MPU9250 DRDY interrupt pin */
-#ifdef BOARD_MPU9250_DRDY_GPIO
+	/* Configure MPU9250 DRDY only when the payload driver is linked. */
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
 	px4_arch_configgpio(BOARD_MPU9250_DRDY_GPIO);
 #endif
 
@@ -211,13 +215,7 @@ static void rdk_rzv2h_gpio_initialize(void)
 	 * flight UART map uses sparse SCI4/5/6/9.
 	 */
 
-	/* Configure I2C7 pins for barometer */
-#ifdef BOARD_I2C7_SDA_GPIO
-	px4_arch_configgpio(BOARD_I2C7_SDA_GPIO);
-#endif
-#ifdef BOARD_I2C7_SCL_GPIO
-	px4_arch_configgpio(BOARD_I2C7_SCL_GPIO);
-#endif
+	/* SCI7-I2C pins are owned and configured by the NuttX lower-half. */
 }
 
 /************************************************************************************
@@ -249,19 +247,10 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 {
 	int ret;
 
-#if defined(CONFIG_RZV_OPENAMP)
-	/* Bring up CR8-0 <-> CA55 RPMsg before PX4 services start so board
-	 * scripts and modules can open /dev/ipcc0 without racing transport init.
+	/* Initialize the CR8-0-local PX4 platform first. Optional remote cores and
+	 * transports must never gate HRT, work queues, parameters, uORB, or the
+	 * local sensor/actuator path.
 	 */
-	ret = rdk_rzv2h_openamp_initialize();
-
-	if (ret != OK) {
-		return ret;
-	}
-#endif
-
-	/* Initialize PX4 platform FIRST - this sets up all core infrastructure */
-	/* This includes: HRT, console buffer, work queues, params, uORB */
 	ret = px4_platform_init();
 
 	if (ret != OK) {
@@ -269,20 +258,68 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		return ret;
 	}
 
+#ifdef CONFIG_RDK_RZV2H_XSPI_PARAMFS
+	ret = rzv2h_xspi_paramfs_initialize();
+
+	if (ret != OK) {
+		syslog(LOG_WARNING,
+		       "board_app_initialize: optional XSPI paramfs unavailable (%d); continuing\n",
+		       ret);
+	}
+#endif
+
+#ifdef CONFIG_RDK_RZV2H_VOLATILE_PARAMFS
+	ret = rzv2h_volatile_paramfs_initialize();
+
+	if (ret != OK) {
+		syslog(LOG_WARNING,
+		       "board_app_initialize: volatile paramfs unavailable (%d); continuing\n",
+		       ret);
+	}
+#endif
+
+#if defined(CONFIG_RZV_OPENAMP)
+	/* OpenAMP is opt-in and best-effort. A missing CA55 endpoint must not
+	 * prevent the standalone CR8-0 PX4 image from starting.
+	 */
+	ret = rdk_rzv2h_openamp_initialize();
+
+	if (ret != OK) {
+		syslog(LOG_WARNING,
+		       "board_app_initialize: optional OpenAMP unavailable (%d); continuing CR8-0 standalone\n",
+		       ret);
+	}
+#endif
+
 	/* configure LEDs */
 	board_autoled_initialize();
 
 	/* configure pins */
 	rdk_rzv2h_gpio_initialize();
 
-	/* Initialize timers for PWM/IO */
-	rdk_rzv2h_timer_initialize();
+	/* The core-only image must not mux or initialize actuator outputs. HRT is
+	 * already initialized by px4_platform_init() and is independent of these
+	 * output timers.
+	 */
+#if defined(CONFIG_DRIVERS_PWM_OUT) || defined(CONFIG_DRIVERS_DSHOT)
+	ret = rdk_rzv2h_timer_initialize();
 
-	/* Initialize SPI bus for IMU sensor */
+	if (ret != OK) {
+		syslog(LOG_ERR, "board_app_initialize: timer initialization failed with error %d\n", ret);
+		return ret;
+	}
+#endif
+
+	/* Initialize the board-owned SPI path for the IMU. This configures the
+	 * SPI0 pinmux and GPIO chip select before the PX4 sensor driver obtains
+	 * the idempotent lower-half through px4_spibus_initialize().
+	 */
 #ifdef CONFIG_RZV_SPI
-	struct spi_dev_s *spi0 = px4_spibus_initialize(BOARD_MPU9250_BUS);
-	if (spi0 == NULL) {
-		syslog(LOG_ERR, "board_app_initialize: px4_spibus_initialize(%d) returned NULL!\n", BOARD_MPU9250_BUS);
+	ret = board_spi_initialize();
+
+	if (ret != OK) {
+		syslog(LOG_ERR, "board_app_initialize: board_spi_initialize() failed with error %d\n", ret);
+		return ret;
 	}
 #endif
 
@@ -297,8 +334,10 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	}
 #endif
 
-	/* Reset SPI buses to ensure clean state for sensor communication */
+	/* Reset SPI buses to ensure clean state for sensor communication. */
+#ifdef CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250
 	board_spi_reset(10, 0xffff);
+#endif
 
 	return OK;
 }

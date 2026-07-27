@@ -3,6 +3,8 @@ set -e
 
 cd ./nuttx
 
+config="${1:?Usage: $0 <rdk-rzv2h-config>}"
+
 # Clean up problematic symlinks/directories before distclean
 rm -rf ../apps/platform/board 2>/dev/null || true
 
@@ -13,11 +15,7 @@ make distclean -j$(nproc) || true
 rm -f arch/arm/src/chip 2>/dev/null || true
 rm -f arch/arm/src/board 2>/dev/null || true
 
-#./tools/configure.sh evk-ra8p1:spi-loopback
-#./tools/configure.sh evk-ra8p1:ipc-cm85
-#./tools/configure.sh evk-ra8p1:ipc-cm33
-#./tools/configure.sh rdk-rzv2h:nsh-cr8_1
-./tools/configure.sh rdk-rzv2h:nsh-rtt
+./tools/configure.sh "rdk-rzv2h:${config}"
 # If Make.defs is missing, manually remove .config and reconfigure (can't use -E since make needs Make.defs)
 #if [ ! -r Make.defs ]; then
 #  echo "Make.defs missing: removing .config and reconfiguring"

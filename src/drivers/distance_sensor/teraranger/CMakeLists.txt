@@ -38,6 +38,7 @@ px4_add_module(
 		TERARANGER.cpp
 		TERARANGER.hpp
 	DEPENDS
+		drivers__device
 		drivers_rangefinder
 		px4_work_queue
 	)

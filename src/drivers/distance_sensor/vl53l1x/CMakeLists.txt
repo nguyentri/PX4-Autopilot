@@ -38,6 +38,7 @@ px4_add_module(
 		vl53l1x.cpp
 		vl53l1x.hpp
 	DEPENDS
+		drivers__device
 		drivers_rangefinder
 		px4_work_queue
 	)

@@ -122,8 +122,10 @@ add_custom_command(
 		${romfs_gen_root_dir}/init.d/rc.autostart.post
 		${romfs_gen_root_dir}/init.d/rc.filepaths
 		${romfs_copy_stamp}
-	COMMAND ${CMAKE_COMMAND} -E remove_directory ${romfs_gen_root_dir}/*
-	COMMAND ${CMAKE_COMMAND} -E tar xf ${romfs_tar_file}
+	COMMAND ${CMAKE_COMMAND} -E remove_directory ${romfs_gen_root_dir}
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${romfs_gen_root_dir}
+	COMMAND ${CMAKE_COMMAND} -E chdir ${romfs_gen_root_dir}
+		${CMAKE_COMMAND} -E tar xf ${romfs_tar_file}
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/px_process_airframes.py
 		--airframes-path ${romfs_gen_root_dir}/init.d
 		--start-script ${romfs_gen_root_dir}/init.d/rc.autostart
@@ -136,7 +138,7 @@ add_custom_command(
 		--rc-dir ${romfs_gen_root_dir}/init.d
 		--params-file ${CONFIG_BOARD_PARAM_FILE}
 	COMMAND ${CMAKE_COMMAND} -E touch ${romfs_copy_stamp}
-	WORKING_DIRECTORY ${romfs_gen_root_dir}
+	WORKING_DIRECTORY ${PX4_BINARY_DIR}
 	DEPENDS ${romfs_tar_file}
 	COMMENT "ROMFS: copying, generating airframes"
 	)
@@ -172,35 +174,42 @@ endif()
 set(OPTIONAL_BOARD_RC)
 list(APPEND OPTIONAL_BOARD_RC
 	rc.board_defaults
+	rc.board_defaults.cmds
 	rc.board_sensors
 	rc.board_extras
 	rc.board_mavlink
 )
 
-foreach(board_rc_file ${OPTIONAL_BOARD_RC})
+if(NOT DEFINED config_romfs_include_board_init)
+	set(config_romfs_include_board_init true)
+endif()
 
-	if(EXISTS "${PX4_BOARD_DIR}/init/${board_rc_file}")
-		file(RELATIVE_PATH rc_file_relative ${PX4_SOURCE_DIR} ${PX4_BOARD_DIR}/init/${board_rc_file})
-		message(STATUS "ROMFS:  Adding ${rc_file_relative} -> /etc/init.d/${board_rc_file}")
+if(config_romfs_include_board_init)
+	foreach(board_rc_file ${OPTIONAL_BOARD_RC})
 
-		add_custom_command(
-			OUTPUT
-				${romfs_gen_root_dir}/init.d/${board_rc_file}
-				${board_rc_file}.stamp
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PX4_BOARD_DIR}/init/${board_rc_file} ${romfs_gen_root_dir}/init.d/${board_rc_file}
-			COMMAND ${CMAKE_COMMAND} -E touch ${board_rc_file}.stamp
-			DEPENDS
-				${PX4_BOARD_DIR}/init/${board_rc_file}
-				romfs_copy.stamp
-			COMMENT "ROMFS: copying ${board_rc_file}"
-		)
+		if(EXISTS "${PX4_BOARD_DIR}/init/${board_rc_file}")
+			file(RELATIVE_PATH rc_file_relative ${PX4_SOURCE_DIR} ${PX4_BOARD_DIR}/init/${board_rc_file})
+			message(STATUS "ROMFS:  Adding ${rc_file_relative} -> /etc/init.d/${board_rc_file}")
 
-		list(APPEND extras_dependencies
-			${board_rc_file}.stamp
+			add_custom_command(
+				OUTPUT
+					${romfs_gen_root_dir}/init.d/${board_rc_file}
+					${board_rc_file}.stamp
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PX4_BOARD_DIR}/init/${board_rc_file} ${romfs_gen_root_dir}/init.d/${board_rc_file}
+				COMMAND ${CMAKE_COMMAND} -E touch ${board_rc_file}.stamp
+				DEPENDS
+					${PX4_BOARD_DIR}/init/${board_rc_file}
+					romfs_copy.stamp
+				COMMENT "ROMFS: copying ${board_rc_file}"
 			)
-	endif()
 
-endforeach()
+			list(APPEND extras_dependencies
+				${board_rc_file}.stamp
+				)
+		endif()
+
+	endforeach()
+endif()
 
 
 # board extras

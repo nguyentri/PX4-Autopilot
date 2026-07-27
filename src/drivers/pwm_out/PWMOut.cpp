@@ -56,7 +56,21 @@ PWMOut::~PWMOut()
 
 bool PWMOut::update_pwm_out_state(bool on)
 {
+#ifdef BOARD_PWM_OUTPUTS_REQUIRE_COMPLETE_INIT
+	if (on && !_pwm_initialized) {
+		/* Rebuild the fixed board mask on every attempt. A failed or
+		 * temporarily disabled timer parameter must not make a channel
+		 * permanently unavailable until the module is restarted.
+		 */
+		_pwm_mask = (1u << DIRECT_PWM_OUTPUT_CHANNELS) - 1u;
+	}
+#endif
+
 	if (on && !_pwm_initialized && _pwm_mask != 0) {
+
+#ifdef BOARD_PWM_OUTPUTS_REQUIRE_COMPLETE_INIT
+		const uint32_t required_pwm_mask = _pwm_mask;
+#endif
 
 		for (int timer = 0; timer < MAX_IO_TIMERS; ++timer) {
 			_timer_rates[timer] = -1;
@@ -85,12 +99,29 @@ bool PWMOut::update_pwm_out_state(bool on)
 			}
 		}
 
+#ifdef BOARD_PWM_OUTPUTS_REQUIRE_COMPLETE_INIT
+		if (_pwm_mask != required_pwm_mask) {
+			PX4_ERR("incomplete PWM timer configuration (required 0x%lx, configured 0x%lx)",
+				(unsigned long)required_pwm_mask, (unsigned long)_pwm_mask);
+			return false;
+		}
+#endif
+
 		int ret = up_pwm_servo_init(_pwm_mask);
 
 		if (ret < 0) {
 			PX4_ERR("up_pwm_servo_init failed (%i)", ret);
 			return false;
 		}
+
+#ifdef BOARD_PWM_OUTPUTS_REQUIRE_COMPLETE_INIT
+		if ((uint32_t)ret != _pwm_mask) {
+			PX4_ERR("incomplete PWM initialization (requested 0x%lx, initialized 0x%x)",
+				(unsigned long)_pwm_mask, ret);
+			up_pwm_servo_deinit((uint32_t)ret);
+			return false;
+		}
+#endif
 
 		_pwm_mask = ret;
 
@@ -106,8 +137,13 @@ bool PWMOut::update_pwm_out_state(bool on)
 
 			if (ret != 0) {
 				PX4_ERR("up_pwm_servo_set_rate_group_update failed for timer %i, rate %i (%i)", timer, _timer_rates[timer], ret);
+#ifdef BOARD_PWM_OUTPUTS_REQUIRE_COMPLETE_INIT
+				up_pwm_servo_deinit(_pwm_mask);
+				return false;
+#else
 				_timer_rates[timer] = -1;
 				_pwm_mask &= ~channels;
+#endif
 			}
 		}
 
@@ -128,6 +164,43 @@ bool PWMOut::update_pwm_out_state(bool on)
 bool PWMOut::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 			   unsigned num_outputs, unsigned num_control_groups_updated)
 {
+#ifdef BOARD_PWM_MOTOR_OUTPUTS_DISABLE_ON_STOP_MOTORS
+	/* This board requires electrically inactive motor PWM pins whenever PX4
+	 * asserts stop_motors. Non-motor functions retain the standard PX4
+	 * prearm/disarmed behavior.
+	 */
+	if (!_pwm_initialized) {
+		if (!update_pwm_out_state(true)) {
+			return false;
+		}
+
+		/* Initialization starts with zero compare values. Disable every
+		 * channel before loading the first requested values so the first
+		 * active edge cannot use stale state.
+		 */
+		up_pwm_servo_arm(false, _pwm_mask);
+		_pwm_enabled_mask = 0;
+		_pwm_on = false;
+	}
+
+	uint32_t motor_mask = 0;
+
+	for (unsigned i = 0; i < num_outputs; i++) {
+		const OutputFunction function = _mixing_output.outputFunction(i);
+
+		if (function >= OutputFunction::Motor1 && function <= OutputFunction::MotorMax) {
+			motor_mask |= 1u << i;
+		}
+	}
+
+	const uint32_t desired_enabled_mask = stop_motors ? (_pwm_mask & ~motor_mask) : _pwm_mask;
+	const uint32_t disable_mask = _pwm_enabled_mask & ~desired_enabled_mask;
+
+	if (disable_mask != 0) {
+		up_pwm_servo_arm(false, disable_mask);
+	}
+#endif
+
 	/* output to the servos */
 	if (_pwm_initialized) {
 		for (size_t i = 0; i < num_outputs; i++) {
@@ -136,17 +209,38 @@ bool PWMOut::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 				outputs[i] = 0;
 			}
 
-			if (_pwm_mask & (1 << i)) {
+#ifdef BOARD_PWM_MOTOR_OUTPUTS_DISABLE_ON_STOP_MOTORS
+			const bool channel_enabled = desired_enabled_mask & (1u << i);
+#else
+			const bool channel_enabled = _pwm_mask & (1u << i);
+#endif
+
+			if (channel_enabled) {
 				up_pwm_servo_set(i, outputs[i]);
 			}
 		}
 	}
 
+#ifdef BOARD_PWM_MOTOR_OUTPUTS_DISABLE_ON_STOP_MOTORS
+	const uint32_t enable_mask = desired_enabled_mask & ~_pwm_enabled_mask;
+
+	if (enable_mask != 0) {
+		up_pwm_servo_arm(true, enable_mask);
+	}
+
+	_pwm_enabled_mask = desired_enabled_mask;
+	_pwm_on = desired_enabled_mask != 0;
+#endif
+
 	/* Trigger all timer's channels in Oneshot mode to fire
 	 * the oneshots with updated values.
 	 */
 	if (num_control_groups_updated > 0) {
+#ifdef BOARD_PWM_MOTOR_OUTPUTS_DISABLE_ON_STOP_MOTORS
+		up_pwm_update(_pwm_enabled_mask);
+#else
 		up_pwm_update(_pwm_mask);
+#endif
 	}
 
 	return true;
@@ -167,6 +261,7 @@ void PWMOut::Run()
 
 	_mixing_output.update();
 
+#ifndef BOARD_PWM_MOTOR_OUTPUTS_DISABLE_ON_STOP_MOTORS
 	/* update PWM status if armed or if disarmed PWM values are set */
 	bool pwm_on = true;
 
@@ -175,6 +270,7 @@ void PWMOut::Run()
 			_pwm_on = pwm_on;
 		}
 	}
+#endif
 
 	// check for parameter updates
 	if (_parameter_update_sub.updated()) {

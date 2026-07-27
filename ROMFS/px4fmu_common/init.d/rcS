@@ -33,6 +33,8 @@ set RC_INPUT_ARGS ""
 set STORAGE_AVAILABLE no
 set SDCARD_EXT_PATH /fs/microsd/ext_autostart
 set SDCARD_FORMAT no
+set DSHOT_START yes
+set TONE_ALARM_START yes
 set STARTUP_TUNE 1
 set VEHICLE_TYPE none
 
@@ -258,7 +260,10 @@ else
 	# Start the tone_alarm driver.
 	# Needs to be started after the parameters are loaded (for CBRK_BUZZER).
 	#
-	tone_alarm start
+	if [ $TONE_ALARM_START = yes ]
+	then
+		tone_alarm start
+	fi
 
 	#
 	# Waypoint storage.
@@ -342,9 +347,17 @@ else
 			esc_battery start
 		fi
 
-		if ! param compare BAT1_SOURCE 1
+		# battery_status owns the analog power-module bricks. Start it when
+		# either supported brick selects that source; external and ESC battery
+		# producers do not require this module.
+		if param compare BAT1_SOURCE 0
 		then
 			battery_status start
+		else
+			if param compare BAT2_SOURCE 0
+			then
+				battery_status start
+			fi
 		fi
 
 		sensors start
@@ -460,7 +473,10 @@ else
 	else
 		commander start
 
-		dshot start
+		if [ $DSHOT_START = yes ]
+		then
+			dshot start
+		fi
 		pwm_out start
 	fi
 
@@ -660,6 +676,8 @@ unset RC_INPUT_ARGS
 unset STORAGE_AVAILABLE
 unset SDCARD_EXT_PATH
 unset SDCARD_FORMAT
+unset DSHOT_START
+unset TONE_ALARM_START
 unset STARTUP_TUNE
 unset VEHICLE_TYPE
 

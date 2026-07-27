@@ -102,8 +102,11 @@ Renesas builds validate that the custom NuttX submodules track:
 - `platforms/nuttx/NuttX/apps` → `https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx-apps.git`, branch `main`
 
 The `renesas_rdk-rzv2h_default` target is CR8-only — no CA55/Linux, SD, or
-RPMsg dependency. Production console is SEGGER RTT and parameters live at
-`/fs/params` on the board-mounted XSPI LittleFS volume.
+RPMsg dependency. Production console is SEGGER RTT. During bring-up,
+`/fs/params` lives on volatile TMPFS and resets at reboot. The experimental
+XSPI LittleFS backend stays disabled until controller setup, partition
+ownership, erase/program/readback, reboot persistence, and power-loss recovery
+are proven on the RDK.
 
 ### Switching Targets
 

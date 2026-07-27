@@ -45,6 +45,7 @@ px4_add_module(
 		mpu9250_main.cpp
 	DEPENDS
 		drivers_accelerometer
+		drivers__device
 		drivers_gyroscope
 		drivers_magnetometer
 		px4_work_queue
@@ -61,6 +62,7 @@ px4_add_module(
 		mpu9250_i2c_main.cpp
 	DEPENDS
 		drivers_accelerometer
+		drivers__device
 		drivers_gyroscope
 		px4_work_queue
 )

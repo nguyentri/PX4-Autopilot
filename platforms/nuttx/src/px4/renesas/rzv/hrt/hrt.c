@@ -50,6 +50,7 @@
 
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
+#include <assert.h>
 
 #include <queue.h>
 #include <nuttx/clock.h>
@@ -145,6 +146,7 @@ static void hrt_call_insert(struct hrt_call *entry)
 static void hrt_schedule_locked(void)
 {
 	struct hrt_call *next = entry_to_call(g_callout_queue.head);
+	uint32_t max_delay_us = rzv_hrt_max_delay_us();
 
 	rzv_hrt_cancel();
 
@@ -155,19 +157,25 @@ static void hrt_schedule_locked(void)
 	hrt_abstime now = hrt_absolute_time();
 	uint32_t delay_us;
 
+	if (max_delay_us == 0) {
+		PANIC();
+	}
+
 	if (next->deadline <= now) {
 		delay_us = HRT_MIN_DELAY_US;
 
 	} else {
 		hrt_abstime diff = next->deadline - now;
-		delay_us = (diff > UINT32_MAX) ? UINT32_MAX : (uint32_t)diff;
+		delay_us = (diff > max_delay_us) ? max_delay_us : (uint32_t)diff;
 
 		if (delay_us < HRT_MIN_DELAY_US) {
 			delay_us = HRT_MIN_DELAY_US;
 		}
 	}
 
-	(void)rzv_hrt_call_after(delay_us, hrt_dispatch, NULL);
+	if (rzv_hrt_call_after(delay_us, hrt_dispatch, NULL) < 0) {
+		PANIC();
+	}
 }
 
 /* Called from rzv_hrt ISR context via rzv_hrt_call_after. Runs the
@@ -208,9 +216,14 @@ static void hrt_call_invoke(void)
 			call->callout(call->arg);
 		}
 
-		/* Requeue periodic calls */
+		/* Requeue periodic calls. hrt_call_delay() may have supplied a new
+		 * deadline from inside the callback; hrt_cancel() may have cleared
+		 * the period to suppress this requeue.
+		 */
 		if (call->period != 0) {
-			call->deadline = deadline + call->period;
+			if (call->deadline <= now) {
+				call->deadline = deadline + call->period;
+			}
 
 			flags = enter_critical_section();
 			hrt_call_insert(call);
@@ -276,11 +289,13 @@ void hrt_cancel(struct hrt_call *entry)
 
 	if (entry->deadline != 0) {
 		sq_rem(&entry->link, &g_callout_queue);
-		entry->deadline = 0;
-		entry->period = 0;
-		entry->callout = NULL;
-		entry->arg = NULL;
 	}
+
+	entry->link.flink = NULL;
+	entry->deadline = 0;
+	entry->period = 0;
+	entry->callout = NULL;
+	entry->arg = NULL;
 
 	hrt_schedule_locked();
 	leave_critical_section(flags);
@@ -295,9 +310,7 @@ void hrt_call_delay(struct hrt_call *entry, hrt_abstime delay)
 {
 	irqstate_t flags = enter_critical_section();
 
-	if (entry->deadline != 0) {
-		entry->deadline += delay;
-	}
+	entry->deadline = hrt_absolute_time() + delay;
 
 	hrt_schedule_locked();
 	leave_critical_section(flags);
@@ -315,7 +328,9 @@ void hrt_init(void)
 	 * If the arch shim is not built (CONFIG_RZV_HRT=n), the symbol
 	 * will not link — that is the intended build-time enforcement.
 	 */
-	(void)rzv_hrt_initialize();
+	if (rzv_hrt_initialize() < 0) {
+		PANIC();
+	}
 
 	g_initialized = true;
 }

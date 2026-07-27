@@ -31,15 +31,35 @@
 #
 ############################################################################
 
-add_library(drivers_board
+set(drivers_board_sources
 	board_common.c
-	i2c.cpp
 	init.c
 	led.c
-	spi.cpp
 	system_stubs.c
 	timer_config.cpp
+	${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_volatile_paramfs.c
+	${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_xspi_paramfs.c
 )
+
+if(CONFIG_DRIVERS_BAROMETER_BMP280)
+	list(APPEND drivers_board_sources i2c.cpp)
+endif()
+
+if(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250)
+	list(APPEND drivers_board_sources spi.cpp)
+endif()
+
+# PX4's NuttX integration leaves the RDK board sources out of libboards (the
+# generated archive contains only the generic boardctl/dummy objects). Link the
+# shared SPI pinmux/CS implementation explicitly whenever the RZ/V2H SPI
+# lower-half is enabled.
+if(CONFIG_RZV_SPI)
+	list(APPEND drivers_board_sources
+		${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_spi.c
+	)
+endif()
+
+add_library(drivers_board ${drivers_board_sources})
 
 target_link_libraries(drivers_board
 	PRIVATE
@@ -65,7 +85,8 @@ endif()
 
 target_include_directories(drivers_board PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Build the board-local px4io_bridge module (FMU<->IO uORB bridge over /dev/ipcc1)
-# so it is compiled into the firmware. It was previously present but wired into
-# no build.
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
+# The CR8-1 bridge is a final-milestone feature. Independent CR8-0 images must
+# not carry a dormant /dev/ipcc1 consumer.
+if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
+endif()

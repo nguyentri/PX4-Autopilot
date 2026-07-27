@@ -142,9 +142,18 @@ void SbusRc::Run()
 
 	constexpr hrt_abstime rc_scan_max = 3_s;
 
+	if (_rcs_fd < 0 && cycle_timestamp < _next_config_retry) {
+		perf_end(_cycle_perf);
+		return;
+	}
+
 	// read all available data from the serial RC input UART
 	uint8_t rcs_buf[SBUS_BUFFER_SIZE] {};
-	int newBytes = ::read(_rcs_fd, &rcs_buf[0], SBUS_BUFFER_SIZE);
+	int newBytes = 0;
+
+	if (_rcs_fd >= 0) {
+		newBytes = ::read(_rcs_fd, &rcs_buf[0], SBUS_BUFFER_SIZE);
+	}
 
 	if (newBytes > 0) {
 		_bytes_rx += newBytes;
@@ -160,7 +169,21 @@ void SbusRc::Run()
 			_rcs_fd = open(_device, O_RDWR | O_NONBLOCK);
 		}
 
-		sbus_config(_rcs_fd, board_rc_singlewire(_device));
+		if (sbus_config(_rcs_fd, board_rc_singlewire(_device)) != 0) {
+			PX4_ERR("failed to configure SBUS on %s", _device);
+
+			if (_rcs_fd >= 0) {
+				close(_rcs_fd);
+				_rcs_fd = -1;
+			}
+
+			_rc_scan_begin = 0;
+			_next_config_retry = cycle_timestamp + rc_scan_max;
+			perf_end(_cycle_perf);
+			return;
+		}
+
+		_next_config_retry = 0;
 
 		// First check if the board provides a board-specific inversion method (e.g. via GPIO),
 		// and if not use an IOCTL

@@ -103,7 +103,9 @@ RCInput::init()
 	// assume SBUS input and immediately switch it to
 	// so that if Single wire mode on TX there will be only
 	// a short contention
-	sbus_config(_rcs_fd, board_rc_singlewire(_device));
+	if (sbus_config(_rcs_fd, board_rc_singlewire(_device)) != 0) {
+		return PX4_ERROR;
+	}
 
 #ifdef GPIO_PPM_IN
 	// disable CPPM input by mapping it away from the timer capture input
@@ -487,7 +489,13 @@ void RCInput::Run()
 			if (_rc_scan_begin == 0) {
 				_rc_scan_begin = cycle_timestamp;
 				// Configure serial port for SBUS
-				sbus_config(_rcs_fd, board_rc_singlewire(_device));
+				if (sbus_config(_rcs_fd, board_rc_singlewire(_device)) != 0) {
+					PX4_ERR("failed to configure SBUS on %s", _device);
+					perf_end(_cycle_perf);
+					exit_and_cleanup();
+					return;
+				}
+
 				rc_io_invert(true);
 
 				// flush serial buffer and any existing buffered data

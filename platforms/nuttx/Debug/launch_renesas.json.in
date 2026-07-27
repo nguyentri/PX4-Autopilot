@@ -1,5 +1,12 @@
 {
     "version": "0.2.0",
+    "inputs": [
+        {
+            "id": "rzv2hJlinkSerial",
+            "type": "promptString",
+            "description": "Exact J-Link serial number for the authorized RZ/V2H probe"
+        }
+    ],
     //Map usb to WSL2, run the following commands in Windows PowerShell as Administrator
     //usbipd list
     //usbipd bind --busid 1-4
@@ -7,13 +14,11 @@
     //usbipd detach --busid 1-4 // to detach the device from WSL2
     "configurations": [
         {
-        "name": "Debug RZV2H CR8 (Core0)",
+        "name": "@RZV_DEBUG_PROFILE_NAME@",
         "cwd": "${workspaceRoot}",
-        //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
-        "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
-        //"executable" : "${workspaceRoot}/refs/sci_b/sci_b_uart_rzv2h_evk_cr8_0_ep/e2studio/Debug/sci_b_uart_rzv2h_evk_cr8_0_ep.elf",
+        "executable": "${workspaceRoot}/@RZV_DEBUG_EXECUTABLE@",
         "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
-        "request": "launch",
+        "request": "attach",
         "type": "cortex-debug",
         "gdbPath": "/usr/bin/gdb-multiarch",
         "svdFile": "${workspaceRoot}/rzv2h.svd",
@@ -25,9 +30,8 @@
             // "-select", "IP=192.168.1.89:19023", // incase of running on wsl, need to run jlinkRemoteServer on windown
         ],
         "device": "R9A09G057H44_R8_0", // R9A09G057H44_M33_0/R9A09G057H44_R8_0
-        // "serialNumber": "52006677", // 51028188/52006677/51026290
+        "serialNumber": "${input:rzv2hJlinkSerial}",
         "showDevDebugOutput": "parsed",
-        "runToEntryPoint": "arm_boot",
         "rttConfig": {
             "enabled": true,
             "address": "auto",
@@ -43,18 +47,8 @@
             "enabled": true,
             "samplesPerSecond": 4
         },
-        /* https://github.com/Marus/cortex-debug/issues/955#issuecomment-1806828308
-            We have to reset after FW download, because we have no idea where you PC/SP are.
-            Many devices use temporary FW to program the device. Besides, a 'reset' should always work.
-            This is how 99% of devices work.
-            If a reset causes a problem, should take it up with your device manufacturer and their openocd scripts.
-            Btw, the Reset/Restart buttons also will not work.
-        */
-        "overrideLaunchCommands": [
-            "monitor reset",    // Reset the target
-            "monitor halt",     // Halt the target
-            "load"              // Load the binary
-            // "c"              // Continue the target (not be used in CR8)
+        "overrideAttachCommands": [
+            "monitor halt"
         ],
         },
         {

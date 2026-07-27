@@ -123,7 +123,7 @@ constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C7
+#ifdef CONFIG_RZV_SCI7_I2C
 		true,
 #else
 		false,
@@ -141,8 +141,8 @@ constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX
 			}
 		}
 
-		// Either the bus is enabled in NuttX and configured in i2c_busses_conf, or disabled and not configured
-		constexpr_assert(found_bus == nuttx_enabled_i2c_buses[i], "I2C bus config mismatch (CONFIG_RZV_I2Cx)");
+		// Either the bus is enabled in NuttX and configured here, or both are disabled.
+		constexpr_assert(found_bus == nuttx_enabled_i2c_buses[i], "I2C bus config mismatch");
 	}
 
 	return true;

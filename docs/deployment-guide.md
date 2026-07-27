@@ -37,260 +37,105 @@ git submodule update --init --recursive
 
 ## 2. Build Targets
 
-The current critical path builds and deploys CR8-0 only. CR8-1 and CM33
-artifacts are optional G11 work after the CR8-0 PX4 drone path and required
-reliability gates pass. Do not treat their absence as a CR8-0 deployment
-failure.
+The current diagnostic rollback target is `renesas_rdk-rzv2h_core_only`. It
+keeps RTT, HRT, work queues, parameters, uORB, and the diagnostic command set,
+but excludes payload lower-halves, payload/flight modules, and output init.
+Full default and multicore targets still exist for other milestones; this
+guide documents the core-only path.
 
 ### Build Script
 
 **Primary build entry point:**
 ```bash
-./build.sh rdk-rzv2h_default
+./build.sh renesas_rdk-rzv2h_core_only
 ```
 
-**Available targets:**
+**Core-only artifacts:**
 ```bash
-./build.sh --list | grep rdk-rzv
-# Outputs:
-# - renesas_rdk-rzv2h_default      (CR8-0 flight stack)
-# - renesas_rdk-rzv2h-io-cr8_1     (CR8-1 IO co-processor)
-# - renesas_rdk-rzv2h-io-cm33      (CM33 IO co-processor)
+./build.sh renesas_rdk-rzv2h_core_only
+# Output: build/renesas_rdk-rzv2h_core_only/
+#   ├── renesas_rdk-rzv2h_core_only.elf
+#   ├── renesas_rdk-rzv2h_core_only.px4
+#   ├── NuttX/nuttx/.config
+#   └── renesas_rdk-rzv2h_core_only.bin  (artifact only; not a flashing contract)
 ```
 
-### Build Individual Cores
-
-**CR8-0 (Flight Stack):**
-```bash
-./build.sh renesas_rdk-rzv2h_default
-# Output: build/renesas_rdk-rzv2h_default/
-#   ├── bin/px4
-#   ├── src/modules/px4iofirmware/px4io.elf
-#   └── nuttx/nuttx.bin  (embedded NuttX kernel)
-```
-
-**CR8-1 (IO Co-processor):**
-```bash
-./build.sh renesas_rdk-rzv2h-io-cr8_1
-# Output: build/renesas_rdk-rzv2h-io-cr8_1/nuttx/nuttx.bin
-```
-
-**CM33 (Alternative IO):**
-```bash
-./build.sh renesas_rdk-rzv2h-io-cm33
-# Output: build/renesas_rdk-rzv2h-io-cm33/nuttx/nuttx.bin
-```
-
-### Custom Board Config
-
-**Override defconfig:**
-```bash
-./build.sh renesas_rdk-rzv2h_default -DBOARD_CONFIG=nsh-leds
-# Selects configs/nsh-leds/ instead of default
-```
+The core-only image is built from
+`boards/renesas/rdk-rzv2h/core_only.px4board`,
+`boards/renesas/rdk-rzv2h/nuttx-config/core_only/defconfig`, and
+`ROMFS/rdk-rzv2h-core-only`.
 
 ---
 
 ## 3. Flash Routes
 
-### Option A: SD Card Boot (Recommended for CR8-0)
-
-**Preparation:**
-
-1. Build the CR8-0 image. Build CR8-1/CM33 only when executing the final
-   multicore milestone.
-2. Format microSD card (FAT32):
-   ```bash
-   sudo mkfs.vfat /dev/sdX1
-   mkdir /mnt/sd
-   sudo mount /dev/sdX1 /mnt/sd
-   ```
-
-3. Copy bootloader (u-boot) and kernels:
-   ```bash
-   # Obtain u-boot.bin from Renesas BSP
-   sudo cp /path/to/u-boot.bin /mnt/sd/u-boot.bin
-   
-   # Copy CR8-0 (primary)
-   sudo cp build/renesas_rdk-rzv2h_default/nuttx/nuttx.bin /mnt/sd/nuttx_cr8_0.bin
-   
-   # Optional G11 only: copy CR8-1
-   sudo cp build/renesas_rdk-rzv2h-io-cr8_1/nuttx/nuttx.bin /mnt/sd/nuttx_cr8_1.bin
-   
-   # Optional G11 only: copy CM33
-   sudo cp build/renesas_rdk-rzv2h-io-cm33/nuttx/nuttx.bin /mnt/sd/nuttx_cm33.bin
-   ```
-
-4. Sync and eject:
-   ```bash
-   sync
-   sudo umount /mnt/sd
-   ```
-
-5. Insert SD card into RDK-RZ/V2H and power on.
-
-**Verification:** The `nsh-rtt` configuration exposes the CR8-0 NuttX shell
-on SCI4 (115200 8N1); boot and syslog diagnostics appear on SEGGER RTT.
-
----
-
-### Option B: eMMC Flash (Factory)
-
-**Prerequisites:**
-- Renesas eMMC flashing tool (Renesas BSP documentation).
-- JTAG or serial bootloader mode.
-
-**Flow:**
-1. Enter bootloader mode (DIP switch configuration; consult board manual).
-2. Run Renesas flash utility:
-   ```bash
-   renesas-flash-tool --device /dev/ttyUSB0 \
-     --addr 0x00000000 --file build/.../nuttx.bin
-   ```
-3. Power cycle; kernel boots from eMMC.
-
-(Detailed tool usage beyond scope; refer to Renesas board documentation.)
-
----
-
-### Option C: xSPI/QSPI Parameter Storage
-
-**Status:** Board paramfs/MTD source exists; on-target persistence validation is pending.
-
-**Plan:** LittleFS on xSPI for parameter storage. Keep ULog on a separately
-validated SDHI mount.
-
-**Blocker:** Partition-boundary proof, mount, parameter save/reboot/load, and
-power-loss recovery. Do not treat source presence as validated persistence.
+There is no approved raw-`.bin` flashing recipe for the core-only image in
+this guide. The current debug contract is attach-only until the
+boot-consumer/address contract is authoritative.
 
 ---
 
 ## 4. Debug: JLink + VS Code
 
-### Configuration (commit a3c58b73a52)
+### Configuration
 
-**JLink Setup:**
-
-1. Install JLink EDU/commercial license (Segger).
-   ```bash
-   # macOS
-   brew install segger-jlink
-   
-   # Linux
-   wget https://www.segger.com/downloads/jlink/JLink_Linux_x86_64.deb
-   sudo dpkg -i JLink_Linux_x86_64.deb
-   ```
-
-2. Verify JLink connection:
-   ```bash
-   JLinkExe -device RZV2H -if SWD -speed 4000
-   # Output: Connected to RZV2H via SWD at 4 MHz
-   ```
+Use the exact core-only ELF, the exact device name `R9A09G057H44_R8_0`, and
+the user-provided probe serial. The generated VS Code RZV profile is
+read-only attach. Reset, load, and continue require explicit authorization.
 
 ### VS Code Launch Configurations
 
 **File:** `.vscode/launch.json`
 
-**CR8-0 (NuttX + PX4):**
-```json
-{
-  "name": "Attach CR8-0 (JLink)",
-  "type": "cppdbg",
-  "request": "launch",
-  "program": "${workspaceFolder}/build/renesas_rdk-rzv2h_default/nuttx/nuttx.elf",
-  "cwd": "${workspaceFolder}",
-  "MIMode": "gdb",
-  "miDebuggerPath": "arm-none-eabi-gdb",
-  "miDebuggerArgs": "-q -ex 'target remote localhost:2331'",
-  "preLaunchTask": "jlink-server",
-  "stopAtEntry": true,
-  "externalConsole": false
-}
-```
+Building the target generates `Attach RZV2H CR8 (Core0,
+renesas_rdk-rzv2h_core_only, read-only)`. Select that profile and enter the
+exact authorized probe serial when prompted. The variant appears in the
+profile name and its executable is the matching target ELF. The profile uses
+`request: "attach"` and only `monitor halt`; it has no reset, load, or
+continue command.
 
-**CR8-1 (IO co-processor):**
-```json
-{
-  "name": "Attach CR8-1 (JLink)",
-  "type": "cppdbg",
-  "request": "launch",
-  "program": "${workspaceFolder}/build/renesas_rdk-rzv2h-io-cr8_1/nuttx/nuttx.elf",
-  "MIMode": "gdb",
-  "miDebuggerPath": "arm-none-eabi-gdb",
-  "miDebuggerArgs": "-q -ex 'target remote localhost:2332' -ex 'set mem inaccessible-by-default off'",
-  "preLaunchTask": "jlink-cr8_1",
-  "stopAtEntry": true
-}
-```
+For a bounded command-line snapshot, identify the same probe explicitly:
 
-**Task (`.vscode/tasks.json`):**
-```json
-{
-  "label": "jlink-server",
-  "type": "shell",
-  "command": "JLinkGDBServer",
-  "args": ["-device", "RZV2H", "-if", "SWD", "-speed", "4000", "-port", "2331"],
-  "isBackground": true,
-  "problemMatcher": { "pattern": { "regexp": "Listening on port" } }
-}
-```
-
-### OpenOCD (Alternative)
-
-**Configuration:** `.openocd/rdk-rzv2h.cfg`
-
-```tcl
-# Renesas RZ/V2H OpenOCD configuration
-source [find interface/jlink.cfg]
-transport select swd
-source [find target/rzv2h.cfg]
-```
-
-**Launch:**
 ```bash
-openocd -f .openocd/rdk-rzv2h.cfg
-# In GDB: target remote localhost:3333
+JLINK_SERIAL=<probe-serial> \
+  cmake --build build/renesas_rdk-rzv2h_core_only \
+  --target jlink_gdb_backtrace
 ```
+
+The RZ/V2H build does not generate `jlink_upload`, `jlink_debug_gdb`,
+`jlink_debug_ozone`, or raw-binary flash targets.
 
 ---
 
 ## 5. Serial Console (UART Debug)
 
-### Serial Modes
+### Core-only CR8-0
 
-#### Standalone CR8-0 NuttX
+**Role:** RTT0 console/debug only.
 
-**Role:** SCI4 shell + RTT diagnostics.
+The core-only image has no payload serial consumers. Use the RTT shell and the
+built-in diagnostic commands:
 
-**Device:** `/dev/ttyUSB0` for the SCI4 adapter on the RDK carrier board.
-
-**Settings:** 115200 baud, 8 data bits, 1 stop bit, no parity.
-
-**Connection:**
-```bash
-minicom -D /dev/ttyUSB0 -b 115200
-# or
-picocom -b 115200 /dev/ttyUSB0
-# or
-screen /dev/ttyUSB0 115200
+```text
+ver all
+dmesg
+system_time
+work_queue status
+param show
+top
+uorb top
+listener parameter_update
+perf
 ```
 
-**NuttX Shell Prompt:**
-```
-nsh> help
-nsh> ps
-nsh> dmesg
-```
+`listener vehicle_status` belongs the full default image; do not use it as the
+core-only uORB proof.
 
-#### Integrated PX4 CR8-0
+### Full Default PX4
 
-**Role:** RTT0 console/debug with SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
-SCI6 RC, and SCI9 GPS.
-
-**Policy:** SCI3 is not an active console on the RDK-RZV2H board.
-
-**First drone-equivalent serial gates:** GPS SCI9 = 115200 8N1. RC SCI6 =
-100000 8E2 with the board inversion path verified on target.
+The full default image carries SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
+SCI6 RC, and SCI9 GPS. This guide does not document those payload console
+routes.
 
 ---
 
@@ -307,40 +152,29 @@ SCI6 RC, and SCI9 GPS.
 **GDB Commands:**
 ```bash
 (gdb) target remote localhost:2331
-(gdb) break main
-(gdb) continue
 (gdb) rtty
 # RTT console appears; logs print in real-time
 ```
 
+Starting the target, changing breakpoints, reset, load, and continue are
+outside the default read-only attach procedure and require explicit
+authorization.
+
 **Extraction Script (ref):**
 ```bash
 # Extract RTT base address from ELF
-arm-none-eabi-readelf -s build/.../nuttx.elf | grep _SEGGER_RTT
+arm-none-eabi-readelf -s \
+  build/renesas_rdk-rzv2h_core_only/renesas_rdk-rzv2h_core_only.elf \
+  | grep _SEGGER_RTT
 ```
 
 ---
 
-## 7. Log Collection
+## 7. Storage and Logs
 
-### ULog Format (PX4 Native)
-
-**Status:** Post-G9 optional. The first drone-equivalent CR8-0 image keeps
-SDHI/ULog disabled because the checked-in FSP drone reference has no SDHI
-driver. Use this procedure only after the separate SDHI track passes.
-
-**Path:** `/fs/microsd/` (SD card via SDHI0).
-
-**Capture:**
-```bash
-nsh> ls /fs/microsd/*.ulg
-/fs/microsd/2026-07-11_12-34-56.ulg
-```
-
-**Decode:**
-```bash
-python -m pyulog.tools.export 2026-07-11_12-34-56.ulg --output-file data.csv
-```
+The core-only image mounts volatile TMPFS at `/fs`. `/fs/params` is available
+for within-boot parameter changes and resets on reboot. This guide does not
+document SDHI/ULog or any external storage path.
 
 ### System Log (dmesg)
 
@@ -362,10 +196,12 @@ nsh> dmesg
 **Solution:** Ensure SEGGER RTT symbols included:
 ```bash
 # Check if symbol exists in ELF
-arm-none-eabi-nm build/.../nuttx.elf | grep _SEGGER_RTT
+arm-none-eabi-nm \
+  build/renesas_rdk-rzv2h_core_only/renesas_rdk-rzv2h_core_only.elf \
+  | grep _SEGGER_RTT
 
-# If missing, re-link with RTT library
-./build.sh renesas_rdk-rzv2h_default -DCONFIG_SEGGER_RTT=y
+# If missing, rebuild the checked-in core-only configuration
+./build.sh renesas_rdk-rzv2h_core_only
 ```
 
 ### Submodule Desynchronization
@@ -374,10 +210,9 @@ arm-none-eabi-nm build/.../nuttx.elf | grep _SEGGER_RTT
 
 **Solution:**
 ```bash
-git submodule foreach git reset --hard
+git submodule status
 git submodule update --init --recursive
-./build.sh clean
-./build.sh renesas_rdk-rzv2h_default
+./build.sh renesas_rdk-rzv2h_core_only
 ```
 
 ### JLink Connection Timeout
@@ -394,28 +229,27 @@ git submodule update --init --recursive
    sudo usermod -a -G dialout $USER
    # Log out and back in
    ```
-3. Restart JLink daemon:
+3. Stop only the J-Link server started by the current terminal, then rerun
+   the serial-bound snapshot helper:
    ```bash
-   killall JLinkGDBServer
-   JLinkGDBServer -device RZV2H -if SWD -speed 4000
+   # Press Ctrl-C in that server's terminal first.
+   JLINK_SERIAL=<probe-serial> \
+     cmake --build build/renesas_rdk-rzv2h_core_only \
+     --target jlink_gdb_backtrace
    ```
 
 ---
 
 ## 9. Validation Checklist
 
-Before flight qualification:
+Before qualification:
 
-- [ ] Build completes without warnings.
-- [ ] CR8-0 boots to the standalone NuttX shell on SCI4; RTT shows boot diagnostics.
-- [ ] Integrated PX4 CR8-0 keeps console/debug on RTT0 and routes MAVLink/QGroundControl on SCI5, not RTT0.
-- [ ] CR8-0 boots and runs without CR8-1, CM33, or a remote endpoint.
-- [ ] CR8-1/CM33 load and synchronize only when validating optional G11.
-- [ ] GDB attaches via JLink; can set breakpoints and step.
-- [ ] xSPI parameter save/reboot/load passes.
-- [ ] SDHI/ULog remains disabled for the first drone-equivalent baseline.
-- [ ] MAVLink heartbeat and telemetry are visible in QGroundControl over SCI5.
-- [ ] Stress test: 1 hour continuous flight simulation without crash.
+- [ ] `renesas_rdk-rzv2h_core_only` builds cleanly.
+- [ ] The exact `renesas_rdk-rzv2h_core_only.elf` attaches read-only through J-Link.
+- [ ] J-Link uses `R9A09G057H44_R8_0` plus the user-provided probe serial.
+- [ ] RTT shows `ver all`, `dmesg`, `system_time`, `work_queue status`, `top`, `uorb top`, and `param show`.
+- [ ] No raw `.bin` flashing route is used until the boot-consumer/address contract is authoritative.
+- [ ] No hardware proof claims are made for the core-only image.
 
 ---
 

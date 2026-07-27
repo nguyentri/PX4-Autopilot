@@ -77,6 +77,7 @@ private:
 	void Run() override;
 
 	hrt_abstime _rc_scan_begin{0};
+	hrt_abstime _next_config_retry{0};
 	hrt_abstime _timestamp_last_signal{0};
 
 	bool _rc_scan_locked{false};

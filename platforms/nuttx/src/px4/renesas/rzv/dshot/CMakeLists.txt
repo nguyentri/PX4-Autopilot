@@ -36,6 +36,8 @@ px4_add_library(arch_dshot
 	dshot_telemetry.c
 )
 
+target_link_libraries(arch_dshot PRIVATE nuttx_arch)
+
 # Optimize for speed
 target_compile_options(arch_dshot PRIVATE -O2)
 

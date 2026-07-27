@@ -62,6 +62,18 @@ if(NOT "${PX4_BOARD}" MATCHES "io-v2")
 endif()
 
 add_subdirectory(px4_work_queue)
+
+if(TARGET px4_layer)
+	# WorkQueueManagerStart() uses the NuttX task-spawn implementation in
+	# px4_layer, while px4_platform_init() in px4_layer starts the work-queue
+	# manager through px4_platform. Declare the static-library cycle explicitly
+	# so minimal builds receive the same archive rescan as full module builds.
+	cmake_policy(PUSH)
+	cmake_policy(SET CMP0079 NEW)
+	target_link_libraries(px4_work_queue PRIVATE px4_layer)
+	cmake_policy(POP)
+endif()
+
 add_subdirectory(work_queue)
 
 if("${PX4_PLATFORM}" MATCHES "nuttx")

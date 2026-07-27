@@ -53,9 +53,7 @@
 #define PWM_MAX_RATE          500     /* Hz */
 #define PWM_MIN_PULSE_WIDTH   1000    /* us */
 #define PWM_MAX_PULSE_WIDTH   2000    /* us */
-#define PWM_DISARMED_WIDTH    1000    /* us */
 
-static bool pwm_initialized = false;
 static uint32_t pwm_rate = PWM_DEFAULT_RATE;
 
 /**
@@ -63,28 +61,47 @@ static uint32_t pwm_rate = PWM_DEFAULT_RATE;
  */
 int up_pwm_servo_init(uint32_t channel_mask)
 {
-	if (pwm_initialized) {
-		return channel_mask;
-	}
+	uint32_t current_mask = 0;
 
-	/* Initialize IO timer system */
-	int ret = io_timer_init();
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* Allocate channels for PWM output */
+	/* Release only channels owned by analog PWM modes. A prior PWMOut
+	 * instance may have stopped, while DShot or another timer client must
+	 * remain untouched.
+	 */
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		if (channel_mask & (1 << i)) {
-			ret = io_timer_allocate_channel(i, IOTimerChanMode_PWMOut);
-			if (ret != 0) {
+		int mode = io_timer_get_channel_mode(i);
+
+		if (mode == IOTimerChanMode_PWMOut || mode == IOTimerChanMode_OneShot) {
+			current_mask |= 1u << i;
+		}
+	}
+
+	if (current_mask != 0) {
+		io_timer_set_enable(false, IOTimerChanMode_PWMOut, current_mask);
+
+		for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+			if (current_mask & (1u << i)) {
+				io_timer_unallocate_channel(i);
+			}
+		}
+	}
+
+	uint32_t initialized_mask = 0;
+
+	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+		if (channel_mask & (1u << i)) {
+			int ret = io_timer_channel_init(i, IOTimerChanMode_PWMOut, NULL, NULL);
+
+			if (ret == 0) {
+				initialized_mask |= 1u << i;
+
+			} else {
+				up_pwm_servo_deinit(initialized_mask);
 				return ret;
 			}
 		}
 	}
 
-	pwm_initialized = true;
-	return channel_mask;
+	return initialized_mask;
 }
 
 /**
@@ -97,7 +114,10 @@ void up_pwm_servo_deinit(uint32_t channel_mask)
 
 	/* Unallocate channels */
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		if (channel_mask & (1 << i)) {
+		int mode = io_timer_get_channel_mode(i);
+
+		if ((channel_mask & (1u << i)) &&
+		    (mode == IOTimerChanMode_PWMOut || mode == IOTimerChanMode_OneShot)) {
 			io_timer_unallocate_channel(i);
 		}
 	}

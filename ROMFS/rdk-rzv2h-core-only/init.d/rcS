@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# RDK-RZ/V2H core-only diagnostic startup.
+#
+# px4_platform_init() has already initialized HRT, work queues, parameters,
+# and uORB. Keep this script free of payload and flight-module startup.
+#
+set +e
+
+echo ""
+echo "RDK-RZ/V2H CORE-ONLY DIAGNOSTIC IMAGE"
+echo "Payload drivers, flight modules, serial consumers, and outputs are disabled."
+echo ""
+
+ver all

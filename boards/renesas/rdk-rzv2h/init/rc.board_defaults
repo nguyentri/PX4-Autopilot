@@ -1,86 +1,43 @@
 #!/bin/sh
 #
-# Renesas RDK-RZV2H board defaults
+# Renesas RDK-RZ/V2H board defaults
 #
-# Board specific defaults for the Renesas RZ/V2H flight stack.
-# Based on PX4 FreeRTOS+FSP reference implementation.
+# This file is sourced by NuttX NSH, not a POSIX shell.
 #------------------------------------------------------------------------------
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIG_FILE="/fs/etc/config.txt"
-EXTRAS_FILE="/fs/etc/extras.txt"
+set RZV_DEFAULTS ${R}etc/init.d/rc.board_defaults.cmds
+set RZV_CONFIG /fs/etc/config.txt
+set RZV_EXTRAS /fs/etc/extras.txt
+set RZV_LEGACY_DEFAULTS /fs/rc.board_defaults.cmds
 
-# Filesystem fallbacks under CONFIG_BOARD_ROOT_PATH.
-LEGACY_CMD_FILE="/fs/rc.board_defaults.cmds"
-LEGACY_PARAM_FILE="/fs/params"
-EMBEDDED_CMD_FILE="${SCRIPT_DIR}/rc.board_defaults.cmds"
-
-run_cmd_file() {
-    local file="$1"
-
-    if [ ! -f "${file}" ]; then
-        return 1
-    fi
-
-    while IFS= read -r line || [ -n "$line" ]; do
-        case "${line}" in
-            ''|\#*) continue ;;
-        esac
-
-        optional=0
-
-        if [ "${line#\?}" != "${line}" ]; then
-            optional=1
-            line="${line#\?}"
-            # trim leading whitespace after optional marker
-            line="${line#"${line%%[![:space:]]*}"}"
-
-            if [ -z "${line}" ]; then
-                continue
-            fi
-        fi
-
-        if ! eval "${line}"; then
-            if [ "${optional}" -eq 0 ]; then
-                echo "rc.board_defaults: failed command: ${line}" >&2
-                return 2
-            fi
-
-            echo "rc.board_defaults: optional command failed, continuing: ${line}" >&2
-        fi
-    done < "${file}"
-
-    return 0
-}
-
-ran_any=0
-
-# Preferred CA55-provided command lists
-if run_cmd_file "${CONFIG_FILE}"; then
-    ran_any=1
+# Always load the safe board defaults. Optional filesystem scripts may then
+# override them with normal `param set` or `param set-default` commands.
+if [ -f $RZV_DEFAULTS ]
+then
+	. $RZV_DEFAULTS
+else
+	echo "ERROR [init] missing $RZV_DEFAULTS"
 fi
 
-if run_cmd_file "${EXTRAS_FILE}"; then
-    ran_any=1
+if [ -f $RZV_CONFIG ]
+then
+	echo "Board config: $RZV_CONFIG"
+	. $RZV_CONFIG
 fi
 
-# Legacy compatibility: single bundled command list or params.txt
-if [ "${ran_any}" -eq 0 ]; then
-    if run_cmd_file "${LEGACY_CMD_FILE}"; then
-        ran_any=1
-    fi
+if [ -f $RZV_EXTRAS ]
+then
+	echo "Board extras: $RZV_EXTRAS"
+	. $RZV_EXTRAS
 fi
 
-if [ "${ran_any}" -eq 0 ]; then
-    if run_cmd_file "${LEGACY_PARAM_FILE}"; then
-        ran_any=1
-    fi
+if [ -f $RZV_LEGACY_DEFAULTS ]
+then
+	echo "Legacy board defaults: $RZV_LEGACY_DEFAULTS"
+	. $RZV_LEGACY_DEFAULTS
 fi
 
-# Final fallback to embedded command list
-if [ "${ran_any}" -eq 0 ]; then
-    if ! run_cmd_file "${EMBEDDED_CMD_FILE}"; then
-        echo "rc.board_defaults: missing command list" >&2
-        exit 1
-    fi
-fi
+unset RZV_DEFAULTS
+unset RZV_CONFIG
+unset RZV_EXTRAS
+unset RZV_LEGACY_DEFAULTS

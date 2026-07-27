@@ -98,6 +98,10 @@ else()
 	endif()
 endif()
 
+# only in the cygwin environment: convert absolute linker script path to mixed windows (C:/...)
+# because even relative linker script paths are different for linux, mac and windows
+CYGPATH(NUTTX_CONFIG_DIR NUTTX_CONFIG_DIR_CYG)
+
 set(nuttx_linker_script
 	${NUTTX_CONFIG_DIR_CYG}/scripts/${SCRIPT_PREFIX}script.ld)
 
@@ -151,10 +155,6 @@ if(CONFIG_OPENAMP)
 endif()
 
 file(RELATIVE_PATH PX4_BINARY_DIR_REL ${CMAKE_CURRENT_BINARY_DIR} ${PX4_BINARY_DIR})
-
-# only in the cygwin environment: convert absolute linker script path to mixed windows (C:/...)
-# because even relative linker script paths are different for linux, mac and windows
-CYGPATH(NUTTX_CONFIG_DIR NUTTX_CONFIG_DIR_CYG)
 
 if((DEFINED ENV{SIGNING_TOOL}) AND (NOT NUTTX_DIR MATCHES "external"))
 	set(PX4_BINARY_OUTPUT ${PX4_BINARY_DIR}/${PX4_CONFIG}_unsigned.bin)
@@ -454,6 +454,16 @@ endif()
 
 
 # debugger helpers
+if(CONFIG_ARCH_CORTEXR8)
+	set(DEBUG_GDB_ARCH_MACROS "ARMv7R")
+	set(DEBUG_GDB_ARCH_HELP_COMMAND "armv7r")
+	set(DEBUG_GDB_ARCH_STATE_COMMAND "armv7rstate")
+else()
+	set(DEBUG_GDB_ARCH_MACROS "ARMv7M")
+	set(DEBUG_GDB_ARCH_HELP_COMMAND "armv7m")
+	set(DEBUG_GDB_ARCH_STATE_COMMAND "vecstate")
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/gdbinit.in ${PX4_BINARY_DIR}/.gdbinit)
 
 # vscode launch.json
@@ -532,9 +542,12 @@ if(NOT NUTTX_DIR MATCHES "external")
 		set(DEBUG_DEVICE "R7KA8P1KF_CPU0")
 		set(DEBUG_SVD_FILE "R7KA8P1AD.svd")
 		set(RENESAS_DEBUG_CONFIG TRUE)
-	elseif(CONFIG_ARCH_CHIP_RZV2H)
-		set(DEBUG_DEVICE "R9A09G057H_CR8_0")
+	elseif(CONFIG_ARCH_CHIP_R9A09G057)
+		set(DEBUG_DEVICE "R9A09G057H44_R8_0")
 		set(DEBUG_SVD_FILE "R9A09G057H.svd")
+		set(RZV_DEBUG_EXECUTABLE "build/${PX4_CONFIG}/${PX4_CONFIG}.elf")
+		set(RZV_DEBUG_PROFILE_NAME "Attach RZV2H CR8 (Core0, ${PX4_CONFIG}, read-only)")
+		set(JLINK_REQUIRE_SERIAL TRUE)
 		set(RENESAS_DEBUG_CONFIG TRUE)
 	else()
 		set(DEBUG_DEVICE "")
@@ -579,6 +592,10 @@ if(NOT NUTTX_DIR MATCHES "external")
 	if(DEBUG_DEVICE)
 		# Use Renesas-specific launch configuration if building for Renesas boards
 		if(RENESAS_DEBUG_CONFIG)
+			if(NOT RZV_DEBUG_EXECUTABLE)
+				set(RZV_DEBUG_EXECUTABLE "build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf")
+				set(RZV_DEBUG_PROFILE_NAME "Attach RZV2H CR8 (Core0, renesas_rdk-rzv2h_default, read-only)")
+			endif()
 			configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/launch_renesas.json.in ${PX4_SOURCE_DIR}/.vscode/launch.json @ONLY)
 			message(STATUS "Generated Renesas debug configuration for ${DEBUG_DEVICE}")
 		else()

@@ -1,6 +1,6 @@
 # NuttX Driver Port Status Matrix
 
-**Date:** 2026-07-26
+**Date:** 2026-07-27
 **Branch:** px4_ra_rzv
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
@@ -39,7 +39,7 @@ not validate every driver or the integrated PX4 image.
 | 7 | GPIO | rzv_gpio.c | rzv_gpio.h | functional | `refs/.../r_ioport.c` | nsh-leds | (pending) | Port 0–12; IRQ/edge config |
 | 8 | GPT (16-bit) | rzv_gpt.c | rzv_gpt.h | functional | `refs/.../r_gpt.c` | pwm | (pending) | Pulse generation; PWM mode |
 | 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | build-clean | `refs/.../r_gtm.c` | gtm | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | Re-audit findings closed: `settimeout` race fixed, `next_interval_us` rearm honoured (APR-02), GTM0 collision resolved (PX4 HRT moved to GTM7). Clean config build and on-target timer evidence still required. |
-| 10 | HRT | rzv_hrt.c (arch shim) + platforms/.../renesas/rzv/hrt/hrt.c (queue mgr) | rzv_hrt.h | build-clean | (GTM7 free-run, arch shim) | PX4 board config (`CONFIG_RZV_HRT=y`) | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | PX4 HRT queue delegates counter/arm to the arch GTM7 shim at runtime P1CLK. PX4 `board_config.h` still contains a stale GTM0/120 MHz declaration. Build re-verification plus on-target monotonicity, callback, jitter, and drift evidence required. |
+| 10 | HRT | rzv_hrt.c (arch shim) + platforms/.../renesas/rzv/hrt/hrt.c (queue mgr) | rzv_hrt.h | build-clean | (GTM7 free-run, arch shim) | PX4 board config (`CONFIG_RZV_HRT=y`) | [2026-07-19 re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) | PX4 HRT queue delegates counter/arm to the arch GTM7 shim at runtime P1CLK. The stale board-level GTM0/120 MHz declaration is removed. Build passes; on-target monotonicity, callback, jitter, and drift evidence remain required. |
 | 11 | I2C (RIIC) | rzv_i2c.c | rzv_i2c.h | functional | `refs/.../r_riic.c` | (nsh default) | (pending) | Native I2C master; DMA optional |
 | 12 | ICU (CR8-0/1) | rzv_icu.c | rzv_icu.h | functional | (internal) | (framework) | (pending) | Interrupt control unit; priority routing |
 | 13 | ICU (CM33) | rzv_icu_cm33.c | rzv_icu.h | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33-specific ICU routing |
@@ -49,7 +49,7 @@ not validate every driver or the integrated PX4 image.
 | 17 | IPC Raw | rzv_ipc_raw.c | (none) | functional | (internal) | (framework) | (pending) | Low-level MHU mailbox access |
 | 18 | IRQ (CR8) | rzv_irq.c | (none) | functional | (internal) | (framework) | (pending) | Interrupt vector setup; CR8-0/1 GIC. On-target `nsh-rtt` pass validated SCI4 TX/RX interrupt delivery. |
 | 19 | IRQ (CM33) | rzv_irq_cm33.c | (none) | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33 Cortex-M33 NVIC setup |
-| 20 | Low-Level UART | rzv_lowputc.c | (none) | functional | (SCI-B based) | (bootloader) | (pending) | Early putc for debugging; no buffering. Current policy: standalone CR8-0 `nsh-rtt` uses SCI4 shell + RTT diagnostics; integrated PX4 CR8-0 uses RTT0 console/debug and keeps SCI3 unused on the RDK; `help\r` echo confirmed on SCI4. |
+| 20 | Low-Level UART | rzv_lowputc.c | (none) | functional | (SCI-B based) | (bootloader) | (pending) | Early putc for debugging; no buffering. Current policy: standalone CR8-0 `nsh-rtt` uses SCI4 shell + RTT diagnostics; integrated PX4 CR8-0 uses RTT0 console/debug and bypasses SCI low-setup so SCI3 remains untouched; `help\r` echo confirmed on SCI4. |
 | 21 | Memory Management | rzv_memmng.c | (none) | functional | (internal) | (framework) | (pending) | Heap, page alignment setup |
 | 22 | MHU Core | rzv_mhu_core.c | rzv_mhu.h | functional | (internal) | (framework) | (pending) | Register read/write; DSB ordering |
 | 23 | MPU Regions | rzv_mpu_regions.c | (none) | functional | (internal) | (framework) | (pending) | ARM MPU setup for memory protection |
@@ -57,17 +57,17 @@ not validate every driver or the integrated PX4 image.
 | 25 | POEG | rzv_poeg.c | rzv_poeg.h | functional | (internal) | (framework) | (pending) | PWM output enable group; fault handling |
 | 26 | RPMsg Layer | rzv_rpmsg.c | (none) | build-clean | (OpenAMP dep) | ipcc | (pending) | RPMsg endpoint abstraction; CRC16 frame |
 | 27 | Remote Proc | rzv_rproc.c | (none) | functional | `nuttx/include/remoteproc.h` | (framework) | (pending) | Core loading, boot, IPC kickoff |
-| 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `refs/.../r_sci_b_i2c/` | hil-full (target SCI7) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | Current lower-half validation/IRQ/pin tables implement SCI0-3 only. The RDK BMP280 uses SCI7 on P76/P77, so `CONFIG_RZV_SCI_I2C7` in `hil-full` is not yet a functional board path. SCI7 enablement and target proof are required. |
-| 29 | SCI/I2C Clock | rzv_sci_i2c_clock.c | rzv_sci.h | functional | (FSP helper) | (shared) | (pending) | BRR/CKS divider calculation for I2C |
+| 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `refs/.../r_sci_b_i2c/` | hil-full (SCI7) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | `CONFIG_RZV_SCI7_I2C` now covers SCI7 base/CPG/ELC, P76/P77 FSP-parity pin setup, board registration as bus 7, and PX4 dispatch. Fresh `hil-full` and integrated PX4 links contain the path. BMP280 transactions, analyzer capture, NACK/timeout, and recovery remain on-target gates. |
+| 29 | SCI/I2C Clock | rzv_sci_i2c_clock.c | rzv_sci.h | functional | (FSP helper) | (shared) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | Runtime P5CLK calculation; 100 MHz/400 kHz reproduces FSP CKS0, BRR3, MDDR131, 399780 Hz, and 30-cycle SDA delay. Frequency measurement pending. |
 | 30 | SCI/I2C ISR | rzv_sci_i2c_isr.c | rzv_sci.h | functional | (FSP helper) | (shared) | (pending) | Interrupt handlers for I2C events |
 | 31 | SCI/SPI Master | rzv_sci_spi.c | rzv_sci_spi.h | build-clean | `refs/.../r_sci_b.c` | sci-spi-loopback | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | SCI0 only on RDK; P6_0 SCK; on-target loopback/error validation pending |
 | 32 | SCI/SPI Clock | rzv_sci_spi_clock.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | BRR/CKS/MDDR calculation build-validated; frequency measurement pending |
 | 33 | SCI/SPI ISR | rzv_sci_spi_isr.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | FRSR-based FIFO drain build-validated; on-target transfer/error paths pending |
 | 34 | SCIF UART | rzv_scif.c | rzv_scifa.h | blocked | `refs/.../scifa_iodefine.h` (R9A09G057H) | nsh-scif (build) | [2026-07-20 audit](../../plans/reports/audit-260720-1112-rzv2h-scif-serial-port-report.md) | SCIFA0 16-byte FIFO UART. Register model + ELC events verified vs FSP. BLOCKED for functional: (F1) driver enables RSCI/SCI0 clock id, not SCIFA0's CPG_CLKON_8[15] + MCPU2_MSTOP → peripheral stays gated; (F2) SCIFA0 TXD/RXD pins never muxed. Safe fixes applied: up_putc readiness guard, dead TEI path removed, baud-failure bits cleared. Sample-only path (all shipping targets use SCI-B/RTT console) |
 | 35 | SDHI | rzv_sdhi.c | rzv_sdhi.h | build-clean | (none — no FSP `r_sdhi.c` in refs/) | sdhi | [2026-07-20 audit](../../plans/reports/audit-260720-1000-rzv2h-sdhi-fsp-vs-nuttx-report.md) | PIO 1/4-bit, IRQ-driven (combined ISR, INTID 767); compiles + wired to `/dev/mmcsd0`. Pending on-target register/command/PIO evidence. No FSP parity reference; sample/post-G9 only and does not gate the first drone-equivalent PX4 run. |
-| 36 | Serial Framework | rzv_serial.c | (none) | functional | (NuttX core) | (framework) | (pending) | UART dispatcher; flow control. FIFO RX path validated on SCI4 under `nsh-rtt`; `uart_recvchars()` now reaches RX interrupt handling. |
-| 37 | SPI (RSPI) | rzv_spi.c | rzv_spi.h | functional | `refs/.../r_rspi.c` | spi-loopback | (pending) | Native SPI master; CS control; DMAC |
-| 38 | Startup (CR8) | rzv_start.c | (none) | functional | (internal) | (bootloader) | (pending) | CR8-0 boot; memory init; jump to main. RTT diagnostics stay usable before SCI init; `nsh-rtt` boots to a working SCI4 shell. |
+| 36 | Serial Framework | rzv_serial.c | (none) | functional | (NuttX core) | (framework) | (pending) | UART dispatcher; flow control. FIFO RX path validated on SCI4 under `nsh-rtt`; `uart_recvchars()` now reaches RX interrupt handling. `TIOCGICOUNT` and the non-opening `rzv_serial_get_icount()` snapshot path back PX4 `serial_status`; `rx/tx` are boot-lifetime modulo-2^32 register-transfer counters, `frame/overrun/parity` are sampled CSR assertions, and `buf_overrun` counts exact software-ring discards. The command snapshots the registered lower half directly, so querying a closed payload UART does not run its `setup()`/`shutdown()` lifecycle or contaminate its receive ring. Current RDK-RZV2H defconfigs leave `CONFIG_SERIAL_RXDMA/TXDMA` unset, so DMA accounting remains unsupported/future. |
+| 37 | SPI (RSPI) | rzv_spi.c | rzv_spi.h | build-clean | `refs/.../r_rspi.c` | spi-loopback, hil-spi-loopback | [2026-07-27 HIL registration fix](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/tester-260727-0838-rzv2h-hil-spi-registration.md) | Native polled SPI master with board GPIO CS. `hil-spi-loopback` now runs late board bring-up before direct `hwtest_main`, so `/dev/spi0` registration is linked into the boot path; internal loopback requires no jumper. Clean HIL/standalone builds pass; loopback, MPU9250 WHOAMI/data/DRDY, and error recovery remain on-target gates. |
+| 38 | Startup (CR8) | rzv_start.c | (none) | functional | (internal) | (bootloader) | (pending) | CR8-0 boot; memory init; jump to main. RTT diagnostics stay usable before SCI init; syslog-console builds bypass SCI low-setup. `nsh-rtt` retains its working SCI4 shell setup; integrated RTT shell I/O still needs a target transcript. |
 | 39 | Startup (CM33) | rzv_start_cm33.c | (none) | functional | (CM33 variant) | nsh-cm33 | (pending) | CM33 boot path; co-processor wake |
 | 40 | Timer ISR | rzv_timerisr.c | (none) | functional | (internal) | (framework) | (pending) | System tick; clock interrupt dispatch |
 | 41 | Watchdog | rzv_wdt.c | rzv_wdt.h | build-clean | separate WDT sample/CMSIS evidence; not active in drone ref | wdt | [2026-07-20 audit](../../plans/reports/audit-260720-1152-rzv2h-wdt-fsp-vs-nuttx-report.md) | Independent watchdog; refresh sequence. Reset-mode/WDT0 is source-audited, but no on-target evidence exists. Automatic sample only, no NSH command-registration requirement, and non-gating for G3-G9. |
@@ -77,21 +77,22 @@ not validate every driver or the integrated PX4 image.
 ## Summary
 
 - **Total drivers:** 41
-- **Functional:** 25
-- **Build-clean:** 10
+- **Functional:** 24
+- **Build-clean:** 11
 - **Blocked:** 4 (ADC, Ether, Ether PHY, SCIF UART)
 - **Stub:** 2
 - **Production:** 0 (pending stress test)
 
 Plan-critical reconciliation:
 
-- Many standalone CR8-0 defconfigs still select SCI1 and must be normalized to
-  SCI4 or RTT-only diagnostics.
-- `nsh-cr8_1` and `nsh-cm33` still require static console correction to SCI5
-  and SCI9; their target validation is final-milestone work.
-- Board `Makefile` includes WDT, CAN-FD, GTM, IPC, and SDHI sources that
-  `CMakeLists.txt` currently omits.
-- `hil-full` cannot be hardware-ready until SCI7 simple-I2C exists.
+- Standalone CR8-0 defconfigs are normalized to SCI4 or RTT-only diagnostics.
+- `nsh-cr8_1` and `nsh-cm33` select SCI5 and SCI9. CM33 linking and both target
+  proofs remain final-milestone work.
+- Board Make/CMake source selection is reconciled for the audited configs.
+- `hil-spi-loopback` explicitly selects late board initialization; its clean
+  image links the SPI registration chain before direct `hwtest_main`.
+- `hil-full` is SCI7 build-clean but cannot be hardware-ready until the
+  BMP280 transaction and recovery procedure passes on target.
 - CR8-1/CM33/OpenAMP work is non-gating until the CR8-0 PX4 drone path passes.
 
 ---

@@ -489,6 +489,7 @@ WorkQueueManagerStatus()
 
 	} else {
 		PX4_INFO("not running");
+		return PX4_ERROR;
 	}
 
 	return PX4_OK;

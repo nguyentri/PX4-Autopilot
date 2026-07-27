@@ -87,6 +87,22 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NUTTX_DIR}/.conf
 # NuttX cmake defconfig
 ###############################################################################
 
+# A reconfigure can replace a NuttX defconfig without recreating the CMake
+# build directory. Track values imported from the previous full .config; any
+# value not present in the new config must be cleared after current values are
+# imported so it cannot continue to affect the CMake graph.
+get_cmake_property(NUTTX_CONFIG_CACHE_VARIABLES CACHE_VARIABLES)
+foreach(CACHED_VARIABLE ${NUTTX_CONFIG_CACHE_VARIABLES})
+	get_property(CACHED_VARIABLE_HELP CACHE ${CACHED_VARIABLE} PROPERTY HELPSTRING)
+
+	if(CACHED_VARIABLE_HELP MATCHES "^NUTTX DEFCONFIG:")
+		list(APPEND STALE_NUTTX_CONFIG_CACHE_VARIABLES ${CACHED_VARIABLE})
+	endif()
+endforeach()
+unset(NUTTX_CONFIG_CACHE_VARIABLES)
+unset(CACHED_VARIABLE)
+unset(CACHED_VARIABLE_HELP)
+
 # parse nuttx config options for cmake
 file(STRINGS ${PX4_BINARY_DIR}/NuttX/nuttx/.config ConfigContents)
 foreach(NameAndValue ${ConfigContents})
@@ -106,5 +122,12 @@ foreach(NameAndValue ${ConfigContents})
 		# Set the variable
 		#message(STATUS "${Name} ${Value}")
 		set(${Name} ${Value} CACHE INTERNAL "NUTTX DEFCONFIG: ${Name}" FORCE)
+		list(REMOVE_ITEM STALE_NUTTX_CONFIG_CACHE_VARIABLES ${Name})
 	endif()
 endforeach()
+
+foreach(STALE_VARIABLE ${STALE_NUTTX_CONFIG_CACHE_VARIABLES})
+	set(${STALE_VARIABLE} "" CACHE INTERNAL "NUTTX DEFCONFIG: ${STALE_VARIABLE}" FORCE)
+endforeach()
+unset(STALE_NUTTX_CONFIG_CACHE_VARIABLES)
+unset(STALE_VARIABLE)

@@ -4,8 +4,8 @@ help px4
 source ${PX4_SOURCE_DIR}/platforms/nuttx/Debug/NuttX
 help nuttx
 
-source ${PX4_SOURCE_DIR}/platforms/nuttx/Debug/ARMv7M
-help armv7m
+source ${PX4_SOURCE_DIR}/platforms/nuttx/Debug/@DEBUG_GDB_ARCH_MACROS@
+help @DEBUG_GDB_ARCH_HELP_COMMAND@
 
 set mem inaccessible-by-default off
 

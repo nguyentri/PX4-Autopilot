@@ -1,0 +1,5 @@
+// Raw binary flashing is intentionally disabled for @PX4_CONFIG@.
+// The RZ/V2H CR8 output is a composite loader image; no authoritative
+// boot-consumer address contract exists for loadbin. Use an explicitly
+// authorized GDB load of the exact ELF instead.
+qc

@@ -81,10 +81,10 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P90 | MOSI | MPU9250 IMU | Data out |
 | P91 | MISO | MPU9250 IMU | Data in |
 | P92 | SCK | MPU9250 IMU | Clock |
-| P93 | CS (SSLA0) | MPU9250 IMU | Chip select |
+| P93 | GPIO CS (SSLA0-capable) | MPU9250 IMU | Active-low chip select |
 | P94 | SSLA1 | Unused by reference application | Reserved alternate chip select |
 
-**Speed:** ~10 MHz (SPI mode 0/1).  
+**Speed:** Driver default 1 MHz; target ceiling unverified.
 **DMA:** Not currently enabled; PIO polling in rzv_spi.c.
 
 ### I2C Bus (RSCI7 SCI-mode I2C)

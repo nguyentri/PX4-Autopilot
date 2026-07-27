@@ -79,6 +79,17 @@
 namespace
 {
 
+int configure_pwm_gpio(uint32_t gpio, unsigned channel)
+{
+	const int ret = px4_arch_configgpio(gpio);
+
+	if (ret != 0) {
+		syslog(LOG_ERR, "rdk_rzv2h_timer_initialize: PWM%u GPIO configuration failed: %d\n", channel, ret);
+	}
+
+	return ret;
+}
+
 /**
  * GPT Timer Instances for PWM Output
  *
@@ -178,9 +189,8 @@ constexpr ChannelType makeChannel(ChannelType base, uint8_t timer_index, uint32_
 
 } // namespace
 
-// Forward declarations
+// Forward declaration
 extern "C" int io_timer_init();
-extern "C" void hrt_init(void);
 
 extern "C" {
 
@@ -214,32 +224,47 @@ extern "C" {
 	/**
 	 * @brief Initialize timer subsystem for RDK-RZV2H
 	 *
-	 * This function initializes the GPT timers for PWM output and the HRT timer.
-	 * Called from board_app_initialize() during board startup.
+	 * This function initializes the GPT timers used for actuator output.
+	 * HRT is initialized independently by px4_platform_init().
 	 *
 	 * @return 0 on success, negative errno on failure
 	 */
 	int rdk_rzv2h_timer_initialize(void)
 	{
+		int ret = 0;
+
 		/* Ensure PWM pins are configured for GPT output */
 #ifdef BOARD_PWM_CH0_GPIO
-		px4_arch_configgpio(BOARD_PWM_CH0_GPIO);
+		ret = configure_pwm_gpio(BOARD_PWM_CH0_GPIO, 0);
+
+		if (ret != 0) {
+			return ret;
+		}
 #endif
 #ifdef BOARD_PWM_CH1_GPIO
-		px4_arch_configgpio(BOARD_PWM_CH1_GPIO);
+		ret = configure_pwm_gpio(BOARD_PWM_CH1_GPIO, 1);
+
+		if (ret != 0) {
+			return ret;
+		}
 #endif
 #ifdef BOARD_PWM_CH2_GPIO
-		px4_arch_configgpio(BOARD_PWM_CH2_GPIO);
+		ret = configure_pwm_gpio(BOARD_PWM_CH2_GPIO, 2);
+
+		if (ret != 0) {
+			return ret;
+		}
 #endif
 #ifdef BOARD_PWM_CH3_GPIO
-		px4_arch_configgpio(BOARD_PWM_CH3_GPIO);
+		ret = configure_pwm_gpio(BOARD_PWM_CH3_GPIO, 3);
+
+		if (ret != 0) {
+			return ret;
+		}
 #endif
 
-		/* Initialize high-resolution timer first */
-		hrt_init();
-
 		/* Initialize IO timer subsystem */
-		int ret = io_timer_init();
+		ret = io_timer_init();
 
 		if (ret != 0) {
 			syslog(LOG_ERR, "rdk_rzv2h_timer_initialize: io_timer_init() failed: %d\n", ret);

@@ -24,27 +24,13 @@ CONFIG_ARCH_CHIP="rzv"
 CONFIG_ARCH_CHIP_RZV=y
 CONFIG_ARCH_CHIP_R9A09G057=y
 CONFIG_ARCH_STACKDUMP=y
-CONFIG_ARMV7R_DCACHE=y
-CONFIG_ARMV7R_DTCM=y
-CONFIG_ARMV7R_ICACHE=y
-CONFIG_ARMV7R_ITCM=y
 CONFIG_BOARD_LOOPSPERMSEC=200000
-CONFIG_RZV2H_BUILD_CR8_0=y
-CONFIG_RZV_CLOCK_PLL=y
-CONFIG_RZV_GTM=y
-CONFIG_RZV_GTM0_TIMER=y
-CONFIG_RZV_GTM_CLOCK_FREQUENCY=120000000
 CONFIG_RZV_HRT=y
-CONFIG_RZV_PCLK_FREQUENCY=120000000
-CONFIG_RZV_DTCM=16
-CONFIG_RZV_ITCM=16
 CONFIG_RAM_SIZE=524288
 CONFIG_RAM_START=0x22060000
 CONFIG_RAW_BINARY=y
-CONFIG_SPINLOCK=y
 CONFIG_BUILTIN=y
 CONFIG_BUILD_FLAT=y
-CONFIG_DEV_CONSOLE=y
 CONFIG_DEBUG_ALERT=y
 CONFIG_DEBUG_ERROR=y
 CONFIG_DEBUG_FEATURES=y
@@ -52,10 +38,9 @@ CONFIG_DEBUG_FULLOPT=y
 CONFIG_DEBUG_INFO=y
 CONFIG_DEBUG_SYMBOLS=y
 CONFIG_DEBUG_WARN=y
-CONFIG_FS_DEVFS=y
-CONFIG_FS_LITTLEFS=y
 CONFIG_FS_PROCFS=y
 CONFIG_FS_ROMFS=y
+CONFIG_FS_TMPFS=y
 CONFIG_HAVE_CXX=y
 CONFIG_HAVE_CXXINITIALIZE=y
 CONFIG_IDLETHREAD_STACKSIZE=2048
@@ -63,8 +48,6 @@ CONFIG_INIT_ENTRYPOINT="nsh_main"
 CONFIG_INTELHEX_BINARY=y
 CONFIG_LIBC_FLOATINGPOINT=y
 CONFIG_LIBC_LOCALTIME=y
-CONFIG_MAX_TASKS=32
-CONFIG_MAX_TASK_ARGS=8
 CONFIG_TASK_NAME_SIZE=24
 CONFIG_PTHREAD_STACK_MIN=512
 CONFIG_PREALLOC_TIMERS=50
@@ -79,9 +62,6 @@ CONFIG_NSH_READLINE=y
 # Core Specific Configuration (CR8 Core 0)
 CONFIG_RZV2H_BUILD_CR8_0=y
 
-# Clock Configuration
-CONFIG_RZV_CLOCK_PLL=y
-
 # PWM Configuration (GPT Timers)
 CONFIG_PWM=y
 CONFIG_RZV_GPT=y
@@ -89,16 +69,13 @@ CONFIG_RZV_GPT6=y
 CONFIG_RZV_GPT7=y
 CONFIG_RZV_GPT9=y
 CONFIG_RZV_GPT10=y
-CONFIG_RDK_RZV2H_XSPI_PARAMFS=y
+CONFIG_RDK_RZV2H_VOLATILE_PARAMFS=y
 
 # Serial Configuration
 # NOTE: SCI3 is NOT routed on the RDK-RZV2H board (no pins assigned; see
 # docs/renesas/pinmap.md "Serial Policy"). Do not enable CONFIG_RZV_SCI3.
 #
-# SCI4: reserved for TFmini LiDAR (/dev/ttyS4) in the integrated PX4 build.
-#       Temporarily used as the NSH shell console during bring-up (see the
-#       console section below). Move the console off SCI4 when the LiDAR is
-#       wired in.
+# SCI4: TFmini LiDAR (/dev/ttyS4)
 # SCI5: MAVLink telemetry (/dev/ttyS5)
 # SCI6: SBUS RC input (/dev/ttyS6)
 # SCI9: GPS M10 (/dev/ttyS9)
@@ -108,6 +85,9 @@ CONFIG_RZV_SCI6=y
 CONFIG_RZV_SCI9=y
 CONFIG_SERIAL=y
 CONFIG_STANDARD_SERIAL=y
+CONFIG_SERIAL_TERMIOS=y
+# Match the checked-in FSP UART settings for SCI4/5/6/9.
+# CONFIG_RZV_SCI_BITRATE_MODULATION is not set
 
 # SCI3 driver intentionally omitted: SCI3 is not available on RDK-RZV2H.
 
@@ -146,36 +126,22 @@ CONFIG_SCI9_2STOP=0
 CONFIG_DEV_CONSOLE=y
 CONFIG_DEV_SIMPLE_ADDRENV=y
 
-# Console options (mutually exclusive). To move the console to RTT0 later
-# (integrated PX4 build, where SCI4 becomes the TFmini LiDAR), comment out
-# CONFIG_SCI4_SERIAL_CONSOLE below and uncomment this RTT0 console block.
-#CONFIG_SERIAL_RTT=y
-#CONFIG_SERIAL_RTT0=y
-#CONFIG_SERIAL_RTT_CONSOLE=y
-#CONFIG_SERIAL_RTT_CONSOLE_CHANNEL=0
-#CONFIG_SERIAL_RTT_POLLING_INTERVAL=1000
-#CONFIG_SERIAL_CONSOLE=y
-
-# Bring-up shell/console on SCI4 (115200 8N1): NSH prompt, input, and command
-# output route to /dev/console on SCI4.
-# NOTE: SCI4 is reserved for the TFmini LiDAR (/dev/ttyS4) in the integrated
-# PX4 build (see docs/renesas/pinmap.md "Serial Policy"). Change this when the
-# LiDAR is wired in.
-CONFIG_SCI4_SERIAL_CONSOLE=y
-CONFIG_SERIAL_CONSOLE=y
-
-# SEGGER RTT channel 0: logging only. Syslog plus boot progress, panic, and
-# architecture low-level diagnostics go to RTT; the SCI4 console is left for
-# shell traffic. RTT is not registered as a serial device or shell console.
+# The integrated image reserves SCI4 for TFmini LiDAR, so no payload SCI is
+# allowed to become /dev/console. SEGGER RTT channel 0 provides both text
+# diagnostics and interactive console input through the syslog console device.
+CONFIG_NO_SERIAL_CONSOLE=y
+# CONFIG_SCI4_SERIAL_CONSOLE is not set
+# CONFIG_SERIAL_CONSOLE is not set
 CONFIG_SYSLOG_RTT=y
+CONFIG_CONSOLE_SYSLOG=y
+CONFIG_SYSLOG_RTT_CONSOLE_INPUT=y
+CONFIG_SYSLOG_RTT_CONSOLE_POLL_USEC=1000
 CONFIG_RZV_DIAGNOSTICS_RTT=y
 CONFIG_SEGGER_RTT=y
 # Link the RTT control block/buffers into uncached SRAM for debugger visibility.
 CONFIG_SEGGER_RTT_SECTION=".noncache_buffer"
 CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=8192
 CONFIG_SEGGER_RTT_BUFFER_SIZE_DOWN=1024
-CONFIG_SEGGER_RTT_PRINTF=y
-CONFIG_SEGGER_RTT_PRINTF_BUFFER_SIZE=2048
 
 # SPI Configuration (for MPU9250 IMU)
 CONFIG_SPI=y
@@ -185,40 +151,32 @@ CONFIG_SPI_EXCHANGE=y
 
 # I2C Configuration
 #
-# The barometer is wired to SCI7 simple-I2C pins P7_6/P7_7, but the current
-# RZV NuttX Kconfig only exposes RIIC0-3 and SCI simple-I2C0-3. Keep generic
-# I2C enabled for PX4 and leave SCI7 hardware validation as the next driver enablement item.
+# The barometer is wired to SCI7 simple-I2C pins P7_6/P7_7. The lower-half
+# maps PX4 logical bus 7 directly to SCI7; on-target BMP280 proof remains a
+# hardware validation gate.
 CONFIG_I2C=y
+CONFIG_RZV_SCI_I2C=y
+CONFIG_RZV_SCI7_I2C=y
 
-# ADC Configuration
-#
-# Battery ADC channels are intentionally disabled in board_config.h for this
-# v1 port; the lower-half driver has only a top-level RZV_ADC Kconfig symbol.
-CONFIG_ANALOG=y
-CONFIG_ADC=y
-CONFIG_RZV_ADC=y
-CONFIG_ADC_FIFOSIZE=8
+# ADC is intentionally excluded from the integrated image. The checked-in
+# drone reference has no active ADC path; retain it as a post-G9 standalone
+# sample until channel ownership and conversions are proven on target.
+# CONFIG_ANALOG is not set
+# CONFIG_ADC is not set
+# CONFIG_RZV_ADC is not set
 
 # DMA Configuration (available, but not bound to DShot/PWM in v1)
 CONFIG_ARCH_DMA=y
 CONFIG_RZV_DMAC=y
 
-# CR8-0 <-> CA55 OpenAMP/RPMsg transport.
-# The board starts the RZ/V2H transport during bring-up and exposes the
-# rpmsg-service-0 channel through /dev/ipcc0 for PX4-side clients.
-CONFIG_EXPERIMENTAL=y
-CONFIG_OPENAMP=y
-CONFIG_RPTUN=y
-CONFIG_RPTUN_THREAD=y
-CONFIG_RZV_OPENAMP=y
-CONFIG_RZV_IPC_IPCC=y
-CONFIG_IPCC=y
-CONFIG_IPCC_BUFFERED=y
-CONFIG_IPCC_NPOLLWAITERS=4
-CONFIG_RZV_IPC_RAW=y
-CONFIG_RZV_IPC_CR8_CR8=y
-CONFIG_RZV_IPC_ROLE_INITIATOR=y
-CONFIG_RZV_IPC_CR8_CR8_LOOPBACK=y
+# Optional remote cores and transports are final-milestone features. The
+# default CR8-0 PX4 image must start without CA55, CR8-1, CM33 or OpenAMP.
+# CONFIG_OPENAMP is not set
+# CONFIG_RZV_OPENAMP is not set
+# CONFIG_RZV_IPC_RAW is not set
+
+# Standalone board examples are excluded from the integrated PX4 image.
+# CONFIG_RZV2H_EXAMPLE_SUPPORT is not set
 
 # Scheduler Configuration
 CONFIG_SCHED_BACKTRACE=y
@@ -237,7 +195,6 @@ CONFIG_SIG_SIGALRM_ACTION=y
 CONFIG_SIG_SIGUSR1_ACTION=y
 CONFIG_SIG_SIGUSR2_ACTION=y
 CONFIG_STACK_COLORATION=y
-CONFIG_SIGINT_ACTION=y
 CONFIG_START_DAY=10
 CONFIG_START_MONTH=9
 CONFIG_START_YEAR=2025
@@ -246,8 +203,6 @@ CONFIG_SYSTEM_NSH_PRIORITY=100
 CONFIG_SYSTEM_NSH_STACKSIZE=2048
 CONFIG_USEC_PER_TICK=1000
 CONFIG_SPINLOCK=y
-
-CONFIG_MM_KERNEL_HEAPSIZE=262144
 
 # FIX-055: vectors live at low address (ITCM 0x00000000); arm_head.S
 # clears SCTLR.V when this is set. Combined with explicit VBAR write in
@@ -263,5 +218,3 @@ CONFIG_DEBUG_GPIO=y
 CONFIG_DEBUG_GPIO_ERROR=y
 CONFIG_DEBUG_GPIO_WARN=y
 CONFIG_DEBUG_GPIO_INFO=y
-
-CONFIG_CPP_HAVE_VARARGS=y

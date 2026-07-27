@@ -39,5 +39,6 @@ px4_add_module(
 		ll40ls.cpp
 		LidarLiteI2C.cpp
 	DEPENDS
+		drivers__device
 		drivers_rangefinder
 	)

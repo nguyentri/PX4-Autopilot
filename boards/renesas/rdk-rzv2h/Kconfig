@@ -36,4 +36,12 @@ config BOARD_RDK_RZV2H_HAS_MAG
 	---help---
 		Enable AK8963 magnetometer (internal to MPU9250).
 
+config BOARD_RDK_RZV2H_PX4IO_BRIDGE
+	bool "Enable the experimental CR8-1 PX4IO bridge"
+	default n
+	---help---
+		Build the CR8-0 uORB bridge for a separately loaded CR8-1 PX4IO
+		image. Keep disabled in independent CR8-0 images until the final
+		multicore milestone validates IPCC ownership and recovery.
+
 endif # BOARD_RDK_RZV2H
