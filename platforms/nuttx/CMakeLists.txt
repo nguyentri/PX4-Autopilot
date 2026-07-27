@@ -304,6 +304,7 @@ else()
 		-Wl,--warn-common
 		-Wl,--gc-sections
 
+		$<$<BOOL:${CONFIG_ARCH_ARMV7R}>:-Wl,--entry=__start>
 		$<$<BOOL:${CONFIG_ARCH_ARMV7R}>:${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o>
 
 		-Wl,--start-group
@@ -546,7 +547,7 @@ if(NOT NUTTX_DIR MATCHES "external")
 		set(DEBUG_DEVICE "R9A09G057H44_R8_0")
 		set(DEBUG_SVD_FILE "R9A09G057H.svd")
 		set(RZV_DEBUG_EXECUTABLE "build/${PX4_CONFIG}/${PX4_CONFIG}.elf")
-		set(RZV_DEBUG_PROFILE_NAME "Attach RZV2H CR8 (Core0, ${PX4_CONFIG}, read-only)")
+		set(RZV_DEBUG_PROFILE_NAME "Debug RZV2H CR8 (Core0, ${PX4_CONFIG} PX4)")
 		set(JLINK_REQUIRE_SERIAL TRUE)
 		set(RENESAS_DEBUG_CONFIG TRUE)
 	else()
@@ -594,7 +595,7 @@ if(NOT NUTTX_DIR MATCHES "external")
 		if(RENESAS_DEBUG_CONFIG)
 			if(NOT RZV_DEBUG_EXECUTABLE)
 				set(RZV_DEBUG_EXECUTABLE "build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf")
-				set(RZV_DEBUG_PROFILE_NAME "Attach RZV2H CR8 (Core0, renesas_rdk-rzv2h_default, read-only)")
+				set(RZV_DEBUG_PROFILE_NAME "Debug RZV2H CR8 (Core0, renesas_rdk-rzv2h_default PX4)")
 			endif()
 			configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/launch_renesas.json.in ${PX4_SOURCE_DIR}/.vscode/launch.json @ONLY)
 			message(STATUS "Generated Renesas debug configuration for ${DEBUG_DEVICE}")

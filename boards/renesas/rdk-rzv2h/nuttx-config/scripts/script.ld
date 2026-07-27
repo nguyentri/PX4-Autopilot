@@ -119,6 +119,24 @@ ASSERT(IPC_RAW_SHM_START >= OPENAMP_VRING_START + OPENAMP_VRING_LENGTH,
 /* Cross-core: CR8-0 private DDR must end at or before CR8-1 private DDR start */
 ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= DDR_CR8_1_PRIV_START,
        "CR8-0 private DDR overlaps CR8-1 private DDR - repartition rdk-rzv2h_cr8_0.ld/cr8_1.ld");
+ASSERT(SRAM_CACHE_PRV_START == 0x08180000 &&
+       SRAM_CACHE_PRV_LENGTH <= 0x00020000,
+       "CR8-0 cacheable SRAM must fit MPU region 2");
+ASSERT(SRAM_UNCACHE_PRV_START == 0x081A0000 &&
+       SRAM_UNCACHE_PRV_LENGTH <= 0x00020000,
+       "CR8-0 non-cacheable SRAM must fit MPU region 3");
+ASSERT(DDR_CACHE_PRV_START == 0x40800000 &&
+       DDR_CACHE_LENGTH == 0x00800000,
+       "CR8-0 cacheable DDR must match MPU region 6");
+ASSERT(DDR_UNCACHE_PRV_START == 0x41000000 &&
+       DDR_UNCACHE_LENGTH == 0x00800000,
+       "CR8-0 non-cacheable DDR must match MPU region 7");
+ASSERT(OPENAMP_RSCTBL_START == 0x42F00000 &&
+       MHU_SHMEM_START + MHU_SHMEM_LENGTH <= 0x42F02000,
+       "OpenAMP resource table and MHU SHMEM must fit MPU region 8");
+ASSERT(OPENAMP_VRING_START == 0x43000000 &&
+       IPC_RAW_SHM_START + IPC_RAW_SHM_LENGTH <= 0x44000000,
+       "OpenAMP VRING and IPC SHM must fit MPU region 9");
 
 PHDRS
 {
@@ -605,10 +623,9 @@ PROVIDE( _einit = __init_array_end );
 PROVIDE( _sdata = _itcm_load_addr );
 /* End of flash load area: end of SDRAM load region */
 PROVIDE( _edata = _sdram_load_addr + _sdram_load_size );
-/* Flash readonly/text area: use FLASH_HEADER_START as the base for readonly data */
-PROVIDE( _stext = FLASH_HEADER_START );
-/* End of readonly/text area: same end as the overall flash load region */
-PROVIDE( _etext = _sdram_load_addr + _sdram_load_size );
+/* Runtime executable text bounds used to validate C++ constructor targets */
+PROVIDE( _stext = _sdram_text_start );
+PROVIDE( _etext = _sdram_text_end );
 PROVIDE( _eronly = _etext );
 /* End of zero-initialized RAM (BSS end) */
 PROVIDE( _sbss = __bss_start__ );

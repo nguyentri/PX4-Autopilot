@@ -14,42 +14,94 @@
     //usbipd detach --busid 1-4 // to detach the device from WSL2
     "configurations": [
         {
-        "name": "@RZV_DEBUG_PROFILE_NAME@",
-        "cwd": "${workspaceRoot}",
-        "executable": "${workspaceRoot}/@RZV_DEBUG_EXECUTABLE@",
-        "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
-        "request": "attach",
-        "type": "cortex-debug",
-        "gdbPath": "/usr/bin/gdb-multiarch",
-        "svdFile": "${workspaceRoot}/rzv2h.svd",
-        "servertype": "jlink",
-        "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
-        "serverArgs": [
-            "-speed", "15000",
-            // "-select", "IP=10.231.20.16:19023", // Need to check the IP address and Port of the JLink server
-            // "-select", "IP=192.168.1.89:19023", // incase of running on wsl, need to run jlinkRemoteServer on windown
-        ],
-        "device": "R9A09G057H44_R8_0", // R9A09G057H44_M33_0/R9A09G057H44_R8_0
-        "serialNumber": "${input:rzv2hJlinkSerial}",
-        "showDevDebugOutput": "parsed",
-        "rttConfig": {
-            "enabled": true,
-            "address": "auto",
-            "decoders": [
-            {
-                "label": "rtt_0",
-                "port": 0,
-                "type": "console",
+            "name": "@RZV_DEBUG_PROFILE_NAME@",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/@RZV_DEBUG_EXECUTABLE@",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": [
+                "-speed", "15000"
+            ],
+            "device": "R9A09G057H44_R8_0",
+            "serialNumber": "${input:rzv2hJlinkSerial}",
+            "showDevDebugOutput": "parsed",
+            "overrideLaunchCommands": [
+                "monitor halt",
+                "monitor reset",
+                "load",
+                "set $pc = __start"
+            ],
+            "overrideResetCommands": [
+                "monitor halt",
+                "monitor reset",
+                "set $pc = __start"
+            ],
+            "runToEntryPoint": "arm_boot",
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "label": "rtt_0",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
             }
-            ]
         },
-        "liveWatch": {
-            "enabled": true,
-            "samplesPerSecond": 4
-        },
-        "overrideAttachCommands": [
-            "monitor halt"
-        ],
+        {
+            "name": "Debug RZV2H CR8 (Core0, standalone NuttX)",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": [
+                "-speed", "15000"
+            ],
+            "device": "R9A09G057H44_R8_0",
+            "serialNumber": "${input:rzv2hJlinkSerial}",
+            "showDevDebugOutput": "parsed",
+            "overrideLaunchCommands": [
+                "monitor halt",
+                "monitor reset",
+                "load",
+                "set $pc = __start"
+            ],
+            "overrideResetCommands": [
+                "monitor halt",
+                "monitor reset",
+                "set $pc = __start"
+            ],
+            "runToEntryPoint": "arm_boot",
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "label": "rtt_0",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
         },
         {
             "name": "Debug RA8P1 CM85 (Core0)",
