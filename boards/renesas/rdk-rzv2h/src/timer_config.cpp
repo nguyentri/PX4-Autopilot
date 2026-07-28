@@ -47,8 +47,8 @@
  * ├─────────┼───────────┼─────────┼─────────────────────┼───────────┤
  * │ PWM0    │ GPT6      │ GTIOC6A │ PA4 (Port10, Pin4)  │ Mode 11   │
  * │ PWM1    │ GPT7      │ GTIOC7B │ PA7 (Port10, Pin7)  │ Mode 11   │
- * │ PWM2    │ GPT9      │ GTIOC9A │ P96 (Port9, Pin6)   │ Mode 9    │
- * │ PWM3    │ GPT10     │ GTIOC10B│ P53 (Port5, Pin3)   │ Mode 11   │
+ * │ PWM2    │ logical 9 │ GTIOC9A │ P96 (Port9, Pin6)   │ Mode 9    │
+ * │ PWM3    │ logical 10│ GTIOC10B│ P53 (Port5, Pin3)   │ Mode 11   │
  * └─────────┴───────────┴─────────┴─────────────────────┴───────────┘
  *
  * GPIO Header Mapping:
@@ -60,7 +60,9 @@
  * Timer Settings:
  * - Frequency: 400 Hz (configurable via startup script, range 50-500 Hz)
  * - Mode: Standard PWM (1000-2000 µs pulse width)
- * - Clock: runtime PCLK from NuttX rzv_get_pclk_frequency()
+ * - Clock: runtime P4CLK from NuttX rzv_get_gpt_clock_hz()
+ *
+ * Logical GPT9/GPT10 map to physical R_GPT11/R_GPT12 in unit 1.
  *
  * Pin assignments from rzv2h_pinmap.h
  */
@@ -88,6 +90,21 @@ int configure_pwm_gpio(uint32_t gpio, unsigned channel)
 	}
 
 	return ret;
+}
+
+constexpr uint32_t kPwmGpios[MAX_TIMER_IO_CHANNELS] = {
+	static_cast<uint32_t>(BOARD_PWM_CH0_GPIO),
+	static_cast<uint32_t>(BOARD_PWM_CH1_GPIO),
+	static_cast<uint32_t>(BOARD_PWM_CH2_GPIO),
+	static_cast<uint32_t>(BOARD_PWM_CH3_GPIO),
+};
+
+void unconfigure_pwm_gpios(unsigned configured_count)
+{
+	while (configured_count > 0) {
+		configured_count--;
+		(void)px4_arch_unconfiggpio(kPwmGpios[configured_count]);
+	}
 }
 
 /**
@@ -231,43 +248,25 @@ extern "C" {
 	 */
 	int rdk_rzv2h_timer_initialize(void)
 	{
-		int ret = 0;
+		unsigned configured_count = 0;
 
-		/* Ensure PWM pins are configured for GPT output */
-#ifdef BOARD_PWM_CH0_GPIO
-		ret = configure_pwm_gpio(BOARD_PWM_CH0_GPIO, 0);
+		for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+			int ret = configure_pwm_gpio(kPwmGpios[channel], channel);
 
-		if (ret != 0) {
-			return ret;
+			if (ret != 0) {
+				unconfigure_pwm_gpios(configured_count);
+				return ret;
+			}
+
+			configured_count++;
 		}
-#endif
-#ifdef BOARD_PWM_CH1_GPIO
-		ret = configure_pwm_gpio(BOARD_PWM_CH1_GPIO, 1);
-
-		if (ret != 0) {
-			return ret;
-		}
-#endif
-#ifdef BOARD_PWM_CH2_GPIO
-		ret = configure_pwm_gpio(BOARD_PWM_CH2_GPIO, 2);
-
-		if (ret != 0) {
-			return ret;
-		}
-#endif
-#ifdef BOARD_PWM_CH3_GPIO
-		ret = configure_pwm_gpio(BOARD_PWM_CH3_GPIO, 3);
-
-		if (ret != 0) {
-			return ret;
-		}
-#endif
 
 		/* Initialize IO timer subsystem */
-		ret = io_timer_init();
+		int ret = io_timer_init();
 
 		if (ret != 0) {
 			syslog(LOG_ERR, "rdk_rzv2h_timer_initialize: io_timer_init() failed: %d\n", ret);
+			unconfigure_pwm_gpios(configured_count);
 			return ret;
 		}
 

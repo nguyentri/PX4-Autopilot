@@ -94,12 +94,9 @@ typedef uint64_t hrt_abstime;
 typedef void (*channel_handler_t)(void *context, uint32_t chan_index,
 				  hrt_abstime isrs_time, uint32_t isrs_rcnt);
 
-/* Timer channel allocation type */
-/* Array sized for all possible channel modes */
-#define NUM_CHANNEL_MODES  8
-
-static io_timer_channel_allocation_t channel_allocations[NUM_CHANNEL_MODES] = { 0 };
+static io_timer_channel_allocation_t channel_allocations[IOTimerChanModeSize] = { 0 };
 static io_timer_channel_allocation_t timer_allocations[MAX_IO_TIMERS] = { 0 };
+static bool io_timer_initialized;
 
 /* External declarations from board timer_config.cpp */
 extern const io_timers_t io_timers[];
@@ -162,10 +159,16 @@ static inline uint32_t gpt_compare_offset(unsigned channel, bool buffered)
 static void gpt_set_compare(uint32_t base, unsigned channel, uint32_t ticks,
 			    bool buffered)
 {
-	io_timer_putreg32(ticks, base + gpt_compare_offset(channel, buffered));
+	uint32_t compare = UINT32_MAX;
+
+	if (ticks > 0 && ticks < gpt_state[channel].period) {
+		compare = ticks - 1u;
+	}
+
+	io_timer_putreg32(compare, base + gpt_compare_offset(channel, buffered));
 }
 
-static uint32_t gpt_duty_control(unsigned channel, uint32_t ticks)
+static uint32_t gpt_duty_control(unsigned channel, uint32_t ticks, uint32_t period)
 {
 	uint32_t duty = GPT_GTUDDTYC_UD;
 	uint32_t selected_duty = GPT_UDDTYC_DTY_REGISTER;
@@ -173,7 +176,7 @@ static uint32_t gpt_duty_control(unsigned channel, uint32_t ticks)
 	if (ticks == 0) {
 		selected_duty = GPT_UDDTYC_DTY_0_PERCENT;
 
-	} else if (ticks >= gpt_state[channel].period) {
+	} else if (ticks >= period) {
 		selected_duty = GPT_UDDTYC_DTY_100_PERCENT;
 	}
 
@@ -189,7 +192,21 @@ static uint32_t gpt_duty_control(unsigned channel, uint32_t ticks)
 	return duty;
 }
 
-static bool is_configured_channel(unsigned channel)
+static void gpt_write_duty_control(uint32_t base, unsigned channel,
+				   uint32_t ticks, uint32_t period,
+				   bool latch_direction)
+{
+	uint32_t duty = gpt_duty_control(channel, ticks, period);
+
+	if (latch_direction) {
+		io_timer_putreg32(duty | GPT_GTUDDTYC_UDF,
+				  base + RZV_GPT_GTUDDTYC_OFFSET);
+	}
+
+	io_timer_putreg32(duty, base + RZV_GPT_GTUDDTYC_OFFSET);
+}
+
+static bool valid_channel(unsigned channel)
 {
 	return channel < MAX_TIMER_IO_CHANNELS &&
 	       timer_io_channels[channel].timer_index < MAX_IO_TIMERS &&
@@ -197,12 +214,36 @@ static bool is_configured_channel(unsigned channel)
 		timer_io_channels[channel].timer_channel == 2);
 }
 
-static uint32_t pulse_width_to_ticks(unsigned channel, uint16_t value)
+static bool valid_mode(io_timer_channel_mode_t mode)
 {
-	uint64_t ticks = (uint64_t)value * gpt_state[channel].pclk / 1000000ULL;
+	return mode > IOTimerChanMode_NotUsed && mode < IOTimerChanModeSize;
+}
 
-	if (ticks >= gpt_state[channel].period) {
-		ticks = gpt_state[channel].period ? gpt_state[channel].period - 1 : 0;
+static bool analog_pwm_mode(io_timer_channel_mode_t mode)
+{
+	return mode == IOTimerChanMode_PWMOut || mode == IOTimerChanMode_OneShot;
+}
+
+static io_timer_channel_allocation_t valid_channel_mask(void)
+{
+	io_timer_channel_allocation_t mask = 0;
+
+	for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+		if (valid_channel(channel)) {
+			mask |= (io_timer_channel_allocation_t)1u << channel;
+		}
+	}
+
+	return mask;
+}
+
+static uint32_t pulse_width_to_ticks(uint32_t pclk, uint32_t period,
+				     uint16_t value)
+{
+	uint64_t ticks = (uint64_t)value * pclk / 1000000ULL;
+
+	if (ticks > period) {
+		ticks = period;
 	}
 
 	return (uint32_t)ticks;
@@ -211,10 +252,10 @@ static uint32_t pulse_width_to_ticks(unsigned channel, uint16_t value)
 static uint32_t gpt_output_control(unsigned channel, bool enable)
 {
 	if (timer_io_channels[channel].timer_channel == 1) {
-		return GPT_GTIOR_GTIOA_HIGH_CMP_LOW | (enable ? GPT_GTIOR_OAE : 0);
+		return GPT_GTIOR_GTIOA_CYCLE_END_HIGH_CMP_LOW | (enable ? GPT_GTIOR_OAE : 0);
 	}
 
-	return GPT_GTIOR_GTIOB_HIGH_CMP_LOW | (enable ? GPT_GTIOR_OBE : 0);
+	return GPT_GTIOR_GTIOB_CYCLE_END_HIGH_CMP_LOW | (enable ? GPT_GTIOR_OBE : 0);
 }
 
 /**
@@ -222,11 +263,7 @@ static uint32_t gpt_output_control(unsigned channel, bool enable)
  */
 static int rzv2h_gpt_init_channel(unsigned channel)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS) {
-		return -EINVAL;
-	}
-
-	if (!is_configured_channel(channel)) {
+	if (!valid_channel(channel)) {
 		return -EINVAL;
 	}
 
@@ -276,8 +313,7 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 	gpt_set_compare(base, channel, 0, true);
 	io_timer_putreg32(period - 1, base + RZV_GPT_GTPBR_OFFSET);
 	io_timer_putreg32(GPT_GTBER_FORCE_TRANSFER, base + RZV_GPT_GTBER_OFFSET);
-	io_timer_putreg32(gpt_duty_control(channel, 0),
-			  base + RZV_GPT_GTUDDTYC_OFFSET);
+	gpt_write_duty_control(base, channel, 0, period, true);
 
 	/* Keep timer output disabled until PX4 arms/enables PWM. */
 	io_timer_putreg32(gpt_output_control(channel, false), base + RZV_GPT_GTIOR_OFFSET);
@@ -289,38 +325,73 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 	return 0;
 }
 
+static void rzv2h_gpt_deinit_channel(unsigned channel)
+{
+	if (!valid_channel(channel) || !gpt_state[channel].initialized) {
+		return;
+	}
+
+	uint8_t timer_idx = timer_io_channels[channel].timer_index;
+	uint8_t timer_id = io_timers[timer_idx].timer_id;
+	uint32_t base = get_gpt_base(timer_id);
+
+	if (base != 0) {
+		gpt_unlock(base);
+		gpt_write_duty_control(base, channel, 0,
+				       gpt_state[channel].period, false);
+		io_timer_putreg32(gpt_channel_mask(timer_id),
+				  base + RZV_GPT_GTSTP_OFFSET);
+		io_timer_putreg32(gpt_channel_mask(timer_id),
+				  base + RZV_GPT_GTCLR_OFFSET);
+		io_timer_putreg32(gpt_output_control(channel, false),
+				  base + RZV_GPT_GTIOR_OFFSET);
+		io_timer_putreg32(0, base + RZV_GPT_GTINTAD_OFFSET);
+		io_timer_putreg32(0, base + RZV_GPT_GTST_OFFSET);
+		gpt_lock(base);
+	}
+
+	(void)rzv_gpt_module_stop(timer_id);
+	memset(&gpt_state[channel], 0, sizeof(gpt_state[channel]));
+}
+
 /**
  * Initialize the I/O timer system for RZV2H
  */
 int io_timer_init(void)
 {
-	/* Initialize channel allocations - all channels start as NotUsed */
-	channel_allocations[0] = (1 << MAX_TIMER_IO_CHANNELS) - 1;
-
-	for (int i = 1; i < NUM_CHANNEL_MODES; i++) {
-		channel_allocations[i] = 0;
+	if (io_timer_initialized) {
+		return 0;
 	}
 
-	/* Initialize timer state */
+	/* Initialize channel allocations - all channels start as NotUsed */
+	memset(channel_allocations, 0, sizeof(channel_allocations));
+	memset(timer_allocations, 0, sizeof(timer_allocations));
 	memset(gpt_state, 0, sizeof(gpt_state));
+	channel_allocations[IOTimerChanMode_NotUsed] = valid_channel_mask();
 
 	/* Initialize all configured GPT channels */
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		if (is_configured_channel(i)) {
+		if (valid_channel(i)) {
 			int ret = rzv2h_gpt_init_channel(i);
 			if (ret != 0) {
+				while (i > 0) {
+					i--;
+					rzv2h_gpt_deinit_channel(i);
+				}
+
 				return ret;
 			}
 		}
 	}
 
+	io_timer_initialized = true;
 	return 0;
 }
 
 /* Validation functions */
 int io_timer_validate_channel_index(unsigned channel)
 {
-	return (channel < MAX_TIMER_IO_CHANNELS) ? 0 : -EINVAL;
+	return valid_channel(channel) ? 0 : -EINVAL;
 }
 
 static inline int validate_timer_index(unsigned timer)
@@ -332,7 +403,7 @@ static inline int validate_timer_index(unsigned timer)
 int io_timer_allocate_timer(unsigned timer, io_timer_channel_mode_t mode)
 {
 	int ret = -EINVAL;
-	if (validate_timer_index(timer) == 0) {
+	if (validate_timer_index(timer) == 0 && valid_mode(mode)) {
 		if (timer_allocations[timer] == IOTimerChanMode_NotUsed || timer_allocations[timer] == mode) {
 			timer_allocations[timer] = mode;
 			ret = 0;
@@ -355,6 +426,10 @@ int io_timer_unallocate_timer(unsigned timer)
 
 int io_timer_allocate_channel(unsigned channel, io_timer_channel_mode_t mode)
 {
+	if (!valid_channel(channel) || !valid_mode(mode)) {
+		return -EINVAL;
+	}
+
 	irqstate_t flags = px4_enter_critical_section();
 	int existing_mode = io_timer_get_channel_mode(channel);
 	int ret = -EBUSY;
@@ -371,10 +446,14 @@ int io_timer_allocate_channel(unsigned channel, io_timer_channel_mode_t mode)
 
 int io_timer_unallocate_channel(unsigned channel)
 {
+	if (!valid_channel(channel)) {
+		return -EINVAL;
+	}
+
 	irqstate_t flags = px4_enter_critical_section();
 	io_timer_channel_allocation_t bit = 1 << channel;
 
-	for (int i = 0; i < NUM_CHANNEL_MODES; i++) {
+	for (int i = 0; i < IOTimerChanModeSize; i++) {
 		channel_allocations[i] &= ~bit;
 	}
 
@@ -385,6 +464,10 @@ int io_timer_unallocate_channel(unsigned channel)
 
 int io_timer_get_channel_mode(unsigned channel)
 {
+	if (!valid_channel(channel)) {
+		return -EINVAL;
+	}
+
 	io_timer_channel_allocation_t bit = 1 << channel;
 
 	for (int mode = IOTimerChanModeSize - 1; mode >= 0; mode--) {
@@ -401,39 +484,55 @@ int io_timer_get_channel_mode(unsigned channel)
  */
 int io_timer_set_pwm_rate(unsigned channel, unsigned rate)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized ||
+	if (!valid_channel(channel) ||
 	    rate < PWM_MIN_FREQUENCY_HZ || rate > PWM_MAX_FREQUENCY_HZ) {
 		return -EINVAL;
+	}
+
+	irqstate_t flags = px4_enter_critical_section();
+
+	int mode = io_timer_get_channel_mode(channel);
+	if (!gpt_state[channel].initialized ||
+	    !analog_pwm_mode((io_timer_channel_mode_t)mode)) {
+		px4_leave_critical_section(flags);
+		return -EPERM;
 	}
 
 	uint8_t timer_idx = timer_io_channels[channel].timer_index;
 	uint8_t timer_id = io_timers[timer_idx].timer_id;
 	uint32_t base = get_gpt_base(timer_id);
 	if (base == 0) {
+		px4_leave_critical_section(flags);
 		return -EINVAL;
 	}
 
 	/* Calculate new period */
 	uint32_t period = gpt_state[channel].pclk / rate;
 	if (period == 0) {
+		px4_leave_critical_section(flags);
 		return -ERANGE;
 	}
 
-	irqstate_t flags = px4_enter_critical_section();
 	gpt_unlock(base);
-	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
-	io_timer_putreg32(period - 1, base + RZV_GPT_GTPR_OFFSET);
 	gpt_state[channel].period = period;
 
-	uint32_t ticks = pulse_width_to_ticks(channel, gpt_state[channel].ccr_value);
-	gpt_set_compare(base, channel, ticks, false);
-	gpt_set_compare(base, channel, ticks, true);
-	io_timer_putreg32(period - 1, base + RZV_GPT_GTPBR_OFFSET);
-	io_timer_putreg32(gpt_duty_control(channel, ticks),
-			  base + RZV_GPT_GTUDDTYC_OFFSET);
-
+	uint32_t ticks = pulse_width_to_ticks(gpt_state[channel].pclk, period,
+					     gpt_state[channel].ccr_value);
 	if (gpt_state[channel].enabled) {
-		io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
+		io_timer_putreg32(period - 1u, base + RZV_GPT_GTPBR_OFFSET);
+		gpt_set_compare(base, channel, ticks, true);
+		gpt_write_duty_control(base, channel, ticks, period, false);
+
+	} else {
+		io_timer_putreg32(gpt_channel_mask(timer_id),
+				  base + RZV_GPT_GTSTP_OFFSET);
+		io_timer_putreg32(period - 1u, base + RZV_GPT_GTPR_OFFSET);
+		io_timer_putreg32(period - 1u, base + RZV_GPT_GTPBR_OFFSET);
+		gpt_set_compare(base, channel, ticks, false);
+		gpt_set_compare(base, channel, ticks, true);
+		gpt_write_duty_control(base, channel, ticks, period, false);
+		io_timer_putreg32(gpt_channel_mask(timer_id),
+				  base + RZV_GPT_GTCLR_OFFSET);
 	}
 
 	gpt_lock(base);
@@ -447,38 +546,70 @@ int io_timer_set_pwm_rate(unsigned channel, unsigned rate)
  */
 int io_timer_set_enable(bool enable, io_timer_channel_mode_t mode, io_timer_channel_allocation_t masks)
 {
+	io_timer_channel_allocation_t available = valid_channel_mask();
+
+	if (!valid_mode(mode) || !analog_pwm_mode(mode) ||
+	    (masks & ~available) != 0) {
+		return -EINVAL;
+	}
+
+	irqstate_t flags = px4_enter_critical_section();
+
+	if ((channel_allocations[mode] & masks) != masks) {
+		px4_leave_critical_section(flags);
+		return -EINVAL;
+	}
+
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		if (masks & (1 << i)) {
-			if (gpt_state[i].initialized) {
-				uint8_t timer_idx = timer_io_channels[i].timer_index;
-				uint8_t timer_id = io_timers[timer_idx].timer_id;
-				uint32_t base = get_gpt_base(timer_id);
-				if (base != 0) {
-					irqstate_t flags = px4_enter_critical_section();
-					gpt_unlock(base);
-
-					if (enable) {
-						uint32_t ticks = pulse_width_to_ticks(i, gpt_state[i].ccr_value);
-						io_timer_putreg32(gpt_duty_control(i, ticks),
-								  base + RZV_GPT_GTUDDTYC_OFFSET);
-						io_timer_putreg32(gpt_output_control(i, true), base + RZV_GPT_GTIOR_OFFSET);
-						io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
-						gpt_state[i].enabled = true;
-					} else {
-						gpt_state[i].ccr_value = 0;
-						io_timer_putreg32(gpt_duty_control(i, 0),
-								  base + RZV_GPT_GTUDDTYC_OFFSET);
-						io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
-						io_timer_putreg32(gpt_output_control(i, false), base + RZV_GPT_GTIOR_OFFSET);
-						gpt_state[i].enabled = false;
-					}
-
-					gpt_lock(base);
-					px4_leave_critical_section(flags);
-				}
-			}
+		if ((masks & (1u << i)) != 0 &&
+		    (!valid_channel(i) || !gpt_state[i].initialized ||
+		     get_gpt_base(io_timers[timer_io_channels[i].timer_index].timer_id) == 0)) {
+			px4_leave_critical_section(flags);
+			return -EINVAL;
 		}
 	}
+
+	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+		if ((masks & (1u << i)) == 0) {
+			continue;
+		}
+
+		uint8_t timer_idx = timer_io_channels[i].timer_index;
+		uint8_t timer_id = io_timers[timer_idx].timer_id;
+		uint32_t base = get_gpt_base(timer_id);
+		gpt_unlock(base);
+
+		if (enable) {
+			uint32_t ticks = pulse_width_to_ticks(gpt_state[i].pclk,
+							     gpt_state[i].period,
+							     gpt_state[i].ccr_value);
+			gpt_write_duty_control(base, i, ticks,
+					       gpt_state[i].period, false);
+			io_timer_putreg32(gpt_channel_mask(timer_id),
+					  base + RZV_GPT_GTCLR_OFFSET);
+			io_timer_putreg32(gpt_output_control(i, true),
+					  base + RZV_GPT_GTIOR_OFFSET);
+			io_timer_putreg32(gpt_channel_mask(timer_id),
+					  base + RZV_GPT_GTSTR_OFFSET);
+			gpt_state[i].enabled = true;
+
+		} else {
+			gpt_state[i].ccr_value = 0;
+			gpt_write_duty_control(base, i, 0,
+					       gpt_state[i].period, false);
+			io_timer_putreg32(gpt_channel_mask(timer_id),
+					  base + RZV_GPT_GTSTP_OFFSET);
+			io_timer_putreg32(gpt_channel_mask(timer_id),
+					  base + RZV_GPT_GTCLR_OFFSET);
+			io_timer_putreg32(gpt_output_control(i, false),
+					  base + RZV_GPT_GTIOR_OFFSET);
+			gpt_state[i].enabled = false;
+		}
+
+		gpt_lock(base);
+	}
+
+	px4_leave_critical_section(flags);
 	return 0;
 }
 
@@ -487,22 +618,32 @@ int io_timer_set_enable(bool enable, io_timer_channel_mode_t mode, io_timer_chan
  */
 int io_timer_set_ccr(unsigned channel, uint16_t value)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS || !gpt_state[channel].initialized) {
+	if (!valid_channel(channel)) {
 		return -EINVAL;
+	}
+
+	irqstate_t flags = px4_enter_critical_section();
+
+	int mode = io_timer_get_channel_mode(channel);
+	if (!gpt_state[channel].initialized ||
+	    !analog_pwm_mode((io_timer_channel_mode_t)mode)) {
+		px4_leave_critical_section(flags);
+		return -EPERM;
 	}
 
 	uint8_t timer_idx = timer_io_channels[channel].timer_index;
 	uint32_t base = get_gpt_base(io_timers[timer_idx].timer_id);
 	if (base == 0) {
+		px4_leave_critical_section(flags);
 		return -EINVAL;
 	}
 
-	uint32_t ticks = pulse_width_to_ticks(channel, value);
+	uint32_t ticks = pulse_width_to_ticks(gpt_state[channel].pclk,
+					     gpt_state[channel].period, value);
 
-	irqstate_t flags = px4_enter_critical_section();
 	gpt_unlock(base);
-	io_timer_putreg32(gpt_duty_control(channel, ticks),
-			  base + RZV_GPT_GTUDDTYC_OFFSET);
+	gpt_write_duty_control(base, channel, ticks,
+			       gpt_state[channel].period, false);
 	gpt_set_compare(base, channel, ticks, gpt_state[channel].enabled);
 	if (!gpt_state[channel].enabled) {
 		gpt_set_compare(base, channel, ticks, true);
@@ -520,7 +661,7 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
  */
 uint16_t io_timer_get_ccr(unsigned channel)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS) {
+	if (!valid_channel(channel)) {
 		return 0;
 	}
 	return gpt_state[channel].ccr_value;
@@ -531,9 +672,13 @@ uint16_t io_timer_get_ccr(unsigned channel)
  */
 uint32_t io_timer_get_group(unsigned timer)
 {
+	if (validate_timer_index(timer) != 0) {
+		return 0;
+	}
+
 	uint32_t group = 0;
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		if (timer_io_channels[i].timer_index == timer) {
+		if (valid_channel(i) && timer_io_channels[i].timer_index == timer) {
 			group |= (1 << i);
 		}
 	}
@@ -546,7 +691,10 @@ uint32_t io_timer_get_group(unsigned timer)
 int io_timer_channel_init(unsigned channel, io_timer_channel_mode_t mode,
 			  void (*callback)(void *, uint32_t, uint64_t, uint32_t), void *context)
 {
-	if (channel >= MAX_TIMER_IO_CHANNELS) {
+	(void)callback;
+	(void)context;
+
+	if (!valid_channel(channel) || !valid_mode(mode)) {
 		return -EINVAL;
 	}
 

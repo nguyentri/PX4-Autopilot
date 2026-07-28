@@ -85,14 +85,18 @@ PWM outputs use the RZV2H GPT (General Purpose Timer) peripheral for ESC control
 |-------------|-----------|----------|------|--------------------------|------------|
 | PWM0 (ESC1) | GPT6      | GTIOC6A  | PA4  | GPIO_GTIOC6A_PA_4_M11    | GPIO12     |
 | PWM1 (ESC2) | GPT7      | GTIOC7B  | PA7  | GPIO_GTIOC7B_PA_7_M11    | GPIO13     |
-| PWM2 (ESC3) | GPT9      | GTIOC9A  | P96  | GPIO_GTIOC9A_P9_6_M9     | GPIO19     |
-| PWM3 (ESC4) | GPT10     | GTIOC10B | P53  | GPIO_GTIOC10B_P5_3_M11   | GPIO06     |
+| PWM2 (ESC3) | logical GPT9  | GTIOC9A  | P96  | GPIO_GTIOC9A_P9_6_M9     | GPIO19     |
+| PWM3 (ESC4) | logical GPT10 | GTIOC10B | P53  | GPIO_GTIOC10B_P5_3_M11   | GPIO06     |
 
 **PWM Configuration:**
 - Default Frequency: 400 Hz (configurable 50-500 Hz)
 - Pulse Width Range: 1000-2000 µs (standard PWM servo range)
-- Timer Clock: runtime PCLK from NuttX `rzv_get_pclk_frequency()`; nominal P0CLK is 100 MHz in the current RZ/V2H clock table
-- Resolution: nominal ~100 ticks/µs at 100 MHz
+- Timer Clock: runtime P4CLK from NuttX `rzv_get_gpt_clock_hz()`; nominal 200 MHz
+- Resolution: nominal 200 ticks/µs at 200 MHz
+- Logical GPT9/GPT10 map to physical R_GPT11/R_GPT12 register blocks.
+- The default PX4 board path exposes 50-500 Hz analog PWM only and rejects
+  `PWM_MAIN_TIMx=-1`. OneShot ownership plumbing is internal and has no board
+  trigger path; standalone NuttX finite pulse-count PWM is separate.
 
 **DShot Support:**
 - Disabled by default and experimental only.
@@ -268,7 +272,7 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
 
 ### Clock Configuration
 - External crystal: 24MHz
-- GPT timer clock: runtime PCLK from NuttX; nominal P0CLK is 100MHz
+- GPT timer clock: runtime P4CLK from NuttX; nominal 200 MHz
 - HRT resolution: 1µs
 
 ### Memory Map
@@ -338,7 +342,7 @@ validation proves the GPT/DMAC timing path.
 
 1. **Check GPIO configuration**: Verify pins are configured for the listed GTIOC peripheral function
 2. **Check timer initialization**: `rdk_rzv2h_timer_initialize()` should complete without errors
-3. **Verify clock**: `rzv_get_pclk_frequency()` should report the clock used for PWM period calculation
+3. **Verify clock**: `rzv_get_gpt_clock_hz()` should report P4CLK used for PWM period calculation
 
 ### Motor Spin at Boot
 

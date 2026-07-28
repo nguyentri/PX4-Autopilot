@@ -85,6 +85,15 @@ endif()
 
 target_include_directories(drivers_board PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_custom_target(rzv2h_gpt_pwm_contract_test
+	COMMAND
+		${PYTHON_EXECUTABLE}
+		${PX4_SOURCE_DIR}/test/rzv2h_gpt_pwm_contract_test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H GPT/PWM source and pulse-phase contracts"
+	VERBATIM
+)
+
 # The CR8-1 bridge is a final-milestone feature. Independent CR8-0 images must
 # not carry a dormant /dev/ipcc1 consumer.
 if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)

@@ -38,10 +38,11 @@
 #include <px4_arch/io_timer.h>
 #include <stdint.h>
 
-/* RZV2H NuttX HAL-based IO Timer implementation
+/* RZV2H direct-register IO Timer implementation
  *
- * This implementation uses NuttX PWM and Timer HAL for RZV2H GPT timers.
- * The RZV GPT timers are accessed through the rzv_gpt.c driver.
+ * PX4 owns these GPT instances and accesses their registers through
+ * io_timer.c. The NuttX PWM lower-half is a separate, mutually exclusive
+ * standalone path.
  */
 
 /* DMA configuration structure for RZV2H GPT */
@@ -57,19 +58,12 @@ struct io_timers_channel_mapping_t {
 	uint32_t element[MAX_IO_TIMERS];
 };
 
-/* PWM device handles for RZV2H GPT timers */
-struct rzv2h_pwm_device_t {
-	struct pwm_lowerhalf_s *pwm_dev;
-	uint8_t gpt_channel;
-	uint32_t gpio_pin;
-};
-
-/* Initialize RZV2H GPT timer using NuttX HAL approach */
+/* Initialize the static GPT descriptor used by the direct-register path. */
 static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_config = {})
 {
 	::io_timers_t ret{};
 
-	// Map timer enum to GPT channel number for NuttX HAL
+	// Map timer enum to the logical GPT channel number.
 	switch (timer) {
 	case Timer::Timer0:
 		ret.timer_id = 0;        // GPT0
@@ -160,7 +154,7 @@ static inline constexpr ::io_timers_t initIOTimer(Timer::Timer timer, DMA dma_co
 		break;
 	}
 
-	// Set base address to 0 - we'll use NuttX HAL instead of direct register access
+	// io_timer.c resolves the runtime base from timer_id.
 	ret.base = 0;
 	ret.vectorno = 0;
 
@@ -174,7 +168,7 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
 {
 	::timer_io_channels_t ret{};
 
-	// Map timer to timer_index for NuttX HAL
+	// Map timer to the PX4 timer array index.
 	// The timer_index corresponds to the PWM channel index (0-3)
 	// RDK-RZV2H PWM mapping: GPT6→PWM0, GPT7→PWM1, GPT9→PWM2, GPT10→PWM3
 	switch (timer_channel.timer) {
@@ -239,7 +233,7 @@ static inline constexpr ::timer_io_channels_t initIOTimerChannel(const ::io_time
 		break;
 	}
 
-	// Set channel (NuttX GPT channels)
+	// Set GPT output half (1=A, 2=B).
 	ret.timer_channel = (uint8_t)timer_channel.channel;
 
 	// GPIO configuration - encode port/pin for GPIO initialization

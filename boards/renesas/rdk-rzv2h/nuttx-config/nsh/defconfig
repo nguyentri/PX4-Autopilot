@@ -53,6 +53,7 @@ CONFIG_PTHREAD_STACK_MIN=512
 CONFIG_PREALLOC_TIMERS=50
 CONFIG_PRIORITY_INHERITANCE=y
 CONFIG_NSH_ARCHINIT=y
+CONFIG_NSH_ARCHROMFS=y
 CONFIG_NSH_ROMFSETC=y
 CONFIG_NSH_BUILTIN_APPS=y
 CONFIG_NSH_CONSOLE=y
@@ -205,9 +206,6 @@ CONFIG_SYSTEM_NSH_STACKSIZE=2048
 CONFIG_USEC_PER_TICK=1000
 CONFIG_SPINLOCK=y
 
-# FIX-055: vectors live at low address (ITCM 0x00000000); arm_head.S
-# clears SCTLR.V when this is set. Combined with explicit VBAR write in
-# rzv_start.c::rzv_set_vbar() so exceptions are routed to _vectors.
 CONFIG_ARCH_LOWVECTORS=y
 
 # FPU Configuration

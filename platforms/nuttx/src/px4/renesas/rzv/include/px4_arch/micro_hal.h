@@ -78,27 +78,10 @@ typedef uint32_t gpio_pinset_t;
 
 /* GPIO functions using RZV2H NuttX drivers */
 #define px4_arch_configgpio(pinset)              rzv_gpioconfig(pinset)
-#define px4_arch_unconfiggpio(pinset)            rzv_gpiounconfig(pinset)
+#define px4_arch_unconfiggpio(pinset)            rzv_unconfiggpio(pinset)
 #define px4_arch_gpioread(pinset)                rzv_gpioread(pinset)
 #define px4_arch_gpiowrite(pinset, value)        rzv_gpiowrite(pinset, value)
 #define px4_arch_gpiosetevent(pinset,r,f,e,fp,a) rzv_gpiosetevent(pinset,r,f,e,fp,a)
-
-/* Timer configuration for RZV2H - Based on PCLK frequency */
-/**
- * GPT Timer Clock Configuration
- *
- * RZV2H GPT timers use PCLKD (Peripheral Clock D).
- * Default: 120 MHz for the GPT peripheral domain.
- *
- * Note: This value should match the NuttX kernel configuration
- * and the io_timer.c definitions for consistent PWM operation.
- */
-#ifndef CONFIG_RZV_PCLK_FREQUENCY
-#  define CONFIG_RZV_PCLK_FREQUENCY    120000000  /* 120MHz PCLKD for RZV2H GPT */
-#endif
-
-#define TIMER_HRT_CYCLES_PER_US (CONFIG_RZV_PCLK_FREQUENCY / 1000000)
-#define TIMER_HRT_CYCLES_PER_MS (CONFIG_RZV_PCLK_FREQUENCY / 1000)
 
 /* Cache alignment - ARMv7-R Cortex-R8 has cache */
 #if defined(CONFIG_ARMV7R_DCACHE)

@@ -56,40 +56,67 @@
 
 static uint32_t pwm_rate = PWM_DEFAULT_RATE;
 
+static int pwm_servo_release_channels(uint32_t channel_mask)
+{
+	uint32_t pwmout_mask = 0;
+	uint32_t oneshot_mask = 0;
+
+	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+		int mode = io_timer_get_channel_mode(i);
+
+		if (channel_mask & (1u << i)) {
+			if (mode == IOTimerChanMode_PWMOut) {
+				pwmout_mask |= 1u << i;
+
+			} else if (mode == IOTimerChanMode_OneShot) {
+				oneshot_mask |= 1u << i;
+			}
+		}
+	}
+
+	int ret = io_timer_set_enable(false, IOTimerChanMode_PWMOut, pwmout_mask);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = io_timer_set_enable(false, IOTimerChanMode_OneShot, oneshot_mask);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	uint32_t allocated_mask = pwmout_mask | oneshot_mask;
+
+	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
+		if (allocated_mask & (1u << i)) {
+			io_timer_unallocate_channel(i);
+		}
+	}
+
+	return 0;
+}
+
 /**
  * Initialize PWM servo outputs
  */
 int up_pwm_servo_init(uint32_t channel_mask)
 {
-	uint32_t current_mask = 0;
-
 	/* Release only channels owned by analog PWM modes. A prior PWMOut
 	 * instance may have stopped, while DShot or another timer client must
 	 * remain untouched.
 	 */
-	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		int mode = io_timer_get_channel_mode(i);
+	int ret = pwm_servo_release_channels(UINT32_MAX);
 
-		if (mode == IOTimerChanMode_PWMOut || mode == IOTimerChanMode_OneShot) {
-			current_mask |= 1u << i;
-		}
-	}
-
-	if (current_mask != 0) {
-		io_timer_set_enable(false, IOTimerChanMode_PWMOut, current_mask);
-
-		for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-			if (current_mask & (1u << i)) {
-				io_timer_unallocate_channel(i);
-			}
-		}
+	if (ret != 0) {
+		return ret;
 	}
 
 	uint32_t initialized_mask = 0;
 
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
 		if (channel_mask & (1u << i)) {
-			int ret = io_timer_channel_init(i, IOTimerChanMode_PWMOut, NULL, NULL);
+			ret = io_timer_channel_init(i, IOTimerChanMode_PWMOut, NULL, NULL);
 
 			if (ret == 0) {
 				initialized_mask |= 1u << i;
@@ -109,18 +136,8 @@ int up_pwm_servo_init(uint32_t channel_mask)
  */
 void up_pwm_servo_deinit(uint32_t channel_mask)
 {
-	/* Disable all channels */
-	io_timer_set_enable(false, IOTimerChanMode_PWMOut, channel_mask);
-
-	/* Unallocate channels */
-	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
-		int mode = io_timer_get_channel_mode(i);
-
-		if ((channel_mask & (1u << i)) &&
-		    (mode == IOTimerChanMode_PWMOut || mode == IOTimerChanMode_OneShot)) {
-			io_timer_unallocate_channel(i);
-		}
-	}
+	/* Keep ownership if shutdown fails; a live GPT must not be reallocated. */
+	(void)pwm_servo_release_channels(channel_mask);
 }
 
 /**
@@ -132,15 +149,18 @@ int up_pwm_servo_set_rate(unsigned rate)
 		return -EINVAL;
 	}
 
-	pwm_rate = rate;
-
 	/* Update all channels with new rate */
 	for (unsigned i = 0; i < MAX_TIMER_IO_CHANNELS; i++) {
 		if (io_timer_get_channel_mode(i) == IOTimerChanMode_PWMOut) {
-			io_timer_set_pwm_rate(i, rate);
+			int ret = io_timer_set_pwm_rate(i, rate);
+
+			if (ret != 0) {
+				return ret;
+			}
 		}
 	}
 
+	pwm_rate = rate;
 	return 0;
 }
 

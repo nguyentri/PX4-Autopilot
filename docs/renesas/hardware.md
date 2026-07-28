@@ -102,8 +102,8 @@ External Oscillator, typically 24 MHz
 | uart_clk | Sub PLL | 48 MHz | UART baud generator |
 | spi_clk | Sub PLL | 100 MHz | SPI transfer clock |
 | rtc_clk | XTAL | 32.768 kHz | Real-time clock |
-| gpt_clk | Sub PLL | 48 MHz | GPT PWM clock |
-| gtm_clk | Sub PLL | 200 MHz | GTM / HRT timer clock |
+| gpt_clk | P4CLK | 200 MHz nominal | GPT PWM clock; query `rzv_get_gpt_clock_hz()` |
+| gtm_clk | P1CLK | 100 MHz nominal | GTM / HRT timer clock; query its runtime accessor |
 
 ### 3.3 CPG Register Base
 
@@ -296,12 +296,13 @@ References:
 
 ### 9.1 GPT: General PWM Timer
 
-- **Type:** 16-bit PWM timers.
-- **Count:** 10 channels, GPT0-GPT9.
-- **Base address for GPT0:** `0x41410000`, with per-channel offsets.
+- **Type:** 32-bit PWM timers.
+- **Count:** 16 logical channels, GPT0-GPT15.
+- **Register mapping:** logical GPT0-GPT7 map to physical R_GPT0-R_GPT7;
+  logical GPT8-GPT15 map to physical R_GPT10-R_GPT17.
 - **Modes:** PWM, input capture, compare match.
-- **Frequency range:** 48 MHz clock divided down to application frequency.
-- **Duty precision:** 16-bit, 0-65535 counts.
+- **Clock:** runtime P4CLK; nominal 200 MHz on the checked-in CR8_0 setup.
+- **Duty precision:** 32-bit period/compare registers.
 - **PX4 use:** ESC motor-control PWM output.
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c`
@@ -458,7 +459,8 @@ PX4 flight stack
 
 ### 13.1 POEG: Port Output Enable for GPT
 
-POEG provides a safety interlock for PWM outputs.
+POEG provides an optional hardware safety interlock for PWM outputs. It is not
+required by the current GPT/PWM driver scope.
 
 - Used for fail-safe GPIO drive.
 - Triggered by watchdog or external signal.
@@ -475,7 +477,9 @@ POEG provides a safety interlock for PWM outputs.
 
 ### PX4/NuttX Development Notes
 
-- Do not enable destructive PWM or actuator output paths until POEG and required reset/boot/disarm/process-failure behavior is understood.
+- Validate reset, boot, disarm, process-failure, and inactive-output behavior
+  before actuator tests. Add POEG only if the product safety design requires a
+  hardware fault interlock.
 - The checked-in drone reference has no active WDT driver. Keep PX4 WDT integration post-G9/non-gating; validate the standalone sample separately.
 - For first-run PX4 actuator testing, confirm safe default output state during reset, boot, crash, disarm, and emergency kill.
 
@@ -524,7 +528,7 @@ Use this checklist as a practical board-port validation flow.
 - [ ] Sensor probing.
 - [ ] MAVLink startup.
 - [ ] PWM output using GPT.
-- [ ] Required safety path using POEG and safe GPT states.
+- [ ] Required safe GPT reset/boot/disarm/failure states; POEG optional.
 - [ ] Optional post-G9 WDT integration.
 
 ---
@@ -573,4 +577,6 @@ Use this checklist as a practical board-port validation flow.
 - **Register view:** Register addresses assume CR8-0 view. CR8-1 and CM33 may have offset views depending on the memory map.
 - **Boot mode:** DSW1 and mode pin configuration must match the intended boot/debug path.
 - **PX4 timing:** GTM/HRT correctness must be proven before relying on scheduler, work queues, sensor timing, or actuator timing.
-- **PWM safety:** GPT/POEG/watchdog behavior must be validated before connecting real actuators.
+- **PWM safety:** GPT reset/boot/disarm/failure behavior must be validated
+  before connecting real actuators; validate POEG/watchdog only when selected
+  by the product safety design.

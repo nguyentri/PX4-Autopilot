@@ -207,7 +207,7 @@
  * PWM Settings:
  * - Frequency: 400 Hz (default ESC rate, configurable to 50-500 Hz)
  * - Pulse Width: 1000-2000 us (standard PWM servo range)
- * - Resolution: runtime PCLK dependent; nominal P0CLK is 100MHz
+ * - Resolution: runtime P4CLK dependent; nominal P4CLK is 200 MHz
  *
  * Reference: NuttX arch/arm/src/rzv/hardware/rzv2h/rzv2h_pinmap.h
  */
