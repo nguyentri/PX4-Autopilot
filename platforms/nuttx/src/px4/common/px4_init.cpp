@@ -100,6 +100,11 @@ void px4_platform_i2c_init()
 	while (i2c_bus_iterator.next()) {
 		i2c_master_s *i2c_dev = px4_i2cbus_initialize(i2c_bus_iterator.bus().bus);
 
+		if (i2c_dev == nullptr) {
+			syslog(LOG_ERR, "failed to initialize I2C bus %d\n", i2c_bus_iterator.bus().bus);
+			continue;
+		}
+
 #if defined(CONFIG_I2C_RESET)
 		I2C_RESET(i2c_dev);
 #endif // CONFIG_I2C_RESET

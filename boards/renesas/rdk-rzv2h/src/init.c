@@ -325,7 +325,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 
 	/* Initialize I2C bus for barometer sensor (SCI-mode simple-I2C).
 	 * Gated on CONFIG_RZV_SCI_I2C so it activates only when the SCI-I2C
-	 * lower-half is enabled; disabled by default pending SCI7 HW validation.
+	 * lower-half is enabled.
 	 */
 #ifdef CONFIG_RZV_SCI_I2C
 	struct i2c_master_s *i2c7 = px4_i2cbus_initialize(PX4_I2C_BUS_EXPANSION);

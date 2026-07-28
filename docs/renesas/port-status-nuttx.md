@@ -1,6 +1,6 @@
 # NuttX Driver Port Status Matrix
 
-**Date:** 2026-07-27
+**Date:** 2026-07-28
 **Branch:** px4_ra_rzv
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
@@ -57,8 +57,8 @@ not validate every driver or the integrated PX4 image.
 | 25 | POEG | rzv_poeg.c | rzv_poeg.h | functional | (internal) | (framework) | (pending) | PWM output enable group; fault handling |
 | 26 | RPMsg Layer | rzv_rpmsg.c | (none) | build-clean | (OpenAMP dep) | ipcc | (pending) | RPMsg endpoint abstraction; CRC16 frame |
 | 27 | Remote Proc | rzv_rproc.c | (none) | functional | `nuttx/include/remoteproc.h` | (framework) | (pending) | Core loading, boot, IPC kickoff |
-| 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `refs/.../r_sci_b_i2c/` | hil-full (SCI7) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | `CONFIG_RZV_SCI7_I2C` now covers SCI7 base/CPG/ELC, P76/P77 FSP-parity pin setup, board registration as bus 7, and PX4 dispatch. Fresh `hil-full` and integrated PX4 links contain the path. BMP280 transactions, analyzer capture, NACK/timeout, and recovery remain on-target gates. |
-| 29 | SCI/I2C Clock | rzv_sci_i2c_clock.c | rzv_sci.h | functional | (FSP helper) | (shared) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | Runtime P5CLK calculation; 100 MHz/400 kHz reproduces FSP CKS0, BRR3, MDDR131, 399780 Hz, and 30-cycle SDA delay. Frequency measurement pending. |
+| 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `refs/.../r_sci_b_i2c/` | hil-full (SCI7) | [SCI7 re-audit](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260728-rzv2h-sci7-i2c-reaudit.md) | `CONFIG_RZV_SCI7_I2C` uses FSP-compatible SCISPICLK timing, fixed GIC TXI/TEI lines, and P76/P77 FSP-parity pins; board registration retains logical bus 7. Both the nested NuttX `hil-full` build and the PX4 `renesas_rdk-rzv2h_default` build now pass. BMP280 transactions, analyzer capture, NACK/timeout, and recovery remain on-target gates. |
+| 29 | SCI/I2C Clock | rzv_sci_i2c_clock.c | rzv_sci.h | functional | (FSP helper) | (shared) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | Runtime P5CLK calculation; 100 MHz/400 kHz reproduces FSP CKS0, BRR3, MDDR131, 399780 Hz, and 30-cycle SDA delay. Direct build validation is clean; frequency measurement and on-target timing capture remain pending. |
 | 30 | SCI/I2C ISR | rzv_sci_i2c_isr.c | rzv_sci.h | functional | (FSP helper) | (shared) | (pending) | Interrupt handlers for I2C events |
 | 31 | SCI/SPI Master | rzv_sci_spi.c | rzv_sci_spi.h | build-clean | `refs/.../r_sci_b.c` | sci-spi-loopback | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | SCI0 only on RDK; P6_0 SCK; on-target loopback/error validation pending |
 | 32 | SCI/SPI Clock | rzv_sci_spi_clock.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | BRR/CKS/MDDR calculation build-validated; frequency measurement pending |
@@ -91,8 +91,9 @@ Plan-critical reconciliation:
 - Board Make/CMake source selection is reconciled for the audited configs.
 - `hil-spi-loopback` explicitly selects late board initialization; its clean
   image links the SPI registration chain before direct `hwtest_main`.
-- `hil-full` is SCI7 build-clean but cannot be hardware-ready until the
-  BMP280 transaction and recovery procedure passes on target.
+- `hil-full` is SCI7 build-clean and now passes both nested NuttX and PX4
+  builds, but it still cannot be hardware-ready until the BMP280 transaction
+  and recovery procedure passes on target.
 - CR8-1/CM33/OpenAMP work is non-gating until the CR8-0 PX4 drone path passes.
 
 ---

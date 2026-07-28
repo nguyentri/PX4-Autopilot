@@ -58,5 +58,7 @@ constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
 	initI2CBusInternal(I2C::Bus{PX4_I2C_BUS_EXPANSION}),
 };
 
+static_assert(validateI2CConfig(px4_i2c_buses), "I2C bus config mismatch");
+
 /* I2C device configuration (managed separately from buses for RZV) */
 // BMP280 barometer on I2C7 at address 0x76

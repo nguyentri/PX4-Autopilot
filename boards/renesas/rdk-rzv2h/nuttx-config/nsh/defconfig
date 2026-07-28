@@ -157,6 +157,7 @@ CONFIG_SPI_EXCHANGE=y
 # maps PX4 logical bus 7 directly to SCI7; on-target BMP280 proof remains a
 # hardware validation gate.
 CONFIG_I2C=y
+CONFIG_I2C_RESET=y
 CONFIG_RZV_SCI_I2C=y
 CONFIG_RZV_SCI7_I2C=y
 

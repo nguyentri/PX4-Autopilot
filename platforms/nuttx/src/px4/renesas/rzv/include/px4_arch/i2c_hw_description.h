@@ -34,6 +34,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <nuttx/i2c/i2c_master.h>
 #include <px4_platform_common/i2c.h>
 #include <px4_platform_common/constexpr_util.h>
 #include <px4_arch/hw_description.h>
@@ -41,43 +42,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* Use NuttX I2C structures - no redefinition needed */
-/* struct i2c_master_s and struct i2c_msg_s are already defined in nuttx/i2c/i2c_master.h */
-
-/* I2C message flags - use guards to prevent redefinition */
-#ifndef I2C_M_READ
-#define I2C_M_READ          0x0001  /* Read data */
-#endif
-#ifndef I2C_M_NOSTART
-#define I2C_M_NOSTART       0x0002  /* Don't send START condition */
-#endif
-#ifndef I2C_M_NOSTOP
-#define I2C_M_NOSTOP        0x0004  /* Don't send STOP condition */
-#endif
-#ifndef I2C_M_NORESTART
-#define I2C_M_NORESTART     0x0008  /* Don't send RESTART condition */
-#endif
-#ifndef I2C_M_NACK
-#define I2C_M_NACK          0x0010  /* Expect NACK bit */
-#endif
-#ifndef I2C_M_SCAN
-#define I2C_M_SCAN          0x0020  /* Scan the bus for devices */
-#endif
-
-/* I2C control operations */
-#define I2C_RESET(dev)      px4_i2cbus_reset(dev)
-
-/* I2C transfer function - performs a sequence of I2C transfers */
-#ifndef I2C_TRANSFER
-#define I2C_TRANSFER(dev, msgs, count) px4_i2c_transfer(dev, msgs, count)
-#endif
-
-/* I2C hardware interface functions for RZV2H */
-struct i2c_master_s *px4_i2cbus_initialize(int bus);
-int px4_i2cbus_uninitialize(struct i2c_master_s *dev);
-int px4_i2cbus_reset(struct i2c_master_s *dev);
-int px4_i2c_transfer(struct i2c_master_s *dev, struct i2c_msg_s *msgs, int count);
 
 #ifdef __cplusplus
 }
