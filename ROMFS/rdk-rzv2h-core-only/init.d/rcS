@@ -12,6 +12,8 @@ echo "RDK-RZ/V2H PX4 CORE + PWM DEMONSTRATION"
 echo "Sensor, payload, flight-module, and serial startup is disabled."
 echo ""
 
+. /etc/init.d/rc.filepaths
+param select $PARAM_FILE
 ver all
 
 # Match the full RZ/V2H and working RA8P1 BSP demonstrations: four independent
