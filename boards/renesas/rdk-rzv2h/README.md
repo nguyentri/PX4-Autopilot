@@ -11,10 +11,17 @@ Multicore transports remain opt-in final-milestone features.
 
 The board also ships `renesas_rdk-rzv2h_core_only`, a deterministic rollback
 image built from `core_only.px4board`, `nuttx-config/core_only/defconfig`, and
-`ROMFS/rdk-rzv2h-core-only`. It retains RTT/HRT/work queues/parameters/uORB
-and the diagnostic commands needed to inspect failures, but excludes payload
-UARTs, SPI/I2C/RC/GPS/IMU/baro drivers, PWM outputs, flight modules, and
-output init.
+the generated `ROMFS/rdk-rzv2h-core-only` startup tree. It retains
+RTT/HRT/work queues/parameters/uORB and the diagnostic commands needed to
+inspect failures, auto-starts `pwm_out`, and excludes payload UARTs,
+SPI/I2C/RC/GPS/IMU/baro drivers, flight-module startup, and serial consumers.
+
+The board also ships `renesas_rdk-rzv2h_sih`, a build-clean CR8-0 FC-SIH demo
+image built from `sih.px4board`, `nuttx-config/sih/defconfig`, and the compact
+`ROMFS/rdk-rzv2h-sih` startup tree. It starts simulated accel/gyro/baro/mag/GPS
+paths through HIL sensors and `pwm_out_sim`, but it does not start physical
+buses, GPT/PWM output, or `control_allocator`. Target validation still needs a
+cold power-cycle and on-target proof.
 
 ## Hardware Configuration
 
@@ -119,14 +126,17 @@ boards/renesas/rdk-rzv2h/
 ├── default.px4board          # Main board configuration
 ├── firmware.prototype        # Firmware metadata
 ├── Kconfig                   # Board Kconfig options
+├── sih.px4board              # FC-SIH board configuration
 ├── init/
 │   ├── rc.board_defaults     # Boot defaults script
 │   ├── rc.board_defaults.cmds # Safe parameter defaults
 │   ├── rc.board_sensors      # Board-specific sensor probes
 │   └── rc.offline_sensor_check
 ├── nuttx-config/
-│   └── nsh/
-│       └── defconfig         # NuttX kernel configuration
+│   ├── nsh/
+│   │   └── defconfig         # NuttX kernel configuration
+│   └── sih/
+│       └── defconfig         # FC-SIH NuttX kernel configuration
 └── src/
     ├── CMakeLists.txt
     ├── board_config.h        # Hardware definitions
@@ -180,6 +190,42 @@ make renesas_rdk-rzv2h_core_only
 Core-only artifacts are emitted under `build/renesas_rdk-rzv2h_core_only/`
 and include `renesas_rdk-rzv2h_core_only.elf` and
 `renesas_rdk-rzv2h_core_only.px4`.
+
+### SIH Sensor Demo Build
+
+```bash
+make renesas_rdk-rzv2h_sih
+```
+
+The SIH image is the CR8-0 software demo path only. It links simulated
+accel/gyro/baro/mag/GPS, HIL sensors, and `pwm_out_sim`; it does not start any
+physical bus, GPT, or PWM driver. Use it from a cold power-cycle and treat the
+current state as build-clean but on-target pending.
+
+Build RZ/V2H NuttX targets sequentially. Their separate top-level build
+directories still regenerate shared files under `platforms/nuttx/NuttX`, so
+parallel or interleaved target builds can create stale cross-target state.
+
+### SIH Demo Shell Checks
+
+```bash
+ver all
+ps
+top once
+work_queue status
+system_time hrt-test
+listener sensor_accel -n 5
+listener sensor_gyro -n 5
+listener sensor_baro -n 5
+listener sensor_mag -n 5
+listener sensor_gps -n 5
+pwm_out_sim status
+free
+perf
+```
+
+Queue count is timing-dependent on this image, so use `work_queue status`
+alongside `ps` and `top` rather than expecting a fixed thread count.
 
 ### Clean Build
 ```bash
@@ -264,7 +310,7 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
 
 | Mode | Console / Debug | Serial Policy | Validation State |
 |------|-----------------|---------------|------------------|
-| Core-only diagnostic image | RTT0 console/debug only | RTT shell, HRT, work queues, params, uORB, `ver`, `dmesg`, `system_time`, `top`, `uorb`, `listener`, `perf` | build-clean; no hardware run |
+| Core-only diagnostic image | RTT0 console/debug only | RTT shell, HRT, lazy work queues, params, uORB, `pwm_out start/stop/status`, `work_queue status`, `ver`, `dmesg`, `system_time`, `top`, `uorb`, `listener`, `perf` | build-clean; no hardware run |
 | Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 is the interactive shell; RTT carries boot, syslog, and debug output | Validated by `nsh-rtt` |
 | Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 is the intended shell path for the CR8-1 IO target; not yet hardware validated | Target policy only |
 | Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 is the intended shell path for the CM33 IO target; not yet hardware validated | Target policy only |
@@ -293,42 +339,31 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
   handling, erase/program/readback, reboot persistence, and power-loss
   recovery must pass before it can replace TMPFS.
 
-## ESC/PWM Validation
+## Core-Only PWM Demonstration
 
-### Test Commands
+The core-only image starts `pwm_out` from
+`ROMFS/rdk-rzv2h-core-only/init.d/rcS`, then prints `work_queue status`. That
+path keeps output disabled until an explicit actuator command is issued and
+uses the minimal lazy queue footprint expected on RZ/V2H, not the broader
+RA8P1 queue fan-out. PWMOut starts on `wq:hp_default` and can migrate its
+subscription callback to `wq:rate_ctrl`; queue creation is asynchronous, so
+the immediate startup listing can differ from a later `work_queue status`.
 
-Test PWM outputs using the NSH console:
+`control_allocator` stays linked only because the actuator metadata generator
+needs the mixer schema. The compact `rcS` does not start `control_allocator`,
+and the image has no sensors, payload peripherals, or serial consumers.
+
+Use the current bounded bench command for a single-channel waveform check:
 
 ```bash
-# Test single channel (channel 1, 1100µs pulse)
-pwm_out test -c 1 -p 1100
-
-# Test single channel at minimum (1000µs)
-pwm_out test -c 1 -p 1000
-
-# Test all channels at armed value
-pwm_out arm
-
-# Disarm all channels
-pwm_out disarm
+actuator_test set -m 1 -v 0 -t 5
 ```
 
-### Expected Results
-
-| Command | Expected Behavior |
-|---------|-------------------|
-| `pwm_out test -c 1 -p 1100` | PWM0 (PA4) outputs 1100µs pulse at 400Hz |
-| `pwm_out test -c 1 -p 1000` | PWM0 outputs minimum 1000µs pulse |
-| `pwm_out arm` | All 4 channels output armed value |
-| `pwm_out disarm` | All channels are disabled; 1000µs is retained as the stored disarmed compare value |
-
-### Signal Verification with Oscilloscope
-
-Connect oscilloscope to PWM pins and verify:
-- Frequency: 400 Hz (2.5ms period)
-- Pulse width: 1000-2000 µs range
-- Rising/falling edge: Clean, no ringing
-- Signal level: 3.3V logic
+`pwm_out` supports `start`, `stop`, and `status` only. The board-scoped PWM
+path keeps outputs disabled under `stop_motors`, so this remains a safe
+demonstration target rather than a flight validation path. The command drives
+Motor 1 at its configured 1100 µs minimum for five seconds; the other enabled
+channels retain their 1000 µs disarmed values.
 
 ### DShot Mode
 

@@ -1,7 +1,8 @@
 # Renesas RDK-RZV2H Board Configuration for PX4 — DShot output variant
 # Cortex-R8 based multicore processor (uses CR8 core 0)
 #
-# Same as default.px4board but replaces PWM_OUT with the DShot driver.
+# Same as default.px4board but adds the opt-in DShot driver.
+# PWMOut remains linked to provide shared PWM_MAIN actuator parameters.
 # NOTE: DShot is opt-in and requires on-target waveform validation before use
 # with motors. The default board configuration remains standard PWM.
 

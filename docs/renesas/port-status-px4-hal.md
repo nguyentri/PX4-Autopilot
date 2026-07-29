@@ -1,6 +1,6 @@
 # PX4 HAL Port Status Matrix
 
-**Date:** 2026-07-28
+**Date:** 2026-07-29
 **Branch:** px4_ra_rzv  
 **Scope:** PX4 Hardware Abstraction Layer (HAL) surfaces for RDK-RZ/V2H; cross-referenced to NuttX driver dependencies.
 
@@ -29,13 +29,49 @@
 > boards keep the common `yes` default. `battery_status` remains source-gated
 > on BAT1/BAT2 power-module sources.
 
+SIH note: `renesas_rdk-rzv2h_sih` is build-clean but hardware-unvalidated. It
+is a CR8-0 FC-SIH demo image, not a hardware proof image. Startup loads
+`sensors start -h`, `simulator_sih`, `sensor_baro_sim`, `sensor_mag_sim`,
+`sensor_gps_sim`, and `pwm_out_sim start -m hil`; `control_allocator` is
+linked for metadata but is not started. The image reports simulated
+accel/gyro/baro/mag/GPS data, keeps physical buses and GPT/PWM off, and leaves
+queue count timing-dependent. Cold power-cycle and on-target validation remain
+pending.
+
 Core-only note: `renesas_rdk-rzv2h_core_only` is build-clean from
-`core_only.px4board`, `nuttx-config/core_only/defconfig`, and
-`ROMFS/rdk-rzv2h-core-only`. It remains separate and unaffected by the
-payload tone-alarm closure. It retains RTT/HRT/work queues/params/uORB and the
-diagnostic commands used to inspect failures, but excludes payload lower-halves,
-payload/flight modules, output init, and `serial_status`. No hardware proof is
-claimed for that image.
+`core_only.px4board`, `nuttx-config/core_only/defconfig`, and the generated
+`ROMFS/rdk-rzv2h-core-only` tree. It retains RTT/HRT/params/uORB and the
+diagnostic commands used to inspect failures, auto-starts `pwm_out`, and keeps
+output disabled until an explicit actuator command is issued. The image
+excludes payload lower-halves, sensors, flight-module startup, serial consumers,
+and `serial_status`. `control_allocator` remains linked only because the
+actuator metadata generator needs the mixer schema. Work queues are lazy:
+PWMOut starts on `wq:hp_default` and can migrate its motor subscription to
+`wq:rate_ctrl`, so immediate and settled listings can differ. Neither should
+match RA8P1's larger sensor/controller/serial queue footprint. No hardware
+proof is claimed for that image.
+
+SIH demo shell contract:
+
+```text
+ver all
+ps
+top once
+work_queue status
+system_time hrt-test
+listener sensor_accel -n 5
+listener sensor_gyro -n 5
+listener sensor_baro -n 5
+listener sensor_mag -n 5
+listener sensor_gps -n 5
+pwm_out_sim status
+free
+perf
+```
+
+Use the commands above to document the SIH startup path and queue state. Do
+not infer target success from the host build; the current image is still
+awaiting cold-power-cycle and on-target validation.
 
 The execution authority is the
 [RDK-RZV2H PX4 NuttX Port Goal Plan](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md).
@@ -52,7 +88,7 @@ milestone work.
 | 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | build-clean | BMP280 baro on SCI7 simple-I2C P76/P77. `CONFIG_RZV_SCI7_I2C=y`; bus 7 dispatches explicitly to `rzv_sci_i2c_initialize(7)`, never RIIC, and maps safely to its dense PX4 clock slot. Fresh standalone HIL and integrated PX4 builds pass; BMP280 probe/read/recovery remains unvalidated on target. |
 | 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | Explicit policy: standalone CR8-0 NuttX = SCI4 shell + RTT diagnostics; target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics. Integrated PX4 RTT0 `/dev/console` input/output is build-clean and bypasses SCI low-setup. SCI6 termios/SBUS 100000 8E2 is build-clean with checked setup failures and the FSP 16-sample, modulation-off baud policy; its fixed external NPN inverter, waveform, and decoded frames remain target gates. Integrated SCI4 is generated as `EXT2`; `SENS_TFMINI_CFG=401` makes common `rc.serial` own TFmini on `/dev/ttyS4`. SCI5 MAVLink/QGC and SCI9 GPS retain payload ownership in the full default image. Default and DShot board configs set `CONFIG_SYSTEMCMDS_SERIAL_STATUS=y`; the command snapshots the registered SCI lower halves directly, without opening or consuming from the payload TTYs, with `serial_status /dev/ttyS4 /dev/ttyS5 /dev/ttyS6 /dev/ttyS9`. The core-only diagnostic image drops all payload serial roles, disables `CONFIG_SYSTEMCMDS_SERIAL_STATUS`, and stays RTT-only; the generated VS Code RZV profile is read-only attach and must use the exact ELF, exact `R9A09G057H44_R8_0`, and user-provided probe serial. SCIF remains sample-only/blocked. |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
-| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | direct GPT MMIO; standalone `rzv_gpt.c` lower-half is mutually exclusive | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | FSP logical mapping: GPT6A/7B/9A/10B on PA4/PA7/P96/P53; logical 9/10 resolve to physical R_GPT11/R_GPT12. Live rate/duty changes use GPT buffers, stopped/disabled paths clear the counter, first setup performs the GTUDDTYC UDF latch, compare values use counts−1, and partial timer/GPIO initialization unwinds. The board-scoped PX4 path disables motor GTIOC on `stop_motors`, validates allocation ownership, and safely reallocates after module restart without stealing DShot ownership. The default PX4 board path exposes analog PWM only and rejects `PWM_MAIN_TIMx=-1`; internal OneShot ownership plumbing has no board trigger path. Standalone NuttX finite pulse-count PWM is separate. Integrated and standalone PWM builds plus source-contract regressions pass. Waveform, inactive-level, transition, and failsafe scope proof pending. |
+| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | direct GPT MMIO; standalone `rzv_gpt.c` lower-half is mutually exclusive | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | FSP logical mapping: GPT6A/7B/9A/10B on PA4/PA7/P96/P53; logical 9/10 resolve to physical R_GPT11/R_GPT12. Live rate/duty changes use GPT buffers, stopped/disabled paths clear the counter, first setup performs the GTUDDTYC UDF latch, compare values use counts−1, and partial timer/GPIO initialization unwinds. The board-scoped PX4 path disables motor GTIOC on `stop_motors`, validates allocation ownership, and safely reallocates after module restart without stealing DShot ownership. The default PX4 board path exposes analog PWM only and rejects `PWM_MAIN_TIMx=-1`; internal OneShot ownership plumbing has no board trigger path. Standalone NuttX finite pulse-count PWM is separate. The core-only demo auto-starts `pwm_out`, prints `work_queue status`, and uses `actuator_test set -m 1 -v 0 -t 5` for a bounded 1100 µs Motor 1 bench waveform. Integrated and standalone PWM builds plus source-contract regressions pass. Waveform, inactive-level, transition, and failsafe scope proof pending. |
 | 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | rzv_dmac.c (HW-trigger) + rzv_gpt.c | boards/renesas/rdk-rzv2h/dshot.px4board | build-clean (opt-in) | TX-only target `renesas_rdk-rzv2h_dshot` builds and links; default remains PWM and excludes DShot. The DShot image includes `pwm_out` as the standard provider of shared `PWM_MAIN` parameters, but runtime `PWM_MAIN_TIM0..3=-3` leaves every group to DShot and the DShot build omits the analog-only complete-init requirement. Shared board defaults set `DSHOT_START` from the silent `DSHOT_MIN` probe, so common startup only calls `dshot start` for the opt-in image. Checked-in CMSIS/FSP sources verify DMkSEL offsets, unit mapping, and GPT-overflow DMAC activation IDs. GPT buffered compare + one-shot DMA path is not hardware-validated. BDShot capture/telemetry returns `-ENOTSUP`; the pure GCR/eRPM decoder is not a functional telemetry path. Waveform, transfer ordering, repeated trigger/re-arm, and ESC tests remain pending. |
 | 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred/non-gating | Battery/airspeed ADC consumers and the integrated NuttX ADC lower-half are disabled for G3-G9. The checked-in drone reference has no active ADC driver; ADC sample/driver work is post-G9. |
 | 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (GTM7 free-run) | boards/renesas/rdk-rzv2h/src/ | build-clean; target pending | `CONFIG_RZV_HRT=y`; GTM7 ownership is clean and stale GTM0/120 MHz declarations are removed. A bounded free-run compare maintains the 64-bit epoch; cancel/rearm preserves elapsed ticks; long deadlines use intermediate wakeups; mandatory initialization/arm failures fail visibly; periodic self-delay/self-cancel matches the PX4 contract. Integrated build and source review pass. Runtime P1CLK, wrap monotonicity, jitter, and soak proof remain target gates. |

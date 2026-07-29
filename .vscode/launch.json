@@ -14,9 +14,10 @@
     //usbipd detach --busid 1-4 // to detach the device from WSL2
     "configurations": [
         {
-            "name": "Debug RZV2H CR8 (Core0, renesas_rdk-rzv2h_default PX4)",
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
+            "name": "Debug RZV2H CR8 (Core0)",
+            "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_sih/renesas_rdk-rzv2h_sih.elf",
+            //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
             "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
             "request": "launch",
             "type": "cortex-debug",
@@ -28,7 +29,7 @@
                 "-speed", "15000"
             ],
             "device": "R9A09G057H44_R8_0",
-            "serialNumber": "${input:rzv2hJlinkSerial}",
+            //"serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             "overrideLaunchCommands": [
                 "monitor halt",

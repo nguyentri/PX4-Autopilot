@@ -94,6 +94,43 @@ add_custom_target(rzv2h_gpt_pwm_contract_test
 	VERBATIM
 )
 
+add_custom_target(rzv2h_board_gpio_contract_test ALL
+	COMMAND
+		${PYTHON_EXECUTABLE}
+		${PX4_SOURCE_DIR}/test/rzv2h_board_gpio_contract_test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H board GPIO ownership contracts"
+	VERBATIM
+)
+
+add_custom_target(rzv2h_sih_demo_contract_test
+	COMMAND
+		${PYTHON_EXECUTABLE}
+		${PX4_SOURCE_DIR}/test/rzv2h_sih_demo_contract_test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H SIH configuration and startup contracts"
+	VERBATIM
+)
+
+if(PX4_BOARD_LABEL STREQUAL "sih" AND NOT NUTTX_CONFIG STREQUAL "sih")
+	message(FATAL_ERROR "The RZ/V2H SIH target requires NUTTX_CONFIG=sih")
+endif()
+
+if(PX4_BOARD_LABEL STREQUAL "sih")
+	add_custom_target(rzv2h_sih_artifact_contract_test
+		COMMAND
+			${PYTHON_EXECUTABLE}
+			${PX4_SOURCE_DIR}/test/rzv2h_sih_artifact_contract_test.py
+			--build-dir
+			${PX4_BINARY_DIR}
+		DEPENDS
+			${PX4_BINARY_DIR}/${PX4_CONFIG}.elf
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		COMMENT "Auditing resolved RZ/V2H SIH firmware artifacts"
+		VERBATIM
+	)
+endif()
+
 # The CR8-1 bridge is a final-milestone feature. Independent CR8-0 images must
 # not carry a dormant /dev/ipcc1 consumer.
 if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)

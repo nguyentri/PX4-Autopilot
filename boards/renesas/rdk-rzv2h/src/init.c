@@ -79,6 +79,10 @@ extern int rzv2h_volatile_paramfs_initialize(void);
 #if defined(__PX4_NUTTX)
 void rzv2h_serial_setup(void)
 {
+	/* Board SCI macros own the complete PORT|PIN|PSEL|RZV_GPIO_PERIPH
+	 * configuration. This function is invoked from the arch serial driver's
+	 * rzv_setup() on first console/port open.
+	 */
 #if defined(CONFIG_RZV_SCI3) || defined(CONFIG_SCI3_SERIAL_CONSOLE)
 	px4_arch_configgpio(BOARD_SCI3_TXD_GPIO);
 	px4_arch_configgpio(BOARD_SCI3_RXD_GPIO);

@@ -239,16 +239,16 @@
  * - P53 (Port5, Pin3):  GPT10B (GTIOC10B) - PWM3/ESC4, Mode 11
  */
 #ifndef BOARD_PWM_CH0_GPIO
-#  define BOARD_PWM_CH0_GPIO            GPIO_GTIOC6A_PA_4_M11  /* ESC1: GPT6A on PA4 (GPIO12/PWM0) */
+#  define BOARD_PWM_CH0_GPIO            (GPIO_GTIOC6A_PA_4_M11 | RZV_GPIO_PERIPH)  /* ESC1: GPT6A on PA4 (GPIO12/PWM0) */
 #endif
 #ifndef BOARD_PWM_CH1_GPIO
-#  define BOARD_PWM_CH1_GPIO            GPIO_GTIOC7B_PA_7_M11  /* ESC2: GPT7B on PA7 (GPIO13/PWM1) */
+#  define BOARD_PWM_CH1_GPIO            (GPIO_GTIOC7B_PA_7_M11 | RZV_GPIO_PERIPH)  /* ESC2: GPT7B on PA7 (GPIO13/PWM1) */
 #endif
 #ifndef BOARD_PWM_CH2_GPIO
-#  define BOARD_PWM_CH2_GPIO            GPIO_GTIOC9A_P9_6_M9   /* ESC3: GPT9A on P96 (GPIO19) */
+#  define BOARD_PWM_CH2_GPIO            (GPIO_GTIOC9A_P9_6_M9 | RZV_GPIO_PERIPH)   /* ESC3: GPT9A on P96 (GPIO19) */
 #endif
 #ifndef BOARD_PWM_CH3_GPIO
-#  define BOARD_PWM_CH3_GPIO            GPIO_GTIOC10B_P5_3_M11 /* ESC4: GPT10B on P53 (GPIO06) */
+#  define BOARD_PWM_CH3_GPIO            (GPIO_GTIOC10B_P5_3_M11 | RZV_GPIO_PERIPH) /* ESC4: GPT10B on P53 (GPIO06) */
 #endif
 
 /* DShot Motor Assignment (channel index mapping) */

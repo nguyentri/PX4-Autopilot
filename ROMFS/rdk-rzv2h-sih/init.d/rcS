@@ -1,0 +1,99 @@
+set +e
+echo ""
+echo "RDK-RZ/V2H PX4 SIH SENSOR DEMONSTRATION"
+echo "All sensor data is simulated; physical buses and PWM outputs are disabled."
+echo ""
+ver all
+set sih_params_valid 1
+if param set SYS_HITL 2 fail
+then
+echo "SYS_HITL configured for FC-SIH"
+else
+echo "ERROR [init] SYS_HITL parameter unavailable"
+set sih_params_valid 0
+fi
+if param set SIH_VEHICLE_TYPE 0 fail
+then
+echo "SIH vehicle type configured"
+else
+echo "ERROR [init] SIH_VEHICLE_TYPE parameter unavailable"
+set sih_params_valid 0
+fi
+if param set-default IMU_GYRO_RATEMAX 250
+then
+echo "SIH gyro rate configured"
+else
+echo "ERROR [init] IMU_GYRO_RATEMAX parameter unavailable"
+set sih_params_valid 0
+fi
+if param set-default HIL_ACT_FUNC1 101
+then
+echo "HIL actuator function 1 configured"
+else
+echo "ERROR [init] HIL_ACT_FUNC1 parameter unavailable"
+set sih_params_valid 0
+fi
+if param set-default HIL_ACT_FUNC2 102
+then
+echo "HIL actuator function 2 configured"
+else
+echo "ERROR [init] HIL_ACT_FUNC2 parameter unavailable"
+set sih_params_valid 0
+fi
+if param set-default HIL_ACT_FUNC3 103
+then
+echo "HIL actuator function 3 configured"
+else
+echo "ERROR [init] HIL_ACT_FUNC3 parameter unavailable"
+set sih_params_valid 0
+fi
+if param set-default HIL_ACT_FUNC4 104
+then
+echo "HIL actuator function 4 configured"
+else
+echo "ERROR [init] HIL_ACT_FUNC4 parameter unavailable"
+set sih_params_valid 0
+fi
+if [ $sih_params_valid = 1 ]
+then
+if sensors start -h
+then
+echo "HIL sensor aggregation started"
+else
+echo "ERROR [init] sensors start -h failed"
+fi
+if simulator_sih start
+then
+echo "SIH dynamics started"
+else
+echo "ERROR [init] simulator_sih start failed"
+fi
+if sensor_baro_sim start
+then
+echo "Simulated barometer started"
+else
+echo "ERROR [init] sensor_baro_sim start failed"
+fi
+if sensor_mag_sim start
+then
+echo "Simulated magnetometer started"
+else
+echo "ERROR [init] sensor_mag_sim start failed"
+fi
+if sensor_gps_sim start
+then
+echo "Simulated GPS started"
+else
+echo "ERROR [init] sensor_gps_sim start failed"
+fi
+if pwm_out_sim start -m hil
+then
+echo "HIL output endpoint started; no physical PWM driver is linked"
+else
+echo "ERROR [init] pwm_out_sim start failed"
+fi
+else
+echo "ERROR [init] mandatory SIH parameter setup failed; simulators not started"
+fi
+echo "PX4 work queues are created on demand; exact thread count is timing-dependent."
+work_queue status

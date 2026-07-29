@@ -1,10 +1,9 @@
 #
-# RDK-RZ/V2H CR8-0 core-only PX4 configuration
+# RDK-RZ/V2H CR8-0 PX4 flight-controller SIH configuration
 #
-# This image keeps the local PX4 platform prerequisites, interactive RTT
-# console, HRT, work queues, uORB, parameters, procfs, volatile TMPFS, and the
-# four GPT channels used by the PWM output demonstration. Payload UARTs, SPI,
-# I2C, DMA, persistent storage, and IPC are excluded.
+# This image keeps PX4 core prerequisites, the interactive RTT console, HRT,
+# work queues, uORB, parameters, procfs, and volatile TMPFS. Physical PWM/GPT,
+# payload UART, SPI, I2C, DMA, persistent storage, and IPC are excluded.
 #
 # CONFIG_DISABLE_ENVIRON is not set
 # CONFIG_DISABLE_PSEUDOFS_OPERATIONS is not set
@@ -69,22 +68,18 @@ CONFIG_NSH_READLINE=y
 CONFIG_RZV2H_BUILD_CR8_0=y
 CONFIG_RDK_RZV2H_VOLATILE_PARAMFS=y
 
-# Four independent GPT channels back the PX4 direct PWM output path.
-CONFIG_PWM=y
-CONFIG_RZV_GPT=y
-CONFIG_RZV_GPT6=y
-CONFIG_RZV_GPT7=y
-CONFIG_RZV_GPT9=y
-CONFIG_RZV_GPT10=y
-
-# Interactive console and diagnostics use only SEGGER RTT channel 0.
+# Interactive shell runs on SCI4 (P70/P71) at 115200 8N1, mirroring the
+# standalone nsh-rtt routing: the NSH prompt, input, and command output use the
+# SCI4 /dev/console while SEGGER RTT channel 0 stays output-only for syslog,
+# boot progress, and low-level diagnostics.
 CONFIG_DEV_CONSOLE=y
 CONFIG_DEV_SIMPLE_ADDRENV=y
-CONFIG_NO_SERIAL_CONSOLE=y
+CONFIG_RZV_SCI4=y
+CONFIG_SCI4_SERIAL_CONSOLE=y
+CONFIG_RZV_SCI_FIFO_MODE=y
+CONFIG_RZV_SCI_FIFO_RX_TRIGGER=31
+CONFIG_RZV_SCI_FIFO_TX_TRIGGER=0
 CONFIG_SYSLOG_RTT=y
-CONFIG_CONSOLE_SYSLOG=y
-CONFIG_SYSLOG_RTT_CONSOLE_INPUT=y
-CONFIG_SYSLOG_RTT_CONSOLE_POLL_USEC=1000
 CONFIG_RZV_DIAGNOSTICS_RTT=y
 CONFIG_SEGGER_RTT=y
 CONFIG_SEGGER_RTT_SECTION=".noncache_buffer"

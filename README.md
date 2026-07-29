@@ -18,6 +18,8 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0** - Build Only
 
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** - Build-Clean; simulated accel/gyro/baro/mag/GPS, HIL sensors, `pwm_out_sim` only
+
 - ⏸ **Renesas RDK-RZV2H IO  CR8_1** - Build Only
 
 - ⏸ **Renesas RDK-RZV2H IO  CM33**  - Build Only
@@ -35,6 +37,7 @@ renesas_fpb-ra8e1_default
 renesas_fpb-ra8e1_dshot
 renesas_fpb-ra8e1_test
 renesas_rdk-rzv2h_default
+renesas_rdk-rzv2h_sih
 renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
 ```

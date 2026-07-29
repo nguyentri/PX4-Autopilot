@@ -3,13 +3,51 @@
 # RDK-RZ/V2H core-only diagnostic startup.
 #
 # px4_platform_init() has already initialized HRT, work queues, parameters,
-# and uORB. Keep this script free of payload and flight-module startup.
+# and uORB. Keep this script free of sensor, payload, and flight-module startup.
 #
 set +e
 
 echo ""
-echo "RDK-RZ/V2H CORE-ONLY DIAGNOSTIC IMAGE"
-echo "Payload drivers, flight modules, serial consumers, and outputs are disabled."
+echo "RDK-RZ/V2H PX4 CORE + PWM DEMONSTRATION"
+echo "Sensor, payload, flight-module, and serial startup is disabled."
 echo ""
 
 ver all
+
+# Match the full RZ/V2H and working RA8P1 BSP demonstrations: four independent
+# 400 Hz motor outputs with safe 1000 us disarmed/failsafe pulses.
+param set-default PWM_MAIN_TIM0 400
+param set-default PWM_MAIN_TIM1 400
+param set-default PWM_MAIN_TIM2 400
+param set-default PWM_MAIN_TIM3 400
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
+param set-default PWM_MAIN_MIN1 1100
+param set-default PWM_MAIN_MIN2 1100
+param set-default PWM_MAIN_MIN3 1100
+param set-default PWM_MAIN_MIN4 1100
+param set-default PWM_MAIN_MAX1 1900
+param set-default PWM_MAIN_MAX2 1900
+param set-default PWM_MAIN_MAX3 1900
+param set-default PWM_MAIN_MAX4 1900
+param set-default PWM_MAIN_DIS1 1000
+param set-default PWM_MAIN_DIS2 1000
+param set-default PWM_MAIN_DIS3 1000
+param set-default PWM_MAIN_DIS4 1000
+param set-default PWM_MAIN_FAIL1 1000
+param set-default PWM_MAIN_FAIL2 1000
+param set-default PWM_MAIN_FAIL3 1000
+param set-default PWM_MAIN_FAIL4 1000
+
+if pwm_out start
+then
+	echo "PWM demo ready: outputs stay disabled until an explicit actuator_test."
+	pwm_out status
+else
+	echo "ERROR [init] pwm_out start failed"
+fi
+
+echo "PX4 work queues are created on demand; PWMOut starts on wq:hp_default."
+work_queue status

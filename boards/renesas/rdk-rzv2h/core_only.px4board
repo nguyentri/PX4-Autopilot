@@ -1,8 +1,10 @@
 # RDK-RZ/V2H CR8-0 core-only diagnostic target.
 #
-# This configuration is a deterministic rollback image. It retains the RTT
-# shell and PX4 core services initialized by px4_platform_init(), but excludes
-# payload drivers, flight modules, serial consumers, and actuator commands.
+# This configuration is a deterministic BSP demonstration image. It retains
+# the RTT shell, PX4 core services initialized by px4_platform_init(), and the
+# four-channel PWM output path, but excludes sensor and payload drivers, flight
+# module startup, and serial consumers. Control allocator is linked only to
+# provide the mixer metadata required by PWMOut.
 
 CONFIG_BOARD_ROMFSROOT="rdk-rzv2h-core-only"
 
@@ -13,21 +15,24 @@ CONFIG_BOARD_SERIAL_RC=""
 CONFIG_BOARD_SERIAL_EXT2=""
 CONFIG_COMMON_SERIAL_PORT_MAPPING=n
 
-# Payload and actuator drivers inherited from default.px4board are disabled.
+# Payload drivers inherited from default.px4board are disabled. PWMOut remains
+# linked to demonstrate the GPT-backed direct output path.
 CONFIG_DRIVERS_BAROMETER=n
 CONFIG_DRIVERS_BAROMETER_BMP280=n
 CONFIG_DRIVERS_GPS=n
 CONFIG_DRIVERS_IMU=n
 CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=n
 CONFIG_DRIVERS_MAGNETOMETER=n
-CONFIG_DRIVERS_PWM_OUT=n
+CONFIG_DRIVERS_PWM_OUT=y
 CONFIG_DRIVERS_RC_INPUT=n
 CONFIG_DRIVERS_DISTANCE_SENSOR_TFMINI=n
 
 # Flight and payload modules inherited from default.px4board are disabled.
 CONFIG_MODULES_ATTITUDE_ESTIMATOR_Q=n
 CONFIG_MODULES_COMMANDER=n
-CONFIG_MODULES_CONTROL_ALLOCATOR=n
+# PWMOut actuator metadata requires the mixer schema supplied by this module.
+# The compact core-only rcS does not start control_allocator.
+CONFIG_MODULES_CONTROL_ALLOCATOR=y
 CONFIG_MODULES_DATAMAN=n
 CONFIG_MODULES_EKF2=n
 CONFIG_EKF2_BAROMETER=n
@@ -50,8 +55,8 @@ CONFIG_MODULES_RC_UPDATE=n
 CONFIG_MODULES_SENSORS=n
 CONFIG_MODULES_TEMPERATURE_COMPENSATION=n
 
-# Read-only diagnostics for proving the core services and inspecting failures.
-CONFIG_SYSTEMCMDS_ACTUATOR_TEST=n
+# Diagnostics for proving the core services and driving safe bench PWM tests.
+CONFIG_SYSTEMCMDS_ACTUATOR_TEST=y
 CONFIG_SYSTEMCMDS_DMESG=y
 CONFIG_SYSTEMCMDS_I2CDETECT=n
 CONFIG_SYSTEMCMDS_LED_CONTROL=n
@@ -66,3 +71,8 @@ CONFIG_SYSTEMCMDS_TUNE_CONTROL=n
 CONFIG_SYSTEMCMDS_UORB=y
 CONFIG_SYSTEMCMDS_VER=y
 CONFIG_SYSTEMCMDS_WORK_QUEUE=y
+
+# Board-specific PWM contract used by the PWMOut driver.
+CONFIG_BOARD_HAS_PWM=DEFINE_FROM_BOARDCONFIG
+CONFIG_BOARD_PWM_SIM_DISABLED=DEFINE_FROM_BOARDCONFIG
+CONFIG_BOARD_PWM_DRIVE_ACTIVE_LOW=DEFINE_FROM_BOARDCONFIG
