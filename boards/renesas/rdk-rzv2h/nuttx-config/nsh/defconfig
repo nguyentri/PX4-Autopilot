@@ -127,6 +127,9 @@ CONFIG_SCI9_2STOP=0
 
 CONFIG_DEV_CONSOLE=y
 CONFIG_DEV_SIMPLE_ADDRENV=y
+CONFIG_DEV_FIFO_SIZE=0
+CONFIG_DEV_PIPE_SIZE=70
+CONFIG_PIPES=y
 
 # The integrated image reserves SCI4 for TFmini LiDAR, so no payload SCI is
 # allowed to become /dev/console. SEGGER RTT channel 0 provides both text

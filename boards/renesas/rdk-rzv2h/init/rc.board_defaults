@@ -10,6 +10,11 @@ set RZV_CONFIG /fs/etc/config.txt
 set RZV_EXTRAS /fs/etc/extras.txt
 set RZV_LEGACY_DEFAULTS /fs/rc.board_defaults.cmds
 
+# The board has status LEDs but no supported RGBLED or PX4IO hardware. Keep
+# the generic startup probes disabled so absent commands are never executed.
+set RGBLED_PROBE no
+set PX4IO_CHECK no
+
 # Always load the safe board defaults. Optional filesystem scripts may then
 # override them with normal `param set` or `param set-default` commands.
 if [ -f $RZV_DEFAULTS ]

@@ -1,6 +1,6 @@
 # Per-Driver Validation Checklist
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-30
 **Usage:** Copy and complete this checklist per driver during bring-up; link completed version to [port-status-nuttx.md](port-status-nuttx.md) Validation Report column.
 
 ---
@@ -9,7 +9,7 @@
 
 **Driver File:** `arch/arm/src/rzv/<driver>.c`  
 **Header File:** `arch/arm/src/rzv/hardware/rzv_<driver>.h`  
-**Sample Config:** `boards/arm/rzv/rdk-rzv2h/configs/<config>/`  
+**Sample Config:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/<config>/`
 **Reference FSP:** `refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/r_<driver>/`
 
 ---
@@ -30,7 +30,7 @@
 ### A.2 Clock/Reset Initialization Order
 
 - [ ] Driver calls `rzv_clock_enable()` (or equivalent) BEFORE accessing peripheral registers.
-- [ ] Reset de-assertion (ICU) happens AFTER clock enable, BEFORE register write.
+- [ ] Reset de-assertion happens through the CPG/module reset path AFTER clock enable, BEFORE register write.
 - [ ] CPG divisor set correctly (reference FSP driver for PLL/clock tree).
 - [ ] No access to peripheral registers when clock is gated (would hang or read 0xFFFF).
 
@@ -40,8 +40,10 @@
 
 ### A.3 Pin/Alternate Function Assignment
 
-- [ ] Pins assigned to peripheral in `rzv_pinmap.h` match `boards/arm/rzv/rdk-rzv2h/configs/<config>/defconfig`.
-- [ ] Alternate function (AF) routing correct: UART TXD pin → SCIF_TXD via ICU, not GPIO output.
+- [ ] Pins assigned to the peripheral match the selected instance in
+      `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/<config>/defconfig`
+      and the board IOPORT/PFC setup.
+- [ ] Alternate function (AF) routing correct: UART TXD pin → SCIF_TXD via IOPORT/PFC, not ICU or GPIO output.
 - [ ] No pin conflicts: same pin not assigned to two peripherals simultaneously (verify with `pinmap.md`).
 - [ ] Pull-up/pull-down configured per datasheet (e.g., UART RXD typically has pull-up).
 
@@ -52,13 +54,11 @@
 ### A.4 Interrupt Vector & Priority Assignment
 
 - [ ] IRQ number assigned to peripheral (from ICU interrupt mapping) in `rzv_irq.h`.
-- [ ] ISR priority assigned (CPU priority level, GIC priority value) matches device role.
-  - Flight-critical (SPI, I2C): priority 0–3 (high).
-  - Non-critical (watchdog): priority 4–15 (low).
+- [ ] ISR priority is documented per device and matches the board interrupt plan.
 - [ ] ISR registered via `irq_attach()` with correct handler signature.
 - [ ] No IRQ conflicts: same vector number not assigned to two drivers.
 
-**Verification:** Run `grep -r "RZV_IRQ_<DRIVER>" arch/arm/src/rzv/`.
+**Verification:** Run `grep -r "RZV_IRQ_<DRIVER>" platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`.
 
 ---
 
@@ -67,7 +67,9 @@
 ### B.1 Driver Init Entry Point
 
 - [ ] `<driver>_initialize()` exists and called from `up_initialize()` (or board-specific init).
-- [ ] Returns status (int): 0 on success, -ENODEV on error (no hardware) or -EBUSY (already open).
+- [ ] Return contract matches the selected NuttX interface: status-returning
+      initializers use `0`/negative `errno`, while lower-half factories may
+      return a device pointer or `NULL`.
 - [ ] Idempotent: multiple calls to `initialize()` do not corrupt state (re-entrant guards if needed).
 
 ---
@@ -77,12 +79,13 @@
 For each supported peripheral instance, verify in order:
 
 1. **Clock enable** → `rzv_clock_enable(MODULE_ID)` or CPG register write.
-2. **Reset de-assertion** → write RST register (ICU) or equivalent.
-3. **Pin configuration** → `pm_pinctrl()` or GPIO alternate function set.
+2. **Reset de-assertion** → CPG/module reset release helper for the module.
+3. **Pin configuration** → board IOPORT/PFC alternate-function setup.
 4. **Peripheral register defaults** → clear/set control registers to known state.
 5. **Interrupt setup** → `irq_attach()` + enable via GIC/ICU.
 6. **DMA setup (if used)** → channel reserve, alignment, cache setup.
-7. **Device registration** → `<type>_register()` (e.g., `uart_register()`, `spi_dev_register()`).
+7. **Device registration** → the current upper-half API (e.g.,
+   `uart_register()` or `spi_register()`).
 
 **Anti-pattern:** Setting registers before clock enable will fail silently or hang.
 
@@ -91,9 +94,8 @@ For each supported peripheral instance, verify in order:
 ### B.3 Clock Divisor Verification
 
 - [ ] Clock divider formula matches FSP reference driver.
-- [ ] Baud rate (UART), SCK frequency (SPI), or sample rate (ADC) achievable with CPG settings.
-  - Example: UART baud rate = PCLK / (16 × (BRR + 1)). Verify BRR calculation for 115200 baud.
-- [ ] Tolerance within ±3% (standard for serial comms).
+- [ ] Baud rate (UART), SCK frequency (SPI), or sample rate (ADC) is achievable with the documented CPG settings.
+  - Example: UART baud rate = PCLK / (16 × (BRR + 1)). Verify the module-specific BRR calculation.
 
 **Test:** Load driver, read peripheral clock rate register, compare to expected divisor output.
 
@@ -105,7 +107,7 @@ For each supported peripheral instance, verify in order:
 
 - [ ] ISR reads status register (not assumed from callback context).
 - [ ] ISR clears interrupt flag in peripheral (write 1 to ICLR or equivalent) BEFORE returning.
-- [ ] If using GIC, ISR should end with `gic_acknowledge(irq)` to deassert the interrupt line.
+- [ ] If using GIC, verify the line is acknowledged by the architecture path or the driver-specific helper; do not assume a manual `gic_acknowledge(irq)` belongs in every ISR.
 - [ ] Avoid double-clear: single write clears flag; no loop waiting for flag to clear.
 
 **Failure Example:** ISR doesn't clear interrupt → immediate re-entry, hangs CPU.
@@ -114,9 +116,9 @@ For each supported peripheral instance, verify in order:
 
 ### C.2 ISR Priority & Non-Blocking Semantics
 
-- [ ] ISR does NOT call blocking functions (nxmutex_lock, sem_wait, malloc).
-- [ ] ISR duration <100 µs (measure with GPIO toggle on enter/exit).
-- [ ] ISR priority prevents preemption by lower-priority tasks (kernel scheduler respects GIC priority levels).
+- [ ] ISR does NOT call blocking functions (`nxmutex_lock`, `sem_wait`, `malloc`).
+- [ ] ISR duration is measured and documented against the driver-specific acceptance criterion.
+- [ ] ISR priority prevents preemption by lower-priority tasks according to the board interrupt plan.
 - [ ] ISR re-entrancy: if peripheral can generate multiple simultaneous interrupts (e.g., RX + TX), use atomic flags or queue pending events.
 
 **Test:** Enable ISR in NuttX config, attach oscilloscope to GPIO toggle, measure width and jitter.
@@ -137,8 +139,10 @@ For each supported peripheral instance, verify in order:
 
 ### D.1 Cache Coherency & Invalidate/Clean
 
-- [ ] Read-DMA buffer: `arm_dcache_inval_range()` BEFORE reading DMA result (invalidate CPU cache).
-- [ ] Write-DMA buffer: `arm_dcache_clean_range()` AFTER copying data to buffer, BEFORE DMA start (flush CPU cache).
+- [ ] Read-DMA buffer: invalidate the destination with
+      `up_invalidate_dcache(start, end)` before CPU consumption.
+- [ ] Write-DMA buffer: clean the source with
+      `up_clean_dcache(start, end)` after CPU writes and before DMA start.
 - [ ] Buffer alignment: DMA data buffers aligned to cache line (32 or 64 bytes, typically).
 - [ ] Buffer size: multiple of DMA transfer width (e.g., SPI DMAC uses 4-byte words; buffer size ≥4 and divisible by 4).
 
@@ -148,9 +152,13 @@ For each supported peripheral instance, verify in order:
 
 ### D.2 DMAC Channel Management
 
-- [ ] Channel reserve: `dmac_channel_reserve()` called once per peripheral instance.
-- [ ] Channel release: `dmac_channel_release()` called when driver closed (cleanup).
-- [ ] No hardcoded channel numbers: use board-specific assignment (e.g., `CONFIG_RZV_SPI0_DMA_CHANNEL`).
+- [ ] Channel setup uses `rzv_dmac_channel_initialize()` and
+      `rzv_dmac_channel_configure()` once per assigned channel.
+- [ ] Stop/cleanup uses `rzv_dmac_channel_stop()` or
+      `rzv_dmac_channel_disable()` as required by the driver's lifecycle.
+- [ ] No hardcoded channel numbers: use separate board assignments for each
+      direction (for example, `CONFIG_RZV_DMAC_SPI0_RX_CHANNEL` and
+      `CONFIG_RZV_DMAC_SPI0_TX_CHANNEL`).
 - [ ] Channel interrupts (if used): ISR priority ≥ peripheral driver priority.
 
 ---
@@ -169,8 +177,9 @@ For each supported peripheral instance, verify in order:
 
 - [x] Build `rdk-rzv2h:dmac-memcpy` with `CONFIG_RZV_DMAC` and
   `CONFIG_EXAMPLES_RZV_DMAC` enabled.
-- [ ] Flash and run `rzv_dmac` on CR8-0; this is deliberately deferred from
-  the build-only check.
+- [ ] After an approved exact-image load procedure exists, load and run
+  `rzv_dmac` on CR8-0; this is deliberately deferred from the build-only
+  check.
 - [ ] Archive UART output containing CPU addresses, final status, and
   `PASS: DMAC memcpy`.  If bus aliases are required as evidence, read N0SA
   and N0DA through the hardware debugger; the supported application interface
@@ -182,10 +191,13 @@ For each supported peripheral instance, verify in order:
 
 ## SECTION E: Concurrency & Shared Register Access
 
-### E.1 IRQSave Protection
+### E.1 Critical-Section Protection
 
-- [ ] Shared register access (multiple bits written by driver + ISR) guarded with `irqsave()` / `irqrestore()`.
-- [ ] Example: SPI module may have TX register and STATUS register; ISR reads STATUS, task writes to TX → use irqsave lock.
+- [ ] Shared register access (multiple bits written by driver + ISR) guarded
+      with `enter_critical_section()` / `leave_critical_section()`.
+- [ ] Example: if an ISR and task update related SPI state, capture the
+      returned `irqstate_t` and leave the critical section after the atomic
+      update.
 - [ ] Mutexes used for non-ISR-to-ISR sharing (task-to-task or task-to-workqueue).
 
 **Anti-pattern:** Task reads STATUS, ISR modifies STATUS, task writes wrong bit → data corruption.
@@ -248,7 +260,7 @@ if (rising_edge)  conf |= IOPORT_IRQ_EDGE_RISING;
 ```
 
 - [ ] Edge/level semantics identical.
-- [ ] Trigger timing <100 ns after hardware edge (measure with oscilloscope if critical).
+- [ ] Trigger timing is measured if the edge path is safety-critical; document the observed value and the acceptance criterion used.
 
 ---
 
@@ -277,8 +289,7 @@ if (rising_edge)  conf |= IOPORT_IRQ_EDGE_RISING;
 
 **Setup:** Measure time from hardware event to callback start.
 
-- [ ] Jitter <100 µs (acceptable for most UAV apps).
-- [ ] Max latency <500 µs (hard real-time requirement for flight control).
+- [ ] Jitter and latency are recorded against the driver-specific requirement.
 
 **Measurement Method:**
 1. Toggle GPIO input (external signal generator or loopback).
@@ -295,85 +306,51 @@ if (rising_edge)  conf |= IOPORT_IRQ_EDGE_RISING;
 
 ---
 
-## SECTION I: Example Completion
+## SECTION I: Illustrative Completion Format
 
-**Driver: UART (rzv_scif.c)**
+> The SCIF report below is formatting guidance only. It is not RDK-RZ/V2H
+> validation evidence and must not be copied into a status row as a PASS.
+> The current SCIF lower-half remains blocked until its clock and IOPORT/PFC
+> requirements are resolved and proven on target.
 
 ```markdown
-# Validation Report: rzv_scif.c
+# Validation Report: <driver/config>
 
-**Date:** 2026-07-15  
-**Tester:** John Developer  
-**Config:** boards/arm/rzv/rdk-rzv2h/configs/nsh-scif/
+**Date:** <YYYY-MM-DD>
+**Tester:** <name or lab>
+**Core/board revision:** <CR8-0|CR8-1|CM33>, <revision>
+**Config and revisions:** <config>, <root/NuttX hashes>
+**Boot/load provenance:** <cold|warm|debugger>, <exact command>
+**Artifact SHA-256:** <hash>
 
-## A. Static Validation
+## Static Evidence
 
-### A.1 Register Map
-- [x] Base address 0x1004A000 matches UM section 27.3 (Serial Communication Interface F).
-- [x] Bit definitions verified: SMR, SCR, FSR, FTDR, FRDR, SPTR.
-- [x] No magic addresses; all from rzv_sci.h.
+- [ ] CMSIS/manual/FSP authority and applicability recorded.
+- [ ] Base/offset/clock/reset/pin/IRQ claims traced to source.
+- [ ] Board registration and expected node/consumer traced.
 
-### A.2 Clock/Reset
-- [x] rzv_clock_enable(MODULE_ID_SCI_F) called before register init.
-- [x] Reset deasserted via ICU write.
-- [x] CPG divisor set for PCLK = 100 MHz.
+## Build Evidence
 
-### A.3 Pins
-- [x] SCIF_TXD on port 1 pin 3 (AF9) matches defconfig.
-- [x] SCIF_RXD on port 1 pin 2 (AF9) with pull-up enabled.
-- [x] No pin conflicts.
+- [ ] Clean named configure/build/link result recorded.
+- [ ] Expected board/lower-half symbols or objects present.
+- [ ] No unresolved symbols or source-list mismatch.
 
-### A.4 IRQ
-- [x] IRQ 201 (from UM) assigned to SCIF_F in rzv_irq.h.
-- [x] Priority set to 5 (non-critical).
-- [x] No conflicts detected.
+## Target Evidence
 
-## B. Initialization Order
+- [ ] Complete boot log and command transcript attached.
+- [ ] Successful operation and one injected failure/recovery captured.
+- [ ] Register/analyzer/scope evidence attached where applicable.
+- [ ] Timing, resource, and stress bounds state both criterion and result.
 
-- [x] up_initialize() → rzv_serial_initialize() → scif_init() sequence verified.
-- [x] Clock → Reset → Pin → Register → IRQ order confirmed.
-- [x] Baud rate 115200: PCLK 100MHz, BRR = 54 (formula: (100e6 / (16 * 115200)) - 1 = 53.67 ≈ 54).
-- [x] Idempotent: called twice in test, no corruption.
+## Result
 
-## C. ISR
+**Result:** <PASS|FAIL|DEFERRED>
+**Strongest evidence tier:** <configured|build-clean|hardware-ready|on-target functional|PX4-integrated|stress-validated>
+**Open gates:** <remaining evidence or none>
 
-- [x] ISR clears FSR (frame status) register before return.
-- [x] GIC acknowledge called (via up_enable_irq mechanics).
-- [x] ISR duration <50 µs (measured with GPIO toggle).
-- [x] No blocking calls inside ISR.
+## Unresolved Questions
 
-## D. DMA
-
-- [x] Not used in this driver (polled UART).
-
-## E. Concurrency
-
-- [x] Driver state per-instance (one state_s struct per SCIF_F instance).
-- [x] No shared globals.
-
-## F. Power Management
-
-- [x] suspend/resume not implemented (blocking poll only).
-
-## G. Functional Equivalence
-
-- [x] Baud rate formula matches FSP r_sci_b.c.
-- [x] 115200 baud verified with serial terminal (loopback).
-- [x] Edge semantics N/A (UART not edge-triggered).
-
-## H. Stress
-
-- [x] Loopback test: 100k characters at 115200 baud; no drop.
-- [x] Latency: <100 µs from RX interrupt to callback.
-- [x] CPU remains responsive during test.
-
-## I. Pass/Fail
-
-**Result: PASS** ✓
-
-**Status:** functional
-
-**Notes:** Ready for integration. Consider adding DMA support in future for high-rate telemetry.
+- <question or "None">
 ```
 
 ---

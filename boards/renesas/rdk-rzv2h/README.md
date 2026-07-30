@@ -16,12 +16,14 @@ RTT/HRT/work queues/parameters/uORB and the diagnostic commands needed to
 inspect failures, auto-starts `pwm_out`, and excludes payload UARTs,
 SPI/I2C/RC/GPS/IMU/baro drivers, flight-module startup, and serial consumers.
 
-The board also ships `renesas_rdk-rzv2h_sih`, a build-clean CR8-0 FC-SIH demo
-image built from `sih.px4board`, `nuttx-config/sih/defconfig`, and the compact
+The board also ships `renesas_rdk-rzv2h_sih`, a CR8-0 FC-SIH demo with a
+bounded on-target transcript. It is built from `sih.px4board`,
+`nuttx-config/sih/defconfig`, and the compact
 `ROMFS/rdk-rzv2h-sih` startup tree. It starts simulated accel/gyro/baro/mag/GPS
 paths through HIL sensors and `pwm_out_sim`, but it does not start physical
-buses, GPT/PWM output, or `control_allocator`. Target validation still needs a
-cold power-cycle and on-target proof.
+payload/sensor buses, GPT/PWM output, or `control_allocator`. SCI4 remains the
+interactive shell. Cold-cycle provenance, physical pin-safety measurement,
+and soak validation remain open.
 
 ## Hardware Configuration
 
@@ -29,7 +31,9 @@ cold power-cycle and on-target proof.
 - **MCU**: Renesas RZV2H (R9A09G057)
 - **Core**: ARM Cortex-R8 (CR8_0) @ 800MHz
 - **Architecture**: ARMv7-R with FPU
-- **Memory**: 524KB RAM at 0x22060000
+- **Linked memory**: CR8-0 private ITCM/DTCM plus 8 MiB cacheable DDR at
+  0x40800000 and 8 MiB non-cacheable DDR at 0x41000000. The legacy
+  `CONFIG_RAM_*` values are not the PX4 link/heap authority.
 
 ### Inter-core Topology
 | Role | Processor | Image | Communication |
@@ -199,8 +203,11 @@ make renesas_rdk-rzv2h_sih
 
 The SIH image is the CR8-0 software demo path only. It links simulated
 accel/gyro/baro/mag/GPS, HIL sensors, and `pwm_out_sim`; it does not start any
-physical bus, GPT, or PWM driver. Use it from a cold power-cycle and treat the
-current state as build-clean but on-target pending.
+physical payload/sensor bus, GPT, or PWM driver. The current board transcript
+proves boot, interactive shell, one bounded HRT callback, work queues,
+simulated topics, and the HIL endpoint. Use it from a cold power-cycle; the
+four-pin static-level measurement and 10-minute resource/rate soak remain
+pending.
 
 Build RZ/V2H NuttX targets sequentially. Their separate top-level build
 directories still regenerate shared files under `platforms/nuttx/NuttX`, so

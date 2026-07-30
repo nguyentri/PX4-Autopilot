@@ -1,7 +1,7 @@
 # PX4 HAL Port Status Matrix
 
-**Date:** 2026-07-29
-**Branch:** px4_ra_rzv  
+**Date:** 2026-07-30
+**Branch:** gitlab-migration
 **Scope:** PX4 Hardware Abstraction Layer (HAL) surfaces for RDK-RZ/V2H; cross-referenced to NuttX driver dependencies.
 
 ---
@@ -29,14 +29,38 @@
 > boards keep the common `yes` default. `battery_status` remains source-gated
 > on BAT1/BAT2 power-module sources.
 
-SIH note: `renesas_rdk-rzv2h_sih` is build-clean but hardware-unvalidated. It
-is a CR8-0 FC-SIH demo image, not a hardware proof image. Startup loads
+> The 2026-07-30 payload-image rebuilds also close deterministic startup
+> command and MAVLink-shell defects. Required `mft`/`bsondump` commands are
+> linked; absent RGBLED/PX4IO probes are disabled by board capability flags;
+> `CONFIG_PIPES=y` selects NuttX `lib_pipe.o` instead of a board `ENOSYS`
+> stub. An automatic post-build contract verifies both default and DShot
+> label/nsh/CR8-0 resolution, linker, builtins, pipe object, undefined-symbol
+> set, split image, and `.px4` payload. Default ELF SHA-256:
+> `73cf6258a8fb508f3d639d6d49a7a6d9ff9562fa17676c8376637c763e379136`;
+> DShot ELF SHA-256:
+> `a1e447f597bca07b92f76929846035535d0f2bdde465c23ad12c5d96ecc7700a`.
+> Exact-image cold boot remains a target gate.
+
+SIH note: `renesas_rdk-rzv2h_sih` now has bounded on-target evidence for its
+simulation-only contract. It is a CR8-0 FC-SIH demo image, not a physical
+hardware proof image. Startup loads
 `sensors start -h`, `simulator_sih`, `sensor_baro_sim`, `sensor_mag_sim`,
 `sensor_gps_sim`, and `pwm_out_sim start -m hil`; `control_allocator` is
 linked for metadata but is not started. The image reports simulated
-accel/gyro/baro/mag/GPS data, keeps physical buses and GPT/PWM off, and leaves
-queue count timing-dependent. Cold power-cycle and on-target validation remain
-pending.
+accel/gyro/baro/mag/GPS data, keeps physical payload/sensor buses and GPT/PWM
+drivers off, and leaves queue count timing-dependent. The July 30 transcript
+self-reports the current PX4/NuttX revisions, reaches an interactive NSH shell,
+passes one `system_time hrt-test`, shows expected queues and simulated topics,
+and reports the HIL endpoint running. It records no artifact hash, so it is not
+attributed to the fresh SIH ELF
+`4af2676db2b5d5bfab433a9339aba23cf6e8c61750214772c5201a010993a731`.
+Fresh SIH builds run the source and artifact contracts automatically
+(11/11 + 12/12). Exact load/cold-cycle provenance, SCI4 transport capture,
+physical pin-safety measurements, transcript coverage gaps, and the 10-minute
+resource/rate soak remain pending. See the
+[SIH evidence audit](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260730-rzv2h-sih-runtime-evidence.md);
+the historical evidence filename says `sil`, but the image/runtime variant is
+SIH: [px4_nuttx_rzv2h_sil.txt](px4_nuttx_rzv2h_sil.txt).
 
 Core-only note: `renesas_rdk-rzv2h_core_only` is build-clean from
 `core_only.px4board`, `nuttx-config/core_only/defconfig`, and the generated
@@ -69,9 +93,10 @@ free
 perf
 ```
 
-Use the commands above to document the SIH startup path and queue state. Do
-not infer target success from the host build; the current image is still
-awaiting cold-power-cycle and on-target validation.
+Use the commands above to finish the SIH startup and queue evidence. The
+current transcript is a bounded runtime pass, not completion of the cold-cycle,
+pin-safety, or soak gates, and it gives no evidence for physical sensors,
+payload links, flight readiness, or GPT/PWM output.
 
 The execution authority is the
 [RDK-RZV2H PX4 NuttX Port Goal Plan](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md).
@@ -84,7 +109,7 @@ milestone work.
 
 | # | Peripheral | PX4 HAL File | NuttX Driver Dep | PX4 Board Dir | Status | Migration Notes |
 |---|------------|--------------|------------------|---------------|--------|-----------------|
-| 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | `rzv_spi.c` + board pinmux/GPIO CS | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean; target pending | `CONFIG_RZV_SPI=y`. `board_app_initialize()` now calls `board_spi_initialize()` before sensor startup, which muxes P90/P91/P92 and configures P93 as active-low GPIO CS. The board select hook keys on the SPI0 lower-half instance, so PX4 sensor IDs and standalone NuttX test IDs share the same CS path. Initialization and standalone registration retry state are serialized/published safely. [Software checkpoint](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/pm-260727-0701-rzv2h-integrated-spi-closure.md). DRDY is P50. On-target WHOAMI/data/DRDY proof pending. |
+| 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | `rzv_spi.c` + board IOPORT/PFC mux + GPIO CS | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean; target pending | `CONFIG_RZV_SPI=y`. `board_app_initialize()` now calls `board_spi_initialize()` before sensor startup, which muxes P90/P91/P92 and configures P93 as active-low GPIO CS. The board select hook keys on the SPI0 lower-half instance, so PX4 sensor IDs and standalone NuttX test IDs share the same CS path. Initialization and standalone registration retry state are serialized/published safely. [Software checkpoint](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/pm-260727-0701-rzv2h-integrated-spi-closure.md). DRDY is P50. On-target WHOAMI/data/DRDY proof pending. |
 | 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | build-clean | BMP280 baro on SCI7 simple-I2C P76/P77. `CONFIG_RZV_SCI7_I2C=y`; bus 7 dispatches explicitly to `rzv_sci_i2c_initialize(7)`, never RIIC, and maps safely to its dense PX4 clock slot. Fresh standalone HIL and integrated PX4 builds pass; BMP280 probe/read/recovery remains unvalidated on target. |
 | 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | Explicit policy: standalone CR8-0 NuttX = SCI4 shell + RTT diagnostics; target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics. Integrated PX4 RTT0 `/dev/console` input/output is build-clean and bypasses SCI low-setup. SCI6 termios/SBUS 100000 8E2 is build-clean with checked setup failures and the FSP 16-sample, modulation-off baud policy; its fixed external NPN inverter, waveform, and decoded frames remain target gates. Integrated SCI4 is generated as `EXT2`; `SENS_TFMINI_CFG=401` makes common `rc.serial` own TFmini on `/dev/ttyS4`. SCI5 MAVLink/QGC and SCI9 GPS retain payload ownership in the full default image. Default and DShot board configs set `CONFIG_SYSTEMCMDS_SERIAL_STATUS=y`; the command snapshots the registered SCI lower halves directly, without opening or consuming from the payload TTYs, with `serial_status /dev/ttyS4 /dev/ttyS5 /dev/ttyS6 /dev/ttyS9`. The core-only diagnostic image drops all payload serial roles, disables `CONFIG_SYSTEMCMDS_SERIAL_STATUS`, and stays RTT-only; the generated VS Code RZV profile is read-only attach and must use the exact ELF, exact `R9A09G057H44_R8_0`, and user-provided probe serial. SCIF remains sample-only/blocked. |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
@@ -105,7 +130,7 @@ milestone work.
 **NuttX Foundation:** `rzv_spi.c` (RSPI native) + `rzv_sci_spi.c` (SCI as SPI fallback).
 
 **PX4 HAL Interface:**
-- `board_spi_initialize()` configures the SPI0 pinmux and P93 GPIO CS, then
+- `board_spi_initialize()` configures the SPI0 IOPORT/PFC mux and P93 GPIO CS, then
   initializes the RZ/V2H lower-half before payload startup.
 - Later `px4_spibus_initialize()` calls from PX4 sensor drivers reuse the
   idempotent `rzv_spibus_initialize()` result (`CONFIG_RZV_SPI=y`).
@@ -173,7 +198,7 @@ not affect the separate standalone NuttX image where SCI4 is the shell.
 - IRQ attachment via `px4_arch_gpioirq()` + callback.
 - LED control (status, error, heartbeat LEDs on rdk-rzv2h).
 
-**Validation:** LED blink test (configs/nsh-leds); button IRQ latency <100 µs.
+**Validation:** LED blink test (configs/nsh-leds); button IRQ latency is measured and compared against the board-specific acceptance criterion.
 
 ---
 
@@ -243,8 +268,8 @@ pass. See the
 [GTM7 HRT review](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/reviewer-260727-rzv2h-hrt-gtm7.md).
 
 **Target validation:** confirm runtime P1CLK and monotonicity across a real or
-accelerated counter wrap; then measure jitter <100 µs and uptime >1 hour
-without drift >1 ppm under queue load.
+accelerated counter wrap; then measure jitter and uptime against the
+board-specific acceptance criterion under queue load.
 
 ---
 
@@ -310,6 +335,9 @@ erased.
 - Software checkpoint: `system_time hrt-test` and `work_queue status` are the
   exact HRT/work-queue checks; the default image now keys `dshot start` off
   `DSHOT_START` instead of invoking the absent DShot path unconditionally.
+  The automatic payload artifact contract also rejects missing startup
+  utilities, board-enabled absent hardware probes, a non-NuttX `pipe()`, split
+  image/package mismatch, or undefined ELF symbols.
 
 ---
 

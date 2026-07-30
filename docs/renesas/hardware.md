@@ -3,7 +3,7 @@
 **Board:** Renesas RDK-RZ/V2H
 **Target software stack:** PX4 on NuttX
 **Primary development target:** CR8-0
-**Date:** 2026-07-26
+**Date:** 2026-07-30
 **Status:** Consolidated development reference
 
 This document consolidates the hardware notes for the RZ/V2H RDK board into a single PX4/NuttX-focused reference. It is intended for board bring-up, driver development, boot/debug configuration, and hardware-software validation.
@@ -97,7 +97,7 @@ External Oscillator, typically 24 MHz
 
 | Clock | Source | Typical frequency | Function |
 |---|---|---:|---|
-| cpu_clk | Main PLL | 1.5 GHz | CR8-0 / CR8-1 core clock |
+| cpu_clk | Main PLL / loader dividers | 800 MHz board default; measure live | CR8-0 / CR8-1 core clock |
 | periphclk | Sub PLL | Varies | Peripheral bus clock |
 | uart_clk | Sub PLL | 48 MHz | UART baud generator |
 | spi_clk | Sub PLL | 100 MHz | SPI transfer clock |
@@ -121,15 +121,20 @@ External Oscillator, typically 24 MHz
 
 ## 4. Memory Map: Single-Core CR8-0
 
+This table is the CR8-0 view used by the current linker. The canonical
+cross-core aliases and shared windows remain in
+[multicore-memory-map.md](multicore-memory-map.md).
+
 | Region | Start | Size | Type | Cache | Purpose |
 |---|---:|---:|---|---|---|
-| SRAM | `0x00000000` | 1 MB | SRAM | Cached | Vector table, kernel stack, boot |
-| TCM Instruction | `0x0C000000` | 128 KB | SRAM | - | Tight instruction coupling |
-| TCM Data | `0x0D000000` | 128 KB | SRAM | - | Tight data coupling |
-| Code Flash | `0x20000000` | 8 MB | NOR | Cached | NuttX kernel and PX4 code |
-| XSPI Flash | `0x60000000` | 8 MB | QSPI | Cached | File system, LittleFS |
-| Shared DRAM | `0x40000000` | 2 MB | DRAM | Cached | IPC buffers, CR8-1 / CM33 firmware |
-| Peripheral I/O | `0x41000000+` | - | Registers | Uncached | GIC, ICU, GPIO, UART, SPI, etc. |
+| ITCM private | `0x00000000` | 127.5 KB | TCM | - | Vectors and early/BSP text |
+| Flash header | `0x0001FE00` | 128 B | In-image header | - | Renesas load descriptor |
+| DTCM private | `0x00020000` | 128 KB | TCM | - | Stack and tightly coupled data |
+| SRAM cacheable | `0x08180000` | 128 KB | SRAM | Cached | CR8-0 private SRAM |
+| SRAM non-cacheable | `0x081A0000` | 128 KB | SRAM | Uncached | RTT and non-cache buffers |
+| DDR cacheable | `0x40800000` | 8 MB | DDR | Cached | PX4/NuttX text, data, BSS, heap |
+| DDR non-cacheable | `0x41000000` | 8 MB | DDR | Uncached | Explicit non-cache data |
+| xSPI image | `0x20200000` header / `0x60200000` image view | Image dependent | xSPI | Loader-defined | CR8-0 firmware image |
 
 - **Reset vector:** `0x00000000`, SRAM.
 - **Linker script:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld`
@@ -256,7 +261,9 @@ Configuration:
 The MHU is a hardware doorbell for inter-core signaling.
 
 - **Type:** ARM MHU.
-- **Base address:** `0x41490000`, CR8-0 view.
+- **Register aliases:** current NuttX definitions use the `0x10480000` MHU
+  domain with separate non-secure, secure-CR8, and secure-CM33 offsets.
+  Select the domain explicitly; there is no single universal base.
 
 Features:
 
@@ -265,6 +272,10 @@ Features:
 - CR8-0 <-> CM33.
 - Edge-triggered interrupts.
 - Lightweight doorbell behavior with no payload.
+
+The CR8-0 default and SIH images do not enable this path. Current MHU/IPCC
+code is source-audited or build-clean in standalone samples; peer exchange,
+cache ordering, timeouts, and recovery remain final-milestone target gates.
 
 ### 8.2 IPCC: Inter-Processor Communication Controller
 
@@ -310,11 +321,12 @@ References:
 ### 9.2 GTM: General Timer Module
 
 - **Type:** 32-bit free-running counter.
-- **Base address:** `0x41500000`.
-- **Clock:** 200 MHz typical.
-- **Counter:** 32-bit, wraps in approximately 21 seconds at 200 MHz.
+- **HRT instance:** GTM7 at `0x12C03000`.
+- **Clock:** runtime P1CLK; 100 MHz nominal in the checked-in CR8-0 setup.
+- **Counter:** 32-bit, nominal full wrap approximately 42.9 seconds at 100 MHz;
+  the HRT shim uses bounded comparisons and a software epoch.
 - **PX4 use:** High-resolution timer, HRT, for scheduling.
-- **Interrupt:** Counter overflow.
+- **Interrupt:** fixed GTM7 compare IRQ.
 
 **Sources:**
 

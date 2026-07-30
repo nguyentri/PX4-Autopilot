@@ -1,7 +1,7 @@
 # Deployment Guide: Build, Flash, Debug
 
-**Date:** 2026-07-26
-**Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, flash, and debug.
+**Date:** 2026-07-30
+**Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, evidence capture, and debug. The exact cold-load/run recipe remains unresolved.
 
 ---
 
@@ -41,7 +41,8 @@ The current diagnostic rollback target is `renesas_rdk-rzv2h_core_only`. It
 keeps RTT, HRT, work queues, parameters, uORB, and the diagnostic command set,
 but excludes payload lower-halves, payload/flight modules, and output init.
 Full default and multicore targets still exist for other milestones; this
-guide documents the core-only path.
+guide documents the core-only path. The resulting artifacts are build
+evidence only and do not prove a cold boot or flashing contract.
 
 ### Build Script
 
@@ -67,11 +68,11 @@ The core-only image is built from
 
 ---
 
-## 3. Flash Routes
+## 3. Load Routes
 
-There is no approved raw-`.bin` flashing recipe for the core-only image in
-this guide. The current debug contract is attach-only until the
-boot-consumer/address contract is authoritative.
+There is no approved raw-`.bin` flashing recipe or authoritative cold-load/run
+sequence for the core-only image in this guide. The current debug contract is
+attach-only until the boot-consumer/address contract is authoritative.
 
 ---
 
@@ -82,6 +83,7 @@ boot-consumer/address contract is authoritative.
 Use the exact core-only ELF, the exact device name `R9A09G057H44_R8_0`, and
 the user-provided probe serial. The generated VS Code RZV profile is
 read-only attach. Reset, load, and continue require explicit authorization.
+This is a debug attachment contract, not a validated cold-load recipe.
 
 ### VS Code Launch Configurations
 

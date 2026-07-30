@@ -1,10 +1,13 @@
 # Parametric Prompt Recipes
 
-**Date:** 2026-07-11  
-**Status:** Phase 2 (Workflow Enablement)  
+**Date:** 2026-07-30
+**Status:** Active workflow reference
 **Purpose:** Copy-pasteable Claude-Code prompts for common RZ/V2H porting tasks
 
-Each recipe is a template. Substitute `<placeholder>` values and run via `/ck:plan` or direct prompt to Claude-Code.
+Each recipe is a template. Substitute `<placeholder>` values and paste the
+result as a direct Claude-Code prompt. If a plan is needed, invoke `/ck:plan`
+with the completed request; this repository does not define recipe-specific
+CLI flags.
 
 ---
 
@@ -25,16 +28,16 @@ edge cases, and integrates correctly with the RZ/V2H port.
 
 Scope:
 - Driver architecture (lower-half / upper-half split)
-- ISR logic (ack timing, work-queue deferral)
+- ISR logic (source clear timing, work-queue deferral)
 - Error handling (propagation, recovery)
 - Cache coherency (DMA buffer invalidate/clean)
-- Init sequencing (clock → pins → IRQ → config)
+- Init sequencing (clock → reset/unreset → pins → IRQ → config)
 - Concurrency (critical sections, mutex protection)
 
 Files to Read (Primary):
   - platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_<driver>.c (implementation)
   - platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_<driver>.h (register map)
-  - boards/arm/rzv/rdk-rzv2h/src/rzv2h_<driver>.c (board wiring)
+  - platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_<driver>.c (standalone NuttX board wiring)
 
 Files to Read (References):
   - platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c (timer reference)
@@ -43,14 +46,15 @@ Files to Read (References):
   - docs/code-standards.md (code conventions)
 
 Analysis Requirements:
-1. Verify init sequence matches clock → reset → pins → IRQ order
-2. Check ISR clears interrupt at ICU; defers work via work_queue()
+1. Verify init sequence matches clock → reset/unreset → pins (IOPORT/PFC) → IRQ order
+2. Check ISR clears the source it owns; defer work via `work_queue()`
 3. Confirm no blocking calls in ISR (no sleep, malloc, syslog)
 4. Check cache coherency: invalidate before RX DMA, clean before TX
 5. Ensure nxmutex or critical sections protect shared HW registers
 6. Verify error codes propagated (not swallowed)
 7. Check Kconfig and Make.defs rules present
 8. Review sample config compiles and driver registers on boot
+9. Tag the result with the strongest evidence tier actually observed; do not promote a build-only result to hardware-ready
 
 Deliverable Path:
   plans/reports/driver-review-<date>-rzv2h-<driver>-review-report.md
@@ -62,13 +66,13 @@ Success Criteria:
 - [ ] Optional: runnable test command for the driver
 
 Validation Command:
-  ./tools/configure.sh rdk-rzv2h:<driver> && make -j$(nproc)
+  cd platforms/nuttx/NuttX/nuttx && ./tools/configure.sh rdk-rzv2h:<driver> && make -j$(nproc)
   # Verify no undefined references and driver registers
 ```
 
 ### Example Invocation
 ```
-/ck:plan --recipe driver-review --param driver=spi-b
+Paste Recipe 1 with <driver> replaced by spi-b, then invoke /ck:plan if needed.
 ```
 
 ---
@@ -91,8 +95,8 @@ clock dependencies, and driver ownership.
 Scope:
 - Hardware blocks and registers for <subsystem> (ref: FSP module r_<subsystem>)
 - IRQ routing through ICU / GIC
-- Clock (CPG) dependencies
-- Pin multiplexing requirements
+- Clock and reset (CPG) dependencies
+- Pin multiplexing requirements through IOPORT/PFC
 - Driver coverage (which drivers implement which hardware blocks)
 - Known gaps or missing drivers
 
@@ -116,7 +120,8 @@ Analysis Requirements:
 5. Identify driver gaps (hardware blocks without NuttX driver)
 6. List FSP reference files for each gap (for future porting)
 7. Document any known errata or silicon quirks
-8. Suggest porting priority (dependencies: clocks → pins → IRQ → drivers)
+8. Suggest porting priority (dependencies: clocks/reset → pins → IRQ → drivers)
+9. Record the strongest evidence tier observed for each claim
 
 Deliverable Path:
   plans/reports/subsystem-audit-<date>-rzv2h-<subsystem>-audit-report.md
@@ -142,7 +147,7 @@ Validation Command:
 
 ### Example Invocation
 ```
-/ck:plan --recipe subsystem-audit --param subsystem=uart-scif
+Paste Recipe 2 with <subsystem> replaced by uart-scif, then invoke /ck:plan if needed.
 ```
 
 ---
@@ -214,14 +219,15 @@ Success Criteria:
 - [ ] Rollback procedure is explicit and testable
 
 Validation Command:
-  (Phase 1 gate) ./tools/configure.sh rdk-rzv2h:<target> && make -j$(nproc)
-  (Phase 2 gate) make -C platforms/nuttx/NuttX/nuttx APPDIR=... boards=rdk-rzv2h
-  (Phase 4 gate) Run unit tests: pytest tests/<target>/ -v
+  (Phase 1 gate) choose an existing rdk-rzv2h config that exercises <target>,
+                 then run ./tools/configure.sh rdk-rzv2h:<config> && make -j$(nproc)
+  (Phase 2 gate) build the affected PX4 board target from the repository root
+  (Phase 4 gate) run the focused in-tree contract or example documented for <target>
 ```
 
 ### Example Invocation
 ```
-/ck:plan --recipe migration-strategy --param target=ipc-mhu-bridge
+Paste Recipe 3 with <target> replaced by ipc-mhu-bridge, then invoke /ck:plan if needed.
 ```
 
 ---
@@ -243,7 +249,8 @@ PX4 device drivers and test frameworks.
 
 Scope:
 - PX4 HAL interface definition (SPI/I2C/UART/GPIO abstraction)
-- Board-specific glue layer (board_<peripheral>.c)
+- Existing board-specific adapter (`spi.cpp`, `i2c.cpp`, `timer_config.cpp`,
+  `init.c`, or the discovered equivalent)
 - Driver registration and lifecycle (probe, init, shutdown)
 - Error handling and exception handling
 - Interrupt and DMA integration
@@ -253,19 +260,21 @@ Scope:
 Peripheral Examples: spi-b, i2c, uart (scif), gpio (icu), ether
 
 Files to Read (Primary):
-  - PX4 HAL interface: src/drivers/device/<peripheral>/I<PERIPHERAL>.hpp (if exists in upstream)
-  - or boards/<vendor>/*/src/board_<peripheral>.c (existing board implementations)
+  - PX4 NuttX device adapter: src/lib/drivers/device/nuttx/{SPI,I2C}.cpp when applicable
+  - PX4 bus contract: platforms/common/include/px4_platform_common/i2c_spi_buses.h
+  - RZ/V2H board adapters: boards/renesas/rdk-rzv2h/src/{spi.cpp,i2c.cpp,timer_config.cpp,init.c}
   - NuttX driver: platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_<peripheral>.c
   - docs/design-guidelines.md (NuttX driver patterns)
 
 Files to Read (References):
   - docs/system-architecture.md (PX4 ↔ NuttX layering)
-  - PX4 upstream examples: boards/nxp/fmuk66-v3/src/board_spi.c
+  - PX4 upstream examples: boards/px4/fmu-v6xrt/src/{spi.cpp,i2c.cpp}
 
 Analysis Requirements:
 1. Define PX4 HAL interface for <peripheral> (method signatures, error codes)
 2. Review upstream PX4 drivers that use <peripheral> (e.g., IMU drivers use SPI)
-3. Design RZV2H-specific implementation (board_<peripheral>.c)
+3. Extend the existing RZ/V2H adapter; do not invent a generic
+   `board_<peripheral>.c` boundary when the board already has a stronger one
 4. Integrate with NuttX driver lower-half (rzv_<peripheral>.c)
 5. Plan interrupt and DMA wiring
 6. Document power state transitions
@@ -273,26 +282,26 @@ Analysis Requirements:
 8. Plan integration with PX4 startup (board init sequence)
 
 Deliverable Path:
-  boards/renesas/rdk-rzv2h/src/board_<peripheral>.c (implementation)
+  boards/renesas/rdk-rzv2h/src/<existing-adapter-file> (implementation)
   Documentation: plans/reports/hal-port-<date>-rzv2h-<peripheral>-hal-design.md
 
 Success Criteria:
 - [ ] HAL interface file created (or extended if exists)
-- [ ] board_<peripheral>.c compiles without errors
+- [ ] Existing board adapter compiles without errors
 - [ ] Driver registration called during board init
 - [ ] Test program opens, configures, reads/writes peripheral
 - [ ] Error cases (timeout, hw failure) handled gracefully
 - [ ] Upstream PX4 drivers can use the HAL
 
 Validation Command:
-  ./tools/configure.sh rdk-rzv2h:<sample-app-using-<peripheral>>
+  cd platforms/nuttx/NuttX/nuttx && ./tools/configure.sh rdk-rzv2h:<sample-app-using-<peripheral>>
   make -j$(nproc)
   # On board: run unit tests for <peripheral>
 ```
 
 ### Example Invocation
 ```
-/ck:plan --recipe hal-port --param peripheral=spi-b
+Paste Recipe 4 with <peripheral> replaced by spi-b, then invoke /ck:plan if needed.
 ```
 
 ---
@@ -339,7 +348,7 @@ Analysis Requirements:
 4. Identify shared state and locks (nxmutex, critical sections needed?)
 5. Document timing requirements (tick period, HRT usage)
 6. List inter-task communication (other tasks signaling this one? vice versa?)
-7. Plan work-queue type (HPWORK for <100 ms tasks, LPWORK for background)
+7. Plan work-queue type based on the module's latency and blocking tolerance
 8. Identify initialization order (dependencies on other modules)
 9. Create before/after code sketches
 
@@ -363,15 +372,16 @@ Success Criteria:
 - [ ] Memory footprint reduced (no per-task stack overhead)
 
 Validation Command:
-  ./tools/configure.sh rdk-rzv2h:default && make -j$(nproc)
-  # Run existing <app> unit tests
-  pytest tests/modules/<app>/test_*.py -v
+  # From the repository root, build the affected PX4 target:
+  make renesas_rdk-rzv2h_default
+  # Discover and run the existing focused test or contract for <app>;
+  # do not invent a tests/modules path if none exists.
   # On board: monitor CPU utilization, task stack usage
 ```
 
 ### Example Invocation
 ```
-/ck:plan --recipe app-migration --param app=sensor-manager
+Paste Recipe 5 with <app> replaced by sensor-manager, then invoke /ck:plan if needed.
 ```
 
 ---
@@ -401,13 +411,10 @@ target writes. A read-only attach is the default hardware action.
 
 ## How to Use These Recipes
 
-### Via `/ck:plan` CLI
-```bash
-/ck:plan --recipe <recipe-name> --param <key>=<value>
-```
-
-### Via Direct Prompt to Claude-Code
-Copy the template, substitute placeholders, paste into Claude-Code.
+### Via Claude-Code
+Copy the template, substitute placeholders, and paste it into Claude-Code.
+Use `/ck:plan` with that completed request when a saved implementation plan is
+appropriate.
 
 **Substitution Rules:**
 - `<driver>` → lowercase driver name (spi-b, uart, gpio, etc.)
@@ -432,7 +439,7 @@ plans/reports/
 
 ## Related References
 
-- [Design Guidelines](./design-guidelines.md) — detailed NuttX patterns
+- [Design Guidelines](../design-guidelines.md) — detailed NuttX patterns
 - [Porting Playbook](./porting-playbook.md) — step-by-step driver porting
 - [FreeRTOS-to-NuttX Mapping](./freertos-to-nuttx-mapping.md) — API cheat sheet
 - [Code Standards](../code-standards.md) — conventions and commit format

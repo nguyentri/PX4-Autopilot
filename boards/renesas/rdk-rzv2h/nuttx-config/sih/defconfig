@@ -1,9 +1,10 @@
 #
 # RDK-RZ/V2H CR8-0 PX4 flight-controller SIH configuration
 #
-# This image keeps PX4 core prerequisites, the interactive RTT console, HRT,
-# work queues, uORB, parameters, procfs, and volatile TMPFS. Physical PWM/GPT,
-# payload UART, SPI, I2C, DMA, persistent storage, and IPC are excluded.
+# This image keeps PX4 core prerequisites, an interactive SCI4 console with
+# RTT output diagnostics, HRT, work queues, uORB, parameters, procfs, and
+# volatile TMPFS. Physical PWM/GPT, payload UART, SPI, I2C, DMA, persistent
+# storage, and IPC are excluded.
 #
 # CONFIG_DISABLE_ENVIRON is not set
 # CONFIG_DISABLE_PSEUDOFS_OPERATIONS is not set
@@ -67,6 +68,8 @@ CONFIG_NSH_READLINE=y
 
 # CR8-0-local volatile parameter root. No external storage is enabled.
 CONFIG_RZV2H_BUILD_CR8_0=y
+# Keep NuttX board-local peripheral examples out of the PX4 SIH image.
+# CONFIG_RZV2H_EXAMPLE_SUPPORT is not set
 CONFIG_RDK_RZV2H_VOLATILE_PARAMFS=y
 
 # Interactive shell runs on SCI4 (P70/P71) at 115200 8N1, mirroring the

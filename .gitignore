@@ -144,8 +144,16 @@ CLAUDE.md
 CODEX.md
 release-manifest.json
 RZV2H_HWM_CPUs.md
+RZV2H_MSTOP.md
 reformatted_cm33_address_space.md
 docs/journals
 !refs/sci_b/sci_b_uart_rzv2h_evk_cr8_0_ep
 refs
-RZV2H_MSTOP.md
+!test/rzv2h-pwm-oneshot-dshot-contract-test.sh
+!test/rzv2h_board_gpio_contract_test.py
+!test/rzv2h_gtm_contract_test.py
+!test/rzv2h_gpt_pwm_contract_test.py
+!test/rzv2h_sih_artifact_contract_test.py
+!test/rzv2h_sih_demo_contract_test.py
+!test/rzv2h_sci_spi_contract_test.py
+!test/rzv2h_payload_artifact_contract_test.py

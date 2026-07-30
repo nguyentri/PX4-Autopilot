@@ -1,6 +1,6 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-07-26
+**Date:** 2026-07-30
 **Status:** Foundational; FSP pin extraction reconciled, target electrical validation pending
 **Source of Truth:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
 
@@ -143,24 +143,24 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 ## Cross-Check Recipe
 
-**Verify pinmap against FSP source:**
+**Verify source-backed ownership contracts:**
 
 ```bash
-# Extract active pins from pin_data.c
-grep -E "BSP_IO_PORT_.*PIN" \
-  refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c \
-  | sed 's/.*BSP_IO_\(PORT_[^,]*\).*/\1/g' \
-  | sort | uniq > /tmp/fsp_pins.txt
+python3 test/rzv2h_board_gpio_contract_test.py
 
-# Extract active pins from board defconfig
-grep -E "CONFIG_RZV_" \
-  platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/nsh/defconfig \
-  | grep -oE "P[0-9A-F][0-9]" \
-  | sort | uniq > /tmp/nuttx_pins.txt
+rg -n "BSP_IO_PORT_.*PIN" \
+  refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c
 
-# Compare (should show minimal diffs)
-diff /tmp/fsp_pins.txt /tmp/nuttx_pins.txt
+rg -n "P50|P52|P53|P70|P71|P72|P73|P75|P76|P77|P82|P83|P90|P91|P92|P93|P94|P96|P97|PA4|PA6|PA7" \
+  boards/renesas/rdk-rzv2h \
+  platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h
 ```
+
+Defconfigs select peripheral instances, not a complete pin list, so a
+defconfig-only pin diff is not authoritative. The contract test checks the
+board-owned GPIO invariants; the two source scans support human reconciliation.
+None proves drive strength, signal integrity, connector routing, or board
+population.
 
 **Validate against board_config.h:**
 
@@ -185,7 +185,8 @@ grep -E "PX4_UART_|GPIO|SPI|I2C" \
 ## Maintenance Notes
 
 - **Per-PR Rule:** Update this table when adding new peripheral drivers or changing pin assignments.
-- **Verification:** Run cross-check recipe quarterly to catch config drift.
+- **Verification:** Run the cross-check recipe whenever pin or peripheral
+  ownership changes.
 - **If >800 LOC:** Split into `pinmap-uart.md`, `pinmap-spi-i2c.md`, `pinmap-pwm.md` in `peripherals/` directory.
 - **Conflicts:** Reserved pins are marked with owner file; confirm in Kconfig before reassignment.
 
@@ -204,5 +205,7 @@ grep -E "PX4_UART_|GPIO|SPI|I2C" \
 
 ## Next Steps
 
-- **Phase 2:** Add port-status-nuttx.md per-driver validation row.
-- **Phase 3:** Add peripherals/canfd.md, peripherals/sdhi.md with their own pin tables.
+- Complete schematic/electrical validation for active pins and the candidate
+  safety/buzzer/LED signals.
+- Add peripheral-specific CAN-FD and SDHI pin tables only when those optional
+  paths enter hardware bring-up.

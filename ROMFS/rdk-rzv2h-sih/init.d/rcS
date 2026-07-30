@@ -1,7 +1,7 @@
 set +e
 echo ""
 echo "RDK-RZ/V2H PX4 DEMONSTRATION"
-echo "All sensor data is simulated; physical buses and PWM outputs are disabled."
+echo "All sensor data is simulated; payload/sensor buses and GPT/PWM outputs are disabled."
 echo ""
 . /etc/init.d/rc.filepaths
 param select $PARAM_FILE

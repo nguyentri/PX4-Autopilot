@@ -24,8 +24,8 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 
 ### For Validation & Debugging
 
-7. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
-8. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
+8. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
+9. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
 
 ### AI-Assisted Porting Workflow
 
@@ -42,13 +42,13 @@ explicit authorization.
 
 ### For Future Status
 
-9. **[port-status-px4-hal.md](./port-status-px4-hal.md)** (Phase 3) — PX4 HAL integration status per peripheral
+10. **[port-status-px4-hal.md](./port-status-px4-hal.md)** (Phase 3) — PX4 HAL integration status per peripheral
 
 ### Peripherals Deep Dives (TBD)
 
-10. **[peripherals/canfd.md](./peripherals/canfd.md)** (Phase 3+) — CAN-FD dual-channel notes
-11. **[peripherals/sdhi.md](./peripherals/sdhi.md)** (Phase 3+) — SDHI SD/eMMC driver, LittleFS mount
-12. **[peripherals/adc.md](./peripherals/adc.md)** (Phase 3+) — 12-bit ADC, sensor buffering
+11. **[peripherals/canfd.md](./peripherals/canfd.md)** (Phase 3+) — CAN-FD dual-channel notes
+12. **[peripherals/sdhi.md](./peripherals/sdhi.md)** (Phase 3+) — SDHI SD/eMMC driver, LittleFS mount
+13. **[peripherals/adc.md](./peripherals/adc.md)** (Phase 3+) — 12-bit ADC, sensor buffering
 
 ---
 
@@ -69,9 +69,9 @@ explicit authorization.
 
 | Phase | Files | Status |
 |-------|-------|--------|
-| **Phase 1 (Foundational)** | README.md, hardware.md, pinmap.md | IN PROGRESS |
-| **Phase 2 (Workflow)** | port-status-nuttx.md, porting-playbook, freertos→nuttx mapping, prompt-recipes | PENDING |
-| **Phase 3 (Status & Validation)** | port-status-px4-hal.md, ipc-architecture, validation-checklist | PENDING |
+| **Phase 1 (Foundational)** | README.md, hardware.md, pinmap.md | ACTIVE; source reconciled, electrical proof pending |
+| **Phase 2 (Workflow)** | port-status-nuttx.md, porting-playbook, freertos→nuttx mapping, prompt-recipes | ACTIVE |
+| **Phase 3 (Status & Validation)** | port-status-px4-hal.md, ipc-architecture, validation-checklist | ACTIVE; hardware gates pending |
 | **Phase 4 (Peripherals)** | peripherals/*.md (canfd, sdhi, adc) | PENDING |
 
 ---
@@ -105,16 +105,16 @@ All files in this directory use kebab-case (e.g., `port-status-nuttx.md`, `freer
 
 | Doc | Owner | Last Updated | Status |
 |-----|-------|--------------|--------|
-| README.md | docs-manager | 2026-07-11 | Phase 1 ✓ |
-| hardware.md | docs-manager | 2026-07-11 | Phase 1 ✓ |
-| pinmap.md | docs-manager | 2026-07-11 | Phase 1 (draft) |
-| port-status-nuttx.md | TBD | — | Phase 2 |
-| porting-playbook.md | TBD | — | Phase 2 |
-| freertos-to-nuttx-mapping.md | TBD | — | Phase 2 |
-| prompt-recipes.md | TBD | — | Phase 2 |
-| ipc-architecture.md | TBD | — | Phase 3 |
-| validation-checklist.md | TBD | — | Phase 3 |
-| port-status-px4-hal.md | TBD | — | Phase 3 |
+| README.md | port maintainers | 2026-07-30 | Active index |
+| hardware.md | port maintainers | 2026-07-30 | Source reconciled; hardware proof pending |
+| pinmap.md | port maintainers | 2026-07-30 | FSP reconciled; electrical proof pending |
+| port-status-nuttx.md | port maintainers | 2026-07-30 | Active |
+| porting-playbook.md | port maintainers | 2026-07-30 | Active |
+| freertos-to-nuttx-mapping.md | port maintainers | 2026-07-30 | Active |
+| prompt-recipes.md | port maintainers | 2026-07-30 | Active |
+| ipc-architecture.md | port maintainers | 2026-07-30 | Deferred design; target proof pending |
+| validation-checklist.md | port maintainers | 2026-07-30 | Active template |
+| port-status-px4-hal.md | port maintainers | 2026-07-30 | Active |
 | peripherals/canfd.md | TBD | — | Phase 3+ |
 | peripherals/sdhi.md | TBD | — | Phase 3+ |
 | peripherals/adc.md | TBD | — | Phase 3+ |

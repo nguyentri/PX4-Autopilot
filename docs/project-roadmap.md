@@ -1,6 +1,6 @@
 # RDK-RZ/V2H Port Roadmap
 
-**Date:** 2026-07-26
+**Date:** 2026-07-30
 
 **Scope:** RDK-RZV2H PX4-on-NuttX, CR8-0 first
 **Canonical plan:** [RDK-RZV2H PX4 NuttX Port Goal Plan](../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
@@ -12,18 +12,18 @@ matrices, commands, exit criteria, risks, and evidence requirements.
 
 Run PX4 drone software on RDK-RZV2H CR8-0 under NuttX with the FSP-backed
 pinmap, required HAL, sensors, actuators, MAVLink, parameters, and logs.
-CR8-1 and CM33 are optional final-milestone work only after CR8-0 is stable.
+CR8-1 and CM33 stay deferred until CR8-0 is stable.
 
 ## Milestone Overview
 
 | ID | Status | Deliverable | Hard gate |
 |---|---|---|---|
-| G0 | In planning | Baseline authority and evidence vocabulary frozen | FSP/source/doc conflicts recorded |
-| G1 | In planning | Pinmap and all 23 sample configs audited | Every config valid/invalid/conflict/deferred |
-| G2 | Pending | NuttX samples corrected and classified | Required config builds and runtime procedures |
+| G0 | Partial | Baseline authority and evidence vocabulary frozen | Cold/debugger boot authority and board revision remain open |
+| G1 | Static audit complete; authority pending | Pinmap and all 23 sample configs audited | P52/P97/PA6 schematic ownership remains open |
+| G2 | Build-clean | NuttX samples corrected and classified | Required config builds and runtime procedures |
 | G3 | Pending | Required blocked drivers closed or accepted fallback | SCI7, GTM7 HRT, SPI0, GPIO/IRQ, GPT PWM |
 | G4 | Pending | PX4 HAL dependency closure | Matching NuttX sample proof per required HAL |
-| G5 | Pending | CR8-0-only PX4 board image | No fatal CR8-1/CM33/CA55/OpenAMP dependency |
+| G5 | Build-clean | CR8-0-only PX4 board image | No fatal CR8-1/CM33/CA55/OpenAMP dependency |
 | G6 | Pending | PX4 boot, RTT shell, HRT, work queues, uORB | Stable local CR8-0 core |
 | G7 | Pending | IMU, barometer, GPS, LiDAR, MAVLink | GPS SCI9 115200 8N1, topics update, QGC heartbeat |
 | G8 | Pending | RC, four PWM outputs, arming/disarming, failsafe | RC SCI6 100000 8E2 + inversion, scope, safe inactive state |
@@ -33,7 +33,10 @@ CR8-1 and CM33 are optional final-milestone work only after CR8-0 is stable.
 
 Current on-target evidence is narrower than the roadmap: standalone CR8-0
 `nsh-rtt` reaches a working SCI4 shell with RX/TX interrupts and RTT
-diagnostics. This does not promote the integrated PX4 HAL.
+diagnostics. The bounded SIH transcript adds interactive shell use, one
+GTM7-backed HRT callback test, work-queue execution, and simulated PX4 topics.
+That evidence does not promote physical payload/sensor buses or the integrated
+PX4 HAL.
 
 ## Engineering Evidence Loop
 

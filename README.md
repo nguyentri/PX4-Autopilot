@@ -18,7 +18,7 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0** - Build Only
 
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** - Build-Clean; simulated accel/gyro/baro/mag/GPS, HIL sensors, `pwm_out_sim` only
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** - On-target bounded demo; simulated accel/gyro/baro/mag/GPS, HIL sensors, `pwm_out_sim` only; cold-cycle, pin-safety, and soak gates pending
 
 - ⏸ **Renesas RDK-RZV2H IO  CR8_1** - Build Only
 

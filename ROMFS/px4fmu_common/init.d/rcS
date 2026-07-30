@@ -37,6 +37,8 @@ set DSHOT_START yes
 set TONE_ALARM_START yes
 set STARTUP_TUNE 1
 set VEHICLE_TYPE none
+set RGBLED_PROBE yes
+set PX4IO_CHECK yes
 
 # Airframe parameter versioning
 # Value set to 1 by default but can optionally be overridden in the airframe configuration startup script.
@@ -293,10 +295,14 @@ else
 	#
 	# Start system state indicator.
 	#
-	rgbled start -X -q
-	rgbled_ncp5623c start -X -q
-	rgbled_lp5562 start -X -q
-	rgbled_is31fl3195 start -X -q
+	if [ $RGBLED_PROBE = yes ]
+	then
+		rgbled start -X -q
+		rgbled_ncp5623c start -X -q
+		rgbled_lp5562 start -X -q
+		rgbled_is31fl3195 start -X -q
+	fi
+	unset RGBLED_PROBE
 
 	#
 	# Override parameters from user configuration file.
@@ -384,38 +390,42 @@ else
 	#
 	# px4io
 	#
-	if px4io supported
+	if [ $PX4IO_CHECK = yes ]
 	then
-	# Check if PX4IO present and update firmware if needed.
-		if [ -f $IOFW ]
+		if px4io supported
 		then
-			if ! px4io checkcrc ${IOFW}
+		# Check if PX4IO present and update firmware if needed.
+			if [ -f $IOFW ]
 			then
-				# tune Program PX4IO
-				tune_control play -t 16 # tune 16 = PROG_PX4IO
-
-				if px4io update ${IOFW}
+				if ! px4io checkcrc ${IOFW}
 				then
-					usleep 10000
-					tune_control stop
-					if px4io checkcrc ${IOFW}
-					then
-						tune_control play -t 17 # tune 17 = PROG_PX4IO_OK
-					else
-						tune_control play -t 18 # tune 18 = PROG_PX4IO_ERR
-					fi
-				else
-					tune_control stop
-				fi
-			fi
+					# tune Program PX4IO
+					tune_control play -t 16 # tune 16 = PROG_PX4IO
 
-			if ! px4io start
-			then
-				echo "PX4IO start failed"
-				set STARTUP_TUNE 2 # tune 2 = ERROR_TUNE
+					if px4io update ${IOFW}
+					then
+						usleep 10000
+						tune_control stop
+						if px4io checkcrc ${IOFW}
+						then
+							tune_control play -t 17 # tune 17 = PROG_PX4IO_OK
+						else
+							tune_control play -t 18 # tune 18 = PROG_PX4IO_ERR
+						fi
+					else
+						tune_control stop
+					fi
+				fi
+
+				if ! px4io start
+				then
+					echo "PX4IO start failed"
+					set STARTUP_TUNE 2 # tune 2 = ERROR_TUNE
+				fi
 			fi
 		fi
 	fi
+	unset PX4IO_CHECK
 
 	# Heater driver for temperature regulated IMUs.
 	# The heater needs to start after px4io.

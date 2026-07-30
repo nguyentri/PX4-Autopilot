@@ -1,222 +1,108 @@
 # RDK-RZ/V2H System Architecture
 
-**Date:** 2026-07-11  
-**Status:** Foundational (Phase 1)
+**Date:** 2026-07-30
+**Status:** Source-backed reference; CR8-0 active, multicore deferred
 
----
+This document summarizes the checked-in RZ/V2H PX4/NuttX architecture. It does
+not claim production stability, cold-boot validation, or enabled multicore IPC
+in the default images.
 
-## 1. Layered Architecture Diagram
+## 1. Architecture Stack
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    PX4 Modules                       │
-│  (Attitude Control, Position Control, EKF2, etc.)   │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              PX4 Hardware Abstraction Layer          │
-│  (board_config.h, sensors, timers, storage)         │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                  NuttX RTOS                          │
-│  (Task scheduler, memory management, device layer)  │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│           NuttX Driver Port (RZ/V2H)                │
-│  GPIO | UART | SPI | I2C | Timers | DMA | Clock    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│       RZ/V2H Hardware & Peripherals                 │
-│ GIC/ICU | CPG | MHU | DMAC | SDHI | XSPI | etc.    │
-└─────────────────────────────────────────────────────┘
+```text
+PX4 modules
+  -> PX4 HAL / board startup
+  -> NuttX RTOS
+  -> RZ/V2H board and driver layer
+  -> RZ/V2H hardware
 ```
 
----
+The CR8-0 board path is the active PX4 target. CR8-1 and CM33 remain deferred
+multicore work.
 
-## 2. Multicore Topology
+## 2. Core Roles
 
-### Core Roles
+| Core | Current role | Evidence state |
+|---|---|---|
+| CR8-0 | Primary flight stack, board bring-up, diagnostics | Active target |
+| CR8-1 | I/O co-processor / PX4IO-style expansion | Deferred |
+| CM33 | Alternate I/O or safety companion | Deferred |
 
-**CR8-0 (Primary Flight Control)**
-- Cortex-R8 @ 1.5 GHz
-- NuttX kernel + PX4 flight stack
-- Runs: attitude control, nav, sensor fusion, MAVLink
-- Boot: internal SRAM reset vector 0x00000000
+The old shorthand that implied CR8-1 at `0x40000000` and CM33 at `0x40100000`
+has been removed. Exact aliases and boot views belong in
+[multicore-memory-map.md](./renesas/multicore-memory-map.md).
 
-**CR8-1 (IO Co-Processor)**
-- Cortex-R8 @ 1.5 GHz
-- NuttX + PX4-IO firmware (px4io_bridge)
-- Runs: PWM output, RC input, sensor buffering
-- Boot: shared DRAM reset vector 0x40000000
-- Firmware loaded by CR8-0 via linker script
+## 3. Canonical Addressing
 
-**CM33 (Alternative IO)**
-- Cortex-M33 @ 200 MHz
-- Optional: boots from DRAM, runs same px4io role
-- Used when CR8-1 unavailable or for debug features
-- Boot vector: 0x40100000
+Use [multicore-memory-map.md](./renesas/multicore-memory-map.md) for the exact CR8-0,
+CR8-1, and CM33 aliases. That document is the single source of truth for:
 
-### Core Synchronization
+- CR8 private TCM views.
+- DDR aliases per core.
+- Shared DDR carveouts.
+- CM33 secure / non-secure addressing.
+- Loader and boot parameter placement.
 
-**IPC Transport:** NuttX IPCC (Inter-Processor Communication Controller) over MHU (Message Handling Unit)
+This summary only keeps the high-level contract: shared-memory and boot-address
+details are not duplicated here.
 
-- **IPCC:** Character device `/dev/ipcc0`, `/dev/ipcc1` (one per core pair)
-- **MHU:** Hardware message unit for core-to-core signaling
-- **Protocol:** uORB message framing (see `px4io_bridge.cpp`)
-  - Frame: `[msg_id (2B) | seq_num (2B) | length (2B) | payload | crc16 (2B)]`
-  - Sequence check prevents stale/reordered messages
-  - CRC validation detects corruption
+## 4. IPC and Multicore Contract
 
-**Files:**
-- NuttX driver: `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_ipcc.c`, `rzv_mhu_core.c`
-- PX4 bridge: `boards/renesas/rdk-rzv2h/px4io_cr8_0/uorb_bridge.cpp`, `px4io_bridge.cpp`
+IPC is deferred. The default PX4 and SIH images keep it disabled.
 
----
+The source tree contains MHU/IPCC helpers and raw-link scaffolding, but those
+helpers are not evidence of an enabled runtime transport. The current protocol
+contract is documented in [ipc-architecture.md](./renesas/ipc-architecture.md):
 
-## 3. PX4 Board Directory Map
+- PX4IO bridge framing uses a 16-byte header with CRC32.
+- Sequence numbers and magic/version checks reject stale or corrupt frames.
+- Shared-memory ring bounds are checked at build time.
 
-```
-boards/renesas/
-├── rdk-rzv2h/                          (CR8-0 PX4 flight stack)
-│   ├── Kconfig                         (board variant Kconfig)
-│   ├── board_config.h                  (GPIO/UART/SPI/I2C assignment)
-│   ├── board_init.cpp                  (early init, sensor probe)
-│   ├── nuttx-config/                   (NuttX defconfig per profile)
-│   │   ├── nsh/defconfig               (shell + debugging)
-│   │   ├── ipcc/defconfig              (IPC enabled)
-│   │   └── ipcc-multi/defconfig        (dual-core IPC stress test)
-│   ├── px4io_cr8_0/                    (uORB bridge to CR8-1/CM33)
-│   │   ├── px4io_bridge.cpp
-│   │   ├── uorb_bridge.cpp
-│   │   ├── uorb_bridge.h
-│   │   ├── protocol.h                  (message frame defs)
-│   │   └── sharedmem_transport.cpp/h   (IPCC wrapper)
-│   ├── src/
-│   │   ├── board.cpp, board.h
-│   │   ├── CMakeLists.txt
-│   │   └── init_modules.cpp            (PX4 app list)
-│   └── init/
-│       └── rc.board_defaults.cmds      (startup script)
-│
-├── rdk-rzv2h-io-cr8_1/                 (CR8-1 px4io firmware)
-│   ├── px4io_cr8_1/
-│   │   ├── px4io_cr8.cpp               (CR8-1 main)
-│   │   ├── uorb_bridge.cpp
-│   │   ├── sharedmem_transport.cpp
-│   │   └── protocol.h
-│   └── nuttx-config/
-│       ├── nsh/defconfig
-│       └── ipcc/defconfig              (IPCC in reverse role)
-│
-└── rdk-rzv2h-io-cm33/                  (CM33 alternative IO)
-    ├── px4io_m33/
-    │   ├── px4io_m33.cpp
-    │   ├── sharedmem_transport.cpp
-    │   └── protocol.h
-    └── nuttx-config/
+The obsolete "active IPCC" and CRC16 framing notes were removed from this
+summary.
+
+## 5. PX4 Board Layout
+
+```text
+boards/renesas/rdk-rzv2h/
+├── src/                     board startup, pinmux, HAL glue
+├── nuttx-config/            board defconfigs for named profiles
+├── px4io_cr8_0/             deferred PX4IO bridge sources
+├── dshot.px4board           opt-in DShot build
+└── core_only.px4board       deterministic CR8-0 diagnostic image
 ```
 
----
+Build entry points remain the checked-in board targets such as
+`renesas_rdk-rzv2h_default`, `renesas_rdk-rzv2h_sih`, and
+`renesas_rdk-rzv2h_core_only`.
 
-## 4. Build Orchestration
+## 6. Build Flow
 
-**Entry Point:** PX4 CMake system
+1. `./build.sh <target>` selects the board definition.
+2. PX4 CMake resolves the Renesas board sources.
+3. The board defconfig pulls in the NuttX driver and RTOS pieces.
+4. The NuttX submodule supplies the architecture drivers under
+   `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`.
+5. The result is a target-specific ELF/PX4 artifact.
 
-```
-1. User calls: ./build.sh renesas_rdk-rzv2h_default
-2. PX4 CMake finds board def in boards/renesas/rdk-rzv2h/
-3. CMake reads nuttx-config/ and generates NuttX Kconfig includes
-4. NuttX build inherits:
-   - arch/arm/src/rzv/ drivers (GPIO, UART, SPI, etc.)
-   - boards/arm/rzv/rdk-rzv2h/configs/ (board-specific config)
-5. NuttX libnuttx.a links against PX4 board/src/ modules
-6. Final ELF: px4 (CR8-0 image)
-7. Optional: build px4io_bridge into separate CR8-1 firmware
-```
+Build success is source/build evidence only. It does not imply a cold boot, a
+flash recipe, or enabled multicore traffic.
 
-**Kconfig Hierarchy:**
-```
-boards/renesas/rdk-rzv2h/Kconfig
-  └─> boards/renesas/rdk-rzv2h/nuttx-config/<profile>/Kconfig
-      └─> NuttX arch/arm/src/rzv/Kconfig
-          ├─> Platform drivers (GPIO, UART, SPI, I2C, Timers, DMA, Clock)
-          ├─> Board-specific pins & muxing
-          └─> RZ/V2H NuttX drivers; ADC/WDT/CAN-FD/SDHI remain optional
-              and are not active in the checked-in drone FSP reference
-```
+## 7. Related Documentation
 
----
+- [Hardware](./renesas/hardware.md)
+- [NuttX Port Status](./renesas/port-status-nuttx.md)
+- [PX4 HAL Port Status](./renesas/port-status-px4-hal.md)
+- [IPC Architecture](./renesas/ipc-architecture.md)
+- [Multicore Memory Map](./renesas/multicore-memory-map.md)
 
-## 5. Memory Topology (Single-Core CR8-0)
+## 8. Notes
 
-| Region | Start | Size | Purpose |
-|--------|-------|------|---------|
-| **SRAM** | 0x00000000 | 1 MB | Vector table, stack, boot code |
-| **TCM (I/D)** | 0x0C000000 | 256 KB | Tightly-coupled instruction/data cache |
-| **Code Flash** | 0x20000000 | 8 MB | NuttX kernel + PX4 code |
-| **Shared DRAM** | 0x40000000 | 2 MB | IPC buffers, CR8-1/CM33 firmware |
-| **Peripheral I/O** | 0x41000000+ | various | GIC, ICU, GPIO, UART, SPI, I2C, DMA, etc. |
-
----
-
-## 6. IPC Message Flow
-
-**Scenario: CR8-0 sends PWM setpoint to CR8-1**
-
-```
-CR8-0 (PX4 motor_control app)
-  │
-  └─> uorb_bridge_send(motor_cmd_t msg)
-      │
-      ├─> frame: [msg_id=0x0042 | seq=42 | len=32 | payload | crc]
-      │
-      └─> sharedmem_transport::write() via /dev/ipcc0
-          │
-          └─> NuttX IPCC driver reads from shared DRAM ring buffer
-              │
-              └─> Signals CR8-1 via MHU doorbell interrupt
-                  │
-                  CR8-1 (px4io bridge)
-                  │
-                  └─> Handler: rx_message_from_cr8_0()
-                      │
-                      ├─> Parse frame, validate CRC & seq_num
-                      │
-                      └─> GPIO/GPT PWM register update
-                          │
-                          └─> Motor ESC PWM pulse output
-```
-
----
-
-## 7. Device Tree & Linker Scripts
-
-**Linker Scripts** (in NuttX submodule):
-- `boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld` — CR8-0 text/data/bss layout
-- `boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_1.ld` — CR8-1 firmware placement (DRAM)
-
-**PX4 Linker Integration:**
-- `boards/renesas/rdk-rzv2h/nuttx-config/scripts/script.ld` — overlay for IPC regions
-
----
-
-## 8. Related Documentation
-
-- **Project Overview:** [project-overview-pdr.md](./project-overview-pdr.md)
-- **Codebase Summary:** [codebase-summary.md](./codebase-summary.md)
-- **Hardware Details:** [renesas/hardware.md](./renesas/hardware.md)
-- **Pinmap:** [renesas/pinmap.md](./renesas/pinmap.md)
-- **IPC Architecture (detailed):** [renesas/ipc-architecture.md](./renesas/ipc-architecture.md) (Phase 3)
-- **Canonical Plan:** [plans/rzv2h_nuttx_px4_unified_port_plan.md](../plans/rzv2h_nuttx_px4_unified_port_plan.md)
-
----
-
-## Notes
-
-- Single-core (CR8-0 only) is production stable; dual-core IPC experimental.
-- Linker scripts must reserve DRAM for CR8-1 firmware even if CR8-1 unused.
-- IPCC driver handles message queuing; IPCC does not guarantee order on loss.
-- CRC16 polynomial: 0x1021 (standard CCITT).
+- CR8-0 is the only active PX4 flight path in the checked-in default images.
+- No production-stable claim is made for the RZ/V2H port.
+- Do not treat IPC helper symbols, `/dev/ipcc*` names, or linker carveouts as
+  proof of an enabled runtime link.
+- The authoritative cross-core address map lives in
+  [multicore-memory-map.md](./renesas/multicore-memory-map.md).
+- The current bridge protocol contract lives in
+  [ipc-architecture.md](./renesas/ipc-architecture.md).

@@ -1,6 +1,6 @@
 # NuttX Driver Porting Playbook
 
-**Date:** 2026-07-26
+**Date:** 2026-07-30
 **Status:** Phase 2 (Workflow Enablement)  
 **Audience:** Developers porting FSP drivers to NuttX for RZ/V2H
 
@@ -21,11 +21,11 @@ Step-by-step recipe for adding a new driver. Each step references existing exemp
 
 **Extract and document:**
 - Module base address
-- Clock resource ID (from CPG)
-- Interrupt numbers (ICU entry point, GIC distributor ID)
+- Clock resource ID and reset resource ID from CPG
+- Interrupt numbers (ICU routing slot and physical GIC INTID)
 - Register map (offsets, bit definitions)
 - DMA channels (if applicable)
-- Pin multiplexing requirements
+- Pin multiplexing requirements from IOPORT/PFC, not ICU
 
 **Example:** For SPI-B driver:
 ```
@@ -49,39 +49,14 @@ Pins:       MOSI=P4_2, MISO=P4_3, CLK=P4_4, CS=P4_5
 - Bit definitions and masks
 - Interrupt IDs
 
-**Template:**
-```c
-#ifndef __ARCH_ARM_SRC_RZV_HARDWARE_RZV_<DRIVER>_H
-#define __ARCH_ARM_SRC_RZV_HARDWARE_RZV_<DRIVER>_H
+Do not seed a new header with example addresses or IRQ values. Copy the layout
+style from the nearest current `hardware/rzv_*.h`, then derive every base,
+offset, mask, CPG/reset ID, ELC event, and GIC INTID from applicable
+CMSIS/manual/FSP evidence. Use NuttX `getreg*()`/`putreg*()` helpers rather
+than inventing raw volatile-access macros.
 
-#include "chip.h"
-
-/* Register base */
-#define RZV_<DRIVER>_BASE     0x1004A000   /* SPI-B example */
-
-/* Register offsets (relative to base) */
-#define RZV_<DRIVER>_CTRL_OFF 0x00
-#define RZV_<DRIVER>_SR_OFF   0x04
-#define RZV_<DRIVER>_DATA_OFF 0x08
-
-/* Register macros */
-#define RZV_<DRIVER>_CTRL(base)  (*(volatile uint32_t *)((base) + RZV_<DRIVER>_CTRL_OFF))
-#define RZV_<DRIVER>_SR(base)    (*(volatile uint32_t *)((base) + RZV_<DRIVER>_SR_OFF))
-
-/* Bit definitions */
-#define RZV_<DRIVER>_CTRL_ENABLE    (1 << 0)
-#define RZV_<DRIVER>_CTRL_INT_EN    (1 << 1)
-#define RZV_<DRIVER>_SR_RX_READY    (1 << 0)
-#define RZV_<DRIVER>_SR_TX_READY    (1 << 1)
-
-/* Interrupt IDs */
-#define RZV_<DRIVER>_IRQ0  32
-#define RZV_<DRIVER>_IRQ1  33
-
-#endif
-```
-
-**Cross-check:** Match against `refs/.../r_<driver>.c` register offsets and bit values. Small errors here cascade.
+**Cross-check:** Match the selected silicon/core view. An FSP driver for a
+different device or core is supporting evidence, not authority.
 
 ---
 
@@ -89,130 +64,45 @@ Pins:       MOSI=P4_2, MISO=P4_3, CLK=P4_4, CS=P4_5
 
 **File:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_<driver>.c`
 
-**Structure:**
-```c
-#include "rzv_<driver>.h"
-#include "hardware/rzv_<driver>.h"
+Implement against the real NuttX upper-half contract; operation tables and
+registration return types differ by subsystem. Preserve this lifecycle:
 
-/* Device instance */
-static struct rzv_<driver>_dev_s g_rzv_<driver>_dev;
+1. validate instance and configuration;
+2. enable the documented CPG clock;
+3. assert/deassert module reset through the current RZ/V2H clock/reset helper;
+4. apply board IOPORT/PFC configuration;
+5. initialize peripheral state while its interrupts are masked;
+6. attach the exact ICU/GIC events;
+7. enable the peripheral and its IRQs;
+8. on any failure, unwind IRQ, peripheral, reset, clock, and allocation in
+   reverse order;
+9. make explicit uninitialize follow the same shutdown contract.
 
-/* Ops table */
-static const struct <driver>_ops_s g_rzv_<driver>_ops = {
-  .setup = rzv_<driver>_setup,
-  .shutdown = rzv_<driver>_shutdown,
-  /* ... other ops ... */
-};
+The ISR clears only the source(s) it owns and defers blocking/heavy work.
+Do not add a manual GIC acknowledgement unless the current architecture
+contract requires it.
 
-/* ISR: ack hardware, defer work */
-static int rzv_<driver>_isr(int irq, void *context, void *arg) {
-  struct rzv_<driver>_dev_s *priv = (void *)arg;
-  uint32_t status = RZV_<DRIVER>_SR(priv->base);
-  
-  /* Clear pending in ICU */
-  RZV_ICU_ICLR(priv->icu_id) = 0x01;
-  
-  if (status & RZV_<DRIVER>_SR_RX_READY) {
-    work_queue(HPWORK, &priv->work, rzv_<driver>_rx_worker, priv, 0);
-  }
-  return OK;
-}
-
-/* Deferred work: process data (blocking ops allowed) */
-static void rzv_<driver>_rx_worker(FAR void *arg) {
-  struct rzv_<driver>_dev_s *priv = (void *)arg;
-  /* Read from hardware, update buffers, wake waiting tasks */
-}
-
-/* Setup: clock, reset, pins, irq */
-static int rzv_<driver>_setup(FAR struct <driver>_dev_s *dev) {
-  struct rzv_<driver>_dev_s *priv = (void *)dev;
-  
-  /* 1. Clock */
-  rzv_cpg_enable(priv->clk_id);
-  nxsig_usleep(10);
-  
-  /* 2. Module enable */
-  RZV_<DRIVER>_CTRL(priv->base) |= RZV_<DRIVER>_CTRL_ENABLE;
-  
-  /* 3. Soft reset */
-  /* (if module has SRST; depends on FSP) */
-  
-  /* 4. Pins */
-  rzv_pinmux_config(RZV_PINMUX_<DRIVER>_RX, RZV_PIN_FUNC_<n>);
-  
-  /* 5. IRQ */
-  irq_attach(priv->irq, rzv_<driver>_isr, priv);
-  up_enable_irq(priv->irq);
-  
-  /* 6. Module-specific init */
-  RZV_<DRIVER>_CTRL(priv->base) |= RZV_<DRIVER>_CTRL_INT_EN;
-  
-  return OK;
-}
-
-/* Shutdown: disable, release resources */
-static int rzv_<driver>_shutdown(FAR struct <driver>_dev_s *dev) {
-  struct rzv_<driver>_dev_s *priv = (void *)dev;
-  
-  up_disable_irq(priv->irq);
-  irq_detach(priv->irq);
-  RZV_<DRIVER>_CTRL(priv->base) &= ~RZV_<DRIVER>_CTRL_ENABLE;
-  rzv_cpg_disable(priv->clk_id);
-  
-  return OK;
-}
-
-/* Module initialization */
-int rzv_<driver>_initialize(void) {
-  struct rzv_<driver>_dev_s *priv = &g_rzv_<driver>_dev;
-  
-  priv->base = RZV_<DRIVER>_BASE;
-  priv->clk_id = RZV_CPG_<DRIVER>_CLK;
-  priv->irq = RZV_<DRIVER>_IRQ0;
-  nxmutex_init(&priv->lock);
-  
-  return OK;
-}
-```
-
-**Reference:** See `rzv_gpt.c` and `rzv_serial.c` for complete implementations.
+**References:** `rzv_gtm.c` for a timer lower-half lifecycle,
+`rzv_spi.c` for a bus lower-half, and `rzv_serial.c` for the UART framework.
 
 ---
 
 ## Step 4: Board Wiring
 
-**File:** `boards/arm/rzv/rdk-rzv2h/src/rzv2h_<driver>.c`
+**File:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_<driver>.c`
 
 **Content:** Initialize the driver instance and register with upper-half.
 
-```c
-#include "nuttx/config.h"
-#include "px4_arch/hardware.h"
-#include "rzv_<driver>.h"
+For a concrete working example, `rzv2h_timer.c` obtains
+`struct timer_lowerhalf_s *` from `rzv_gtm_timer_initialize(channel)`, checks
+for `NULL`, passes it to `timer_register(devpath, lower)`, and calls
+`rzv_gtm_timer_uninitialize(lower)` when registration fails. Do not generalize
+that pointer/`NULL` contract to an upper-half whose registration API returns
+an integer.
 
-int rzv2h_<driver>_initialize(void) {
-  int ret;
-  
-  /* Initialize lower-half */
-  ret = rzv_<driver>_initialize();
-  if (ret < 0) {
-    syslog(LOG_ERR, "rzv_<driver>_initialize failed: %d\n", ret);
-    return ret;
-  }
-  
-  /* Register upper-half character device */
-  ret = <driver>_register("/dev/<driver>0", &g_rzv_<driver>_dev.common);
-  if (ret < 0) {
-    syslog(LOG_ERR, "<driver>_register failed: %d\n", ret);
-    return ret;
-  }
-  
-  return OK;
-}
-```
-
-**Call this from board init; reference `rzv2h_serial.c` for pattern.**
+**Call this from the NuttX board bring-up path; keep standalone board glue
+under `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/`.
+PX4-only adapters remain under `boards/renesas/rdk-rzv2h/src/`.**
 
 ---
 
@@ -232,14 +122,7 @@ config RZV_<DRIVER>
   depends on ARCH_CHIP_R9A09G057
   ---help---
     Enable NuttX support for RZ/V2H <Driver> peripheral.
-    Requires FSP module r_<driver> for register definitions.
-
-config RZV_<DRIVER>_DMA_RX
-  bool "Enable DMA for RX"
-  default y
-  depends on RZV_<DRIVER> && RZV_DMAC
-  ---help---
-    Use DMAC for bulk RX transfers (improves throughput).
+    Document the supported instances, core, pins, and target procedure here.
 
 endmenu
 ```
@@ -257,11 +140,11 @@ endif
 
 ### 5.3 Board-level Makefile
 
-**File:** `boards/arm/rzv/rdk-rzv2h/src/Make.defs`
+**File:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/Makefile`
 
 ```makefile
 ifeq ($(CONFIG_RZV_<DRIVER>),y)
-BOARD_CSRCS += rzv2h_<driver>.c
+CSRCS += rzv2h_<driver>.c
 endif
 ```
 
@@ -269,7 +152,7 @@ endif
 
 ## Step 6: Sample Configuration
 
-**Directory:** `boards/arm/rzv/rdk-rzv2h/configs/<driver>/`
+**Directory:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/<driver>/`
 
 Create a minimal defconfig for testing:
 
@@ -277,7 +160,6 @@ Create a minimal defconfig for testing:
 ```
 CONFIG_ARCH_CHIP_R9A09G057=y
 CONFIG_RZV_<DRIVER>=y
-CONFIG_RZV_<DRIVER>_DMA_RX=y
 CONFIG_DEBUG_SYMBOLS=y
 CONFIG_SYSLOG_TIMESTAMP=y
 ```
@@ -289,11 +171,13 @@ CONFIG_SYSLOG_TIMESTAMP=y
 ### 7.1 Configure
 
 ```bash
-cd /home/tringuyen/PX4-Autopilot
+# From the PX4-Autopilot repository root:
+cd platforms/nuttx/NuttX/nuttx
 ./tools/configure.sh rdk-rzv2h:<driver>
 ```
 
-If custom config absent, fall back to a similar driver config.
+If the exact config is absent, use the closest board sample in the same NuttX
+tree and document the substitution.
 
 ### 7.2 Build
 
@@ -313,7 +197,8 @@ grep -E "undefined reference|multiple definition" build.log
 
 ### 7.4 Runtime Test (on RDK-RZ/V2H board)
 
-Flash the image and verify:
+After the board owner approves an exact-image load procedure, load that image
+and record its hash, loader/probe, core, and board revision before verifying:
 - Device appears in `/dev/`
 - No crash on open/read/write
 - Data transfers match expected byte counts
@@ -337,8 +222,8 @@ targets until their sample configurations are aligned and tested.
 The integrated PX4 CR8-0 image uses RTT0 for console/debug output instead.
 Its UARTs retain payload ownership: SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
 SCI6 RC at 100000 8E2 with the inversion path proved, and SCI9 GPS at
-115200 8N1. These framing checks gate the first drone-equivalent run. Never
-mix text diagnostics and binary MAVLink on RTT0.
+115200 8N1. These checks are evidence-tier gates for the first
+drone-equivalent run. Never mix text diagnostics and binary MAVLink on RTT0.
 
 ---
 
@@ -347,23 +232,25 @@ mix text diagnostics and binary MAVLink on RTT0.
 Before pushing:
 
 - [ ] Hardware header (`rzv_<driver>.h`) matches FSP register offsets
-- [ ] ISR acks interrupt early; defers heavy work
+- [ ] ISR clears the source that raised the interrupt and defers heavy work
 - [ ] Cache invalidate/clean wraps DMA (RX/TX)
-- [ ] Init sequence: clock → enable → reset → pins → IRQ → config
+- [ ] Init sequence: clock → module reset/unreset → pins (IOPORT/PFC) → IRQ → config
 - [ ] Error codes propagated (not swallowed)
-- [ ] nxmutex protects shared state; critical sections protect R-M-W
+- [ ] `nxmutex` protects shared state; critical sections protect R-M-W
 - [ ] No malloc/free in ISR
 - [ ] Kconfig help text explains constraints and dependencies
-- [ ] Make.defs rules added to both chip and board Makefile
+- [ ] Arch `Make.defs` and board `Makefile`/`CMakeLists.txt` source selection
+      agree
 - [ ] Sample config compiles without errors
+- [ ] Evidence tier is recorded explicitly; do not promote a claim past the strongest proof actually observed
 
-**Cross-reference:** [Design Guidelines](./design-guidelines.md), [Code Standards](../code-standards.md)
+**Cross-reference:** [Design Guidelines](../design-guidelines.md), [Code Standards](../code-standards.md)
 
 ---
 
 ## Related References
 
-- [Design Guidelines](./design-guidelines.md) — ISR, DMAC, init sequence details
+- [Design Guidelines](../design-guidelines.md) — ISR, DMAC, init sequence details
 - [Code Standards](../code-standards.md) — formatting, naming, commit conventions
 - [FreeRTOS-to-NuttX Mapping](./freertos-to-nuttx-mapping.md) — API substitutions
 - FSP Reference: `refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/r_<driver>/`

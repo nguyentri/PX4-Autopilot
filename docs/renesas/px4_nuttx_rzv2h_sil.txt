@@ -1,0 +1,460 @@
+RDK-RZ/V2H PX4 DEMONSTRATION
+All sensor data is simulated; physical buses and PWM outputs are disabled.
+
+INFO  [param] selected parameter default file /fs/params
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: 6a74a44cfdf0fd4bbcaa781a6312d3360af4d129
+PX4 version: Release 0.0.0 (255)
+PX4 git-branch: gitlab-migration
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: e80f58c02b0183ddc2ae8d4bc3d466710e38f27b
+Build datetime: Jul 30 2026 08:47:45
+Build uri: localhost
+Build variant: sih
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+  SYS_HITL: curr: 0 -> new: 2
+SYS_HITL configured for FC-SIH
+SIH vehicle type configured
+SIH gyro rate configured
+HIL actuator function 1 configured
+HIL actuator function 2 configured
+HIL actuator function 3 configured
+HIL actuator function 4 configured
+HIL sensor aggregation started
+SIH dynamics started
+Simulated barometer started
+Simulated magnetometer started
+Simulated GPS started
+HIL output endpoint started; no physical PWM driver is linked
+PX4 work queues are created on demand; exact thread count is timing-dependent.
+
+Work Queue: 4  threads                          RATE        INTERVAL
+|__ 1) wq:rate_ctrl    
+|   |__ 1) pwm_out_sim                       13.3 Hz        75091 us
+|   \__ 2) vehicle_angular_velocity         129.6 Hz         7716 us
+|__ 2) wq:nav_and_controllers
+|   |__ 1) sensors                          103.0 Hz         9706 us
+|   |__ 2) vehicle_acceleration             275.4 Hz         3631 us
+|   |__ 3) vehicle_air_data                  37.6 Hz        26580 us
+|   |__ 4) vehicle_gps_position               0.0 Hz            0 us
+|   \__ 5) vehicle_magnetometer              30.9 Hz        32397 us
+|__ 3) wq:hp_default   
+|   |__ 1) sensor_baro_sim                   28.4 Hz        35229 us (50000 us)
+|   |__ 2) sensor_gps_sim                     0.0 Hz            0 us (125000 us)
+|   \__ 3) sensor_mag_sim                    59.5 Hz        16819 us (20000 us)
+\__ 4) wq:lp_default   
+    \__ 1) parameters                         0.0 Hz            0 us
+
+NuttShell (NSH)
+nsh> 
+---- Sent utf8 encoded message: "help\r" ----
+help
+help usage:  help [-v] [<cmd>]
+
+  .         cd        dmesg     help      mount     rmdir     true      xd        
+  [         cp        echo      hexdump   mv        set       truncate  
+  ?         cmp       exec      kill      printf    sleep     uname     
+  basename  dirname   exit      ls        ps        source    umount    
+  break     dd        false     mkdir     pwd       test      unset     
+  cat       df        free      mkrd      rm        time      usleep    
+
+Builtin Apps:
+  nsh                sensor_baro_sim    perf               ver                
+  control_allocator  sensor_gps_sim     system_time        work_queue         
+  sensors            simulator_sih      top                sh                 
+  pwm_out_sim        dmesg              listener           
+  sensor_mag_sim     param              uorb               
+nsh> 
+---- Sent utf8 encoded message: "ver all\r" ----
+ver all
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: 6a74a44cfdf0fd4bbcaa781a6312d3360af4d129
+PX4 version: Release 0.0.0 (255)
+PX4 git-branch: gitlab-migration
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: e80f58c02b0183ddc2ae8d4bc3d466710e38f27b
+Build datetime: Jul 30 2026 08:47:45
+Build uri: localhost
+Build variant: sih
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+nsh> 
+---- Sent utf8 encoded message: "param show SYS_HITL\r" ----
+param show SYS_HITL
+Symbols: x = used, + = saved, * = unsaved
+x + SYS_HITL [128,564] : 2
+
+ 130/574 parameters used.
+nsh> 
+---- Sent utf8 encoded message: "param show SIH_VEHICLE_TYPE\r" ----
+param show SIH_VEHICLE_TYPE
+Symbols: x = used, + = saved, * = unsaved
+x   SIH_VEHICLE_TYPE [114,540] : 0
+
+ 130/574 parameters used.
+nsh> 
+---- Sent utf8 encoded message: "sys_tim hrt-test\r" ----
+sys_tim hrt-test
+nsh: sys_tim: command not found
+nsh> 
+---- Sent utf8 encoded message: "sys_time hrt-test\r" ----
+sys_time hrt-test
+nsh: sys_time: command not found
+nsh> 
+---- Sent utf8 encoded message: "system_time hrt-test\r" ----
+system_time hrt-test
+INFO  [system_time] HRT test PASS: sleep=22044 us, callback latency=4 us
+nsh> 
+---- Sent utf8 encoded message: "simulator_sih status\r" ----
+simulator_sih status
+INFO  [simulator_sih] Running MultiCopter
+INFO  [simulator_sih] vehicle landed: 1
+INFO  [simulator_sih] local position NED (m)
+  | 0      | 1      | 2      
+ 0|-0.54707  1.8e-06  0.00015 
+INFO  [simulator_sih] local velocity NED (m/s)
+  | 0      | 1      | 2      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+update: 1s, topics: 28, total publications: 578, 27.8 kB/s
+TOPIC NAME INST #SUB RATE #Q SIZE
+sensor_accel  0    3  250  8   48 
+sensor_baro   0    1   20  4   32 
+sensor_gps    0    1    8  1  144 
+sensor_gps    1    1    0  1  144 
+sensor_gyro   0    3  250  8   48 
+sensor_mag    0    1   50  4   40 
+nsh> 
+---- Sent utf8 encoded message: "listener sensor_accel -n 1\r" ----
+listener sensor_accel -n 1
+
+TOPIC: sensor_accel
+ sensor_accel
+    timestamp: 116226541 (0.001215 seconds ago)
+    timestamp_sample: 116226502 (39 us before timestamp)
+    device_id: 1310988 (Type: 0x14, SIMULATION:1 (0x01))
+    x: 0.05051
+    y: 0.04828
+    z: -9.84632
+    temperature: 15.00000
+    error_count: 0
+    clip_counter: [0, 0, 0]
+    samples: 1
+
+nsh> 
+---- Sent utf8 encoded message: "listener sensor_baro -n 1\r" ----
+listener sensor_baro -n 1
+
+TOPIC: sensor_baro
+ sensor_baro
+    timestamp: 123679169 (0.012011 seconds ago)
+    timestamp_sample: 123678569 (600 us before timestamp)
+    device_id: 6620172 (Type: 0x65, SIMULATION:1 (0x04))
+    pressure: 95579.12500
+    temperature: 11.81891
+    error_count: 0
+nsh> 
+---- Sent utf8 encoded message: "listener sensor_gps -n 1\r" ----
+listener sensor_gps -n 1
+
+TOPIC: sensor_gps
+ sensor_gps
+    timestamp: 129254785 (0.038012 seconds ago)
+    timestamp_sample: 129254503 (282 us before timestamp)
+    latitude_deg: 47.397737
+    longitude_deg: 8.545594
+    altitude_msl_m: 488.345123
+    altitude_ellipsoid_m: 488.345123
+    time_utc_usec: 0
+    device_id: 11468804 (Type: 0xAF, SIMULATION:0 (0x00))
+    s_variance_m_s: 0.40000
+    c_variance_rad: 0.10000
+    eph: 0.90000
+    epv: 1.78000
+    hdop: 0.70000
+    vdop: 1.10000
+    noise_per_ms: 0
+    jamming_indicator: 0
+    vel_m_s: 0.13017
+    vel_n_m_s: 0.07951
+    vel_e_m_s: 0.10306
+    vel_d_m_s: 0.01385
+    cog_rad: 0.91364
+    timestamp_time_relative: 0
+    heading: nan
+    heading_offset: nan
+    heading_accuracy: 0.00000
+    rtcm_injection_rate: 0.00000
+    automatic_gain_control: 0
+    fix_type: 3
+    jamming_state: 0
+    spoofing_state: 0
+    vel_ned_valid: True
+    satellites_used: 10
+    selected_rtcm_instance: 0
+    rtcm_crc_failed: False
+    rtcm_msg_used: 0
+
+nsh> 
+---- Sent utf8 encoded message: "listener vehicle_acceleration -n 1\r" ----
+listener vehicle_acceleration -n 1
+
+TOPIC: vehicle_acceleration
+ vehicle_acceleration
+    timestamp: 134518623 (0.003779 seconds ago)
+    timestamp_sample: 134518502 (121 us before timestamp)
+    xyz: [0.04239, -0.01422, -9.75686]
+
+nsh> 
+---- Sent utf8 encoded message: "listener vehicle_gps_position -n 1\r" ----
+listener vehicle_gps_position -n 1
+
+TOPIC: vehicle_gps_position
+ vehicle_gps_position
+    timestamp: 140504785 (0.121340 seconds ago)
+    timestamp_sample: 140502502 (2283 us before timestamp)
+    latitude_deg: 47.397738
+    longitude_deg: 8.545591
+    altitude_msl_m: 489.263733
+    altitude_ellipsoid_m: 489.263733
+    time_utc_usec: 0
+    device_id: 11468804 (Type: 0xAF, SIMULATION:0 (0x00))
+    s_variance_m_s: 0.40000
+    c_variance_rad: 0.10000
+    eph: 0.90000
+    epv: 1.78000
+    hdop: 0.70000
+    vdop: 1.10000
+    noise_per_ms: 0
+    jamming_indicator: 0
+    vel_m_s: 0.05579
+    vel_n_m_s: -0.02550
+    vel_e_m_s: -0.04961
+    vel_d_m_s: 0.12601
+    cog_rad: -2.04560
+    timestamp_time_relative: 0
+    heading: nan
+    heading_offset: nan
+    heading_accuracy: 0.00000
+    rtcm_injection_rate: 0.00000
+    automatic_gain_control: 0
+    fix_type: 3
+    jamming_state: 0
+    spoofing_state: 0
+    vel_ned_valid: True
+    satellites_used: 10
+    selected_rtcm_instance: 0
+    rtcm_crc_failed: False
+    rtcm_msg_used: 0
+
+nsh> 
+---- Sent utf8 encoded message: "pwm_out_sim status\r" ----
+pwm_out_sim status
+pwm_out_sim: cycle: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+pwm_out_sim: interval: 0 events, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Param prefix: HIL_ACT
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 1: func: 102, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 2: func: 103, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 3: func: 104, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 4: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 5: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 6: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 7: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 8: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 9: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 10: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 11: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 12: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 13: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 14: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 15: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+nsh> 
+---- Sent utf8 encoded message: "sensor_baro_sim status\r" ----
+sensor_baro_sim status
+INFO  [sensor_baro_sim] running
+nsh> 
+---- Sent utf8 encoded message: "perf latency\r" ----
+perf latency
+bucket [us] : events
+          1 : 0
+          2 : 0
+          5 : 0
+         10 : 0
+         20 : 0
+         50 : 0
+        100 : 0
+       1000 : 0
+ >1000 : 0
+nsh> 
+---- Sent utf8 encoded message: "dmesg\r" ----
+dmesg
+    longitude_deg: 8.545594
+    altitude_msl_m: 488.345123
+    altitude_ellipsoid_m: 488.345123
+    time_utc_usec: 0
+    device_id: 11468804 (Type: 0xAF, SIMULATION:0 (0x00))
+    s_variance_m_s: 0.40000
+    c_variance_rad: 0.10000
+    eph: 0.90000
+    epv: 1.78000
+    hdop: 0.70000
+    vdop: 1.10000
+    noise_per_ms: 0
+    jamming_indicator: 0
+    vel_m_s: 0.13017
+    vel_n_m_s: 0.07951
+    vel_e_m_s: 0.10306
+    vel_d_m_s: 0.01385
+    cog_rad: 0.91364
+    timestamp_time_relative: 0
+    heading: nan
+    heading_offset: nan
+    heading_accuracy: 0.00000
+    rtcm_injection_rate: 0.00000
+    automatic_gain_control: 0
+    fix_type: 3
+    jamming_state: 0
+    spoofing_state: 0
+    vel_ned_valid: True
+    satellites_used: 10
+    selected_rtcm_instance: 0
+    rtcm_crc_failed: False
+    rtcm_msg_used: 0
+
+nsh> listener vehicle_acceleration -n 1
+
+TOPIC: vehicle_acceleration
+ vehicle_acceleration
+    timestamp: 134518623 (0.003779 seconds ago)
+    timestamp_sample: 134518502 (121 us before timestamp)
+    xyz: [0.04239, -0.01422, -9.75686]
+
+nsh> listener vehicle_gps_position -n 1
+
+TOPIC: vehicle_gps_position
+ vehicle_gps_position
+    timestamp: 140504785 (0.121340 seconds ago)
+    timestamp_sample: 140502502 (2283 us before timestamp)
+    latitude_deg: 47.397738
+    longitude_deg: 8.545591
+    altitude_msl_m: 489.263733
+    altitude_ellipsoid_m: 489.263733
+    time_utc_usec: 0
+    device_id: 11468804 (Type: 0xAF, SIMULATION:0 (0x00))
+    s_variance_m_s: 0.40000
+    c_variance_rad: 0.10000
+    eph: 0.90000
+    epv: 1.78000
+    hdop: 0.70000
+    vdop: 1.10000
+    noise_per_ms: 0
+    jamming_indicator: 0
+    vel_m_s: 0.05579
+    vel_n_m_s: -0.02550
+    vel_e_m_s: -0.04961
+    vel_d_m_s: 0.12601
+    cog_rad: -2.04560
+    timestamp_time_relative: 0
+    heading: nan
+    heading_offset: nan
+    heading_accuracy: 0.00000
+    rtcm_injection_rate: 0.00000
+    automatic_gain_control: 0
+    fix_type: 3
+    jamming_state: 0
+    spoofing_state: 0
+    vel_ned_valid: True
+    satellites_used: 10
+    selected_rtcm_instance: 0
+    rtcm_crc_failed: False
+    rtcm_msg_used: 0
+
+nsh> pwm_out_sim status
+pwm_out_sim: cycle: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+pwm_out_sim: interval: 0 events, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Param prefix: HIL_ACT
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 1: func: 102, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 2: func: 103, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 3: func: 104, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 4: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 5: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 6: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 7: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 8: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 9: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 10: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 11: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 12: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 13: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 14: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+Channel 15: func:   0, value: 900, failsafe: 600, disarmed: 900, min: 1000, max: 2000
+nsh> sensor_baro_sim status
+INFO  [sensor_baro_sim] running
+nsh> perf latency
+bucket [us] : events
+          1 : 0
+          2 : 0
+          5 : 0
+         10 : 0
+         20 : 0
+         50 : 0
+        100 : 0
+       1000 : 0
+ >1000 : 0
