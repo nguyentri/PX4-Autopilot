@@ -17,7 +17,7 @@
             "cwd": "${workspaceRoot}",
             "name": "Debug RZV2H CR8 (Core0)",
             "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_sih/renesas_rdk-rzv2h_sih.elf",
-            //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
+            //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_core_only/renesas_rdk-rzv2h_core_only.elf",
             "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
             "request": "launch",
             "type": "cortex-debug",

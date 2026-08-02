@@ -9,7 +9,7 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 ### For Hardware & Pinout
 
 1. **[hardware.md](./hardware.md)** — Clocks, memory map, GIC/ICU, DMAC, MHU, boot flow
-2. **[pinmap.md](./pinmap.md)** — Authoritative pin ownership matrix; cross-check against pin_data.c
+2. **[pinmap.md](./pinmap.md)** — Software pin ownership matrix; cross-check against pin_data.c and board electrical authority
 
 ### For Driver Development
 
@@ -81,7 +81,7 @@ explicit authorization.
 - **Master Plan:** [../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
 - **Historical Plan:** [../../plans/rzv2h_nuttx_px4_unified_port_plan.md](../../plans/rzv2h_nuttx_px4_unified_port_plan.md) (superseded 2026-07-26)
 - **RDK-RZ/V2H Board Pinout:** [../../boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md) (BOM, header, peripheral pin assignments, and wiring)
-- **Pin Data Source:** [../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c) (authority for pinmap.md)
+- **Pin Data Source:** [../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c) (FSP software configuration source for pinmap.md)
 - **NuttX Driver Port:** [../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/)
 - **PX4 Board Definition:** [../../boards/renesas/rdk-rzv2h/](../../boards/renesas/rdk-rzv2h/)
 
@@ -105,16 +105,16 @@ All files in this directory use kebab-case (e.g., `port-status-nuttx.md`, `freer
 
 | Doc | Owner | Last Updated | Status |
 |-----|-------|--------------|--------|
-| README.md | port maintainers | 2026-07-30 | Active index |
-| hardware.md | port maintainers | 2026-07-30 | Source reconciled; hardware proof pending |
-| pinmap.md | port maintainers | 2026-07-30 | FSP reconciled; electrical proof pending |
-| port-status-nuttx.md | port maintainers | 2026-07-30 | Active |
+| README.md | port maintainers | 2026-08-02 | Active index |
+| hardware.md | port maintainers | 2026-08-02 | Source reconciled; hardware proof pending |
+| pinmap.md | port maintainers | 2026-08-02 | FSP reconciled; electrical proof pending |
+| port-status-nuttx.md | port maintainers | 2026-08-02 | Active |
 | porting-playbook.md | port maintainers | 2026-07-30 | Active |
 | freertos-to-nuttx-mapping.md | port maintainers | 2026-07-30 | Active |
 | prompt-recipes.md | port maintainers | 2026-07-30 | Active |
 | ipc-architecture.md | port maintainers | 2026-07-30 | Deferred design; target proof pending |
-| validation-checklist.md | port maintainers | 2026-07-30 | Active template |
-| port-status-px4-hal.md | port maintainers | 2026-07-30 | Active |
+| validation-checklist.md | port maintainers | 2026-08-02 | Active template |
+| port-status-px4-hal.md | port maintainers | 2026-08-02 | Active |
 | peripherals/canfd.md | TBD | — | Phase 3+ |
 | peripherals/sdhi.md | TBD | — | Phase 3+ |
 | peripherals/adc.md | TBD | — | Phase 3+ |

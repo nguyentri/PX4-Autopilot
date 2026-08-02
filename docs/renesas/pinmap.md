@@ -1,10 +1,10 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-07-30
+**Date:** 2026-08-02
 **Status:** Foundational; FSP pin extraction reconciled, target electrical validation pending
-**Source of Truth:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
+**FSP software configuration source:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
 
-Authoritative pin ownership matrix. Each row represents one GPIO pin and its configured alternate function. Cross-referenced against NuttX board configs and active FSP peripherals.
+Software pin ownership matrix. Each row represents one GPIO pin and its configured alternate function. Cross-referenced against NuttX board configs and active FSP peripherals. Board schematic/pinout authority and target electrical proof remain required.
 
 ## Serial Policy
 
@@ -21,12 +21,14 @@ serial roles are split by mode:
 ## Pin Numbering Convention
 
 **Format:** `P<port><bit>` where:
-- `<port>` = 0–10; hexadecimal-style aliases use `PA` for port 10
+- `<port>` = 0–11; hexadecimal-style aliases use `PA` and `PB` for ports 10
+  and 11
 - `<bit>` = 0–7 (bit position within port)
 
 **Example:** P70 = Port 7, bit 0
 
-**Total:** ~96 GPIO pins + multiplexed special-function pins.
+**Current lower-half total:** 86 bonded pins across P0-PB, plus multiplexed
+special-function selections.
 
 ---
 

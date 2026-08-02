@@ -94,7 +94,7 @@ add_custom_target(rzv2h_gpt_pwm_contract_test
 	VERBATIM
 )
 
-add_custom_target(rzv2h_board_gpio_contract_test ALL
+add_custom_target(rzv2h_board_gpio_contract_test
 	COMMAND
 		${PYTHON_EXECUTABLE}
 		${PX4_SOURCE_DIR}/test/rzv2h_board_gpio_contract_test.py
@@ -110,6 +110,46 @@ add_custom_target(rzv2h_sih_demo_contract_test
 	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 	COMMENT "Running RZ/V2H SIH configuration and startup contracts"
 	VERBATIM
+)
+
+add_custom_target(rzv2h_gtm_contract_test
+	COMMAND
+		${PYTHON_EXECUTABLE}
+		${PX4_SOURCE_DIR}/test/rzv2h_gtm_contract_test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H GTM source contracts"
+	VERBATIM
+)
+
+add_custom_target(rzv2h_sci_spi_contract_test
+	COMMAND
+		${PYTHON_EXECUTABLE}
+		${PX4_SOURCE_DIR}/test/rzv2h_sci_spi_contract_test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H SCI/SPI source contracts"
+	VERBATIM
+)
+
+add_custom_target(rzv2h_pwm_oneshot_dshot_contract_test
+	COMMAND
+		bash
+		${PX4_SOURCE_DIR}/test/rzv2h-pwm-oneshot-dshot-contract-test.sh
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H OneShot/DShot source contracts"
+	VERBATIM
+)
+
+# Source-only contracts are required by every board variant. Keeping one ALL
+# aggregate makes the normal build the CI gate while preserving focused target
+# names for local diagnosis.
+add_custom_target(rzv2h_source_contract_tests ALL
+	DEPENDS
+		rzv2h_board_gpio_contract_test
+		rzv2h_gpt_pwm_contract_test
+		rzv2h_gtm_contract_test
+		rzv2h_pwm_oneshot_dshot_contract_test
+		rzv2h_sci_spi_contract_test
+		rzv2h_sih_demo_contract_test
 )
 
 if(PX4_BOARD_LABEL STREQUAL "default" OR PX4_BOARD_LABEL STREQUAL "dshot")

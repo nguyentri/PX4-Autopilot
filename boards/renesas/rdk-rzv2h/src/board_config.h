@@ -93,6 +93,7 @@
 
 #define BOARD_HAS_NO_RESET              1  /* No dedicated external reset */
 #define BOARD_HAS_NO_BOOTLOADER         1  /* No bootloader support initially */
+#define BOARD_HAS_ON_RESET              1  /* Quiesce motor pins before reset */
 #define BOARD_TYPE_COMPLETE             89 /* Board type ID for RZV2H */
 
 /* CPU UUID Configuration */

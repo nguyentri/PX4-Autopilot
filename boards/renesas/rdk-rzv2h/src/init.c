@@ -177,7 +177,14 @@ __EXPORT void board_peripheral_reset(int ms)
 
 __EXPORT void board_on_reset(int status)
 {
-	/* configure the GPIO pins to outputs and keep them low */
+	/* Disconnect every motor signal before early initialization or reset.
+	 * rzv_unconfiggpio() enters high-impedance mode before clearing the pinmux,
+	 * so an active GPT/DShot peripheral cannot drive an ESC through reset.
+	 */
+	(void)px4_arch_unconfiggpio(BOARD_PWM_CH0_GPIO);
+	(void)px4_arch_unconfiggpio(BOARD_PWM_CH1_GPIO);
+	(void)px4_arch_unconfiggpio(BOARD_PWM_CH2_GPIO);
+	(void)px4_arch_unconfiggpio(BOARD_PWM_CH3_GPIO);
 
 	if (status >= 0) {
 		up_mdelay(6);

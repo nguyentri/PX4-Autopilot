@@ -12,10 +12,14 @@
 
 #include <px4_platform_common/px4_config.h>
 #include <nuttx/arch.h>
-#include <stdint.h>
+#include <nuttx/board.h>
 
-void board_reset(int status)
+int board_reset(int status)
 {
-	/* Perform system reset */
+#if defined(BOARD_HAS_ON_RESET)
+	board_on_reset(status);
+#endif
+
 	up_systemreset();
+	return 0;
 }

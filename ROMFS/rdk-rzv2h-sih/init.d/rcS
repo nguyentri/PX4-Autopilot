@@ -7,6 +7,7 @@ echo ""
 param select $PARAM_FILE
 ver all
 set sih_params_valid 1
+set sih_startup_valid 1
 if param set SYS_HITL 2 fail
 then
 echo "SYS_HITL configured for FC-SIH"
@@ -63,39 +64,51 @@ then
 echo "HIL sensor aggregation started"
 else
 echo "ERROR [init] sensors start -h failed"
+set sih_startup_valid 0
 fi
 if simulator_sih start
 then
 echo "SIH dynamics started"
 else
 echo "ERROR [init] simulator_sih start failed"
+set sih_startup_valid 0
 fi
 if sensor_baro_sim start
 then
 echo "Simulated barometer started"
 else
 echo "ERROR [init] sensor_baro_sim start failed"
+set sih_startup_valid 0
 fi
 if sensor_mag_sim start
 then
 echo "Simulated magnetometer started"
 else
 echo "ERROR [init] sensor_mag_sim start failed"
+set sih_startup_valid 0
 fi
 if sensor_gps_sim start
 then
 echo "Simulated GPS started"
 else
 echo "ERROR [init] sensor_gps_sim start failed"
+set sih_startup_valid 0
 fi
 if pwm_out_sim start -m hil
 then
 echo "HIL output endpoint started; no physical PWM driver is linked"
 else
 echo "ERROR [init] pwm_out_sim start failed"
+set sih_startup_valid 0
 fi
 else
 echo "ERROR [init] mandatory SIH parameter setup failed; simulators not started"
+set sih_startup_valid 0
+fi
+if [ $sih_startup_valid = 0 ]
+then
+echo "ERROR [init] mandatory SIH startup failed"
+exit 1
 fi
 echo "PX4 work queues are created on demand; exact thread count is timing-dependent."
 work_queue status

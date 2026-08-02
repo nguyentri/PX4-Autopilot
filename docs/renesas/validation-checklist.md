@@ -1,6 +1,6 @@
 # Per-Driver Validation Checklist
 
-**Date:** 2026-07-30
+**Date:** 2026-08-02
 **Usage:** Copy and complete this checklist per driver during bring-up; link completed version to [port-status-nuttx.md](port-status-nuttx.md) Validation Report column.
 
 ---
@@ -143,7 +143,8 @@ For each supported peripheral instance, verify in order:
       `up_invalidate_dcache(start, end)` before CPU consumption.
 - [ ] Write-DMA buffer: clean the source with
       `up_clean_dcache(start, end)` after CPU writes and before DMA start.
-- [ ] Buffer alignment: DMA data buffers aligned to cache line (32 or 64 bytes, typically).
+- [ ] Buffer alignment: cached CR8 DMA buffers aligned to the 32-byte
+      Cortex-R8 cache line.
 - [ ] Buffer size: multiple of DMA transfer width (e.g., SPI DMAC uses 4-byte words; buffer size ≥4 and divisible by 4).
 
 **Failure Example:** CPU writes to buffer, DMA reads stale cached value → data mismatch.
@@ -163,11 +164,14 @@ For each supported peripheral instance, verify in order:
 
 ---
 
-### D.3 DMA Chain & Transfer Integrity
+### D.3 One-Shot Transfer Integrity
 
-- [ ] Linked descriptors: verify descriptor count and byte alignment (each descriptor may have alignment requirement).
-- [ ] Transfer size bounds: DMAC supports max transfer size (e.g., 64k per descriptor); break larger transfers into chain.
-- [ ] No descriptor corruption: validate fields (source, dest, len, next_descriptor_addr) match memory layout.
+- [ ] Keep `REN` clear and use N[0] register mode; the current driver does not
+      support linked descriptors or continuous reload.
+- [ ] Validate source, destination, byte count, and transfer-width alignment
+      before enabling the channel.
+- [ ] For CR8-0 ITCM/DTCM buffers, verify the programmed N[0] address uses the
+      DMAC bus alias while the caller and cache operations use the CPU address.
 
 **Test:** DMA transfer of known pattern (0xAA55AA55); verify buffer contains exact pattern post-transfer.
 
@@ -185,7 +189,17 @@ For each supported peripheral instance, verify in order:
   and N0DA through the hardware debugger; the supported application interface
   deliberately exposes CPU addresses only.
 - [ ] Keep peripheral-triggered DMAC, DTC, serial, SPI, I2C, and DShot DMA
-  outside this proof until separately designed and validated.
+  outside this memory-copy proof; validate every enabled consumer separately.
+
+### D.5 Hardware-Triggered Peripheral Proof
+
+- [x] Source/build contract supports INTC `DMkSEL` routing and one-shot
+  memory-to-peripheral transfers used by serial and the opt-in DShot image.
+- [ ] Verify the selected activation event and DMAC unit/channel on target.
+- [ ] Capture transfer ordering, repeated trigger/re-arm behavior, cleanup,
+  and error recovery.
+- [ ] For DShot, capture each GPT waveform and confirm ESC response before
+  treating the path as functional.
 
 ---
 
@@ -341,6 +355,13 @@ if (rising_edge)  conf |= IOPORT_IRQ_EDGE_RISING;
 - [ ] Successful operation and one injected failure/recovery captured.
 - [ ] Register/analyzer/scope evidence attached where applicable.
 - [ ] Timing, resource, and stress bounds state both criterion and result.
+- [ ] `reboot` reaches a hardware reset, restarts the exact artifact, and
+      preserves inactive motor-pin levels throughout reset and early boot.
+- [ ] Repeated warm resets do not depend on another core or debugger state.
+- [ ] Parameter save/reboot/load and controlled power-loss recovery prove the
+      selected nonvolatile backend; TMPFS evidence is explicitly volatile.
+- [ ] The reported UUID/GUID is unique per unit, or the report limits the
+      result to one prototype and excludes identity-sensitive deployment.
 
 ## Result
 

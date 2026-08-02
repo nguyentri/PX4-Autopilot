@@ -1,6 +1,6 @@
 # NuttX Driver Port Status Matrix
 
-**Date:** 2026-07-30
+**Date:** 2026-08-02
 **Branch:** gitlab-migration
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
@@ -29,6 +29,9 @@ driver or the integrated PX4 image.
 Because SIH excludes physical payload/sensor buses and GPT/PWM, that evidence
 does not promote any physical lower-half. Capture transport, cold-cycle
 provenance, pin-safety measurement, and soak testing remain open.
+The 2026-08-02 default, DShot, SIH, and core-only builds all include the
+NuttX reset API. Their ELFs link `board_on_reset`, `board_reset`, and
+`up_systemreset`; runtime reset and motor-pin safety are not yet target-proven.
 
 ---
 
@@ -39,12 +42,12 @@ provenance, pin-safety measurement, and soak testing remain open.
 | 1 | ADC | rzv_adc.c | rzv_adc.h | blocked | `.../adc_e_iodefine.h` (regs only; no FSP HAL driver) | adc | [2026-07-19 audit](../../plans/reports/audit-260719-1439-rzv2h-adc-fsp-vs-nuttx-report.md) | 12-bit SAR; ELC scan-end via ICU. F1 clock gate fixed (both CPG bits [1:0] via rzv_clock_enable). Open blockers: CLKON domain index unverified (F4), scan-end ADELCCR routing unverified (F5); no on-target evidence. |
 | 2 | CAN-FD | rzv_canfd.c | rzv_canfd.h | source-audited | `refs/.../r_canfd.c` | canfd, canfd-dual | (pending) | Dual CAN0/CAN1; DMAC integration |
 | 3 | Clock/CPG | rzv_clock.c | rzv_cpg.h | source-audited | (internal) | nsh | (pending) | Clock divider init, PLL setup |
-| 4 | DMAC | rzv_dmac.c | rzv_dmac.h | build-clean | `refs/.../r_dmac_b.c` | dmac-memcpy | [2026-07-20 DShot review](../../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md) | CR8-0 polling one-shot memory copy plus hardware-triggered, one-shot memory-to-peripheral routing used by opt-in DShot. Checked-in CMSIS/FSP verifies DMkSEL offsets/unit mapping and activation IDs. Builds clean; on-target request routing, transfer ordering, and peripheral behavior remain unvalidated. |
+| 4 | DMAC | rzv_dmac.c | rzv_dmac.h | build-clean | `refs/.../r_dmac_b.c` | dmac-memcpy | [DMAC API contract](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.h) | CR8-0 polling one-shot memory copy plus hardware-triggered, one-shot memory-to-peripheral routing used by serial and opt-in DShot. Checked-in CMSIS/FSP verifies DMkSEL offsets/unit mapping and activation IDs. Builds clean; on-target request routing, transfer ordering, and peripheral behavior remain unvalidated. |
 | 5 | Ether | rzv_ether.c | rzv_ether.h | blocked | `refs/.../r_ether.c` | ether | [2026-07-19 audit](../../plans/reports/audit-260719-1358-rzv2h-gbeth-fsp-vs-nuttx-report.md) | Group A audit fixes applied (RXQ0EN routing, cacheline-aligned descriptors, atomic ISR, RX tail fix, MAC baseline, PBLx8, PHY poll). Remaining blockers: RGMII pinmux stub (F2), GBETH1 clock IDs (F3), IRQ topology unverified (F6). |
 | 6 | Ether PHY | rzv_ether_phy.c | (via rzv_ether.h) | blocked | (FSP integrated) | ether | [2026-07-19 audit](../../plans/reports/audit-260719-1358-rzv2h-gbeth-fsp-vs-nuttx-report.md) | 1000BASE-T advertisement now written before autoneg (F14). Cannot reach MDIO until board pinmux (F2) is populated. |
-| 7 | GPIO | rzv_gpio.c | rzv_gpio.h | source-audited | `refs/.../r_ioport.c` | nsh-leds | (pending) | Port 0–12; IRQ/edge config |
-| 8 | GPT (16-bit) | rzv_gpt.c | rzv_gpt.h | source-audited | `refs/.../r_gpt.c` | pwm | (pending) | Pulse generation; PWM mode |
-| 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | build-clean | `refs/.../r_gtm.c` | gtm | [2026-07-30 software closure](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260730-rzv2h-software-gate-closure.md) | Reset pulse/release now follows the FSP lifecycle; failure and explicit uninitialize paths stop, detach, reset, clock-gate, and free the lower-half. Board registration handles `timer_register()` as a pointer and reports/cleans every configured channel. Source contracts and a fresh `gtm` config build pass; `/dev/timer0` and `/dev/timer2` target timing/stop evidence remains required. |
+| 7 | GPIO | rzv_gpio.c | rzv_gpio.h | source-audited | `refs/.../r_ioport.c` | nsh-leds | (pending) | NuttX ports 0-11 map to P20-P2B; 86 bonded pins; IRQ/edge config |
+| 8 | GPT (32-bit) | rzv_gpt.c | rzv_gpt.h | source-audited | `refs/.../r_gpt.c` | pwm | [GPT/PWM source contract](../../test/rzv2h_gpt_pwm_contract_test.py) | Pulse generation and PWM mode; target waveform proof pending |
+| 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | build-clean | `refs/.../r_gtm.c` | gtm | [GTM source contract](../../test/rzv2h_gtm_contract_test.py) | Reset pulse/release now follows the FSP lifecycle; failure and explicit uninitialize paths stop, detach, reset, clock-gate, and free the lower-half. Board registration handles `timer_register()` as a pointer and reports/cleans every configured channel. Source contracts and a fresh `gtm` config build pass; `/dev/timer0` and `/dev/timer2` target timing/stop evidence remains required. |
 | 10 | HRT | rzv_hrt.c (arch shim) + platforms/.../renesas/rzv/hrt/hrt.c (queue mgr) | rzv_hrt.h | bounded on-target | (GTM7 free-run, arch shim) | PX4 board config (`CONFIG_RZV_HRT=y`) | [2026-07-30 SIH transcript](./px4_nuttx_rzv2h_sil.txt) | PX4 HRT delegates counter/arm to the arch GTM7 shim at runtime P1CLK. SIH `system_time hrt-test` passed with 22,044 us sleep and 4 us callback latency. Exact load provenance, clock measurement, long-run monotonicity, jitter, drift, and load bounds remain required. |
 | 11 | I2C (RIIC) | rzv_i2c.c | rzv_i2c.h | source-audited | `refs/.../r_riic.c` | (nsh default) | (pending) | Native I2C master; DMA optional |
 | 12 | ICU (CR8-0/1) | rzv_icu.c | rzv_icu.h | source-audited | (internal) | (framework) | (pending) | Interrupt control unit; priority routing |
@@ -66,7 +69,7 @@ provenance, pin-safety measurement, and soak testing remain open.
 | 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `refs/.../r_sci_b_i2c/` | hil-full (SCI7) | [SCI7 re-audit](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260728-rzv2h-sci7-i2c-reaudit.md) | `CONFIG_RZV_SCI7_I2C` uses FSP-compatible SCISPICLK timing, fixed GIC TXI/TEI lines, and P76/P77 FSP-parity pins; board registration retains logical bus 7. Both the nested NuttX `hil-full` build and the PX4 `renesas_rdk-rzv2h_default` build now pass. BMP280 transactions, analyzer capture, NACK/timeout, and recovery remain on-target gates. |
 | 29 | SCI/I2C Clock | rzv_sci_i2c_clock.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | Runtime P5CLK calculation; 100 MHz/400 kHz reproduces FSP CKS0, BRR3, MDDR131, 399780 Hz, and 30-cycle SDA delay. Frequency measurement and on-target timing capture remain pending. |
 | 30 | SCI/I2C ISR | rzv_sci_i2c_isr.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | (pending) | Interrupt handlers build with the SCI7 path; target event/error proof remains pending. |
-| 31 | SCI/SPI Master | rzv_sci_spi.c | rzv_sci_spi.h | build-clean | `refs/.../r_sci_b.c` | sci-spi-loopback | [2026-07-30 software closure](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260730-rzv2h-software-gate-closure.md) | SCI0 only on RDK; P6_0 SCK. The isolated sample now registers `/dev/spi0`, includes `spitool`, and uses a no-op CMD/DATA hook because SCI-B has no separate CMD/DATA signal. Fresh build and source contract pass. Run the documented P5_0 MOSI↔P5_1 MISO `spi exch` loopback plus removed-jumper error check on target. |
+| 31 | SCI/SPI Master | rzv_sci_spi.c | rzv_sci_spi.h | build-clean | `refs/.../r_sci_b.c` | sci-spi-loopback | [SCI/SPI source contract](../../test/rzv2h_sci_spi_contract_test.py) | SCI0 only on RDK; P6_0 SCK. The isolated sample now registers `/dev/spi0`, includes `spitool`, and uses a no-op CMD/DATA hook because SCI-B has no separate CMD/DATA signal. Fresh build and source contract pass. Run the documented P5_0 MOSI↔P5_1 MISO `spi exch` loopback plus removed-jumper error check on target. |
 | 32 | SCI/SPI Clock | rzv_sci_spi_clock.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | BRR/CKS/MDDR calculation build-validated; frequency measurement pending |
 | 33 | SCI/SPI ISR | rzv_sci_spi_isr.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [2026-07-19 remediation](../../plans/reports/review-260719-rzv2h-sci-spi-remediation.md) | FRSR-based FIFO drain build-validated; on-target transfer/error paths pending |
 | 34 | SCIF UART | rzv_scif.c | rzv_scifa.h | blocked | `refs/.../scifa_iodefine.h` (R9A09G057H) | nsh-scif (build) | [2026-07-20 audit](../../plans/reports/audit-260720-1112-rzv2h-scif-serial-port-report.md) | SCIFA0 16-byte FIFO UART. Register model + ELC events verified vs FSP. BLOCKED for functional: (F1) driver enables RSCI/SCI0 clock id, not SCIFA0's CPG_CLKON_8[15] + MCPU2_MSTOP → peripheral stays gated; (F2) SCIFA0 TXD/RXD pins never muxed. Safe fixes applied: up_putc readiness guard, dead TEI path removed, baud-failure bits cleared. Sample-only path (all shipping targets use SCI-B/RTT console) |
@@ -77,14 +80,15 @@ provenance, pin-safety measurement, and soak testing remain open.
 | 39 | Startup (CM33) | rzv_start_cm33.c | (none) | source-audited | (CM33 variant) | nsh-cm33 | (pending) | CM33 boot path; final link, co-processor wake, and runtime proof remain G11 work. |
 | 40 | Timer ISR | rzv_timerisr.c | (none) | bounded on-target | (internal) | (framework) | `nsh-rtt` + SIH transcripts | System tick supports bounded shell/runtime captures; explicit clock/load/jitter evidence remains pending. |
 | 41 | Watchdog | rzv_wdt.c | rzv_wdt.h | build-clean | separate WDT sample/CMSIS evidence; not active in drone ref | wdt | [2026-07-20 audit](../../plans/reports/audit-260720-1152-rzv2h-wdt-fsp-vs-nuttx-report.md) | Independent watchdog; refresh sequence. Reset-mode/WDT0 is source-audited, but no on-target evidence exists. Automatic sample only, no NSH command-registration requirement, and non-gating for G3-G9. |
+| 42 | System reset (CR8) | rzv_systemreset.c | CMSIS/FSP WDT/CPG definitions | build-clean | FSP WDT reset routing | PX4 default/DShot/SIH/core-only | [reset source contract](../../test/rzv2h_gpt_pwm_contract_test.py) | `up_systemreset()` uses the CR8-0 WDT2 or CR8-1 WDT3 route, enables the required clock source, releases reset, selects the shortest supported timeout, routes underflow to system reset, and starts the watchdog with interrupts masked. All four board ELFs link the reset chain. Actual reset latency, post-reset boot state, repeated resets, and inactive motor-pin levels remain target gates. |
 
 ---
 
 ## Summary
 
-- **Total drivers:** 41
+- **Total drivers:** 42
 - **Source-audited:** 12
-- **Build-clean:** 19
+- **Build-clean:** 20
 - **Bounded on-target:** 5
 - **Blocked:** 4 (ADC, Ether, Ether PHY, SCIF UART)
 - **Stub:** 1

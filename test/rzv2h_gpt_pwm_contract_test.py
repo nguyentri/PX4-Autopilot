@@ -251,6 +251,75 @@ class PX4DirectPathContracts(unittest.TestCase):
         self.assertLess(body.index("return ret"), body.index("io_timer_unallocate_channel"))
 
 
+class BoardResetSafetyContracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.board_reset = read(
+            "platforms/nuttx/src/px4/renesas/rzv/board_reset/board_reset.c"
+        )
+        cls.board_init = read("boards/renesas/rdk-rzv2h/src/init.c")
+        cls.board_config = read(
+            "boards/renesas/rdk-rzv2h/src/board_config.h"
+        )
+        cls.rzv_kconfig = read(
+            "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Kconfig"
+        )
+        cls.rzv_make_defs = read(
+            "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Make.defs"
+        )
+        cls.board_reset_cmake = read(
+            "platforms/nuttx/src/px4/renesas/rzv/board_reset/CMakeLists.txt"
+        )
+
+    def test_board_reset_matches_nuttx_and_runs_safety_hook(self) -> None:
+        self.assertRegex(self.board_reset, r"\bint\s+board_reset\(int status\)")
+        self.assertIn("<nuttx/board.h>", self.board_reset)
+        body = function_body(self.board_reset, "board_reset")
+        self.assertIn("board_on_reset(status)", body)
+        self.assertLess(body.index("board_on_reset(status)"), body.index("up_systemreset()"))
+
+    def test_reset_hook_disconnects_every_motor_output(self) -> None:
+        self.assertIn("#define BOARD_HAS_ON_RESET", self.board_config)
+        body = function_body(self.board_init, "board_on_reset")
+
+        for channel in range(4):
+            with self.subTest(channel=channel):
+                self.assertIn(
+                    f"px4_arch_unconfiggpio(BOARD_PWM_CH{channel}_GPIO)",
+                    body,
+                )
+
+    def test_all_px4_profiles_enable_boardctl_reset(self) -> None:
+        for profile in ("nsh", "sih", "core_only"):
+            with self.subTest(profile=profile):
+                defconfig = read(
+                    f"boards/renesas/rdk-rzv2h/nuttx-config/{profile}/defconfig"
+                )
+                self.assertIn("CONFIG_BOARDCTL_RESET=y", defconfig)
+
+    def test_cr8_architecture_supplies_a_nonreturning_system_reset(self) -> None:
+        cr8_selection = self.rzv_kconfig.split(
+            "config ARCH_CORTEXR8_SELECTED", 1
+        )[1].split("endif # !RZV2H_BUILD_CM33", 1)[0]
+        self.assertIn("select ARCH_HAVE_RESET", cr8_selection)
+        self.assertIn("CHIP_CSRCS += rzv_systemreset.c", self.rzv_make_defs)
+        self.assertIn(
+            "target_link_libraries(arch_board_reset PRIVATE nuttx_arch)",
+            self.board_reset_cmake,
+        )
+
+        system_reset = read(
+            "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/"
+            "rzv_systemreset.c"
+        )
+        body = function_body(system_reset, "up_systemreset")
+        self.assertIn("RZV_WDT_CHANNEL_2", system_reset)
+        self.assertIn("RZV_WDT_CHANNEL_3", system_reset)
+        self.assertIn("RZV_CPG_ERRORRST_SEL2_BIT", body)
+        self.assertIn("WDT_WDTRCR_RSTIRQS_RESET_REQ", body)
+        self.assertIn("for (;;)", body)
+
+
 class CoreOnlyDemoContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

@@ -116,6 +116,13 @@ class PayloadArtifactContracts(unittest.TestCase):
         self.assertEqual(self.nuttx.get("CONFIG_RZV2H_BUILD_CR8_0"), "y")
         self.assertIn("rdk-rzv2h_cr8_0.ld", self.link_map)
 
+    def test_cr8_board_reset_is_resolved_in_config_and_elf(self) -> None:
+        self.assertEqual(self.nuttx.get("CONFIG_ARCH_HAVE_RESET"), "y")
+        self.assertEqual(self.nuttx.get("CONFIG_BOARDCTL_RESET"), "y")
+        self.assertFalse(
+            {"board_on_reset", "board_reset", "up_systemreset"} - self.symbols
+        )
+
     def test_required_startup_commands_and_real_pipes_are_resolved(self) -> None:
         for command in ("bsondump", "mft"):
             with self.subTest(command=command):

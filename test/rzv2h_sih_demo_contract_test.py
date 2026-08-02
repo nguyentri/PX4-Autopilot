@@ -59,6 +59,22 @@ class SIHBoardContracts(unittest.TestCase):
         self.assertIn("add_custom_target(rzv2h_sih_demo_contract_test", board_cmake)
         self.assertIn("test/rzv2h_sih_demo_contract_test.py", board_cmake)
         self.assertIn(
+            "add_custom_target(rzv2h_source_contract_tests ALL",
+            board_cmake,
+        )
+
+        for target in (
+            "rzv2h_board_gpio_contract_test",
+            "rzv2h_gpt_pwm_contract_test",
+            "rzv2h_gtm_contract_test",
+            "rzv2h_pwm_oneshot_dshot_contract_test",
+            "rzv2h_sci_spi_contract_test",
+            "rzv2h_sih_demo_contract_test",
+        ):
+            with self.subTest(source_contract_target=target):
+                self.assertIn(target, board_cmake)
+
+        self.assertIn(
             'if(PX4_BOARD_LABEL STREQUAL "sih" AND NOT NUTTX_CONFIG STREQUAL "sih")',
             board_cmake,
         )
@@ -262,6 +278,19 @@ class SIHBoardContracts(unittest.TestCase):
         self.assertIn(
             "ERROR [init] mandatory SIH parameter setup failed; simulators not started",
             self.rcs,
+        )
+        self.assertIn("set sih_startup_valid 1", self.rcs)
+        self.assertGreaterEqual(
+            self.rcs.count("set sih_startup_valid 0"), 7
+        )
+        self.assertIn("if [ $sih_startup_valid = 0 ]", self.rcs)
+        self.assertIn(
+            "ERROR [init] mandatory SIH startup failed",
+            self.rcs,
+        )
+        self.assertLess(
+            self.rcs.index("exit 1"),
+            self.rcs.index("work_queue status"),
         )
 
     def test_nsh_scripts_fit_the_configured_line_buffer(self) -> None:

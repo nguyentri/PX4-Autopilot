@@ -391,13 +391,18 @@ class SIHArtifactContracts(unittest.TestCase):
         required = {
             "__start",
             "board_app_initialize",
+            "board_on_reset",
+            "board_reset",
             "hrt_absolute_time",
             "nsh_main",
             "rzv_hrt_initialize",
+            "up_systemreset",
             "uorb_main",
             "work_queue_main",
         }
         self.assertFalse(required - self.symbols)
+        self.assertEqual(self.nuttx.get("CONFIG_ARCH_HAVE_RESET"), "y")
+        self.assertEqual(self.nuttx.get("CONFIG_BOARDCTL_RESET"), "y")
 
     def test_packed_startup_commands_are_registered_builtins(self) -> None:
         registered = set(

@@ -3,7 +3,7 @@
 **Board:** Renesas RDK-RZ/V2H
 **Target software stack:** PX4 on NuttX
 **Primary development target:** CR8-0
-**Date:** 2026-07-30
+**Date:** 2026-08-02
 **Status:** Consolidated development reference
 
 This document consolidates the hardware notes for the RZ/V2H RDK board into a single PX4/NuttX-focused reference. It is intended for board bring-up, driver development, boot/debug configuration, and hardware-software validation.
@@ -63,10 +63,10 @@ For detailed board BOM, connector/header assignments, and external wiring, use t
 
 | Core | Type | Frequency | Cache | TCM |
 |---|---|---:|---|---|
-| CR8-0 | Cortex-R8 | 1.5 GHz | 32 KB I-cache, 32 KB D-cache | 256 KB I+D |
-| CR8-1 | Cortex-R8 | 1.5 GHz | 32 KB I-cache, 32 KB D-cache | 256 KB I+D |
-| CA55 | Cortex-A55 | 1.5 GHz | 32 KB I-cache, 32 KB D-cache | None |
-| CM33 | Cortex-M33 | 200 MHz | 32 KB I-cache, 32 KB D-cache | 64 KB |
+| CR8-0 | Cortex-R8 | 800 MHz loader/FSP default; read live | 32 KB I-cache, 32 KB D-cache | 128 KB I + 128 KB D |
+| CR8-1 | Cortex-R8 | 800 MHz loader/FSP default; read live | 32 KB I-cache, 32 KB D-cache | 128 KB I + 128 KB D |
+| CA55 | Cortex-A55 | Boot-switch/loader selected; outside current port | Reference-dependent | None |
+| CM33 | Cortex-M33 | Loader configured; outside current port | Reference-dependent | Reference-dependent |
 
 **Current PX4/NuttX port assumption:** CR8-0 is the primary execution core. CR8-1 and CM33 are optional I/O co-processors.
 
@@ -87,7 +87,7 @@ The **CPG**, or Clock Pulse Generator, controls frequency and power for processo
 ```text
 External Oscillator, typically 24 MHz
   |
-  |-- Main PLL  -> PLLCLK  -> dividers -> CPU core, 1.5 GHz
+  |-- Main PLL  -> PLLCLK  -> loader dividers -> CPU cores
   |-- Sub PLL   -> PLLSCLK -> dividers -> SPI, I2C, UART
   |-- Audio PLL -> optional audio clocking
   `-- XTAL      -> RTC clock, 32.768 kHz
@@ -107,7 +107,7 @@ External Oscillator, typically 24 MHz
 
 ### 3.3 CPG Register Base
 
-- **Base address:** `0x41010000`, CR8-0 accessible.
+- **Base address:** `0x10420010`, CR8-0 view.
 - **Key registers:** `CLKON`, `CLKDIV`, PLL settings.
 - **Driver source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c`
 
@@ -136,7 +136,7 @@ cross-core aliases and shared windows remain in
 | DDR non-cacheable | `0x41000000` | 8 MB | DDR | Uncached | Explicit non-cache data |
 | xSPI image | `0x20200000` header / `0x60200000` image view | Image dependent | xSPI | Loader-defined | CR8-0 firmware image |
 
-- **Reset vector:** `0x00000000`, SRAM.
+- **Reset vector:** `0x00000000`, local ITCM.
 - **Linker script:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld`
 
 ### PX4/NuttX Development Notes
@@ -154,26 +154,31 @@ cross-core aliases and shared windows remain in
 
 The GIC handles core interrupts from peripherals.
 
-- **Type:** GICv3, simplified RZ/V2H variant.
-- **Base address:** `0x41800000`, CR8-0 view.
-- **SPI interrupts:** 96, interrupt ID 32-127.
+- **Type:** GIC-600 using the GICv2-compatible register interface.
+- **Base address:** `0x12C10100`, CR8-0 physical view.
+- **Interrupt count:** Read from `GICD_TYPER`/`ICDICTR` at runtime and capped
+  at 1020 by the driver; do not assume a 96-SPI topology.
 - **PPI interrupts:** 16 per-core local interrupts.
 - **SGI interrupts:** 16 software-generated inter-processor interrupts.
+- **SPI interrupts:** Remaining implemented IDs above 31, as reported by the
+  controller at runtime.
 
 Key register groups:
 
 - `GICD_*`: Distributor, central routing.
-- `GICR_*`: Redistributor, per-core enable and priority.
-- `ICC_*`: CPU interface, CPU-side prioritization.
+- `GICC_*`: GICv2-compatible CPU interface and prioritization.
 
-**Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gic.h`
+**Sources:**
+
+- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_irq.c`
+- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_intc_gic.h`
 
 ### 5.2 ICU: Interrupt Control Unit
 
 The ICU routes GPIO and external interrupt pins to the GIC.
 
 - **Type:** ICU with edge/level triggering.
-- **Base address:** `0x41050000`.
+- **Base address:** `0x10400000`.
 - **Inputs:** GPIO ports, external TINT, sensor IRQs.
 - **Outputs:** GIC SPI lines.
 
@@ -197,15 +202,15 @@ Features:
 
 ### 6.1 GPIO Controller
 
-- **Type:** 5-port GPIO plus mixed-mode pins.
-- **Base address:** `0x41010400`.
+- **Type:** RZ/V2H GPIO/PFC lower half.
+- **Base address:** `0x10410020`, CR8-0 view.
 - **Features:** Input, output, pull-up, pull-down, alternate functions, interrupt wiring.
 
 ### 6.2 Port Layout
 
-- Port 0-4: Standard I/O, 16 pins each, 80 total.
-- Port 5-6: Mixed-mode pins, 8 pins each, 16 additional pins.
-- Total: 96 GPIO plus special-function pins.
+- NuttX ports 0-11 map to hardware registers P20-P2B.
+- Bonded pins per port: 8, 6, 2, 8, 8, 8, 8, 8, 8, 8, 8, 6.
+- Total exposed by the current lower half: 86 bonded pins.
 
 ### 6.3 Alternate Functions
 
@@ -218,7 +223,8 @@ Each pin has alternate function options for peripherals such as UART, SPI, I2C, 
 
 ### PX4/NuttX Development Notes
 
-- Treat the pinmap as the source of truth for PX4 board wiring.
+- Treat `pinmap.md` as the software assignment matrix. Confirm external wiring
+  against the board pinout/schematic and target measurements.
 - Validate pinmux configuration early for console UART, debug UART, sensor buses, PWM outputs, and external interrupts.
 - Use a board-level pinout document to avoid conflicts between PX4 sensor, telemetry, RC, GPS, and actuator functions.
 
@@ -229,20 +235,26 @@ Each pin has alternate function options for peripherals such as UART, SPI, I2C, 
 DMAC-B provides high-bandwidth DMA for bulk transfers.
 
 - **Type:** Renesas DMAC-B.
-- **Channels:** 8 independent channels.
-- **Base address:** `0x41410000`.
+- **Topology:** Five units, two groups per unit, eight channels per group;
+  80 global channels numbered 0-79.
+- **Unit bases:** `0x11400000`, `0x14830000`, `0x14840000`,
+  `0x12000000`, and `0x12010000`.
 
 Features:
 
 - 32-bit, 16-bit, and 8-bit transfer modes.
-- Linked-list descriptor chains.
-- Hardware flow control for peripheral-initiated transfers.
-- Interrupt on completion or error.
+- Software-triggered one-shot memory copies.
+- INTC-routed, hardware-triggered one-shot memory-to-peripheral transfers.
+- CPU-address conversion for the CR8-0 ITCM/DTCM bus aliases.
 
 Configuration:
 
-- Channels are reserved per peripheral in Kconfig.
-- Setup is handled in `rzv_dmac.c` and peripheral-specific drivers such as SPI, I2C, Ethernet, and storage.
+- Channels are assigned per consumer in Kconfig; there is no dynamic allocator.
+- Setup is handled in `rzv_dmac.c`; current consumers include serial and the
+  opt-in DShot path.
+- Completion is polling-only. Callbacks and linked-list mode are unsupported.
+- Software and DShot variants build clean; target request routing, ordering,
+  re-arm behavior, and waveforms remain unvalidated.
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.c`
 
@@ -402,9 +414,13 @@ SCI3 is not an active console on the RDK-RZV2H board.
 ### 11.2 RIIC: Renesas I2C
 
 - **Type:** I2C master/slave.
-- **Count:** 3 instances, I2C0, I2C1, I2C7.
-- **Speed:** Standard 100 kHz, Fast 400 kHz, Fast+ 1 MHz.
-- **Use:** Barometer, BMP280, sensor probing.
+- **Hardware definitions:** RIIC0-RIIC8 exist in the R9A09G057H device
+  headers.
+- **Current NuttX lower-half scope:** Native RIIC0-RIIC3 are selectable.
+- **Board BMP280 path:** SCI7 Simple-I2C, a separate SCI-mode controller,
+  registered as logical bus 7 and configured for 400 kHz.
+- **Use:** Barometer and sensor probing; external transactions remain a target
+  validation gate.
 
 **Sources:**
 
@@ -425,10 +441,10 @@ SCI3 is not an active console on the RDK-RZV2H board.
 Hardware Reset, cold start
   |
   v
-SPL / ROM loader @ 0x00000000
-  - Check XSPI for signed image
-  - Copy image to SRAM
-  - Jump to 0x0000
+External boot stage / loader (exact production route not yet proven)
+  - Consume the Renesas image load descriptors
+  - Place ITCM, SRAM, and DDR segments at their linked addresses
+  - Transfer control to local ITCM address 0x00000000
   |
   v
 NuttX bootloader, rzv_start.c
@@ -441,10 +457,10 @@ NuttX bootloader, rzv_start.c
 NuttX kernel
   - Task scheduler
   - Driver initialization
-  - uORB initialization
   |
   v
 PX4 flight stack
+  - uORB initialization
   - PX4 modules start
   - Sensors are probed
   - MAVLink becomes active
@@ -576,7 +592,7 @@ Use this checklist as a practical board-port validation flow.
 ## 16. Related Documentation
 
 - `boards/renesas/rdk-rzv2h/src/pinout.md` - board pinout and wiring authority.
-- `pinmap.md` - pinmap authority.
+- `pinmap.md` - software pin ownership matrix; electrical proof pending.
 - `../system-architecture.md` - system architecture.
 
 ---

@@ -1,6 +1,6 @@
 # PX4 HAL Port Status Matrix
 
-**Date:** 2026-07-30
+**Date:** 2026-08-02
 **Branch:** gitlab-migration
 **Scope:** PX4 Hardware Abstraction Layer (HAL) surfaces for RDK-RZ/V2H; cross-referenced to NuttX driver dependencies.
 
@@ -29,17 +29,24 @@
 > boards keep the common `yes` default. `battery_status` remains source-gated
 > on BAT1/BAT2 power-module sources.
 
-> The 2026-07-30 payload-image rebuilds also close deterministic startup
+> The 2026-08-02 payload-image rebuilds also close deterministic startup
 > command and MAVLink-shell defects. Required `mft`/`bsondump` commands are
 > linked; absent RGBLED/PX4IO probes are disabled by board capability flags;
 > `CONFIG_PIPES=y` selects NuttX `lib_pipe.o` instead of a board `ENOSYS`
 > stub. An automatic post-build contract verifies both default and DShot
 > label/nsh/CR8-0 resolution, linker, builtins, pipe object, undefined-symbol
-> set, split image, and `.px4` payload. Default ELF SHA-256:
-> `73cf6258a8fb508f3d639d6d49a7a6d9ff9562fa17676c8376637c763e379136`;
-> DShot ELF SHA-256:
-> `a1e447f597bca07b92f76929846035535d0f2bdde465c23ad12c5d96ecc7700a`.
-> Exact-image cold boot remains a target gate.
+> set, split image, `.px4` payload, reset configuration, and reset symbols.
+> Every board build also runs the focused GPIO, GPT/PWM, GTM, SCI/SPI,
+> OneShot/DShot, and SIH source contracts. Current ELF SHA-256 values are
+> default `6394a28f2c628737add5cf5ef4a195160aec34e0cdd2bd9559ee6f52f375e923`,
+> DShot `6d81d2548b726ee79d58b9a0e8fb21c6e95c7aaf4db5c6281f3183b88e89a222`,
+> SIH `214c0898b23680468cb9cff7710928be501f83c951817415e9fb17d608ab6248`,
+> and core-only `bea463585efc0f68a11800dec6d53aab5b10a2b6ccebcc2873e7166b5f609302`.
+> `board_reset()` is now wired through NuttX `up_systemreset()` to the CR8
+> WDT2/WDT3 reset route, and `board_on_reset()` disconnects all four motor
+> pins before a normal reset. All four ELFs contain the complete reset symbol
+> chain. Exact-image cold boot, reset occurrence, post-reset startup, and
+> inactive motor-pin scope proof remain target gates.
 
 SIH note: `renesas_rdk-rzv2h_sih` now has bounded on-target evidence for its
 simulation-only contract. It is a CR8-0 FC-SIH demo image, not a physical
@@ -53,14 +60,16 @@ self-reports the current PX4/NuttX revisions, reaches an interactive NSH shell,
 passes one `system_time hrt-test`, shows expected queues and simulated topics,
 and reports the HIL endpoint running. It records no artifact hash, so it is not
 attributed to the fresh SIH ELF
-`4af2676db2b5d5bfab433a9339aba23cf6e8c61750214772c5201a010993a731`.
+`214c0898b23680468cb9cff7710928be501f83c951817415e9fb17d608ab6248`.
 Fresh SIH builds run the source and artifact contracts automatically
-(11/11 + 12/12). Exact load/cold-cycle provenance, SCI4 transport capture,
+(11/11 + 12/12), and mandatory startup failures now terminate `rcS` instead
+of falling through to a misleading success path. Exact load/cold-cycle provenance, SCI4 transport capture,
 physical pin-safety measurements, transcript coverage gaps, and the 10-minute
 resource/rate soak remain pending. See the
-[SIH evidence audit](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260730-rzv2h-sih-runtime-evidence.md);
-the historical evidence filename says `sil`, but the image/runtime variant is
-SIH: [px4_nuttx_rzv2h_sil.txt](px4_nuttx_rzv2h_sil.txt).
+[archived target transcript](px4_nuttx_rzv2h_sil.txt); its historical
+filename says `sil`, but the image/runtime variant is SIH. The goal-plan
+evidence audit records the detailed provenance limits for the next authorized
+target session.
 
 Core-only note: `renesas_rdk-rzv2h_core_only` is build-clean from
 `core_only.px4board`, `nuttx-config/core_only/defconfig`, and the generated
@@ -113,13 +122,14 @@ milestone work.
 | 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | rzv_sci_i2c.c (`rzv_sci_i2c_initialize`, SCI-mode) | boards/renesas/rdk-rzv2h/src/i2c.cpp | build-clean | BMP280 baro on SCI7 simple-I2C P76/P77. `CONFIG_RZV_SCI7_I2C=y`; bus 7 dispatches explicitly to `rzv_sci_i2c_initialize(7)`, never RIIC, and maps safely to its dense PX4 clock slot. Fresh standalone HIL and integrated PX4 builds pass; BMP280 probe/read/recovery remains unvalidated on target. |
 | 3 | UART/Serial | NuttX serial (native) | rzv_serial.c (dispatcher) + rzv_scif.c | boards/renesas/rdk-rzv2h/ | in-progress | Explicit policy: standalone CR8-0 NuttX = SCI4 shell + RTT diagnostics; target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics. Integrated PX4 RTT0 `/dev/console` input/output is build-clean and bypasses SCI low-setup. SCI6 termios/SBUS 100000 8E2 is build-clean with checked setup failures and the FSP 16-sample, modulation-off baud policy; its fixed external NPN inverter, waveform, and decoded frames remain target gates. Integrated SCI4 is generated as `EXT2`; `SENS_TFMINI_CFG=401` makes common `rc.serial` own TFmini on `/dev/ttyS4`. SCI5 MAVLink/QGC and SCI9 GPS retain payload ownership in the full default image. Default and DShot board configs set `CONFIG_SYSTEMCMDS_SERIAL_STATUS=y`; the command snapshots the registered SCI lower halves directly, without opening or consuming from the payload TTYs, with `serial_status /dev/ttyS4 /dev/ttyS5 /dev/ttyS6 /dev/ttyS9`. The core-only diagnostic image drops all payload serial roles, disables `CONFIG_SYSTEMCMDS_SERIAL_STATUS`, and stays RTT-only; the generated VS Code RZV profile is read-only attach and must use the exact ELF, exact `R9A09G057H44_R8_0`, and user-provided probe serial. SCIF remains sample-only/blocked. |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
-| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | direct GPT MMIO; standalone `rzv_gpt.c` lower-half is mutually exclusive | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | FSP logical mapping: GPT6A/7B/9A/10B on PA4/PA7/P96/P53; logical 9/10 resolve to physical R_GPT11/R_GPT12. Live rate/duty changes use GPT buffers, stopped/disabled paths clear the counter, first setup performs the GTUDDTYC UDF latch, compare values use counts−1, and partial timer/GPIO initialization unwinds. The board-scoped PX4 path disables motor GTIOC on `stop_motors`, validates allocation ownership, and safely reallocates after module restart without stealing DShot ownership. The default PX4 board path exposes analog PWM only and rejects `PWM_MAIN_TIMx=-1`; internal OneShot ownership plumbing has no board trigger path. Standalone NuttX finite pulse-count PWM is separate. The core-only demo auto-starts `pwm_out`, prints `work_queue status`, and uses `actuator_test set -m 1 -v 0 -t 5` for a bounded 1100 µs Motor 1 bench waveform. Integrated and standalone PWM builds plus source-contract regressions pass. Waveform, inactive-level, transition, and failsafe scope proof pending. |
+| 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | direct GPT MMIO; standalone `rzv_gpt.c` lower-half is mutually exclusive | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | FSP logical mapping: GPT6A/7B/9A/10B on PA4/PA7/P96/P53; logical 9/10 resolve to physical R_GPT11/R_GPT12. Live rate/duty changes use GPT buffers, stopped/disabled paths clear the counter, first setup performs the GTUDDTYC UDF latch, compare values use counts−1, and partial timer/GPIO initialization unwinds. The board-scoped PX4 path disables motor GTIOC on `stop_motors`, validates allocation ownership, and safely reallocates after module restart without stealing DShot ownership. Before a normal reset, `board_on_reset()` unconfigures PA4/PA7/P96/P53 and waits 6 ms; the WDT-backed reset chain is build-verified in all four board ELFs. The default PX4 board path exposes analog PWM only and rejects `PWM_MAIN_TIMx=-1`; internal OneShot ownership plumbing has no board trigger path. Standalone NuttX finite pulse-count PWM is separate. The core-only demo auto-starts `pwm_out`, prints `work_queue status`, and uses `actuator_test set -m 1 -v 0 -t 5` for a bounded 1100 µs Motor 1 bench waveform. Integrated and standalone PWM builds plus source-contract regressions pass. Waveform, inactive-level, transition, reset, and failsafe scope proof pending. |
 | 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | rzv_dmac.c (HW-trigger) + rzv_gpt.c | boards/renesas/rdk-rzv2h/dshot.px4board | build-clean (opt-in) | TX-only target `renesas_rdk-rzv2h_dshot` builds and links; default remains PWM and excludes DShot. The DShot image includes `pwm_out` as the standard provider of shared `PWM_MAIN` parameters, but runtime `PWM_MAIN_TIM0..3=-3` leaves every group to DShot and the DShot build omits the analog-only complete-init requirement. Shared board defaults set `DSHOT_START` from the silent `DSHOT_MIN` probe, so common startup only calls `dshot start` for the opt-in image. Checked-in CMSIS/FSP sources verify DMkSEL offsets, unit mapping, and GPT-overflow DMAC activation IDs. GPT buffered compare + one-shot DMA path is not hardware-validated. BDShot capture/telemetry returns `-ENOTSUP`; the pure GCR/eRPM decoder is not a functional telemetry path. Waveform, transfer ordering, repeated trigger/re-arm, and ESC tests remain pending. |
 | 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred/non-gating | Battery/airspeed ADC consumers and the integrated NuttX ADC lower-half are disabled for G3-G9. The checked-in drone reference has no active ADC driver; ADC sample/driver work is post-G9. |
 | 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (GTM7 free-run) | boards/renesas/rdk-rzv2h/src/ | build-clean; target pending | `CONFIG_RZV_HRT=y`; GTM7 ownership is clean and stale GTM0/120 MHz declarations are removed. A bounded free-run compare maintains the 64-bit epoch; cancel/rearm preserves elapsed ticks; long deadlines use intermediate wakeups; mandatory initialization/arm failures fail visibly; periodic self-delay/self-cancel matches the PX4 contract. Integrated build and source review pass. Runtime P1CLK, wrap monotonicity, jitter, and soak proof remain target gates. |
 | 8 | CAN | `src/drivers/can/` | rzv_canfd.c | boards/renesas/rdk-rzv2h/src/ | planned | CAN0/CAN1; baud rate; SLCAN over UART alt |
 | 9 | Ether/MAVLink UDP | `src/modules/mavlink/` + network stack | rzv_ether.c + rzv_ether_phy.c | boards/renesas/rdk-rzv2h/src/ | planned | IP config; UDP MAVLink stream; link-up polling; LTE modem integration (TBD) |
 | 10 | xSPI/LittleFS | PX4 parameter backend + NuttX LittleFS | `rzv2h_xspi_paramfs.c` board MTD/mount path | boards/renesas/rdk-rzv2h/src/ | blocked; volatile fallback build-clean | Default mounts TMPFS at `/fs` and uses `/fs/params` without touching flash. Experimental xSPI is disabled: controller init, flash/partition manifest, MPU/cache handling, erase/program/readback, reboot persistence, and power-loss recovery remain unproven. Keep separate from SDHI `/dev/mmcsd0` ULog storage. |
+| 11 | Board identity | `board_get_uuid()` / `board_get_px4_guid()` | board identity provider | boards/renesas/rdk-rzv2h/src/ | blocked for multi-device deployment | `BOARD_OVERRIDE_UUID` is fixed to `RZV2H0000000000`, and the RZ/V2H GUID provider is derived from fixed architecture/board text. The checked-in FSP evidence says unique-ID support is unavailable. This is acceptable only for a declared single-prototype workflow; fleet use, identity-sensitive pairing, and per-device calibration require an approved provisioning source and persistence design. |
 
 ---
 
@@ -332,6 +342,9 @@ erased.
   MAVLink/QGroundControl traffic.
 - `renesas_rdk-rzv2h_core_only` is a diagnostics-only rollback image; use it
   for RTT/HRT/work-queue/parameter/uORB inspection, not for hardware proof.
+- The fixed board UUID/GUID prevents multi-device deployment until a
+  provisioned per-device identity source and persistent storage contract are
+  approved. Do not infer uniqueness from the current values.
 - Software checkpoint: `system_time hrt-test` and `work_queue status` are the
   exact HRT/work-queue checks; the default image now keys `dshot start` off
   `DSHOT_START` instead of invoking the absent DShot path unconditionally.
