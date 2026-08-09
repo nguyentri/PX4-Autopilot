@@ -1,6 +1,6 @@
 # NuttX Driver Porting Playbook
 
-**Date:** 2026-07-30
+**Date:** 2026-08-09
 **Status:** Phase 2 (Workflow Enablement)  
 **Audience:** Developers porting FSP drivers to NuttX for RZ/V2H
 
@@ -12,12 +12,22 @@ Step-by-step recipe for adding a new driver. Each step references existing exemp
 
 **Goal:** Understand the hardware interface and functional requirements.
 
-**Location:** `refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/r_<driver>/`
+**Location:** Resolve the sample and core through
+[reference-source-map.md](./reference-source-map.md). Prefer
+`refs/rzv2h_evk/<sample>/<sample>_rzv2h_evk_<core>_ep/e2studio/`; use the
+integrated or legacy trees only for the exceptions recorded in that map.
 
 **Read these files:**
+- `configuration.xml` — selected core, module, channel, and configurator properties
+- `rzv_gen/{hal_data,pin_data,vector_data}.*` — generated integration contract
+- `rzv_cfg/fsp_cfg/r_<driver>_cfg.h` — selected driver options
 - `r_<driver>.h` — API interface (function signatures, config structs)
 - `r_<driver>.c` — Implementation (register access, init sequence, ISR patterns)
-- `r_<driver>_hal.c` — Hardware abstraction layer (if present)
+- `src/*_ep.c` or `hal_entry.c` — example lifecycle and expected behavior
+
+Not every NuttX driver has a same-IP FSP example. In particular, SCI-B is not
+SCIF/SCIFA, SPI-B is not RSPI, and the current Ethernet reference is a legacy
+CA55 project. Record such gaps instead of substituting a nearby IP block.
 
 **Extract and document:**
 - Module base address
@@ -253,7 +263,7 @@ Before pushing:
 - [Design Guidelines](../design-guidelines.md) — ISR, DMAC, init sequence details
 - [Code Standards](../code-standards.md) — formatting, naming, commit conventions
 - [FreeRTOS-to-NuttX Mapping](./freertos-to-nuttx-mapping.md) — API substitutions
-- FSP Reference: `refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/r_<driver>/`
+- [Reference Source Map](./reference-source-map.md) — core-specific FSP/EVK paths and exceptions
 
 ---
 

@@ -83,11 +83,17 @@ Bitrate = CANFD_CLK / (1 + (TSEG1 + TSEG2))
 
 ## FSP Reference
 
-If available in `refs/px4-freertos-posix-renesas-fsp/`:
+Use the core-matched `can_fd` EVK project described in
+[reference-source-map.md](../reference-source-map.md):
 
-- **Path:** `rzv/fsp/src/r_canfd/r_canfd.c`
-- **Header:** `rzv/fsp/inc/api/r_canfd.h`
-- **Datasheet:** Cross-reference register definitions with Renesas UM (CAN section).
+- **Project:** `refs/rzv2h_evk/can_fd/can_fd_rzv2h_evk_<core>_ep/e2studio/`
+- **Driver:** `rzv/fsp/src/r_canfd/r_canfd.c`
+- **Configuration:** `configuration.xml`, `rzv_cfg/fsp_cfg/r_canfd_cfg.h`
+- **Generated integration:** `rzv_gen/{hal_data,vector_data,pin_data}.*`
+- **Datasheet:** Cross-reference register definitions with the Renesas CAN-FD section.
+
+Select `<core>` as `cm33`, `cr8_0`, or `cr8_1`; generated vectors and
+configuration are core-specific evidence.
 
 ---
 

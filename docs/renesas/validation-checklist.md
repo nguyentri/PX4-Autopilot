@@ -1,6 +1,6 @@
 # Per-Driver Validation Checklist
 
-**Date:** 2026-08-02
+**Date:** 2026-08-09
 **Usage:** Copy and complete this checklist per driver during bring-up; link completed version to [port-status-nuttx.md](port-status-nuttx.md) Validation Report column.
 
 ---
@@ -10,7 +10,10 @@
 **Driver File:** `arch/arm/src/rzv/<driver>.c`  
 **Header File:** `arch/arm/src/rzv/hardware/rzv_<driver>.h`  
 **Sample Config:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/<config>/`
-**Reference FSP:** `refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/r_<driver>/`
+**Reference evidence:** Select the matching project/core in
+[reference-source-map.md](reference-source-map.md), then record exact paths to
+`configuration.xml`, generated HAL/vector/pin data, FSP source, and CMSIS
+headers. Record `(gap)` when no same-IP reference exists.
 
 ---
 
@@ -43,7 +46,9 @@
 - [ ] Pins assigned to the peripheral match the selected instance in
       `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/<config>/defconfig`
       and the board IOPORT/PFC setup.
-- [ ] Alternate function (AF) routing correct: UART TXD pin → SCIF_TXD via IOPORT/PFC, not ICU or GPIO output.
+- [ ] Alternate function routing matches the actual UART IP: SCI-B TXD for
+      `rzv_serial.c`, or SCIFA TXD for `rzv_scif.c`; do not transfer pins
+      between the two IP blocks.
 - [ ] No pin conflicts: same pin not assigned to two peripherals simultaneously (verify with `pinmap.md`).
 - [ ] Pull-up/pull-down configured per datasheet (e.g., UART RXD typically has pull-up).
 
@@ -243,15 +248,10 @@ For each supported peripheral instance, verify in order:
 
 **Checklist Item:** Compare NuttX driver clock calculation to FSP (FreeRTOS) reference.
 
-Example (UART baud rate):
-
-```c
-/* NuttX (rzv_scif.c) */
-uint16_t brr = (PCLK / (16 * baud)) - 1;
-
-/* FSP (r_sci_b.c) */
-uint16_t brr = (SCI_B_PCLK / (16 * baud)) - 1;
-```
+UART example: compare the SCI-B lower-half clock calculation with the
+core-matched EVK `r_sci_b_uart.c` and generated baud settings. Do not compare
+`rzv_scif.c` against SCI-B as if it were the same IP; the current SCIFA audit
+has CMSIS/BSP evidence but no same-IP FSP driver example.
 
 - [ ] Formula identical.
 - [ ] PCLK value matches (verify CPG divisor state).

@@ -1,6 +1,6 @@
 # Parametric Prompt Recipes
 
-**Date:** 2026-07-30
+**Date:** 2026-08-09
 **Status:** Active workflow reference
 **Purpose:** Copy-pasteable Claude-Code prompts for common RZ/V2H porting tasks
 
@@ -8,6 +8,12 @@ Each recipe is a template. Substitute `<placeholder>` values and paste the
 result as a direct Claude-Code prompt. If a plan is needed, invoke `/ck:plan`
 with the completed request; this repository does not define recipe-specific
 CLI flags.
+
+For `firmware:audit`, resolve `<sample>` and `<core>` through
+[reference-source-map.md](reference-source-map.md) before starting Mission 1.
+Pass the active NuttX files, matching EVK project root, and every labelled
+exception together. Never substitute `sci_b_uart` for SCIFA or `spi_b` for
+RSPI; retain the CA55 Ethernet tree as secondary evidence only.
 
 ---
 
@@ -103,7 +109,8 @@ Scope:
 Subsystem Examples: gpio-icu, uart-scif, spi-b-dmac, ether-dmac, ipc-mhu, adc-gtm
 
 Files to Read (Primary):
-  - refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/r_<subsystem>/* (FSP source)
+  - docs/renesas/reference-source-map.md (resolve <sample>, <core>, and gaps first)
+  - refs/rzv2h_evk/<sample>/<sample>_rzv2h_evk_<core>_ep/e2studio/ (when mapped)
   - platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_*.h (HW headers)
   - platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Kconfig (driver enablement)
   - docs/renesas/hardware.md (HW overview)
@@ -179,7 +186,8 @@ Scope:
 Target Examples: gpio-driver-suite, uart-subsystem, ipc-bridge, sensor-manager
 
 Files to Read (Primary):
-  - Current FreeRTOS implementation at refs/px4-freertos-posix-renesas-fsp/ (target module)
+  - Core-matched EVK project selected through docs/renesas/reference-source-map.md
+  - Integrated implementation at refs/px4-freertos-posix-renesas-fsp/ when system/RDK ownership is relevant
   - Equivalent NuttX driver(s) in platforms/nuttx/NuttX/nuttx/
   - docs/renesas/freertos-to-nuttx-mapping.md (API migration cheat sheet)
   - docs/design-guidelines.md (NuttX patterns)
@@ -418,6 +426,10 @@ appropriate.
 
 **Substitution Rules:**
 - `<driver>` → lowercase driver name (spi-b, uart, gpio, etc.)
+- `<sample>` → exact EVK slug from `reference-source-map.md` (`adc_e`,
+  `can_fd`, `sci_b_uart`, etc.); it is not always the NuttX driver name
+- `<core>` → `cm33`, `cr8_0`, or `cr8_1`; never reuse generated vectors or
+  configuration from another core without labelling it secondary evidence
 - `<subsystem>` → subsystem group (gpio-icu, uart-scif, spi-dmac, ether, ipc-mhu)
 - `<target>` → module or subsystem being migrated
 - `<peripheral>` → hardware peripheral name

@@ -112,11 +112,13 @@ Source: `refs/rzv2h_gb_ether/include/rzv2h_irq.h:681` (SPI 735 + base 32 = 767).
 
 ## FSP Reference
 
-If available in `refs/px4-freertos-posix-renesas-fsp/`:
+No dedicated SDHI project or `r_sdhi` driver exists in the current
+`refs/rzv2h_evk/` corpus. Treat checked-in CMSIS headers, the legacy platform
+IRQ table, boot-firmware configuration, and the hardware manual as partial
+evidence only. See [reference-source-map.md](../reference-source-map.md).
 
-- **Path:** `rzv/fsp/src/r_sdhi/r_sdhi.c`
-- **Header:** `rzv/fsp/inc/api/r_sdhi.h`
-- **DMAC integration:** See `r_dmac.c` for linked descriptor setup.
+Do not cite a nonexistent `r_sdhi.c` or infer SDHI DMA behavior from the
+SPI-B `r_dmac_b` consumer example.
 
 ---
 

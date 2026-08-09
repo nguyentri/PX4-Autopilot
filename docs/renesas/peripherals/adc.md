@@ -10,28 +10,17 @@
 
 **Peripheral:** 12-bit successive-approximation ADC with programmable channel scanning and ELC trigger support.
 
-**Instance on RDK-RZ/V2H:**
-- ADC0: Primary analog input (16 channels available)
+**Instance used by the active port:** ADC_E0, eight external channels (0–7).
+Board routing and sensor ownership remain unverified against the RDK schematic.
 
 ---
 
 ## Channel Map
 
-### ADC0 Input Channels (typical assignment)
-
-| Channel | Port | Pin | Signal | Sensor Example |
-|---------|------|-----|--------|-----------------|
-| 0 | (analog) | AN000 | Vref+ | (internal reference) |
-| 1 | (analog) | AN001 | Vref- | (ground) |
-| 2 | 11 | 0 | Battery voltage | LiPo cell monitor |
-| 3 | 11 | 1 | Airspeed differential | Pitot tube (differential pressure) |
-| 4 | 11 | 2 | Aux ADC-1 | Spare analog input |
-| 5 | 11 | 3 | Aux ADC-2 | Spare analog input |
-| 6–15 | — | — | (not used on standard RDK) | (future expansion) |
-
-**Verification:** Cross-reference board schematics and `rzv_pinmap.h` for actual assignments.
-
-**Pin Configuration:** Analog input pins do NOT require alternate function selection; ADC automatically multiplexes on hardware.
+The active lower half accepts channels 0–7 and programs `ADANSA0`. The checked-in
+EVK examples are configuration evidence, not proof of RDK connector routing.
+Confirm package pins, analog mode, and board-level signal ownership from the RDK
+schematic before assigning battery, airspeed, or other sensors.
 
 ---
 
@@ -43,52 +32,30 @@
 
 **Resolution:** 3.3V / 4096 steps ≈ 0.805 mV per LSB.
 
-**Calibration:** Optional internal calibration routine (self-calibrate before first measurement to correct offset/gain drift).
+No calibration routine is implemented by the active lower half.
 
 ---
 
 ## Trigger Sources
 
-**ADC Start Trigger Options:**
-
-| Source | Purpose | Driver Config |
-|--------|---------|---------------|
-| **Software** | Polled ADC reads; `adc_read()` starts conversion. | `CONFIG_ADC_POLLED` |
-| **Timer (GTM)** | Periodic scanning (e.g., 100 Hz sample rate). | `CONFIG_ADC_TIMER_TRIGGER` |
-| **ELC Event** | Synchronized to external event (e.g., GPIO interrupt). | `CONFIG_RZV_ADC_ELC` |
-
-**Recommended for Flight Control:** Timer trigger (GTM) to ensure deterministic sampling synchronized with flight loop.
+The active driver implements Group-A software scans only. Users start a scan with
+`ioctl(fd, ANIOC_TRIGGER, 0)`; scan-end arrives through the configured ELC event,
+ICU slot, and ADC upper-half FIFO. Timer/external triggering is not implemented.
 
 ---
 
 ## Sampling Configuration
 
-**Sample Duration:** Programmable via ADSR (ADC Sampling Time Register).
-
-**Typical Values:**
-- **Fast:** 2.5 µs sample time (8 ADC clock cycles)
-- **Standard:** 5 µs sample time (16 ADC clock cycles)
-- **High-precision:** 10 µs sample time (32 ADC clock cycles)
-
-**Clock Source:** ADC CLK (from CPG module).
-
-**Clock Frequency:** 20 MHz (typical).
-
-**Conversion Time:** ~20 µs for 12-bit result (includes sampling + conversion).
+The lower half selects 12-bit conversion and the configured channel mask. It does
+not expose sample-state timing controls. Clock frequency and conversion latency
+must be measured from the active CPG setup and target hardware before use in a
+timing budget.
 
 ---
 
-## DMAC Support (Optional)
+## DMAC Support
 
-**DMA-Accelerated Scanning:**
-
-| Channel | Direction | Purpose |
-|---------|-----------|---------|
-| (configurable) | ADC result → RAM | High-speed continuous sampling |
-
-**Use Case:** High-frequency IMU pressure sampling or vibrational analysis.
-
-**Cache:** If DMA used, invalidate result buffer post-transfer (ARM dcache).
+The active driver does not implement ADC DMA transfers.
 
 ---
 
@@ -96,31 +63,35 @@
 
 **Interrupt Controller:** ICU
 
-| Event | ICU IRQ | Handler |
+| Event | Routing | Handler |
 |-------|---------|---------|
-| ADC0 Conversion Complete | 183 | `rzv_adc_interrupt()` |
+| ADC Group-A scan end | selectable ELC event → dynamically allocated ICU/GIC INTID | `rzv_adc_interrupt()` |
 
-(IRQ number from UM section Interrupt Controller; verify against `rzv_irq.h`.)
+Do not hard-code IRQ 183. The active configuration uses an event selector and
+`rzv_icu_attach()` returns a physical INTID from the selectable range.
 
 ---
 
 ## Clock Source
 
-**Peripheral Clock:** ADC_CLK (from CPG module).
-
-**Derivation:**
-- Base clock: 100 MHz (typical PCLK)
-- ADC divisor: Typically 1/5 → 20 MHz final ADC clock
-- Verify in CPG CPG_CLKDIV_ADC register
+The board setup enables the ADC CPG clock and releases its module stop/reset
+before registering `/dev/adc0`. Exact target frequency still requires CPG
+readback or authoritative clock-tree evidence.
 
 ---
 
 ## FSP Reference
 
-If available in `refs/px4-freertos-posix-renesas-fsp/`:
+Use the core-matched `adc_e` EVK project described in
+[reference-source-map.md](../reference-source-map.md):
 
-- **Path:** `rzv/fsp/src/r_adc/r_adc.c`
-- **Header:** `rzv/fsp/inc/api/r_adc.h`
+- **Project:** `refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_<core>_ep/e2studio/`
+- **Driver:** `rzv/fsp/src/r_adc_e/r_adc_e.c`
+- **Configuration:** `configuration.xml`, `rzv_cfg/fsp_cfg/r_adc_e_cfg.h`
+- **Generated integration:** `rzv_gen/{hal_data,vector_data,pin_data}.*`
+
+Select `<core>` as `cm33`, `cr8_0`, or `cr8_1`. The integrated PX4/FreeRTOS
+tree remains secondary evidence for RDK application ownership.
 
 ---
 
@@ -129,20 +100,21 @@ If available in `refs/px4-freertos-posix-renesas-fsp/`:
 **File:** `arch/arm/src/rzv/rzv_adc.c`  
 **Board Helpers:** `boards/arm/rzv/rdk-rzv2h/src/rzv2h_adc.c`
 
-**Initialization:**
+**Board registration:**
 ```c
-adc_register(ADC0);  /* Register /dev/adc0 */
+rzv_adc_initialize("/dev/adc0", chanlist, nchannels);
 ```
 
 **Sample Configuration:**
-- `configs/adc/defconfig` — ADC0 enabled with polled mode.
+- `configs/adc/defconfig` — ADC_E0 sample configuration.
 
 **ADC Read:**
 ```c
 int fd = open("/dev/adc0", O_RDONLY);
-uint16_t result;
-ssize_t nread = read(fd, &result, sizeof(result));
-/* result = 0–4095 (12-bit value) */
+ioctl(fd, ANIOC_TRIGGER, 0);
+struct adc_msg_s samples[8];
+ssize_t nread = read(fd, samples, sizeof(samples));
+/* Each message carries channel ID and 12-bit sample data. */
 close(fd);
 ```
 
@@ -150,17 +122,19 @@ close(fd);
 
 ## Register Map
 
-**Base Address (from UM):**
-- ADC0: 0x110A0000 (shared with other analog peripherals)
+**Active ADC_E0 base:** `0x11C00000`.
 
 **Key Registers:**
 - **ADCSR** (ADC Control Register): Enable ADC, select scan mode, trigger source.
-- **ADANS** (ADC Analog Input Select): Choose channels to scan.
-- **ADSR** (ADC Sampling Time): Adjust sample duration.
-- **ADDR[0–15]** (ADC Data Registers): Result per channel (read-only).
-- **ADINFO** (ADC Information): Status flags (conversion complete, etc.).
+- **ADANSA0:** Group-A channel mask for channels 0–7.
+- **ADCER:** conversion resolution/format control.
+- **ADSTRGR:** scan trigger selection.
+- **ADELCCR:** byte-wide event-link control register.
+- **ADDR[0–7]:** per-channel conversion results.
 
-**PGA (Programmable Gain Amplifier):** If available on hardware, configure via ADGAINX registers (optional for sensor pre-amplification).
+See `hardware/rzv_adc.h` and the core-matched CMSIS `adc_e_iodefine.h` for
+widths and offsets. Do not infer unsupported ADC_E registers from other Renesas
+ADC families.
 
 ---
 
@@ -169,12 +143,12 @@ close(fd);
 **Checklist:** [Validation Checklist](../validation-checklist.md)
 
 **Key Tests:**
-- **Initialization:** Start ADC0, verify clock divisor applied.
+- **Initialization:** register/open/close without alignment or bus faults.
 - **Single Read:** Sample known voltage (e.g., 1.65V = 0x800 at mid-scale), verify ±2% accuracy.
 - **Channel Scan:** Read all active channels sequentially; verify no cross-talk.
 - **Accuracy:** Compare NuttX driver result to FSP reference for same input.
 - **Thermal Drift:** Monitor result stability over 1-hour uptime; drift <0.1%/°C.
-- **Stress:** Continuous 1 kHz sampling for 10k samples; no data loss.
+- **Stress:** repeated `ANIOC_TRIGGER` scans with FIFO consumption; no loss.
 
 **Test Fixture:** `configs/adc/` board config + external voltage divider (or known voltage source).
 
@@ -182,7 +156,8 @@ close(fd);
 
 ## PX4 Sensor Integration
 
-Expected on CR8-1: ADC2 (battery voltage), ADC3 (airspeed). Published to uORB via IPC bridge for CR8-0 fusion.
+PX4 sensor-channel ownership and any CR8 inter-core publication remain future
+integration work; the active lower half does not establish these mappings.
 
 ---
 

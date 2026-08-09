@@ -1,6 +1,6 @@
 # FreeRTOS/POSIX to NuttX API Mapping
 
-**Date:** 2026-07-30
+**Date:** 2026-08-09
 **Status:** Source-checked migration reference
 **Purpose:** Cheat sheet for migrating FreeRTOS + POSIX FSP code to native NuttX equivalents
 
@@ -188,6 +188,7 @@ static void my_work_fn(FAR void *arg) {
 
 ## Related References
 
+- [Reference Source Map](./reference-source-map.md) — select the matching EVK sample/core before comparing application or driver behavior
 - [Design Guidelines](../design-guidelines.md) — detailed ISR/work-queue patterns
 - [Porting Playbook](./porting-playbook.md) — step-by-step driver porting
 - [Code Standards](../code-standards.md) — formatting and conventions
