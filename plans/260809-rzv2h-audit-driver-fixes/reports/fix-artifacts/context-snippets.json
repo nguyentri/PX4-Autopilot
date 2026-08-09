@@ -1,0 +1,30 @@
+{
+  "skill": "ck:fix",
+  "mode": "auto",
+  "task": "Remediate source-proven ADC, Ethernet/PHY, and SCIF findings from the 2026-08-09 Mission 1 firmware audit.",
+  "scoutSummary": "Mapped each finding to active NuttX callers, core-matched FSP/CMSIS evidence, secondary GBETH evidence, history, and existing NuttX lifecycle patterns. Hardware-authority gaps remain open.",
+  "acceptanceCriteria": [
+    "Applied changes map to verified root causes.",
+    "Pre-fix source fails every new regression contract and edited source passes.",
+    "Focused Cortex-R8 builds and broader RZ/V2H contracts pass.",
+    "Board/manual-dependent literals remain blocked without authority.",
+    "Audit report distinguishes fixed, open, and blocked findings."
+  ],
+  "touchpoints": [
+    "RZ/V2H ADC_E register access",
+    "GBETH DMA descriptors, network work queues, and PHY resolution",
+    "SCIFA ICU, baud, CPG, reset, shutdown, and early console",
+    "RZ/V2H source-contract tests and audit report"
+  ],
+  "publicContracts": [
+    "NuttX ADC lower-half ANIOC_TRIGGER and adc_msg behavior",
+    "NuttX net-driver locking and administrative-down lifecycle",
+    "EQOS four-word descriptor ABI and CPU/DMA ownership ordering",
+    "NuttX UART setup, termios, interrupt attach, and shutdown lifecycle"
+  ],
+  "blastRadius": [
+    "RDK-RZ/V2H CR8-0 ADC sample",
+    "GBETH0 and any future GBETH1 use of shared driver state",
+    "SCIFA0 sample console and runtime termios configuration"
+  ]
+}
