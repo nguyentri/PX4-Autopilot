@@ -1,0 +1,46 @@
+{
+  "commands": [
+    {
+      "command": "python3 test/rzv2h_adc_ether_scif_contract_test.py -v",
+      "status": "pass",
+      "exitCode": 0,
+      "timestamp": "2026-08-09T14:24:00+07:00",
+      "summary": "16 of 16 edited-source regression contracts passed."
+    },
+    {
+      "command": "RZV_NUTTX_ROOT=/tmp/rzv2h-nuttx-baseline-audit python3 test/rzv2h_adc_ether_scif_contract_test.py -v",
+      "status": "pass",
+      "exitCode": 1,
+      "timestamp": "2026-08-09T14:25:00+07:00",
+      "summary": "Expected negative proof: all 16 contracts failed or errored against archived pre-fix NuttX HEAD."
+    },
+    {
+      "command": "python3 -m unittest discover -s test -p 'rzv2h_*_contract_test.py' -v",
+      "status": "pass",
+      "exitCode": 0,
+      "timestamp": "2026-08-09T14:24:00+07:00",
+      "summary": "85 of 85 RZ/V2H contract tests passed."
+    },
+    {
+      "command": "git diff --check && git -C platforms/nuttx/NuttX/nuttx diff --check",
+      "status": "pass",
+      "exitCode": 0,
+      "timestamp": "2026-08-09T14:24:00+07:00",
+      "summary": "Root and nested NuttX diffs contain no whitespace errors."
+    },
+    {
+      "command": "./build.sh ether",
+      "status": "pass",
+      "exitCode": 0,
+      "timestamp": "2026-08-09T14:27:00+07:00",
+      "summary": "Isolated clean Ethernet build compiled and linked MAC/PHY, placed descriptors in non-cache SRAM, and generated a 207788-byte image."
+    },
+    {
+      "command": "./build.sh nsh-scif",
+      "status": "pass",
+      "exitCode": 0,
+      "timestamp": "2026-08-09T14:27:00+07:00",
+      "summary": "Isolated clean SCIF build compiled clock, lowputc, and SCIF lifecycle changes and generated a 106976-byte image."
+    }
+  ]
+}

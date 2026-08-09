@@ -1,0 +1,11 @@
+{
+  "highRisk": true,
+  "autoStopRequired": true,
+  "humanApproved": true,
+  "largeDiff": true,
+  "reasons": [
+    "Embedded MMIO width, DMA ownership, interrupt concurrency, clocks, and reset sequencing can fault hardware or corrupt memory.",
+    "The user explicitly selected Autonomous execution for this ck:fix request; no commit, push, or target mutation was authorized or performed.",
+    "Source/build evidence cannot replace target HIL for remaining physical contracts."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "decision": "PASS_WITH_RISK",
+  "score": 8.5,
+  "criticalCount": 0,
+  "acceptanceCoverage": [
+    "ADC byte-width fix verified.",
+    "Ethernet descriptor, ordering, net-lock, and teardown fixes verified in source.",
+    "PHY resolution and numeric fixes verified in source.",
+    "SCIF ICU, baud rollback, CPG/reset, ISR, and console fixes verified in source.",
+    "Regression contracts cover all applied defect classes."
+  ],
+  "regressionProof": [
+    "16 edited-source contracts pass and all 16 reject archived pre-fix source.",
+    "85-test RZ/V2H contract discovery passes.",
+    "Independent adversarial re-review found no source-level blocker."
+  ],
+  "blockingReasons": [],
+  "contractStatus": "OK"
+}

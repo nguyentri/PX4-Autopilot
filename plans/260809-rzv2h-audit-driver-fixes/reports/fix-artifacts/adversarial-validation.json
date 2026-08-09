@@ -1,0 +1,13 @@
+{
+  "decision": "PASS_WITH_RISK",
+  "disprovenClaims": [],
+  "unverifiedClaims": [
+    "DMA barrier sufficiency and ring ownership under sustained target traffic",
+    "Ethernet teardown behavior under real IRQ and watchdog pressure",
+    "SCIFA live termios reconfiguration and ICU delivery on target"
+  ],
+  "missingProof": [
+    "RZ/V2H HIL traces, traffic soak, CPG/reset readback, and SCIFA pin/IRQ captures"
+  ],
+  "reachableRegressions": []
+}
