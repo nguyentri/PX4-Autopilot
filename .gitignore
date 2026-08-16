@@ -128,6 +128,14 @@ git config advice.addIgnoredFile false
 .vscode/targets.log
 
 *.py
+!platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py
+!test/rzv2h_core_irq_contract_test.py
+!test/rzv2h_ipc_raw_contract_test.py
+!test/rzv2h_ipc_elf_allowlist_test.py
+!test/rzv2h_cm33_startup_mpu_contract_test.py
+!test/rzv2h_ipc_recovery_contract_test.py
+!test/test-rzv2h-ipc-recovery-contract.py
+!test/rzv2h_remaining_peripherals_contract_test.py
 *.csv
 .backup
 *log

@@ -22,11 +22,12 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 
 7. **[ipc-architecture.md](./ipc-architecture.md)** (Phase 3) — IPCC/MHU, uORB bridge framing, CRC, sequence checks
 8. **[multicore-memory-map.md](./multicore-memory-map.md)** — Ratified CR8-0/CR8-1/CM33 unified memory map & per-core address aliases (single source of truth)
+9. **[rzv2h-three-core-jlink-contract.md](./rzv2h-three-core-jlink-contract.md)** — Core selectors, CM33 debugger aliases, and fail-closed reset/detach gates
 
 ### For Validation & Debugging
 
-9. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
-10. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
+10. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
+11. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
 
 ### AI-Assisted Porting Workflow
 
@@ -44,13 +45,13 @@ explicit authorization.
 
 ### For Future Status
 
-11. **[port-status-px4-hal.md](./port-status-px4-hal.md)** (Phase 3) — PX4 HAL integration status per peripheral
+12. **[port-status-px4-hal.md](./port-status-px4-hal.md)** (Phase 3) — PX4 HAL integration status per peripheral
 
 ### Peripherals Deep Dives (TBD)
 
-12. **[peripherals/canfd.md](./peripherals/canfd.md)** (Phase 3+) — CAN-FD dual-channel notes
-13. **[peripherals/sdhi.md](./peripherals/sdhi.md)** (Phase 3+) — SDHI SD/eMMC driver, LittleFS mount
-14. **[peripherals/adc.md](./peripherals/adc.md)** (Phase 3+) — 12-bit ADC, sensor buffering
+13. **[peripherals/canfd.md](./peripherals/canfd.md)** (Phase 3+) — CAN-FD dual-channel notes
+14. **[peripherals/sdhi.md](./peripherals/sdhi.md)** (Phase 3+) — SDHI SD/eMMC driver, LittleFS mount
+15. **[peripherals/adc.md](./peripherals/adc.md)** (Phase 3+) — 12-bit ADC, sensor buffering
 
 ---
 
@@ -117,6 +118,7 @@ All files in this directory use kebab-case (e.g., `port-status-nuttx.md`, `freer
 | freertos-to-nuttx-mapping.md | port maintainers | 2026-08-09 | Active |
 | prompt-recipes.md | port maintainers | 2026-08-09 | Active |
 | ipc-architecture.md | port maintainers | 2026-07-30 | Deferred design; target proof pending |
+| rzv2h-three-core-jlink-contract.md | port maintainers | 2026-08-09 | Source-reconciled; target lifecycle proof pending |
 | validation-checklist.md | port maintainers | 2026-08-09 | Active template |
 | port-status-px4-hal.md | port maintainers | 2026-08-09 | Active |
 | peripherals/canfd.md | TBD | — | Phase 3+ |

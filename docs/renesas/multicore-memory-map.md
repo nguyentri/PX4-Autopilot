@@ -44,19 +44,21 @@ the same physical SRAM). Boot ROM at `0x0` reads the BOOTPARAM block from a fixe
 | SRAM1 (Code, Secure) | `0x0808_0000` | `0x080F_FFFF` | 512 K | CM33 code bank 1 (image spans 0+1) | OK (HWM) |
 | BOOTPARAM | `0x0800_1E00` | `0x0800_1FFF` | 0x200 | ROM contract: end-word, size `0x00000A00`, entry, magic `0xAA55` | TARGET (FSP ref) |
 | DUMMY gap | `0x0800_2000` | `0x0800_2007` | 8 | reserved gap before code | TARGET (FSP ref) |
-| Code/rodata/data/bss/stack/heap | `0x0800_2800` | `~0x080F_EFFF` | `0xFC7FF` (~1 M) | LMA=VMA (ROM loads whole image) | TARGET (FSP ref) |
-| SRAM data alias (same phys) | `0x2800_2800` | — | — | `.data`/`.bss` data-space view (+0x20000000) | TARGET |
+| Code/rodata/data/bss/stack/heap | `0x0800_2800` | `0x080F_7FFF` | `0xF5800` | NuttX volatile-load window; FSP persistent image may extend farther | SOURCE-RATIFIED |
+| RTT reserved window | `0x080F_8000` | `0x080F_BFFF` | 16 K | NuttX `.noncache_buffer`; MPU non-cacheable/shareable | SOURCE-RATIFIED |
+| SRAM data alias (same phys) | `0x2800_2800` | — | — | data-space view (+0x20000000); not used by current NuttX ELF | SOURCE-RATIFIED |
 | xSPI image source (flash) | `0x6000_0000` | — | image | boot ROM loads from here | TARGET |
 
-**BOOTPARAM contents (FSP `rzv2h_evk_cm.ld`), to reproduce in `rdk-rzv2h_cm33.ld`:**
+**BOOTPARAM contents (FSP `rzv2h_evk_cm.ld`) for a future persistent image:**
 `LONG(__RAM_end__ - 0x08000000)` · `LONG(0x00000A00)` · `LONG(reset_entry + 0x20000000)` · `SHORT(0xAA55)`.
 The entry is the code→data-alias of the reset handler. In NuttX this must resolve to `__start`.
 
-**Open decisions (do NOT ship blind — boot-critical, HW-unverifiable):**
-- Secure vs non-secure alias for the NuttX CM33 image (FSP reference uses Secure `0x08…`).
-- `.data` model: LMA=VMA whole-image-load (ROM) vs `CONFIG_BOOT_RUNFROMFLASH` copy — must match `rzv_start_cm33.c`.
-- CM33 peripheral MMIO aliases (e.g. MHU): current `rzv_start_cm33.c` maps MHU NS `0x1048_0000`; HWM §1.8.2
-  lists MHU (NS) `0x5048_0000` / (S) `0x4048_0000`. Reconcile before CM33 boot bring-up.
+The volatile NuttX debugger image now follows the FSP secure SRAM code view
+at `0x0800_2800`, uses LMA=VMA, and maps the CM33 non-secure MHU view at
+`0x5048_0000`. This is source/build evidence, not proof that SEGGER reset or
+release establishes the required CM33 secure reset state. Persistent ROM/xSPI
+packaging still requires BOOTPARAM and post-build work outside this RAM-load
+validation scope.
 
 ---
 
@@ -94,14 +96,14 @@ Same physical DDR window, addressed per core (CR8 base `0x4000_0000`; CM33-S FSP
 | OPENAMP_RSCTBL | `0x42F0_0000` | `0x82F0_0000` | 4 K | OK (intentional cross-core overlap) |
 | MHU_SHMEM | `0x42F0_1000` | `0x82F0_1000` | 4 K | OK |
 | OPENAMP_VRING | `0x4300_0000` | `0x8300_0000` | 8 M (FSP ref 0xF00000) | OK |
-| IPC_RAW_SHM (CR8↔CR8; CR8↔CM33 @+0x10000) | `0x4380_0000` | (alias TBD) | 256 K | VERIFY — CM33 alias not yet in `cm33.ld` |
+| IPC_RAW_SHM (CR8↔CR8; CR8-1↔CM33 @+0x20000) | `0x4380_0000` | `0x8380_0000` | 256 K | SOURCE-RATIFIED; CM33 link uses `0x8382_0000` |
 
-CM33 shared-window secure vs non-secure alias, and DDR cacheability from CM33, remain open (needs HW test).
+The raw IPC profile maps its CM33 secure-DDR view non-cacheable/shareable.
+CPU-side visibility and cache behavior remain target validation gates.
 
 ---
 
 ## Unresolved (carry to CM33 implementation pass)
-1. Secure vs non-secure CM33 alias choice for image + shared windows.
-2. CM33 `.data` copy model (LMA=VMA vs RUNFROMFLASH) — couple `cm33.ld` and `rzv_start_cm33.c` together.
-3. CM33 MHU/peripheral MMIO alias reconciliation (`0x1048_0000` in code vs HWM `0x5048_0000`).
-4. All CM33 boot addresses tagged TARGET need on-target confirmation (ROM bootparam acceptance).
+1. Prove the CM33 reset/vector/register launch sequence with `R9A09G057H44_M33_0` before execution.
+2. Confirm CM33 CPU access to `0x8382_0000` and MHU NS `0x5048_0000`; DAP readback alone is insufficient.
+3. Persistent ROM/xSPI bootparam acceptance remains outside the volatile-load scope.

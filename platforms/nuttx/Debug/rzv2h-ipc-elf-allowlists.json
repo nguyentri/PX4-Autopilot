@@ -1,0 +1,33 @@
+{
+  "devices": {
+    "R9A09G057H44_R8_0": {
+      "status": "ratified",
+      "ranges": [
+        {"name": "local-itcm", "start": "0x00000000", "end": "0x0001fe80"},
+        {"name": "local-dtcm", "start": "0x00020000", "end": "0x00040000"},
+        {"name": "private-sram-cache", "start": "0x08180000", "end": "0x081a0000"},
+        {"name": "private-sram-uncache", "start": "0x081a0000", "end": "0x081c0000"},
+        {"name": "private-ddr-cache", "start": "0x40800000", "end": "0x41000000"},
+        {"name": "private-ddr-uncache", "start": "0x41000000", "end": "0x41800000"}
+      ]
+    },
+    "R9A09G057H44_R8_1": {
+      "status": "ratified",
+      "ranges": [
+        {"name": "local-itcm", "start": "0x00000000", "end": "0x0001fe80"},
+        {"name": "local-dtcm", "start": "0x00020000", "end": "0x00040000"},
+        {"name": "private-sram-cache", "start": "0x081c0000", "end": "0x081e0000"},
+        {"name": "private-sram-uncache", "start": "0x081e0000", "end": "0x08200000"},
+        {"name": "private-ddr-cache", "start": "0x41800000", "end": "0x42000000"},
+        {"name": "private-ddr-uncache", "start": "0x42000000", "end": "0x42800000"}
+      ]
+    },
+    "R9A09G057H44_M33_0": {
+      "status": "ratified",
+      "ranges": [
+        {"name": "secure-sram-code", "start": "0x08002800", "end": "0x080fc000"},
+        {"name": "secure-sram-data-alias", "start": "0x28002800", "end": "0x280fc000"}
+      ]
+    }
+  }
+}
