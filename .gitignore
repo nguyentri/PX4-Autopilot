@@ -133,8 +133,9 @@ git config advice.addIgnoredFile false
 !test/rzv2h_ipc_raw_contract_test.py
 !test/rzv2h_ipc_elf_allowlist_test.py
 !test/rzv2h_cm33_startup_mpu_contract_test.py
+!test/rzv2h_default_board_contract_test.py
 !test/rzv2h_ipc_recovery_contract_test.py
-!test/test-rzv2h-ipc-recovery-contract.py
+!test/test_rzv2h_ipc_recovery_contract.py
 !test/rzv2h_remaining_peripherals_contract_test.py
 *.csv
 .backup

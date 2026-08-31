@@ -185,7 +185,286 @@ class CliTests(unittest.TestCase):
             )
 
         self.assertEqual(result.returncode, 0, msg=result.stderr)
-        self.assertIn("RESULT=AUTHORIZED_ADDRESS_CONTRACT", result.stdout)
+        self.assertIn("LOAD_EXECUTED=NO", result.stdout)
+        self.assertIn("RESULT=ADDRESS_CONTRACT_VERIFIED", result.stdout)
+
+    def test_path_replacement_cannot_bind_hash_to_different_headers(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            elf = root / "sample.elf"
+            elf.write_bytes(b"trusted-elf")
+            replacement = root / "replacement.elf"
+            replacement.write_bytes(b"replacement-elf")
+            digest = hashlib.sha256(elf.read_bytes()).hexdigest()
+
+            readelf = root / "fake-readelf.py"
+            readelf.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "import pathlib\n"
+                "import sys\n"
+                f"os.replace({str(replacement)!r}, {str(elf)!r})\n"
+                "data = pathlib.Path(sys.argv[-1]).read_bytes()\n"
+                "if data == b'trusted-elf':\n"
+                "    print('  LOAD 0x000800 0x09000000 0x09000000 0x20 0x20 R E 0x1000')\n"
+                "else:\n"
+                "    print('  LOAD 0x000800 0x08002800 0x08002800 0x20 0x20 R E 0x1000')\n",
+                encoding="utf-8",
+            )
+            readelf.chmod(0o755)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--elf",
+                    str(elf),
+                    "--device",
+                    "R9A09G057H44_M33_0",
+                    "--readelf",
+                    str(readelf),
+                    "--expect-sha256",
+                    digest,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+
+        self.assertEqual(result.returncode, 1, msg=result.stdout)
+        self.assertIn("RESULT=DENY", result.stderr)
+        self.assertNotIn("RESULT=ADDRESS_CONTRACT_VERIFIED", result.stdout)
+
+    def test_guarded_loader_uses_retained_snapshot_after_source_replacement(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            elf = root / "sample.elf"
+            elf.write_bytes(b"trusted-elf")
+            replacement = root / "replacement.elf"
+            replacement.write_bytes(b"replacement-elf")
+            digest = hashlib.sha256(elf.read_bytes()).hexdigest()
+            loaded_bytes = root / "loaded.bin"
+            snapshot_path = root / "snapshot-path.txt"
+            readelf_inode = root / "readelf-inode.txt"
+            loader_inode = root / "loader-inode.txt"
+
+            readelf = root / "fake-readelf.py"
+            readelf.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "import pathlib\n"
+                "import sys\n"
+                f"os.replace({str(replacement)!r}, {str(elf)!r})\n"
+                "assert pathlib.Path(sys.argv[-1]).read_bytes() == b'trusted-elf'\n"
+                f"pathlib.Path({str(readelf_inode)!r}).write_text(str(os.stat(sys.argv[-1]).st_ino))\n"
+                "print('  LOAD 0x000800 0x08002800 0x08002800 0x20 0x20 R E 0x1000')\n",
+                encoding="utf-8",
+            )
+            readelf.chmod(0o755)
+
+            loader = root / "fake-loader.py"
+            loader.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "import pathlib\n"
+                "import sys\n"
+                f"pathlib.Path({str(loaded_bytes)!r}).write_bytes(pathlib.Path(sys.argv[1]).read_bytes())\n"
+                f"pathlib.Path({str(snapshot_path)!r}).write_text(sys.argv[1])\n"
+                f"pathlib.Path({str(loader_inode)!r}).write_text(str(os.stat(sys.argv[1]).st_ino))\n",
+                encoding="utf-8",
+            )
+            loader.chmod(0o755)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--elf",
+                    str(elf),
+                    "--device",
+                    "R9A09G057H44_M33_0",
+                    "--readelf",
+                    str(readelf),
+                    "--expect-sha256",
+                    digest,
+                    "--loader",
+                    str(loader),
+                    "--loader-arg={elf}",
+                    "--authorize-load",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+            self.assertEqual(elf.read_bytes(), b"replacement-elf")
+            self.assertEqual(loaded_bytes.read_bytes(), b"trusted-elf")
+            self.assertEqual(readelf_inode.read_text(), loader_inode.read_text())
+            self.assertFalse(Path(snapshot_path.read_text()).exists())
+            self.assertIn("RESULT=GUARDED_LOAD_COMPLETED", result.stdout)
+
+    def test_loader_failure_is_reported_and_snapshot_is_cleaned(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            elf = root / "sample.elf"
+            elf.write_bytes(b"sample-elf")
+            digest = hashlib.sha256(elf.read_bytes()).hexdigest()
+            snapshot_path = root / "snapshot-path.txt"
+
+            readelf = root / "fake-readelf.py"
+            readelf.write_text(
+                "#!/usr/bin/env python3\n"
+                "print('  LOAD 0x000800 0x08002800 0x08002800 0x20 0x20 R E 0x1000')\n",
+                encoding="utf-8",
+            )
+            readelf.chmod(0o755)
+            loader = root / "failing-loader.py"
+            loader.write_text(
+                "#!/usr/bin/env python3\n"
+                "import pathlib\n"
+                "import sys\n"
+                f"pathlib.Path({str(snapshot_path)!r}).write_text(sys.argv[1])\n"
+                "raise SystemExit(23)\n",
+                encoding="utf-8",
+            )
+            loader.chmod(0o755)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--elf",
+                    str(elf),
+                    "--device",
+                    "R9A09G057H44_M33_0",
+                    "--readelf",
+                    str(readelf),
+                    "--expect-sha256",
+                    digest,
+                    "--loader",
+                    str(loader),
+                    "--loader-arg={elf}",
+                    "--authorize-load",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("RESULT=LOAD_FAILED returncode=23", result.stderr)
+            self.assertFalse(Path(snapshot_path.read_text()).exists())
+
+    def test_loader_requires_explicit_authorization(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            elf = root / "sample.elf"
+            elf.write_bytes(b"sample-elf")
+            digest = hashlib.sha256(elf.read_bytes()).hexdigest()
+            loader_marker = root / "loader-ran"
+
+            readelf = root / "fake-readelf.py"
+            readelf.write_text(
+                "#!/usr/bin/env python3\n"
+                "print('  LOAD 0x000800 0x08002800 0x08002800 0x20 0x20 R E 0x1000')\n",
+                encoding="utf-8",
+            )
+            readelf.chmod(0o755)
+            loader = root / "fake-loader.py"
+            loader.write_text(
+                "#!/usr/bin/env python3\n"
+                "import pathlib\n"
+                f"pathlib.Path({str(loader_marker)!r}).touch()\n",
+                encoding="utf-8",
+            )
+            loader.chmod(0o755)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--elf",
+                    str(elf),
+                    "--device",
+                    "R9A09G057H44_M33_0",
+                    "--readelf",
+                    str(readelf),
+                    "--expect-sha256",
+                    digest,
+                    "--loader",
+                    str(loader),
+                    "--loader-arg={elf}",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("--loader requires explicit --authorize-load", result.stderr)
+            self.assertFalse(loader_marker.exists())
+
+    def test_loader_arguments_are_not_shell_interpolated(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            elf = root / "sample.elf"
+            elf.write_bytes(b"sample-elf")
+            digest = hashlib.sha256(elf.read_bytes()).hexdigest()
+            argv_output = root / "argv.json"
+            injection_target = root / "injected"
+
+            readelf = root / "fake-readelf.py"
+            readelf.write_text(
+                "#!/usr/bin/env python3\n"
+                "print('  LOAD 0x000800 0x08002800 0x08002800 0x20 0x20 R E 0x1000')\n",
+                encoding="utf-8",
+            )
+            readelf.chmod(0o755)
+            loader = root / "argv-loader.py"
+            loader.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json\n"
+                "import pathlib\n"
+                "import sys\n"
+                f"pathlib.Path({str(argv_output)!r}).write_text(json.dumps(sys.argv[1:]))\n",
+                encoding="utf-8",
+            )
+            loader.chmod(0o755)
+            literal = f"$(touch {injection_target}); still-literal"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--elf",
+                    str(elf),
+                    "--device",
+                    "R9A09G057H44_M33_0",
+                    "--readelf",
+                    str(readelf),
+                    "--expect-sha256",
+                    digest,
+                    "--loader",
+                    str(loader),
+                    "--loader-arg={elf}",
+                    f"--loader-arg={literal}",
+                    "--authorize-load",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+            loader_argv = json.loads(argv_output.read_text())
+            self.assertEqual(loader_argv[1], literal)
+            self.assertFalse(injection_target.exists())
 
     def test_custom_manifest_is_inspection_only_even_with_hash(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

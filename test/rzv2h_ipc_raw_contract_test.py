@@ -81,9 +81,14 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
             self.assertIn("CONFIG_RZV_IPC_RAW=y", symbols)
             self.assertIn("CONFIG_RZV_IPC_RAW_ENTRY_SIZE=64", symbols)
             self.assertIn("CONFIG_RZV_IPC_TX_TIMEOUT_MS=100", symbols)
+            self.assertIn("CONFIG_RZV_IPC_RECOVERY_WAIT_MS=30000", symbols)
             self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO=y", symbols)
             self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO_AUTOECHO=y", symbols)
             self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_PEER=y", symbols)
+            self.assertIn(
+                "CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_READY_WAIT_MS=60000",
+                symbols,
+            )
             self.assertIn('CONFIG_INIT_ENTRYPOINT="rzv_ipc_boot_main"', symbols)
             self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO_DEFAULT_SIZE=64", symbols)
             self.assertIn("CONFIG_CONSOLE_SYSLOG=y", symbols)
@@ -239,6 +244,92 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         self.assertLess(state_lock, final_check)
         self.assertLess(final_check, publish)
         self.assertLess(publish, state_unlock)
+
+    def test_explicit_recovery_waits_for_peer_rendezvous(self) -> None:
+        source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")
+        chardev = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw_chardev.c")
+        recover = source[
+            source.index("int rzv_ipc_raw_recover")
+            : source.index("ssize_t rzv_ipc_raw_read")
+        ]
+
+        reset = recover.index("nxsem_reset(&priv->rxsem, 0)")
+        first_check = recover.index("rzv_ipc_recovery_pending", reset)
+        wait = recover.index("nxsem_tickwait_uninterruptible", first_check)
+        final_check = recover.index("rzv_ipc_recovery_pending", wait)
+        self.assertLess(reset, first_check)
+        self.assertLess(first_check, wait)
+        self.assertLess(wait, final_check)
+        self.assertIn("CONFIG_RZV_IPC_RECOVERY_WAIT_MS", chardev)
+        arm = recover.index("rzv_ipc_arm_ack(priv)")
+        registration_guard = recover.index("rendezvous_wait_ms == 0", arm)
+        initiator_wait = recover.index("MSEC2TICK(rendezvous_wait_ms)", registration_guard)
+        self.assertLess(arm, registration_guard)
+        self.assertLess(registration_guard, initiator_wait)
+        self.assertIn("return -EAGAIN", recover[registration_guard:initiator_wait])
+        self.assertIn("rzv_ipc_raw_recover(priv, 0)", source)
+
+    def test_healthy_responder_recovery_short_circuits_before_wait(self) -> None:
+        source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")
+        recover = source[
+            source.index("int rzv_ipc_raw_recover")
+            : source.index("ssize_t rzv_ipc_raw_read")
+        ]
+
+        # A responder recover on an already-ready, non-degraded link with no
+        # fresh recovery epoch returns OK before resetting rxsem or arming the
+        # rendezvous wait, so recovering a working link neither blocks for
+        # RZV_IPC_RECOVERY_WAIT_MS nor quarantines it.
+        fast_path = recover.index("priv->stats.ready && !priv->stats.degraded")
+        reset = recover.index("nxsem_reset(&priv->rxsem, 0)")
+        self.assertLess(fast_path, reset)
+        guard = recover[fast_path:reset]
+        self.assertIn("!rzv_ipc_recovery_pending(priv, previous_epoch)", guard)
+        self.assertIn("return OK;", guard)
+
+    def test_registration_recovery_runs_under_rxlock(self) -> None:
+        source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")
+        register = source[source.index("int rzv_ipc_raw_register") :]
+
+        # The boot-time recover adopts under rxlock like the runtime read and
+        # ioctl paths, honouring rzv_ipc_adopt_recovery_locked's contract.
+        lock = register.index("nxmutex_lock(&priv->rxlock)")
+        call = register.index("rzv_ipc_raw_recover(priv, 0)")
+        unlock = register.index("nxmutex_unlock(&priv->rxlock)", call)
+        self.assertLess(lock, call)
+        self.assertLess(call, unlock)
+
+    def test_boot_peer_waits_for_ready_without_implicit_recovery(self) -> None:
+        source = read(APP / "rzv_ipc_demo_main.c")
+        start = source.index("static int ipctest_wait_for_boot_ready")
+        end = source.index("static int ipctest_boot_peer", start)
+        wait = source[start:end]
+
+        self.assertIn("RZV_IPC_RAWIOC_GET_STATS", wait)
+        self.assertIn("stats.ready && !stats.degraded", wait)
+        self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_READY_WAIT_MS", wait)
+        self.assertNotIn("RZV_IPC_RAWIOC_RECOVER", wait)
+
+    def test_recovery_reinitializes_both_rings_before_rearming_ack(self) -> None:
+        source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")
+
+        recover = source[
+            source.index("int rzv_ipc_raw_recover")
+            : source.index("ssize_t rzv_ipc_raw_read")
+        ]
+
+        tx_init = recover.index("rzv_ipc_initialize_header(priv->tx_hdr, epoch, priv->local_mask);")
+        rx_init = recover.index("rzv_ipc_initialize_header(priv->rx_hdr, epoch, priv->local_mask);")
+        arm_ack = recover.index("rzv_ipc_arm_ack(priv);")
+        sem_reset = recover.index("nxsem_reset(&priv->rxsem, 0);", arm_ack)
+        ready_state = recover.index("priv->stats.ready = true;")
+
+        self.assertLess(tx_init, rx_init)
+        self.assertLess(rx_init, arm_ack)
+        self.assertLess(arm_ack, sem_reset)
+        self.assertLess(sem_reset, ready_state)
+        self.assertIn("priv->stats.degraded = false;", recover)
+        self.assertIn("priv->stats.recoveries++;", recover)
 
     def test_ack_transaction_is_armed_with_the_irq_masked(self) -> None:
         source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")

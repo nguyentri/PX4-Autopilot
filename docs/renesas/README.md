@@ -23,11 +23,13 @@ Mini-index for RDK-RZ/V2H porting documentation. Start here for RZ/V2H-specific 
 7. **[ipc-architecture.md](./ipc-architecture.md)** (Phase 3) — IPCC/MHU, uORB bridge framing, CRC, sequence checks
 8. **[multicore-memory-map.md](./multicore-memory-map.md)** — Ratified CR8-0/CR8-1/CM33 unified memory map & per-core address aliases (single source of truth)
 9. **[rzv2h-three-core-jlink-contract.md](./rzv2h-three-core-jlink-contract.md)** — Core selectors, CM33 debugger aliases, and fail-closed reset/detach gates
+10. **[rzv2h-three-core-ipc-artifacts.md](./rzv2h-three-core-ipc-artifacts.md)** — Tracked artifact hashes, PT_LOAD load-span authorization, CM33 vector contract
+11. **[rzv2h-ipc-hil-test-guide.md](./rzv2h-ipc-hil-test-guide.md)** — Repeatable HIL bring-up: load order, RTT driving, `ipctest` 100/100 ping/echo acceptance
 
 ### For Validation & Debugging
 
-10. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
-11. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
+12. **[validation-checklist.md](./validation-checklist.md)** (Phase 3) — Per-driver bring-up checklist, FreeRTOS equivalence checks
+13. **[prompt-recipes.md](./prompt-recipes.md)** (Phase 2) — Reusable Claude prompts: driver review, HAL port, migration
 
 ### AI-Assisted Porting Workflow
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed PT_LOAD checker for RZ/V2H volatile J-Link loads."""
+"""Fail-closed PT_LOAD checker and guarded RZ/V2H volatile ELF loader."""
 
 from __future__ import annotations
 
@@ -10,9 +10,11 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO, Iterator
 
 
 LOAD_RE = re.compile(
@@ -128,27 +130,62 @@ def containing_range(
     return None
 
 
-def sha256(path: Path) -> str:
+@contextmanager
+def snapshot_elf(path: Path) -> Iterator[tuple[BinaryIO, str]]:
+    """Copy one opened ELF into a private inode used for all validation."""
     digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    with tempfile.TemporaryDirectory(prefix="rzv2h-elf-") as temp_dir:
+        snapshot_path = Path(temp_dir) / "snapshot.elf"
+        with path.open("rb") as source, snapshot_path.open("xb") as destination:
+            for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                digest.update(chunk)
+                destination.write(chunk)
+        snapshot_path.chmod(0o400)
+        with snapshot_path.open("rb") as snapshot:
+            snapshot_path.unlink()
+            yield snapshot, digest.hexdigest()
 
 
-def readelf_headers(elf: Path, readelf: str) -> str:
+def snapshot_fd_path(elf: BinaryIO) -> Path:
+    descriptor = elf.fileno()
+    proc_path = Path("/proc") / str(os.getpid()) / "fd" / str(descriptor)
+    fd_path = proc_path if proc_path.exists() else Path("/dev/fd") / str(descriptor)
+    if not fd_path.exists():
+        raise RuntimeError("host has no file-descriptor path for ELF snapshot")
+    return fd_path
+
+
+def readelf_headers(elf: BinaryIO, readelf: str) -> str:
     environment = dict(os.environ)
     environment["LC_ALL"] = "C"
+    descriptor = elf.fileno()
+    fd_path = snapshot_fd_path(elf)
     result = subprocess.run(
-        (readelf, "-W", "-l", str(elf)),
+        (readelf, "-W", "-l", str(fd_path)),
         check=False,
         capture_output=True,
         text=True,
         env=environment,
+        pass_fds=(descriptor,),
     )
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "readelf failed")
     return result.stdout
+
+
+def run_loader(
+    elf: BinaryIO, loader: str, loader_args: list[str]
+) -> subprocess.CompletedProcess[bytes]:
+    """Run a loader against the retained snapshot without shell expansion."""
+    if loader_args.count("{elf}") != 1:
+        raise ValueError("loader arguments must contain exactly one {elf} token")
+
+    descriptor = elf.fileno()
+    fd_path = snapshot_fd_path(elf)
+
+    command = [loader]
+    command.extend(str(fd_path) if item == "{elf}" else item for item in loader_args)
+    return subprocess.run(command, check=False, pass_fds=(descriptor,))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -163,6 +200,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-unverified",
         action="store_true",
         help="host inspection only; output remains NOT AUTHORIZED FOR LOAD",
+    )
+    parser.add_argument(
+        "--loader",
+        help="executable for guarded load; requires one literal {elf} loader argument",
+    )
+    parser.add_argument(
+        "--loader-arg",
+        action="append",
+        default=[],
+        help="one loader argv item; repeat and use exactly one literal {elf}",
+    )
+    parser.add_argument(
+        "--authorize-load",
+        action="store_true",
+        help="explicitly authorize invoking --loader after every gate passes",
     )
     return parser
 
@@ -190,47 +242,68 @@ def main() -> int:
         canonical_manifest = Path(__file__).with_name(
             "rzv2h-ipc-elf-allowlists.json"
         ).resolve(strict=True)
-        digest = sha256(elf)
-        if args.expect_sha256 and digest.lower() != args.expect_sha256.lower():
-            raise ValueError(
-                f"SHA-256 mismatch expected={args.expect_sha256} actual={digest}"
+        with snapshot_elf(elf) as (snapshot, digest):
+            if args.expect_sha256 and digest.lower() != args.expect_sha256.lower():
+                raise ValueError(
+                    f"SHA-256 mismatch expected={args.expect_sha256} actual={digest}"
+                )
+
+            status, allowed = load_device_manifest(manifest, args.device)
+            if status not in ACCEPTED_STATUSES and not args.allow_unverified:
+                raise ValueError(
+                    f"device status {status!r} is not authorized; target proof required"
+                )
+
+            segments = parse_program_headers(readelf_headers(snapshot, args.readelf))
+            failures = 0
+            print(f"ELF={elf}")
+            print(f"SHA256={digest}")
+            print(f"DEVICE={args.device}")
+            print(f"MANIFEST_STATUS={status}")
+            print(f"MANIFEST={manifest}")
+            print("IDX PADDR FILESZ MEMSZ ALLOWED_RANGE VERDICT")
+            for segment in segments:
+                candidate = containing_range(segment, allowed)
+                verdict = "PASS" if candidate else "DENY"
+                range_name = candidate.name if candidate else "-"
+                print(
+                    f"{segment.index} {segment.paddr:#010x} {segment.filesz:#x} "
+                    f"{segment.memsz:#x} {range_name} {verdict}"
+                )
+                failures += candidate is None
+
+            if failures:
+                raise ValueError(f"{failures} PT_LOAD segment(s) outside allowed RAM")
+
+            authorized, reason = authorization_mode(
+                manifest, canonical_manifest, status, args.expect_sha256
             )
+            if not authorized:
+                print(f"RESULT=INSPECTION_ONLY reason={reason}")
+                return 2
 
-        status, allowed = load_device_manifest(manifest, args.device)
-        if status not in ACCEPTED_STATUSES and not args.allow_unverified:
-            raise ValueError(
-                f"device status {status!r} is not authorized; target proof required"
-            )
+            if args.loader is None:
+                if args.loader_arg:
+                    raise ValueError("--loader-arg requires --loader")
+                if args.authorize_load:
+                    raise ValueError("--authorize-load requires --loader")
+                print("LOAD_EXECUTED=NO")
+                print("RESULT=ADDRESS_CONTRACT_VERIFIED")
+                return 0
 
-        segments = parse_program_headers(readelf_headers(elf, args.readelf))
-        failures = 0
-        print(f"ELF={elf}")
-        print(f"SHA256={digest}")
-        print(f"DEVICE={args.device}")
-        print(f"MANIFEST_STATUS={status}")
-        print(f"MANIFEST={manifest}")
-        print("IDX PADDR FILESZ MEMSZ ALLOWED_RANGE VERDICT")
-        for segment in segments:
-            candidate = containing_range(segment, allowed)
-            verdict = "PASS" if candidate else "DENY"
-            range_name = candidate.name if candidate else "-"
-            print(
-                f"{segment.index} {segment.paddr:#010x} {segment.filesz:#x} "
-                f"{segment.memsz:#x} {range_name} {verdict}"
-            )
-            failures += candidate is None
+            if not args.authorize_load:
+                raise ValueError("--loader requires explicit --authorize-load")
+            loader_result = run_loader(snapshot, args.loader, args.loader_arg)
+            if loader_result.returncode != 0:
+                print(
+                    f"RESULT=LOAD_FAILED returncode={loader_result.returncode}",
+                    file=sys.stderr,
+                )
+                return 1
 
-        if failures:
-            raise ValueError(f"{failures} PT_LOAD segment(s) outside allowed RAM")
-
-        authorized, reason = authorization_mode(
-            manifest, canonical_manifest, status, args.expect_sha256
-        )
-        if not authorized:
-            print(f"RESULT=INSPECTION_ONLY reason={reason}")
-            return 2
-        print("RESULT=AUTHORIZED_ADDRESS_CONTRACT")
-        return 0
+            print("LOAD_EXECUTED=YES")
+            print("RESULT=GUARDED_LOAD_COMPLETED")
+            return 0
     except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
         print(f"RESULT=DENY reason={error}", file=sys.stderr)
         return 1
