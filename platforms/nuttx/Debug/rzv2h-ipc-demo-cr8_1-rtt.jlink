@@ -1,0 +1,20 @@
+// JLinkExe command file: bridge the CR8-1 NSH console over SEGGER RTT.
+//
+// Points RTT at the CR8-1 control block and starts the RTT server so JLinkExe
+// serves the CR8-1 NSH terminal on 127.0.0.1:19021. Attaches to the already
+// running core (loaded by rzv2h-ipc-demo-load-both.sh) — it does NOT reset or
+// halt, so the resident CR8-0 <-> CR8-1 link stays live.
+//
+// Run (device/interface/probe come from the command line; keep the session
+// open so port 19021 stays served — do not feed `exit`):
+//
+//   JLinkExe -select usb=<probe-sn> -device R9A09G057H44_R8_1 \
+//            -if SWD -speed auto -AutoConnect 1 \
+//            -CommandFile rzv2h-ipc-demo-cr8_1-rtt.jlink
+//
+// Then attach a client to the CR8-1 NSH prompt, e.g.:
+//   telnet 127.0.0.1 19021      (or: nc 127.0.0.1 19021)
+//
+// CR8-1 _SEGGER_RTT control block: 0x081E0000
+exec SetRTTAddr 0x081E0000
+rtt start

@@ -14,6 +14,149 @@
     //usbipd detach --busid 1-4 // to detach the device from WSL2
     "configurations": [
         {
+            "name": "IPC RZV2H CR8-0 (SCI4) — load & debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": ["-speed", "auto"],
+            "device": "R9A09G057H44_R8_0",
+            "serialNumber": "${input:rzv2hJlinkSerial}",
+            "showDevDebugOutput": "parsed",
+            // Volatile RAM load + core-local start. NO monitor reset: the peer
+            // CR8-1 image is resident and a reset is SoC-wide (see loadstart.gdb).
+            // CR8-0 NSH console is on the SCI4 UART (external picocom), not RTT.
+            "overrideLaunchCommands": [
+                "monitor halt",
+                "load",
+                "set $pc = __start"
+            ],
+            "overrideResetCommands": [
+                "monitor halt",
+                "set $pc = __start"
+            ],
+            "runToEntryPoint": "arm_boot",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        },
+        {
+            "name": "IPC RZV2H CR8-1 (RTT) — load & debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "launch",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": ["-speed", "auto"],
+            "device": "R9A09G057H44_R8_1",
+            "serialNumber": "${input:rzv2hJlinkSerial}",
+            "showDevDebugOutput": "parsed",
+            // Same volatile RAM load, NO monitor reset (peer CR8-0 resident).
+            "overrideLaunchCommands": [
+                "monitor halt",
+                "load",
+                "set $pc = __start"
+            ],
+            "overrideResetCommands": [
+                "monitor halt",
+                "set $pc = __start"
+            ],
+            "runToEntryPoint": "arm_boot",
+            // CR8-1 NSH console over SEGGER RTT; control block at 0x081E0000.
+            "rttConfig": {
+                "enabled": true,
+                "address": "0x081E0000",
+                "decoders": [
+                    {
+                        "label": "CR8-1 NSH",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        },
+        {
+            "name": "IPC RZV2H — load BOTH, attach CR8-0",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "attach",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": ["-speed", "auto"],
+            "device": "R9A09G057H44_R8_0",
+            "serialNumber": "${input:rzv2hJlinkSerial}",
+            "showDevDebugOutput": "parsed",
+            // preLaunchTask loads + verifies BOTH cores and frees the probe;
+            // then attach to the already-running CR8-0 (no load, no reset).
+            "preLaunchTask": "rzv2h-ipc-load-both",
+            "overrideAttachCommands": [
+                "monitor halt"
+            ],
+            "overrideResetCommands": [
+                "monitor halt"
+            ],
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        },
+        {
+            "name": "IPC RZV2H — load BOTH, attach CR8-1 (RTT)",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "attach",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": ["-speed", "auto"],
+            "device": "R9A09G057H44_R8_1",
+            "serialNumber": "${input:rzv2hJlinkSerial}",
+            "showDevDebugOutput": "parsed",
+            "preLaunchTask": "rzv2h-ipc-load-both",
+            "overrideAttachCommands": [
+                "monitor halt"
+            ],
+            "overrideResetCommands": [
+                "monitor halt"
+            ],
+            "rttConfig": {
+                "enabled": true,
+                "address": "0x081E0000",
+                "decoders": [
+                    {
+                        "label": "CR8-1 NSH",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        },
+        {
             "cwd": "${workspaceRoot}",
             "name": "Debug RZV2H CR8 (Core0)",
             "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_sih/renesas_rdk-rzv2h_sih.elf",

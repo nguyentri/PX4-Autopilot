@@ -31,6 +31,50 @@
             }
         },
         {
+            "label": "rzv2h-ipc-load-both",
+            "type": "shell",
+            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc-demo-load-both-auto.sh",
+            "args": [
+                "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf",
+                "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "JLINK_SERIAL": "${input:rzv2hJlinkSerial}"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "rzv2h-ipc-demo-run",
+            "type": "shell",
+            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc-demo-run.sh",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "JLINK_SERIAL": "${input:rzv2hJlinkSerial}"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "test",
             "type": "shell",
             "command": "make tests",
@@ -297,6 +341,11 @@
         }
     ],
     "inputs": [
+        {
+            "type": "promptString",
+            "id": "rzv2hJlinkSerial",
+            "description": "Exact J-Link serial number for the authorized RZ/V2H probe"
+        },
         {
             "type": "pickString",
             "id": "gzWorld",
