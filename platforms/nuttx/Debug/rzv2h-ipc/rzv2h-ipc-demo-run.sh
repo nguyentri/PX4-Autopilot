@@ -36,14 +36,19 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 . "${HERE}/rzv2h-ipc-demo-jlink-lib.sh"
 
-NUTTX=$(cd "${HERE}/../NuttX/nuttx" && pwd)
+NUTTX=$(cd "${HERE}/../../NuttX/nuttx" && pwd)
 AUTO="${HERE}/rzv2h-ipc-demo-load-both-auto.sh"
 BUILD="${HERE}/rzv2h-ipc-demo-build-and-load.sh"
-RTT_JLINK="${HERE}/rzv2h-ipc-demo-cr8_1-rtt.jlink"
+# Which core is bridged over RTT. Defaults to CR8-1 (the responder) for the
+# dual-console split demo; override RTT_DEVICE/RTT_JLINK/RTT_LABEL to instead
+# drive CR8-0 (the initiator) over RTT; for scripted CR8-0 NSH use
+# ../nuttx-rtt-bridge.sh start cr8_0 (or rzv2h-ipc-demo-autotest.sh).
+RTT_JLINK="${RTT_JLINK:-${HERE}/rzv2h-ipc-demo-cr8_1-rtt.jlink}"
+RTT_DEVICE="${RTT_DEVICE:-R9A09G057H44_R8_1}"
+RTT_LABEL="${RTT_LABEL:-CR8-1}"
 
 GDB_PORT="${GDB_PORT:-50000}"
 RTT_PORT="${RTT_PORT:-19021}"
-DEV_CR8_1="R9A09G057H44_R8_1"
 SCI_PORT="${SCI_PORT:-/dev/ttyUSB0}"
 SCI_BAUD="${SCI_BAUD:-115200}"
 TMUX_SESSION="${TMUX_SESSION:-rzv2h-ipc-demo}"
@@ -105,10 +110,10 @@ RTT_LOG="${LOG_DIR}/rtt-bridge.log"
 FIFO=$(mktemp -u "${TMPDIR:-/tmp}/rzv2h-rtt.XXXXXX")
 mkfifo "${FIFO}"
 
-echo "== opening CR8-1 RTT bridge on 127.0.0.1:${RTT_PORT} (log: ${RTT_LOG}) =="
+echo "== opening ${RTT_LABEL} RTT bridge on 127.0.0.1:${RTT_PORT} (log: ${RTT_LOG}) =="
 preflight_probe_free || { rm -f "${FIFO}"; exit 1; }
 
-"${JLINKEXE}" -select "usb=${JLINK_SERIAL}" -device "${DEV_CR8_1}" \
+"${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${RTT_DEVICE}" \
 	-if SWD -speed auto -AutoConnect 1 -CommandFile "${RTT_JLINK}" \
 	<"${FIFO}" >"${RTT_LOG}" 2>&1 &
 BRIDGE_PID=$!
@@ -142,7 +147,7 @@ EOF
 #   --no-tmux / no tmux: RTT here, CR8-0 SCI4 opened by you in another terminal.
 if [ "${DO_CONNECT}" -eq 0 ]; then
 	[ -n "${RTT_CLIENT}" ] || echo "(no telnet/nc found; connect a client to 127.0.0.1:${RTT_PORT})"
-	echo "Bridge is up. Connect CR8-1 with: ${RTT_CLIENT:-nc 127.0.0.1 ${RTT_PORT}}"
+	echo "Bridge is up. Connect ${RTT_LABEL} with: ${RTT_CLIENT:-nc 127.0.0.1 ${RTT_PORT}}"
 	echo "CR8-0 SCI4: ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh ${SCI_PORT}"
 	echo "Press Ctrl-C here to stop the bridge and release the probe."
 	while kill -0 "${BRIDGE_PID}" 2>/dev/null; do sleep 1; done
@@ -166,10 +171,13 @@ elif [ "${USE_TMUX}" -eq 1 ] && command -v tmux >/dev/null 2>&1 && [ -e "${SCI_P
 	tmux kill-session -t "${TMUX_SESSION}" 2>/dev/null || true
 
 elif [ -n "${RTT_CLIENT}" ]; then
-	# Fallback: no tmux (or SCI port absent). RTT here; open SCI4 separately.
-	[ -e "${SCI_PORT}" ] || echo "(note: ${SCI_PORT} not present -- attach the FT232 for the CR8-0 console)"
-	echo "== CR8-1 NSH (RTT). Open CR8-0 in another terminal: =="
-	echo "   ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh ${SCI_PORT}"
+	# Fallback: no tmux (or SCI port absent). Single RTT console here.
+	echo "== ${RTT_LABEL} NSH (RTT) on 127.0.0.1:${RTT_PORT}. =="
+	if [ "${RTT_LABEL}" = "CR8-1" ]; then
+		# Dual-console split: the other core (CR8-0) is on the SCI4 UART.
+		[ -e "${SCI_PORT}" ] || echo "(note: ${SCI_PORT} not present -- attach the FT232 for the CR8-0 console)"
+		echo "   Open CR8-0 in another terminal: ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh ${SCI_PORT}"
+	fi
 	echo "== Quit this client to end the session. =="
 	# shellcheck disable=SC2086
 	${RTT_CLIENT} || true

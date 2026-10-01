@@ -33,7 +33,7 @@
         {
             "label": "rzv2h-ipc-load-both",
             "type": "shell",
-            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc-demo-load-both-auto.sh",
+            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh",
             "args": [
                 "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf",
                 "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf"
@@ -61,7 +61,7 @@
             // the initiator over RTT so the flaky SCI4 UART is bypassed.
             "label": "rzv2h-ipc-load-both-cr8_0-rtt",
             "type": "shell",
-            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc-demo-load-both-auto.sh",
+            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh",
             "args": [
                 "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0.elf",
                 "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf"
@@ -84,11 +84,11 @@
         },
         {
             // Release the probe held by a detached JLinkExe RTT bridge
-            // (.claude/skills/gdb-jlink-debug/scripts/rtt-bridge.sh) before a
+            // (platforms/nuttx/Debug/nuttx-rtt-bridge.sh) before a
             // JLinkGDBServer session. No-op when no bridge is running.
             "label": "rzv2h-rtt-bridge-stop",
             "type": "shell",
-            "command": "${workspaceFolder}/.claude/skills/gdb-jlink-debug/scripts/rtt-bridge.sh",
+            "command": "${workspaceFolder}/platforms/nuttx/Debug/nuttx-rtt-bridge.sh",
             "args": ["stop"],
             "presentation": {
                 "echo": true,
@@ -101,7 +101,7 @@
         {
             "label": "rzv2h-ipc-demo-run",
             "type": "shell",
-            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc-demo-run.sh",
+            "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-run.sh",
             "options": {
                 "cwd": "${workspaceFolder}",
                 "env": {

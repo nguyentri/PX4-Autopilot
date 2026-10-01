@@ -129,6 +129,8 @@ git config advice.addIgnoredFile false
 
 *.py
 !platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py
+!platforms/nuttx/Debug/nsh_console_exec.py
+!platforms/nuttx/Debug/svd_register_tool.py
 !test/rzv2h_core_irq_contract_test.py
 !test/rzv2h_ipc_raw_contract_test.py
 !test/rzv2h_ipc_elf_allowlist_test.py

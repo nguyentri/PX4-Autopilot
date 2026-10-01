@@ -28,6 +28,10 @@
 set -eu
 
 HERE=$(cd "$(dirname "$0")" && pwd)
+# port_listening (ss/proc based: POSIX sh has no /dev/tcp, and a probe
+# connect could consume the -singlerun GDB session). Its load_core is
+# superseded by the local one below.
+. "${HERE}/rzv2h-ipc-demo-jlink-lib.sh"
 LOADSTART="${HERE}/rzv2h-ipc-hil-loadstart.gdb"
 
 CR8_0_ELF="${1:-}"
@@ -84,13 +88,12 @@ load_core() {
 
 	# Wait until the server is listening (or died).
 	tries=0
-	while ! (exec 3<>/dev/tcp/127.0.0.1/"${GDB_PORT}") 2>/dev/null; do
+	while ! port_listening "${GDB_PORT}"; do
 		kill -0 "${srv_pid}" 2>/dev/null || { echo "GDB server for ${label} failed to start" >&2; exit 1; }
 		tries=$((tries + 1))
 		[ "${tries}" -gt 100 ] && { echo "GDB server for ${label} not listening" >&2; kill "${srv_pid}" 2>/dev/null || true; exit 1; }
 		sleep 0.1
 	done
-	exec 3>&- 2>/dev/null || true
 
 	"${GDB_BIN}" -q -batch "${elf}" -x "${LOADSTART}"
 

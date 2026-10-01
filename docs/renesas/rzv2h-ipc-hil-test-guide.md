@@ -29,7 +29,7 @@ probe/reset rules in
   `R9A09G057H44_R8_1`.
 - RTT control blocks: CR8-0 `0x081A0000`, CR8-1 `0x081E0000`.
 
-Helper GDB scripts live in `platforms/nuttx/Debug/`:
+Helper GDB scripts live in `platforms/nuttx/Debug/rzv2h-ipc/`:
 
 | Script | Purpose | Mutating? |
 |---|---|---|
@@ -53,7 +53,7 @@ the responder adopts them at bring-up. Start one J-Link GDB server for the
 CR8-0 device selector, then:
 
 ```sh
-gdb-multiarch -q -batch <cr8_0-elf> -x platforms/nuttx/Debug/rzv2h-ipc-hil-loadstart.gdb
+gdb-multiarch -q -batch <cr8_0-elf> -x platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb
 ```
 
 This writes the PT_LOAD segments to core-local RAM, sets PC to `__start`,
@@ -191,7 +191,7 @@ USB-serial adapter on the SCI4 pins (P70 TXD / P71 RXD, GND common) at 115200
 8N1 for CR8-0. Under WSL, `usbipd attach --wsl --busid <id>` both the J-Link and
 the FT232; the FT232 then enumerates as e.g. `/dev/ttyUSB0`.
 
-**Run** (scripts in `platforms/nuttx/Debug/`). One command does everything and
+**Run** (scripts in `platforms/nuttx/Debug/rzv2h-ipc/`). One command does everything and
 opens **both** NSH consoles side by side in a single `tmux` window:
 
 1. **One command.** Loads **both** cores to DDR (CR8-0 first), verifies each is
@@ -243,6 +243,21 @@ JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-manual.sh guide
 ./rzv2h-ipc-demo-load-both-manual.sh rtt          # CR8-1 RTT bridge -> :19021
 ./rzv2h-ipc-demo-load-both-manual.sh sci /dev/ttyUSB0
 ```
+
+**Automated regression (RTT only, no UART).** One command RAM-loads both cores
+(RTT-console images `ipcc-raw-cr8_0` + `ipcc-raw-cr8_1`), drives CR8-0 NSH over
+RTT (`ipctest --recover`, `--ping -n 100 -s 64`), then switches the RTT bridge to
+CR8-1 and reads the `mode=auto-echo` result its boot task printed. Exit 0 = PASS;
+1 IPC check failed, 2 usage/preflight, 3 load failed, 4 RTT transport dead.
+Transcripts go to `rzv2h-ipc/logs/autotest-<ts>/` (gitignored, serial masked).
+
+```sh
+JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-autotest.sh [cr8_0-rtt-elf] [cr8_1-elf]
+```
+
+It uses the generic `platforms/nuttx/Debug/nuttx-rtt-bridge.sh` (JLinkExe RTT
+bridge, no reset/halt) and `nsh_console_exec.py` (scripted NSH over RTT or UART),
+which work for any NuttX/PX4 image.
 
 ### Phase 2 (deferred): SCI4 display on CR8-1
 

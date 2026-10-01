@@ -58,10 +58,12 @@ port_listening() {
 # touches a probe the user is using for something unrelated.
 preflight_probe_free() {
 	killed=0
-	for pat in "usb=${JLINK_SERIAL}" "-select ${JLINK_SERIAL}"; do
-		if pgrep -f "${pat}" >/dev/null 2>&1; then
-			echo "-- preflight: releasing stale J-Link owner (${pat})"
-			pkill -f "${pat}" 2>/dev/null || true
+	# JLinkGDBServer: "-select usb=<sn>"; JLinkExe (RTT bridge): "-USB <sn>".
+	for pat in "usb=${JLINK_SERIAL}" "-select ${JLINK_SERIAL}" "-USB ${JLINK_SERIAL}"; do
+		# "--": the "-select ..." pattern must not be parsed as an option.
+		if pgrep -f -- "${pat}" >/dev/null 2>&1; then
+			echo "-- preflight: releasing stale J-Link owner of <probe-sn>"
+			pkill -f -- "${pat}" 2>/dev/null || true
 			killed=1
 		fi
 	done

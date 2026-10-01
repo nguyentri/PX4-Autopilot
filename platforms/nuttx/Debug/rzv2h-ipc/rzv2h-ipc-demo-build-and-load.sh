@@ -28,7 +28,7 @@
 set -eu
 
 HERE=$(cd "$(dirname "$0")" && pwd)
-NUTTX=$(cd "${HERE}/../NuttX/nuttx" && pwd)
+NUTTX=$(cd "${HERE}/../../NuttX/nuttx" && pwd)
 LOAD_BOTH="${HERE}/rzv2h-ipc-demo-load-both.sh"
 
 CR8_0_CONFIG="${CR8_0_CONFIG:-rdk-rzv2h:ipcc-raw-cr8_0-sci4}"

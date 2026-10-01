@@ -131,7 +131,7 @@ case "${cmd}" in
 		echo "Freeing probe, then opening CR8-1 RTT bridge on 127.0.0.1:19021 ..."
 		echo "Leave this running; connect a client with: telnet 127.0.0.1 19021"
 		preflight_probe_free || exit 1
-		exec "${JLINKEXE}" -select "usb=${JLINK_SERIAL}" -device "${DEV_CR8_1}" \
+		exec "${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${DEV_CR8_1}" \
 			-if SWD -speed auto -AutoConnect 1 -CommandFile "${RTT_JLINK}"
 		;;
 
