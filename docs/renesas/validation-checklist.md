@@ -143,10 +143,16 @@ For each supported peripheral instance, verify in order:
 ### C.4 P94 Button TINT Retest
 
 The 2026-10-01 `rdk-rzv2h:nsh-leds` fix uses GPIO/TINT source GPIOINT68.
-Build/source review is complete; target checks below remain open.
+Build/source review and the INTR8SEL address correction are complete.
+[User confirmation on 2026-10-01](gpio-button-interrupt-validation.md) records
+that the external interrupt works after the CR8-0 hardware retest; detailed
+checks below remain open.
 
-- [ ] Record the loaded ELF SHA-256 and confirm boot logs report `P94 external interrupt (TINT) attached`.
+- [x] User confirmed the reported P94 external-interrupt defect is fixed in `nsh-leds`.
+
+- [x] Record the loaded ELF SHA-256 and confirm boot logs report `P94 external interrupt (TINT) attached` — passed (user-confirmed).
 - [ ] After attachment, verify P94 has PM=`01` (input), PMC=`0` (GPIO), and ISEL29_H bit 0=`1` at `0x10412d4c`.
+- [ ] Confirm `INTR8SEL0` is accessed at `0x10400140` and capture the selected TINT route and GIC state.
 - [ ] Press/release repeatedly: each debounced falling-edge press reaches the callback and toggles LED0/PB4; release alone does not toggle it. Record logs and register evidence before marking PASS.
 
 ---

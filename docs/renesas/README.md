@@ -30,6 +30,7 @@ Each doc carries its own `**Date:**` header; trust that over this index.
 | Doc | Use it for |
 |-----|-----------|
 | [port-status-nuttx.md](./port-status-nuttx.md) | Per-driver NuttX status and evidence tier (authoritative) |
+| [gpio-button-interrupt-validation.md](./gpio-button-interrupt-validation.md) | 2026-10-01 CR8-0 `nsh-leds` P94 external-interrupt confirmation, fixes, and open evidence gates |
 | [port-status-px4-hal.md](./port-status-px4-hal.md) | PX4 HAL integration status per peripheral (authoritative) |
 | [px4-nuttx-rzv2h-sih-transcript.txt](./px4-nuttx-rzv2h-sih-transcript.txt) | Archived 2026-07-30 on-target SIH transcript (evidence) |
 
