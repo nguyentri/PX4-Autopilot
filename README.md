@@ -125,7 +125,7 @@ Required: Linux/macOS host, ARM GCC 9+ (`arm-none-eabi-gcc` on `PATH`), CMake
 
 Renesas builds validate that the custom NuttX submodules track:
 
-- `platforms/nuttx/NuttX/nuttx` → `https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx_px4.git`, branch `main`
+- `platforms/nuttx/NuttX/nuttx` → `https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx_px4.git`, branch `nuttx_ra_rzv`
 - `platforms/nuttx/NuttX/apps` → `https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx-apps.git`, branch `main`
 
 The `renesas_rdk-rzv2h_default` target is CR8-only — no CA55/Linux, SD, or

@@ -22,7 +22,7 @@ focus here.
 | Register map (CMSIS-SVD) | `rzv2h.svd` (repo root) |
 | Plans / agent reports | `plans/`, `plans/reports/` |
 
-Both NuttX submodules track the OneKiwiTech GitLab forks (branch `main`).
+Both NuttX submodules track the OneKiwiTech GitLab forks: `nuttx` on branch `nuttx_ra_rzv`, `apps` on `main`.
 Commit driver changes inside the submodule first, then bump the pointer.
 
 **Upstream content you can ignore** (stock PX4/NuttX files, do not edit for port work):
