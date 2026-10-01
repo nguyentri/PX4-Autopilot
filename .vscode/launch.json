@@ -26,7 +26,6 @@
             "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
             "serverArgs": ["-speed", "auto"],
             "device": "R9A09G057H44_R8_0",
-            "serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             // Volatile RAM load + core-local start. NO monitor reset: the peer
             // CR8-1 image is resident and a reset is SoC-wide (see loadstart.gdb).
@@ -59,7 +58,6 @@
             "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
             "serverArgs": ["-speed", "auto"],
             "device": "R9A09G057H44_R8_1",
-            "serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             // Same volatile RAM load, NO monitor reset (peer CR8-0 resident).
             "overrideLaunchCommands": [
@@ -102,7 +100,6 @@
             "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
             "serverArgs": ["-speed", "auto"],
             "device": "R9A09G057H44_R8_0",
-            "serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             // preLaunchTask loads + verifies BOTH cores and frees the probe;
             // then attach to the already-running CR8-0 (no load, no reset).
@@ -131,7 +128,6 @@
             "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
             "serverArgs": ["-speed", "auto"],
             "device": "R9A09G057H44_R8_1",
-            "serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             "preLaunchTask": "rzv2h-ipc-load-both",
             "overrideAttachCommands": [
@@ -146,6 +142,51 @@
                 "decoders": [
                     {
                         "label": "CR8-1 NSH",
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            },
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        },
+        {
+            "name": "IPC RZV2H — load BOTH (CR8-0 RTT), attach CR8-0 (RTT)",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0.elf",
+            "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
+            "request": "attach",
+            "type": "cortex-debug",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "svdFile": "${workspaceRoot}/rzv2h.svd",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "serverArgs": ["-speed", "auto"],
+            "device": "R9A09G057H44_R8_0",
+            "showDevDebugOutput": "parsed",
+            // Path A: drive the INITIATOR (CR8-0) over RTT with one probe.
+            // preLaunchTask loads the CR8-0 RTT-console build + the CR8-1
+            // responder, then attach to the already-running CR8-0 (no load, no
+            // reset). CR8-1 boots headless and auto-echoes on /dev/ipcc1.
+            // On this CR8-0 prompt run:
+            //   ipctest --recover -d /dev/ipcc1
+            //   ipctest --ping    -d /dev/ipcc1 -n 100 -s 64
+            "preLaunchTask": "rzv2h-ipc-load-both-cr8_0-rtt",
+            "overrideAttachCommands": [
+                "monitor halt"
+            ],
+            "overrideResetCommands": [
+                "monitor halt"
+            ],
+            // CR8-0 NSH console over SEGGER RTT; control block at 0x081A0000.
+            "rttConfig": {
+                "enabled": true,
+                "address": "0x081A0000",
+                "decoders": [
+                    {
+                        "label": "CR8-0 NSH",
                         "port": 0,
                         "type": "console"
                     }
@@ -172,7 +213,6 @@
                 "-speed", "15000"
             ],
             "device": "R9A09G057H44_R8_0",
-            //"serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             "overrideLaunchCommands": [
                 "monitor halt",
@@ -217,7 +257,6 @@
                 "-speed", "15000"
             ],
             "device": "R9A09G057H44_R8_0",
-            "serialNumber": "${input:rzv2hJlinkSerial}",
             "showDevDebugOutput": "parsed",
             "overrideLaunchCommands": [
                 "monitor halt",

@@ -1,6 +1,6 @@
 # Code Standards & Conventions
 
-**Date:** 2026-07-11  
+**Date:** 2026-07-11
 **Status:** Phase 2 (Workflow Enablement)
 
 This document defines coding conventions for the RDK-RZ/V2H port. Standards diverge between PX4 code and the NuttX submodule; follow the section matching your target directory.
@@ -11,8 +11,8 @@ This document defines coding conventions for the RDK-RZ/V2H port. Standards dive
 
 ### 1.1 PX4 Code (src/, boards/, platforms/nuttx/src/)
 
-**Style:** PX4 AStyle (Linux variant)  
-**Configuration:** `Tools/astyle/astylerc`  
+**Style:** PX4 AStyle (Linux variant)
+**Configuration:** `Tools/astyle/astylerc`
 **Tool:** `astyle` (or `Tools/astyle/fix_code_style.sh`)
 
 **Rules:**
@@ -32,7 +32,7 @@ This document defines coding conventions for the RDK-RZ/V2H port. Standards dive
 
 ### 1.2 NuttX Submodule (platforms/nuttx/NuttX/nuttx/**)
 
-**Style:** NuttX K&R  
+**Style:** NuttX K&R
 **Rules:**
 - Indent: 8-column spaces (not tabs, despite astylerc at top level)
 - Line length: ≤120 columns
@@ -161,7 +161,7 @@ Per project rule: do NOT use `chore` or `docs` for `.claude/` directory changes 
 
 ## 4. File Naming
 
-**Python, Go, Rust:** Follow language convention (snake_case)  
+**Python, Go, Rust:** Follow language convention (snake_case)
 **C/C++:** Follow local pattern; prefer kebab-case for new modules
 
 **New Files:**
