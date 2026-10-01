@@ -1,6 +1,6 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-08-02
+**Date:** 2026-10-01
 **Status:** Foundational; FSP pin extraction reconciled, target electrical validation pending
 **FSP software configuration source:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
 
@@ -48,8 +48,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P75** | 7.5 | AF=1 | RSCI6 RXD | Input | Noise-filter | B01 | rzv_serial.c | RC RX |
 | **P76** | 7.6 | AF=1 | RSCI7 SDA (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | BMP280 SDA |
 | **P77** | 7.7 | AF=1 | RSCI7 SCL (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | BMP280 SCL |
-| **P82** | 8.2 | AF=6 | RSCI9 TXD | Output | None | B01 | rzv_serial.c | GPS TX |
-| **P83** | 8.3 | AF=6 | RSCI9 RXD | Input | None | B01 | rzv_serial.c | GPS RX |
+| **P82** | 8.2 | AF=6 | RSCI9 TXD | Output | None | B01 | rzv_serial.c | GPS TX; CAN2 CTX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
+| **P83** | 8.3 | AF=6 | RSCI9 RXD | Input | None | B01 | rzv_serial.c | GPS RX; CAN2 CRX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
 | **P90** | 9.0 | AF=1 | RSPI0 MOSI | Output | None | B11 | rzv_spi.c | MPU9250 MOSI |
 | **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | MPU9250 MISO |
 | **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | MPU9250 SCK |
@@ -137,7 +137,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P4 | 0–7 | Unused | Available for GPIO expansion |
 | P5 | 1, 4, 6–7 | Unused | P50 interrupt, P52 safety input, P53 PWM |
 | P6 | 0–7 | Unused | Available for expansion |
-| P8 | 0–1, 4–7 | Unused | P82, P83 reserved (UART) |
+| P8 | 0–1, 4–7 | Unused in PX4 images | P80/P81 = CAN1 (CANFD CH0, `canfd*` NuttX configs); P82/P83 = SCI9 GPS or CAN2 (CANFD CH1) |
 | P9 | 5 | Unused | P90–94 SPI0, P96 PWM, P97 buzzer |
 | PA | 0–3, 5 | Unused | PA4/PA7 PWM; PA6 safety LED |
 

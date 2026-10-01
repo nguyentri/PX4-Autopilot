@@ -28,16 +28,12 @@ Build: `platforms/nuttx/NuttX/build.sh canfd`. The configs enable
 | Device | Kconfig | Driver channel | RDK label | Pins (PSEL=5) |
 |--------|---------|----------------|-----------|---------------|
 | `/dev/can0` | `CONFIG_RZV_CANFD0` | 0 | CAN1 | P80 TX (CTX0), P81 RX (CRX0) |
-| `/dev/can1` | `CONFIG_RZV_CANFD1` | 1 | CAN2 | P86 TX (**CTX3**), P87 RX (**CRX3**) |
+| `/dev/can1` | `CONFIG_RZV_CANFD1` | 1 | CAN2 | P82 TX (CTX1), P83 RX (CRX1) |
 
-**Open:** chip pin mux (`refs/rzv2h_scripts/rzv2h_pin_mapping.csv`, PSEL=5)
-puts CTX3/CRX3 on P86/P87 and CTX1/CRX1 on P82/P83, but
-`g_rzv_canfd1_config` uses `.channel = 1` with `RZV_ELC_CANFD_CH1_*`. Either
-the pins should be P82/P83, or `/dev/can1` should drive channel 3. The RDK
-`pin_data.c` (`refs/px4-freertos-posix-renesas-fsp/rzv_gen/`) configures no
-CAN pins, and the EVK `can_fd` samples are a different board, so only the RDK
-schematic (which SoC pins reach the "CAN2" connector) can settle it. Internal
-loopback does not exercise the pins.
+P82/P83 are shared with SCI9 (GPS M10). `rzv2h_canfd.c` stops the build with
+`#error` if `CONFIG_RZV_CANFD1` and `CONFIG_RZV_SCI9` are both set. CAN2 →
+P82/P83 is confirmed from the RDK schematic (2026-10-01); before that the board
+used P86/P87, which carry CTX3/CRX3 (channel 3), not channel 1.
 
 ## Register Block
 
@@ -88,7 +84,7 @@ No DMA path exists.
 |------|-------|
 | CAN0 internal loopback, 4 frames, IDs/DLCs/payloads match via `/dev/can0` | PASS, J-Link/GDB + RTT, 2026-08-09 |
 | External bus (transceiver, termination, analyzer) | open |
-| CAN1 (`/dev/can1`), including the channel/pin mismatch above | open |
+| CAN1 (`/dev/can1`) on P82/P83, external bus | open (pins fixed 2026-10-01, build-clean) |
 | Interrupt-driven TX/RX completion | open |
 | PX4 `src/drivers/can/` / UAVCAN integration | planned ([port-status-px4-hal.md](../port-status-px4-hal.md)) |
 
