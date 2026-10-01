@@ -1,7 +1,7 @@
 # Code Standards & Conventions
 
-**Date:** 2026-07-11
-**Status:** Phase 2 (Workflow Enablement)
+**Date:** 2026-10-01
+**Status:** Active
 
 This document defines coding conventions for the RDK-RZ/V2H port. Standards diverge between PX4 code and the NuttX submodule; follow the section matching your target directory.
 
@@ -32,17 +32,18 @@ This document defines coding conventions for the RDK-RZ/V2H port. Standards dive
 
 ### 1.2 NuttX Submodule (platforms/nuttx/NuttX/nuttx/**)
 
-**Style:** NuttX K&R
+**Style:** NuttX coding standard (`Documentation/contributing/coding_style.rst` in the submodule)
 **Rules:**
-- Indent: 8-column spaces (not tabs, despite astylerc at top level)
-- Line length: ≤120 columns
-- Comments: /* */ style; no // for multi-line blocks
-- Naming: snake_case for functions/variables
+- Indent: 2 spaces per level, no tabs; braces on their own line, indented with the body
+- Line length: 78 columns target (nxstyle warns beyond)
+- Comments: `/* */` only, never `//`
+- Naming: snake_case functions/variables, `rzv_` prefix for arch symbols, UPPER_CASE macros
+- Section banners (`/****...` Included Files / Pre-processor Definitions / Private Functions / Public Functions) as in existing `rzv_*.c`
 
-**Rationale:** NuttX upstream maintains strict K&R enforcement. Use NuttX tools for validation:
+**Check before committing in the submodule:**
 ```bash
 cd platforms/nuttx/NuttX/nuttx
-./tools/nxstyle.c --check arch/arm/src/rzv/rzv_<driver>.c
+./tools/checkpatch.sh -f arch/arm/src/rzv/rzv_<driver>.c   # builds and runs nxstyle
 ```
 
 ---
@@ -217,9 +218,9 @@ Do not use routinely; commit message will flag style violations for review.
 - `.editorconfig` — line length, endings, indentation defaults
 - `Tools/astyle/astylerc` — PX4 AStyle rules (C/C++)
 - `platforms/nuttx/NuttX/nuttx/.nxstyle` — NuttX K&R rules
-- Phase 1 docs: [System Architecture](./system-architecture.md)
-- Phase 2 docs: [Design Guidelines](./design-guidelines.md), [Porting Playbook](./renesas/porting-playbook.md)
+- Architecture: [System Architecture](./system-architecture.md)
+- Driver work: [Design Guidelines](./design-guidelines.md), [Porting Playbook](./renesas/porting-playbook.md)
 
 ---
 
-**Maintenance:** Update this document when astylerc or project rules change; version it with the next phase (Phase 3 +).
+**Maintenance:** Update this document when astylerc or project rules change; keep the date header current.

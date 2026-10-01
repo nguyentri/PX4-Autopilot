@@ -66,7 +66,7 @@ Fresh SIH builds run the source and artifact contracts automatically
 of falling through to a misleading success path. Exact load/cold-cycle provenance, SCI4 transport capture,
 physical pin-safety measurements, transcript coverage gaps, and the 10-minute
 resource/rate soak remain pending. See the
-[archived target transcript](px4_nuttx_rzv2h_sil.txt); its historical
+[archived target transcript](px4-nuttx-rzv2h-sih-transcript.txt); its historical
 filename says `sil`, but the image/runtime variant is SIH. The goal-plan
 evidence audit records the detailed provenance limits for the next authorized
 target session.

@@ -1,7 +1,7 @@
 # RDK-RZ/V2H Codebase Summary
 
-**Date:** 2026-07-11
-**Status:** Foundational (Phase 1)
+**Date:** 2026-10-01
+**Status:** Active
 
 Directory-by-directory tour focused on RZ/V2H: what lives where, driver inventory, board configs, and reference sources.
 
@@ -130,43 +130,26 @@ Directory-by-directory tour focused on RZ/V2H: what lives where, driver inventor
 
 ```
 rdk-rzv2h/
-├── configs/          (21 Kconfig profiles, one per test case)
-│   ├── adc/          → ADC driver test
-│   ├── canfd/        → Single CAN-FD channel
-│   ├── canfd-dual/   → Dual CAN-FD channels
-│   ├── ether/        → Ethernet + PHY
-│   ├── gtm/          → GTM timer test
-│   ├── hil-full/     → Hardware-in-loop full feature set
-│   ├── hil-spi-loopback/
-│   ├── hil-uart-loopback/
-│   ├── ipcc/         → IPCC IPC test (CR8-0 + CR8-1)
-│   ├── ipcc-multi/   → Stress test (many IPC messages)
-│   ├── nsh/          → NuttX shell (basic)
-│   ├── nsh-cm33/     → Shell on CM33 core
-│   ├── nsh-cr8_1/    → Shell on CR8-1 core
-│   ├── nsh-leds/     → LED blink test
-│   ├── nsh-scif/     → Shell via SCIF UART
-│   ├── pwm/          → PWM output test
-│   ├── pwm-oneshot/  → PWM one-shot mode
-│   ├── sci-spi-loopback/
-│   ├── sdhi/         → SDHI SD card test
-│   ├── spi-loopback/
-│   └── wdt/          → Watchdog timer test
-│
-├── include/          (board-specific headers)
-│   ├── board.h       (GPIO/UART/SPI assignments for this board)
-│   └── ...
-│
-├── scripts/          (linker scripts per core)
-│   ├── rdk-rzv2h_cr8_0.ld
-│   ├── rdk-rzv2h_cr8_1.ld
-│   ├── rdk-rzv2h_cm33.ld
-│   └── ...
-│
-└── src/              (board initialization code)
-    ├── board.c       (board_boot_config, GPIO setup)
-    └── ...
+├── configs/<name>/defconfig   one NuttX profile per bring-up/test case
+├── include/board.h            clocks, pins, LEDs/buttons for this board
+├── scripts/                   rdk-rzv2h_{cr8_0,cr8_1,cm33}.ld, Make.defs,
+│                              rzv2h-cr8-split-image-postbuild.sh
+└── src/                       rzv2h_bringup.c, rzv2h_appinit.c, rzv2h_boot.c,
+                               per-peripheral glue rzv2h_<periph>.c
 ```
+
+List configs with `platforms/nuttx/NuttX/build.sh --list`. Common ones:
+
+| Config | Purpose |
+|--------|---------|
+| `nsh-rtt` | CR8-0 NSH over SEGGER RTT (default bring-up shell) |
+| `nsh`, `nsh-scif` | NSH over SCI4 / SCIF UART |
+| `nsh-cr8_1`, `nsh-cm33` | NSH on the IO cores |
+| `ipcc`, `ipcc-multi`, `ipcc-raw-*` | Multi-core IPC (IPCC char dev / raw rings) per core |
+| `adc`, `canfd`, `canfd-dual`, `ether`, `gtm`, `pwm`, `pwm-oneshot`, `sdhi`, `wdt`, `dmac-memcpy` | Single-peripheral tests |
+| `spi-loopback`, `sci-spi-loopback`, `hil-*` | Loopback / HIL harnesses |
+
+Build one: `platforms/nuttx/NuttX/build.sh <config>`.
 
 ### Config File Structure
 
@@ -248,53 +231,30 @@ Four example peripheral drivers:
 
 ## 5. Plans & Historical Records
 
-**Root:** `plans/`
+**Root:** `plans/` (timestamped dirs `YYMMDD-HHmm-<slug>/`, reports in `plans/reports/`)
 
-### Canonical Plan (Go-Forward)
-
-- `rzv2h_nuttx_px4_unified_port_plan.md` — master status & roadmap
-
-### Phase-Based Plan Dirs
-
-- `260423-1524-rzv2h-driver-review-audit/` — driver audit (historical)
-- `260425-1150-rzv2h-port-v06/` — port v0.6 milestones (historical)
-- `260514-2348-rzv2h-esc-pwm-motor-control-audit-fix/` — PWM audit (historical)
-- `260520-0000-rzv2h-px4-intercore-board-integration/` — IPC/board integration (historical)
-- `260711-0834-rzv2h-port-docs-init/` — **This Phase 1** (current)
-
-### Loose Plans (Superseded, Reference Only)
-
-- `px4_nuttx_rdk-rzv2h_porting_plan.md`
-- `rzv2h_cr8_ipcc_ipc_openamp_impl.md`
-- `rzv2h_ether_nuttx_audit_fix.md`
-- `rzv2h_esc_pwm_motor_control_audit_fix.md`
-- `rzv2h_startup_irq_tick_regmap_audit_fix.md`
-- `rzv2h_uart_shell_gpio_audit_fix.md`
-- `rzv2h_px4_intercore_board_integration.md`
-
-**Note:** These older plans remain for historical audit trail. New work references `rzv2h_nuttx_px4_unified_port_plan.md` and documented specs in `docs/`.
+- **Active plan:** `plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md`
+- **Superseded master:** `plans/rzv2h_nuttx_px4_unified_port_plan.md` (2026-07-26; history only)
+- Loose `plans/rzv2h_*.md` files and older dated dirs are historical audit trail.
+- Lessons and incident notes: `docs/journals/`.
 
 ---
 
 ## 6. Driver Inventory Summary
 
-**30+ drivers ported to NuttX for RZ/V2H:**
-
-**Core (7):** clock, IRQ, GPIO, serial, I2C, SPI, timers
-**Subsystems (23+):** GTM, DMA, CAN-FD, SDHI, XSPI, ADC, watchdog, Ethernet, IPC/IPCC, MHU, OpenAMP, RPMsg, safety interlock
-
-**Validation Status:** Compile-complete; integration tests per config (ipcc, ether, pwm, adc, canfd, sdhi, etc.)
+Per-driver status and evidence tier live only in
+[renesas/port-status-nuttx.md](./renesas/port-status-nuttx.md) (NuttX) and
+[renesas/port-status-px4-hal.md](./renesas/port-status-px4-hal.md) (PX4 HAL).
 
 ---
 
 ## 7. Key Build Artifacts
 
-| Target | Output | Location |
-|--------|--------|----------|
-| `renesas_rdk-rzv2h_default` | px4 (CR8-0 ELF) | `build/renesas_rdk-rzv2h_default/bin/px4` |
-| CR8-1 firmware (if dual-core) | px4io_bridge (CR8-1 ELF) | `build/.../px4io_bridge` |
-| NuttX kernel | libnuttx.a | `build/.../nuttx/libnuttx.a` |
-| Combined image (XSPI) | px4.bin | `build/.../px4.bin` (1.34 MB typical) |
+| Build | Output |
+|-------|--------|
+| `./build.sh renesas_rdk-rzv2h_<variant>` | `build/renesas_rdk-rzv2h_<variant>/renesas_rdk-rzv2h_<variant>.elf` (+ `.px4`, `.bin`) |
+| `./build.sh renesas_rdk-rzv2h-io-{cr8_1,cm33}_default` | `build/<target>/<target>.elf` |
+| `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `nuttx.bin`, `nuttx.hex`, `System.map` |
 
 ---
 
@@ -304,7 +264,7 @@ Four example peripheral drivers:
 - **System Architecture:** [system-architecture.md](./system-architecture.md)
 - **Hardware Details:** [renesas/hardware.md](./renesas/hardware.md)
 - **Pinmap Authority:** [renesas/pinmap.md](./renesas/pinmap.md)
-- **Canonical Plan:** [plans/rzv2h_nuttx_px4_unified_port_plan.md](../plans/rzv2h_nuttx_px4_unified_port_plan.md)
+- **Active Plan:** [plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md](../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
 
 ---
 
@@ -336,5 +296,5 @@ grep -r "register\|bit\|mask" refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/ |
 
 - NuttX submodule at `platforms/nuttx/NuttX/nuttx/` tracks upstream but is RZ/V2H-patched.
 - PX4 boards under `boards/renesas/` are independent of NuttX board defs; they reference NuttX via CMake includes.
-- Plans folder is semi-historical; check dates and status headers. Canonical state is `rzv2h_nuttx_px4_unified_port_plan.md`.
-- References in `refs/` are read-only; they are the baseline for audits and validation.
+- Plans folder is semi-historical; check dates and status headers. Active plan: `plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md`.
+- References in `refs/` are read-only, local-only (gitignored), and the baseline for audits and validation.

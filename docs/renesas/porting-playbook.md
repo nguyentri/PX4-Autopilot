@@ -178,22 +178,27 @@ CONFIG_SYSLOG_TIMESTAMP=y
 
 ## Step 7: Validation Loop
 
-### 7.1 Configure
+### 7.1 Configure + Build
+
+Use `platforms/nuttx/NuttX/build.sh` (runs from any CWD). It does the
+distclean, stale-symlink cleanup, `configure.sh rdk-rzv2h:<config>` and
+`make -j$(nproc)` in one step.
 
 ```bash
 # From the PX4-Autopilot repository root:
-cd platforms/nuttx/NuttX/nuttx
-./tools/configure.sh rdk-rzv2h:<driver>
+platforms/nuttx/NuttX/build.sh --list                    # list configs
+platforms/nuttx/NuttX/build.sh <config> 2>&1 | tee build.log         # clean build
+platforms/nuttx/NuttX/build.sh --no-clean <config> 2>&1 | tee build.log  # incremental
 ```
+
+- Exit status: `0` ok, `1` build failed, `2` bad usage / unknown config.
+- `--no-clean` refuses to run unless the tree was last configured for the
+  same config by `build.sh`; use it in edit-compile loops.
+- Outputs: `platforms/nuttx/NuttX/nuttx/{nuttx,nuttx.bin,nuttx.hex,System.map}`
+  (`nuttx` is the ELF to load with J-Link/GDB).
 
 If the exact config is absent, use the closest board sample in the same NuttX
 tree and document the substitution.
-
-### 7.2 Build
-
-```bash
-make -j$(nproc) 2>&1 | tee build.log
-```
 
 **Fix errors:** undefined references, missing includes, Kconfig syntax.
 

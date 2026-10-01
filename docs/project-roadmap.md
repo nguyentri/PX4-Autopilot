@@ -1,6 +1,6 @@
 # RDK-RZ/V2H Port Roadmap
 
-**Date:** 2026-07-30
+**Date:** 2026-10-01
 
 **Scope:** RDK-RZV2H PX4-on-NuttX, CR8-0 first
 **Canonical plan:** [RDK-RZV2H PX4 NuttX Port Goal Plan](../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
@@ -37,6 +37,10 @@ diagnostics. The bounded SIH transcript adds interactive shell use, one
 GTM7-backed HRT callback test, work-queue execution, and simulated PX4 topics.
 That evidence does not promote physical payload/sensor buses or the integrated
 PX4 HAL.
+Ahead of G11, the raw NuttX IPC demo (`/dev/ipcc1`, CR8-0 ↔ CR8-1) passes
+`ipctest` ping/echo 100/100 on target via RAM load + RTT
+([HIL guide](./renesas/rzv2h-ipc-hil-test-guide.md)); this is NuttX-only and
+does not promote PX4 multicore integration.
 
 ## Engineering Evidence Loop
 

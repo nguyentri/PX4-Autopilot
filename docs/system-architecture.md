@@ -1,6 +1,6 @@
 # RDK-RZ/V2H System Architecture
 
-**Date:** 2026-07-30
+**Date:** 2026-10-01
 **Status:** Source-backed reference; CR8-0 active, multicore deferred
 
 This document summarizes the checked-in RZ/V2H PX4/NuttX architecture. It does
@@ -77,6 +77,15 @@ Build entry points remain the checked-in board targets such as
 `renesas_rdk-rzv2h_core_only`.
 
 ## 6. Build Flow
+
+Two entry points share the same NuttX tree:
+
+- **PX4 image:** `./build.sh <renesas_rdk-rzv2h_*>` (steps below).
+- **NuttX-only image:** `platforms/nuttx/NuttX/build.sh <config>` configures
+  `rdk-rzv2h:<config>` from `nuttx/boards/arm/rzv/rdk-rzv2h/configs/` and
+  builds `nuttx/nuttx` directly; used for driver bring-up and NSH samples.
+
+PX4 image steps:
 
 1. `./build.sh <target>` selects the board definition.
 2. PX4 CMake resolves the Renesas board sources.

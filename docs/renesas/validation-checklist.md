@@ -1,6 +1,6 @@
 # Per-Driver Validation Checklist
 
-**Date:** 2026-08-09
+**Date:** 2026-10-01
 **Usage:** Copy and complete this checklist per driver during bring-up; link completed version to [port-status-nuttx.md](port-status-nuttx.md) Validation Report column.
 
 ---
@@ -137,6 +137,17 @@ For each supported peripheral instance, verify in order:
 - [ ] Peripheral-level interrupt enable (e.g., SPI TXE flag) separate from CPU-level (GIC) enable.
 
 **Failure Example:** Forgetting `up_enable_irq()` → ISR never fires even on valid peripheral event.
+
+---
+
+### C.4 P94 Button TINT Retest
+
+The 2026-10-01 `rdk-rzv2h:nsh-leds` fix uses GPIO/TINT source GPIOINT68.
+Build/source review is complete; target checks below remain open.
+
+- [ ] Record the loaded ELF SHA-256 and confirm boot logs report `P94 external interrupt (TINT) attached`.
+- [ ] After attachment, verify P94 has PM=`01` (input), PMC=`0` (GPIO), and ISEL29_H bit 0=`1` at `0x10412d4c`.
+- [ ] Press/release repeatedly: each debounced falling-edge press reaches the callback and toggles LED0/PB4; release alone does not toggle it. Record logs and register evidence before marking PASS.
 
 ---
 

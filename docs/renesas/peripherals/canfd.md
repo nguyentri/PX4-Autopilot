@@ -1,152 +1,106 @@
-# CAN-FD Peripheral Specification
+# CAN-FD Peripheral Notes
 
-**Date:** 2026-07-11  
-**Hardware:** Renesas RZ/V2H (R9A09G057H)  
-**Scope:** CAN-FD controller block documentation for driver development.
+**Date:** 2026-10-01
+**Hardware:** Renesas RZ/V2H (R9A09G057H), RDK-RZ/V2H
+**Status:** bounded on-target (CAN0 internal loopback). Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #2.
 
----
-
-## Hardware Block Overview
-
-**Peripheral:** Flexible Data-rate CAN (CAN-FD) controller supporting classical CAN 2.0B and CAN-FD.
-
-**Instances on RDK-RZ/V2H:**
-- CAN0: Channel 0 (primary UAV link)
-- CAN1: Channel 1 (redundant or alternate link)
+Source-verified notes for `rzv_canfd.c`. Facts below are taken from the
+NuttX source; anything not in source is marked open.
 
 ---
 
-## Pin Assignment
+## Files
 
-### CAN0
-- **TXD:** Port 6 Pin 0 (alternate function 2)
-- **RXD:** Port 6 Pin 1 (alternate function 2)
-- **Termination:** 120 Ω pull-up/pull-down on board (verify with schematics).
+| What | Path (under `platforms/nuttx/NuttX/nuttx/`) |
+|------|------|
+| Arch driver | `arch/arm/src/rzv/rzv_canfd.c`, `rzv_canfd.h` |
+| Register defs | `arch/arm/src/rzv/hardware/rzv_canfd.h` |
+| Board glue | `boards/arm/rzv/rdk-rzv2h/src/rzv2h_canfd.c` (`board_canfd_initialize()`, called from `rzv2h_bringup.c`) |
+| Pins | `boards/arm/rzv/rdk-rzv2h/include/board.h` (`BOARD_CANFD{0,1}_{TX,RX}_GPIO`) |
+| Configs | `canfd` (CH0, `/dev/can0`), `canfd-dual` (CH0 + CH1) — SCI4 console |
 
-### CAN1
-- **TXD:** Port 7 Pin 4 (alternate function 2)
-- **RXD:** Port 7 Pin 5 (alternate function 2)
+Build: `platforms/nuttx/NuttX/build.sh canfd`. The configs enable
+`CONFIG_CAN`, `CONFIG_CAN_FD`, `CONFIG_RZV_CANFD`, `CONFIG_RZV_CANFD0`
+(`CONFIG_RZV_CANFD1` in `canfd-dual`) and `apps/examples/can`.
 
-**Verification:** Cross-reference `rzv_pinmap.h` and board defconfig.
+## Device / Channel / Pin Map
 
----
+| Device | Kconfig | Driver channel | RDK label | Pins (PSEL=5) |
+|--------|---------|----------------|-----------|---------------|
+| `/dev/can0` | `CONFIG_RZV_CANFD0` | 0 | CAN1 | P80 TX (CTX0), P81 RX (CRX0) |
+| `/dev/can1` | `CONFIG_RZV_CANFD1` | 1 | CAN2 | P86 TX (**CTX3**), P87 RX (**CRX3**) |
 
-## Clock Source
+**Open:** chip pin mux (`refs/rzv2h_scripts/rzv2h_pin_mapping.csv`, PSEL=5)
+puts CTX3/CRX3 on P86/P87 and CTX1/CRX1 on P82/P83, but
+`g_rzv_canfd1_config` uses `.channel = 1` with `RZV_ELC_CANFD_CH1_*`. Either
+the pins should be P82/P83, or `/dev/can1` should drive channel 3. The RDK
+`pin_data.c` (`refs/px4-freertos-posix-renesas-fsp/rzv_gen/`) configures no
+CAN pins, and the EVK `can_fd` samples are a different board, so only the RDK
+schematic (which SoC pins reach the "CAN2" connector) can settle it. Internal
+loopback does not exercise the pins.
 
-**Peripheral Clock:** CANFD_CLK (from CPG module).
+## Register Block
 
-**Derivation:**
-- PCLK base: 100 MHz (typical)
-- CANFD divisor: Set via CPG CK_ON register
-- Final frequency: PCLK / divisor (check datasheet Table X for supported divisors)
+- Base `RZV_CANFD_BASE` = `0x12440000` (one controller, per-channel CFDC
+  blocks at stride `0x10`, global registers from `0x80`).
+- TX buffer access window is `BASE + 0x10000` (corrected 2026-08-09).
+- Decode with `platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd`.
 
-**Bitrate Calculation:**
-```
-Bitrate = CANFD_CLK / (1 + (TSEG1 + TSEG2))
-```
+## Clock and Bit Timing
 
-- **250 kbps:** CANFD_CLK = 50 MHz, TSEG1 = 8, TSEG2 = 3
-- **500 kbps:** CANFD_CLK = 100 MHz, TSEG1 = 8, TSEG2 = 3
-- **1 Mbps:** CANFD_CLK = 100 MHz, TSEG1 = 4, TSEG2 = 1
+- `rzv_clock_enable(RZV_CPG_CLK_CANFD)` + `rzv_module_unreset()` in the driver.
+- Constants assume CANFDCLK = 80 MHz (not read back from CPG):
 
----
+| Phase | Bitrate | BRP | TSEG1 | TSEG2 | SJW | Tq per bit |
+|-------|---------|-----|-------|-------|-----|------------|
+| Nominal | 400 kbit/s | 2 | 74 | 25 | 25 | 100 (1 + 74 + 25) |
+| Data | 3.2 Mbit/s | 1 | 16 | 8 | 8 | 25 (1 + 16 + 8) |
 
-## Interrupt Mapping
+Bitrate = CANFDCLK / (BRP × (1 + TSEG1 + TSEG2)). Registers hold field − 1.
+Bitrates are compile-time constants; there is no runtime bitrate ioctl.
 
-**Interrupt Controller:** ICU (Interrupt Control Unit)
+## Interrupts
 
-| Event | ICU IRQ | Priority | Handler |
-|-------|---------|----------|---------|
-| CAN0 RX | 212 | 4 | `rzv_canfd_rx_isr(CAN0)` |
-| CAN0 TX | 213 | 4 | `rzv_canfd_tx_isr(CAN0)` |
-| CAN0 Error | 214 | 3 | `rzv_canfd_err_isr(CAN0)` |
-| CAN1 RX | 215 | 4 | `rzv_canfd_rx_isr(CAN1)` |
-| CAN1 TX | 216 | 4 | `rzv_canfd_tx_isr(CAN1)` |
-| CAN1 Error | 217 | 3 | `rzv_canfd_err_isr(CAN1)` |
+All CAN-FD events are **selectable ICU routes** attached with
+`rzv_icu_attach()`; there are no fixed IRQ numbers.
 
-(IRQ numbers from UM section Interrupt Controller; verify against `rzv_irq.h`.)
+| Event | ELC source |
+|-------|------------|
+| Global error (shared) | `RZV_ELC_CANFD_GLERR` |
+| RX FIFO (shared) | `RZV_ELC_CANFD_RXFINT` |
+| Per-channel TX / error | `RZV_ELC_CANFD_CHn_TRX`, `RZV_ELC_CANFD_CHn_ERR` |
 
----
+Loopback completion is serviced synchronously in the driver because late
+selectable-ICU route writes did not latch on target. Interrupt-driven
+completion is an open gate.
 
-## DMAC Channel Assignment
+No DMA path exists.
 
-**If DMA-accelerated RX/TX enabled:**
+## Modes
 
-| Channel | Direction | Peripheral | Example |
-|---------|-----------|------------|---------|
-| 4 | CAN0 RX → RAM | CAN0 RX buffer | Linked descriptor chain |
-| 5 | RAM → CAN0 TX | CAN0 TX buffer | Linked descriptor chain |
+- Boot default: internal loopback (`.loopback = true`; CTME=1, INT_LOOP).
+- Toggle with the private ioctl `CANIOC_RZV_LOOPBACK`
+  (`_CANIOC(CAN_FIRST + CAN_NCMDS + 0)`).
 
-*Note:* Standard polling also supported; DMA optional for high-throughput scenarios.
+## Evidence
 
----
+| Item | State |
+|------|-------|
+| CAN0 internal loopback, 4 frames, IDs/DLCs/payloads match via `/dev/can0` | PASS, J-Link/GDB + RTT, 2026-08-09 |
+| External bus (transceiver, termination, analyzer) | open |
+| CAN1 (`/dev/can1`), including the channel/pin mismatch above | open |
+| Interrupt-driven TX/RX completion | open |
+| PX4 `src/drivers/can/` / UAVCAN integration | planned ([port-status-px4-hal.md](../port-status-px4-hal.md)) |
 
 ## FSP Reference
 
-Use the core-matched `can_fd` EVK project described in
-[reference-source-map.md](../reference-source-map.md):
+Core-matched EVK sample: `refs/rzv2h_evk/can_fd/can_fd_rzv2h_evk_<core>_ep/`
+(`<core>` = `cm33`, `cr8_0`, `cr8_1`). EVK board: use for IP behavior only,
+not pins. Driver `rzv/fsp/src/r_canfd/`; config
+in `configuration.xml`, `rzv_cfg/fsp_cfg/r_canfd_cfg.h`, `rzv_gen/`. See
+[reference-source-map.md](../reference-source-map.md).
 
-- **Project:** `refs/rzv2h_evk/can_fd/can_fd_rzv2h_evk_<core>_ep/e2studio/`
-- **Driver:** `rzv/fsp/src/r_canfd/r_canfd.c`
-- **Configuration:** `configuration.xml`, `rzv_cfg/fsp_cfg/r_canfd_cfg.h`
-- **Generated integration:** `rzv_gen/{hal_data,vector_data,pin_data}.*`
-- **Datasheet:** Cross-reference register definitions with the Renesas CAN-FD section.
+## Related
 
-Select `<core>` as `cm33`, `cr8_0`, or `cr8_1`; generated vectors and
-configuration are core-specific evidence.
-
----
-
-## NuttX Driver
-
-**File:** `arch/arm/src/rzv/rzv_canfd.c`  
-**Header:** `arch/arm/src/rzv/hardware/rzv_canfd.h`
-
-**Initialization:**
-```c
-canfd_initialize(CAN0);  /* Register /dev/can0 */
-canfd_initialize(CAN1);  /* Register /dev/can1 */
-```
-
-**Sample Configuration:**
-- `configs/canfd/defconfig` — Single CAN0 enabled.
-- `configs/canfd-dual/defconfig` — Both CAN0 and CAN1 enabled.
-
----
-
-## Register Map
-
-**Base Addresses (from UM):**
-- CAN0: 0x110A0000
-- CAN1: 0x110B0000
-
-**Key Registers:**
-- **MCR** (Mode Control Register): Set CAN mode (init, test, listen-only).
-- **CTLR** (Control Register): Enable TX, RX, interrupts.
-- **TXFIFOCR** (TX FIFO Control): Manage TX queue depth.
-- **RXFIFOCR** (RX FIFO Control): Manage RX queue depth.
-- **GAFLECTR** (Global Acceptance Filter List Entry Control): Message filtering.
-- **CFCCR** (CAN-FD Composite Frame Config Control): FD-specific (data rate phase).
-
-**Cache Coherency:** If using DMA, flush TX buffer before enabling TX DMA; invalidate RX buffer after DMA complete (ARM dcache operations).
-
----
-
-## Driver Validation
-
-**Checklist:** [Validation Checklist](../validation-checklist.md)
-
-**Key Tests:**
-- Loopback: CAN0 TXD → RXD (internal); send frame, verify RX callback.
-- Dual-channel: Send CAN0 frame, verify isolated from CAN1 RX.
-- Bitrate sweep: 250k, 500k, 1M baud rates; measure timing with CAN analyzer.
-- Stress: 10k frames at 1 Mbps without drop.
-
-**Test Fixture:** `configs/canfd/` and `configs/canfd-dual/` board configs + loopback cable.
-
----
-
-## Related Docs
-
-- [Port Status Matrix](../port-status-nuttx.md) — CAN-FD driver row.
-- [System Architecture](../../system-architecture.md) — CAN role in flight control loop.
+- [validation-checklist.md](../validation-checklist.md)
+- [pinmap.md](../pinmap.md)

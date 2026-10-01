@@ -1,6 +1,6 @@
 # RZ/V2H Reference Source Map
 
-**Date:** 2026-08-09
+**Date:** 2026-10-01
 **Status:** Canonical input map for driver porting and `firmware:audit`
 **Scope:** RZ/V2H EVK CM33, CR8-0, and CR8-1 examples plus explicitly bounded fallback trees
 
@@ -26,6 +26,15 @@ For a target core, use evidence in this order:
 contract when the non-generated project files exist. A CMSIS header proves a
 register layout; it does not prove driver lifecycle, pins, clocks, or IRQ
 routing. Build success and example presence are not target validation.
+
+**Board boundary (EVK ≠ RDK):** `refs/rzv2h_evk/` targets the Renesas
+**EVK** board. Its `pin_data.c`, connector, and transceiver choices are not
+evidence for the **RDK-RZ/V2H** board this port runs on. Use EVK projects for
+IP behavior (registers, clocks, ELC/IRQ, driver lifecycle) only. RDK pin
+ownership comes from `refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c`
+plus the RDK schematic; if the RDK `pin_data.c` does not configure a pin
+(e.g. CAN, ADC), the schematic is the only authority. Chip-level pin
+functions per PSEL: `refs/rzv2h_scripts/rzv2h_pin_mapping.csv`.
 
 ## Core path convention
 

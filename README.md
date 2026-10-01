@@ -17,7 +17,7 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DShot** — Build-Clean (opt-in TX-only DShot600 via GPT+DMAC; hardware scope proof pending)
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Core-Only** — Build-Clean (diagnostics-only rollback profile with RTT/HRT/params/uORB and bounded PWM bench test)
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** — On-Target Bounded Demo; simulated sensors (accel/gyro/baro/mag/GPS), HIL sensors, `pwm_out_sim`; GTM7 HRT callback pass; cold-cycle, pin-safety, and soak gates pending
-- ⏸ **Renesas RDK-RZV2H IO CR8_1** — Build Only (raw IPC / IPCC build-clean with distinct RTT console and ABI-v2 sequence recovery; target proof pending)
+- ⏸ **Renesas RDK-RZV2H IO CR8_1** — Build Only (raw IPC / IPCC build-clean with distinct RTT console and ABI-v2 sequence recovery; NuttX-only raw IPC demo passes 100/100 on target; this PX4 image is not target-proven)
 - ⏸ **Renesas RDK-RZV2H IO CM33** — Build Only (raw IPC / IPCC build-clean with secure SRAM `0x08002800` vectors, non-secure MHU `0x50480000`; target boot/IPC proof pending)
 
 ### Build Targets
@@ -42,33 +42,13 @@ renesas_rdk-rzv2h_sih
 
 ## RZ/V2H Porting Status Summary
 
-The RDK-RZ/V2H porting effort focuses on Cortex-R8 Core 0 as the primary flight stack, with Cortex-R8 Core 1 and Cortex-M33 in multi-core IPC roles.
+Cortex-R8 core 0 runs the PX4 flight stack; CR8-1 and CM33 are IO cores over IPC.
 
-### NuttX Driver Matrix (42 Drivers)
+- **NuttX drivers:** a handful have bounded on-target evidence (CR8 startup/IRQ, SCI4 shell, GTM/HRT, DMAC memcpy, CAN-FD and SPI loopback, raw IPC CR8-0 ↔ CR8-1 100/100); most are build-clean or source-audited; none are production.
+- **PX4 HAL (CR8-0):** SPI, I2C, GPIO, PWM, HRT, IPC build-clean; params on volatile TMPFS; xSPI storage and board identity blocked.
+- **Integrated PX4:** on-target SIH demo only; sensor/actuator flight path not yet validated.
 
-| Status Tier | Count | Drivers |
-|-------------|-------|---------|
-| **Bounded On-Target** | 9 | CAN-FD (internal loopback), DMAC (memcpy), GTM (timer0/2), HRT (GTM7 shim / SIH test), IRQ (CR8 GIC), Serial (SCI-B on SCI4 shell), SPI (RSPI loopback), Startup (CR8-0), Timer ISR (CR8) |
-| **Build-Clean** | 17 | IPC Dispatch, IPC IPCC, IPC Raw (CR8-0/CR8-1/CM33), Memory Management, MHU Core, OpenAMP, RPMsg, Remote Proc, SCI/I2C Master, SCI/I2C Clock, SCI/I2C ISR, SCI/SPI Master, SCI/SPI Clock, SCI/SPI ISR, SDHI, Watchdog, System Reset (CR8) |
-| **Source-Audited** | 11 | Clock/CPG, GPIO (P0–PB), GPT (32-bit), I2C (RIIC), ICU (CR8), ICU (CM33), IRQ (CM33), Low-Level UART, MPU Regions, POEG, Startup (CM33) |
-| **Blocked (HW/HIL Gates)** | 4 | ADC (SAR 12-bit), Ether (GbEther), Ether PHY, SCIF UART (source defects resolved; target HW/HIL proof open) |
-| **Stub** | 1 | Idle Task (WFI) |
-| **Production** | 0 | Pending stress & soak testing (≥10k cycles / 1h uptime) |
-
-### PX4 HAL Integration Matrix (CR8-0)
-
-| Peripheral / Subsystem | Status | Implementation & Policy Notes |
-|------------------------|--------|-------------------------------|
-| **SPI** | `build-clean` | RSPI0 mapped to P90–P92, P93 GPIO CS; sensor bus registration shared; DRDY on P50. |
-| **I2C** | `build-clean` | BMP280 barometer on SCI7 simple-I2C (P76/P77); `CONFIG_RZV_SCI7_I2C=y`. |
-| **UART / Serial** | `in-progress` | RTT0 `/dev/console` for PX4; SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS. |
-| **GPIO** | `build-clean` | Port I/O and IRQ/edge via `rzv_gpio*` across 86 bonded pins. |
-| **PWM / ESC** | `build-clean` | 4-channel GPT output (PA4, PA7, P96, P53); restart-safe channel allocation; safe reset pin unwinding. |
-| **DShot** | `build-clean` (opt-in) | TX-only DShot600 via GPT + DMAC in `renesas_rdk-rzv2h_dshot`; BDShot telemetry disabled (`-ENOTSUP`). |
-| **Timer / HRT** | `build-clean` | Dedicated GTM7 64-bit epoch free-run comparison; tested in SIH demo (`22,044 µs` sleep, `4 µs` latency). |
-| **xSPI / Parameter Storage** | `blocked` (volatile fallback) | TMPFS `/fs/params` active default (resets on reboot); xSPI LittleFS disabled pending flash safety proof. |
-| **Board Identity** | `blocked` | Fixed UUID/GUID (`RZV2H0000000000`); single-prototype workflow only until persistent UID source approved. |
-| **Multi-Core IPC** | `build-clean` | Unified memory map, ABI-v2 rings, fail-closed ELF load checker, and MHU doorbells for CR8-0/CR8-1/CM33. |
+Authoritative, per-driver tables: [port-status-nuttx.md](./docs/renesas/port-status-nuttx.md) and [port-status-px4-hal.md](./docs/renesas/port-status-px4-hal.md). Do not copy them here.
 
 ## Documentation
 
@@ -88,23 +68,11 @@ See [docs/](./docs/) and [docs/renesas/](./docs/renesas/) for comprehensive guid
 
 ### Renesas RZ/V2H Port Documentation
 
-| Document | Purpose |
-|----------|---------|
-| [docs/renesas/README.md](./docs/renesas/README.md) | RZ/V2H documentation mini-index and navigation guide |
-| [hardware.md](./docs/renesas/hardware.md) | Clocks, memory map, GIC/ICU, DMAC, MHU, boot flow, and DSW1 switches |
-| [pinmap.md](./docs/renesas/pinmap.md) | Software pin ownership matrix, alternate functions, and electrical mapping |
-| [port-status-nuttx.md](./docs/renesas/port-status-nuttx.md) | 42-driver NuttX HAL coverage, evidence levels, and audit reports |
-| [port-status-px4-hal.md](./docs/renesas/port-status-px4-hal.md) | PX4 HAL integration status per peripheral and CR8-0 goal reconciliation |
-| [porting-playbook.md](./docs/renesas/porting-playbook.md) | Step-by-step recipe for FSP to NuttX driver porting |
-| [freertos-to-nuttx-mapping.md](./docs/renesas/freertos-to-nuttx-mapping.md) | FreeRTOS/POSIX to NuttX API translation cheat sheet |
-| [prompt-recipes.md](./docs/renesas/prompt-recipes.md) | Parametric AI prompts for driver audits, HAL porting, and debugging |
-| [reference-source-map.md](./docs/renesas/reference-source-map.md) | Canonical EVK/core selection map and evidence hierarchy |
-| [multicore-memory-map.md](./docs/renesas/multicore-memory-map.md) | Ratified unified memory map for CR8-0, CR8-1, and CM33 address spaces |
-| [ipc-architecture.md](./docs/renesas/ipc-architecture.md) | Multi-core IPC architecture, MHU channels, and shared DDR ring buffers |
-| [rzv2h-three-core-ipc-artifacts.md](./docs/renesas/rzv2h-three-core-ipc-artifacts.md) | Tracked host ELF hashes, load-span checks, and address contracts |
-| [rzv2h-three-core-jlink-contract.md](./docs/renesas/rzv2h-three-core-jlink-contract.md) | J-Link GDB server devices, core selectors, and debugger lifecycle gates |
-| [validation-checklist.md](./docs/renesas/validation-checklist.md) | Per-driver static and dynamic bring-up checklist |
-| [px4_nuttx_rzv2h_sil.txt](./docs/renesas/px4_nuttx_rzv2h_sil.txt) | Archived on-target SIH simulation demonstration transcript |
+Start at [docs/renesas/README.md](./docs/renesas/README.md) (hardware, pinmap, status, playbook, IPC, validation).
+
+### AI Agents
+
+[AGENTS.md](./AGENTS.md) is the agent entry point: code map, the two build scripts, RTT/J-Link debug, `refs/` layout, and evidence rules. [CLAUDE.md](./CLAUDE.md) adds Claude Code workflow rules on top.
 
 ## Quick Start
 
@@ -124,6 +92,13 @@ source ./build_setup.sh
 
 `./build.sh --list` enumerates every supported target. `make <target>` works too
 and is equivalent to `./build.sh <target>`.
+
+NuttX-only builds (driver bring-up, NSH test configs) use a separate script:
+
+```bash
+platforms/nuttx/NuttX/build.sh --list      # nsh-rtt, ipcc, adc, canfd, ...
+platforms/nuttx/NuttX/build.sh nsh-rtt     # ELF: platforms/nuttx/NuttX/nuttx/nuttx
+```
 
 ## Quick Start for Contributors
 

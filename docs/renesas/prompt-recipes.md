@@ -72,7 +72,7 @@ Success Criteria:
 - [ ] Optional: runnable test command for the driver
 
 Validation Command:
-  cd platforms/nuttx/NuttX/nuttx && ./tools/configure.sh rdk-rzv2h:<driver> && make -j$(nproc)
+  platforms/nuttx/NuttX/build.sh <driver>
   # Verify no undefined references and driver registers
 ```
 
@@ -228,7 +228,7 @@ Success Criteria:
 
 Validation Command:
   (Phase 1 gate) choose an existing rdk-rzv2h config that exercises <target>,
-                 then run ./tools/configure.sh rdk-rzv2h:<config> && make -j$(nproc)
+                 then run platforms/nuttx/NuttX/build.sh <config>
   (Phase 2 gate) build the affected PX4 board target from the repository root
   (Phase 4 gate) run the focused in-tree contract or example documented for <target>
 ```
@@ -302,8 +302,7 @@ Success Criteria:
 - [ ] Upstream PX4 drivers can use the HAL
 
 Validation Command:
-  cd platforms/nuttx/NuttX/nuttx && ./tools/configure.sh rdk-rzv2h:<sample-app-using-<peripheral>>
-  make -j$(nproc)
+  platforms/nuttx/NuttX/build.sh <sample-app-using-<peripheral>>
   # On board: run unit tests for <peripheral>
 ```
 

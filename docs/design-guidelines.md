@@ -1,7 +1,7 @@
 # NuttX Driver Design Guidelines
 
 **Date:** 2026-07-11  
-**Status:** Phase 2 (Workflow Enablement)  
+**Status:** Active  
 **Scope:** RZ/V2H driver architecture patterns, ISR rules, DMA integration, init sequencing
 
 This document codifies patterns used in reference drivers (rzv_gpt.c, rzv_serial.c). Follow these patterns when porting new drivers from FSP to NuttX.

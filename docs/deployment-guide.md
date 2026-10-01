@@ -1,37 +1,25 @@
 # Deployment Guide: Build, Flash, Debug
 
-**Date:** 2026-07-30
-**Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, evidence capture, and debug. The exact cold-load/run recipe remains unresolved.
+**Date:** 2026-10-01
+**Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, volatile RAM load, RTT console, and debug. No persistent flash/cold-boot recipe is approved yet.
 
 ---
 
 ## 1. Build Tools & Environment Setup
 
-### Install Build Dependencies
-
-**Linux (Debian/Ubuntu):**
-```bash
-sudo apt-get update
-sudo apt-get install -y \
-  build-essential cmake ninja-build git wget curl \
-  arm-none-eabi-gcc arm-none-eabi-gdb arm-none-eabi-binutils \
-  python3 python3-pip python3-dev python3-venv \
-  protobuf-compiler
-```
-
-**macOS (Homebrew):**
-```bash
-brew install cmake ninja arm-none-eabi-gcc python3@11
-```
-
-### Fetch Submodules
+### Setup
 
 ```bash
 cd /path/to/PX4-Autopilot
-git submodule update --init --recursive
+source ./build_setup.sh   # checks toolchain/deps, scrubs e2studio CMAKE_* vars, inits submodules
 ```
 
-(Includes `platforms/nuttx/NuttX/nuttx` and reference FSP in `refs/`.)
+Required: `arm-none-eabi-gcc` 9+ on `PATH`, CMake 3.20+, Ninja, Python 3 with
+`kconfiglib`, `gdb-multiarch`, SEGGER J-Link software (`JLinkExe`,
+`JLinkGDBServer`). `build_setup.sh` reports anything missing.
+
+`refs/` (FSP reference, EVK samples) is **not** a submodule; it is a local,
+gitignored directory. See [renesas/reference-source-map.md](./renesas/reference-source-map.md).
 
 ---
 
@@ -44,7 +32,16 @@ Full default and multicore targets still exist for other milestones; this
 guide documents the core-only path. The resulting artifacts are build
 evidence only and do not prove a cold boot or flashing contract.
 
-### Build Script
+### NuttX-only builds (driver bring-up)
+
+```bash
+platforms/nuttx/NuttX/build.sh --list              # nsh, nsh-rtt, ipcc, adc, canfd, ...
+platforms/nuttx/NuttX/build.sh nsh-rtt             # distclean + configure + build
+platforms/nuttx/NuttX/build.sh --no-clean nsh-rtt  # incremental
+# ELF: platforms/nuttx/NuttX/nuttx/nuttx
+```
+
+### PX4 builds
 
 **Primary build entry point:**
 ```bash
@@ -70,9 +67,17 @@ The core-only image is built from
 
 ## 3. Load Routes
 
-There is no approved raw-`.bin` flashing recipe or authoritative cold-load/run
-sequence for the core-only image in this guide. The current debug contract is
-attach-only until the boot-consumer/address contract is authoritative.
+Only **volatile RAM load** over J-Link/GDB is in use (no reset, image lost on
+power cycle). It is proven for NuttX configs (e.g. `nsh-rtt`, IPC raw demo):
+
+```bash
+# JLinkGDBServer running for R9A09G057H44_R8_0, then:
+gdb-multiarch -q -batch <elf> -x platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb
+```
+
+Step-by-step and two-core order: [renesas/rzv2h-ipc-hil-test-guide.md](./renesas/rzv2h-ipc-hil-test-guide.md).
+There is still no approved raw-`.bin`/xSPI flashing recipe or cold-boot
+sequence. RAM load, reset, and target writes require explicit authorization.
 
 ---
 
@@ -145,29 +150,26 @@ routes.
 
 ### RTT Setup
 
-**Purpose:** Print debug logs without UART overhead; visible in GDB or stand-alone viewer.
+`JLinkGDBServer` **cannot** bridge RTT on the CR8 cores (its terminal port is
+semihosting only). Use JLinkExe, which attaches to the running core without
+reset/halt and serves RTT channel 0 as raw TCP on `127.0.0.1:19021`:
 
-**Configuration:**
-- JLink RTT address: Extracted at runtime from ELF symbol `_SEGGER_RTT`.
-- Viewer: JLinkRTTViewer (Segger) or GDB command `rtty`.
-
-**GDB Commands:**
 ```bash
-(gdb) target remote localhost:2331
-(gdb) rtty
-# RTT console appears; logs print in real-time
+JLINK_SERIAL=<probe-sn> platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>
+platforms/nuttx/Debug/nsh_console_exec.py 'uname -a' 'free' 'dmesg'
+platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop    # before starting JLinkGDBServer
 ```
 
-Starting the target, changing breakpoints, reset, load, and continue are
-outside the default read-only attach procedure and require explicit
-authorization.
+- `_SEGGER_RTT` control block: from `arm-none-eabi-nm <elf>`; defaults CR8-0
+  `0x081A0000`, CR8-1 `0x081E0000`.
+- One probe = one owner: stop the bridge before GDB, and vice versa.
+- Long NSH lines can hit `CONFIG_NSH_MAXARGUMENTS` or drop an input byte;
+  keep commands short.
 
-**Extraction Script (ref):**
+### Register reads
+
 ```bash
-# Extract RTT base address from ELF
-arm-none-eabi-readelf -s \
-  build/renesas_rdk-rzv2h_core_only/renesas_rdk-rzv2h_core_only.elf \
-  | grep _SEGGER_RTT
+platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd info R_SCI4
 ```
 
 ---
