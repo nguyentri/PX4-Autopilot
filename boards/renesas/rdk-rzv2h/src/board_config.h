@@ -65,7 +65,7 @@
  * - 24 MHz crystal oscillator
  *
  * PX4 Sensor Configuration (matches FSP rzv_gen/pin_data.c + configuration.xml RDK pinconfig):
- * - MPU9250 IMU on RSPI0 (P90=MOSI, P91=MISO, P92=SCK, P93=SSLA0/CS) with INT on P50 (TINT)
+ * - MPU9250 IMU on RSPI0 (P90=MOSI, P91=MISO, P92=SCK, P93=SSLA0/CS) with INT on P94 (TINT)
  * - BMP280 barometer on RSCI7 SCI-mode I2C (P76=SDA, P77=SCL) at address 0x76
  *
  * Serial Ports (sparse numbering matches SCI channel; no debug UART, console = SEGGER RTT):
@@ -157,7 +157,8 @@
  * RSPI0: MPU9250 IMU only (single-IMU per RDK-RZ/V2H pinout BOM).
  * P90 = MOSI A, P91 = MISO A, P92 = SCK A. P93 is the SSLA0-capable pin,
  * configured as an active-low GPIO chip select by the NuttX board layer.
- * P94 (SSLA1) is FSP-configured but unused (no second IMU wired).
+ * P94 is used as the MPU9250 INT input (TINT), not as SSLA1. It is shared
+ * with the NuttX button demo, so the two cannot be wired at the same time.
  */
 #define PX4_NUMBER_SPI_BUSES            1
 #define BOARD_NUMBER_SPI_BUSES          1
@@ -178,7 +179,7 @@
 #  define BOARD_MPU9250_CS_GPIO         GPIO_P9_3_OUTPUT_HIGH  /* P93 = active-low GPIO CS */
 #endif
 #ifndef BOARD_MPU9250_DRDY_GPIO
-#  define BOARD_MPU9250_DRDY_GPIO       GPIO_IRQ0_P5_0  /* P50 (FSP TINT_ENABLE - verify ICU routing) */
+#  define BOARD_MPU9250_DRDY_GPIO       GPIO_P9_4_INPUT  /* P94 (TINT) */
 #endif
 
 /****************************************************************************************************

@@ -56,7 +56,7 @@ The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
 ### Sensors
 | Sensor | Interface | Configuration |
 |--------|-----------|---------------|
-| MPU9250 (IMU) | RSPI0 | CS=P93, INT=P50 (GPIO25) |
+| MPU9250 (IMU) | RSPI0 | CS=P93, INT=P94 |
 | BMP280 (Baro) | SCI-mode I2C7 | Address 0x76, P76/P77 (GPIO02/03) |
 
 ### Serial Ports
@@ -86,7 +86,7 @@ instead.
 |------|-------------------|---------------|
 | RSPI0 | P90/P91/P92      | MPU9250 IMU   |
 |       | P93 (SSLA0)      | MPU9250 NCS   |
-| INT  | P50               | MPU9250 INT   |
+| INT  | P94               | MPU9250 INT   |
 
 ### PWM Outputs (4 ESC channels)
 

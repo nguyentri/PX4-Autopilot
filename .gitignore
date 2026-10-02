@@ -165,6 +165,7 @@ refs
 !test/rzv2h_sih_artifact_contract_test.py
 !test/rzv2h_sih_demo_contract_test.py
 !test/rzv2h_sci_spi_contract_test.py
+!test/rzv2h-icm20948-contract-test.py
 !test/rzv2h_payload_artifact_contract_test.py
 rzv2h_sd.txt
 .agentkit/config.yaml

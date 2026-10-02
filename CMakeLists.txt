@@ -247,7 +247,7 @@ if(${PX4_PLATFORM} STREQUAL "nuttx" AND ${PX4_BOARD_VENDOR} STREQUAL "renesas")
 	px4_validate_custom_nuttx_submodule(
 		platforms/nuttx/NuttX/nuttx
 		https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx_px4.git
-		main
+		nuttx_ra_rzv
 		)
 	px4_validate_custom_nuttx_submodule(
 		platforms/nuttx/NuttX/apps

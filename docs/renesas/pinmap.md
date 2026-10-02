@@ -1,6 +1,6 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-10-01
+**Date:** 2026-10-02
 **Status:** Foundational; FSP pin extraction reconciled, target electrical validation pending
 **FSP software configuration source:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
 
@@ -38,7 +38,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 | Pin | Port.Bit | Alt-Func | Peripheral | Mode | Pull | Drive | Owner File | FSP Ref |
 |-----|----------|----------|-----------|------|------|-------|------------|---------|
-| **P50** | 5.0 | TINT | GPIO/INT | Input | None; noise filter on | B01 | rzv_gpio.c | MPU9250 DRDY |
+| **P50** | 5.0 | TINT | GPIO/INT | Input | None; noise filter on | B01 | unused by PX4 | MPU9250 DRDY (FSP reference only; PX4 moved DRDY to P94) |
 | **P52** | 5.2 | GPIO | Safety input | Input | Schmitt + noise filter | B01 | board safety (planned) | GPS safety switch |
 | **P53** | 5.3 | AF=11 | GPT10B (PWM4) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P70** | 7.0 | AF=1 | RSCI4 TXD | Output | None | B01 | rzv_serial.c | TFmini TX |
@@ -54,7 +54,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | MPU9250 MISO |
 | **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | MPU9250 SCK |
 | **P93** | 9.3 | AF=1 | RSPI0 SSLA0 (CS) | Output | None | B11 | rzv_spi.c | MPU9250 CS |
-| **P94** | 9.4 | AF=1 | RSPI0 SSLA1 | Output | None | B11 | reserved by SPI0 mux | Unused SSLA1 |
+| **P94** | 9.4 | GPIO | TINT input | Input | Pull-up | B11 | rzv_gpio.c | MPU9250 DRDY (PX4) / GY-912 INT; FSP reference: unused SSLA1. Shared with the button demo |
 | **P96** | 9.6 | AF=9 | GPT9A (PWM3) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P97** | 9.7 | GPIO | GPS buzzer | Output low | None | B01 | board GPIO (planned) | GPS buzzer |
 | **PA4 / P10_04** | A.4 | AF=11 | GPT6A (PWM1) | Output | None | B01 | rzv_gpt.c | PWM |
@@ -84,7 +84,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P91 | MISO | MPU9250 IMU | Data in |
 | P92 | SCK | MPU9250 IMU | Clock |
 | P93 | GPIO CS (SSLA0-capable) | MPU9250 IMU | Active-low chip select |
-| P94 | SSLA1 | Unused by reference application | Reserved alternate chip select |
+| P94 | GPIO / TINT input | MPU9250 IMU / GY-912 test | Data-ready interrupt (not SSLA1) |
 
 **Speed:** Driver default 1 MHz; target ceiling unverified.
 **DMA:** Not currently enabled; PIO polling in rzv_spi.c.
@@ -117,7 +117,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 | Pin | Function | Source | Active Config |
 |-----|----------|--------|----------------|
-| P50 | GPIO / TINT | Ext. interrupt | IMU INT (edge-triggered) |
+| P94 | GPIO / TINT | Ext. interrupt | IMU INT (edge-triggered); exclusive with the button demo |
 | P52 | GPIO input | Safety switch candidate | FSP reference config; PX4 consumption pending |
 | P97 | GPIO output low | GPS buzzer candidate | FSP reference config; PX4 consumption pending |
 | PA6 / P10_06 | GPIO output low | Safety LED candidate | FSP reference config; PX4 consumption pending |
@@ -135,7 +135,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P2 | 0–7 | Unused | Available for GPIO expansion |
 | P3 | 0–7 | Unused | Available for GPIO expansion |
 | P4 | 0–7 | Unused | Available for GPIO expansion |
-| P5 | 1, 4, 6–7 | Unused | P50 interrupt, P52 safety input, P53 PWM |
+| P5 | 0–1, 4, 6–7 | Unused | P50 was the FSP IMU INT (PX4 uses P94), P52 safety input, P53 PWM |
 | P6 | 0–7 | Unused | Available for expansion |
 | P8 | 0–1, 4–7 | Unused in PX4 images | P80/P81 = CAN1 (CANFD CH0, `canfd*` NuttX configs); P82/P83 = SCI9 GPS or CAN2 (CANFD CH1) |
 | P9 | 5 | Unused | P90–94 SPI0, P96 PWM, P97 buzzer |

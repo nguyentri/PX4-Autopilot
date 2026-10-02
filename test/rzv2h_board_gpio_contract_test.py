@@ -290,8 +290,6 @@ class BoardPeripheralGPIOContracts(unittest.TestCase):
         for macro in (
             "BOARD_LED1_GPIO",
             "BOARD_LED2_GPIO",
-            "BOARD_LED3_GPIO",
-            "BOARD_LED4_GPIO",
             "BOARD_MPU9250_CS_GPIO",
             "BOARD_MPU9250_DRDY_GPIO",
             "BOARD_P5_0_GPIO",

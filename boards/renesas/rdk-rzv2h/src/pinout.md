@@ -65,9 +65,9 @@ Complete bill of materials, 40-pin GPIO pinout, and wiring for the RZ/V2H autono
 | **18** | GPIO24 | **GPS TX** (UART9) |
 | **19** | GPIO10/MOSI | **MPU9250 MOSI** (SPI) |
 | **21** | GPIO09/MISO | **MPU9250 MISO** (SPI) |
-| **22** | GPIO25 | **MPU9250 INT** |
 | **23** | GPIO11/SCK | **MPU9250 SCK** (SPI) |
 | **24** | GPIO08/CE0 | **MPU9250 CS** (SPI) |
+| **26** | GPIO07/CE1 | **MPU9250 INT** (P94) |
 | **31** | GPIO06 | **ESC4 PWM** (GPT10B) |
 | **32** | GPIO12/PWM0 | **ESC1 PWM** (GPT6A) |
 | **33** | GPIO13/PWM1 | **ESC2 PWM** (GPT7B) |
@@ -99,7 +99,7 @@ not available as an RDK console.
 
 **IMU (MPU9250) – SPI:**
 ```
-VCC→RDK 3.3V (Pin1), GND→GND, SCK→Pin23, MOSI→Pin19, MISO→Pin21, INT→Pin22, CS→Pin24
+VCC→RDK 3.3V (Pin1), GND→GND, SCK→Pin23, MOSI→Pin19, MISO→Pin21, INT→Pin26, CS→Pin24
 ```
 
 **Barometer (BMP280) – I2C:**

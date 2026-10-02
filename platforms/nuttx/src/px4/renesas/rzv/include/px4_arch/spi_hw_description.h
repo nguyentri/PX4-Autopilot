@@ -87,10 +87,11 @@ static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::
 	              (1 << 2) |  // GPIO_OUTPUT (direction bit)
 	              (1 << 0);   // GPIO_OUTPUT_HIGH (initial value)
 
-	// DRDY pin configuration - input with pull-up
+	// DRDY pin configuration - input with pull-up, interrupt via a TINT
+	// channel so any GPIO pin works (the IRQ0-15 path needs a fixed pin)
 	if (drdy_gpio.port != GPIO::PortInvalid) {
 		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) |
-		                (1 << 4);   // GPIO_INPUT with pull-up
+		                RZV_GPIO_INPUT | RZV_GPIO_PULLUP | RZV_GPIO_TINT;
 	}
 
 	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)

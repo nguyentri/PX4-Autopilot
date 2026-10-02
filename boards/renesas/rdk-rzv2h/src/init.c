@@ -222,7 +222,7 @@ static void rdk_rzv2h_gpio_initialize(void)
 
 	/* Serial pins are owned by the NuttX RZ/V2H board serial setup.
 	 * Do not configure stale low-numbered SCI macros here: the first
-	 * channel's TX alternate overlaps MPU9250 DRDY on P50, and the PX4
+	 * channel's TX alternate overlaps P50, and the PX4
 	 * flight UART map uses sparse SCI4/5/6/9.
 	 */
 

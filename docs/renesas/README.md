@@ -48,6 +48,7 @@ Each doc carries its own `**Date:**` header; trust that over this index.
 | Doc | Use it for |
 |-----|-----------|
 | [validation-checklist.md](./validation-checklist.md) | Per-driver static + on-target bring-up checklist |
+| [gy912-icm20948-validation.md](./gy912-icm20948-validation.md) | Standalone CR8-0 SPI0/P94 ICM20948 diagnostic wiring, RTT commands and acceptance gates |
 | [prompt-recipes.md](./prompt-recipes.md) | Reusable agent prompts: driver audit, HAL port, migration |
 | [../deployment-guide.md](../deployment-guide.md) | Build, RAM load, RTT console, J-Link debug |
 
