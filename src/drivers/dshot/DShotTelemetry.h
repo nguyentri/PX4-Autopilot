@@ -113,6 +113,11 @@ private:
 	void requestNextMotor(int num_motors);
 
 	/**
+	 * Drop any bytes still buffered from a previous (timed-out) response before a new request.
+	 */
+	void flushStaleResponse();
+
+	/**
 	 * Decode a single byte from an ESC feedback frame
 	 * @param byte
 	 * @param successful_decoding set to true if checksum matches

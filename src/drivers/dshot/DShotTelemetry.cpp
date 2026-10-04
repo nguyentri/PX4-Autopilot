@@ -81,6 +81,7 @@ int DShotTelemetry::redirectOutput(OutputBuffer &buffer)
 	}
 
 	_current_motor_index_request = buffer.motor_index;
+	flushStaleResponse();
 	_current_request_start = hrt_absolute_time();
 	_redirect_output = &buffer;
 	_redirect_output->buf_pos = 0;
@@ -239,8 +240,18 @@ int DShotTelemetry::getRequestMotorIndex()
 		return -1;
 	}
 
+	flushStaleResponse();
 	_current_request_start = hrt_absolute_time();
 	return _current_motor_index_request;
+}
+
+void DShotTelemetry::flushStaleResponse()
+{
+	// Responses are matched to a motor by which request was outstanding, not by anything in the frame,
+	// so a late response left in the RX FIFO after a timeout would decode cleanly as the next motor's
+	// and offset every reading by one ESC from then on. Discard it before issuing the next request.
+	tcflush(_uart_fd, TCIFLUSH);
+	_frame_position = 0;
 }
 
 void DShotTelemetry::decodeAndPrintEscInfoPacket(const OutputBuffer &buffer)

@@ -467,7 +467,14 @@ bool DShot::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 
 			uint16_t output = outputs[i];
 
-			if (output == DSHOT_DISARM_VALUE) {
+			const bool reversible = _param_dshot_3d_enable.get() || (_reversible_outputs & (1u << i));
+
+			// 3D deadband [L, H] is inclusive so L == H (default 1000) still stops the motor.
+			// Send motor stop: up_dshot_motor_data_set() would add the MIN_throttle offset to 0.
+			const bool in_3d_deadband = reversible && output >= _param_dshot_3d_dead_l.get()
+						    && output <= _param_dshot_3d_dead_h.get();
+
+			if (output == DSHOT_DISARM_VALUE || in_3d_deadband) {
 				up_dshot_motor_command(i, DShot_cmd_motor_stop, telemetry_index == requested_telemetry_index);
 
 			} else {
@@ -476,28 +483,22 @@ bool DShot::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 				// This is in terms of DShot values, code below is in terms of actuator_output
 				// Direction 1) 48 is the slowest, 1047 is the fastest.
 				// Direction 2) 1049 is the slowest, 2047 is the fastest.
-				if (_param_dshot_3d_enable.get() || (_reversible_outputs & (1u << i))) {
-					if (output >= _param_dshot_3d_dead_l.get() && output < _param_dshot_3d_dead_h.get()) {
-						output = DSHOT_DISARM_VALUE;
+				if (reversible) {
+					bool upper_range = output >= 1000;
+
+					if (upper_range) {
+						output -= 1000;
 
 					} else {
-						bool upper_range = output >= 1000;
+						output = 999 - output; // lower range is inverted
+					}
 
-						if (upper_range) {
-							output -= 1000;
+					float max_output = 999.f;
+					float min_output = max_output * _param_dshot_min.get();
+					output = math::min(max_output, (min_output + output * (max_output - min_output) / max_output));
 
-						} else {
-							output = 999 - output; // lower range is inverted
-						}
-
-						float max_output = 999.f;
-						float min_output = max_output * _param_dshot_min.get();
-						output = math::min(max_output, (min_output + output * (max_output - min_output) / max_output));
-
-						if (upper_range) {
-							output += 1000;
-						}
-
+					if (upper_range) {
+						output += 1000;
 					}
 				}
 

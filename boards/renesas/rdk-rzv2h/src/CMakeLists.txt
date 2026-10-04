@@ -139,7 +139,21 @@ add_custom_target(rzv2h_pwm_oneshot_dshot_contract_test
 	VERBATIM
 )
 
-# Source-only contracts are required by every board variant. Keeping one ALL
+add_custom_target(rzv2h_dmac_runtime_test
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-dmac-runtime-test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H DMAC driver MMIO regressions"
+	VERBATIM
+)
+
+add_custom_target(rzv2h_dshot_runtime_test
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-dshot-runtime-test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H DShot edge and lifecycle regressions"
+	VERBATIM
+)
+
+# Source and host MMIO contracts are required by every board variant. Keeping one ALL
 # aggregate makes the normal build the CI gate while preserving focused target
 # names for local diagnosis.
 add_custom_target(rzv2h_source_contract_tests ALL
@@ -150,6 +164,8 @@ add_custom_target(rzv2h_source_contract_tests ALL
 		rzv2h_pwm_oneshot_dshot_contract_test
 		rzv2h_sci_spi_contract_test
 		rzv2h_sih_demo_contract_test
+		rzv2h_dmac_runtime_test
+		rzv2h_dshot_runtime_test
 )
 
 if(PX4_BOARD_LABEL STREQUAL "default" OR PX4_BOARD_LABEL STREQUAL "dshot")
