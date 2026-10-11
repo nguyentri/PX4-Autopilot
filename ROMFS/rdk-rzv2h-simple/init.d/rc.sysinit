@@ -1,0 +1,3 @@
+# Board initialization already mounted volatile parameter storage at /fs.
+# SDHI and the experimental XSPI backend are intentionally disabled.
+true

@@ -40,6 +40,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <rzv_gpio.h>
 
 /* GPIO port and pin definitions for RZV2H */
 namespace GPIO
@@ -148,16 +149,12 @@ struct DRDY {
 /* Helper functions to convert GPIO enums to uint32_t pinset encoding */
 static inline constexpr uint32_t getGPIOPort(GPIO::Port port)
 {
-	// Port encoding: bits 27-24 (shifted << 24)
-	// Direct mapping: Port0=0, Port1=1, ..., PortA=10, PortB=11
-	return ((uint32_t)port << 24);
+	return static_cast<uint32_t>(port) << GPIO_PORT_SHIFT;
 }
 
 static inline constexpr uint32_t getGPIOPin(GPIO::Pin pin)
 {
-	// Pin encoding: bits 19-16 (shifted << 16)
-	// Direct mapping: Pin0=0, Pin1=1, ..., Pin15=15
-	return ((uint32_t)pin << 16);
+	return static_cast<uint32_t>(pin) << GPIO_PIN_SHIFT;
 }
 
 /* I2C definitions for RZV2H */

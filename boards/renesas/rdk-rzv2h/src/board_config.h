@@ -65,7 +65,8 @@
  * - 24 MHz crystal oscillator
  *
  * PX4 Sensor Configuration (matches FSP rzv_gen/pin_data.c + configuration.xml RDK pinconfig):
- * - MPU9250 IMU on RSPI0 (P90=MOSI, P91=MISO, P92=SCK, P93=SSLA0/CS) with INT on P94 (TINT)
+ * - MPU9250 IMU on RSPI0 (P90=MOSI, P91=MISO, P92=SCK, P93=GPIO CS) with INT on P94 (TINT)
+ * - The simple bench profile substitutes ICM20948 on the same SPI0/CS/INT wiring
  * - BMP280 barometer on RSCI7 SCI-mode I2C (P76=SDA, P77=SCL) at address 0x76
  *
  * Serial Ports (sparse numbering matches SCI channel; no debug UART, console = SEGGER RTT):
@@ -154,10 +155,10 @@
  ****************************************************************************************************/
 
 /* SPI Bus Configuration (matches FSP module.driver.spi_b.channel = 0)
- * RSPI0: MPU9250 IMU only (single-IMU per RDK-RZ/V2H pinout BOM).
- * P90 = MOSI A, P91 = MISO A, P92 = SCK A. P93 is the SSLA0-capable pin,
- * configured as an active-low GPIO chip select by the NuttX board layer.
- * P94 is used as the MPU9250 INT input (TINT), not as SSLA1. It is shared
+ * RSPI0: one selected MPU9250 or ICM20948 IMU on the shared wiring.
+ * P90 = MOSI A, P91 = MISO A, P92 = SCK A. P93 is configured as an
+ * active-low GPIO chip select by the NuttX board layer.
+ * P94 is used as the selected IMU INT input (TINT), not as SSLA1. It is shared
  * with the NuttX button demo, so the two cannot be wired at the same time.
  */
 #define PX4_NUMBER_SPI_BUSES            1
@@ -168,7 +169,7 @@
 
 /* SPI Bus Limits */
 #define BOARD_SPI_BUS_MAX_BUS_ITEMS     1
-#define BOARD_SPI_BUS_MAX_DEVICES       1  /* MPU9250 only */
+#define BOARD_SPI_BUS_MAX_DEVICES       1  /* One physical IMU/CS */
 #define SPI_BUS_MAX_BUS_ITEMS           BOARD_SPI_BUS_MAX_BUS_ITEMS
 
 /* MPU9250 IMU on RSPI0 */
@@ -180,6 +181,17 @@
 #endif
 #ifndef BOARD_MPU9250_DRDY_GPIO
 #  define BOARD_MPU9250_DRDY_GPIO       GPIO_P9_4_INPUT  /* P94 (TINT) */
+#endif
+
+/* ICM20948 alternative on the same SPI0 pads; P94 is exclusively owned. */
+#ifndef BOARD_ICM20948_BUS
+#  define BOARD_ICM20948_BUS            0
+#endif
+#ifndef BOARD_ICM20948_CS_GPIO
+#  define BOARD_ICM20948_CS_GPIO        GPIO_P9_3_OUTPUT_HIGH
+#endif
+#ifndef BOARD_ICM20948_DRDY_GPIO
+#  define BOARD_ICM20948_DRDY_GPIO      GPIO_TINT_P9_4
 #endif
 
 /****************************************************************************************************
@@ -327,9 +339,21 @@
  ****************************************************************************************************/
 
 /* Sensor Availability */
-#define BOARD_HAS_SENSOR_IMU            1  /* MPU9250 (single 9-axis IMU per RDK-RZ/V2H pinout BOM) */
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) || defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+#define BOARD_HAS_SENSOR_IMU            1
+#else
+#define BOARD_HAS_SENSOR_IMU            0
+#endif
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250)
 #define BOARD_HAS_SENSOR_MAG            1  /* AK8963 internal to MPU9250 */
-#define BOARD_HAS_SENSOR_BARO           1  /* BMP280 */
+#else
+#define BOARD_HAS_SENSOR_MAG            0  /* ICM20948 auxiliary mag is an optional manual start */
+#endif
+#if defined(CONFIG_DRIVERS_BAROMETER_BMP280)
+#define BOARD_HAS_SENSOR_BARO           1
+#else
+#define BOARD_HAS_SENSOR_BARO           0
+#endif
 #define BOARD_HAS_SENSOR_RANGEFINDER    1  /* TFminiPlus LiDAR */
 
 /* Default Sensor Orientation */

@@ -37,7 +37,7 @@
  * RDK-RZV2H SPI bus configuration for PX4 sensor drivers
  *
  * Sensor Configuration:
- * - SPI0: MPU9250 IMU sensor
+ * - SPI0: one profile-selected MPU9250 or ICM20948 IMU sensor
  */
 
 #include <px4_platform_common/px4_config.h>
@@ -52,19 +52,26 @@
 
 /* SPI bus configuration */
 
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+#error "SPI0/P93 supports one IMU; select either MPU9250 or ICM20948"
+#elif defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+static constexpr uint32_t imu_device_type = DRV_IMU_DEVTYPE_ICM20948;
+#elif defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250)
+static constexpr uint32_t imu_device_type = DRV_IMU_DEVTYPE_MPU9250;
+#else
+#error "The sensor SPI table requires an enabled IMU driver"
+#endif
+
 constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 	initSPIBus(SPI::Bus(PX4_SPI_BUS_SENSORS), {
-		// CS = P93 (GPIO-driven, active-low). DRDY = P94 (MPU9250 INT, TINT).
+		// CS = P93 (GPIO-driven, active-low). DRDY = P94 (IMU INT, TINT).
 		// Do not use PA7; that pin is GPT7B/ESC2 PWM (see timer_config.cpp:154).
-		initSPIDevice(DRV_IMU_DEVTYPE_MPU9250, SPI::CS{GPIO::Port9, GPIO::Pin3}, SPI::DRDY{GPIO::Port9, GPIO::Pin4}),
+		initSPIDevice(imu_device_type, SPI::CS{GPIO::Port9, GPIO::Pin3}, SPI::DRDY{GPIO::Port9, GPIO::Pin4}),
 	}),
 };
 
-/* SPI bus devices - used for device registration */
-
-static constexpr uint32_t spi1_bus1_devices[] = {
-	DRV_IMU_DEVTYPE_MPU9250,
-};
+static_assert(validateSPIConfig(px4_spi_buses), "SPI bus configuration mismatch");
+static_assert(px4_spi_buses[0].power_enable_gpio == 0, "The IMU bus has no switched power GPIO");
 
 /**
  * Initialize SPI bus for sensors

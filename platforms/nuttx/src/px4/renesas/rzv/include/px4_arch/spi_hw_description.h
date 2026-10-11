@@ -76,26 +76,25 @@ constexpr bool validateSPIConfig(const px4_spi_bus_t spi_busses_conf[SPI_BUS_MAX
 	return true;
 }
 
-static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::CS cs_gpio, SPI::DRDY drdy_gpio = {})
+static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::CS cs_gpio,
+		SPI::DRDY drdy_gpio = {GPIO::PortInvalid, GPIO::PinInvalid})
 {
 	px4_spi_bus_device_t ret{};
 
 	// CS pin configuration - output high (inactive)
-	// For RZV2H, use getGPIOPort and getGPIOPin to extract port and pin from the enum
-	// GPIO flags: GPIO_OUTPUT | GPIO_OUTPUT_HIGH
 	ret.cs_gpio = getGPIOPort(cs_gpio.port) | getGPIOPin(cs_gpio.pin) |
-	              (1 << 2) |  // GPIO_OUTPUT (direction bit)
-	              (1 << 0);   // GPIO_OUTPUT_HIGH (initial value)
+		      RZV_GPIO_OUTPUT | RZV_GPIO_INITIAL_HIGH | RZV_GPIO_DRVSTR_NORMAL;
 
 	// DRDY pin configuration - input with pull-up, interrupt via a TINT
 	// channel so any GPIO pin works (the IRQ0-15 path needs a fixed pin)
-	if (drdy_gpio.port != GPIO::PortInvalid) {
+	if (drdy_gpio.port != GPIO::PortInvalid && drdy_gpio.pin != GPIO::PinInvalid) {
 		ret.drdy_gpio = getGPIOPort(drdy_gpio.port) | getGPIOPin(drdy_gpio.pin) |
-		                RZV_GPIO_INPUT | RZV_GPIO_PULLUP | RZV_GPIO_TINT;
+				RZV_GPIO_INPUT | RZV_GPIO_PULLUP | RZV_GPIO_TINT;
 	}
 
 	if (PX4_SPIDEVID_TYPE(devid) == 0) { // it's a PX4 device (internal or external)
 		ret.devid = PX4_SPIDEV_ID(PX4_SPI_DEVICE_ID, devid);
+
 	} else { // it's a NuttX device (e.g. SPIDEV_FLASH(0))
 		ret.devid = devid;
 	}
@@ -104,7 +103,8 @@ static inline constexpr px4_spi_bus_device_t initSPIDevice(uint32_t devid, SPI::
 	return ret;
 }
 
-static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus_devices_t &devices, GPIO::GPIOPin power_enable = {})
+static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus_devices_t &devices,
+		GPIO::GPIOPin power_enable = {GPIO::PortInvalid, GPIO::PinInvalid})
 {
 	px4_spi_bus_t ret{};
 	ret.requires_locking = false;
@@ -135,10 +135,10 @@ static inline constexpr px4_spi_bus_t initSPIBus(SPI::Bus bus, const px4_spi_bus
 	ret.bus = (int)bus;
 	ret.is_external = false;
 
-	if (power_enable.port != GPIO::PortInvalid) {
+	if (power_enable.port != GPIO::PortInvalid && power_enable.pin != GPIO::PinInvalid) {
 		// Power enable GPIO - output low (power off initially)
 		ret.power_enable_gpio = getGPIOPort(power_enable.port) | getGPIOPin(power_enable.pin) |
-		                        (1 << 2);  // GPIO_OUTPUT, bit 0=0 for low
+					RZV_GPIO_OUTPUT | RZV_GPIO_INITIAL_LOW;
 	}
 
 	return ret;

@@ -109,6 +109,22 @@ void rzv2h_serial_setup(void)
 }
 #endif
 
+#if defined(CONFIG_RZV_GPIO_IRQ)
+static void rdk_rzv2h_gpio_irq_initialize_once(void)
+{
+	static bool initialized;
+	irqstate_t flags = enter_critical_section();
+
+	/* Repeated board initialization must preserve live callback owners. */
+	if (!initialized) {
+		rzv_gpio_irq_initialize();
+		initialized = true;
+	}
+
+	leave_critical_section(flags);
+}
+#endif
+
 #if defined(CONFIG_RZV_OPENAMP)
 static int rdk_rzv2h_openamp_initialize(void)
 {
@@ -215,8 +231,11 @@ static void rdk_rzv2h_gpio_initialize(void)
 	px4_arch_configgpio(GPIO_nLED_4);
 #endif
 
-	/* Configure MPU9250 DRDY only when the payload driver is linked. */
-#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
+	/* Configure only the selected IMU's DRDY input. P94 has one owner. */
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+	/* The shared board descriptor omits pulls; PX4 configures the pull-up. */
+	px4_arch_configgpio(BOARD_ICM20948_DRDY_GPIO | RZV_GPIO_PULLUP);
+#elif defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
 	px4_arch_configgpio(BOARD_MPU9250_DRDY_GPIO);
 #endif
 
@@ -269,6 +288,10 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		return ret;
 	}
 
+#if defined(CONFIG_RZV_GPIO_IRQ)
+	rdk_rzv2h_gpio_irq_initialize_once();
+#endif
+
 #ifdef CONFIG_RDK_RZV2H_XSPI_PARAMFS
 	ret = rzv2h_xspi_paramfs_initialize();
 
@@ -277,6 +300,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		       "board_app_initialize: optional XSPI paramfs unavailable (%d); continuing\n",
 		       ret);
 	}
+
 #endif
 
 #ifdef CONFIG_RDK_RZV2H_VOLATILE_PARAMFS
@@ -287,6 +311,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		       "board_app_initialize: volatile paramfs unavailable (%d); continuing\n",
 		       ret);
 	}
+
 #endif
 
 #if defined(CONFIG_RZV_OPENAMP)
@@ -300,6 +325,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		       "board_app_initialize: optional OpenAMP unavailable (%d); continuing CR8-0 standalone\n",
 		       ret);
 	}
+
 #endif
 
 	/* configure LEDs */
@@ -319,6 +345,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		syslog(LOG_ERR, "board_app_initialize: timer initialization failed with error %d\n", ret);
 		return ret;
 	}
+
 #endif
 
 	/* Initialize the board-owned SPI path for the IMU. This configures the
@@ -332,6 +359,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		syslog(LOG_ERR, "board_app_initialize: board_spi_initialize() failed with error %d\n", ret);
 		return ret;
 	}
+
 #endif
 
 	/* Initialize I2C bus for barometer sensor (SCI-mode simple-I2C).
@@ -340,9 +368,11 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	 */
 #ifdef CONFIG_RZV_SCI_I2C
 	struct i2c_master_s *i2c7 = px4_i2cbus_initialize(PX4_I2C_BUS_EXPANSION);
+
 	if (i2c7 == NULL) {
 		syslog(LOG_ERR, "board_app_initialize: px4_i2cbus_initialize(%d) returned NULL!\n", PX4_I2C_BUS_EXPANSION);
 	}
+
 #endif
 
 	/* Reset SPI buses to ensure clean state for sensor communication. */

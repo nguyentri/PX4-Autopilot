@@ -45,7 +45,7 @@ if(CONFIG_DRIVERS_BAROMETER_BMP280)
 	list(APPEND drivers_board_sources i2c.cpp)
 endif()
 
-if(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250)
+if(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250 OR CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
 	list(APPEND drivers_board_sources spi.cpp)
 endif()
 
@@ -153,6 +153,13 @@ add_custom_target(rzv2h_dshot_runtime_test
 	VERBATIM
 )
 
+add_custom_target(rzv2h_simple_profile_contract_test
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-simple-profile-contract-test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H simple profile and SPI descriptor contracts"
+	VERBATIM
+)
+
 # Source and host MMIO contracts are required by every board variant. Keeping one ALL
 # aggregate makes the normal build the CI gate while preserving focused target
 # names for local diagnosis.
@@ -166,7 +173,30 @@ add_custom_target(rzv2h_source_contract_tests ALL
 		rzv2h_sih_demo_contract_test
 		rzv2h_dmac_runtime_test
 		rzv2h_dshot_runtime_test
+		rzv2h_simple_profile_contract_test
 )
+
+if(PX4_BOARD_LABEL STREQUAL "simple" AND NOT NUTTX_CONFIG STREQUAL "simple")
+	message(FATAL_ERROR "The RZ/V2H simple target requires NUTTX_CONFIG=simple")
+endif()
+
+if(PX4_BOARD_LABEL STREQUAL "simple")
+	add_custom_target(rzv2h_simple_artifact_contract_test ALL
+		COMMAND
+			${PYTHON_EXECUTABLE}
+			${PX4_SOURCE_DIR}/test/rzv2h-simple-artifact-contract-test.py
+			--build-dir
+			${PX4_BINARY_DIR}
+			--board-label
+			${PX4_BOARD_LABEL}
+		DEPENDS
+			${PX4_BINARY_DIR}/${PX4_CONFIG}.px4
+			rzv2h_simple_profile_contract_test
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		COMMENT "Auditing resolved RZ/V2H simple firmware artifacts"
+		VERBATIM
+	)
+endif()
 
 if(PX4_BOARD_LABEL STREQUAL "default" OR PX4_BOARD_LABEL STREQUAL "dshot")
 	add_custom_target(rzv2h_payload_artifact_contract_test ALL
