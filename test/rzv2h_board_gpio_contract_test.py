@@ -45,7 +45,6 @@ NUTTX_PERIPHERAL_MACROS = (
     "BOARD_SPI0_MOSI_GPIO",
     "BOARD_SPI0_MISO_GPIO",
     "BOARD_SPI0_SCK_GPIO",
-    "BOARD_SPI0_SS0_GPIO",
     "BOARD_PWM_CH0_GPIO",
     "BOARD_PWM_CH1_GPIO",
     "BOARD_PWM_CH2_GPIO",
@@ -62,7 +61,6 @@ NUTTX_PERIPHERAL_MACROS = (
     "BOARD_P9_0_GPIO",
     "BOARD_P9_1_GPIO",
     "BOARD_P9_2_GPIO",
-    "BOARD_P9_3_GPIO",
     "BOARD_CANFD0_TX_GPIO",
     "BOARD_CANFD0_RX_GPIO",
     "BOARD_CANFD1_TX_GPIO",
@@ -71,6 +69,13 @@ NUTTX_PERIPHERAL_MACROS = (
 
 PX4_PERIPHERAL_MACROS = tuple(
     "BOARD_PWM_CH{}_GPIO".format(channel) for channel in range(4)
+)
+
+NUTTX_SPI_CS_MACROS = (
+    "BOARD_SPI0_SS0_GPIO",
+    "BOARD_P9_3_GPIO",
+    "BOARD_MPU9250_CS_GPIO",
+    "BOARD_ICM20948_CS_GPIO",
 )
 
 
@@ -149,7 +154,8 @@ def assert_not_peripheral_mode(test_case, definitions, macro):
 
 
 def preprocess_mode_contract(include_directive, include_dirs, macros,
-                             extra_definitions=""):
+                             extra_definitions="",
+                             expected_mode="RZV_GPIO_PERIPH"):
     compiler = shutil.which("cc")
 
     if compiler is None:
@@ -163,8 +169,9 @@ def preprocess_mode_contract(include_directive, include_dirs, macros,
             '#error "' + macro + ' is not defined"',
             "#endif",
             "#if ((" + macro
-            + " & GPIO_MODE_MASK) != RZV_GPIO_PERIPH)",
-            '#error "' + macro + ' does not resolve to peripheral mode"',
+            + " & GPIO_MODE_MASK) != " + expected_mode + ")",
+            '#error "' + macro + ' does not resolve to '
+            + expected_mode + '"',
             "#endif",
         ))
 
@@ -222,6 +229,24 @@ def preprocess_mode_contract(include_directive, include_dirs, macros,
 
 
 class BoardPeripheralGPIOContracts(unittest.TestCase):
+    def test_spi_chip_select_aliases_are_p93_gpio_output_initially_high(self):
+        arch_path = ROOT / "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv"
+        checks = "\n".join(
+            "#if " + macro + " != 0x93811000U\n"
+            '#error "' + macro + ' must encode P93 GPIO output, initially high"\n'
+            "#endif"
+            for macro in NUTTX_SPI_CS_MACROS
+        )
+        result = preprocess_mode_contract(
+            '#include "board.h"',
+            (NUTTX_BOARD_DIR / "include", arch_path, arch_path / "hardware",
+             ROOT / "platforms/nuttx/NuttX/nuttx/include"),
+            NUTTX_SPI_CS_MACROS,
+            extra_definitions=checks,
+            expected_mode="RZV_GPIO_OUTPUT",
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+
     def test_nuttx_peripheral_macros_own_the_mode_flag(self):
         definitions = macro_definitions(NUTTX_BOARD_HEADER)
 
@@ -288,9 +313,9 @@ class BoardPeripheralGPIOContracts(unittest.TestCase):
         nuttx_definitions = macro_definitions(NUTTX_BOARD_HEADER)
 
         for macro in (
+            *NUTTX_SPI_CS_MACROS,
             "BOARD_LED1_GPIO",
             "BOARD_LED2_GPIO",
-            "BOARD_MPU9250_CS_GPIO",
             "BOARD_MPU9250_DRDY_GPIO",
             "BOARD_P5_0_GPIO",
             "BOARD_P7_4_GPIO",
@@ -331,7 +356,7 @@ class BoardPeripheralGPIOContracts(unittest.TestCase):
         )
         self.assertIsNotNone(spi_cs)
         self.assertNotIn("RZV_GPIO_PERIPH", spi_cs.group(1))
-        self.assertIn("RZV_GPIO_OUTPUT", spi_cs.group(1))
+        self.assertIn("BOARD_SPI0_SS0_GPIO", spi_cs.group(1))
 
     def test_source_callers_do_not_append_peripheral_mode(self):
         caller_composition = re.compile(
