@@ -15,7 +15,6 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 - ⏸ **Renesas EVK-RA8P1 IO CM33** — Build Only
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 (Default)** — Build-Clean; RTT0 console, volatile `/fs/params`, WDT-backed reset chain linked, SPI0/SCI7/PWM/serial adapters wired; on-target hardware validation pending
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DShot** — Build-Clean (opt-in TX-only DShot600 via GPT+DMAC; hardware scope proof pending)
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Core-Only** — Build-Clean (diagnostics-only rollback profile with RTT/HRT/params/uORB and bounded PWM bench test)
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Simple** — Build-Clean bench profile: RTT, four-channel PWMOut and SPI0 ICM20948 raw accel/gyro; fresh four-profile software checks passed; hardware untested
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** — On-Target Bounded Demo; simulated sensors (accel/gyro/baro/mag/GPS), HIL sensors, `pwm_out_sim`; GTM7 HRT callback pass; cold-cycle, pin-safety, and soak gates pending
 - ⏸ **Renesas RDK-RZV2H IO CR8_1** — Build Only (raw IPC / IPCC build-clean with distinct RTT console and ABI-v2 sequence recovery; NuttX-only raw IPC demo passes 100/100 on target; this PX4 image is not target-proven)

@@ -74,6 +74,20 @@ class SimpleSourceContracts(unittest.TestCase):
                      "MODULES_MAVLINK", "MODULES_EKF2", "BOARD_RDK_RZV2H_PX4IO_BRIDGE"):
             self.assertEqual(self.board.get("CONFIG_" + name), "n", name)
 
+    def test_discovered_targets_match_readme_and_retire_core_only(self):
+        targets = subprocess.check_output(
+            ["bash", str(ROOT / "build.sh"), "--list"], cwd=ROOT, text=True
+        ).splitlines()
+        self.assertIn("renesas_rdk-rzv2h_simple", targets)
+        self.assertNotIn("renesas_rdk-rzv2h_core_only", targets)
+        documented = re.search(
+            r"### Build Targets\s+[\s\S]*?```text\s+([\s\S]*?)```", read("README.md")
+        )
+        self.assertIsNotNone(documented)
+        self.assertEqual(targets, documented.group(1).strip().splitlines())
+        self.assertTrue((ROOT / PROFILE / "nuttx-config/core_only/defconfig").is_file())
+        self.assertTrue((ROOT / "ROMFS/rdk-rzv2h-core-only").is_dir())
+
     def test_kernel_retains_rtt_timers_and_one_sensor_owner(self):
         for name in ("RZV2H_BUILD_CR8_0", "ARCH_FPU", "RZV_HRT", "PWM", "RZV_GPT6", "RZV_GPT7",
                      "RZV_GPT9", "RZV_GPT10", "SPI", "SPI_EXCHANGE", "RZV_SPI0", "RZV_GPIO_IRQ",

@@ -172,6 +172,7 @@ refs
 !test/rzv2h-simple-profile-contract-test.py
 !test/rzv2h-simple-artifact-contract-test.py
 !test/rzv2h-simple-test-support.py
+!test/rzv2h_bmm150_sample_contract_test.py
 rzv2h_sd.txt
 ak-engineer
 .agentkit
