@@ -128,9 +128,12 @@ void modifyreg32(uintptr_t address, uint32_t clear, uint32_t set)
 
 void up_clean_dcache(uintptr_t start, uintptr_t end)
 {
-  (void)start;
   (void)end;
   cache_calls++;
+  if (start >= 0x10000000u && start < 0x20000000u)
+    {
+      peripheral_cache_calls++;
+    }
 }
 
 void up_invalidate_dcache(uintptr_t start, uintptr_t end)

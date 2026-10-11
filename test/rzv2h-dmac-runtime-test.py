@@ -91,6 +91,9 @@ class DmacRuntimeTests(unittest.TestCase):
     def test_trigger_routing_preserves_sibling(self):
         self.run_scenario("routing")
 
+    def test_peripheral_to_memory_receive(self):
+        self.run_scenario("peripheral-source")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

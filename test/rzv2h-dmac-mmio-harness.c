@@ -68,6 +68,20 @@ int main(int argc, char **argv)
       config.length = 0;
       CHECK(rzv_dmac_channel_configure(0, &config) == -EINVAL,
             "zero length accepted");
+      config = configuration(true);
+      config.src_addr_mode = RZV_DMAC_ADDR_FIXED;
+      config.src_addr = 0x12800054u;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -ENOTSUP,
+            "peripheral-to-peripheral accepted");
+      config = configuration(false);
+      config.ack_mode = 4;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -ENOTSUP,
+            "software trigger accepted DACK mode");
+      config = configuration(true);
+      config.ack_mode = 8;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -ENOTSUP,
+            "out-of-range DACK mode accepted");
+      config = configuration(false);
       CHECK(rzv_dmac_channel_start(-1) == -EINVAL, "negative channel accepted");
       CHECK(rzv_dmac_channel_start(80) == -EINVAL, "out-of-range channel accepted");
       CHECK(writes == 0 && cache_calls == 0, "invalid config touched hardware");
@@ -87,6 +101,49 @@ int main(int argc, char **argv)
       CHECK(rzv_dmac_channel_stop(8) == 0, "release route 8");
       CHECK((getreg32(route) & 0x3ffu) == 0x3ffu, "release kept route");
       CHECK(((getreg32(route) >> 16) & 0x3ffu) == 264, "sibling route lost");
+      return 0;
+    }
+
+  if (strcmp(scenario, "peripheral-source") == 0)
+    {
+      config = configuration(true);
+      config.src_addr_mode = RZV_DMAC_ADDR_FIXED;
+      config.dst_addr_mode = RZV_DMAC_ADDR_INCREMENT;
+      config.src_addr = 0x12800054u;
+      config.dst_addr = DESTINATION;
+      config.ack_mode = 4;
+      CHECK(rzv_dmac_channel_configure(1, &config) == 0,
+            "peripheral-to-memory configure");
+      uint32_t chcfg = getreg32(RZV_DMAC_CHCFG(0, 1));
+      CHECK((chcfg & DMAC_CHCFG_AM_MASK) == (4u << DMAC_CHCFG_AM_SHIFT),
+            "DACK mode not programmed");
+      CHECK((chcfg & (DMAC_CHCFG_REQD | DMAC_CHCFG_SAD | DMAC_CHCFG_HIEN)) ==
+            (DMAC_CHCFG_REQD | DMAC_CHCFG_SAD | DMAC_CHCFG_HIEN),
+            "receive requester or fixed source not programmed");
+      CHECK((chcfg & DMAC_CHCFG_DAD) == 0, "memory destination fixed");
+
+      unsigned int saved_invalidations = destination_invalidations;
+      destination_dirty = true;
+      CHECK(rzv_dmac_channel_start(1) == 0, "peripheral-to-memory start");
+      CHECK(destination_invalidations == saved_invalidations + 1,
+            "start did not prepare memory destination");
+      CHECK(!destination_dirty, "dirty destination survived start");
+      complete_channel(1);
+      CHECK(rzv_dmac_channel_set_buffer(1, SOURCE_NEXT, LENGTH) == -ENOTSUP,
+            "peripheral source replaced after completion");
+      saved_invalidations = destination_invalidations;
+      CHECK(rzv_dmac_channel_stop(1) == 0, "peripheral-to-memory stop");
+      CHECK(destination_invalidations == saved_invalidations + 1,
+            "stop did not invalidate memory destination");
+      CHECK(peripheral_cache_calls == 0, "peripheral source cache-maintained");
+
+      config = configuration(true);
+      config.ack_mode = 4;
+      config.source_request = true;
+      CHECK(rzv_dmac_channel_configure(0, &config) == 0,
+            "source-requested transmit configure");
+      CHECK((getreg32(RZV_DMAC_CHCFG(0, 0)) & DMAC_CHCFG_REQD) == 0,
+            "source requester not programmed");
       return 0;
     }
 
