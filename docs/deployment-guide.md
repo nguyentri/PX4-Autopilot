@@ -1,6 +1,6 @@
 # Deployment Guide: Build, Flash, Debug
 
-**Date:** 2026-10-01
+**Date:** 2026-10-04
 **Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, volatile RAM load, RTT console, and debug. No persistent flash/cold-boot recipe is approved yet.
 
 ---
@@ -25,12 +25,14 @@ gitignored directory. See [renesas/reference-source-map.md](./renesas/reference-
 
 ## 2. Build Targets
 
-The current diagnostic rollback target is `renesas_rdk-rzv2h_core_only`. It
-keeps RTT, HRT, work queues, parameters, uORB, and the diagnostic command set,
-but excludes payload lower-halves, payload/flight modules, and output init.
-Full default and multicore targets still exist for other milestones; this
-guide documents the core-only path. The resulting artifacts are build
-evidence only and do not prove a cold boot or flashing contract.
+The compact bench target is `renesas_rdk-rzv2h_simple`: RTT, HRT, work queues,
+volatile params, uORB, four-channel PWMOut and SPI0 ICM20948 accel/gyro.
+It excludes flight/payload modules, serial consumers, MAVLink and IPC. Outputs
+remain inactive until a finite explicit actuator command. Full default and
+multicore targets remain available. The retired core-only target's resources
+and evidence are historical. Fresh simple/default/DShot/SIH builds and artifact
+audits pass; no target load/cold-boot/electrical proof is claimed. See the
+[simple bench guide](renesas/simple-pwm-icm20948-validation.md).
 
 ### NuttX-only builds (driver bring-up)
 
@@ -45,23 +47,24 @@ platforms/nuttx/NuttX/build.sh --no-clean nsh-rtt  # incremental
 
 **Primary build entry point:**
 ```bash
-./build.sh renesas_rdk-rzv2h_core_only
+./build.sh renesas_rdk-rzv2h_simple
 ```
 
-**Core-only artifacts:**
+**Simple artifacts:**
 ```bash
-./build.sh renesas_rdk-rzv2h_core_only
-# Output: build/renesas_rdk-rzv2h_core_only/
-#   ├── renesas_rdk-rzv2h_core_only.elf
-#   ├── renesas_rdk-rzv2h_core_only.px4
+./build.sh renesas_rdk-rzv2h_simple
+./build.sh --no-clean renesas_rdk-rzv2h_simple  # same profile only
+# Output: build/renesas_rdk-rzv2h_simple/
+#   ├── renesas_rdk-rzv2h_simple.elf
+#   ├── renesas_rdk-rzv2h_simple.px4
 #   ├── NuttX/nuttx/.config
-#   └── renesas_rdk-rzv2h_core_only.bin  (artifact only; not a flashing contract)
+#   └── renesas_rdk-rzv2h_simple.bin  (artifact only; not a flashing contract)
 ```
 
-The core-only image is built from
-`boards/renesas/rdk-rzv2h/core_only.px4board`,
-`boards/renesas/rdk-rzv2h/nuttx-config/core_only/defconfig`, and
-`ROMFS/rdk-rzv2h-core-only`.
+The simple image is built from
+`boards/renesas/rdk-rzv2h/simple.px4board`,
+`boards/renesas/rdk-rzv2h/nuttx-config/simple/defconfig`, and
+`ROMFS/rdk-rzv2h-simple`.
 
 ---
 
@@ -85,17 +88,19 @@ sequence. RAM load, reset, and target writes require explicit authorization.
 
 ### Configuration
 
-Use the exact core-only ELF, the exact device name `R9A09G057H44_R8_0`, and
+Use the exact simple ELF, the exact device name `R9A09G057H44_R8_0`, and
 the user-provided probe serial. The generated VS Code RZV profile is
 read-only attach. Reset, load, and continue require explicit authorization.
-This is a debug attachment contract, not a validated cold-load recipe.
+This is a debug attachment contract, not a validated cold-load recipe. Before
+halting the core, stop PWMOut and measure inactive outputs; software actuator
+timeouts do not run while halted.
 
 ### VS Code Launch Configurations
 
 **File:** `.vscode/launch.json`
 
 Building the target generates `Attach RZV2H CR8 (Core0,
-renesas_rdk-rzv2h_core_only, read-only)`. Select that profile and enter the
+renesas_rdk-rzv2h_simple, read-only)`. Select that profile and enter the
 exact authorized probe serial when prompted. The variant appears in the
 profile name and its executable is the matching target ELF. The profile uses
 `request: "attach"` and only `monitor halt`; it has no reset, load, or
@@ -105,7 +110,7 @@ For a bounded command-line snapshot, identify the same probe explicitly:
 
 ```bash
 JLINK_SERIAL=<probe-serial> \
-  cmake --build build/renesas_rdk-rzv2h_core_only \
+  cmake --build build/renesas_rdk-rzv2h_simple \
   --target jlink_gdb_backtrace
 ```
 
@@ -116,11 +121,11 @@ The RZ/V2H build does not generate `jlink_upload`, `jlink_debug_gdb`,
 
 ## 5. Serial Console (UART Debug)
 
-### Core-only CR8-0
+### Simple CR8-0
 
 **Role:** RTT0 console/debug only.
 
-The core-only image has no payload serial consumers. Use the RTT shell and the
+The simple image has no payload serial consumers and starts PWMOut/ICM20948 asynchronously. Use the RTT shell and the
 built-in diagnostic commands:
 
 ```text
@@ -136,7 +141,7 @@ perf
 ```
 
 `listener vehicle_status` belongs the full default image; do not use it as the
-core-only uORB proof.
+simple uORB proof.
 
 ### Full Default PX4
 
@@ -160,8 +165,8 @@ platforms/nuttx/Debug/nsh_console_exec.py 'uname -a' 'free' 'dmesg'
 platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop    # before starting JLinkGDBServer
 ```
 
-- `_SEGGER_RTT` control block: from `arm-none-eabi-nm <elf>`; defaults CR8-0
-  `0x081A0000`, CR8-1 `0x081E0000`.
+- `_SEGGER_RTT` control block: discover it from the exact image with
+  `arm-none-eabi-nm <elf>`; do not assume an address from another profile.
 - One probe = one owner: stop the bridge before GDB, and vice versa.
 - Long NSH lines can hit `CONFIG_NSH_MAXARGUMENTS` or drop an input byte;
   keep commands short.
@@ -176,7 +181,7 @@ platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd info R_SCI4
 
 ## 7. Storage and Logs
 
-The core-only image mounts volatile TMPFS at `/fs`. `/fs/params` is available
+The simple image mounts volatile TMPFS at `/fs`. `/fs/params` is available
 for within-boot parameter changes and resets on reboot. This guide does not
 document SDHI/ULog or any external storage path.
 
@@ -201,11 +206,11 @@ nsh> dmesg
 ```bash
 # Check if symbol exists in ELF
 arm-none-eabi-nm \
-  build/renesas_rdk-rzv2h_core_only/renesas_rdk-rzv2h_core_only.elf \
+  build/renesas_rdk-rzv2h_simple/renesas_rdk-rzv2h_simple.elf \
   | grep _SEGGER_RTT
 
-# If missing, rebuild the checked-in core-only configuration
-./build.sh renesas_rdk-rzv2h_core_only
+# If missing, rebuild the checked-in simple configuration
+./build.sh renesas_rdk-rzv2h_simple
 ```
 
 ### Submodule Desynchronization
@@ -216,7 +221,7 @@ arm-none-eabi-nm \
 ```bash
 git submodule status
 git submodule update --init --recursive
-./build.sh renesas_rdk-rzv2h_core_only
+./build.sh renesas_rdk-rzv2h_simple
 ```
 
 ### JLink Connection Timeout
@@ -238,7 +243,7 @@ git submodule update --init --recursive
    ```bash
    # Press Ctrl-C in that server's terminal first.
    JLINK_SERIAL=<probe-serial> \
-     cmake --build build/renesas_rdk-rzv2h_core_only \
+     cmake --build build/renesas_rdk-rzv2h_simple \
      --target jlink_gdb_backtrace
    ```
 
@@ -248,12 +253,13 @@ git submodule update --init --recursive
 
 Before qualification:
 
-- [ ] `renesas_rdk-rzv2h_core_only` builds cleanly.
-- [ ] The exact `renesas_rdk-rzv2h_core_only.elf` attaches read-only through J-Link.
+- [x] `renesas_rdk-rzv2h_simple` builds cleanly (2026-10-04 software checkpoint).
+- [ ] The exact `renesas_rdk-rzv2h_simple.elf` attaches read-only through J-Link.
 - [ ] J-Link uses `R9A09G057H44_R8_0` plus the user-provided probe serial.
 - [ ] RTT shows `ver all`, `dmesg`, `system_time`, `work_queue status`, `top`, `uorb top`, and `param show`.
 - [ ] No raw `.bin` flashing route is used until the boot-consumer/address contract is authoritative.
-- [ ] No hardware proof claims are made for the core-only image.
+- [ ] Raw topics, FIFO acquisition, P94 callbacks and four PWM waveforms are
+  recorded independently; no flight-readiness claim is made.
 
 ---
 

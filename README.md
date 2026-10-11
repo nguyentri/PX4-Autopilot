@@ -16,6 +16,7 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 (Default)** — Build-Clean; RTT0 console, volatile `/fs/params`, WDT-backed reset chain linked, SPI0/SCI7/PWM/serial adapters wired; on-target hardware validation pending
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DShot** — Build-Clean (opt-in TX-only DShot600 via GPT+DMAC; hardware scope proof pending)
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Core-Only** — Build-Clean (diagnostics-only rollback profile with RTT/HRT/params/uORB and bounded PWM bench test)
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Simple** — Build-Clean bench profile: RTT, four-channel PWMOut and SPI0 ICM20948 raw accel/gyro; fresh four-profile software checks passed; hardware untested
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** — On-Target Bounded Demo; simulated sensors (accel/gyro/baro/mag/GPS), HIL sensors, `pwm_out_sim`; GTM7 HRT callback pass; cold-cycle, pin-safety, and soak gates pending
 - ⏸ **Renesas RDK-RZV2H IO CR8_1** — Build Only (raw IPC / IPCC build-clean with distinct RTT console and ABI-v2 sequence recovery; NuttX-only raw IPC demo passes 100/100 on target; this PX4 image is not target-proven)
 - ⏸ **Renesas RDK-RZV2H IO CM33** — Build Only (raw IPC / IPCC build-clean with secure SRAM `0x08002800` vectors, non-secure MHU `0x50480000`; target boot/IPC proof pending)
@@ -34,10 +35,10 @@ renesas_fpb-ra8e1_dshot
 renesas_fpb-ra8e1_test
 renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
-renesas_rdk-rzv2h_core_only
 renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_dshot
 renesas_rdk-rzv2h_sih
+renesas_rdk-rzv2h_simple
 ```
 
 ## RZ/V2H Porting Status Summary
@@ -69,6 +70,9 @@ See [docs/](./docs/) and [docs/renesas/](./docs/renesas/) for comprehensive guid
 ### Renesas RZ/V2H Port Documentation
 
 Start at [docs/renesas/README.md](./docs/renesas/README.md) (hardware, pinmap, status, playbook, IPC, validation).
+For the compact PWM + ICM20948 bench target, use the
+[simple validation guide](./docs/renesas/simple-pwm-icm20948-validation.md).
+The retired core-only target is historical; its NuttX/ROMFS resources and evidence remain archived.
 
 ### AI Agents
 

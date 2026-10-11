@@ -66,7 +66,7 @@ Complete bill of materials, 40-pin GPIO pinout, and wiring for the RZ/V2H autono
 | **19** | GPIO10/MOSI | **MPU9250 MOSI** (SPI) |
 | **21** | GPIO09/MISO | **MPU9250 MISO** (SPI) |
 | **23** | GPIO11/SCK | **MPU9250 SCK** (SPI) |
-| **24** | GPIO08/CE0 | **MPU9250 CS** (SPI) |
+| **24** | GPIO08/CE0 | **MPU9250 CS** (P93, GPIO) |
 | **26** | GPIO07/CE1 | **MPU9250 INT** (P94) |
 | **31** | GPIO06 | **ESC4 PWM** (GPT10B) |
 | **32** | GPIO12/PWM0 | **ESC1 PWM** (GPT6A) |
@@ -98,6 +98,8 @@ not available as an RDK console.
 ### Key Connections
 
 **IMU (MPU9250) – SPI:**
+
+CS uses P93/header pin 24 as active-low GPIO.
 ```
 VCC→RDK 3.3V (Pin1), GND→GND, SCK→Pin23, MOSI→Pin19, MISO→Pin21, INT→Pin26, CS→Pin24
 ```

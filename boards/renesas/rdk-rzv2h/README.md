@@ -9,12 +9,16 @@ RZV2H MPU using the Cortex-R8 (CR8_0) core for real-time flight control. The
 default image is independent of CA55, CR8_1, CM33, OpenAMP, and IPCC.
 Multicore transports remain opt-in final-milestone features.
 
-The board also ships `renesas_rdk-rzv2h_core_only`, a deterministic rollback
-image built from `core_only.px4board`, `nuttx-config/core_only/defconfig`, and
-the generated `ROMFS/rdk-rzv2h-core-only` startup tree. It retains
-RTT/HRT/work queues/parameters/uORB and the diagnostic commands needed to
-inspect failures, auto-starts `pwm_out`, and excludes payload UARTs,
-SPI/I2C/RC/GPS/IMU/baro drivers, flight-module startup, and serial consumers.
+The compact `renesas_rdk-rzv2h_simple` bench image uses `simple.px4board`,
+`nuttx-config/simple/defconfig` and `ROMFS/rdk-rzv2h-simple`. It retains
+RTT/HRT/work queues/volatile parameters/uORB, starts PWMOut and SPI0 ICM20948
+accel/gyro independently, and excludes flight modules, payload UARTs, RC,
+barometer, automatic magnetometer, MAVLink, IPC and DShot. Control allocator
+is linked for mixer metadata only. Outputs remain inactive until an explicit
+finite actuator test. Fresh simple/default/DShot/SIH builds and artifact audits
+pass; the bench remains hardware untested.
+The retired core-only target's NuttX/ROMFS resources and evidence are historical.
+See the [simple bench validation guide](../../../docs/renesas/simple-pwm-icm20948-validation.md).
 
 The board also ships `renesas_rdk-rzv2h_sih`, a CR8-0 FC-SIH demo with a
 bounded on-target transcript. It is built from `sih.px4board`,
@@ -85,7 +89,7 @@ instead.
 | Bus  | Pins              | Device        |
 |------|-------------------|---------------|
 | RSPI0 | P90/P91/P92      | MPU9250 IMU   |
-|       | P93 (SSLA0)      | MPU9250 NCS   |
+|       | P93 (GPIO CS)    | MPU9250 NCS   |
 | INT  | P94               | MPU9250 INT   |
 
 ### PWM Outputs (4 ESC channels)
@@ -186,14 +190,16 @@ platforms/nuttx/src/px4/renesas/rzv2h/
 make renesas_rdk-rzv2h_default
 ```
 
-### Core-Only Diagnostic Build
+### Simple PWM and ICM20948 Bench Build
+
 ```bash
-make renesas_rdk-rzv2h_core_only
+./build.sh renesas_rdk-rzv2h_simple
+./build.sh --no-clean renesas_rdk-rzv2h_simple
 ```
 
-Core-only artifacts are emitted under `build/renesas_rdk-rzv2h_core_only/`
-and include `renesas_rdk-rzv2h_core_only.elf` and
-`renesas_rdk-rzv2h_core_only.px4`.
+Artifacts: `build/renesas_rdk-rzv2h_simple/renesas_rdk-rzv2h_simple.{elf,px4}`.
+Use `--no-clean` only for the same profile. Raw topics, FIFO processing, P94
+callbacks and PWM electrical behavior require separate runtime checks.
 
 ### SIH Sensor Demo Build
 
@@ -317,7 +323,7 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
 
 | Mode | Console / Debug | Serial Policy | Validation State |
 |------|-----------------|---------------|------------------|
-| Core-only diagnostic image | RTT0 console/debug only | RTT shell, HRT, lazy work queues, params, uORB, `pwm_out start/stop/status`, `work_queue status`, `ver`, `dmesg`, `system_time`, `top`, `uorb`, `listener`, `perf` | build-clean; no hardware run |
+| Simple PWM + ICM20948 bench | RTT0 console/debug only | HRT, lazy work queues, volatile params, raw accel/gyro, PWMOut and diagnostics; no flight/payload startup | build-clean; fresh four-profile software checks passed; hardware untested |
 | Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 is the interactive shell; RTT carries boot, syslog, and debug output | Validated by `nsh-rtt` |
 | Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 is the intended shell path for the CR8-1 IO target; not yet hardware validated | Target policy only |
 | Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 is the intended shell path for the CM33 IO target; not yet hardware validated | Target policy only |
@@ -346,31 +352,28 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
   handling, erase/program/readback, reboot persistence, and power-loss
   recovery must pass before it can replace TMPFS.
 
-## Core-Only PWM Demonstration
+## Simple PWM and ICM20948 Bench
 
-The core-only image starts `pwm_out` from
-`ROMFS/rdk-rzv2h-core-only/init.d/rcS`, then prints `work_queue status`. That
-path keeps output disabled until an explicit actuator command is issued and
-uses the minimal lazy queue footprint expected on RZ/V2H, not the broader
-RA8P1 queue fan-out. PWMOut starts on `wq:hp_default` and can migrate its
-subscription callback to `wq:rate_ctrl`; queue creation is asynchronous, so
-the immediate startup listing can differ from a later `work_queue status`.
+The dedicated compact rcS sources its PWM defaults and sensor hook explicitly.
+`pwm_out start` and `icm20948 -s -b 0 -R 0 start` are checked independently;
+accepted asynchronous requests are not sample or hardware readiness proof.
+Rotation 0 is an unverified bench mounting placeholder. Automatic mag is off;
+manual `-M` is a flag, not `-M 1`. The driver publishes raw topics directly,
+without starting `sensors` or `control_allocator`.
 
-`control_allocator` stays linked only because the actuator metadata generator
-needs the mixer schema. The compact `rcS` does not start `control_allocator`,
-and the image has no sensors, payload peripherals, or serial consumers.
+Four channels use `PWM_MAIN_TIM0..3=400`, functions 101..104, minimum 1100 µs,
+maximum 1900 µs and disarmed/failsafe parameters 1000 µs. The explicit finite
+command `actuator_test set -m 1 -v 0 -t 5` requests the nonreversed motor's
+1100 µs minimum for five seconds, then leaves that motor output inactive.
+Verify actual parameters and measure each pin. PWMOut enables all configured
+channels during an active test; unrequested channels use DIS1000 pulses during
+that window. All motor channels must become inactive after timeout or stop;
+disarmed values do not prove continuing pulses on disabled outputs. PWMOut
+queues are lazy and startup is asynchronous.
 
-Use the current bounded bench command for a single-channel waveform check:
-
-```bash
-actuator_test set -m 1 -v 0 -t 5
-```
-
-`pwm_out` supports `start`, `stop`, and `status` only. The board-scoped PWM
-path keeps outputs disabled under `stop_motors`, so this remains a safe
-demonstration target rather than a flight validation path. The command drives
-Motor 1 at its configured 1100 µs minimum for five seconds; the other enabled
-channels retain their 1000 µs disarmed values.
+Use the [validation guide](../../../docs/renesas/simple-pwm-icm20948-validation.md)
+for exact wiring, FIFO/callback checks and measurements. Stop PWMOut and verify
+inactive pins before halting the core for debugger callback observation.
 
 ### DShot Mode
 

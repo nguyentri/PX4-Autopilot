@@ -48,13 +48,25 @@ Each doc carries its own `**Date:**` header; trust that over this index.
 | Doc | Use it for |
 |-----|-----------|
 | [validation-checklist.md](./validation-checklist.md) | Per-driver static + on-target bring-up checklist |
+| [pwm-pin-validation.md](./pwm-pin-validation.md) | Standalone GPT PWM duty/period pin measurements, endpoint limits and live-update capture |
+| [simple-pwm-icm20948-validation.md](./simple-pwm-icm20948-validation.md) | PX4 simple bench: SPI0 raw/FIFO/IRQ evidence and four-channel PWM measurement gates |
 | [gy912-icm20948-validation.md](./gy912-icm20948-validation.md) | Standalone CR8-0 SPI0/P94 ICM20948 diagnostic wiring, RTT commands and acceptance gates |
+| [bmm150-i2c-validation.md](./bmm150-i2c-validation.md) | Standalone CR8-0 SCI7 I2C BMM150 diagnostic wiring, RTT commands and acceptance gates |
 | [prompt-recipes.md](./prompt-recipes.md) | Reusable agent prompts: driver audit, HAL port, migration |
 | [../deployment-guide.md](../deployment-guide.md) | Build, RAM load, RTT console, J-Link debug |
 
-## Product (non-engineering)
+## Autonomous Drone Solution and Design
 
-[marketing/](./marketing/) — solution positioning and system specification. Claims there are gated by the status docs above; do not use them as engineering evidence.
+| Doc | Use it for |
+|-----|------------|
+| [marketing/README.md](./marketing/README.md) | Entry point, document map, customer and engineering reading paths, and direct design/development links |
+| [marketing/rzv2h-autonomous-drone-solution.md](./marketing/rzv2h-autonomous-drone-solution.md) | Customer-facing single-central-SoC solution, external-device story, and approved claim boundaries |
+| [marketing/rzv2h-system-specification.md](./marketing/rzv2h-system-specification.md) | Target aircraft boundary, external-device interfaces, system requirements, and verification gates |
+| [marketing/rzv2h-software-specification.md](./marketing/rzv2h-software-specification.md) | Target A55/DRP-AI3/CR8-0/CR8-1 allocation, IPC, lifecycle, fault handling, and software requirements |
+| [marketing/rzv2h-development-ecosystem.md](./marketing/rzv2h-development-ecosystem.md) | Customer starting profiles, RDK pre-development boundary, official repositories, Yocto/Ubuntu/ROS 2 versions, and AI/YOLO compatibility guidance |
+
+Claims in `marketing/` are gated by the status documents above. Target
+architecture is not engineering evidence that a capability is implemented.
 
 ---
 

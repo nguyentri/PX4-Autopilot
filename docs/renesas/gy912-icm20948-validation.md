@@ -1,9 +1,11 @@
 # GY-912 ICM20948 Standalone Validation
 
-**Date:** 2026-10-02  
+**Date:** 2026-10-11<br>
 **Board/core:** RDK-RZ/V2H, CR8-0  
 **Config:** `rdk-rzv2h:gy912`  
-**Evidence:** host checks passed; firmware build-clean; sensor hardware untested
+**Evidence:** host checks passed; firmware build-clean; bounded on-target,
+user-reported standalone sensor pass ([archived RTT excerpt](gy912-icm20948-rtt-261011.txt),
+[status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md))
 
 ## Scope and wiring
 
@@ -24,14 +26,24 @@ not start PX4, register a flight sensor, or test magnetometer/barometer data.
 Disconnect the P94 button-demo wiring before connecting sensor INT. The
 `gy912` configuration excludes `ARCH_BUTTONS` and both SPI loopback samples;
 that exclusion does not remove external button wiring. Only one sensor may
-use P93. Verify the actual module revision, power input, regulator and logic
-level adaptation against its schematic before connecting power. Board GPIO
-voltage alone does not establish that a module tolerates it.
+use P93. Verify the actual module revision, power input,
+regulator and logic level adaptation against its schematic before connecting
+power. Board GPIO voltage alone does not establish that a module tolerates it.
 
 The sensor uses SPI mode **3**, 8-bit words, MSB first, **1 MHz**. Pinmux mode
 1 is a separate GPIO alternate-function setting. The existing board SPI
 integration holds P93 low across each whole command/data exchange. P94 uses
 `GPIO_TINT_P9_4` (GPIOINT68); native IRQ4 pinmux is a different route.
+
+The P93 CS aliases in [board.h](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/include/board.h)
+select GPIO output. Board SPI initialization and the GPIO observation test
+use the shared board CS mapping, `BOARD_SPI0_SS0_GPIO`
+(`GPIO_P9_3_OUTPUT_HIGH`), and leave CS high when idle. The descriptor's
+initial-level flag applies at configuration; subsequent writes use their
+explicit requested level. High is inactive; CS must go low during a selected
+transaction. If it stays high throughout traffic, check that
+`rzv_spi_select()` receives the initialized SPI0 device and that internal
+loopback is disabled; loopback intentionally keeps the sensor deselected.
 
 ## Build
 
@@ -44,6 +56,8 @@ platforms/nuttx/NuttX/build.sh --no-clean gy912
 ```
 
 The incremental command is valid only after this script configured `gy912`.
+After a PX4 build, run the clean `gy912` command first to restore the standalone
+NuttX configuration before using `--no-clean` again.
 Outputs are `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `nuttx.bin`, and
 `nuttx.hex`. Building changes the active NuttX configuration/output; rebuild
 the prior profile with the same script when switching back.
@@ -89,6 +103,72 @@ not the builtin command's result. Read the diagnostic result and NSH error
 output in the captured transcript; reaching another `nsh>` prompt does not
 prove sensor success.
 
+## On-target sensor checkpoint
+
+The user-reported pass is bounded on-target evidence for the standalone
+GY-912/ICM20948 path after restoring CS to P93, with P90 MOSI, P91 MISO, P92
+SCK and P94 INT. The archived excerpt includes:
+
+```text
+ICM20948 sample=9 accel=(8699,8539,-10966) gyro=(33,58,6) IRQ=3863
+```
+
+The excerpt is partial: it does not include WHOAMI/configuration output, the
+final result or sample total, a complete transcript, or a logic-analyzer
+trace. It therefore extends the existing SPI/GPIO bounded-on-target evidence
+without promoting the standalone image to PX4 sensor integration, FIFO,
+magnetometer, PWM, or production validation.
+
+## GPIO-only CS observation
+
+On 2026-10-11, the user identified and repaired a broken CS-to-analyzer wire
+that caused the earlier stuck-high observation. CS is restored to P93 after
+the temporary P50 experiment. The user then reported that the standalone
+`gy912_test` sensor run passed on CR8-0. The [archived RTT excerpt](gy912-icm20948-rtt-261011.txt)
+shows SPI0 CS selection messages and one raw sample; the [status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md)
+records the user attribution and evidence limits. No fresh logic-analyzer
+capture was supplied, so the GPIO-only procedure below remains available for
+a separately instrumented P93 check.
+
+After loading the rebuilt `gy912` image, run:
+
+```text
+nsh> gy912_test cs
+```
+
+This mode configures P93 with `GPIO_P9_3_OUTPUT_HIGH`, then writes low for
+one second and high for one second, repeating **10 cycles** (about 20 seconds).
+It reads the GPIO input after each hold and prints:
+
+```text
+P93 CS step=1 write=0 read=0
+P93 CS step=2 write=1 read=1
+...
+P93 CS step=20 write=1 read=1
+P93 CS GPIO result=0
+```
+
+A readback mismatch produces a nonzero result but the pattern continues so
+it can still be captured. GPIO write or sleep errors stop the pattern, with
+an attempt to restore CS high. Normal completion also leaves CS high. This
+mode shares the sensor test's busy guard and makes no SPI calls or P94
+interrupt changes. Board boot still initializes SPI0; no transfer is requested
+by this mode. The existing `gy912_test [sample-count]` mode remains available.
+
+Connect the module CS wire and analyzer probe to **P93 (header pin 24)**.
+Optionally probe **header pin 23 (P92)** with a common ground. Expect the slow
+low/high pattern on P93; the command does not request clock pulses on P92.
+Compare the analyzer signal with each printed
+readback. GPIO input readback alone does not prove the signal reaches the
+header or sensor.
+
+With the RTT bridge attached, wait for the final result even if NSH returns
+an early prompt:
+
+```bash
+platforms/nuttx/Debug/nsh_console_exec.py --timeout 30 --until 'P93 CS GPIO result=' --log /tmp/gy912-cs-rtt.log 'gy912_test cs'
+```
+
 ## Acceptance and failure cases
 
 | Check | Required result |
@@ -133,9 +213,10 @@ Record board/module revision and wiring, parent/apps/NuttX source revisions,
 ELF SHA-256, approved loading/reset method and the complete RTT transcript.
 Capture P93 framing, mode-3 clock edges and P94 falling pulses with a scope or
 logic analyzer. Include normal/default/single/repeated runs and missing sensor,
-disconnected INT and malformed argument results. A clean build or the earlier
-[P94 button confirmation](gpio-button-interrupt-validation.md) does not prove
-sensor communication or sensor-generated interrupts.
+disconnected INT and malformed argument results. The archived excerpt and user
+report extend the existing [P94 button confirmation](gpio-button-interrupt-validation.md),
+but do not replace the complete transcript, exact-image provenance, or direct
+waveform evidence required for the remaining sensor gates.
 
 ## Software checkpoint
 
@@ -171,5 +252,6 @@ These checks establish software behavior and linkage, not target communication.
 
 ## Unresolved questions
 
-Actual module/board revision, electrical interface and passing hardware
-transcript remain unrecorded.
+Actual module/board revision, electrical interface, complete passing hardware
+transcript, exact loaded ELF hash/source revisions, direct P93/P94 waveform
+capture, and repeated/negative hardware cases remain unrecorded.

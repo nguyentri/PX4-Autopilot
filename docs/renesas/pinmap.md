@@ -1,6 +1,6 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-10-02
+**Date:** 2026-10-11
 **Status:** Foundational; FSP pin extraction reconciled, target electrical validation pending
 **FSP software configuration source:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
 
@@ -38,7 +38,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 | Pin | Port.Bit | Alt-Func | Peripheral | Mode | Pull | Drive | Owner File | FSP Ref |
 |-----|----------|----------|-----------|------|------|-------|------------|---------|
-| **P50** | 5.0 | TINT | GPIO/INT | Input | None; noise filter on | B01 | unused by PX4 | MPU9250 DRDY (FSP reference only; PX4 moved DRDY to P94) |
+| **P50** | 5.0 | GPIO | Unused | Input | None | B01 | board.h | MPU9250 DRDY in FSP reference; current DRDY is P94 |
 | **P52** | 5.2 | GPIO | Safety input | Input | Schmitt + noise filter | B01 | board safety (planned) | GPS safety switch |
 | **P53** | 5.3 | AF=11 | GPT10B (PWM4) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P70** | 7.0 | AF=1 | RSCI4 TXD | Output | None | B01 | rzv_serial.c | TFmini TX |
@@ -46,14 +46,14 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P72** | 7.2 | AF=1 | RSCI5 TXD | Output | None | B01 | rzv_serial.c | Telemetry TX |
 | **P73** | 7.3 | AF=1 | RSCI5 RXD | Input | None | B01 | rzv_serial.c | Telemetry RX |
 | **P75** | 7.5 | AF=1 | RSCI6 RXD | Input | Noise-filter | B01 | rzv_serial.c | RC RX |
-| **P76** | 7.6 | AF=1 | RSCI7 SDA (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | BMP280 SDA |
-| **P77** | 7.7 | AF=1 | RSCI7 SCL (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | BMP280 SCL |
+| **P76** | 7.6 | AF=1 | RSCI7 SDA (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 3; BMP280 / BMM150 SDA |
+| **P77** | 7.7 | AF=1 | RSCI7 SCL (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 5; BMP280 / BMM150 SCL |
 | **P82** | 8.2 | AF=6 | RSCI9 TXD | Output | None | B01 | rzv_serial.c | GPS TX; CAN2 CTX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
 | **P83** | 8.3 | AF=6 | RSCI9 RXD | Input | None | B01 | rzv_serial.c | GPS RX; CAN2 CRX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
 | **P90** | 9.0 | AF=1 | RSPI0 MOSI | Output | None | B11 | rzv_spi.c | MPU9250 MOSI |
 | **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | MPU9250 MISO |
 | **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | MPU9250 SCK |
-| **P93** | 9.3 | AF=1 | RSPI0 SSLA0 (CS) | Output | None | B11 | rzv_spi.c | MPU9250 CS |
+| **P93** | 9.3 | GPIO | SPI0 CS | Output, initially high | None | B11 | rzv2h_spi.c / PX4 SPI table | SSLA0-capable pin used as GPIO CS |
 | **P94** | 9.4 | GPIO | TINT input | Input | Pull-up | B11 | rzv_gpio.c | MPU9250 DRDY (PX4) / GY-912 INT; FSP reference: unused SSLA1. Shared with the button demo |
 | **P96** | 9.6 | AF=9 | GPT9A (PWM3) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P97** | 9.7 | GPIO | GPS buzzer | Output low | None | B01 | board GPIO (planned) | GPS buzzer |
@@ -83,7 +83,7 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P90 | MOSI | MPU9250 IMU | Data out |
 | P91 | MISO | MPU9250 IMU | Data in |
 | P92 | SCK | MPU9250 IMU | Clock |
-| P93 | GPIO CS (SSLA0-capable) | MPU9250 IMU | Active-low chip select |
+| P93 | GPIO CS (SSLA0-capable) | MPU9250 IMU / ICM20948 | Active-low chip select |
 | P94 | GPIO / TINT input | MPU9250 IMU / GY-912 test | Data-ready interrupt (not SSLA1) |
 
 **Speed:** Driver default 1 MHz; target ceiling unverified.
@@ -93,11 +93,12 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 | Pin | Function | Device | Signal |
 |-----|----------|--------|--------|
-| P76 | SDA | BMP280 barometer | Data |
-| P77 | SCL | BMP280 barometer | Clock |
+| P76 | SDA | BMP280 barometer / BMM150 magnetometer | Data (40-pin header Pin 3) |
+| P77 | SCL | BMP280 barometer / BMM150 magnetometer | Clock (40-pin header Pin 5) |
 
-**Address:** 0x76 (BMP280).  
-**Speed:** 100 kHz (standard mode).  
+**Address:** 0x76 (BMP280, `hil-full`); 0x10–0x13 (BMM150, `bmm150` config, default 0x10).  
+**Speed:** 100 kHz (BMP280 HIL); 400 kHz default for the BMM150 sample. Neither validated on target.  
+**Module power:** Pin 1 3V3, Pin 6 GND. See [bmm150-i2c-validation.md](./bmm150-i2c-validation.md).  
 **DMA:** Disabled (PIO mode).
 
 ### PWM / GPT Outputs (ESC Control)
@@ -135,10 +136,10 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P2 | 0–7 | Unused | Available for GPIO expansion |
 | P3 | 0–7 | Unused | Available for GPIO expansion |
 | P4 | 0–7 | Unused | Available for GPIO expansion |
-| P5 | 0–1, 4, 6–7 | Unused | P50 was the FSP IMU INT (PX4 uses P94), P52 safety input, P53 PWM |
+| P5 | 0–1, 4, 6–7 | Unused | P50 was the FSP IMU INT (current INT is P94), P52 safety input, P53 PWM |
 | P6 | 0–7 | Unused | Available for expansion |
 | P8 | 0–1, 4–7 | Unused in PX4 images | P80/P81 = CAN1 (CANFD CH0, `canfd*` NuttX configs); P82/P83 = SCI9 GPS or CAN2 (CANFD CH1) |
-| P9 | 5 | Unused | P90–94 SPI0, P96 PWM, P97 buzzer |
+| P9 | 5 | Unused | P90–93 SPI0, P94 IMU INT, P96 PWM, P97 buzzer |
 | PA | 0–3, 5 | Unused | PA4/PA7 PWM; PA6 safety LED |
 
 ---
