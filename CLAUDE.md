@@ -80,3 +80,9 @@ This ensures packages installed by `install.sh` (google-genai, pypdf, etc.) are 
 Project facts (code map, build scripts, RTT/J-Link debug, `refs/` layout, evidence rules, doc map) live in AGENTS.md so every agent tool shares them:
 
 @AGENTS.md
+
+## AgentKit workflow
+
+ClaudeKit has been replaced by AgentKit Engineer. The project Claude plugin is enabled as `ak-engineer@agentkit-local`; global Claude, Codex, and Antigravity retain their own AK installations. Use the live installed `ak:*` skill catalog for workflows. Custom firmware skills remain under `.claude/skills/`, with existing Codex symlinks preserved.
+
+From the repository root, refresh the project plugin with `ak kit refresh engineer --target claude-code --switch-to-plugin --yes`. Verify its content with `ak audit engineer --project-dir . --plugin-mode --json`. Global Codex is maintained with `ak kit refresh engineer --global --target codex --yes`.

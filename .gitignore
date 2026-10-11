@@ -173,4 +173,6 @@ refs
 !test/rzv2h-simple-artifact-contract-test.py
 !test/rzv2h-simple-test-support.py
 rzv2h_sd.txt
-.agentkit/config.yaml
+ak-engineer
+.agentkit
+.claude-plugin
