@@ -307,6 +307,81 @@ class NuttXLowerHalfContracts(unittest.TestCase):
             "rdk-rzv2h/src/rzv2h_pwm.c"
         )
 
+    def test_setup_admits_software_start_stop_and_clear(self) -> None:
+        compiler = shutil.which("cc")
+        self.assertIsNotNone(compiler)
+        bodies = "\n".join(
+            signature + function_body(self.gpt, name)
+            for name, signature in (
+                ("gpt_unlock", "static void gpt_unlock(struct rzv_gpt_lowerhalf_s *priv)"),
+                ("gpt_lock", "static void gpt_lock(struct rzv_gpt_lowerhalf_s *priv)"),
+                ("rzv_gpt_setup", "static int rzv_gpt_setup(struct pwm_lowerhalf_s *dev)"),
+            )
+        )
+        boundary = r"""
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "hardware/rzv_gpt.h"
+#define FAR
+#define OK 0
+typedef unsigned int irqstate_t;
+struct pwm_lowerhalf_s { int unused; };
+struct rzv_gpt_lowerhalf_s {
+  struct pwm_lowerhalf_s dev;
+  uint32_t pclk;
+  unsigned int channel;
+  unsigned int hw_ch;
+  bool initialized;
+};
+static uint32_t registers[64];
+static int rzv_gpt_module_start(int channel) { (void)channel; return 0; }
+static uint32_t rzv_get_gpt_clock_hz(void) { return 200000000; }
+static irqstate_t enter_critical_section(void) { return 0; }
+static void leave_critical_section(irqstate_t flags) { (void)flags; }
+static void gpt_putreg(struct rzv_gpt_lowerhalf_s *priv, unsigned int offset,
+                       uint32_t value) {
+  uint32_t bit = 1u << priv->hw_ch;
+  registers[offset / 4] = value;
+  /* Software group commands only act when their source admits them. */
+  if ((value & bit) && offset == RZV_GPT_GTSTR_OFFSET &&
+      (registers[RZV_GPT_GTSSR_OFFSET / 4] & (1u << 31)))
+    registers[RZV_GPT_GTCR_OFFSET / 4] |= GPT_GTCR_CST;
+  if ((value & bit) && offset == RZV_GPT_GTSTP_OFFSET &&
+      (registers[RZV_GPT_GTPSR_OFFSET / 4] & (1u << 31)))
+    registers[RZV_GPT_GTCR_OFFSET / 4] &= ~GPT_GTCR_CST;
+  if ((value & bit) && offset == RZV_GPT_GTCLR_OFFSET &&
+      (registers[RZV_GPT_GTCSR_OFFSET / 4] & (1u << 31)))
+    registers[RZV_GPT_GTCNT_OFFSET / 4] = 0;
+}
+"""
+        exercise = r"""
+int main(void) {
+  struct rzv_gpt_lowerhalf_s priv = {.channel = 6, .hw_ch = 6};
+  registers[RZV_GPT_GTCNT_OFFSET / 4] = 123;
+  assert(rzv_gpt_setup(&priv.dev) == 0 && priv.initialized);
+  assert(registers[RZV_GPT_GTCNT_OFFSET / 4] == 0);
+  gpt_putreg(&priv, RZV_GPT_GTSTR_OFFSET, 1u << 6);
+  assert(registers[RZV_GPT_GTCR_OFFSET / 4] & GPT_GTCR_CST);
+  gpt_putreg(&priv, RZV_GPT_GTSTP_OFFSET, 1u << 6);
+  assert(!(registers[RZV_GPT_GTCR_OFFSET / 4] & GPT_GTCR_CST));
+  registers[RZV_GPT_GTCNT_OFFSET / 4] = 456;
+  gpt_putreg(&priv, RZV_GPT_GTCLR_OFFSET, 1u << 6);
+  assert(registers[RZV_GPT_GTCNT_OFFSET / 4] == 0);
+}
+"""
+        with tempfile.TemporaryDirectory(prefix="rzv2h-gpt-setup-") as tmp:
+            directory = Path(tmp)
+            (directory / "nuttx").mkdir()
+            (directory / "nuttx/config.h").write_text("")
+            source = directory / "setup.c"
+            source.write_text(boundary + bodies + exercise)
+            binary = directory / "setup"
+            subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror",
+                            "-I", tmp, "-I", str(NUTTX / "arch/arm/src/rzv"),
+                            str(source), "-o", str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
     def test_board_routes_the_mixed_a_b_outputs_explicitly(self) -> None:
         self.assertIn("enum rzv_gpt_output_e", self.header)
         self.assertRegex(
@@ -355,12 +430,45 @@ class NuttXLowerHalfContracts(unittest.TestCase):
         failure = body.split("if (ret < 0)", 2)[-1]
         self.assertIn("gpt_quiesce_locked", failure)
 
+    def test_compare_irq_selectors_match_the_cr8_source_table(self) -> None:
+        body = function_body(self.gpt, "rzv_gpt_compare_event")
+        program = r"""
+#include <assert.h>
+#include <stdint.h>
+#include "hardware/rzv_gpt.h"
+#define FAR
+#define RZV_GPT_OUTPUT_A 0
+struct rzv_gpt_lowerhalf_s { unsigned int channel, hw_ch, output; };
+""" + "static uint16_t rzv_gpt_compare_event(const struct rzv_gpt_lowerhalf_s *priv)" + body + r"""
+int main(void) {
+  const unsigned int channels[] = {6, 7, 9, 10};
+  const unsigned int outputs[] = {0, 1, 0, 1};
+  /* FSP CR8 IRQSEL identifiers, not ELC event numbers. */
+  const unsigned int expected[] = {121, 130, 220, 229};
+  for (unsigned int i = 0; i < 4; ++i) {
+    struct rzv_gpt_lowerhalf_s priv = {channels[i], channels[i] % 8, outputs[i]};
+    assert(rzv_gpt_compare_event(&priv) == expected[i]);
+  }
+}
+"""
+        with tempfile.TemporaryDirectory(prefix="rzv2h-gpt-irqsel-") as tmp:
+            directory = Path(tmp)
+            (directory / "nuttx").mkdir()
+            (directory / "nuttx/config.h").write_text("")
+            source = directory / "irqsel.c"
+            source.write_text(program)
+            binary = directory / "irqsel"
+            subprocess.run([shutil.which("cc"), "-std=c11", "-Wall", "-Wextra", "-Werror",
+                            "-I", tmp, "-I", str(NUTTX / "arch/arm/src/rzv"),
+                            str(source), "-o", str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
     def test_finite_pulses_complete_on_compare_falling_edges(self) -> None:
         attach = function_body(self.gpt, "rzv_gpt_compare_event")
         start = function_body(self.gpt, "rzv_gpt_start")
         irq = function_body(self.gpt, "rzv_gpt_irq")
-        self.assertIn("ELCCMPA", attach)
-        self.assertIn("ELCCMPB", attach)
+        self.assertIn("IRQSEL_CCMPA", attach)
+        self.assertIn("IRQSEL_CCMPB", attach)
         self.assertIn("GPT_GTINTAD_GTINTA", start)
         self.assertIn("GPT_GTINTAD_GTINTB", start)
         self.assertIn("pulse_started", irq)
