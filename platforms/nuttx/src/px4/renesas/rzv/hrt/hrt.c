@@ -37,10 +37,10 @@
  * PX4 high-resolution timer for RZ/V2H — queue manager only.
  *
  * All register access to the timer counter lives in
- * arch/arm/src/rzv/rzv_hrt.c (GTM7 free-run at P1CLK, runtime clock
- * lookup). This file keeps the PX4 hrt_call queue and delegates
- * counter reads and one-shot arming to the arch driver via
- * rzv_hrt_absolute_time() and rzv_hrt_call_after().
+ * arch/arm/src/rzv/rzv_hrt.c (GTM free-run at P1CLK, runtime clock
+ * lookup; GTM7 on CR8-0, GTM6 on CR8-1). This file keeps the PX4
+ * hrt_call queue and delegates counter reads and one-shot arming to
+ * the arch driver via rzv_hrt_absolute_time() and rzv_hrt_call_after().
  *
  * Requires CONFIG_RZV_HRT=y so the arch shim is linked.
  */

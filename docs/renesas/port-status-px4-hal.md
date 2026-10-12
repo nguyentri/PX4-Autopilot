@@ -346,7 +346,9 @@ are historical evidence and do not cover this remediation.
 
 ### Timer/HRT (Line 7)
 
-**NuttX Foundation:** `rzv_hrt.c` owns dedicated GTM7. GPT6/7/9/10 remain
+**NuttX Foundation:** `rzv_hrt.c` owns one dedicated GTM. CR8-0 uses GTM7. The
+CR8-1 IO image selects GTM6 (`CONFIG_RZV_HRT_GTM6`); this is build-clean but not
+run on target. GPT6/7/9/10 remain
 separate PWM resources. The checked-in reference supports a 100 MHz P1CLK,
 but live loader-owned clock divergence is not yet detected.
 

@@ -348,12 +348,16 @@ References:
 ### 9.2 GTM: General Timer Module
 
 - **Type:** 32-bit free-running counter.
-- **HRT instance:** GTM7 at `0x12C03000`.
+- **HRT instance:** one GTM per PX4 core, chosen by the NuttX Kconfig choice
+  `RZV_HRT_GTM6`/`RZV_HRT_GTM7`. GTM channels are shared by all cores. CR8-0 uses
+  GTM7 at `0x12C03000` (the default), and the CR8-1 IO image uses GTM6 at
+  `0x12C02000`.
 - **Clock:** runtime P1CLK; 100 MHz nominal in the checked-in CR8-0 setup.
 - **Counter:** 32-bit, nominal full wrap approximately 42.9 seconds at 100 MHz;
   the HRT shim uses bounded comparisons and a software epoch.
 - **PX4 use:** High-resolution timer, HRT, for scheduling.
-- **Interrupt:** fixed GTM7 compare IRQ.
+- **Interrupt:** the fixed compare IRQ of the selected GTM (`RZV_IRQ_GTM7` or
+  `RZV_IRQ_GTM6`).
 
 **Sources:**
 
