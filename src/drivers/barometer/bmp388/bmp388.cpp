@@ -206,34 +206,38 @@ BMP388::collect()
 bool
 BMP388::soft_reset()
 {
-	bool    result = false;
-	uint8_t status;
-	int     ret;
+	// A cold sensor may initially report CMD_RDY clear. Bound readiness to
+	// ten reads with the existing 2 ms reset interval between attempts.
+	static constexpr unsigned MAX_READY_ATTEMPTS = 10;
+	uint8_t status = 0;
 
-	ret = _interface->get_reg(BMP3_SENS_STATUS_REG_ADDR, &status);
+	for (unsigned attempt = 0; attempt < MAX_READY_ATTEMPTS; ++attempt) {
+		if (_interface->get_reg(BMP3_SENS_STATUS_REG_ADDR, &status) != OK) {
+			return false;
+		}
 
-	if (ret != OK) {
+		if (status & BMP3_CMD_RDY) {
+			break;
+		}
+
+		if (attempt + 1 == MAX_READY_ATTEMPTS) {
+			return false;
+		}
+
+		usleep(BMP3_POST_RESET_WAIT_TIME);
+	}
+
+	if (_interface->set_reg(BPM3_CMD_SOFT_RESET, BMP3_CMD_ADDR) != OK) {
 		return false;
 	}
 
-	if (status & BMP3_CMD_RDY) {
-		ret = _interface->set_reg(BPM3_CMD_SOFT_RESET, BMP3_CMD_ADDR);
+	usleep(BMP3_POST_RESET_WAIT_TIME);
 
-		if (ret == OK) {
-			usleep(BMP3_POST_RESET_WAIT_TIME);
-			ret = _interface->get_reg(BMP3_ERR_REG_ADDR, &status);
-
-			if (ret != OK) {
-				return false;
-			}
-
-			if ((status & BMP3_CMD_ERR) == 0) {
-				result = true;
-			}
-		}
+	if (_interface->get_reg(BMP3_ERR_REG_ADDR, &status) != OK) {
+		return false;
 	}
 
-	return result;
+	return (status & BMP3_CMD_ERR) == 0;
 }
 
 /*
