@@ -128,6 +128,10 @@ git config advice.addIgnoredFile false
 .vscode/targets.log
 
 *.py
+!Tools/renesas-coding-standards.py
+!test/renesas-coding-standards-test.py
+!test/rzv2h-wdt-runtime-test.py
+!test/rzv2h-driver-boundary-runtime-test.py
 !platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py
 !platforms/nuttx/Debug/nsh_console_exec.py
 !platforms/nuttx/Debug/svd_register_tool.py
@@ -186,3 +190,5 @@ ak-engineer
 
 !platforms/nuttx/Debug/rzv2h-boot-package.py
 !test/rzv2h-boot-package-test.py
+
+!test/rzv2h-board-failure-runtime-test.py
