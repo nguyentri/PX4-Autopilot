@@ -49,7 +49,9 @@
 
 #include <crc32.h>
 #include <float.h>
+#include <limits.h>
 #include <math.h>
+#include <sys/stat.h>
 
 #include <containers/Bitset.hpp>
 #include <drivers/drv_hrt.h>
@@ -718,6 +720,59 @@ param_reset_specific(const char *resets[], int num_resets)
 	}
 }
 
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+static int param_temporary_path(const char *filename, char (&temporary)[PATH_MAX])
+{
+	const int length = snprintf(temporary, sizeof(temporary), "%s.tmp", filename);
+
+	if (length < 0 || static_cast<size_t>(length) >= sizeof(temporary)) {
+		return -ENAMETOOLONG;
+	}
+
+	return PX4_OK;
+}
+
+/**
+ * Finish a save that was interrupted inside rename().
+ *
+ * NuttX rename() unlinks an existing target before moving the source over it,
+ * so a reset in that window leaves only "<file>.tmp". The temporary was synced
+ * and verified before rename() was attempted, so promote it when the target is
+ * missing. The BSON size header is written last, so a temporary whose header
+ * does not equal its length is an interrupted export and is left for the next
+ * save to overwrite.
+ */
+static void param_recover_atomic(const char *filename)
+{
+	char temporary[PATH_MAX];
+	struct stat status {};
+
+	if (filename == nullptr || param_temporary_path(filename, temporary) != PX4_OK) {
+		return;
+	}
+
+	pthread_mutex_lock(&file_mutex);
+
+	if (::stat(filename, &status) != 0 && errno == ENOENT) {
+		int fd = ::open(temporary, O_RDONLY);
+
+		if (fd >= 0) {
+			int32_t document_size = 0;
+			const bool complete = ::fstat(fd, &status) == 0
+					      && ::read(fd, &document_size, sizeof(document_size)) == sizeof(document_size)
+					      && document_size > 0 && document_size == status.st_size;
+			::close(fd);
+
+			if (complete && ::rename(temporary, filename) == 0) {
+				PX4_WARN("recovered interrupted parameter save to %s", filename);
+			}
+		}
+	}
+
+	pthread_mutex_unlock(&file_mutex);
+}
+#endif
+
 int
 param_set_default_file(const char *filename)
 {
@@ -739,6 +794,9 @@ param_set_default_file(const char *filename)
 
 	if (filename) {
 		param_default_file = strdup(filename);
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+		param_recover_atomic(param_default_file);
+#endif
 	}
 
 #endif /* FLASH_BASED_PARAMS */
@@ -766,6 +824,9 @@ int param_set_backup_file(const char *filename)
 
 	if (filename) {
 		param_backup_file = strdup(filename);
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+		param_recover_atomic(param_backup_file);
+#endif
 
 	} else {
 		param_backup_file = nullptr; // backup disabled
@@ -781,6 +842,60 @@ const char *param_get_backup_file()
 
 static int param_export_internal(int fd, param_filter_func filter);
 static int param_verify(int fd);
+
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+static int param_save_atomic(const char *filename)
+{
+	char temporary[PATH_MAX];
+
+	if (param_temporary_path(filename, temporary) != PX4_OK) {
+		return -ENAMETOOLONG;
+	}
+
+	int fd = ::open(temporary, O_WRONLY | O_CREAT | O_TRUNC, PX4_O_MODE_666);
+
+	if (fd < 0) {
+		return -errno;
+	}
+
+	perf_begin(param_export_perf);
+	int result = param_export_internal(fd, nullptr);
+	perf_end(param_export_perf);
+
+	if (result == PX4_OK && ::fsync(fd) != 0) {
+		result = -errno;
+	}
+
+	if (::close(fd) != 0 && result == PX4_OK) {
+		result = -errno;
+	}
+
+	if (result == PX4_OK) {
+		fd = ::open(temporary, O_RDONLY, PX4_O_MODE_666);
+
+		if (fd < 0) {
+			result = -errno;
+
+		} else {
+			result = param_verify(fd);
+
+			if (::close(fd) != 0 && result == PX4_OK) {
+				result = -errno;
+			}
+		}
+	}
+
+	if (result == PX4_OK && ::rename(temporary, filename) != 0) {
+		result = -errno;
+	}
+
+	if (result != PX4_OK) {
+		::unlink(temporary);
+	}
+
+	return result;
+}
+#endif
 
 int param_save_default(bool blocking)
 {
@@ -810,7 +925,10 @@ int param_save_default(bool blocking)
 		static constexpr int MAX_ATTEMPTS = 3;
 
 		for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-			// write parameters to file
+			// Write parameters using the selected filesystem contract.
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+			res = param_save_atomic(filename);
+#else
 			int fd = ::open(filename, O_WRONLY | O_CREAT | O_TRUNC, PX4_O_MODE_666);
 
 			if (fd > -1) {
@@ -826,6 +944,8 @@ int param_save_default(bool blocking)
 					::close(fd_verify);
 				}
 			}
+
+#endif
 
 			if (res == PX4_OK) {
 				break;
@@ -850,6 +970,14 @@ int param_save_default(bool blocking)
 
 		// backup file
 		if (param_backup_file) {
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+			int backup_export_ret = param_save_atomic(param_backup_file);
+
+			if (backup_export_ret != PX4_OK) {
+				PX4_ERR("backup parameter export to %s failed (%d)", param_backup_file, backup_export_ret);
+			}
+
+#else
 			int fd_backup_file = ::open(param_backup_file, O_WRONLY | O_CREAT | O_TRUNC, PX4_O_MODE_666);
 
 			if (fd_backup_file > -1) {
@@ -866,6 +994,8 @@ int param_save_default(bool blocking)
 					::close(fd_verify);
 				}
 			}
+
+#endif
 		}
 	}
 
@@ -890,6 +1020,10 @@ param_load_default()
 	if (!filename) {
 		return flash_param_load();
 	}
+
+#ifdef CONFIG_BOARD_PARAM_FILE_ATOMIC
+	param_recover_atomic(filename);
+#endif
 
 	int fd_load = ::open(filename, O_RDONLY);
 

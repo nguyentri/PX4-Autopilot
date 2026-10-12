@@ -196,6 +196,18 @@ menu "File paths"
     config BOARD_PARAM_FILE
         string "Parameter file"
         default "/fs/mtd_params"
+
+    config BOARD_PARAM_FILE_ATOMIC
+        bool "Save parameters with sync, verification and atomic rename"
+        default n
+        help
+            Write a sibling temporary file, sync and verify it, then rename it
+            over the active parameter file. NuttX rename() removes an existing
+            target first; a complete temporary left by a reset in that window
+            is promoted when the file is next selected or loaded. Requires a
+            filesystem with durable metadata commits; power-loss qualification
+            is separate.
+
 endmenu
 
 menu "drivers"
