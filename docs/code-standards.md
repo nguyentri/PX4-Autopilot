@@ -1,6 +1,6 @@
 # Code Standards & Conventions
 
-**Date:** 2026-10-01
+**Date:** 2026-10-12
 **Status:** Active
 
 This document defines coding conventions for the RDK-RZ/V2H port. Standards diverge between PX4 code and the NuttX submodule; follow the section matching your target directory.
@@ -45,6 +45,71 @@ This document defines coding conventions for the RDK-RZ/V2H port. Standards dive
 cd platforms/nuttx/NuttX/nuttx
 ./tools/checkpatch.sh -f arch/arm/src/rzv/rzv_<driver>.c   # builds and runs nxstyle
 ```
+
+### 1.3 NuttX Driver Engineering Guidance
+
+These rules supplement the NuttX style and apply to hand-written PX4/NuttX
+driver code. Keep the NuttX file header, required source path, copyright,
+author/contact, license, and any existing SPDX attribution intact. Vendor and
+generated files remain owned by their generator or configuration inputs.
+Authors remain responsible for every accepted line, including AI-generated code.
+
+**Comments and API contracts:**
+
+- Comments explain stable engineering reasons: invariants, hardware
+  constraints, ownership, races, timing, or required sequencing. Remove
+  comments that only restate the code.
+- Keep process metadata out of comments and file headers: plans, phases, audit
+  findings, session labels, specification coordinates, repository or source
+  links, porting provenance, and change history. Symbol names and meaningful
+  hardware terms are appropriate.
+- Do not add `TODO` or `FIXME` comments. A `Fix:` or `FIX:` prefix is also a
+  process label and does not belong in a comment. Track unresolved work in the
+  owning issue or document. The conventional commit type `fix(...)` remains
+  valid.
+- Use NuttX function headers with `Name:`, `Description:`, `Input Parameters:`,
+  and `Returned Value:` sections; add `Assumptions/Limitations:` when needed.
+  Document ranges, NULL handling, ownership, required context, and every
+  success or error result. NuttX C code does not use Doxygen tags.
+
+**State, scope, and types:**
+
+- Keep objects at the narrowest scope that satisfies their lifetime. Use
+  module-private `static` state for persistent state, and keep resettable state
+  out of function-local `static` objects.
+- Group related state by responsibility, writer, and reset lifetime. A struct
+  does not make concurrent access atomic. Keep immutable tables and constants
+  `static const`.
+- Use fixed-width types for hardware-defined data and the existing NuttX/POSIX
+  types for API results, sizes, and addresses. Preserve external ABI types and
+  names, and encode non-obvious units in names such as `_hz`, `_mv`, or `_ns`.
+
+**Interrupt and real-time work:**
+
+- ISR work must be bounded and finite. Do not allocate, block, wait for an
+  unbounded condition, retry without a cap, or perform logging or other heavy
+  I/O in an ISR; defer that work to the appropriate task or worker.
+- Measure worst-case execution on target, including callees and relevant interrupt
+  interference, and keep it within the allocated period with margin. Recheck
+  after compiler, optimization, code-generation, or linker-placement changes.
+- Use RTOS-native synchronization that matches the execution context, such as
+  NuttX mutexes, semaphores, or interrupt-safe primitives. `volatile` does not
+  make a compound operation atomic, and local interrupt masking does not
+  protect data shared with another core.
+
+**Dependencies, configuration, and failure paths:**
+
+- Include directly what the file uses; do not rely on transitive includes.
+  Forward-declare opaque types in headers when possible and keep public
+  headers minimal.
+- Do not hand-edit generated or vendor sources. Change their generator or
+  configuration input, and avoid unrelated reformatting in the same change.
+- Keep defaults for independent physical signals independent, even when their
+  numeric values match. Use separate configuration symbols and unit-bearing
+  interface fields so one missing value cannot select another signal's limit.
+- Check return values and document the sentinel or negative `errno` contract.
+  Initialization failures must unwind resources in reverse order and leave a
+  documented, predictable state; do not silently swallow errors.
 
 ---
 
@@ -140,8 +205,13 @@ Rationale: makes port commits filterable by `git log --grep '(rzv2h'` and keeps 
 
 **Body:**
 - Explain *why*, not what (code shows what)
+- Describe the concrete behavior and rationale; mention compatibility or side
+  effects when relevant
 - Wrap at 72 columns
-- Reference issues/commits when relevant
+- Keep workflow or history narrative, plans, phases, audit or session labels,
+  specification coordinates, `Fix:`/`FIX:` labels, repository paths, and
+  porting-source links out of the subject and body
+- Retain meaningful external issue or commit footers when relevant
 - Include breaking changes or side effects
 
 **Example:**
@@ -149,8 +219,8 @@ Rationale: makes port commits filterable by `git log --grep '(rzv2h'` and keeps 
 feat(rzv2h/serial): add SCIF-B multi-baud rate support
 
 Extends rzv_serial driver to handle SCIF-B clock source
-changes for UART baud rates 115200 and 921600. Requires
-CPG clock reconfig on mode switch; see rzv_clk.c for details.
+changes for UART baud rates 115200 and 921600. Reprograms the
+CPG clock and baud divisor together when the source changes.
 
 Fixes: #457
 ```
