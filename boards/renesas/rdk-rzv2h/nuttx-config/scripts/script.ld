@@ -568,7 +568,10 @@ SECTIONS
     _sram_load_addr = FLASH_DATA_START + _itcm_load_size;
     _sram_load_size = _sram_load_end - _sram_load_start;
     _sdram_load_addr = FLASH_DATA_START + _itcm_load_size + _sram_load_size;
-    _sdram_load_size = (_sdram_text_end - _sdram_text_start) + (_sdram_data_end - _sdram_data_start);
+    /* The loader copies one block from _sdram_text_start; include any
+     * alignment padding before .sdram_data_section, which objcopy keeps.
+     */
+    _sdram_load_size = _sdram_data_end - _sdram_text_start;
     _sdram_load_start = _sdram_text_start;
     .header : {
         _header_start = .;
