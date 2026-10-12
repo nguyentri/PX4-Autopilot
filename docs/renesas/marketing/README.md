@@ -30,20 +30,11 @@ architecture for one central compute SoC.
 
 ## Target architecture and platform scope
 
-The target assigns Linux, ROS 2, perception, autonomy and payload services to
-the Cortex-A55 cluster with DRP-AI3/DRP acceleration. CR8-0 runs PX4 on NuttX
-and owns flight decisions. CR8-1 runs NuttX for aircraft I/O and supervised
-actuator output. The Cortex-M33 core is excluded from boot and runtime roles.
-
-The design applies to customer RZ/V2H platforms, including a SOM with a custom
-carrier or a discrete SoC board. External memory, power electronics, sensors,
-cameras, BMS, radios, gimbal controllers, ESCs and motors form part of the
-aircraft. The customer selects their parts, wiring, protocols and board support.
-
-The RDK-RZ/V2H provides a pre-development example. Its pins, images and PX4/
-NuttX or FreeRTOS samples are reference implementations. The stock RDK has no
-usable analog battery input; customer hardware defines a digital BMS/power
-monitor connection or a protected analog sensing path where required.
+The [system specification](./rzv2h-system-specification.md#2-system-context-and-boundaries)
+owns the target domain allocation, customer-board boundary and CM33 exclusion;
+the [software specification](./rzv2h-software-specification.md#1-scope-and-design-rules)
+owns the software partition and contracts. The RDK and repository images are
+pre-development references, not customer pinouts or production evidence.
 
 ## Engineering entry points
 

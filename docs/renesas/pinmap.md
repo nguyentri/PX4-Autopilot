@@ -116,15 +116,6 @@ profiles. GPS remains 115200 8N1; SBUS requires the external inverter.
 
 ### SPI Bus (RSPI0)
 
-| Pin | Function | Device | Signal |
-|-----|----------|--------|--------|
-| P90 | MOSI | Selected IMU profile | Data out |
-| P91 | MISO | Selected IMU profile | Data in |
-| P92 | SCK | Selected IMU profile | Clock |
-| P93 | GPIO CS (SSLA0-capable) | Single native sensor / extension IMU #1 | Active-low chip select |
-| P94 | GPIO / TINT or CS1 | Native DRDY/button / extension IMU #2 | Exclusive profile roles |
-| P95 | CS2 (planned native profile) | Extension IMU #3 | Reference SSLA2 |
-
 **Speed:** Driver default 1 MHz; target ceiling unverified.
 **Transfer backend:** PIO and opt-in SPI0 DMA exist in the native lower half.
 Read the selected defconfig and [SPI source](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c)
@@ -133,16 +124,11 @@ DMA transfers or CS waveforms. New multi-CS routing starts with PIO.
 
 ### I2C Bus (RSCI7 SCI-mode I2C)
 
-| Pin | Function | Device | Signal |
-|-----|----------|--------|--------|
-| P76 | SDA | Sensors selected by profile | Data (40-pin header Pin 3) |
-| P77 | SCL | Sensors selected by profile | Clock (40-pin header Pin 5) |
-
 **Address:** Legacy BMP280 0x76; BMM150 sample defaults to 0x10 with address
-configuration. Planned extension addresses are in the profile table above;
+configuration. Extension addresses are in the profile table above;
 reference runtime `rcS` selects BMP390L 0x77 despite a legacy 0x76 board macro.
 **Speed:** 100 kHz (BMP280 HIL); 400 kHz default for the BMM150 sample. Neither validated on target.
-**Module power:** Pin 1 3V3, Pin 6 GND. See [bmm150-i2c-validation.md](./bmm150-i2c-validation.md).
+**Module power:** Pin 1 3V3, Pin 6 GND. See [bmm150-i2c-validation.md](./validation/bmm150-i2c-validation.md).
 **DMA:** Disabled (PIO mode).
 
 ### PWM / GPT Outputs (ESC Control)
@@ -160,12 +146,8 @@ reference runtime `rcS` selects BMP390L 0x77 despite a legacy 0x76 board macro.
 
 ### GPIO / Interrupts
 
-| Pin | Function | Source | Active Config |
-|-----|----------|--------|----------------|
-| P94 | GPIO / TINT or CS1 | Profile-dependent | Native IMU INT/button versus planned extension CS1 |
-| P52 | No ratified GPIO input | Safety switch candidate | Reference active XML is RSCI1 TX; generated symbol and routing need verification |
-| P97 | GPIO output low | GPS buzzer candidate | FSP reference config; PX4 consumption pending |
-| PA6 / P10_06 | GPIO output low | Safety LED candidate | FSP reference config; PX4 consumption pending |
+Use the active assignment table for P94's exclusive roles and the unqualified
+P52/P97/PA6 safety and indication candidates.
 
 **Pull-ups/Pull-downs:** P76/P77 require external I2C pull-ups; confirm the populated board value before timing validation.
 
@@ -204,16 +186,6 @@ only the XML's selected `RDK` set rather than merging inactive profiles.
 None proves drive strength, signal integrity, connector routing, or board
 population.
 
-**Validate against board_config.h:**
-
-```bash
-grep -E "PX4_UART_|GPIO|SPI|I2C" \
-  boards/renesas/rdk-rzv2h/src/board_config.h \
-  | grep -oE "P[0-9A-F][0-9]"
-```
-
----
-
 ## Related Files
 
 - **Hardware Guide:** [hardware.md](./hardware.md)
@@ -230,7 +202,6 @@ grep -E "PX4_UART_|GPIO|SPI|I2C" \
 - **Per-PR Rule:** Update this table when adding new peripheral drivers or changing pin assignments.
 - **Verification:** Run the cross-check recipe whenever pin or peripheral
   ownership changes.
-- **If >800 LOC:** Split into `pinmap-uart.md`, `pinmap-spi-i2c.md`, `pinmap-pwm.md` in `peripherals/` directory.
 - **Conflicts:** Reserved pins are marked with owner file; confirm in Kconfig before reassignment.
 
 ---
@@ -246,10 +217,3 @@ grep -E "PX4_UART_|GPIO|SPI|I2C" \
    electrical confirmation. Active XML does not establish P52 as a safety input.
 
 ---
-
-## Next Steps
-
-- Proceed with configurable extension software integration and sample regression
-  checks; obtain schematic/electrical evidence for target qualification.
-- Add peripheral-specific CAN-FD and SDHI pin tables only when those optional
-  paths enter hardware bring-up.

@@ -1,284 +1,212 @@
 # NuttX Driver Porting Playbook
 
-**Date:** 2026-10-11
 **Status:** Source and build workflow; physical qualification is a separate gate
-**Audience:** Developers porting FSP drivers to NuttX for RZ/V2H
-
-Step-by-step recipe for adding a new driver. Each step references existing exemplars and design patterns documented elsewhere.
-
----
-
-## Step 1: Read FSP Source
-
-**Goal:** Understand the hardware interface and functional requirements.
-
-**Location:** Resolve the sample and core through
-[reference-source-map.md](./reference-source-map.md). Prefer
-`refs/rzv2h_evk/<sample>/<sample>_rzv2h_evk_<core>_ep/e2studio/`; use the
-integrated RDK reference `refs/rzv2h_drone_px4-dev/` or legacy trees only for
-the exceptions recorded in that map. Use the [reference source map](./reference-source-map.md#current-rdk-reference-availability)
-for comparison provenance and the active XML selection.
-
-**Read these files:**
-- `configuration.xml` — selected core, module, channel, and configurator properties
-- `rzv_gen/{hal_data,pin_data,vector_data}.*` — generated integration contract
-- `rzv_cfg/fsp_cfg/r_<driver>_cfg.h` — selected driver options
-- `r_<driver>.h` — API interface (function signatures, config structs)
-- `r_<driver>.c` — Implementation (register access, init sequence, ISR patterns)
-- `src/*_ep.c` or `hal_entry.c` — example lifecycle and expected behavior
-
-Not every NuttX driver has a same-IP FSP example. In particular, SCI-B is not
-SCIF/SCIFA, SPI-B is not RSPI, and the current Ethernet reference is a legacy
-CA55 project. Record such gaps instead of substituting a nearby IP block.
-
-**Extract and document:**
-- Module base address
-- Clock resource ID and reset resource ID from CPG
-- Interrupt numbers (ICU routing slot and physical GIC INTID)
-- Register map (offsets, bit definitions)
-- DMA channels (if applicable)
-- Pin multiplexing requirements from IOPORT/PFC, not ICU
-
-For the active RDK XML, record the selected source paths and treat missing
-generated `rzv_gen` output or schematic data as a physical-qualification
-follow-up. Do not invent register, IRQ, DMA, or pin values to fill that gap.
-The active RDK SPI0 ownership is P90/P91/P92 with P93/P94/P95 as SSLA0/1/2;
-P36/SSLA2 belongs to the inactive IMDT configuration. Existing GY-912 and
-simple profiles intentionally keep P93 GPIO CS and P94 DRDY. A future native
-extension profile is permanently default-off for compatibility; an explicitly
-selected software build may proceed from the selected XML, while physical use
-waits for board corroboration.
-
----
-
-## Step 2: Create Hardware Header
-
-**File:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_<driver>.h`
-
-**Content:**
-- Register base address macro
-- Register offset macros
-- Bit definitions and masks
-- Interrupt IDs
-
-Do not seed a new header with example addresses or IRQ values. Copy the layout
-style from the nearest current `hardware/rzv_*.h`, then derive every base,
-offset, mask, CPG/reset ID, ELC event, and GIC INTID from applicable
-CMSIS/manual/FSP evidence. Use NuttX `getreg*()`/`putreg*()` helpers rather
-than inventing raw volatile-access macros.
-
-**Cross-check:** Match the selected silicon/core view. An FSP driver for a
-different device or core is supporting evidence, not authority.
-
----
-
-## Step 3: Skeleton Lower-Half Driver
-
-**File:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_<driver>.c`
-
-Implement against the real NuttX upper-half contract; operation tables and
-registration return types differ by subsystem. Preserve this lifecycle:
-
-1. validate instance and configuration;
-2. enable the documented CPG clock;
-3. assert/deassert module reset through the current RZ/V2H clock/reset helper;
-4. apply board IOPORT/PFC configuration;
-5. initialize peripheral state while its interrupts are masked;
-6. attach the exact ICU/GIC events;
-7. enable the peripheral and its IRQs;
-8. on any failure, unwind IRQ, peripheral, reset, clock, and allocation in
-   reverse order;
-9. make explicit uninitialize follow the same shutdown contract.
-
-The ISR clears only the source(s) it owns and defers blocking/heavy work.
-Do not add a manual GIC acknowledgement unless the current architecture
-contract requires it.
-
-**References:** `rzv_gtm.c` for a timer lower-half lifecycle,
-`rzv_spi.c` for a bus lower-half, and `rzv_serial.c` for the UART framework.
-
----
-
-## Step 4: Board Wiring
-
-**File:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_<driver>.c`
-
-**Content:** Initialize the driver instance and register with upper-half.
-
-For a concrete working example, `rzv2h_timer.c` obtains
-`struct timer_lowerhalf_s *` from `rzv_gtm_timer_initialize(channel)`, checks
-for `NULL`, passes it to `timer_register(devpath, lower)`, and calls
-`rzv_gtm_timer_uninitialize(lower)` when registration fails. Do not generalize
-that pointer/`NULL` contract to an upper-half whose registration API returns
-an integer.
-
-**Call this from the NuttX board bring-up path; keep standalone board glue
-under `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/`.
-PX4-only adapters remain under `boards/renesas/rdk-rzv2h/src/`.**
-
----
-
-## Step 5: Build System Updates
-
-### 5.1 Kconfig (Driver Enablement)
-
-**File:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Kconfig`
-
-Add:
-```kconfig
-menu "<Driver> (RZV2H)"
-
-config RZV_<DRIVER>
-  bool "Enable <Driver> Support"
-  default n
-  depends on ARCH_CHIP_R9A09G057
-  ---help---
-    Enable NuttX support for RZ/V2H <Driver> peripheral.
-    Document the supported instances, core, pins, and target procedure here.
-
-endmenu
-```
-
-### 5.2 Make.defs (Build Rules)
-
-**File:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Make.defs`
-
-Add conditional compilation:
-```makefile
-ifeq ($(CONFIG_RZV_<DRIVER>),y)
-CHIP_CSRCS += rzv_<driver>.c
-endif
-```
-
-### 5.3 Board-level Makefile
-
-**File:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/Makefile`
-
-```makefile
-ifeq ($(CONFIG_RZV_<DRIVER>),y)
-CSRCS += rzv2h_<driver>.c
-endif
-```
-
----
-
-## Step 6: Sample Configuration
-
-**Directory:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/<driver>/`
-
-Create a minimal defconfig for testing:
-
-**File:** `defconfig`
-```
-CONFIG_ARCH_CHIP_R9A09G057=y
-CONFIG_RZV_<DRIVER>=y
-CONFIG_DEBUG_SYMBOLS=y
-CONFIG_SYSLOG_TIMESTAMP=y
-```
-
----
-
-## Step 7: Validation Loop
-
-### 7.1 Configure + Build
-
-Use `platforms/nuttx/NuttX/build.sh` (runs from any CWD). It does the
-distclean, stale-symlink cleanup, `configure.sh rdk-rzv2h:<config>` and
-`make -j$(nproc)` in one step.
-
-```bash
-# From the PX4-Autopilot repository root:
-platforms/nuttx/NuttX/build.sh --list                    # list configs
-platforms/nuttx/NuttX/build.sh <config> 2>&1 | tee build.log         # clean build
-platforms/nuttx/NuttX/build.sh --no-clean <config> 2>&1 | tee build.log  # incremental
-```
-
-- Exit status: `0` ok, `1` build failed, `2` bad usage / unknown config.
-- `--no-clean` refuses to run unless the tree was last configured for the
-  same config by `build.sh`; use it in edit-compile loops.
-- Outputs: `platforms/nuttx/NuttX/nuttx/{nuttx,nuttx.bin,nuttx.hex,System.map}`
-  (`nuttx` is the ELF to load with J-Link/GDB).
-
-If the exact config is absent, use the closest board sample in the same NuttX
-tree and document the substitution. After required source/build checks pass, a
-source-backed software port may proceed while generated pin output or schematic
-confirmation remains a separately scheduled physical gate. A pending target
-gate never waives a required build or software-correctness failure.
-
-**Fix errors:** undefined references, missing includes, Kconfig syntax.
-
-### 7.3 Link Check
-
-Verify symbols resolved (no undefined references to cpg, dmac, pinmux):
-
-```bash
-grep -E "undefined reference|multiple definition" build.log
-```
-
-### 7.4 Runtime Test (on RDK-RZ/V2H board)
-
-After the board owner approves an exact-image load procedure, load that image
-and record its hash, loader/probe, core, and board revision before verifying:
-- Device appears in `/dev/`
-- No crash on open/read/write
-- Data transfers match expected byte counts
-- No stack overflow (check syslog)
-
-**Example (UART):**
-```bash
-# Select the physical channel owned by the image under test.
-CONSOLE_DEV=/dev/ttyS4
-test -e "${CONSOLE_DEV}"
-echo "test" > "${CONSOLE_DEV}"
-cat "${CONSOLE_DEV}"  # or use a serial monitor
-```
-
-RDK-RZ/V2H keeps physical SCI numbering in device names; selecting a console
-does not rename it to `/dev/ttyS0`. Standalone NSH target ownership is SCI4
-(`/dev/ttyS4`) on CR8-0, SCI5 (`/dev/ttyS5`) on CR8-1, and SCI9
-(`/dev/ttyS9`) on CM33. CR8-1 and CM33 mappings remain hardware-validation
-targets until their sample configurations are aligned and tested.
-
-The integrated PX4 CR8-0 image uses RTT0 for console/debug output instead.
-Its UARTs retain payload ownership: SCI4/P70-P71 TFmini, SCI5/P72-P73 SiK
-telemetry, SCI6 RX/P75 SBUS, SCI7 I2C/P76-P77, and SCI9/P82-P83 GPS. Native
-MAVLink defaults telemetry to 57600; the recovered reference startup uses
-115200, while the reference hardware guide records 57600. Keep the selected
-baud explicit in the profile or parameter and do not silently copy either
-value. These checks are physical qualification gates for a drone-equivalent
-run, not prerequisites for source/build work. Never mix text diagnostics and
-binary MAVLink on RTT0.
-
----
-
-## Step 8: Code Review Checklist
-
-Before pushing:
-
-- [ ] Hardware header (`rzv_<driver>.h`) matches FSP register offsets
-- [ ] ISR clears the source that raised the interrupt and defers heavy work
-- [ ] Cache invalidate/clean wraps DMA (RX/TX)
-- [ ] Init sequence: clock → module reset/unreset → pins (IOPORT/PFC) → IRQ → config
-- [ ] Error codes propagated (not swallowed)
-- [ ] `nxmutex` protects shared state; critical sections protect R-M-W
-- [ ] No malloc/free in ISR
-- [ ] Kconfig help text explains constraints and dependencies
-- [ ] Arch `Make.defs` and board `Makefile`/`CMakeLists.txt` source selection
-      agree
-- [ ] Sample config compiles without errors
-- [ ] Evidence tier is recorded explicitly; do not promote a claim past the strongest proof actually observed
-
-**Cross-reference:** [Design Guidelines](../design-guidelines.md), [Code Standards](../code-standards.md)
-
----
-
-## Related References
-
-- [Design Guidelines](../design-guidelines.md) — ISR, DMAC, init sequence details
-- [Code Standards](../code-standards.md) — formatting, naming, commit conventions
-- [FreeRTOS-to-NuttX Mapping](./freertos-to-nuttx-mapping.md) — API substitutions
-- [Reference Source Map](./reference-source-map.md) — core-specific FSP/EVK paths and exceptions
-
----
-
-**Maintenance:** Update when NuttX driver interface or build system changes; track in Phase 3+ reviews.
+**Audience:** Contributors porting RZ/V2H FSP drivers or related board glue to NuttX
+
+This is the contributor route for a new RZ/V2H driver. It records the decisions
+that a port must preserve and points to the source, build, coding, and evidence
+owners. It does not replace the NuttX upper-half contract, the selected FSP
+project, or a board validation report.
+
+## 1. Establish the comparison contract
+
+Start with the [reference source map](./reference-source-map.md). Resolve the
+sample, silicon view, core, and known exceptions before reading generated FSP
+output. Use the mapped core-matched EVK project or the recovered RDK reference
+where the map says it is authoritative. A nearby IP block is supporting
+evidence only: SCI-B, SCIF/SCIFA, SPI-B, and RSPI must not be silently treated
+as interchangeable.
+
+Record the exact source paths used for the comparison, including the selected
+`configuration.xml`, FSP implementation and configuration, generated HAL/vector
+or pin output when available, and CMSIS headers. If generated output or
+schematic evidence is absent, record that as a later physical-qualification
+input. Do not invent a base address, IRQ, DMA event, pin, or clock value to fill
+the gap, and do not turn a missing physical artifact into a source/build gate.
+
+For the RDK sensor-extension work, retain the native default and existing
+GY-912/simple P93 CS/P94 DRDY profiles. The configurable extension remains
+explicitly selected and default-off; its software can be source/build reviewed
+from the selected XML while physical use waits for board corroboration.
+
+Before implementation, write a short task input containing:
+
+- driver or subsystem, target core, board/profile, and intended boundary;
+- source-map entry and exact reference paths, including labelled gaps;
+- NuttX source/header/board/config files in scope;
+- invariants to preserve: clock/reset, pin ownership, IRQ routing, cache/DMA,
+  concurrency, error cleanup, and compatibility profile;
+- evidence requested: source review, host/build result, or named on-target gate;
+- files allowed to change and the rollback point.
+
+Keep this task input with the work record so source choices and requested
+evidence remain reviewable.
+
+## 2. Derive the hardware contract
+
+The hardware header belongs under
+`platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/`. Derive register
+bases, offsets, access rules, masks, CPG/reset IDs, ELC events, and interrupt
+identifiers from applicable CMSIS, manual, and FSP evidence. Follow the layout
+of the nearest current header and use NuttX register access helpers. Do not seed
+the file with illustrative addresses or IRQ values.
+
+Cross-check the selected core and silicon view. Pin alternate functions come
+from board IOPORT/PFC configuration and the selected profile, not from ICU
+routing tables. Confirm ownership against [pinmap.md](./pinmap.md) and the
+profile's defconfig; flag a conflict instead of choosing a convenient pin.
+
+The header and driver should make the following contract reviewable from their
+own owners:
+
+1. the module clock is enabled before peripheral access;
+2. the documented module reset path is released before configuration;
+3. board pin setup is applied for the selected instance;
+4. peripheral state is initialized while delivery is masked or otherwise safe;
+5. the actual ICU/GIC route is attached through the architecture's current API;
+6. the peripheral and CPU interrupt sources are enabled at their required
+   points; and
+7. every failure unwinds resources in the reverse order and reports its error.
+
+Do not infer one registration or return contract from another subsystem. A
+lower-half factory may return a device pointer, while another initializer or
+registration function returns a status. Read the selected upper-half interface
+and its current RZ/V2H exemplar first. Useful exemplars are
+`rzv_gpt.c`/`rzv_gtm.c` for timer lower halves, `rzv_spi.c` for a bus lower
+half, and `rzv_serial.c` for the UART framework.
+
+## 3. Preserve driver safety invariants
+
+Apply these invariants to the selected driver and its actual upper-half API.
+
+### Interrupts
+
+An ISR reads the status needed to identify its event, clears the peripheral or
+interrupt source it owns according to that IP's contract, records bounded state,
+and returns through the NuttX architecture path. It must not block, allocate,
+or format ordinary diagnostic output. Defer work that can block or take a
+mutex to the work queue or task context selected by the subsystem.
+
+There is no universal manual ICU or GIC acknowledgement sequence. The selected
+architecture route may clear or acknowledge delivery for the driver. Add a
+driver-specific acknowledgement only when the current architecture/IP contract
+requires it, and verify that it does not double-clear the source. Configure
+edge/level behavior and enable each line using the route's owning API; do not
+copy an IRQ recipe from another core or peripheral.
+
+### DMA and cache
+
+Use the current DMAC interface in
+`platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.h`. Prove source and
+destination addressability, transfer width, length, channel ownership, trigger
+route, buffer lifetime, and cleanup. For cached CR8 DMA, the live interface
+uses `up_clean_dcache()` for memory written before a DMA read and
+`up_invalidate_dcache()` before the CPU consumes DMA-written memory. Respect the
+address range and alignment requirements of the actual transfer and its owner.
+
+The DMAC implementation currently owns the cache calls for its configured
+transfers in the paths that support them. A peripheral driver must still prove
+that its buffer lifetime and any CPU reuse satisfy that interface. Keep one-shot
+and hardware-triggered transfers distinct, and validate every enabled consumer
+separately. A memory-copy example does not prove serial, SPI, I2C, or DShot
+operation.
+
+### Reset and timing
+
+Use the current `rzv_clock_enable()`, `rzv_module_unreset()`, and matching
+disable/uninitialize paths where the driver owns them. Apply any documented
+power-up or register read-back delay from the selected IP evidence; do not add a
+generic sleep as a substitute for a hardware contract. Shutdown must quiesce
+active transfer/interrupt state before disabling the clock. Reset behavior,
+inactive motor-pin levels, and warm-reset independence are profile-specific
+acceptance gates, not assumptions from a clean build.
+
+### Errors and shared state
+
+Return initialization, attach, configuration, and transfer failures to the
+caller. Use assertions for programmer invariants and normal logging for
+recoverable failures in task context. Protect a register read-modify-write
+shared with an ISR using a bounded critical section and restore the saved
+interrupt state. Protect task-to-task or task-to-work-queue state with the
+subsystem's mutex/semaphore contract. Keep per-instance state separate and make
+idempotence or duplicate initialization explicit when the upper-half can call
+the entry point more than once.
+
+## 4. Wire the board and configuration
+
+Standalone NuttX board glue belongs in
+`platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/`; PX4-only adapters
+remain under `boards/renesas/rdk-rzv2h/src/`. Add Kconfig and source selection
+only where the driver is actually owned, and keep the option default-off unless
+the profile contract explicitly selects it. The board registration must use the
+selected subsystem's real lower-half and upper-half APIs.
+
+Use `rzv2h_timer.c` as a concrete lower-half registration example: it checks the
+timer factory result, registers the returned lower half, and uninitializes it
+when registration fails. This pointer/`NULL` lifecycle is an example for that
+interface only; do not generalize it to status-returning registrations.
+
+Keep the sample config minimal and explicit about the target core, driver
+option, board pins, console, and debug evidence needed for the test. Do not
+copy a full defconfig or hand-maintain a list of all configurations here. The
+machine-owned list is exposed by `platforms/nuttx/NuttX/build.sh --list`.
+
+## 5. Build and review
+
+Use [deployment-guide.md](../deployment-guide.md) for current PX4/NuttX build,
+artifact, RTT, RAM-load, and J-Link procedures. It owns command details and
+approval boundaries. In particular, J-Link reset, image load, and target memory
+writes require explicit user approval; a read-only attach is the default.
+
+The narrow software loop is:
+
+1. run the selected source/header and configuration checks;
+2. run the named NuttX or PX4 build through its owning script;
+3. inspect the link/source-selection result and the expected symbols;
+4. run the focused host contract or example test when one exists; and
+5. hand the remaining physical checks to the per-driver validation record.
+
+A clean build or host test establishes its own evidence tier only. It does not
+prove pin electrical behavior, IRQ delivery, DMA coherency on hardware, reset
+behavior, persistence, per-unit identity, or an integrated PX4 path.
+
+Before review, check:
+
+- source authority and any `(gap)` are named;
+- clock/reset, pin, IRQ, upper-half, and cleanup contracts are traced to code;
+- ISR source ownership and deferred work are justified for the actual IP;
+- DMA cache, address, width, channel, and trigger assumptions are explicit;
+- failure paths undo resources and return meaningful errors;
+- Kconfig and source selection agree with board wiring;
+- formatting, comments, and commit conventions follow [code-standards.md](../code-standards.md); and
+- the result is labelled with the strongest observed evidence tier.
+
+## 6. Validation handoff
+
+Copy [validation-checklist.md](./validation/validation-checklist.md) for the driver and
+link the completed record from the appropriate row in
+[port-status-nuttx.md](./port-status-nuttx.md). Keep source/build review,
+host tests, and named board transcripts separate. A status row may not advance
+past the strongest evidence actually captured.
+
+The checklist is context-sensitive: select only the DMA, power, timing,
+concurrency, and reliability checks that the driver contract requires, while
+retaining all applicable failure and recovery checks. Do not convert a generic
+stress loop into a blanket gate. The P94 TINT retest remains tied to its named
+`nsh-leds` image and its own register, edge, transcript, and provenance gates.
+
+For hardware work, record the exact artifact hash, core, board revision, load
+and reset provenance, console transcript, and any register or analyzer capture.
+Keep the board owner approval boundary visible in the report. A missing passing
+transcript or physical artifact is an open gate, not a reason to claim a
+production result.
+
+## Related owners
+
+- [Reference source map](./reference-source-map.md) — comparison provenance and gaps.
+- [FreeRTOS/POSIX to NuttX mapping](./freertos-to-nuttx-mapping.md) — semantic migration aid.
+- [Code standards](../code-standards.md) — formatting, naming, comments, and commits.
+- [Deployment guide](../deployment-guide.md) — build, artifact, RTT, and debug procedures.
+- [Validation checklist](./validation/validation-checklist.md) — per-driver evidence record.
+- [Port status](./port-status-nuttx.md) — status tier and validation-report owner.
+- [Hardware](./hardware.md) and [pin map](./pinmap.md) — board-level contracts.

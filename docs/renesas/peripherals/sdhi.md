@@ -98,4 +98,4 @@ the SPI-B `r_dmac_b` example. See [reference-source-map.md](../reference-source-
 
 ## Related
 
-- [validation-checklist.md](../validation-checklist.md)
+- [validation-checklist.md](../validation/validation-checklist.md)

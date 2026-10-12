@@ -1,7 +1,6 @@
 # NuttX Driver Port Status Matrix
 
 **Date:** 2026-10-11
-**Branch:** gitlab-migration
 **Scope:** Renesas RZ/V2H (R9A09G057H) NuttX drivers under `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`
 
 ---
@@ -38,7 +37,7 @@ The 2026-08-09 three-core raw-IPC preparation adds clean
 `ipcc-raw-cr8_0`, `ipcc-raw-cr8_1`, and `ipcc-raw-cm33` builds with distinct
 RTT consoles, numeric raw devices, ABI-v2 epoch/sequence recovery, and a
 fail-closed ELF load checker. The tracked host evidence now lives in
-[RZ/V2H Three-Core IPC Artifact Evidence](./rzv2h-three-core-ipc-artifacts.md).
+[RZ/V2H Three-Core IPC Artifact Evidence](./evidence/rzv2h-three-core-ipc-artifacts.md).
 The legacy `ipcc` profile still builds. CR8-0/CR8-1 load spans are
 host-authorized only when the canonical bundled manifest and exact ELF SHA-256
 are supplied.
@@ -48,24 +47,18 @@ rebuilt CM33 raw ELF passes the address checker. This is build evidence only:
 at that date no CR8-1/CM33 boot or IPC traffic claim existed.
 Since then the CR8-0 ↔ CR8-1 raw link (`/dev/ipcc1`) passes `ipctest`
 recover + ping/echo 100/100 on target
-([HIL guide](./rzv2h-ipc-hil-test-guide.md)); CM33 boot/traffic is still
+([HIL guide](./validation/rzv2h-ipc-hil-test-guide.md)); CM33 boot/traffic is still
 unproven.
 The focused ADC, Ether, Ether PHY, SCIF, RIIC, POEG, and serial fixes below
 separate source/build closure from the still-open hardware or HIL gates.
 
 ### Reference extension boundary
 
-The local FreeRTOS reference describes a fitted extension profile with three
-polled ICM45686 devices sharing SPI0 P90/P91/P92, configurable CS lines P93,
-P94, and P95, and no DRDY ownership. Its SCI7 bus on P76/P77 carries BMM150 at
-0x10, BMP390L through the `bmp388` driver at 0x77, and INA228 at 0x45; P36 is
-inactive IMDT in the selected profile. The native opt-in `drone` profile now
-implements this layout through default-off `RZV2H_DRONE_SENSOR_EXTENSION`,
-GPIO CS and polled PIO. Real-descriptor and shared SCI7 transfer/ISR host tests
-pass, and the firmware builds; no extension target evidence is claimed.
-The MPU9250/BMP280 paths and standalone ICM20948/GY-912 and BMM150 samples
-remain named legacy profiles. See [execution progress](../../plans/261011-2017-rzv2h-drone-reference-port/reports/goal-progress.md). Keep CS1/P94 extension
-wiring separate from the legacy P94 button/DRDY images.
+The opt-in `drone` profile has host/build evidence and no extension target
+qualification. Keep its P94 chip-select role separate from the legacy
+button/DRDY images. Wiring belongs in [sensor profiles](pinmap.md#sensor-wiring-profiles);
+software checkpoint details belong in
+[execution progress](../../plans/261011-2017-rzv2h-drone-reference-port/reports/goal-progress.md).
 
 Reference cells follow the core-selection and evidence rules in the
 [RZ/V2H Reference Source Map](reference-source-map.md). EVK examples are
@@ -90,18 +83,18 @@ limit rather than claiming those FSP files were inspected.
 | 4 | DMAC | rzv_dmac.c | rzv_dmac.h | bounded on-target | `rzv2h_evk/spi_b/*_<core>_ep`: `r_dmac_b` consumer example | dmac-memcpy | J-Link/GDB + RTT, 2026-08-09 | Historical 2026-08-09 CR8-0 software-triggered block-mode copy passed a 1024-byte memory comparison (`status=0x00000040`); this does not prove retained rearm or peripheral pacing. The 2026-10-02 fixes prepare cached memory destinations on every software start, guard enabled/bus-active start and buffer replacement, and reassert DEM on repeated starts. [Executed host driver tests](../../test/rzv2h-dmac-runtime-test.py): six failures before fixes, 11/11 after; [verification](../../plans/261002-2129-rzv2h-dshot-runtime-remediation/reports/worker-261002-dmac-runtime-fix.md). Opt-in DShot compare-event pacing remains unvalidated on target; serial DMA remains deferred. 2026-10-11: peripheral-to-memory hardware triggers (`ack_mode`, `source_request`) added for SPI0 DMA; host tests 12/12, build-clean only (see SPI row). No standalone EVK DMAC project. |
 | 5 | Ether | rzv_ether.c | rzv_ether.h | blocked | `rzv2h_gb_ether/plat/ether/r_ether.c` (legacy CA55; no EVK EP) | ether | [2026-08-09 audit](../../plans/reports/audit-260809-rzv2h-adc-ether-phy-scif-mission1-report.md) | Legacy same-IP evidence only. Descriptor-stride, cache/order, lock, and PHY-fallback defects are fixed in source. Open hardware blockers remain: ETH0 clock-ID, RGMII pinmux, IRQ topology, and link-state. |
 | 6 | Ether PHY | rzv_ether_phy.c | (via rzv_ether.h) | blocked | `rzv2h_gb_ether/plat/ether/r_phy.c` (legacy CA55; no EVK EP) | ether | [2026-08-09 audit](../../plans/reports/audit-260809-rzv2h-adc-ether-phy-scif-mission1-report.md) | Legacy PHY/skew evidence only. PHY resolution and fallback are fixed in source. Exact fitted PHY, straps, RGMII timing ownership, per-core integration, and target MDIO/traffic remain open. |
-| 7 | GPIO | rzv_gpio.c | rzv_gpio.h | bounded on-target | core-matched EVK `r_ioport` + generated `pin_data.c`; integrated RDK pin ownership | nsh-leds, gy912 | [2026-10-01 P94 confirmation](gpio-button-interrupt-validation.md), [GY-912 checkpoint](gy912-icm20948-validation.md) | User confirmed external interrupt delivery after retesting CR8-0 `nsh-leds`. P94 uses GPIO/TINT source GPIOINT68 with ISEL enabled and falling-edge press handling; the callback is configured to toggle LED0/PB4. PM input-mode and IRQ lifecycle fixes are in source. The 2026-10-11 GY-912 run adds user-reported sensor INT activity (`IRQ=3863`) after restoring CS to P93; no fresh edge trace was supplied. Passing transcript, exact image provenance, measured LED/edge behavior, other channels, and stress remain open. |
+| 7 | GPIO | rzv_gpio.c | rzv_gpio.h | bounded on-target | core-matched EVK `r_ioport` + generated `pin_data.c`; integrated RDK pin ownership | nsh-leds, gy912 | [2026-10-01 P94 confirmation](evidence/gpio-button-interrupt-validation.md), [GY-912 checkpoint](validation/gy912-icm20948-validation.md) | User confirmed external interrupt delivery after retesting CR8-0 `nsh-leds`. P94 uses GPIO/TINT source GPIOINT68 with ISEL enabled and falling-edge press handling; the callback is configured to toggle LED0/PB4. PM input-mode and IRQ lifecycle fixes are in source. The 2026-10-11 GY-912 run adds user-reported sensor INT activity (`IRQ=3863`) after restoring CS to P93; no fresh edge trace was supplied. Passing transcript, exact image provenance, measured LED/edge behavior, other channels, and stress remain open. |
 | 8 | GPT (32-bit) | rzv_gpt.c | rzv_gpt.h | source-audited | `rzv2h_evk/gpt` + `gpt_input_capture` core-matched EPs: `r_gpt` | pwm | [GPT/PWM source contract](../../test/rzv2h_gpt_pwm_contract_test.py) | Pulse generation and PWM mode; target waveform proof pending |
 | 9 | GTM (32-bit) | rzv_gtm.c | rzv_gtm.h | bounded on-target | `rzv2h_evk/gtm/*_<core>_ep`: `r_gtm` + generated config | gtm | J-Link/GDB + RTT, 2026-08-09 | RTT NSH runs on `/dev/timer0` and `/dev/timer2` each completed 20 status samples, five signal deliveries, stop, and clean finish. Long-run timing accuracy, jitter, and fault injection remain target gates. |
-| 10 | HRT | rzv_hrt.c (arch shim) + platforms/.../renesas/rzv/hrt/hrt.c (queue mgr) | rzv_hrt.h | bounded on-target | (GTM7 free-run, arch shim) | PX4 board config (`CONFIG_RZV_HRT=y`) | [2026-07-30 SIH transcript](./px4-nuttx-rzv2h-sih-transcript.txt) | PX4 HRT delegates counter/arm to the arch GTM7 shim at runtime P1CLK. SIH `system_time hrt-test` passed with 22,044 us sleep and 4 us callback latency. Exact load provenance, clock measurement, long-run monotonicity, jitter, drift, and load bounds remain required. |
+| 10 | HRT | rzv_hrt.c (arch shim) + platforms/.../renesas/rzv/hrt/hrt.c (queue mgr) | rzv_hrt.h | bounded on-target | (GTM7 free-run, arch shim) | PX4 board config (`CONFIG_RZV_HRT=y`) | [2026-07-30 SIH transcript](./evidence/px4-nuttx-rzv2h-sih-transcript.txt) | PX4 HRT delegates counter/arm to the arch GTM7 shim at runtime P1CLK. SIH `system_time hrt-test` passed with 22,044 us sleep and 4 us callback latency. Exact load provenance, clock measurement, long-run monotonicity, jitter, drift, and load bounds remain required. |
 | 11 | I2C (RIIC) | rzv_i2c.c | rzv_i2c.h | source-audited | `rzv2h_evk/riic_master/*_<core>_ep`: `r_riic_master` | (nsh default) | (pending) | Native I2C master; board API and implementation now match. Dormant: no defconfig enables native RIIC, the 2026-10-02 I2C re-audit keeps two defects open (late ACKBT for 1-2 byte reads, STOP interrupt never attached), and the RX/STOP HIL path remains open. Use SCI7 simple-I2C (rows 28–30) for sensors. |
-| 12 | ICU (CR8-0/1) | rzv_icu.c | rzv_icu.h + rzv_intc.h | bounded on-target | `rzv2h_evk/intc_irq` + `intc_tint` CR8 EPs | nsh-leds | [2026-10-01 P94 confirmation](gpio-button-interrupt-validation.md), [GY-912 checkpoint](gy912-icm20948-validation.md) | CR8-0 P94 GPIO/TINT delivery user-confirmed after correcting all 43 INTR8SEL offsets to CMSIS range `0x0140..0x01e8` (`INTR8SEL0=0x10400140`). The 2026-10-11 GY-912 run adds user-reported sensor INT activity (`IRQ=3863`) on the same route; no fresh edge trace was supplied. Evidence covers this route only; CR8-1, native IRQ, other selectable events, full passing capture, and stress remain open. |
+| 12 | ICU (CR8-0/1) | rzv_icu.c | rzv_icu.h + rzv_intc.h | bounded on-target | `rzv2h_evk/intc_irq` + `intc_tint` CR8 EPs | nsh-leds | [2026-10-01 P94 confirmation](evidence/gpio-button-interrupt-validation.md), [GY-912 checkpoint](validation/gy912-icm20948-validation.md) | CR8-0 P94 GPIO/TINT delivery user-confirmed after correcting all 43 INTR8SEL offsets to CMSIS range `0x0140..0x01e8` (`INTR8SEL0=0x10400140`). The 2026-10-11 GY-912 run adds user-reported sensor INT activity (`IRQ=3863`) on the same route; no fresh edge trace was supplied. Evidence covers this route only; CR8-1, native IRQ, other selectable events, full passing capture, and stress remain open. |
 | 13 | ICU (CM33) | rzv_icu_cm33.c | rzv_icu.h | source-audited | `rzv2h_evk/intc_irq` + `intc_tint` CM33 EPs | nsh-cm33, ipcc-raw-cm33 | (pending) | CM33 selectable-event routing builds with the raw profile; fixed MHU interrupts bypass INTM33SEL. Target dispatch proof pending. |
 | 14 | Idle Task | rzv_idle.c | (none) | stub | (none) | nsh | (pending) | CPU idle loop; WFI instruction |
 | 15 | IPC Dispatch | rzv_ipc.c | (none) | build-clean | (none) | (framework) | (pending) | IPC message dispatcher; no target traffic proof |
 | 16 | IPC/IPCC | rzv_ipc_ipcc.c | (none) | build-clean | `nuttx/include/nuttx/ipcc.h` | ipcc, ipcc-multi | (pending) | Buffered RX now admits only complete RPMsg packets, drains bounded backlogs, preserves overflow retry, and serializes callback/refill producers. Legacy OpenAMP/IPCC remains separate from raw IPC; saturation, ordering, and wakeup HIL remain open. |
-| 17 | IPC Raw | rzv_ipc_raw.c | (none) | bounded on-target | (internal) | ipcc-raw-cr8_0, ipcc-raw-cr8_1, ipcc-raw-cm33 | [IPC HIL guide](./rzv2h-ipc-hil-test-guide.md), [Three-core IPC artifacts](./rzv2h-three-core-ipc-artifacts.md) | Scoped character device, numeric minors, checked ABI-v2 rings, exact ACK correlation, stale-response-safe ACK arming, quarantine, and two-sided recovery build on all three cores. On target, CR8-0 ↔ CR8-1 `/dev/ipcc1` (RAM load, RTT-driven `ipctest`) passes recover + ping/echo 100/100 both directions with `invalid_headers=0`, no faults; RTT autotest repeats it. CM33 traffic, cold boot, long-run soak, and error injection remain open. |
-| 18 | IRQ (CR8) | rzv_irq.c | (none) | bounded on-target | (internal) | (framework) | `nsh-rtt` evidence | Interrupt vector setup; CR8-0/1 GIC. The `nsh-rtt` pass validates SCI4 TX/RX; [P94 confirmation](gpio-button-interrupt-validation.md) adds bounded CR8-0 GPIO/TINT delivery. Other routes remain unvalidated. |
+| 17 | IPC Raw | rzv_ipc_raw.c | (none) | bounded on-target | (internal) | ipcc-raw-cr8_0, ipcc-raw-cr8_1, ipcc-raw-cm33 | [IPC HIL guide](./validation/rzv2h-ipc-hil-test-guide.md), [Three-core IPC artifacts](./evidence/rzv2h-three-core-ipc-artifacts.md) | Scoped character device, numeric minors, checked ABI-v2 rings, exact ACK correlation, stale-response-safe ACK arming, quarantine, and two-sided recovery build on all three cores. On target, CR8-0 ↔ CR8-1 `/dev/ipcc1` (RAM load, RTT-driven `ipctest`) passes recover + ping/echo 100/100 both directions with `invalid_headers=0`, no faults; RTT autotest repeats it. CM33 traffic, cold boot, long-run soak, and error injection remain open. |
+| 18 | IRQ (CR8) | rzv_irq.c | (none) | bounded on-target | (internal) | (framework) | `nsh-rtt` evidence | Interrupt vector setup; CR8-0/1 GIC. The `nsh-rtt` pass validates SCI4 TX/RX; [P94 confirmation](evidence/gpio-button-interrupt-validation.md) adds bounded CR8-0 GPIO/TINT delivery. Other routes remain unvalidated. |
 | 19 | IRQ (CM33) | rzv_irq_cm33.c | (none) | source-audited | (CM33 variant) | nsh-cm33, ipcc-raw-cm33 | (pending) | Standard ARMv8-M vectors and base-16 NuttX external IRQ numbering link clean; target NVIC dispatch remains unproved. |
 | 20 | Low-Level UART | rzv_lowputc.c | (none) | source-audited | `rzv2h_evk/sci_b_uart/*_<core>_ep`: `r_sci_b_uart` + generated pins | (bootloader) | (pending) | SCI-B evidence only, not SCIFA. Early putc has no buffering. Current policy: standalone CR8-0 `nsh-rtt` uses SCI4 shell + RTT diagnostics; integrated PX4 CR8-0 uses RTT0 and bypasses SCI low-setup. |
 | 21 | Memory Management | rzv_memmng.c | (none) | build-clean | (internal) | (framework) | (pending) | Heap and page-alignment setup; explicit target heap evidence remains pending. |
@@ -111,7 +104,7 @@ limit rather than claiming those FSP files were inspected.
 | 25 | POEG | rzv_poeg.c | rzv_poeg.h | source-audited | `rzv2h_evk/poeg/*_<core>_ep`: `r_poeg` + `r_gpt` | (framework) | (pending) | PWM output enable group; event-mask ABI and module-start sequencing are fixed in source. Fault and safe-state HIL remain open. |
 | 26 | RPMsg Layer | rzv_rpmsg.c | (none) | build-clean | (OpenAMP dep) | ipcc | (pending) | OpenAMP endpoint wrapper with bounded RX packet queue; no application CRC framing |
 | 27 | Remote Proc | rzv_rproc.c | (none) | build-clean | `nuttx/include/remoteproc.h` | ipcc | (pending) | CA55/CR8 resource and kickoff path; target boot/recovery proof pending |
-| 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `rzv2h_drone_px4-dev/rzv/fsp/src/r_sci_b_i2c/` (integrated; no EVK mode EP) | hil-full, bmm150 (SCI7) | [SCI7 re-audit](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260728-rzv2h-sci7-i2c-reaudit.md), [2026-10-02 re-audit](../../plans/261002-1938-rzv2h-i2c-reaudit-bmm150-sample/reports/audit-261002-rzv2h-i2c-reaudit.md) | `CONFIG_RZV_SCI7_I2C` uses FSP-compatible SCISPICLK timing, fixed GIC TXI/TEI lines, and P76/P77 FSP-parity pins; board registration retains logical bus 7. Both builds pass. Transfer timeout now uses a relative tick wait. The standalone [BMM150 sample](bmm150-i2c-validation.md) (`bmm150` config, 400 kHz, repeated START) builds clean and remains a valid standalone target gate. Native PX4 still names BMP280 at 0x76; the opt-in drone profile integrates BMP390L/INA228 at 0x77/0x45 with passing host transfer/ISR and build checks; physical device proof remains pending. |
+| 28 | SCI/I2C Master | rzv_sci_i2c.c | rzv_sci.h | build-clean | `rzv2h_drone_px4-dev/rzv/fsp/src/r_sci_b_i2c/` (integrated; no EVK mode EP) | hil-full, bmm150 (SCI7) | [SCI7 re-audit](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/audit-260728-rzv2h-sci7-i2c-reaudit.md), [2026-10-02 re-audit](../../plans/261002-1938-rzv2h-i2c-reaudit-bmm150-sample/reports/audit-261002-rzv2h-i2c-reaudit.md) | `CONFIG_RZV_SCI7_I2C` uses FSP-compatible SCISPICLK timing, fixed GIC TXI/TEI lines, and P76/P77 FSP-parity pins; board registration retains logical bus 7. Both builds pass. Transfer timeout now uses a relative tick wait. The standalone [BMM150 sample](validation/bmm150-i2c-validation.md) (`bmm150` config, 400 kHz, repeated START) builds clean and remains a valid standalone target gate. Native PX4 still names BMP280 at 0x76; the opt-in drone profile integrates BMP390L/INA228 at 0x77/0x45 with passing host transfer/ISR and build checks; physical device proof remains pending. |
 | 29 | SCI/I2C Clock | rzv_sci_i2c_clock.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | [goal-plan reconciliation](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/phase-03-rzv2h-blocked-driver-closure-plan.md) | Runtime P5CLK calculation; 100 MHz/400 kHz reproduces FSP CKS0, BRR3, MDDR131, 399780 Hz, and 30-cycle SDA delay. Frequency measurement and on-target timing capture remain pending. |
 | 30 | SCI/I2C ISR | rzv_sci_i2c_isr.c | rzv_sci.h | build-clean | (FSP helper) | (shared) | (pending) | Interrupt handlers build with the SCI7 path; target event/error proof remains pending. |
 | 31 | SCI/SPI Master | rzv_sci_spi.c | rzv_sci_spi.h | build-clean | integrated SCI-B/CMSIS register evidence; no SCI-B SPI EVK EP | sci-spi-loopback | [SCI/SPI source contract](../../test/rzv2h_sci_spi_contract_test.py) | SCI0 only on RDK; P6_0 SCK. `sci_b_uart` proves UART mode only. Fresh build and source contract pass; run the documented loopback plus removed-jumper error check on target. |
@@ -120,46 +113,12 @@ limit rather than claiming those FSP files were inspected.
 | 34 | SCIF UART | rzv_scif.c | rzv_scifa.h | blocked | core-matched R9A09G057H `scifa_iodefine.h`/BSP only; no SCIFA EP | nsh-scif (build) | [2026-08-09 audit](../../plans/reports/audit-260809-rzv2h-adc-ether-phy-scif-mission1-report.md) | Do not map `sci_b_uart` to SCIFA. Clock, INTID-width, baud, and ISR-work defects are fixed in source. SCIF pinmux and FIFO-error hardware issues remain open, and no target proof exists yet. |
 | 35 | SDHI | rzv_sdhi.c | rzv_sdhi.h | build-clean | (none — no FSP `r_sdhi.c` in refs/) | sdhi | [2026-07-20 audit](../../plans/reports/audit-260720-1000-rzv2h-sdhi-fsp-vs-nuttx-report.md) | PIO 1/4-bit, IRQ-driven (combined ISR, INTID 767); compiles + wired to `/dev/mmcsd0`. Pending on-target register/command/PIO evidence. No FSP parity reference; sample/post-G9 only and does not gate the first drone-equivalent PX4 run. |
 | 36 | Serial Framework | rzv_serial.c | (none) | bounded on-target | `rzv2h_evk/sci_b_uart/{cm33,cr8_0,cr8_1}` EPs | (framework) | `nsh-rtt` evidence | UART dispatcher over SCI-B; not SCIFA. SCI setup/shutdown waits are now bounded. FIFO RX is validated on SCI4 under `nsh-rtt`; payload channels and error injection remain unproved. `TIOCGICOUNT` and the non-opening snapshot path back PX4 `serial_status`. |
-| 37 | SPI (RSPI) | rzv_spi.c | rzv_spi.h | bounded on-target | `rzv2h_gb_ether/drivers/rspi.c` (secondary); EVK `spi_b` is different IP | spi-loopback, hil-spi-loopback, gy912 | J-Link/GDB + RTT, 2026-08-09; [GY-912 checkpoint](gy912-icm20948-validation.md), [archived RTT excerpt](gy912-icm20948-rtt-261011.txt), [status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md) | Native RSPI master with legacy board CS/DRDY profiles. `hil-spi-loopback` passed 1/4 MHz byte, 64-byte burst, and mode-3 cases. The 2026-10-11 user-reported GY-912 run adds CS selection activity and one raw ICM20948 sample on CR8-0 after restoring CS to P93; the excerpt is partial and has no direct analyzer trace. SPI-B must not be used as same-IP parity evidence. Opt-in `RZV_SPI0_DMA` and `RZV2H_SPI0_HARDWARE_SSL` were tried in `gy912`; the first hardware-SSL run read WHO_AM_I 0x00, and GPIO-CS + DMA then reported RX DMA errors. Host/build results remain software evidence only. The opt-in three-CS, polled ICM45686 drone profile has passing host/build checks and no native target evidence. |
+| 37 | SPI (RSPI) | rzv_spi.c | rzv_spi.h | bounded on-target | `rzv2h_gb_ether/drivers/rspi.c` (secondary); EVK `spi_b` is different IP | spi-loopback, hil-spi-loopback, gy912 | J-Link/GDB + RTT, 2026-08-09; [GY-912 checkpoint](validation/gy912-icm20948-validation.md), [archived RTT excerpt](evidence/gy912-icm20948-rtt-261011.txt), [status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md) | Native RSPI master with legacy board CS/DRDY profiles. `hil-spi-loopback` passed 1/4 MHz byte, 64-byte burst, and mode-3 cases. The 2026-10-11 user-reported GY-912 run adds CS selection activity and one raw ICM20948 sample on CR8-0 after restoring CS to P93; the excerpt is partial and has no direct analyzer trace. SPI-B must not be used as same-IP parity evidence. Opt-in `RZV_SPI0_DMA` and `RZV2H_SPI0_HARDWARE_SSL` were tried in `gy912`; the first hardware-SSL run read WHO_AM_I 0x00, and GPIO-CS + DMA then reported RX DMA errors. Host/build results remain software evidence only. The opt-in three-CS, polled ICM45686 drone profile has passing host/build checks and no native target evidence. |
 | 38 | Startup (CR8) | rzv_start.c | (none) | bounded on-target | (internal) | (bootloader) | `nsh-rtt` + SIH transcripts | CR8-0 startup reaches shells in bounded captures. Exact-image cold/debugger provenance and integrated default startup remain pending. |
-| 39 | Startup (CM33) | rzv_start_cm33.c | (none) | source-audited | (CM33 variant) | nsh-cm33, ipcc-raw-cm33 | [Three-core IPC artifacts](./rzv2h-three-core-ipc-artifacts.md) | Standard vectors and Thumb reset entry link at FSP-matched secure SRAM `0x08002800`; current NuttX exports `_vectors` there and uses verified vector words for MSP/Thumb launch semantics. Heap ends at `0x080f8000`, with a non-cacheable RTT window above it. SEGGER reset-entry, co-processor wake, and runtime proof remain target gates. |
+| 39 | Startup (CM33) | rzv_start_cm33.c | (none) | source-audited | (CM33 variant) | nsh-cm33, ipcc-raw-cm33 | [Three-core IPC artifacts](./evidence/rzv2h-three-core-ipc-artifacts.md) | Standard vectors and Thumb reset entry link at FSP-matched secure SRAM `0x08002800`; current NuttX exports `_vectors` there and uses verified vector words for MSP/Thumb launch semantics. Heap ends at `0x080f8000`, with a non-cacheable RTT window above it. SEGGER reset-entry, co-processor wake, and runtime proof remain target gates. |
 | 40 | Timer ISR | rzv_timerisr.c | (none) | bounded on-target | (internal) | (framework) | `nsh-rtt` + SIH transcripts | CR8 private-timer tick supports bounded CR8-0 shell/runtime captures. CM33 still compiles this CR8-only source; an authoritative CM33 tick source/frequency remains an open architecture blocker. |
 | 41 | Watchdog | rzv_wdt.c | rzv_wdt.h | build-clean | `rzv2h_evk/wdt/*_<core>_ep`: `r_wdt` + INTC/GTM config | wdt | [2026-07-20 audit](../../plans/reports/audit-260720-1152-rzv2h-wdt-fsp-vs-nuttx-report.md) | Independent watchdog; refresh sequence. Reset-mode/WDT0 is source-audited, but no on-target evidence exists. Automatic sample only, no NSH command-registration requirement, and non-gating for G3-G9. |
 | 42 | System reset (CR8) | rzv_systemreset.c | CMSIS/FSP WDT/CPG definitions | build-clean | core-matched `rzv2h_evk/wdt` EP reset routing | PX4 default/DShot/SIH/core-only | [reset source contract](../../test/rzv2h_gpt_pwm_contract_test.py) | `up_systemreset()` uses the CR8-0 WDT2 or CR8-1 WDT3 route, enables the required clock source, releases reset, selects the shortest supported timeout, routes underflow to system reset, and starts the watchdog with interrupts masked. All four board ELFs link the reset chain. Actual reset latency, post-reset boot state, repeated resets, and inactive motor-pin levels remain target gates. |
-
----
-
-## Summary
-
-- **Total drivers:** 42
-- **Source-audited:** 9
-- **Build-clean:** 16
-- **Bounded on-target:** 12
-- **Blocked:** 4 (ADC, Ether, Ether PHY, SCIF UART; source fixes are in, hardware/HIL gates remain)
-- **Stub:** 1
-- **Production:** 0 (pending stress test)
-
-Plan-critical reconciliation:
-
-- CR8-0 `nsh-leds` P94 GPIO/TINT interrupt delivery is user-confirmed after
-  GPIO ISEL/lifecycle and INTR8SEL address corrections. The
-  [named confirmation record](gpio-button-interrupt-validation.md) retains
-  exact-image, passing-transcript, edge/toggle, and stress gates.
-
-- Standalone CR8-0 defconfigs are normalized to SCI4 or RTT-only diagnostics.
-- `nsh-cr8_1` and `nsh-cm33` select SCI5 and SCI9. CM33 linking and both target
-  proofs remain final-milestone work.
-- Board Make/CMake source selection is reconciled for the audited configs.
-- `hil-spi-loopback` explicitly selects late board initialization; its clean
-  image links the SPI registration chain before direct `hwtest_main`. The
-  non-inverted internal loopback suite passes all four on-target cases.
-- `hil-full` is SCI7 build-clean and now passes both nested NuttX and PX4
-  builds; the native BMP280 transaction and recovery procedure remain target
-  gates. The drone extension integrates BMP390L/INA228 in a separate
-  build-clean profile with target qualification pending.
-- ADC, Ether, Ether PHY, RIIC, POEG, SCIF, and serial rows now separate
-  source/build closure from the remaining hardware or HIL gates.
-- CR8-1/CM33/OpenAMP work is non-gating until the CR8-0 PX4 drone path passes.
 
 ---
 
@@ -167,7 +126,8 @@ Plan-critical reconciliation:
 
 When submitting a driver PR:
 1. Update the driver row: status, sample config (if applicable).
-2. Verify the row count remains 42.
+2. Preserve each row's evidence scope and unresolved gates; add or remove rows
+   only when driver ownership changes.
 3. Link to validation report (once available).
 4. Update notes field if behavior changed.
 
@@ -175,7 +135,7 @@ When submitting a driver PR:
 
 ## Related Docs
 
-- [Validation Checklist](validation-checklist.md) — per-driver bring-up steps.
+- [Validation Checklist](validation/validation-checklist.md) — per-driver bring-up steps.
 - [Reference Source Map](reference-source-map.md) — canonical EVK/core selection and gaps.
 - [IPC Architecture](ipc-architecture.md) — MHU/IPCC integration.
 - [Deployment Guide](../deployment-guide.md) — build and test harness.

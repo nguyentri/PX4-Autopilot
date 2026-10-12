@@ -1,90 +1,87 @@
 # Deployment Guide: Build, Flash, Debug
 
-**Date:** 2026-10-04
-**Scope:** End-to-end workflow for RDK-RZ/V2H (NuttX + PX4) build, volatile RAM load, RTT console, and debug. No persistent flash/cold-boot recipe is approved yet.
+**Scope:** Build and target-operation procedures for the RDK-RZ/V2H PX4 and
+NuttX port.
 
----
+The documented target routes are volatile RAM loading and read-only debug
+attachment. Execution still requires the permissions stated below. A persistent
+flash route and cold-boot deployment sequence require a
+separately verified boot-consumer, address, recovery, and hardware contract.
 
 ## 1. Build Tools & Environment Setup
 
-### Setup
+From the repository root, source the setup script before building:
 
 ```bash
-cd /path/to/PX4-Autopilot
-source ./build_setup.sh   # checks toolchain/deps, scrubs e2studio CMAKE_* vars, inits submodules
+source ./build_setup.sh
 ```
 
-Required: `arm-none-eabi-gcc` 9+ on `PATH`, CMake 3.20+, Ninja, Python 3 with
-`kconfiglib`, `gdb-multiarch`, SEGGER J-Link software (`JLinkExe`,
-`JLinkGDBServer`). `build_setup.sh` reports anything missing.
+The script checks the host dependencies, initializes submodules, and removes
+e2studio `CMAKE_*` variables that can break the compiler probe. The build
+scripts are the owners of configuration, cleanup, and stale-architecture-link
+handling; do not replace them with a hand-run `tools/configure.sh` plus `make`
+sequence.
 
-`refs/` (FSP reference, EVK samples) is **not** a submodule; it is a local,
-gitignored directory. See [renesas/reference-source-map.md](./renesas/reference-source-map.md).
-
----
+`refs/` is local, gitignored reference material. It is not required for every
+host build; use [reference-source-map.md](./renesas/reference-source-map.md)
+when a driver audit needs it.
 
 ## 2. Build Targets
 
-The compact bench target is `renesas_rdk-rzv2h_simple`: RTT, HRT, work queues,
-volatile params, uORB, four-channel PWMOut and SPI0 ICM20948 accel/gyro.
-It excludes flight/payload modules, serial consumers, MAVLink and IPC. Outputs
-remain inactive until a finite explicit actuator command. Full default and
-multicore targets remain available. The retired core-only target's resources
-and evidence are historical. Fresh simple/default/DShot/SIH builds and artifact
-audits pass; no target load/cold-boot/electrical proof is claimed. See the
-[simple bench guide](renesas/simple-pwm-icm20948-validation.md).
+Discover the current PX4 targets with `./build.sh --list` and the NuttX
+profiles with `platforms/nuttx/NuttX/build.sh --list`. Build RZ/V2H targets
+sequentially because their shared NuttX build tree is regenerated between
+profiles.
 
-### NuttX-only builds (driver bring-up)
+### NuttX-only builds
 
 ```bash
-platforms/nuttx/NuttX/build.sh --list              # nsh, nsh-rtt, ipcc, adc, canfd, ...
-platforms/nuttx/NuttX/build.sh nsh-rtt             # distclean + configure + build
-platforms/nuttx/NuttX/build.sh --no-clean nsh-rtt  # incremental
-# ELF: platforms/nuttx/NuttX/nuttx/nuttx
+platforms/nuttx/NuttX/build.sh --list
+platforms/nuttx/NuttX/build.sh nsh-rtt
+platforms/nuttx/NuttX/build.sh --no-clean nsh-rtt
 ```
+
+The resulting NuttX ELF is under
+`platforms/nuttx/NuttX/nuttx/nuttx`; the script also owns the associated binary
+and map outputs.
 
 ### PX4 builds
 
-**Primary build entry point:**
 ```bash
-./build.sh renesas_rdk-rzv2h_simple
+./build.sh renesas_rdk-rzv2h_default
+./build.sh --no-clean renesas_rdk-rzv2h_default
 ```
 
-**Simple artifacts:**
-```bash
-./build.sh renesas_rdk-rzv2h_simple
-./build.sh --no-clean renesas_rdk-rzv2h_simple  # same profile only
-# Output: build/renesas_rdk-rzv2h_simple/
-#   ├── renesas_rdk-rzv2h_simple.elf
-#   ├── renesas_rdk-rzv2h_simple.px4
-#   ├── NuttX/nuttx/.config
-#   └── renesas_rdk-rzv2h_simple.bin  (artifact only; not a flashing contract)
-```
+Use `--no-clean` only while iterating on the same profile. The simple bench,
+drone extension, SIH, and DShot profiles select their own board manifest and
+NuttX configuration; the board source and [system architecture](./system-architecture.md)
+describe their boundaries. The retired core-only material is historical and
+has no deployment target.
 
-The simple image is built from
-`boards/renesas/rdk-rzv2h/simple.px4board`,
-`boards/renesas/rdk-rzv2h/nuttx-config/simple/defconfig`, and
-`ROMFS/rdk-rzv2h-simple`.
-
----
+Build artifacts are written below `build/<target>/`. An ELF or binary artifact
+is not a flashing contract.
 
 ## 3. Load Routes
 
-Only **volatile RAM load** over J-Link/GDB is in use (no reset, image lost on
-power cycle). It is proven for NuttX configs (e.g. `nsh-rtt`, IPC raw demo):
+The supported target route is a volatile RAM load over J-Link/GDB. It does not
+survive power loss. For the NuttX IPC HIL route, the configured GDB script is:
 
 ```bash
-# JLinkGDBServer running for R9A09G057H44_R8_0, then:
-gdb-multiarch -q -batch <elf> -x platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb
+gdb-multiarch -q -batch <elf> \
+  -x platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb
 ```
 
-Step-by-step and two-core order: [renesas/rzv2h-ipc-hil-test-guide.md](./renesas/rzv2h-ipc-hil-test-guide.md).
-There is still no approved raw-`.bin`/xSPI flashing recipe or cold-boot
-sequence. RAM load, reset, and target writes require explicit authorization.
+The [IPC HIL guide](./renesas/validation/rzv2h-ipc-hil-test-guide.md) owns the exact
+two-core order and the image-specific load contract.
+
+J-Link reset, image load, and target memory writes require explicit user
+authorization. No raw `.bin` or xSPI flashing command is approved. The boot
+package checker below performs host-only structural validation and does not
+change that boundary.
 
 ### Host validation of a boot candidate
 
-The opt-in `renesas_rdk-rzv2h_drone` profile can produce a checked host candidate:
+The opt-in `renesas_rdk-rzv2h_drone` profile can be checked on the host:
 
 ```bash
 ./build.sh renesas_rdk-rzv2h_drone
@@ -96,50 +93,38 @@ python3 platforms/nuttx/Debug/rzv2h-boot-package.py \
   --output /tmp/rzv2h-boot-candidate
 ```
 
-The output directory must be new. The tool checks the actual ARM32 ELF and
-native split-image descriptors: header complements/signature, contiguous copy
-blocks, private RAM/reservation bounds, initialized-data byte coverage and an
-executable entry point. It rejects unsupported layouts, overlap and truncated
-inputs. `image_base` permits rebasing the descriptor source addresses and their
-complements; destinations and payload bytes stay tied to the linked ELF.
-The layout's default address is the native linker address. The postbuild SREC
-address `0x60200000` is a separate loader alias; an approved boot owner must
-resolve which view the loader uses before selecting it. The marker/signature
-checks verify structure, not cryptographic authenticity.
+The output directory must be new. The checker validates the ARM32 ELF and
+native split-image descriptors, bounds, coverage, entry point, and supported
+address layout. It performs no target I/O and does not establish loader
+ownership, persistent boot, reset re-entry, or cryptographic authenticity.
 
-The resulting `candidate.bin` and hash manifest retain
-`deployment_enabled: false`. The tool performs no target I/O and provides no
-flashing command. Loader ownership, DDR/TCM/clocks, cache maintenance, the
-`0x1234FEDC` handoff/reset sequence and recovery must be verified separately.
-Native startup depends on initialized data being copied before entry and owns
-BSS clearing; retained `.noinit` is not initialized by this package. This
-artifact check does not establish persistent cold boot or reset re-entry.
+`image_base` rebases descriptor source addresses and complements; destinations
+and payload bytes remain tied to the ELF. The default is the native linker
+address. The postbuild SREC address `0x60200000` is a separate loader alias;
+the boot owner must resolve the loader's address view before selecting it.
+Marker/signature checks verify structure only.
 
----
+The candidate and hash manifest retain `deployment_enabled: false`. Before
+deployment, verify loader ownership, DDR/TCM/clocks, cache maintenance, the
+`0x1234FEDC` handoff/reset sequence and recovery. Initialized data must be
+copied before entry; native startup clears BSS, while this package does not
+initialize retained `.noinit`. These remain separate from host validation.
+See the [checker](../platforms/nuttx/Debug/rzv2h-boot-package.py) and
+[layout](../boards/renesas/rdk-rzv2h/boot-layout.json) for the executable contract.
 
-## 4. Debug: JLink + VS Code
+## 4. Debug: J-Link + VS Code
 
-### Configuration
+The generated RZ/V2H debug profile is a read-only attach. Use the exact ELF
+for the profile and the user-provided probe serial. The profile may halt the
+core; reset, load, and continue require explicit authorization. Stop PWMOut
+and confirm inactive outputs before halting a running actuator image because
+software timeouts do not run while the core is stopped.
 
-Use the exact simple ELF, the exact device name `R9A09G057H44_R8_0`, and
-the user-provided probe serial. The generated VS Code RZV profile is
-read-only attach. Reset, load, and continue require explicit authorization.
-This is a debug attachment contract, not a validated cold-load recipe. Before
-halting the core, stop PWMOut and measure inactive outputs; software actuator
-timeouts do not run while halted.
+The generated profile is in `.vscode/launch.json` after a target build. The
+RZ/V2H configuration uses `request: "attach"` and `monitor halt`; it does not
+include reset, load, or continue commands.
 
-### VS Code Launch Configurations
-
-**File:** `.vscode/launch.json`
-
-Building the target generates `Attach RZV2H CR8 (Core0,
-renesas_rdk-rzv2h_simple, read-only)`. Select that profile and enter the
-exact authorized probe serial when prompted. The variant appears in the
-profile name and its executable is the matching target ELF. The profile uses
-`request: "attach"` and only `monitor halt`; it has no reset, load, or
-continue command.
-
-For a bounded command-line snapshot, identify the same probe explicitly:
+For a bounded command-line backtrace, bind the probe serial explicitly:
 
 ```bash
 JLINK_SERIAL=<probe-serial> \
@@ -147,157 +132,107 @@ JLINK_SERIAL=<probe-serial> \
   --target jlink_gdb_backtrace
 ```
 
-The RZ/V2H build does not generate `jlink_upload`, `jlink_debug_gdb`,
-`jlink_debug_ozone`, or raw-binary flash targets.
-
----
+The build does not provide a raw-binary flash target. One J-Link probe has one
+owner at a time; stop the RTT bridge before a GDB session.
 
 ## 5. Serial Console (UART Debug)
 
-### Simple CR8-0
-
-**Role:** RTT0 console/debug only.
-
-The simple image has no payload serial consumers and starts PWMOut/ICM20948 asynchronously. Use the RTT shell and the
-built-in diagnostic commands:
-
-```text
-ver all
-dmesg
-system_time
-work_queue status
-param show
-top
-uorb top
-listener parameter_update
-perf
-```
-
-`listener vehicle_status` belongs the full default image; do not use it as the
-simple uORB proof.
-
-### Full Default PX4
-
-The full default image carries SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
-SCI6 RC, and SCI9 GPS. This guide does not document those payload console
-routes.
-
----
+The integrated RZ/V2H PX4 images use RTT for text diagnostics. Standalone
+NuttX shell profiles may expose SCI4; payload serial roles are owned by the
+selected board profile. Use the board source and resolved configuration for
+the current port assignment rather than treating a console route as a
+payload validation result.
 
 ## 6. Real-Time Transfer (RTT) Console
 
-### RTT Setup
-
-`JLinkGDBServer` **cannot** bridge RTT on the CR8 cores (its terminal port is
-semihosting only). Use JLinkExe, which attaches to the running core without
-reset/halt and serves RTT channel 0 as raw TCP on `127.0.0.1:19021`:
+`JLinkGDBServer` does not bridge RTT on the CR8 cores. Use JLinkExe through the
+repository bridge, which attaches without reset or halt and serves RTT channel
+0 on `127.0.0.1:19021`:
 
 ```bash
-JLINK_SERIAL=<probe-sn> platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>
+JLINK_SERIAL=<probe-serial> \
+  platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>
 platforms/nuttx/Debug/nsh_console_exec.py 'uname -a' 'free' 'dmesg'
-platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop    # before starting JLinkGDBServer
+platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop
 ```
 
-- `_SEGGER_RTT` control block: discover it from the exact image with
-  `arm-none-eabi-nm <elf>`; do not assume an address from another profile.
-- One probe = one owner: stop the bridge before GDB, and vice versa.
-- Long NSH lines can hit `CONFIG_NSH_MAXARGUMENTS` or drop an input byte;
-  keep commands short.
+Discover `_SEGGER_RTT` from the exact loaded ELF:
 
-### Register reads
+```bash
+arm-none-eabi-nm <elf>
+```
+
+Historical addresses are not a substitute for symbol discovery. Keep NSH
+commands short because the configured argument limit and RTT input path can
+drop long lines.
+
+To inspect an SVD register definition on the host:
 
 ```bash
 platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd info R_SCI4
 ```
 
----
-
 ## 7. Storage and Logs
 
-The simple image mounts volatile TMPFS at `/fs`. `/fs/params` is available
-for within-boot parameter changes and resets on reboot. This guide does not
-document SDHI/ULog or any external storage path.
+During bring-up, `/fs/params` is volatile TMPFS state and resets on reboot.
+The current simple image does not provide a persistent SDHI/ULog route. The
+parameter-storage and xSPI ownership decision remains a qualification item;
+do not infer persistence from a successful within-boot parameter change.
 
-### System Log (dmesg)
+Read the system ring buffer through RTT:
 
-**Real-time:**
-```bash
+```text
 nsh> dmesg
 ```
 
-**Ringbuffer size:** CONFIG_SYSLOG_BUFFER_SIZE (default 1024).
-
----
+The configured `CONFIG_SYSLOG_BUFFER_SIZE` controls the ring capacity.
 
 ## 8. Common Troubleshooting
 
-### Link Errors (Missing Symbols)
+### Missing `_SEGGER_RTT`
 
-**Error:** `undefined reference to '_SEGGER_RTT'`
+Confirm the symbol in the exact profile ELF, then rebuild that profile through
+`./build.sh`; do not substitute an ELF from another target.
 
-**Solution:** Ensure SEGGER RTT symbols included:
-```bash
-# Check if symbol exists in ELF
-arm-none-eabi-nm \
-  build/renesas_rdk-rzv2h_simple/renesas_rdk-rzv2h_simple.elf \
-  | grep _SEGGER_RTT
+### Submodule desynchronization
 
-# If missing, rebuild the checked-in simple configuration
-./build.sh renesas_rdk-rzv2h_simple
-```
+Inspect the submodule state and reinitialize it through Git before rebuilding:
 
-### Submodule Desynchronization
-
-**Error:** `fatal: index file corrupt; no matching version for ...`
-
-**Solution:**
 ```bash
 git submodule status
 git submodule update --init --recursive
-./build.sh renesas_rdk-rzv2h_simple
+./build.sh renesas_rdk-rzv2h_default
 ```
 
-### JLink Connection Timeout
+### J-Link connection timeout
 
-**Error:** `Can not connect to J-Link via USB.`
+Verify the probe is visible and stop only the J-Link server owned by the
+current terminal. Re-run the serial-bound helper after the server exits:
 
-**Solution:**
-1. Verify USB cable (should show `Bus 001 Device 00X`):
-   ```bash
-   lsusb | grep Segger
-   ```
-2. Check device permissions:
-   ```bash
-   sudo usermod -a -G dialout $USER
-   # Log out and back in
-   ```
-3. Stop only the J-Link server started by the current terminal, then rerun
-   the serial-bound snapshot helper:
-   ```bash
-   # Press Ctrl-C in that server's terminal first.
-   JLINK_SERIAL=<probe-serial> \
-     cmake --build build/renesas_rdk-rzv2h_simple \
-     --target jlink_gdb_backtrace
-   ```
+```bash
+lsusb | grep Segger
+JLINK_SERIAL=<probe-serial> \
+  cmake --build build/renesas_rdk-rzv2h_simple \
+  --target jlink_gdb_backtrace
+```
 
----
+Do not kill an unowned server or use an unbound probe when multiple targets
+are connected.
 
 ## 9. Validation Checklist
 
-Before qualification:
-
-- [x] `renesas_rdk-rzv2h_simple` builds cleanly (2026-10-04 software checkpoint).
-- [ ] The exact `renesas_rdk-rzv2h_simple.elf` attaches read-only through J-Link.
-- [ ] J-Link uses `R9A09G057H44_R8_0` plus the user-provided probe serial.
-- [ ] RTT shows `ver all`, `dmesg`, `system_time`, `work_queue status`, `top`, `uorb top`, and `param show`.
-- [ ] No raw `.bin` flashing route is used until the boot-consumer/address contract is authoritative.
-- [ ] Raw topics, FIFO acquisition, P94 callbacks and four PWM waveforms are
-  recorded independently; no flight-readiness claim is made.
-
----
+Before a target or driver is promoted, use the relevant status table and
+validation guide. A build-clean result is not on-target evidence. For the
+simple bench, the remaining target checks include read-only attach, RTT
+diagnostics, raw sensor topics, FIFO/DRDY behavior, and independent PWM
+waveform measurement. Keep actuator outputs inactive except during an explicit
+finite test and record physical evidence separately from host contract tests.
 
 ## Related Docs
 
-- [System Architecture](system-architecture.md) — CR8-0/CR8-1/CM33 topology.
-- [Code Standards](code-standards.md) — Build system and conventions.
-- [NuttX Port Status](renesas/port-status-nuttx.md) — Driver status per core.
+- [System Architecture](system-architecture.md) — current core boundaries and
+  build relationships.
+- [Code Standards](code-standards.md) — coding and contribution rules.
+- [NuttX Port Status](renesas/port-status-nuttx.md) — driver evidence by core.
+- [PX4 HAL Port Status](renesas/port-status-px4-hal.md) — HAL evidence.
+- [Validation route](renesas/README.md) — board-specific validation guides.

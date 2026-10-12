@@ -19,12 +19,11 @@ Identify the actual module/revision and verify its regulator, supply and logic
 level adaptation from its schematic before powering it. A GY-912 label or the
 board GPIO voltage does not prove module tolerance. See the
 [standalone module constraints](gy912-icm20948-validation.md#scope-and-wiring).
-Disconnect P94 button wiring and other SPI0/P94 users. In this legacy image,
-one sensor owns P93 and P94 callback ownership is exclusive; sensor reset/stop
-can detach that descriptor. The fitted extension reference is a future,
-default-off profile with three polled ICM45686 devices sharing P90/P91/P92 and
-configurable CS lines P93/P94/P95, with no DRDY. Its P94 CS1 wiring is
-incompatible with this image's P94 interrupt contract. Do not run standalone
+Disconnect P94 button wiring and other SPI0/P94 users. The
+[sensor wiring profiles](../pinmap.md#sensor-wiring-profiles) define native and
+opt-in extension ownership for P90–P95. In this legacy image one sensor owns
+P93 and P94 callback ownership is exclusive; extension CS1 on P94 is therefore
+incompatible with this image's interrupt contract. Do not run standalone
 `gy912_test` or `/dev/pwmN` commands in this image. Use disconnected motors/ESCs
 and compatible high-impedance probes.
 
@@ -70,9 +69,9 @@ Software checkpoint, 2026-10-04: 114 distinct Python source methods and the Bash
 OneShot/DShot runner passed. Fresh repository-wrapper builds passed for
 simple/default/DShot/SIH, with respectively 6/6/6/12 artifact methods, then a
 fresh final simple restoration passed all six artifact methods again. The
-[tester report](../../plans/261004-rzv2h-simple-pwm-icm20948/reports/tester-261004-simple.md)
+[tester report](../../../plans/261004-rzv2h-simple-pwm-icm20948/reports/tester-261004-simple.md)
 records source/host checks, resolved configuration, linked SPI implementations
-and failed attempts; [persistent evidence](../../plans/261004-rzv2h-simple-pwm-icm20948/reports/software-evidence/)
+and failed attempts; [persistent evidence](../../../plans/261004-rzv2h-simple-pwm-icm20948/reports/software-evidence)
 includes passing build logs and frozen source hashes. Final simple ELF SHA-256:
 `0794001c7754539cccd01ed747d4783363632be36dd5b2409f790b15fb2ad55c`;
 binary 328640 bytes; `_SEGGER_RTT` at `0x081a2400`.
@@ -84,7 +83,7 @@ waveforms. Recheck symbols against the exact ELF used in any later session.
 
 Reset, ELF load and target-memory writes require separate explicit approval;
 no target operation has been performed for this guide. Follow the
-[deployment guide](../deployment-guide.md). Use the exact loaded ELF to discover
+[deployment guide](../../deployment-guide.md). Use the exact loaded ELF to discover
 `_SEGGER_RTT`, without assuming another image's address:
 
 ```bash

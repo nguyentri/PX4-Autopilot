@@ -4,8 +4,8 @@
 **Board/core:** RDK-RZ/V2H, CR8-0  
 **Config:** `rdk-rzv2h:gy912`  
 **Evidence:** captured host/build checks passed. The bounded user-reported
-sensor pass used historical GPIO CS/P94 IRQ wiring ([archived RTT excerpt](gy912-icm20948-rtt-261011.txt),
-[status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md));
+sensor pass used historical GPIO CS/P94 IRQ wiring ([archived RTT excerpt](../evidence/gy912-icm20948-rtt-261011.txt),
+[status report](../../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md));
 it does not qualify the selected live DMA/SSLA0 variant. Recorded DMA target
 attempts and their failures remain in the section below; capture resolved
 configuration and exact ELF for each new result.
@@ -34,14 +34,13 @@ use P93. Verify the actual module revision, power input,
 regulator and logic level adaptation against its schematic before connecting
 power. Board GPIO voltage alone does not establish that a module tolerates it.
 
-The fitted extension reference is a separate future profile: three polled
-ICM45686 devices share P90/P91/P92 and use configurable CS lines P93/P94/P95;
-there is no DRDY ownership in that profile. P94 therefore cannot be both this
-legacy ICM20948 interrupt and extension CS1, and the `nsh-leds` button image
-cannot be run with the extension wiring. The native extension is not
-implemented yet; preserve this standalone GPIO-CS/P94-DRDY sample and its
-hardware-SSL/DMA experiments as legacy evidence while software work proceeds
-from the reference source.
+The [sensor wiring profiles](../pinmap.md#sensor-wiring-profiles) define the
+native and opt-in extension ownership for P90–P95. In this legacy sample P94 is
+the ICM20948 interrupt and P93 is its single CS; P94 cannot also be extension
+CS1, and the `nsh-leds` button image cannot run with extension wiring. Preserve
+this standalone GPIO-CS/P94-DRDY sample and its hardware-SSL/DMA evidence;
+the resolved profile configuration and exact ELF remain authoritative for a
+run.
 
 The sensor uses SPI mode **3**, 8-bit words, MSB first, **1 MHz**. Pinmux mode
 1 is a separate GPIO alternate-function setting. P93 stays low across each
@@ -50,7 +49,7 @@ frame (see [SPI0 DMA and hardware CS](#spi0-dma-and-hardware-ssla0-cs)), or the
 GPIO path drives it from `rzv_spi_select()`. P94 uses
 `GPIO_TINT_P9_4` (GPIOINT68); native IRQ4 pinmux is a different route.
 
-With `RZV2H_SPI0_HARDWARE_SSL` off, the P93 CS aliases in [board.h](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/include/board.h)
+With `RZV2H_SPI0_HARDWARE_SSL` off, the P93 CS aliases in [board.h](../../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/include/board.h)
 select GPIO output. Board SPI initialization and the GPIO observation test
 use the shared board CS mapping, `BOARD_SPI0_SS0_GPIO`
 (`GPIO_P9_3_OUTPUT_HIGH`), and leave CS high when idle. The descriptor's
@@ -140,7 +139,7 @@ SPI0, GPIO IRQ, GY912 and RTT input before loading the image.
 
 Reset, ELF loading and target-memory writes need explicit authorization.
 No hardware operation was performed for this guide. Use the approved board
-loading procedure in the [deployment guide](../deployment-guide.md), then
+loading procedure in the [deployment guide](../../deployment-guide.md), then
 attach the bridge to the running image:
 
 ```bash
@@ -193,8 +192,8 @@ magnetometer, PWM, or production validation.
 On 2026-10-11, the user identified and repaired a broken CS-to-analyzer wire
 that caused the earlier stuck-high observation. CS is restored to P93 after
 the temporary P50 experiment. The user then reported that the standalone
-`gy912_test` sensor run passed on CR8-0. The [archived RTT excerpt](gy912-icm20948-rtt-261011.txt)
-shows SPI0 CS selection messages and one raw sample; the [status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md)
+`gy912_test` sensor run passed on CR8-0. The [archived RTT excerpt](../evidence/gy912-icm20948-rtt-261011.txt)
+shows SPI0 CS selection messages and one raw sample; the [status report](../../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md)
 records the user attribution and evidence limits. No fresh logic-analyzer
 capture was supplied, so the GPIO-only procedure below remains available for
 a separately instrumented P93 check.
@@ -283,7 +282,7 @@ ELF SHA-256, approved loading/reset method and the complete RTT transcript.
 Capture P93 framing, mode-3 clock edges and P94 falling pulses with a scope or
 logic analyzer. Include normal/default/single/repeated runs and missing sensor,
 disconnected INT and malformed argument results. The archived excerpt and user
-report extend the existing [P94 button confirmation](gpio-button-interrupt-validation.md),
+report extend the existing [P94 button confirmation](../evidence/gpio-button-interrupt-validation.md),
 but do not replace the complete transcript, exact-image provenance, or direct
 waveform evidence required for the remaining sensor gates.
 
@@ -315,8 +314,8 @@ These checks establish software behavior and linkage, not target communication.
 
 ## References
 
-- [Implementation plan](../../plans/261002-gy912-icm20948-rzv2h/plan.md)
-- [NuttX driver evidence tiers](port-status-nuttx.md)
+- [Implementation plan](../../../plans/261002-gy912-icm20948-rzv2h/plan.md)
+- [NuttX driver evidence tiers](../port-status-nuttx.md)
 - [TDK ICM20948 datasheet DS-000189 v1.5](https://product.tdk.com/system/files/dam/doc/product/sensor/mortion-inertial/imu/data_sheet/ds-000189-icm-20948-v1.5.pdf)
 
 ## Unresolved questions

@@ -12,7 +12,7 @@ For sensor assignments use [profile-specific pin ownership](./pinmap.md#sensor-w
 The current FreeRTOS reference is `refs/rzv2h_drone_px4-dev/`: its selected
 `RDK` XML and `docs/HARDWARE.md` describe three ICM-45686 IMUs on SPI0,
 BMM150/BMP390L/INA228 on SCI7 I2C, and the existing serial/PWM connections.
-The native extension profile is planned and configurable; existing native
+The native extension profile is opt-in and configurable; existing native
 MPU9250/BMP280, ICM20948/GY912 and SIH profiles retain their own contracts.
 [Native board pinout](../../boards/renesas/rdk-rzv2h/src/pinout.md) describes
 legacy bench wiring; it is not the new extension BOM.
@@ -63,28 +63,14 @@ physical sensor array. See [reference provenance and limits](./reference-source-
 
 ## 2. System Overview
 
-### 2.1 SoC
+The RDK uses the Renesas R9A09G057H. Core responsibilities and software
+boundaries belong in [system architecture](../system-architecture.md).
+CR8-0 owns primary board bring-up; optional peers require explicit peripheral,
+interrupt and shared-memory ownership before being enabled.
 
-- **SoC:** Renesas R9A09G057H, RZ/V2H family.
-- **Process:** 40 nm.
-- **Temperature range:** 0-70 deg C commercial.
-
-### 2.2 Core Complex
-
-| Core | Type | Frequency | Cache | TCM |
-|---|---|---:|---|---|
-| CR8-0 | Cortex-R8 | 800 MHz loader/FSP default; read live | 32 KB I-cache, 32 KB D-cache | 128 KB I + 128 KB D |
-| CR8-1 | Cortex-R8 | 800 MHz loader/FSP default; read live | 32 KB I-cache, 32 KB D-cache | 128 KB I + 128 KB D |
-| CA55 | Cortex-A55 | Boot-switch/loader selected; outside current port | Reference-dependent | None |
-| CM33 | Cortex-M33 | Loader configured; outside current port | Reference-dependent | Reference-dependent |
-
-**Current PX4/NuttX port assumption:** CR8-0 is the primary execution core. CR8-1 and CM33 are optional I/O co-processors.
-
-### PX4/NuttX Development Notes
-
-- Treat CR8-0 as the owner of board initialization, scheduler startup, PX4 module execution, and primary peripheral bring-up unless the architecture is explicitly changed.
-- If CR8-1 or CM33 is enabled later, define deterministic ownership for peripherals, shared memory, interrupts, and IPC before adding runtime logic.
-- Keep single-core CR8-0 boot stable before introducing multi-core features.
+Core frequencies depend on boot-switch and loader configuration. Record the
+live clock state for timing evidence rather than assuming the nominal loader
+settings.
 
 ---
 
@@ -92,71 +78,29 @@ physical sensor array. See [reference provenance and limits](./reference-source-
 
 The **CPG**, or Clock Pulse Generator, controls frequency and power for processor and peripheral blocks.
 
-### 3.1 Main Clock Tree
+### Clock authority
 
-```text
-External Oscillator, typically 24 MHz
-  |
-  |-- Main PLL  -> PLLCLK  -> loader dividers -> CPU cores
-  |-- Sub PLL   -> PLLSCLK -> dividers -> SPI, I2C, UART
-  |-- Audio PLL -> optional audio clocking
-  `-- XTAL      -> RTC clock, 32.768 kHz
-```
+Use the [clock driver](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c)
+and its selected BSP inputs for clock sources, module gates and divider
+calculations. GPT uses P4CLK and GTM uses P1CLK; their nominal frequencies do
+not prove the live loader state.
 
-### 3.2 Key Frequency Dividers
-
-| Clock | Source | Typical frequency | Function |
-|---|---|---:|---|
-| cpu_clk | Main PLL / loader dividers | 800 MHz board default; measure live | CR8-0 / CR8-1 core clock |
-| periphclk | Sub PLL | Varies | Peripheral bus clock |
-| uart_clk | Sub PLL | 48 MHz | UART baud generator |
-| spi_clk | Sub PLL | 100 MHz | SPI transfer clock |
-| rtc_clk | XTAL | 32.768 kHz | Real-time clock |
-| gpt_clk | P4CLK | 200 MHz nominal | GPT PWM clock; query `rzv_get_gpt_clock_hz()` |
-| gtm_clk | P1CLK | 100 MHz nominal | GTM / HRT timer clock; query its runtime accessor |
-
-### 3.3 CPG Register Base
-
-- **Base address:** `0x10420010`, CR8-0 view.
-- **Key registers:** `CLKON`, `CLKDIV`, PLL settings.
-- **Driver source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c`
-
-### PX4/NuttX Development Notes
-
-- Audit software clock setup against selected XML and core-matched FSP/BSP
-  sources; corroborate with generated output and live measurements for target
-  timing acceptance. Missing generated output does not block a software build.
-- Hardcoded divider values in `rzv_clock.c` are critical. A mismatch can break UART baud rate, SPI timing, I2C timing, PWM frequency, HRT scheduling, and driver timeout behavior.
-- During bring-up, validate clocks before debugging higher-level PX4 sensor or actuator issues.
+Audit clock setup against selected XML and core-matched FSP/BSP sources.
+Corroborate with generated output and live measurements for target timing
+acceptance. Validate clocks before investigating baud, bus-rate, PWM or HRT
+errors; missing generated output does not block source work or a build.
 
 ---
 
 ## 4. Memory Map: Single-Core CR8-0
 
-This table is the CR8-0 view used by the current linker. The canonical
-cross-core aliases and shared windows remain in
-[multicore-memory-map.md](multicore-memory-map.md).
+The [multicore memory map](multicore-memory-map.md) owns private TCM, SRAM,
+DDR, shared windows and loader aliases for every core. Compare the exact
+image against the selected
+[linker script](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld).
 
-| Region | Start | Size | Type | Cache | Purpose |
-|---|---:|---:|---|---|---|
-| ITCM private | `0x00000000` | 127.5 KB | TCM | - | Vectors and early/BSP text |
-| Flash header | `0x0001FE00` | 128 B | In-image header | - | Renesas load descriptor |
-| DTCM private | `0x00020000` | 128 KB | TCM | - | Stack and tightly coupled data |
-| SRAM cacheable | `0x08180000` | 128 KB | SRAM | Cached | CR8-0 private SRAM |
-| SRAM non-cacheable | `0x081A0000` | 128 KB | SRAM | Uncached | RTT and non-cache buffers |
-| DDR cacheable | `0x40800000` | 8 MB | DDR | Cached | PX4/NuttX text, data, BSS, heap |
-| DDR non-cacheable | `0x41000000` | 8 MB | DDR | Uncached | Explicit non-cache data |
-| xSPI image | `0x20200000` header / `0x60200000` image view | Image dependent | xSPI | Loader-defined | CR8-0 firmware image |
-
-- **Reset vector:** `0x00000000`, local ITCM.
-- **Linker script:** `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld`
-
-### PX4/NuttX Development Notes
-
-- Confirm that the linker script matches the actual boot flow and memory map.
-- Reserve shared DRAM intentionally if IPC, secondary-core firmware, PX4IO-style bridge logic, or shared logging is used.
-- Keep peripheral I/O mappings uncached.
-- For multi-core expansion, define cacheability and coherency policy for every shared memory region.
+Keep MMIO uncached. Reserve shared memory deliberately and state cacheability
+and coherency policy before assigning a secondary core or DMA consumer.
 
 ---
 
@@ -281,52 +225,14 @@ Configuration:
 
 ## 8. Inter-Core Communication: MHU and IPCC
 
-### 8.1 MHU: Message Handling Unit
+MHU signals an event; the payload lives in shared memory. The
+[IPC architecture](ipc-architecture.md) owns transport separation, protocol
+sources and peer qualification. The [memory map](multicore-memory-map.md)
+owns per-core aliases. Sensor-profile changes do not alter that contract.
 
-The MHU is a hardware doorbell for inter-core signaling.
-
-- **Type:** ARM MHU.
-- **Register aliases:** current NuttX definitions use the `0x10480000` MHU
-  domain with separate non-secure, secure-CR8, and secure-CM33 offsets.
-  Select the domain explicitly; there is no single universal base.
-
-Features:
-
-- One-to-one core signaling.
-- CR8-0 <-> CR8-1.
-- CR8-0 <-> CM33.
-- Edge-triggered interrupts.
-- Lightweight doorbell behavior with no payload.
-
-The CR8-0 default and SIH images do not enable this path. Native raw IPC has
-bounded CR8-0/CR8-1 standalone evidence; see [IPC status and evidence](./ipc-architecture.md).
-That evidence does not establish the FreeRTOS reference's CA55 RPMsg/RPC service
-parity or CM33 exchange. Sensor wiring changes do not change the native shared
-memory contract; qualification of additional peers remains separate work.
-
-### 8.2 IPCC: Inter-Processor Communication Controller
-
-The NuttX IPCC driver wraps MHU and provides:
-
-- Shared-memory ring buffers in DRAM.
-- Message framing with ID, sequence, length, and CRC.
-- Error handling and sequence validation.
-
-Drivers:
-
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_mhu_core.c`
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_ipcc.c`
-
-References:
-
-- Commit `289f3203ec6`, IPC refactor.
-- `boards/renesas/rdk-rzv2h/px4io_cr8_0/uorb_bridge.cpp`
-
-### PX4/NuttX Development Notes
-
-- Keep the first PX4/NuttX target simple: CR8-0 primary, other cores disabled or treated as future co-processors.
-- For future PX4IO-like partitioning, define shared-memory layout, ring-buffer ownership, interrupt ownership, sequence handling, and failure recovery.
-- MHU only signals. Payload must live in shared memory.
+A standalone raw-link result cannot qualify the PX4 bridge, CM33, or the
+reference CA55 RPMsg/RPC service. Define peer reset/recovery and buffer
+ownership for each selected profile.
 
 ---
 
@@ -382,81 +288,33 @@ References:
 
 ### 10.1.1 RDK-RZV2H Serial Policy
 
-| Mode | Console / Debug | Active serial links |
-|---|---|---|
-| Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 for the shell, RTT for boot/syslog/debug |
-| Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 intended for the IO target shell; not yet hardware validated |
-| Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 intended for the IO target shell; not yet hardware validated |
-| Integrated PX4 CR8-0 | RTT0 console/debug | SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC 100000 8E2 + inversion, SCI9 GPS 115200 8N1 |
+The [pin ownership matrix](pinmap.md#serial-policy) owns console and payload
+assignments, device names and wiring. The
+[deployment guide](../deployment-guide.md) owns console connection procedures.
+SCI-B and SCIF/SCIFA are different controllers; select the matching
+[reference source](reference-source-map.md#uart-distinction).
 
-SCI3 is not an active console on the RDK-RZV2H board.
-
-### 10.2 Typical PX4 Device Assignment
-
-| Device | Typical assignment |
-|---|---|
-| `/dev/ttyS4` | TFmini rangefinder |
-| `/dev/ttyS5` | Sik telemetry, MAVLink to QGroundControl |
-| `/dev/ttyS6` | RC input, FS-A8S SBUS, 100000 8E2; termios path build-clean; fixed external NPN inversion and frames require target proof |
-| `/dev/ttyS9` | GPS, u-blox M10, 115200 8N1 |
-
-**Sources:**
-
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_serial.c`
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_lowputc.c`
-
-### PX4/NuttX Development Notes
-
-- Validate the selected mode's console/debug route first, then its
-  telemetry/GPS/RC/sensor UARTs.
-- If baud rate is wrong, check CPG clock configuration before changing UART driver logic.
-- Keep `/dev/ttyS*` mapping consistent with PX4 board configuration and startup scripts.
+Validate the selected profile's console first, then payload UARTs. Check the
+CPG clock when baud is wrong and retain the board's physical SCI numbering.
 
 ---
 
 ## 11. SPI and I2C
 
-### 11.1 RSPI: Sensor SPI Controller
+Use [sensor wiring profiles](pinmap.md#sensor-wiring-profiles) for buses,
+addresses and chip selects. RSPI is distinct from the EVK SPI-B controller;
+SCI7 simple-I2C is distinct from native RIIC. The
+[reference map](reference-source-map.md#known-reference-gaps) records which
+inputs can establish each controller's behavior.
 
-- **Type:** SPI master/slave.
-- **Controller distinction:** Native `rzv_spi.c` is the RSPI path; the EVK
-  `spi_b` example is a different IP reference. Use the integrated board backend
-  and [reference-source map](./reference-source-map.md) for the correct evidence.
-- **RDK-RZ/V2H routing:** SPI0 is the only board-routed instance identified
-  by the current source and pinmap. Schematic and target proof remain pending.
-  SPI1 has no external pinmux or chip-select contract; SPI2 has no NuttX
-  lower-half implementation.
-- **Use:** Current native default assigns SPI0 to MPU9250; simple/GY912 use
-  ICM20948. The planned extension shares SPI0 across three polled ICM45686
-  devices with P93/P94/P95 chip selects. P94 cannot simultaneously serve the
-  bench DRDY/button role. Internal loopback does not validate sensor wiring.
+- SPI: validate mode, clock, chip-select timing and signal integrity with the
+  fitted sensor. Internal loopback cannot establish external wiring.
+- I2C: confirm pull-ups, voltage, strapped address, repeated START and timeout
+  recovery. Preserve each standalone sample's timing and address choices.
+- DMA and hardware chip select are separately selected paths; source/build
+  checks do not prove their electrical timing.
 
-**Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c`
-
-### 11.2 RIIC: Renesas I2C
-
-- **Type:** I2C master/slave.
-- **Hardware definitions:** RIIC0-RIIC8 exist in the R9A09G057H device
-  headers.
-- **Current NuttX lower-half scope:** Native RIIC0-RIIC3 are selectable.
-- **Board sensor path:** SCI7 Simple-I2C, a separate SCI-mode controller,
-  registered as logical bus 7. Native default uses BMP280 at 0x76; BMM150 has
-  a standalone sample. Reference extension runtime uses BMM150 0x10,
-  BMP390L (`bmp388`) 0x77 and INA228 0x45; preserve sample timing/address
-  configuration rather than switching all images to the extension settings.
-- **Use:** Barometer and sensor probing; external transactions remain a target
-  validation gate.
-
-**Sources:**
-
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c`
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c`
-
-### PX4/NuttX Development Notes
-
-- Validate pinmux, clock, reset, chip select, bus speed, and interrupt/DMA configuration separately.
-- For SPI sensors, confirm mode, frequency, chip-select timing, and MISO/MOSI signal integrity with a logic analyzer.
-- For I2C sensors, confirm bus pull-ups, voltage level, address, clock rate, and timeout handling.
+Per-device procedures are linked from the [validation index](README.md).
 
 ---
 
@@ -540,86 +398,27 @@ required by the current GPT/PWM driver scope.
 
 ## 14. PX4/NuttX Bring-Up Checklist
 
-Use this checklist as a practical board-port validation flow.
+Use the [validation checklist](validation/validation-checklist.md) for source, build,
+interrupt, DMA, concurrency and target-evidence gates. Select a device-specific
+procedure from the [port index](README.md) for actual measurements.
 
-### 14.1 Board Mode and Boot
-
-- [ ] Confirm DSW1 switch positions.
-- [ ] Confirm boot source: SD, eMMC, xSPI, or SCIF download.
-- [ ] Confirm normal/JTAG mode.
-- [ ] Confirm reset pin and reset release behavior.
-- [ ] Confirm boot image placement and reset vector.
-
-### 14.2 Early NuttX
-
-- [ ] Confirm `rzv_start.c` is reached.
-- [ ] Confirm VBAR setup.
-- [ ] Confirm CPG initialization.
-- [ ] Confirm linker script memory placement.
-- [ ] Confirm the selected console route (RTT0 for integrated PX4 and RTT samples;
-      UART only for profiles that select it).
-
-### 14.3 Kernel and Timing
-
-- [ ] Confirm NuttX scheduler starts.
-- [ ] Confirm GTM/HRT initialization.
-- [ ] Confirm timer interrupt behavior.
-- [ ] Confirm work queue timing.
-
-### 14.4 Peripheral Bring-Up
-
-- [ ] GPIO pinmux and direction.
-- [ ] ICU and GIC routing.
-- [ ] UART console/debug/telemetry/GPS/RC mapping.
-- [ ] SPI sensor bus and chip select timing.
-- [ ] I2C sensor bus and pull-up/address validation.
-- [ ] DMA channel allocation and cache maintenance.
-
-### 14.5 PX4 Integration
-
-- [ ] uORB initialization.
-- [ ] PX4 module startup.
-- [ ] Sensor probing.
-- [ ] MAVLink startup.
-- [ ] PWM output using GPT.
-- [ ] Required safe GPT reset/boot/disarm/failure states; POEG optional.
-- [ ] Optional post-G9 WDT integration.
-
----
+Isolate board failures in this order: switch/mode pins, reset, boot source,
+image placement, vectors, clocks, memory, console, scheduler, then PX4 startup.
+Exact-image boot provenance and safe inactive actuator outputs remain required.
 
 ## 15. Key Source Files
 
-| Area | File |
-|---|---|
-| Clock / CPG | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c` |
-| Boot / CPU init | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_start.c` |
-| Linker script | `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld` |
-| GIC register definitions | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_intc_gic.h` |
-| ICU | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_icu.c` |
-| GPIO | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c` |
-| Pinmap | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pinmap.h` |
-| DMAC-B | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.c` |
-| MHU low-level driver | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_mhu_core.c` |
-| IPCC driver | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_ipcc.c` |
-| PX4IO bridge reference | `boards/renesas/rdk-rzv2h/px4io_cr8_0/uorb_bridge.cpp` |
-| GPT | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c` |
-| GTM | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gtm.c` |
-| HRT | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_hrt.c` |
-| Serial | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_serial.c` |
-| Early serial | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_lowputc.c` |
-| SPI | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c` |
-| I2C | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c` |
-| SCI-based I2C | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c` |
-| POEG | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_poeg.c` |
-| Watchdog | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_wdt.c` |
+The [codebase map](../codebase-summary.md) owns source navigation; the
+[NuttX status matrix](port-status-nuttx.md) owns per-driver source and evidence.
+Use their links instead of a second driver inventory.
 
 ---
 
 ## 16. Related Documentation
 
 - [Native bench pinout](../../boards/renesas/rdk-rzv2h/src/pinout.md) - legacy wiring.
-- [Pin ownership](./pinmap.md) - native and planned extension profiles, physical header drawing.
-- `../system-architecture.md` - system architecture.
+- [Pin ownership](./pinmap.md) - native and opt-in extension profiles, physical header drawing.
+- [System architecture](../system-architecture.md) - software boundaries.
 
 ---
 

@@ -18,7 +18,7 @@ is linked for mixer metadata only. Outputs remain inactive until an explicit
 finite actuator test. Fresh simple/default/DShot/SIH builds and artifact audits
 pass; the bench remains hardware untested.
 The retired core-only target's NuttX/ROMFS resources and evidence are historical.
-See the [simple bench validation guide](../../../docs/renesas/simple-pwm-icm20948-validation.md).
+See the [simple bench validation guide](../../../docs/renesas/validation/simple-pwm-icm20948-validation.md).
 
 The board also ships `renesas_rdk-rzv2h_sih`, a CR8-0 FC-SIH demo with a
 bounded on-target transcript. It is built from `sih.px4board`,
@@ -371,7 +371,7 @@ that window. All motor channels must become inactive after timeout or stop;
 disarmed values do not prove continuing pulses on disabled outputs. PWMOut
 queues are lazy and startup is asynchronous.
 
-Use the [validation guide](../../../docs/renesas/simple-pwm-icm20948-validation.md)
+Use the [validation guide](../../../docs/renesas/validation/simple-pwm-icm20948-validation.md)
 for exact wiring, FIFO/callback checks and measurements. Stop PWMOut and verify
 inactive pins before halting the core for debugger callback observation.
 

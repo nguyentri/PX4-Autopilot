@@ -39,7 +39,7 @@ manufacturing.
 - [6. Operational behavior](#6-operational-behavior)
 - [7. Safety, reliability, and security](#7-safety-reliability-and-security)
 - [8. System requirements](#8-system-requirements)
-- [9. Current implementation status](#9-current-implementation-status)
+- [9. Evidence boundary](#9-evidence-boundary)
 - [10. Verification strategy](#10-verification-strategy)
 - [11. References and open decisions](#11-references-and-open-decisions)
 
@@ -718,24 +718,15 @@ Systems engineering shall approve or revise each with workload, percentile/
 maximum, fault response and measurement definition before freezing the ICD.
 An 80-TOPS capability is not a thermal test workload.
 
-## 9. Current implementation status
+## 9. Evidence boundary
 
-This section reports evidence from the repository's RDK-based pre-development
-port. It does not narrow the platform-level requirements to the RDK board.
-
-| Capability | Repository evidence on 2026-10-11 | Target gap |
-|---|---|---|
-| RDK CR8-0 PX4/NuttX | Build-clean integrated paths; bounded SIH demonstration | Physical flight sensors, actuators, storage, boot, and flight validation |
-| RDK CR8-1 | Image/build scaffolding and protocol source | Complete I/O peer, output supervision, target proof, and failure recovery |
-| RDK CR8-0↔CR8-1 IPC | Raw-ring/CRC/sequence design and some NuttX-only evidence | Enabled PX4 peer path, cache/load/reset/latency and safety proof |
-| A55/Linux | SoC/vendor Linux capability outside this PX4 target | Integrated boot, device tree, RPMsg/DDS, media, DRP-AI3 and lifecycle |
-| Physical PWM/DShot | Build-clean paths; DShot is TX-only and target-unvalidated | CR8-1 ownership choice, waveforms, ESC behavior, telemetry and timeout proof |
-| Smart BMS | No selected aircraft BMS contract; stock RDK has no analog battery input | Component/protocol selection, customer-board interface, driver and HIL; add a secondary monitor only if required |
-| Cameras/VIO/AI | Target only | Hardware, drivers, models, synchronization, datasets and flight tests |
-| Gimbal/payload | Target only | Vendor selection, manager, power, protocol and arbitration tests |
-| Persistent parameters/logs | Volatile PX4 parameter fallback; storage drivers incomplete | Production storage ownership and power-loss recovery |
-
-No row above supports a production or flight-ready claim.
+This specification owns the target hardware requirements and their verification
+strategy. Current repository implementation status and named hardware evidence
+are maintained in the [NuttX port status](../port-status-nuttx.md) and [PX4 HAL
+status](../port-status-px4-hal.md); the [software specification](./rzv2h-software-specification.md)
+owns the corresponding software gap and verification contracts. RDK and
+repository results remain pre-development evidence and do not narrow these
+platform-level requirements.
 
 ## 10. Verification strategy
 

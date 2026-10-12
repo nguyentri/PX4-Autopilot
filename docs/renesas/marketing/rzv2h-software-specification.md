@@ -40,7 +40,7 @@ sample is separate reference material.
 - [10. Configuration, persistence, update, and logging](#10-configuration-persistence-update-and-logging)
 - [11. Software security](#11-software-security)
 - [12. Software requirements](#12-software-requirements)
-- [13. Current-to-target gap](#13-current-to-target-gap)
+- [13. Evidence boundary](#13-evidence-boundary)
 - [14. Verification and open decisions](#14-verification-and-open-decisions)
 
 ## 1. Scope and design rules
@@ -165,7 +165,7 @@ source ./build_setup.sh
 ```
 
 The simple image is a PWM + ICM20948 bench profile without flight/autonomy
-startup. Use its [validation guide](../simple-pwm-icm20948-validation.md);
+startup. Use its [validation guide](../validation/simple-pwm-icm20948-validation.md);
 it is not a drone image. For later integration build
 `./build.sh renesas_rdk-rzv2h_default`. The expected ELF pattern is
 `build/<target>/<target>.elf`; archive the actual artifact hash, toolchain,
@@ -179,10 +179,10 @@ and make. RTT/debug and the loaded ELF must match; follow the repository guide.
 
 | Responsibility | Existing owner / starting source | Customer deliverable |
 |---|---|---|
-| PX4 board | [RDK board](../../../boards/renesas/rdk-rzv2h/) | Customer board target, sensor buses, timer outputs, startup and airframe config |
-| NuttX board | [RDK NuttX board](../../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/) | Pins, boot, linker map, owned peripherals and defconfigs |
-| SoC/PX4 HAL | [RZ/V NuttX drivers](../../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/) and [PX4 HAL](../../../platforms/nuttx/src/px4/renesas/rzv/) | Driver/HRT/reset/DMA changes with tests, separate from board pin policy |
-| CR8-1 I/O | [CR8-1 board scaffold](../../../boards/renesas/rdk-rzv2h-io-cr8_1/) and [IPC architecture](../ipc-architecture.md) | Complete peer, lease, RC/BMS acquisition, output backend and reset recovery |
+| PX4 board | [RDK board](../../../boards/renesas/rdk-rzv2h) | Customer board target, sensor buses, timer outputs, startup and airframe config |
+| NuttX board | [RDK NuttX board](../../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h) | Pins, boot, linker map, owned peripherals and defconfigs |
+| SoC/PX4 HAL | [RZ/V NuttX drivers](../../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv) and [PX4 HAL](../../../platforms/nuttx/src/px4/renesas/rzv) | Driver/HRT/reset/DMA changes with tests, separate from board pin policy |
+| CR8-1 I/O | [CR8-1 board scaffold](../../../boards/renesas/rdk-rzv2h-io-cr8_1) and [IPC architecture](../ipc-architecture.md) | Complete peer, lease, RC/BMS acquisition, output backend and reset recovery |
 | Linux BSP | Selected external SDK/module BSP; not built by this PX4 command | Boot artifacts, DDR setup, DTS, reserved memory, modules and rootfs |
 | ROS 2/autonomy | Locked ecosystem workspace plus customer packages | Version-matched messages, frame/time conversions, gateway, calibrated models and tests |
 
@@ -381,8 +381,8 @@ facts and link health; Linux cannot suppress the PX4 response.
 
 | Source reference | What can be reused | Required target work |
 |---|---|---|
-| [INA228 driver](../../../src/drivers/power_monitor/ina228/) | Device-register and shunt-calibration logic | Qualified bus/board configuration and CR8-1 acquisition adapter or explicitly temporary CR8-0 bench ownership |
-| [SMBus battery driver](../../../src/drivers/batt_smbus/) | SBS reads and BQ40Z50/BQ40Z80-specific handling | Audit supported commands, timing, PEC and device compatibility; not a universal smart-battery driver |
+| [INA228 driver](../../../src/drivers/power_monitor/ina228) | Device-register and shunt-calibration logic | Qualified bus/board configuration and CR8-1 acquisition adapter or explicitly temporary CR8-0 bench ownership |
+| [SMBus battery driver](../../../src/drivers/batt_smbus) | SBS reads and BQ40Z50/BQ40Z80-specific handling | Audit supported commands, timing, PEC and device compatibility; not a universal smart-battery driver |
 | [DroneCAN battery bridge](../../../src/drivers/uavcan/sensors/battery.cpp) | BatteryInfo/auxiliary decoding into PX4 semantics | CAN stack/driver ownership on CR8-1 and a new bounded IPC ingestion path on CR8-0 |
 
 The existing `batt_smbus.cpp` also contains manufacturer writes and
@@ -730,22 +730,15 @@ camera/IMU correlation. These remain proposals requiring systems approval and
 measurement; they are not PX4 defaults or SDK guarantees. Define how a stale
 setpoint is detected even while Offboard heartbeats continue.
 
-## 13. Current-to-target gap
+## 13. Evidence boundary
 
-The evidence column below describes this repository's RDK pre-development port;
-the required-work column applies to the selected customer platform.
-
-| Area | Current repository evidence | Required software work |
-|---|---|---|
-| CR8-0 flight image | Build-clean target and bounded SIH evidence | Physical flight path, persistent storage, production boot and on-airframe validation |
-| CR8-1 I/O | Board/image scaffolding; responder not complete | Minimal I/O application, drivers, lease state machine, outputs, watchdog and HIL |
-| CR8 IPC | Fixed raw rings and v2 frame checks in source; default images disabled | Peer implementations, enabled integration, cache/reset/load/timing/safety proof |
-| A55 integration | Not part of the active PX4 image | Linux BSP/product image, CR8 lifecycle, RPMsg/DDS, time, health and update |
-| ROS 2/autonomy | Target only | Selected DDS bridge/topics, VIO/perception/planner, frames/quality contracts |
-| RDK battery reference | PX4 battery plumbing exists; no selected aircraft BMS; RDK battery ADC channels are disabled | Digital BMS service, normalization, customer-board routing/configuration and fault tests; optional secondary-monitor adapter where required |
-| Camera/gimbal | Target only | Drivers, managers, media, time sync, arbitration and interoperability |
-| DShot/PWM/CAN outputs | CR8-0 paths build-clean; DShot TX-only and unvalidated | Final CR8-1 ownership, protocol support, telemetry, timeout and waveforms |
-| Security/update | No released multi-image product chain | Identity, boot trust, signed manifest, rollback, key and debug policy |
+This specification owns target software contracts, requirements and verification
+gates. Current repository implementation status and named hardware evidence are
+maintained in the [NuttX port status](../port-status-nuttx.md) and [PX4 HAL
+status](../port-status-px4-hal.md); the [system specification](./rzv2h-system-specification.md)
+owns the corresponding hardware requirements. RDK and repository results remain
+pre-development evidence and do not promote target contracts to shipped
+behavior.
 
 ## 14. Verification and open decisions
 

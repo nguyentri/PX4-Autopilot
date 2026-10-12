@@ -28,7 +28,7 @@ The three Renesas `Debug_Flat.launch` files select USB, SWD, numeric speed
 `15000`, a 30-second connection timeout, and GDB port 61234. Their matching
 `.jlink` files are byte-identical and specify no custom script or loader.
 Those `refs/` paths are local ignored source inputs. They are not tracked proof;
-use [RZ/V2H Three-Core IPC Artifact Evidence](./rzv2h-three-core-ipc-artifacts.md)
+use [RZ/V2H Three-Core IPC Artifact Evidence](./evidence/rzv2h-three-core-ipc-artifacts.md)
 for tracked hashes and host-side authorization commands.
 
 ## Reset, run, and detach metadata

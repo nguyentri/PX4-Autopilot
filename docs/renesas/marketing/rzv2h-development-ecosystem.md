@@ -57,12 +57,14 @@ all three target domains into a flight-qualified release.
 | RZ/V2H AI SDK/Yocto | Custom Linux BSP and product-image development | EVK source starting point; port boot, DDR, device tree and peripherals |
 | Supplier SOM BSP | Carrier-board product development | Use that module revision's supported BSP; obtain its release manifest |
 | Public RDK PX4/FreeRTOS sample | Study CR8/A55 PX4, sensors and RPMsg integration | Separate FreeRTOS/POSIX baseline, not a drop-in NuttX image |
-| This PX4/NuttX port | Target CR8-0 flight and CR8-1 I/O development | Build/source and bounded RDK evidence; physical flight integration remains |
+| This PX4/NuttX port | Target CR8-0 flight and CR8-1 I/O development | See the [NuttX](../port-status-nuttx.md) and [PX4 HAL](../port-status-px4-hal.md) status matrices; customer flight integration remains |
 | RZ FSP/Multi-OS | CR8 peripherals, lifecycle and IPC references | Match board, core and package release; CM33 examples are out of scope |
 
-The drone target remains A55/DRP-AI3 + CR8-0/PX4/NuttX + CR8-1/NuttX.
-Choose an A55 cold-boot path without a CM33 dependency. Run the public FreeRTOS
-sample separately if needed to understand a peripheral or transport.
+The target domain allocation and CM33-free boot boundary belong to the [system
+specification](./rzv2h-system-specification.md#3-rzv2h-allocation) and [software
+specification](./rzv2h-software-specification.md#3-deployment-by-compute-domain).
+Choose an A55 cold-boot path without a CM33 dependency; run the public FreeRTOS
+sample separately when it is useful for peripheral or transport study.
 
 ## 2. Verified software snapshot
 

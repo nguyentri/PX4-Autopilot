@@ -32,67 +32,29 @@ Two different paths share the RZ/V2H MHU helpers:
 `rzv_mhu_core.c` only provides register and IRQ helpers. It does not imply that
 OpenAMP or a raw link is enabled.
 
-The checked-in MHU aliases are:
-
-| Access domain | MHU0 base |
-|---|---:|
-| non-secure | `0x10480000` |
-| secure CR8 | `0x10480800` |
-| secure CM33 | `0x10481000` |
-
-The raw-link configuration currently selects the non-secure window. A move to
-the secure CR8 alias is a physical target-qualification decision; it does not
-change the native ABI or the current standalone memory map.
+The raw profile selects the non-secure MHU window. Domain aliases belong to
+[the MHU hardware header](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_mhu.h)
+and [the memory map](multicore-memory-map.md). Changing access domains requires
+physical qualification; it does not implicitly change the shared-memory ABI.
 
 ## 3. Raw MHU + Shared-Memory Links
 
-`arch/arm/src/rzv/rzv_ipc_channels.h` is the single source of truth for these
-allocations:
+The [channel contract](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_channels.h)
+owns device numbers, per-core MHU routes, shared windows, ring layout and ABI
+constants. Use it together with the [memory map](multicore-memory-map.md)
+instead of transcribing channel or offset tables into another document.
 
-| Device | Link | TX/RX MHU0 NS channels | Shared memory |
-|---|---|---|---:|
-| `/dev/ipcc1` | CR8-0 ↔ CR8-1 | 4 / 9 | `0x43800000`, 64 KiB |
-| `/dev/ipcc2` | CR8-0 ↔ CM33 | 10 / 15 | `0x43810000`, 32 KiB |
-| `/dev/ipccLB` | CR8-0 loopback | 16 / 16 | `0x43818000`, 16 KiB |
-| `/dev/ipcc3` | CR8-1 ↔ CM33 | 21 / 22 | `0x43820000`, 32 KiB |
-
-All channels are checked against the RZ/V2H MHU-B-NS valid-channel mask.
-Compile-time assertions also check ring sizing, channel separation, and the
-`0x43800000`–`0x4383ffff` IPC carveout bounds.
-
-Each raw ring half contains:
-
-```text
-offset 0   uint32_t head
-offset 4   uint32_t tail
-offset 8   uint32_t mask
-offset 12  uint32_t flags (ABI version in bits 7:0)
-offset 16  48-byte cache-line pad
-offset 64  fixed-size entries
-```
-
-The ABI is little-endian. The producer cleans data before the MHU kick; the
-consumer invalidates before reading and responds with the MHU ACK. Current raw
-entries are 64 bytes.
+The transport separates doorbell delivery from payload ownership. Producers
+must publish cache-visible data before signaling; consumers must observe the
+published data before acknowledging it. Ring bounds, channel separation and
+recovery epochs are part of the transport contract, not application framing.
 
 ## 4. PX4IO Message Protocol
 
-The protocol source is
-`boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h`.
-
-Every message starts with this packed 16-byte header:
-
-| Field | Type | Current value or meaning |
-|---|---|---|
-| `magic` | `uint32_t` | `0x525a5632` (`RZV2`) |
-| `version` | `uint8_t` | `0x02` |
-| `msg_type` | `uint8_t` | heartbeat, actuator, status, RC, battery, or failsafe type |
-| `sequence` | `uint16_t` | monotonic counter per message stream |
-| `timestamp_us` | `uint32_t` | source HRT timestamp |
-| `crc32` | `uint32_t` | IEEE CRC32 with this field zeroed during calculation |
-
-This replaces the obsolete `0xaa`/CRC16 frame previously documented here.
-Messages must fit one 64-byte raw-ring entry.
+The [PX4IO protocol](../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h)
+owns message types, sizes, magic/version, sequence and CRC fields. Frames must
+fit a raw entry. Its application CRC is distinct from the transport ABI;
+OpenAMP/RPMsg does not acquire that framing merely by using the same MHU.
 
 The CR8-0 uORB bridge:
 
@@ -118,7 +80,7 @@ The raw drivers, shared-memory ABI, bridge, and example profiles are not the
 default runtime path. In particular:
 
 - The NuttX raw CR8-0/CR8-1 link has bounded `ipctest` recover/ping/echo
-  100/100 evidence in the [HIL guide](./rzv2h-ipc-hil-test-guide.md). That
+  100/100 evidence in the [HIL guide](./validation/rzv2h-ipc-hil-test-guide.md). That
   sample result does not qualify the PX4 uORB bridge or CM33 exchange.
 - The [CR8-1 PX4IO scaffold](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/px4io_cr8.cpp)
   sends placeholder commands on `/dev/ipcc3`; it is not the CR8-0 uORB
@@ -151,5 +113,5 @@ on-target behavior:
 
 - [NuttX port status](./port-status-nuttx.md)
 - [Multicore memory map](./multicore-memory-map.md)
-- [Validation checklist](./validation-checklist.md)
+- [Validation checklist](./validation/validation-checklist.md)
 - [Porting playbook](./porting-playbook.md)

@@ -351,29 +351,17 @@ the evidence needed to develop the aircraft safety case.
 
 ## 7. Evidence and productization
 
-### 7.1 What exists today
+### 7.1 Evidence boundary
 
-- An RDK-based PX4/NuttX RZ/V2H CR8-0 pre-development port with build-clean
-  integration paths.
-- Bounded on-target SIH evidence for a simulation-only profile.
-- Source/build scaffolding for CR8-1, MHU/shared-memory IPC, CRC/sequence checks,
-  and multiple peripheral drivers.
-- Build-clean PWM and opt-in TX-only DShot paths that still need physical proof.
-- Reference RDK NuttX/PX4 board configurations whose peripheral assignments
-  must be adapted to the customer's flight-controller hardware.
+The repository's current implementation status and named hardware evidence are
+maintained in the [NuttX port status](../port-status-nuttx.md) and [PX4 HAL
+status](../port-status-px4-hal.md). The [system specification](./rzv2h-system-specification.md)
+and [software specification](./rzv2h-software-specification.md) retain the
+customer-platform gaps and target requirements. RDK and repository results are
+pre-development evidence; they do not support a production or flight-ready
+claim.
 
-### 7.2 What does not exist yet
-
-- A flight-validated physical-sensor and motor aircraft image.
-- Enabled, fully implemented, safety-validated CR8-0↔CR8-1 PX4 I/O operation.
-- Integrated A55 Linux/DRP-AI3 camera/autonomy product image.
-- Selected BMS, cameras, gimbal, radio, ESCs, memory, storage, and production PCB.
-- A released customer flight-controller board and validated battery interface;
-  the RDK has no analog battery path, so that option requires customer hardware.
-- Production boot/update/security, fleet identity, persistent parameters, and
-  aircraft qualification evidence.
-
-### 7.3 Productization sequence
+### 7.2 Productization sequence
 
 1. Freeze aircraft requirements, safety target, exact SoC ordering code, and
    external-device ICD.

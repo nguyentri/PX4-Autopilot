@@ -1,11 +1,10 @@
 # RDK-RZ/V2H System Architecture
 
-**Date:** 2026-10-01
-**Status:** Source-backed reference; CR8-0 active, multicore deferred
+**Status:** Source-backed reference; CR8-0 active, multicore opt-in
 
-This document summarizes the checked-in RZ/V2H PX4/NuttX architecture. It does
-not claim production stability, cold-boot validation, or enabled multicore IPC
-in the default images.
+This document records the current boundaries and durable decisions for the
+RZ/V2H PX4/NuttX port. Source, board manifests, status tables, and the
+deployment guide own implementation details, evidence, and run procedures.
 
 ## 1. Architecture Stack
 
@@ -18,7 +17,22 @@ PX4 modules
 ```
 
 The CR8-0 board path is the active PX4 target. CR8-1 and CM33 remain deferred
-multicore work.
+multicore targets; their standalone images are available for separate IPC
+work. The default CR8-0 image remains independent of CA55/Linux, CR8-1, CM33,
+OpenAMP, and IPCC.
+
+The project outcome is a source-backed PX4 flight path on CR8-0 under NuttX,
+with the board pinmap, HAL, sensors, actuators, telemetry, parameters, and
+logs qualified in the evidence tiers used by the port status documents. The
+opt-in `renesas_rdk-rzv2h_drone` profile carries the recovered RDK sensor
+extension; default, simple, SIH, DShot, and standalone NuttX profiles remain
+separate compatibility surfaces.
+
+CA55/Linux integration, RPMsg/OpenAMP as a default dependency, wireless and
+video features, and production flash/cold-boot claims are outside the current
+CR8-0 contract. ADC, SDHI/ULog, CAN-FD, Ethernet, WDT, and DShot remain
+optional or post-drone qualification paths according to the active plans and
+status tables.
 
 ## 2. Core Roles
 
@@ -27,10 +41,6 @@ multicore work.
 | CR8-0 | Primary flight stack, board bring-up, diagnostics | Active target |
 | CR8-1 | I/O co-processor / PX4IO-style expansion | Deferred |
 | CM33 | Alternate I/O or safety companion | Deferred |
-
-The old shorthand that implied CR8-1 at `0x40000000` and CM33 at `0x40100000`
-has been removed. Exact aliases and boot views belong in
-[multicore-memory-map.md](./renesas/multicore-memory-map.md).
 
 ## 3. Canonical Addressing
 
@@ -48,54 +58,29 @@ details are not duplicated here.
 
 ## 4. IPC and Multicore Contract
 
-IPC is deferred. The default PX4 and SIH images keep it disabled.
+IPC is opt-in. The default PX4, simple, SIH, and drone images keep OpenAMP and
+IPCC disabled; standalone CR8-1/CM33 images and NuttX IPC configurations are
+separate validation surfaces. A raw NuttX IPC transcript therefore does not
+promote PX4 multicore integration.
 
-The source tree contains MHU/IPCC helpers and raw-link scaffolding, but those
-helpers are not evidence of an enabled runtime transport. The current protocol
-contract is documented in [ipc-architecture.md](./renesas/ipc-architecture.md):
-
-- PX4IO bridge framing uses a 16-byte header with CRC32.
-- Sequence numbers and magic/version checks reject stale or corrupt frames.
-- Shared-memory ring bounds are checked at build time.
-
-The obsolete "active IPCC" and CRC16 framing notes were removed from this
-summary.
+The [IPC architecture](./renesas/ipc-architecture.md) owns transport and
+application-protocol boundaries. Helper symbols and linker carveouts do not
+establish an enabled runtime link.
 
 ## 5. PX4 Board Layout
 
-```text
-boards/renesas/rdk-rzv2h/
-├── src/                     board startup, pinmux, HAL glue
-├── nuttx-config/            board defconfigs for named profiles
-├── px4io_cr8_0/             deferred PX4IO bridge sources
-├── dshot.px4board           opt-in DShot build
-└── core_only.px4board       deterministic CR8-0 diagnostic image
-```
-
-Build entry points remain the checked-in board targets such as
-`renesas_rdk-rzv2h_default`, `renesas_rdk-rzv2h_sih`, and
-`renesas_rdk-rzv2h_core_only`.
+The [board root](../boards/renesas/rdk-rzv2h/) owns named `.px4board`
+manifests, NuttX configurations and startup selection. Use the
+[codebase map](codebase-summary.md) for implementation boundaries and
+`./build.sh --list` for active targets. Retired core-only resources are
+historical; `simple` is the compact PWM/ICM20948 bench profile.
 
 ## 6. Build Flow
 
-Two entry points share the same NuttX tree:
-
-- **PX4 image:** `./build.sh <renesas_rdk-rzv2h_*>` (steps below).
-- **NuttX-only image:** `platforms/nuttx/NuttX/build.sh <config>` configures
-  `rdk-rzv2h:<config>` from `nuttx/boards/arm/rzv/rdk-rzv2h/configs/` and
-  builds `nuttx/nuttx` directly; used for driver bring-up and NSH samples.
-
-PX4 image steps:
-
-1. `./build.sh <target>` selects the board definition.
-2. PX4 CMake resolves the Renesas board sources.
-3. The board defconfig pulls in the NuttX driver and RTOS pieces.
-4. The NuttX submodule supplies the architecture drivers under
-   `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/`.
-5. The result is a target-specific ELF/PX4 artifact.
-
-Build success is source/build evidence only. It does not imply a cold boot, a
-flash recipe, or enabled multicore traffic.
+PX4 and standalone NuttX builds share the same NuttX tree, so profile builds
+must run sequentially. The [deployment guide](deployment-guide.md) owns
+configuration, artifact and target-operation procedures. A clean build does
+not qualify cold boot, persistence or multicore traffic.
 
 ## 7. Related Documentation
 
@@ -104,14 +89,13 @@ flash recipe, or enabled multicore traffic.
 - [PX4 HAL Port Status](./renesas/port-status-px4-hal.md)
 - [IPC Architecture](./renesas/ipc-architecture.md)
 - [Multicore Memory Map](./renesas/multicore-memory-map.md)
+- [NuttX Porting Playbook](./renesas/porting-playbook.md)
+- [Active reference-port plan](../plans/261011-2017-rzv2h-drone-reference-port/plan.md)
+- [Broader port goal plan](../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
 
-## 8. Notes
+## 8. Qualification boundary
 
-- CR8-0 is the only active PX4 flight path in the checked-in default images.
-- No production-stable claim is made for the RZ/V2H port.
-- Do not treat IPC helper symbols, `/dev/ipcc*` names, or linker carveouts as
-  proof of an enabled runtime link.
-- The authoritative cross-core address map lives in
-  [multicore-memory-map.md](./renesas/multicore-memory-map.md).
-- The current bridge protocol contract lives in
-  [ipc-architecture.md](./renesas/ipc-architecture.md).
+Driver and HAL status tables own demonstrated readiness. Intended customer
+architecture in [marketing/](renesas/marketing/README.md) has a different
+scope: its CM33 exclusion does not remove the repository's optional CM33
+sample. No production or flight qualification is implied by either design.

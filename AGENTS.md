@@ -36,7 +36,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 | Full PX4 firmware | `./build.sh renesas_rdk-rzv2h_default` (`--list` for all targets, `--no-clean` to iterate) | `build/<target>/<target>.elf` |
 | NuttX only (driver bring-up, NSH samples) | `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `.bin`, `.hex` |
 - PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot}`, `renesas_rdk-rzv2h-io-cr8_1_default`, `renesas_rdk-rzv2h-io-cm33_default`.
-- `simple` is the isolated RTT PWM + ICM20948 accel/gyro bench profile; see `docs/renesas/simple-pwm-icm20948-validation.md`. Retired core-only resources/evidence remain historical.
+- `simple` is the isolated RTT PWM + ICM20948 accel/gyro bench profile; see `docs/renesas/validation/simple-pwm-icm20948-validation.md`. Retired core-only resources/evidence remain historical.
 - NuttX configs: `platforms/nuttx/NuttX/build.sh --list` (e.g. `nsh-rtt`, `nsh-scif`, `ipcc`, `adc`, `canfd`, `hil-full`). `--no-clean <config>` rebuilds the same config incrementally. Exit codes: 0 ok, 1 build failed, 2 bad usage.
 - Never hand-run `tools/configure.sh` + `make`; the scripts handle distclean and stale arch symlinks.
 - First-time setup: `source ./build_setup.sh` (checks deps, scrubs e2studio `CMAKE_*` env vars, inits submodules).
@@ -84,13 +84,13 @@ do not block source/host/build work; record remaining physical qualification.
 | Add/port a driver (FSP → NuttX) | `docs/renesas/porting-playbook.md`, `docs/renesas/freertos-to-nuttx-mapping.md` |
 | Driver status | `docs/renesas/port-status-nuttx.md`, `docs/renesas/port-status-px4-hal.md` |
 | Hardware, clocks, memory, pins | `docs/renesas/hardware.md`, `docs/renesas/pinmap.md`, `docs/renesas/multicore-memory-map.md` |
-| Multi-core IPC | `docs/renesas/ipc-architecture.md`, `docs/renesas/rzv2h-ipc-hil-test-guide.md` |
-| Validation checklist | `docs/renesas/validation-checklist.md` |
-| Simple PWM + ICM bench | `docs/renesas/simple-pwm-icm20948-validation.md` |
-| Driver design / coding rules | `docs/design-guidelines.md`, `docs/code-standards.md` |
+| Multi-core IPC | `docs/renesas/ipc-architecture.md`, `docs/renesas/validation/rzv2h-ipc-hil-test-guide.md` |
+| Validation checklist | `docs/renesas/validation/validation-checklist.md` |
+| Simple PWM + ICM bench | `docs/renesas/validation/simple-pwm-icm20948-validation.md` |
+| Driver design / coding rules | `docs/renesas/porting-playbook.md`, `docs/code-standards.md` |
 | Architecture, build/flash/debug | `docs/system-architecture.md`, `docs/deployment-guide.md` |
-| Scope, roadmap, code tour | `docs/project-overview-pdr.md`, `docs/project-roadmap.md`, `docs/codebase-summary.md` |
-| Reusable prompts | `docs/renesas/prompt-recipes.md` |
+| Code tour | `docs/codebase-summary.md` |
+| Historical target and artifact evidence | `docs/renesas/evidence/` |
 | Past incidents and lessons | `docs/journals/` |
 | Active reference-port plan | `plans/261011-2017-rzv2h-drone-reference-port/plan.md` |
 | Broader driver/multicore roadmap | `plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md` |

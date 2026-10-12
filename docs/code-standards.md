@@ -1,6 +1,5 @@
 # Code Standards & Conventions
 
-**Date:** 2026-10-12
 **Status:** Active
 
 This document defines coding conventions for the RDK-RZ/V2H port. Standards diverge between PX4 code and the NuttX submodule; follow the section matching your target directory.
@@ -11,18 +10,10 @@ This document defines coding conventions for the RDK-RZ/V2H port. Standards dive
 
 ### 1.1 PX4 Code (src/, boards/, platforms/nuttx/src/)
 
-**Style:** PX4 AStyle (Linux variant)
-**Configuration:** `Tools/astyle/astylerc`
-**Tool:** `astyle` (or `Tools/astyle/fix_code_style.sh`)
-
-**Rules:**
-- Indent: 8-column tabs (force-tab=8)
-- Style: Linux K&R with modifications
-- Line length: ≤120 columns (enforced; see `.editorconfig`)
-- Pointer alignment: right (align-pointer=name)
-- Operators: padded (pad-oper, pad-header)
-- Blocks: all break-blocks, keep-one-line-blocks intact
-- Preprocessor: indented (indent-preprocessor, indent-cases)
+The executable style owner is `Tools/astyle/astylerc`, with repository-wide
+line and newline defaults in `.editorconfig`. Keep PX4 AStyle's Linux variant,
+8-column tabs, right-aligned pointers, padded operators, and its configured
+block/preprocessor handling. The project limit is 120 columns.
 
 **Validation:**
 ```bash
@@ -32,13 +23,12 @@ This document defines coding conventions for the RDK-RZ/V2H port. Standards dive
 
 ### 1.2 NuttX Submodule (platforms/nuttx/NuttX/nuttx/**)
 
-**Style:** NuttX coding standard (`Documentation/contributing/coding_style.rst` in the submodule)
-**Rules:**
-- Indent: 2 spaces per level, no tabs; braces on their own line, indented with the body
-- Line length: 78 columns target (nxstyle warns beyond)
-- Comments: `/* */` only, never `//`
-- Naming: snake_case functions/variables, `rzv_` prefix for arch symbols, UPPER_CASE macros
-- Section banners (`/****...` Included Files / Pre-processor Definitions / Private Functions / Public Functions) as in existing `rzv_*.c`
+Follow the NuttX coding standard in
+`platforms/nuttx/NuttX/nuttx/Documentation/contributing/coding_style.rst` and
+the submodule's `nxstyle` checker inputs. The RZ/V2H port uses two-space
+indentation, no tabs, braces on their own line, a 78-column target, C block
+comments, snake_case symbols, `rzv_` architecture prefixes, UPPER_CASE
+macros, and the existing section-banner pattern.
 
 **Check before committing in the submodule:**
 ```bash
@@ -267,13 +257,9 @@ Per project rule: do NOT use `chore` or `docs` for `.claude/` directory changes 
 
 ## 6. Pre-Commit Checks
 
-**Hook Location:** `Tools/astyle/pre-commit`
-
-**Runs:**
-1. AStyle on modified C/C++ files (non-excluded)
-2. Newline check (final LF)
-3. Trailing whitespace removal
-4. Tab/space indent rules (config-aware)
+The project hook is `Tools/astyle/pre-commit`; use it together with the
+language-specific checker owned by the relevant tree. It applies the configured
+formatting, newline, whitespace, and indentation checks.
 
 **To Bypass (rarely; requires justification):**
 ```bash
@@ -287,10 +273,11 @@ Do not use routinely; commit message will flag style violations for review.
 
 - `.editorconfig` — line length, endings, indentation defaults
 - `Tools/astyle/astylerc` — PX4 AStyle rules (C/C++)
-- `platforms/nuttx/NuttX/nuttx/.nxstyle` — NuttX K&R rules
+- `platforms/nuttx/NuttX/nuttx/.github/nxstyle.json` and
+  `platforms/nuttx/NuttX/nuttx/tools/nxstyle.c` — NuttX style checker inputs
 - Architecture: [System Architecture](./system-architecture.md)
-- Driver work: [Design Guidelines](./design-guidelines.md), [Porting Playbook](./renesas/porting-playbook.md)
+- Driver work: [Porting Playbook](./renesas/porting-playbook.md)
 
 ---
 
-**Maintenance:** Update this document when astylerc or project rules change; keep the date header current.
+**Maintenance:** Update this document when astylerc or project rules change.

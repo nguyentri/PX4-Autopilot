@@ -1,218 +1,118 @@
 # FreeRTOS/POSIX to NuttX API Mapping
 
-**Date:** 2026-10-11
 **Status:** Source-checked migration reference; target qualification is separate
-**Purpose:** Cheat sheet for migrating FreeRTOS + POSIX FSP code to native NuttX equivalents
 
-This table maps common FreeRTOS/POSIX APIs to their NuttX counterparts. Each
-row includes the header file, caveats, and a reference PX4 code path. It is an
-API migration aid, not a claim that a migrated driver has passed physical
-qualification.
+Use this page while reading an FSP or FreeRTOS reference implementation. It
+maps concepts and highlights semantic decisions that must be made in the
+actual NuttX subsystem. It does not prescribe a one-to-one replacement or
+prove that a migrated driver works on hardware. Read the selected source and
+upper-half contract first, then use the [porting playbook](./porting-playbook.md)
+for the implementation sequence.
 
-For RDK application ownership, use the recovered reference checkout at
-`refs/rzv2h_drone_px4-dev/`. The [reference source map](./reference-source-map.md#current-rdk-reference-availability)
-owns its comparison provenance and active XML selection. The selected `RDK`
-configuration is the software reference for board ownership; missing generated
-`rzv_gen` output or schematic data is a later physical-qualification input,
-not a reason to stop an otherwise source-backed NuttX migration.
+The [reference source map](./reference-source-map.md) owns RDK/EVK provenance
+and core selection. Native raw IPC ABI-v2 remains separate from the CA55
+RPMsg/RPC/uXRCE path. Existing GY-912 and simple profiles retain P93 CS/P94
+DRDY; any extension profile is explicit and default-off.
 
-Keep transport contracts distinct. Native raw IPC ABI-v2 is owned by
-`rzv_ipc_channels.h` and the native IPCC code. It is not the reference CA55
-RPMsg/RPC/uXRCE path; the optional CA55 integration is a later profile. Sensor
-selection and extension wiring likewise remain explicit profile decisions:
-the existing GY-912 and simple profiles retain their P93 CS/P94 DRDY wiring.
-A future configurable extension profile remains default-off for compatibility;
-an explicitly selected software build may proceed from the selected XML, while
-physical use waits for generated-output, schematic, and board corroboration.
+## Tasks and threads
 
----
-
-## Task / Thread Management
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `xTaskCreate(fn, name, stack, param, pri, hdl)` | `task_create(name, pri, stack, main_fn, argv)` or `pthread_create()` | `sched.h`, `pthread.h` | `task_create()` returns a PID and requires a `main_t`: `int fn(int argc, char *argv[])`. Use a pthread when a single `void *` argument and POSIX cancellation semantics fit better. | `platforms/nuttx/src/px4/common/tasks.cpp` |
-| `vTaskDelay(ticks)` | `nxsig_usleep((useconds_t)ticks * CONFIG_USEC_PER_TICK)` | `nuttx/signal.h`, `nuttx/clock.h` | Convert with the actual FreeRTOS tick period; never assume 1 ms or 10 ms. Guard multiplication overflow for untrusted/large values. | RZ/V2H drivers and apps |
-| `vTaskDelete(hdl)` | `task_delete(pid)` or `pthread_cancel(tid)` | `sched.h`, `pthread.h` | `pthread_cancel()` follows configured cancellation semantics; do not assume it immediately terminates the thread. | Core NuttX |
-| `uxTaskGetStackHighWaterMark(hdl)` | `nxsched_get_stackinfo(pid, &info)` with `CONFIG_STACK_COLORATION` | `nuttx/sched.h` | `ps`/`top` can expose stack use when stack coloration is enabled. Treat uncoloured values as unavailable. | Debug/status commands |
-
----
-
-## Synchronization: Mutexes & Semaphores
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `xSemaphoreCreateMutex()` | `nxmutex_init(lock)` | `nuttx/mutex.h` | Use mutexes for task-context mutual exclusion. They are not ISR primitives. | PX4/NuttX task code |
-| `xSemaphoreTake(sem, timeout)` | `nxmutex_lock(lock)`, `nxmutex_trylock(lock)`, or `nxsem_tickwait(sem, ticks)` | `nuttx/mutex.h`, `nuttx/semaphore.h` | `nxmutex_lock()` blocks until acquired. `nxmutex_trylock()` is non-blocking. Select a timed semaphore/mutex API when the FreeRTOS timeout is part of the contract. | `platforms/nuttx/src/px4/common/*.cpp` |
-| `xSemaphoreGive(sem)` | `nxmutex_unlock(lock)` or `nxsem_post(sem)` | `nuttx/mutex.h`, `nuttx/semaphore.h` | Unlock/post wakes highest-priority waiter. | — |
-| `xSemaphoreCreateBinary()` | `nxsem_init(sem, 0, 0)` | `nuttx/semaphore.h` | Initialize to 0 (locked); call `nxsem_post()` to unlock. Used for event signaling. | ISR completion callbacks |
-| `xSemaphoreCreateCounting(max, init)` | `nxsem_init(sem, 0, init)` | `nuttx/semaphore.h` | Initialize counting semaphore; no explicit max in NuttX (limited by int). | Resource pools |
-
----
-
-## Event Groups & Queues
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `xEventGroupSetBits(grp, bits)` | Atomic bit state plus `nxsem_post()` or a message queue | `nuttx/semaphore.h`, `mqueue.h` | This tree has no generic `nxevent_post()`/`nuttx/event.h` event-group API. Preserve wait-all/wait-any/clear-on-exit semantics explicitly. | Interrupt callback → deferred worker |
-| `xQueueCreate(len, item_size)` | `mq_open(name, flags, mode, &attr)` | `mqueue.h` | Set `mq_maxmsg` and `mq_msgsize`; call `mq_unlink()` when named-queue lifetime should end. | NuttX applications |
-| `xQueueSend(q, item, timeout)` | `mq_send()` or `mq_timedsend()` | `mqueue.h` | `mq_timedsend()` is the POSIX timeout form; kernel-internal code may use the `nxmq_*` equivalents. | NuttX applications |
-| `xQueueReceive(q, buf, timeout)` | `mq_receive()` or `mq_timedreceive()` | `mqueue.h` | Blocking receive; use `mq_timedreceive()` when the FreeRTOS timeout is meaningful. | NuttX applications |
-
----
-
-## Timers & Delays
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `xTimerCreate(name, period, reload, id, callback)` | `wd_start(wd, ticks, callback, arg)` or delayed `work_queue()` | `nuttx/wdog.h`, `nuttx/wqueue.h` | A watchdog callback runs in timer-interrupt context and must not block. For task-context periodic work, have the worker requeue itself with a delay. | Sensor polling |
-| `hrt_absolute_time()` (PX4 API) | `rzv_hrt_absolute_time()` under the RZ/V2H PX4 shim | `rzv_hrt.h` | The RZ/V2H PX4 implementation delegates to the GTM7 arch shim; this tree has no generic `up_hrt_time()` contract. | `platforms/nuttx/src/px4/renesas/rzv/hrt/hrt.c` |
-| `usleep(us)` (POSIX) | `nxsig_usleep(us)` | `nuttx/signal.h` | POSIX-compatible sleep in microseconds. May be interrupted by signals. | Device drivers |
-| `sleep(s)` (POSIX) | `sleep(s)` or `nxsig_sleep(s)` | `unistd.h`, `nuttx/signal.h` | POSIX sleep in seconds; same behavior. | — |
-
----
-
-## ISR Context & Interrupt Handling
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `xHigherPriorityTaskWoken` (ISR hint) | `work_queue(priority, &work_s, fn, arg, delay)` | `nuttx/wqueue.h` | Instead of waking a specific task, defer work to a work-queue (HPWORK for ISRs, LPWORK for background). NuttX scheduler handles priority. | Device drivers (ISR → deferred) |
-| `portENTER_CRITICAL()` | `enter_critical_section()` | `nuttx/irq.h` | Save interrupt state and enter a critical section. Keep it bounded; do not sleep inside it. | `rzv_<driver>.c` |
-| `portEXIT_CRITICAL()` | `leave_critical_section(flags)` | `nuttx/irq.h` | Restore the saved state from the matching `enter_critical_section()`. | — |
-| `portISR_CONTEXT()` or `xPortInIsrContext()` | `up_interrupt_context()` | `nuttx/arch.h` | Test if currently in ISR. Used to choose blocking-safe calls (can't block in ISR). | ISR condition checks |
-| `irq_attach(irq, fn, arg)` (NuttX) | Same | `nuttx/irq.h` | NuttX native; attach ISR to interrupt. Up to arch to define irq numbers. | All drivers |
-
----
-
-## Memory Management
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `pvPortMalloc(size)` | `kmm_malloc(size)` (kernel heap) or `malloc(size)` (user heap) | `nuttx/mm/mm.h`, `stdlib.h` | NuttX separates kernel and user heaps. Neither allocation path is an ISR contract; allocate before enabling interrupts or defer allocation to task context. | Driver initialization |
-| `vPortFree(ptr)` | `kmm_free(ptr)` or `free(ptr)` | `nuttx/mm/mm.h`, `stdlib.h` | Match the allocator and avoid freeing from ISR context. | — |
-| `pvPortMallocAligned(size, align)` | `kmm_memalign(align, size)` | `nuttx/mm/mm.h` | Allocate an aligned block; DMA still requires cache, addressability, and lifetime proof. | DMA buffer setup |
-
----
-
-## Logging & Debug
-
-| FreeRTOS / POSIX | NuttX Equivalent | Header | Notes | PX4 Reference |
-|---|---|---|---|---|
-| `printf(fmt, ...)` | `syslog(priority, fmt, ...)` or PX4 logging in task context | `syslog.h` | Do not treat formatted logging or an arbitrary low-level putc as ISR-safe. Record counters/status in the ISR and format them later unless the selected backend explicitly documents interrupt safety. | Logging and diagnostics |
-| `DEBUG_PRINT()` (app macro) | `DEBUGASSERT(cond)` or `syslog()` | `debug.h`, `syslog.h` | `DEBUGASSERT` follows the debug configuration; use it for invariants and use task-context logging for recoverable errors. | Validation checks |
-
----
-
-## POSIX Shim → Native NuttX Call Sites
-
-When porting drivers or middleware from FreeRTOS to NuttX, check these PX4 shim layers to see how cross-OS abstractions are implemented:
-
-| Abstraction | Location | Purpose |
+| FreeRTOS/POSIX concept | NuttX surface | Semantic decision to record |
 |---|---|---|
-| HRT (high-resolution timer) | `platforms/nuttx/src/px4/renesas/rzv/hrt/hrt.c` | Binds the PX4 HRT queue to the RZ/V2H GTM7 arch shim |
-| Task wrappers | `platforms/nuttx/src/px4/common/tasks.cpp` | Maps PX4 task APIs to NuttX task/pthread behavior |
-| Work Queue | `platforms/common/px4_work_queue/` | PX4 scheduled work on the platform work-queue layer |
-| uORB | `platforms/common/uORB/` | PX4 publish/subscribe transport; not a direct POSIX mqueue mapping |
-| sleep / usleep | `unistd.h`, `nuttx/signal.h` | POSIX-compatible; prefer `nxsig_usleep()` where NuttX signal-aware sleep semantics are required |
+| `xTaskCreate()` | `task_create()` or `pthread_create()` | `task_create()` uses a NuttX `main_t` and returns a PID; a pthread preserves a `void *` argument and pthread lifecycle semantics. Choose from the owner interface, not from the function name alone. |
+| `vTaskDelay(ticks)` | `nxsig_usleep()` or a NuttX timer/work queue | Convert using the actual FreeRTOS tick period. A delay inside a work callback must be represented by requeueing or another task-context design. |
+| `vTaskDelete()` | `task_delete()` or `pthread_cancel()` | Cancellation and cleanup behavior differ. Prove who owns the task, buffers, handles, and shutdown ordering. |
+| `uxTaskGetStackHighWaterMark()` | `nxsched_get_stackinfo()` or `ps`/`top` with stack coloration | Treat stack data as unavailable unless the selected configuration enables the required accounting. Record the configured task/POSIX stack owner. |
+| FreeRTOS priority | NuttX task or work-queue priority | Numeric ranges and scheduling policy differ. Preserve the deadline and blocking assumptions, then choose the profile's priority; do not rescale by a fixed formula. |
 
----
+PX4 task wrappers are in
+`platforms/nuttx/src/px4/common/tasks.cpp`. Inspect them before introducing a
+new task boundary in a PX4 module.
 
-## Thread/Task Creation Patterns
+## Mutexes, semaphores, events, and queues
 
-### FreeRTOS Pattern (FSP Reference)
+| FreeRTOS/POSIX concept | NuttX surface | Semantic difference |
+|---|---|---|
+| `xSemaphoreCreateMutex()` | `nxmutex_init()` | A mutex is task-context ownership and mutual exclusion. It is not an ISR signal. |
+| `xSemaphoreTake()` / `xSemaphoreGive()` | `nxmutex_lock()`/`nxmutex_unlock()`, or `nxsem_*()` | Choose a mutex for ownership or a semaphore for counting/signaling. Preserve timeout, interruption, and priority behavior instead of mapping every semaphore to a mutex. |
+| Binary semaphore from an ISR | `nxsem_init()` plus `nxsem_post()` from the supported completion path | Initialize the count and prove whether multiple completions may coalesce. Use the subsystem's ISR-safe primitive. |
+| Counting semaphore | `nxsem_*()` | NuttX's count and timeout behavior are the contract. Record overflow and cancellation expectations when they matter. |
+| Event group | Explicit atomic flags plus semaphore, or a message queue | NuttX has no generic FreeRTOS wait-all/wait-any/clear-on-exit equivalent in this port. Preserve each event bit's ownership and clear semantics explicitly. |
+| `xQueueCreate()` / send / receive | POSIX `mq_*()` or the internal `nxmq_*()` API | Set message size/count and lifetime intentionally. Use the internal form only where the owner is kernel-side; named queues require explicit unlink/cleanup. |
 
-```c
-TaskHandle_t task_handle;
-xTaskCreate(my_task_fn, "mytask", 2048, NULL, 2, &task_handle);
+Do not use a mutex, semaphore, queue, or event group from interrupt context
+unless the selected NuttX interface documents that operation as safe. The
+usual RZ/V2H driver pattern records the event in the ISR and wakes/delegates
+work to task context.
 
-static void my_task_fn(void *arg) {
-  for (;;) {
-    /* Do work */
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-```
+## Timers and time
 
-### NuttX Equivalent
+| FreeRTOS/POSIX concept | NuttX surface | Semantic difference |
+|---|---|---|
+| `xTimerCreate()` callback | `wd_start()` or delayed `work_queue()` | A watchdog callback has timer/interrupt-context restrictions. Use delayed work or a task when the callback can block or take a mutex. |
+| `vTaskDelayUntil()` | Requeued work, a task wait, or the subsystem timer API | Preserve absolute-period and overrun behavior; repeated relative sleeps can drift. |
+| `usleep()` | `nxsig_usleep()` where signal-aware behavior is required | Record whether interruption is expected and how `EINTR` is handled. |
+| `sleep()` | POSIX `sleep()` or `nxsig_sleep()` | Keep the existing seconds-level contract; do not use it for a driver deadline without checking tick and signal behavior. |
+| PX4 `hrt_absolute_time()` | The PX4 RZ/V2H HRT shim | The implementation is in `platforms/nuttx/src/px4/renesas/rzv/hrt/hrt.c` and delegates to the profile-selected RZ/V2H GTM path. It is not a generic NuttX `up_hrt_time()` substitution. |
 
-```c
-/* Option 1: NuttX native task */
-static int my_task_main(int argc, char *argv[])
-{
-  for (;;)
-    {
-      nxsig_usleep(100000);
-    }
+## Interrupts and deferred work
 
-  return 0;
-}
+| FreeRTOS/POSIX concept | NuttX surface | Semantic difference |
+|---|---|---|
+| `xHigherPriorityTaskWoken` / `portEND_SWITCHING_ISR()` | The driver ISR plus `work_queue()` or a documented semaphore path | NuttX does not require the FreeRTOS yield hint. The ISR must clear the source it owns and defer blocking/heavy work using the selected queue or task contract. |
+| `portENTER_CRITICAL()` / `portEXIT_CRITICAL()` | `enter_critical_section()` / `leave_critical_section()` | Save and restore the returned `irqstate_t`. Keep the region bounded and never sleep within it. |
+| ISR-context test | `up_interrupt_context()` | Use only when the call path genuinely has task and ISR variants; it does not make a blocking operation ISR-safe. |
+| FreeRTOS interrupt registration | `irq_attach()` plus the RZ/V2H ICU/GIC owner API | IRQ numbering, edge/level setup, routing, enablement, and source clear are core/IP-specific. There is no generic manual GIC acknowledgement recipe. |
 
-pid_t pid = task_create("mytask", 2, 2048, my_task_main, NULL);
+The RZ/V2H architecture and drivers show the relevant route in
+`rzv_icu.h`, `rzv_icu_*.c`, `rzv_serial.c`, `rzv_gpt.c`, and the corresponding
+hardware header. Compare the selected core and peripheral before porting an
+interrupt sequence.
 
-/* Option 2: POSIX pthread (recommended for portability) */
-pthread_t tid;
+## Memory and DMA
 
-static void *my_task_fn(void *arg) {
-  for (;;) {
-    /* Do work */
-    nxsig_usleep(100000);  /* 100 ms in microseconds */
-  }
-  return NULL;  /* pthread requires return */
-}
+| FreeRTOS/POSIX concept | NuttX/RZ/V2H surface | Semantic decision to record |
+|---|---|---|
+| `pvPortMalloc()` / `vPortFree()` | `kmm_malloc()`/`kmm_free()` or the selected C allocator | Match the execution domain and ownership contract. Allocate before enabling interrupts and never allocate/free from an ISR. |
+| Aligned allocation | `kmm_memalign()` or a static aligned buffer | Alignment alone does not prove DMA addressability, cache state, transfer width, or lifetime. |
+| DMA TX buffer | `up_clean_dcache()` through the current DMAC/peripheral path | Clean the exact range after CPU writes and before the DMA reads it, where the owner requires it. |
+| DMA RX buffer | `up_invalidate_dcache()` before CPU consumption | Invalidate the exact range after DMA writes and before the CPU consumes it, where the owner requires it. |
+| FreeRTOS DMA channel/event setup | `rzv_dmac_channel_initialize()`, `rzv_dmac_channel_configure()`, and the matching stop/disable path | Prove channel ownership, width, count, address aliases, trigger routing, one-shot/reload mode, completion/error handling, and cleanup. |
 
-pthread_create(&tid, NULL, my_task_fn, NULL);
-```
+The RZ/V2H DMAC API and cache behavior are owned by
+`platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.h` and
+`rzv_dmac.c`. Do not copy cache helper names or bus-address assumptions from an
+unrelated FreeRTOS BSP. A DMAC memory-copy result does not qualify a peripheral
+consumer.
 
----
+## Logging and error handling
 
-## ISR + Work-Queue Pattern
+| FreeRTOS/POSIX concept | NuttX/PX4 surface | Semantic decision to record |
+|---|---|---|
+| `printf()` or a debug macro | `syslog()`/NuttX subsystem logging or PX4 logging | Keep formatted output in task context unless the selected backend documents interrupt safety. Record bounded ISR state and format it later. |
+| Fatal assertion | `DEBUGASSERT()` for programmer invariants | Assertions are not recovery. Return or log recoverable hardware/configuration failures. |
+| FreeRTOS status code | NuttX `0`/negative `errno` or the selected upper-half result | Preserve the actual interface's return type and unwind partial initialization. Do not treat a pointer/`NULL` factory as an integer status API. |
 
-### FreeRTOS Pattern (FSP Reference)
+## PX4 boundaries to inspect
 
-```c
-static void my_isr(void) {
-  BaseType_t yield = pdFALSE;
-  /* Read hardware status */
-  uint32_t status = HW_STATUS_REG;
-  /* Signal waiting task */
-  xSemaphoreGiveFromISR(isr_sem, &yield);
-  /* Scheduler decides if yield needed */
-  portEND_SWITCHING_ISR(yield);
-}
-```
+| Boundary | Owner |
+|---|---|
+| HRT | `platforms/nuttx/src/px4/renesas/rzv/hrt/hrt.c` |
+| PX4 task wrappers | `platforms/nuttx/src/px4/common/tasks.cpp` |
+| PX4 scheduled work | `platforms/common/px4_work_queue/` |
+| uORB transport | `platforms/common/uORB/`; this is not a direct POSIX mqueue mapping |
+| Board SPI/I2C/UART/GPIO adapters | The existing adapter under `boards/renesas/rdk-rzv2h/src/` and its selected NuttX lower half |
 
-### NuttX Equivalent
+Before coding, list every FreeRTOS call in the reference and classify it as
+task lifecycle, ownership, signaling, timing, interrupt, memory/cache, or
+logging. For each call, record the NuttX owner, timeout/cancellation meaning,
+ISR legality, and cleanup path. Then run the focused source/build checks and
+use the [validation checklist](./validation/validation-checklist.md) to separate host
+evidence from named board qualification.
 
-```c
-static int my_isr(int irq, void *context, void *arg) {
-  struct dev_s *priv = (void *)arg;
-  /* Read hardware status */
-  uint32_t status = HW_STATUS_REG;
-  /* Defer work (non-blocking) */
-  work_queue(HPWORK, &priv->work, my_work_fn, priv, 0);
-  /* Clear the peripheral/ICU source that raised this interrupt. */
-  return OK;
-}
+## Related owners
 
-static void my_work_fn(FAR void *arg) {
-  struct dev_s *priv = (void *)arg;
-  /* Now safe to call blocking NuttX APIs */
-  nxmutex_lock(&priv->lock);
-  /* Process data */
-  nxmutex_unlock(&priv->lock);
-}
-```
-
----
-
-## Related References
-
-- [Reference Source Map](./reference-source-map.md) — select the matching EVK sample/core before comparing application or driver behavior
-- [Design Guidelines](../design-guidelines.md) — detailed ISR/work-queue patterns
-- [Porting Playbook](./porting-playbook.md) — step-by-step driver porting
-- [Code Standards](../code-standards.md) — formatting and conventions
-- NuttX Official Docs: `platforms/nuttx/NuttX/nuttx/Documentation/`
-
----
-
-**Maintenance:** Revise when NuttX APIs change (e.g., semaphore refactor). Track new patterns discovered in driver ports (Phase 3+).
+- [Porting playbook](./porting-playbook.md) — comparison, implementation, and review sequence.
+- [Reference source map](./reference-source-map.md) — FSP/core provenance and gaps.
+- [Code standards](../code-standards.md) — formatting and contribution rules.
+- [Deployment guide](../deployment-guide.md) — build, artifact, console, and debug procedures.
+- [Validation checklist](./validation/validation-checklist.md) — evidence and recovery gates.

@@ -88,10 +88,10 @@ platforms/nuttx/NuttX/build.sh nsh-leds
 
 ## References
 
-- [NuttX driver status](port-status-nuttx.md)
-- [P94 validation checklist](validation-checklist.md#c4-p94-button-tint-retest)
-- [GPIO setup fix journal](../journals/261001-p94-button-interrupt-fix.md)
-- [INTC register header](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_intc.h)
+- [NuttX driver status](../port-status-nuttx.md)
+- [P94 validation checklist](../validation/validation-checklist.md#c4-p94-button-tint-retest)
+- [GPIO setup fix journal](../../journals/261001-p94-button-interrupt-fix.md)
+- [INTC register header](../../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_intc.h)
 
 ## Unresolved Questions
 

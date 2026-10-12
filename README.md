@@ -59,22 +59,20 @@ See [docs/](./docs/) and [docs/renesas/](./docs/renesas/) for comprehensive guid
 
 | Document | Purpose |
 |----------|---------|
-| [project-overview-pdr.md](./docs/project-overview-pdr.md) | Project scope, objectives, and requirements |
-| [system-architecture.md](./docs/system-architecture.md) | System design and component architecture |
+| [system-architecture.md](./docs/system-architecture.md) | Port scope, architecture, boundaries and plan links |
 | [codebase-summary.md](./docs/codebase-summary.md) | Codebase structure and module overview |
 | [code-standards.md](./docs/code-standards.md) | Coding standards and conventions |
-| [design-guidelines.md](./docs/design-guidelines.md) | Design patterns and architectural decisions |
+| [porting-playbook.md](./docs/renesas/porting-playbook.md) | Driver design, implementation and review workflow |
 | [deployment-guide.md](./docs/deployment-guide.md) | Build and deployment procedures |
-| [project-roadmap.md](./docs/project-roadmap.md) | Planned features and milestones |
 
 ### Renesas RZ/V2H Port Documentation
 
 Start at [docs/renesas/README.md](./docs/renesas/README.md) (hardware, pinmap, status, playbook, IPC, validation).
 For the compact PWM + ICM20948 bench target, use the
-[simple validation guide](./docs/renesas/simple-pwm-icm20948-validation.md).
-The current FreeRTOS sensor-extension reference is being integrated through
+[simple validation guide](./docs/renesas/validation/simple-pwm-icm20948-validation.md).
+The opt-in sensor-extension profile is tracked through
 the [reference-port plan](./plans/261011-2017-rzv2h-drone-reference-port/plan.md).
-Its planned opt-in wiring preserves existing native samples; source/host/build
+Its profile wiring preserves existing native samples; source/host/build
 work proceeds independently of later physical qualification.
 The retired core-only target is historical; its NuttX/ROMFS resources and evidence remain archived.
 
@@ -113,9 +111,8 @@ platforms/nuttx/NuttX/build.sh nsh-rtt     # ELF: platforms/nuttx/NuttX/nuttx/nu
 Extending the RZ/V2H port? Start here:
 
 - **[docs/renesas/porting-playbook.md](./docs/renesas/porting-playbook.md)** — Step-by-step guide for adding drivers and features
-- **[docs/renesas/prompt-recipes.md](./docs/renesas/prompt-recipes.md)** — Effective prompts to use for port development
 - **[docs/renesas/port-status-nuttx.md](./docs/renesas/port-status-nuttx.md)** — Current NuttX HAL coverage and next steps
-- **[docs/renesas/validation-checklist.md](./docs/renesas/validation-checklist.md)** — Per-driver validation checklist template
+- **[docs/renesas/validation/validation-checklist.md](./docs/renesas/validation/validation-checklist.md)** — Per-driver validation checklist template
 
 ## Prerequisites
 

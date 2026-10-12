@@ -43,20 +43,11 @@ use them in a timing budget yet.
 
 ## Operation
 
-- 12-bit resolution (`ADCER.ADPRC = 0`), Group-A software scan only.
-- Start a scan with `ioctl(fd, ANIOC_TRIGGER, 0)`; `ANIOC_GET_NCHANNELS` is
-  also supported. Results arrive through the ADC upper-half FIFO, one
-  `struct adc_msg_s` per enabled channel.
-- Not implemented: timer/external triggers, groups B/C, compare windows,
-  sample-state tuning, calibration, DMA.
-
-```c
-int fd = open("/dev/adc0", O_RDONLY);
-ioctl(fd, ANIOC_TRIGGER, 0);
-struct adc_msg_s s[4];
-ssize_t n = read(fd, s, sizeof(s));   /* s[i].am_channel, s[i].am_data */
-close(fd);
-```
+The current implementation is a 12-bit Group-A software-scan lower half;
+timer/external triggers, groups B/C, compare windows, sample-state tuning,
+calibration, and DMA are outside its contract. The NuttX ADC upper-half owns
+the `/dev/adc0` open/ioctl/read interface; read the driver and selected
+`apps/examples/adc` configuration for the current call and message contract.
 
 `apps/examples/adc` (`adc -n 1`) is the usual NSH test if enabled in the config.
 
@@ -66,13 +57,12 @@ Scan-end event `RZV_ELC_ADC0_ADA_ADELCREQ` is routed through the ICU with
 `rzv_icu_attach()` on open. That route is selectable, so the INTID is
 allocated at runtime; there is no fixed ADC IRQ number.
 
-## Key Registers
+## Register authority
 
-`ADCSR` (start/scan mode), `ADANSA0` (Group-A channel mask), `ADCER`
-(resolution/format), `ADSTRGR` (trigger select), `ADELCCR` (8-bit, ELC
-control), `ADDR0`–`ADDR7` (results). Widths and offsets: `hardware/rzv_adc.h`
-and the core-matched `adc_e_iodefine.h`. Decode on target with
-`svd_register_tool.py --svd rzv2h.svd`.
+Register widths, offsets, trigger routing, and result access are owned by
+`hardware/rzv_adc.h`, `rzv_adc.c`, and the core-matched `adc_e_iodefine.h`.
+Use `svd_register_tool.py --svd rzv2h.svd` for target decoding; do not copy a
+second register inventory into this note.
 
 ## Evidence
 
@@ -95,5 +85,5 @@ infer ADC_E registers from other Renesas ADC families. See
 
 ## Related
 
-- [validation-checklist.md](../validation-checklist.md)
+- [validation-checklist.md](../validation/validation-checklist.md)
 - [pinmap.md](../pinmap.md)

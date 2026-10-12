@@ -110,9 +110,9 @@ core selection, vectors, memory, or startup.
 | `spi_b` | yes | yes | yes | Future SPI-B and DMAC-B parity | `r_spi_b.c`, `r_dmac_b.c`, cfgs, generated vector/pin data, `src/spi_ep.c` |
 | `wdt` | yes | yes | yes | WDT and reset routing | `r_wdt.c`, GTM/INTC dependencies, cfgs, vectors, timer/IRQ setup |
 
-The corpus contains 48 e² studio projects: 15 three-core families, two CM33
-I3C variants, and one CM33 `preceding` project. Project metadata records FSP
-3.0.0; preserve the project or content revision in future audit reports.
+Project metadata records FSP 3.0.0; preserve the project or content revision
+in audit reports. The table maps reference choices rather than tracking corpus
+size.
 
 ## UART distinction
 

@@ -166,5 +166,5 @@ in `configuration.xml`, `rzv_cfg/fsp_cfg/r_canfd_cfg.h`, `rzv_gen/`. See
 
 ## Related
 
-- [validation-checklist.md](../validation-checklist.md)
+- [validation-checklist.md](../validation/validation-checklist.md)
 - [pinmap.md](../pinmap.md)

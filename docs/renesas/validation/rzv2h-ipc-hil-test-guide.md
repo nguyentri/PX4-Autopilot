@@ -3,9 +3,9 @@
 Repeatable hardware-in-the-loop procedure to qualify the CR8-0 ↔ CR8-1 native
 raw IPC link and run the `ipctest` ping/echo acceptance (100/100, both
 directions) on live silicon. Companion to the address-contract proof in
-[rzv2h-three-core-ipc-artifacts.md](./rzv2h-three-core-ipc-artifacts.md) and the
+[rzv2h-three-core-ipc-artifacts.md](../evidence/rzv2h-three-core-ipc-artifacts.md) and the
 probe/reset rules in
-[rzv2h-three-core-jlink-contract.md](./rzv2h-three-core-jlink-contract.md).
+[rzv2h-three-core-jlink-contract.md](../rzv2h-three-core-jlink-contract.md).
 
 ## What the link does
 
@@ -33,7 +33,8 @@ CR8 software work.
   `JLinkExe` (for RTT bridging). Know your probe serial number and use SWD.
 - Core device selectors: CR8-0 = `R9A09G057H44_R8_0`, CR8-1 =
   `R9A09G057H44_R8_1`.
-- RTT control blocks: CR8-0 `0x081A0000`, CR8-1 `0x081E0000`.
+- Discover `_SEGGER_RTT` from each exact loaded ELF. Historical raw-image
+  addresses were CR8-0 `0x081A0000` and CR8-1 `0x081E0000`.
 
 Helper GDB scripts live in `platforms/nuttx/Debug/rzv2h-ipc/`:
 
@@ -42,15 +43,17 @@ Helper GDB scripts live in `platforms/nuttx/Debug/rzv2h-ipc/`:
 | `rzv2h-ipc-hil-readonly.gdb` | Attach, dump regs/bt, read GIC SPI target bytes | no |
 | `rzv2h-ipc-hil-loadstart.gdb` | Volatile RAM load + PC=`__start` + `go`, no reset | yes (RAM + run) |
 | `rzv2h-ipc-hil-verify-resume.gdb` | Brief halt to confirm a core is running + SPIs retargeted, then resume | no lasting change |
-| `rzv2h-ipc-hil-rtt-hold.gdb` | Point the probe at the RTT block and hold it so an RTT client can drive NSH | no |
+| `../nuttx-rtt-bridge.sh` | Attach JLinkExe to one core and serve RTT using its ELF | owns probe; no reset |
 
 ## Procedure
 
 ### 1. Verify the address contract (read-only, off-target)
 
-Run the three `--expect-sha256` commands from the artifacts doc. Each must print
-`RESULT=ADDRESS_CONTRACT_VERIFIED`. A mismatch means the image is not the one
-under review — stop and rebuild/re-hash.
+Use the checker described in the artifact record with the canonical manifest
+and the expected SHA-256 for each selected ELF. Each must print
+`RESULT=ADDRESS_CONTRACT_VERIFIED`. Historical recorded hashes apply only to
+those images. Stop on a mismatch; checker success alone does not authorize a
+subsequent load. Reset, RAM load and target writes require explicit approval.
 
 ### 2. Load CR8-0 first (initiator)
 
@@ -74,11 +77,12 @@ headers and adopts the epoch, coming up ready with a live auto-echo.
 
 ### 4. Drive `ipctest` over RTT
 
-RTT is bridged with **`JLinkExe`** on `127.0.0.1:19021`, not JLinkGDBServer
-(the GDB server cannot bridge RTT). Use `rzv2h-ipc-hil-rtt-hold.gdb` to point
-the probe at the CR8-0 RTT control block (`0x081A0000`) and hold it while a
-separate `JLinkExe` session connects on port 19021 to drive NSH. On the CR8-0
-NSH prompt over RTT:
+Follow the [deployment guide](../../deployment-guide.md) to attach
+`nuttx-rtt-bridge.sh` to CR8-0 with the exact loaded ELF. It uses JLinkExe on
+`127.0.0.1:19021`; JLinkGDBServer cannot bridge CR8 RTT. Stop the GDB session
+before starting RTT. A single probe serves one core's RTT at a time.
+
+On the CR8-0 NSH prompt:
 
 ```sh
 ipctest --recover -d /dev/ipcc1
@@ -123,8 +127,9 @@ rule that applies to `--ping`/`--echo` is not needed for them.
 ### Two-console run (relay + ack)
 
 Bring up both cores per the [Procedure](#procedure) above (CR8-0 first, CR8-1
-last), then open one `JLinkExe` RTT session per core (CR8-0 control block
-`0x081A0000`, CR8-1 control block `0x081E0000`) as in step 4.
+last). For simultaneous consoles with one probe, use the SCI4 + RTT split
+below. For RTT-only operation, switch the single bridge between cores as the
+autotest does; do not start competing probe owners.
 
 1. On the **CR8-0** NSH (the peer that displays):
 
@@ -212,8 +217,9 @@ opens **both** NSH consoles side by side in a single `tmux` window:
    JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-run.sh --build    # rebuild first
    ```
 
-   It frees the probe first (killing any stale J-Link owner), so it is safe to
-   rerun. The FT232 must be attached as `/dev/ttyUSB0` (override with
+   The loader checks probe ownership; stop a session you own before running
+   it and do not terminate another user's session. The FT232 must be attached
+   as `/dev/ttyUSB0` (override with
    `SCI_PORT=`). Quit by exiting both tmux panes (picocom `Ctrl-A Ctrl-X`, nc
    `Ctrl-C`), which stops the bridge and releases the probe. tmux prefix is
    `Ctrl-b` (switch panes `Ctrl-b o`). Use `--no-tmux` to instead get the RTT
@@ -291,6 +297,6 @@ reference startup's 115200 setting.
 
 Treat the target as live hardware: verify the address contract before any load,
 attach read-only first, and never issue `monitor reset` after an image is
-resident until the reset scope is measured. Detach at the end and leave the
-cores running. Do not copy ELF contents, memory dumps, RTT buffers, or probe
+resident until the reset scope is measured. Follow the measured, approved detach/run
+contract for that session; the J-Link metadata alone does not prove detach state. Do not copy ELF contents, memory dumps, RTT buffers, or probe
 serial numbers outside the workspace.
