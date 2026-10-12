@@ -13,7 +13,11 @@
 **Reference evidence:** Select the matching project/core in
 [reference-source-map.md](reference-source-map.md), then record exact paths to
 `configuration.xml`, generated HAL/vector/pin data, FSP source, and CMSIS
-headers. Record `(gap)` when no same-IP reference exists.
+headers. If generated output is unavailable, record the available XML/source
+authority and mark the missing artifact as a physical-qualification follow-up;
+do not invent values or block source/build review. Required source/build or
+software-correctness failures remain blockers. Record `(gap)` when no same-IP
+reference exists.
 
 ---
 
@@ -341,8 +345,11 @@ if (rising_edge)  conf |= IOPORT_IRQ_EDGE_RISING;
 
 > The SCIF report below is formatting guidance only. It is not RDK-RZ/V2H
 > validation evidence and must not be copied into a status row as a PASS.
-> The current SCIF lower-half remains blocked until its clock and IOPORT/PFC
-> requirements are resolved and proven on target.
+> The SCIF example below separates target qualification from software failure.
+> Source/build review may proceed from the CMSIS/BSP authority when those
+> checks pass; a failing clock, IOPORT/PFC, FIFO, or other required software
+> check remains a blocker. Serial traffic and board corroboration are the
+> separately scheduled physical qualification gates for a SCIF profile.
 
 ```markdown
 # Validation Report: <driver/config>
@@ -372,13 +379,16 @@ if (rising_edge)  conf |= IOPORT_IRQ_EDGE_RISING;
 - [ ] Successful operation and one injected failure/recovery captured.
 - [ ] Register/analyzer/scope evidence attached where applicable.
 - [ ] Timing, resource, and stress bounds state both criterion and result.
-- [ ] `reboot` reaches a hardware reset, restarts the exact artifact, and
-      preserves inactive motor-pin levels throughout reset and early boot.
-- [ ] Repeated warm resets do not depend on another core or debugger state.
-- [ ] Parameter save/reboot/load and controlled power-loss recovery prove the
-      selected nonvolatile backend; TMPFS evidence is explicitly volatile.
-- [ ] The reported UUID/GUID is unique per unit, or the report limits the
-      result to one prototype and excludes identity-sensitive deployment.
+- [ ] If reset behavior is part of this driver's contract, `reboot` reaches a
+      hardware reset, restarts the exact artifact, and preserves inactive
+      motor-pin levels throughout reset and early boot.
+- [ ] If warm reset independence is part of the profile, repeated warm resets
+      do not depend on another core or debugger state.
+- [ ] If nonvolatile storage is part of the profile, parameter save/reboot/load
+      and controlled power-loss recovery prove the selected backend; TMPFS
+      evidence is explicitly volatile and does not claim persistence.
+- [ ] If deployment requires per-unit identity, the reported UUID/GUID is
+      unique per unit, or the report limits the result to one prototype.
 
 ## Result
 

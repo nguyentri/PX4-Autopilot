@@ -82,6 +82,39 @@ Step-by-step and two-core order: [renesas/rzv2h-ipc-hil-test-guide.md](./renesas
 There is still no approved raw-`.bin`/xSPI flashing recipe or cold-boot
 sequence. RAM load, reset, and target writes require explicit authorization.
 
+### Host validation of a boot candidate
+
+The opt-in `renesas_rdk-rzv2h_drone` profile can produce a checked host candidate:
+
+```bash
+./build.sh renesas_rdk-rzv2h_drone
+python3 test/rzv2h-boot-package-test.py
+python3 platforms/nuttx/Debug/rzv2h-boot-package.py \
+  --elf build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.elf \
+  --image build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.bin \
+  --layout boards/renesas/rdk-rzv2h/boot-layout.json \
+  --output /tmp/rzv2h-boot-candidate
+```
+
+The output directory must be new. The tool checks the actual ARM32 ELF and
+native split-image descriptors: header complements/signature, contiguous copy
+blocks, private RAM/reservation bounds, initialized-data byte coverage and an
+executable entry point. It rejects unsupported layouts, overlap and truncated
+inputs. `image_base` permits rebasing the descriptor source addresses and their
+complements; destinations and payload bytes stay tied to the linked ELF.
+The layout's default address is the native linker address. The postbuild SREC
+address `0x60200000` is a separate loader alias; an approved boot owner must
+resolve which view the loader uses before selecting it. The marker/signature
+checks verify structure, not cryptographic authenticity.
+
+The resulting `candidate.bin` and hash manifest retain
+`deployment_enabled: false`. The tool performs no target I/O and provides no
+flashing command. Loader ownership, DDR/TCM/clocks, cache maintenance, the
+`0x1234FEDC` handoff/reset sequence and recovery must be verified separately.
+Native startup depends on initialized data being copied before entry and owns
+BSS clearing; retained `.noinit` is not initialized by this package. This
+artifact check does not establish persistent cold boot or reset re-entry.
+
 ---
 
 ## 4. Debug: JLink + VS Code

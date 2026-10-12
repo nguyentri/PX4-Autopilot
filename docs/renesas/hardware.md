@@ -3,15 +3,25 @@
 **Board:** Renesas RDK-RZ/V2H
 **Target software stack:** PX4 on NuttX
 **Primary development target:** CR8-0
-**Date:** 2026-08-02
+**Date:** 2026-10-11
 **Status:** Consolidated development reference
 
 This document consolidates the hardware notes for the RZ/V2H RDK board into a single PX4/NuttX-focused reference. It is intended for board bring-up, driver development, boot/debug configuration, and hardware-software validation.
 
-For detailed board BOM, connector/header assignments, and external wiring, use the board pinout as the authority:
+For sensor assignments use [profile-specific pin ownership](./pinmap.md#sensor-wiring-profiles).
+The current FreeRTOS reference is `refs/rzv2h_drone_px4-dev/`: its selected
+`RDK` XML and `docs/HARDWARE.md` describe three ICM-45686 IMUs on SPI0,
+BMM150/BMP390L/INA228 on SCI7 I2C, and the existing serial/PWM connections.
+The native extension profile is planned and configurable; existing native
+MPU9250/BMP280, ICM20948/GY912 and SIH profiles retain their own contracts.
+[Native board pinout](../../boards/renesas/rdk-rzv2h/src/pinout.md) describes
+legacy bench wiring; it is not the new extension BOM.
 
-- `boards/renesas/rdk-rzv2h/src/pinout.md`
-- `boards/renesas/rdk-rzv2h/src/pinout.md` is referenced from the original hardware notes as the RDK-RZ/V2H board pinout.
+Missing generated FSP pin data and the matching extension schematic do not
+block source integration, host tests or builds. Use the selected reference
+configuration provisionally, then confirm fitted parts, connector nets and
+waveforms during target validation. A successful build does not qualify the
+physical sensor array. See [reference provenance and limits](./reference-source-map.md#current-rdk-reference-availability).
 
 ---
 
@@ -113,7 +123,9 @@ External Oscillator, typically 24 MHz
 
 ### PX4/NuttX Development Notes
 
-- Clock frequencies must be verified against the FSP-generated register truth under `refs/.../rzv_gen/`.
+- Audit software clock setup against selected XML and core-matched FSP/BSP
+  sources; corroborate with generated output and live measurements for target
+  timing acceptance. Missing generated output does not block a software build.
 - Hardcoded divider values in `rzv_clock.c` are critical. A mismatch can break UART baud rate, SPI timing, I2C timing, PWM frequency, HRT scheduling, and driver timeout behavior.
 - During bring-up, validate clocks before debugging higher-level PX4 sensor or actuator issues.
 
@@ -219,7 +231,7 @@ Each pin has alternate function options for peripherals such as UART, SPI, I2C, 
 **Sources:**
 
 - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c`
-- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_pinmap.h`
+- `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pinmap.h`
 
 ### PX4/NuttX Development Notes
 
@@ -251,7 +263,8 @@ Configuration:
 
 - Channels are assigned per consumer in Kconfig; there is no dynamic allocator.
 - Setup is handled in `rzv_dmac.c`; current consumers include serial and the
-  opt-in DShot path.
+  opt-in DShot and SPI0 DMA paths. Read consumer Kconfig/defconfig channel
+  selections before allocating a channel; do not reuse historical allocations.
 - Completion is polling-only. Callbacks and linked-list mode are unsupported.
 - Software and DShot variants build clean; target request routing, ordering,
   re-arm behavior, and waveforms remain unvalidated.
@@ -285,9 +298,11 @@ Features:
 - Edge-triggered interrupts.
 - Lightweight doorbell behavior with no payload.
 
-The CR8-0 default and SIH images do not enable this path. Current MHU/IPCC
-code is source-audited or build-clean in standalone samples; peer exchange,
-cache ordering, timeouts, and recovery remain final-milestone target gates.
+The CR8-0 default and SIH images do not enable this path. Native raw IPC has
+bounded CR8-0/CR8-1 standalone evidence; see [IPC status and evidence](./ipc-architecture.md).
+That evidence does not establish the FreeRTOS reference's CA55 RPMsg/RPC service
+parity or CM33 exchange. Sensor wiring changes do not change the native shared
+memory contract; qualification of additional peers remains separate work.
 
 ### 8.2 IPCC: Inter-Processor Communication Controller
 
@@ -397,17 +412,20 @@ SCI3 is not an active console on the RDK-RZV2H board.
 
 ## 11. SPI and I2C
 
-### 11.1 SPI-B: Renesas SPI
+### 11.1 RSPI: Sensor SPI Controller
 
 - **Type:** SPI master/slave.
-- **SoC count:** Three SPI-B instances, SPI0 through SPI2.
+- **Controller distinction:** Native `rzv_spi.c` is the RSPI path; the EVK
+  `spi_b` example is a different IP reference. Use the integrated board backend
+  and [reference-source map](./reference-source-map.md) for the correct evidence.
 - **RDK-RZ/V2H routing:** SPI0 is the only board-routed instance identified
   by the current source and pinmap. Schematic and target proof remain pending.
   SPI1 has no external pinmux or chip-select contract; SPI2 has no NuttX
   lower-half implementation.
-- **Use:** Current board configuration assigns SPI0 to the MPU9250 path.
-  Internal controller loopback is used for bring-up tests and does not
-  validate external routing or the sensor.
+- **Use:** Current native default assigns SPI0 to MPU9250; simple/GY912 use
+  ICM20948. The planned extension shares SPI0 across three polled ICM45686
+  devices with P93/P94/P95 chip selects. P94 cannot simultaneously serve the
+  bench DRDY/button role. Internal loopback does not validate sensor wiring.
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c`
 
@@ -417,8 +435,11 @@ SCI3 is not an active console on the RDK-RZV2H board.
 - **Hardware definitions:** RIIC0-RIIC8 exist in the R9A09G057H device
   headers.
 - **Current NuttX lower-half scope:** Native RIIC0-RIIC3 are selectable.
-- **Board BMP280 path:** SCI7 Simple-I2C, a separate SCI-mode controller,
-  registered as logical bus 7 and configured for 400 kHz.
+- **Board sensor path:** SCI7 Simple-I2C, a separate SCI-mode controller,
+  registered as logical bus 7. Native default uses BMP280 at 0x76; BMM150 has
+  a standalone sample. Reference extension runtime uses BMM150 0x10,
+  BMP390L (`bmp388`) 0x77 and INA228 0x45; preserve sample timing/address
+  configuration rather than switching all images to the extension settings.
 - **Use:** Barometer and sensor probing; external transactions remain a target
   validation gate.
 
@@ -531,7 +552,8 @@ Use this checklist as a practical board-port validation flow.
 - [ ] Confirm VBAR setup.
 - [ ] Confirm CPG initialization.
 - [ ] Confirm linker script memory placement.
-- [ ] Confirm console UART output.
+- [ ] Confirm the selected console route (RTT0 for integrated PX4 and RTT samples;
+      UART only for profiles that select it).
 
 ### 14.3 Kernel and Timing
 
@@ -568,10 +590,10 @@ Use this checklist as a practical board-port validation flow.
 | Clock / CPG | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c` |
 | Boot / CPU init | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_start.c` |
 | Linker script | `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld` |
-| GIC register definitions | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gic.h` |
+| GIC register definitions | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_intc_gic.h` |
 | ICU | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_icu.c` |
 | GPIO | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c` |
-| Pinmap | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_pinmap.h` |
+| Pinmap | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pinmap.h` |
 | DMAC-B | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.c` |
 | MHU low-level driver | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_mhu_core.c` |
 | IPCC driver | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_ipcc.c` |
@@ -591,15 +613,16 @@ Use this checklist as a practical board-port validation flow.
 
 ## 16. Related Documentation
 
-- `boards/renesas/rdk-rzv2h/src/pinout.md` - board pinout and wiring authority.
-- `pinmap.md` - software pin ownership matrix; electrical proof pending.
+- [Native bench pinout](../../boards/renesas/rdk-rzv2h/src/pinout.md) - legacy wiring.
+- [Pin ownership](./pinmap.md) - native and planned extension profiles, physical header drawing.
 - `../system-architecture.md` - system architecture.
 
 ---
 
 ## 17. High-Risk Validation Points
 
-- **Clock correctness:** CPG dividers must match FSP-generated values. Incorrect clocks can break all bus timing.
+- **Clock correctness:** Cross-check selected FSP/BSP configuration and live clocks.
+  Generated output is corroboration for target timing, not a software-build gate.
 - **Memory layout:** Shared DRAM at `0x40000000` must account for IPC buffers and secondary-core firmware if used.
 - **Interrupt routing:** GIC/ICU wiring must be cross-checked against FSP configuration and board pinout.
 - **Register view:** Register addresses assume CR8-0 view. CR8-1 and CM33 may have offset views depending on the memory map.

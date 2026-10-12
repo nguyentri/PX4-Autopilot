@@ -1,7 +1,7 @@
 # NuttX Driver Porting Playbook
 
-**Date:** 2026-08-09
-**Status:** Phase 2 (Workflow Enablement)  
+**Date:** 2026-10-11
+**Status:** Source and build workflow; physical qualification is a separate gate
 **Audience:** Developers porting FSP drivers to NuttX for RZ/V2H
 
 Step-by-step recipe for adding a new driver. Each step references existing exemplars and design patterns documented elsewhere.
@@ -15,7 +15,9 @@ Step-by-step recipe for adding a new driver. Each step references existing exemp
 **Location:** Resolve the sample and core through
 [reference-source-map.md](./reference-source-map.md). Prefer
 `refs/rzv2h_evk/<sample>/<sample>_rzv2h_evk_<core>_ep/e2studio/`; use the
-integrated or legacy trees only for the exceptions recorded in that map.
+integrated RDK reference `refs/rzv2h_drone_px4-dev/` or legacy trees only for
+the exceptions recorded in that map. Use the [reference source map](./reference-source-map.md#current-rdk-reference-availability)
+for comparison provenance and the active XML selection.
 
 **Read these files:**
 - `configuration.xml` — selected core, module, channel, and configurator properties
@@ -37,15 +39,15 @@ CA55 project. Record such gaps instead of substituting a nearby IP block.
 - DMA channels (if applicable)
 - Pin multiplexing requirements from IOPORT/PFC, not ICU
 
-**Example:** For SPI-B driver:
-```
-Base:       0x1004A000
-CPG:        CPG_SPI_B_CLK (ID = 0x2C)
-IRQ (ICU):  SPI_B_INT0 = 32, SPI_B_INT1 = 33
-GIC:        (map via interrupt.h)
-DMAC:       RX uses DMAC channel 4, TX uses channel 5
-Pins:       MOSI=P4_2, MISO=P4_3, CLK=P4_4, CS=P4_5
-```
+For the active RDK XML, record the selected source paths and treat missing
+generated `rzv_gen` output or schematic data as a physical-qualification
+follow-up. Do not invent register, IRQ, DMA, or pin values to fill that gap.
+The active RDK SPI0 ownership is P90/P91/P92 with P93/P94/P95 as SSLA0/1/2;
+P36/SSLA2 belongs to the inactive IMDT configuration. Existing GY-912 and
+simple profiles intentionally keep P93 GPIO CS and P94 DRDY. A future native
+extension profile is permanently default-off for compatibility; an explicitly
+selected software build may proceed from the selected XML, while physical use
+waits for board corroboration.
 
 ---
 
@@ -198,7 +200,10 @@ platforms/nuttx/NuttX/build.sh --no-clean <config> 2>&1 | tee build.log  # incre
   (`nuttx` is the ELF to load with J-Link/GDB).
 
 If the exact config is absent, use the closest board sample in the same NuttX
-tree and document the substitution.
+tree and document the substitution. After required source/build checks pass, a
+source-backed software port may proceed while generated pin output or schematic
+confirmation remains a separately scheduled physical gate. A pending target
+gate never waives a required build or software-correctness failure.
 
 **Fix errors:** undefined references, missing includes, Kconfig syntax.
 
@@ -235,10 +240,14 @@ does not rename it to `/dev/ttyS0`. Standalone NSH target ownership is SCI4
 targets until their sample configurations are aligned and tested.
 
 The integrated PX4 CR8-0 image uses RTT0 for console/debug output instead.
-Its UARTs retain payload ownership: SCI4 LiDAR, SCI5 MAVLink/QGroundControl,
-SCI6 RC at 100000 8E2 with the inversion path proved, and SCI9 GPS at
-115200 8N1. These checks are evidence-tier gates for the first
-drone-equivalent run. Never mix text diagnostics and binary MAVLink on RTT0.
+Its UARTs retain payload ownership: SCI4/P70-P71 TFmini, SCI5/P72-P73 SiK
+telemetry, SCI6 RX/P75 SBUS, SCI7 I2C/P76-P77, and SCI9/P82-P83 GPS. Native
+MAVLink defaults telemetry to 57600; the recovered reference startup uses
+115200, while the reference hardware guide records 57600. Keep the selected
+baud explicit in the profile or parameter and do not silently copy either
+value. These checks are physical qualification gates for a drone-equivalent
+run, not prerequisites for source/build work. Never mix text diagnostics and
+binary MAVLink on RTT0.
 
 ---
 

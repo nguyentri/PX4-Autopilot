@@ -8,6 +8,13 @@ hashes, load-span authorization commands, and the CM33 vector symbol contract.
 It does **not** claim target boot, reset, detach, interrupt, or IPC traffic
 behavior.
 
+These artifacts describe the native raw IPC ABI-v2 and its guarded volatile
+load contract. They are distinct from the reference CA55 RPMsg/RPC/uXRCE
+path. Host-side address/hash evidence is sufficient for software review and
+load preparation; the missing target transcript is a physical qualification
+gate for a selected multi-core profile, not a blocker for standalone CR8
+software work.
+
 ## Provenance Rules
 
 - `plans/260809-1341-rzv2h-three-core-ipc-validation/artifacts/` contains the

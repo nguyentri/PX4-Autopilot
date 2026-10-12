@@ -1,8 +1,8 @@
 # RZ/V2H Reference Source Map
 
-**Date:** 2026-10-01
+**Date:** 2026-10-11
 **Status:** Canonical input map for driver porting and `firmware:audit`
-**Scope:** RZ/V2H EVK CM33, CR8-0, and CR8-1 examples plus explicitly bounded fallback trees
+**Scope:** RDK drone integration and core-matched RZ/V2H EVK IP examples
 
 Use this map before comparing a NuttX driver with Renesas example code. It
 prevents a project for one core or peripheral IP from being treated as proof
@@ -10,7 +10,7 @@ for another.
 
 ## Reference precedence
 
-For a target core, use evidence in this order:
+For peripheral IP behavior on a target core, use evidence in this order:
 
 1. Matching EVK project under `refs/rzv2h_evk/`.
 2. Its `e2studio/configuration.xml` and non-generated source in `e2studio/src/`.
@@ -18,7 +18,7 @@ For a target core, use evidence in this order:
    `e2studio/rzv_cfg/fsp_cfg/` settings.
 4. Its selected FSP implementation under `e2studio/rzv/fsp/src/r_*/`.
 5. The integrated PX4/FreeRTOS tree under
-   `refs/px4-freertos-posix-renesas-fsp/` for RDK application ownership and
+   `refs/rzv2h_drone_px4-dev/` for RDK application ownership and
    cross-driver configuration.
 6. A legacy or different-core example only as labelled secondary evidence.
 
@@ -31,10 +31,47 @@ routing. Build success and example presence are not target validation.
 **EVK** board. Its `pin_data.c`, connector, and transceiver choices are not
 evidence for the **RDK-RZ/V2H** board this port runs on. Use EVK projects for
 IP behavior (registers, clocks, ELC/IRQ, driver lifecycle) only. RDK pin
-ownership comes from `refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c`
-plus the RDK schematic; if the RDK `pin_data.c` does not configure a pin
-(e.g. CAN, ADC), the schematic is the only authority. Chip-level pin
-functions per PSEL: `refs/rzv2h_scripts/rzv2h_pin_mapping.csv`.
+ownership for software integration comes from the selected `RDK` pin set in
+`refs/rzv2h_drone_px4-dev/configuration.xml`, its `docs/HARDWARE.md`, and the
+pinned PX4 board/startup sources. Generated RDK pin data and the matching
+schematic corroborate that mapping for physical qualification; they are not
+prerequisites for configurable source changes, host tests, or builds. Pins
+outside those sources (e.g. CAN/ADC) still need separate RDK electrical
+authority before hardware use. Chip-level pin functions per PSEL:
+`refs/rzv2h_scripts/rzv2h_pin_mapping.csv`.
+
+### Current RDK reference availability
+
+The local `refs/rzv2h_drone_px4-dev/` export matches public parent commit
+`ea03689163229f3f5982a579e79e264598547b7b`. Its PX4 and XRCE Agent dependencies
+are recovered at their exact gitlink revisions; see the
+[recovery record](../../plans/261011-2017-rzv2h-drone-reference-port/reports/execution-session-01.md).
+PX4 board sources live under `px4/boards/renesas/rzv/src/{board,hal,shim,services}/`;
+startup is `px4/boards/renesas/rzv/init/rcS`.
+
+`rzv_gen/pin_data.c` and `rzv/fsp/src/` are **absent** from this snapshot;
+the reference README describes generation/population with e2studio/FSP.
+References to those paths describe expected generated inputs, not files
+available for a current source audit. Use the available pinned board backends
+and selected XML, plus explicitly labelled core-matched IP references.
+The sensor-extension schematic
+SCH-20260713 is also absent. Software integration proceeds using the selected
+XML, hardware guide, and board sources, with configurable wiring and a
+default-off extension profile. Obtain generated output and confirm fitted
+board routing during target validation. Existing GY912/simple wiring remains
+separate: P94 is their DRDY/button input and the extension's second CS output.
+Do not substitute EVK pins or apply the extension mapping globally.
+The XML's only active/selected pin set is `RDK`, selecting P93/P94/P95 as
+SSLA0/1/2. P36 SSLA2 belongs to inactive `RZV2H-IMDT.pincfg`; it is not the active
+RDK alternative. This resolves the software mapping; it does not prove physical
+extension routing. See [pin ownership](./pinmap.md#sensor-wiring-profiles) for
+the current native and planned extension profiles.
+
+The reference hardware guide names ICM-45686, while comments in its SPI table
+name ICM-45688 using the same `icm45686` driver. Keep the driver selection for
+software work and verify fitted part identity at bring-up. Likewise, reference
+`init/rcS` starts SiK telemetry at 115200, whereas its hardware guide and the
+native default use 57600; select baud explicitly for the fitted radio.
 
 ## Core path convention
 

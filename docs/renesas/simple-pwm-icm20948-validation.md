@@ -7,7 +7,8 @@
 
 ## Profile and prerequisites
 
-This compact PX4 image starts PWMOut and SPI0 ICM20948 accel/gyro independently.
+This compact PX4 image is the native legacy bench: it starts PWMOut and one
+SPI0 ICM20948 accel/gyro instance independently.
 It retains RTT/HRT/work queues/uORB and volatile `/fs/params`, with no flight
 modules, `sensors`, allocator startup, MAVLink, IPC, RC, barometer or automatic
 magnetometer. Control allocator is linked only for mixer metadata. Dedicated
@@ -18,17 +19,21 @@ Identify the actual module/revision and verify its regulator, supply and logic
 level adaptation from its schematic before powering it. A GY-912 label or the
 board GPIO voltage does not prove module tolerance. See the
 [standalone module constraints](gy912-icm20948-validation.md#scope-and-wiring).
-Disconnect P94 button wiring and other SPI0/P94 users. Only one sensor owns
-P93, and P94 callback ownership must be exclusive; sensor reset/stop can detach
-that descriptor. Do not run standalone `gy912_test` or `/dev/pwmN` commands in
-this image. Use disconnected motors/ESCs and compatible high-impedance probes.
+Disconnect P94 button wiring and other SPI0/P94 users. In this legacy image,
+one sensor owns P93 and P94 callback ownership is exclusive; sensor reset/stop
+can detach that descriptor. The fitted extension reference is a future,
+default-off profile with three polled ICM45686 devices sharing P90/P91/P92 and
+configurable CS lines P93/P94/P95, with no DRDY. Its P94 CS1 wiring is
+incompatible with this image's P94 interrupt contract. Do not run standalone
+`gy912_test` or `/dev/pwmN` commands in this image. Use disconnected motors/ESCs
+and compatible high-impedance probes.
 
 | Signal | RDK pin | Contract |
 |---|---|---|
 | MOSI/SDI | P90 | SPI0 alternate function |
 | MISO/SDO | P91 | SPI0 alternate function |
 | SCK | P92 | SPI mode 3, 1 MHz, 8-bit MSB first |
-| CS/NCS | P93 | SSLA0-capable pin used as active-low GPIO CS |
+| CS/NCS | P93 | SSLA0-capable pin used as active-low GPIO CS in this legacy image |
 | INT | P94 | Input/pull-up/TINT; no button or competing callback owner |
 | PWM motor 1 | PA4 | GPT6A |
 | PWM motor 2 | PA7 | GPT7B |

@@ -47,6 +47,14 @@ other GPIO/TINT channels and edges, CR8-1 routing, and CM33 routing require
 separate validation. Correcting a shared selector map does not validate every
 peripheral that consumes it.
 
+The P94 ownership recorded here is for the standalone `nsh-leds` button image.
+The fitted extension reference reserves P94 as configurable SPI0 SSLA1/CS1 for
+the second polled ICM45686. The old button image and that extension wiring
+cannot run together; this bounded button result remains valid for its named
+image and wiring only. Native extension support is future, default-off work,
+so the software reference and host/build checks can proceed before physical
+extension qualification.
+
 ## Board Configuration
 
 Use the named `GPIO_TINT_Px_y` input pinsets from `rzv2h_pinmap.h` for GPIO/TINT

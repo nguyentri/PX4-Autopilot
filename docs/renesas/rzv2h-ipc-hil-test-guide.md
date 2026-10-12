@@ -1,8 +1,8 @@
 # RZ/V2H Raw IPC — HIL Test Guide (`/dev/ipcc1` CR8-0 ↔ CR8-1)
 
-Repeatable hardware-in-the-loop procedure to bring up the CR8-0 ↔ CR8-1 raw
-IPC link and run the `ipctest` ping/echo acceptance (100/100, both directions)
-on live silicon. Companion to the address-contract proof in
+Repeatable hardware-in-the-loop procedure to qualify the CR8-0 ↔ CR8-1 native
+raw IPC link and run the `ipctest` ping/echo acceptance (100/100, both
+directions) on live silicon. Companion to the address-contract proof in
 [rzv2h-three-core-ipc-artifacts.md](./rzv2h-three-core-ipc-artifacts.md) and the
 probe/reset rules in
 [rzv2h-three-core-jlink-contract.md](./rzv2h-three-core-jlink-contract.md).
@@ -15,6 +15,12 @@ probe/reset rules in
   doorbell/poll path — no manual `--recover` on CR8-1.
 - Boot auto-echo waits for a ready, non-degraded link before echoing, so it
   does not spin on a half-open link.
+
+This guide qualifies the native raw IPC ABI-v2 owned by
+`rzv_ipc_channels.h`. It is separate from the reference CA55 RPMsg/RPC/uXRCE
+path and from the optional CA55 profile. A missing target transcript leaves a
+physical qualification gate open; it does not block source-backed standalone
+CR8 software work.
 
 ## Prerequisites
 
@@ -259,15 +265,18 @@ It uses the generic `platforms/nuttx/Debug/nuttx-rtt-bridge.sh` (JLinkExe RTT
 bridge, no reset/halt) and `nsh_console_exec.py` (scripted NSH over RTT or UART),
 which work for any NuttX/PX4 image.
 
-### Phase 2 (deferred): SCI4 display on CR8-1
+### Optional console variant: SCI4 display on CR8-1
 
 The transport split above puts SCI4 on **CR8-0** (`ipcc-raw-cr8_0-sci4`).
 Showing the relayed text on a physical UART owned by **CR8-1** instead is still a
-separate task: SCI4 (P70/P71) is a single physical UART with no multi-core
+separate physical-qualification task: SCI4 (P70/P71) is a single physical UART with no multi-core
 arbitration, and both the flight `default.px4board` and the `ipcc-raw-cr8_0-sci4`
 image already assign it to CR8-0. Handing SCI4 to CR8-1 means rebuilding the
 CR8-1 image with `CONFIG_RZV_SCI4` **and** taking it out of the CR8-0 image to
-avoid a two-master pin conflict. Not required for the demos above.
+avoid a two-master pin conflict. Not required for the demos above. The
+`115200` setting in the split-console profile is explicit to that test image;
+it does not change native telemetry's 57600 default or silently adopt the
+reference startup's 115200 setting.
 
 ## Interpreting failures
 

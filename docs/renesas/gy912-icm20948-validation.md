@@ -3,9 +3,12 @@
 **Date:** 2026-10-11<br>
 **Board/core:** RDK-RZ/V2H, CR8-0  
 **Config:** `rdk-rzv2h:gy912`  
-**Evidence:** host checks passed; firmware build-clean; bounded on-target,
-user-reported standalone sensor pass ([archived RTT excerpt](gy912-icm20948-rtt-261011.txt),
-[status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md))
+**Evidence:** captured host/build checks passed. The bounded user-reported
+sensor pass used historical GPIO CS/P94 IRQ wiring ([archived RTT excerpt](gy912-icm20948-rtt-261011.txt),
+[status report](../../plans/reports/pm-261011-1859-gy912-icm20948-on-target.md));
+it does not qualify the selected live DMA/SSLA0 variant. Recorded DMA target
+attempts and their failures remain in the section below; capture resolved
+configuration and exact ELF for each new result.
 
 ## Scope and wiring
 
@@ -19,23 +22,35 @@ not start PX4, register a flight sensor, or test magnetometer/barometer data.
 | P90 | 19 | MOSI / SDI | SPI0 mode-1 pinmux |
 | P91 | 21 | MISO / SDO | SPI0 mode-1 pinmux |
 | P92 | 23 | SCK | SPI0 mode-1 pinmux |
-| P93 | 24 | CS / NCS | Active-low GPIO chip select; SSLA0-capable pin |
+| P93 | 24 | CS / NCS | SPI0 SSLA0-capable output or GPIO CS; the resolved `.config` selects the active mux |
 | P94 | 26 | INT | GPIO/TINT input, active-low pulse, falling-edge callback |
 | GND | GND | GND | Common ground |
 
-Disconnect the P94 button-demo wiring before connecting sensor INT. The
+This is the legacy GY-912/ICM20948 profile. Disconnect the P94 button-demo
+wiring before connecting sensor INT. The
 `gy912` configuration excludes `ARCH_BUTTONS` and both SPI loopback samples;
 that exclusion does not remove external button wiring. Only one sensor may
 use P93. Verify the actual module revision, power input,
 regulator and logic level adaptation against its schematic before connecting
 power. Board GPIO voltage alone does not establish that a module tolerates it.
 
+The fitted extension reference is a separate future profile: three polled
+ICM45686 devices share P90/P91/P92 and use configurable CS lines P93/P94/P95;
+there is no DRDY ownership in that profile. P94 therefore cannot be both this
+legacy ICM20948 interrupt and extension CS1, and the `nsh-leds` button image
+cannot be run with the extension wiring. The native extension is not
+implemented yet; preserve this standalone GPIO-CS/P94-DRDY sample and its
+hardware-SSL/DMA experiments as legacy evidence while software work proceeds
+from the reference source.
+
 The sensor uses SPI mode **3**, 8-bit words, MSB first, **1 MHz**. Pinmux mode
-1 is a separate GPIO alternate-function setting. The existing board SPI
-integration holds P93 low across each whole command/data exchange. P94 uses
+1 is a separate GPIO alternate-function setting. P93 stays low across each
+whole command/data exchange: the SSLA0 hardware output asserts once per DMA
+frame (see [SPI0 DMA and hardware CS](#spi0-dma-and-hardware-ssla0-cs)), or the
+GPIO path drives it from `rzv_spi_select()`. P94 uses
 `GPIO_TINT_P9_4` (GPIOINT68); native IRQ4 pinmux is a different route.
 
-The P93 CS aliases in [board.h](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/include/board.h)
+With `RZV2H_SPI0_HARDWARE_SSL` off, the P93 CS aliases in [board.h](../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/include/board.h)
 select GPIO output. Board SPI initialization and the GPIO observation test
 use the shared board CS mapping, `BOARD_SPI0_SS0_GPIO`
 (`GPIO_P9_3_OUTPUT_HIGH`), and leave CS high when idle. The descriptor's
@@ -44,6 +59,60 @@ explicit requested level. High is inactive; CS must go low during a selected
 transaction. If it stays high throughout traffic, check that
 `rzv_spi_select()` receives the initialized SPI0 device and that internal
 loopback is disabled; loopback intentionally keeps the sensor deselected.
+
+## SPI0 DMA and hardware SSLA0 CS
+
+The `gy912` profile supports SPI0 DMAC and optional hardware SSLA0. Inspect the
+resolved `.config` and the exact ELF before loading an image: the selected
+configuration determines the DMAC unit/channels and whether P93 is hardware
+SSLA0 or GPIO CS. Historical captures below retain the settings of the image
+that produced each result.
+
+| Option | Value | Effect |
+|---|---|---|
+| `CONFIG_RZV_DMAC` | selected in resolved `.config` | DMAC_B driver for the selected unit |
+| `CONFIG_RZV_DMAC_SPI0_TX_CHANNEL` / `_RX_CHANNEL` | selected in resolved `.config` | Channels paced by SPI0 TXI (event 141) / RXI (event 140) |
+| `CONFIG_RZV_SPI0_DMA` | selected in resolved `.config` | When enabled, every SPI0 exchange, including single-word `send`, runs through DMA |
+| `CONFIG_RZV2H_SPI0_HARDWARE_SSL` | selected in resolved `.config` | When enabled, P93 = `GPIO_SSLA0_P9_3_M1`, IOLH b'11 (FSP "X6"), slow slew; when disabled, `rzv_spi_select()` drives GPIO CS |
+
+Each exchange of up to 256 bytes is copied through 32-byte-aligned bounce
+buffers and sent as one continuous frame; with SSLKP clear the SSLA0 output
+asserts for that frame and negates when it ends. The ICM20948 code issues the
+bank select and each register transaction as separate `SPI_EXCHANGE` calls,
+so each becomes its own CS frame, matching the GPIO behavior. Longer
+exchanges are split into multiple frames with a warning. The sequence follows
+the FSP SPI_B DMA driver: SPE off, FIFO reset, `SPDCR2=0`, RX channel
+(SPDR → memory, AM=4, REQD=1) then TX channel (memory → SPDR, AM=4, REQD=0),
+then SPTIE/SPRIE and SPE. Completion is polled on the RX channel; SPSR errors,
+DMA errors and timeouts fill the receive data with `0xff`.
+
+With hardware SSL enabled, `gy912_test cs` (GPIO observation) returns
+`-ENOTSUP` because P93 is no longer a GPIO. Turn `RZV2H_SPI0_HARDWARE_SSL` off (it
+requires `RZV_SPI0_DMA` and excludes the SPI internal-loopback sample) to
+restore GPIO CS.
+
+The archived hardware-SSL/GPIO-CS attempts below use their recorded historical
+images. Do not infer the live channel or CS mapping from an older ELF or
+capture; the resolved `.config` and exact loaded ELF are authoritative.
+
+**Evidence:** the first user-reported run with hardware SSL + DMA (2026-10-11)
+failed: `WHO_AM_I=0x00 expected=0xea`, `result=-19`, no SPI or DMA error or
+timeout logged, so the DMA exchanges reported completion. The defconfig was
+returned to GPIO CS with DMA on to separate the DMA path from SSL framing.
+That GPIO CS + DMA image (ELF SHA-256 `4f8fe869…e4b`, RAM-loaded on CR8-0
+with `rzv2h-ipc-hil-loadstart.gdb`, no reset) also **fails**: every exchange
+logs `RX DMA error CHSTAT=0x00000010` (ER set, EN clear) and `-EIO`, so
+`WHO_AM_I=0xff`, `result=-19`, `IRQ=0`. The DMA receive path is therefore
+broken independently of SSL framing. One known difference from FSP: our
+hardware-trigger path sets CHCFG.HIEN (rising-edge detect), while FSP's SPI_B
+channels use no detection (LOEN/HIEN/LVL = 0); this is unproven as the
+cause. Host DMAC regressions (`test/rzv2h-dmac-runtime-test.py`, 12 tests,
+including peripheral-to-memory receive) and all `test/rzv2h*` contracts pass;
+`gy912`, `spi-loopback`, `hil-spi-loopback`, `hil-full`, `dmac-memcpy`,
+`bmm150`, `pwm` and PX4 `renesas_rdk-rzv2h_{simple,dshot}` build. First
+target gates: WHOAMI `0xea`, raw samples with P94 IRQs, and an analyzer trace
+showing P93 low per exchange. On timeout the driver logs RX/TX `CHSTAT`,
+`SPSR` and remaining bytes.
 
 ## Build
 

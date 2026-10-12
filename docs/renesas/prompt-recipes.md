@@ -15,6 +15,17 @@ Pass the active NuttX files, matching EVK project root, and every labelled
 exception together. Never substitute `sci_b_uart` for SCIFA or `spi_b` for
 RSPI; retain the CA55 Ethernet tree as secondary evidence only.
 
+For RDK application ownership, the recovered FreeRTOS reference is
+`refs/rzv2h_drone_px4-dev/`; use the [reference source map](./reference-source-map.md#current-rdk-reference-availability)
+for comparison provenance and active XML selection. Treat missing generated
+pin output and schematic data as physical-qualification inputs. Prompts may
+plan and review source-backed native software without turning those inputs into
+universal software blockers. Keep the native CR8 default standalone, retain
+the GY-912/simple P93 CS/P94 DRDY profiles, and keep any future configurable
+extension permanently default-off for compatibility. An explicitly selected
+software build may proceed from the selected XML; physical use waits for board
+corroboration.
+
 ---
 
 ## Recipe 1: Driver Review
@@ -29,7 +40,7 @@ PROMPT:
 
 Task: Review RZ/V2H NuttX driver implementation for <driver>.
 
-Role: Technical reviewer ensuring driver follows NuttX best practices, handles 
+Role: Technical reviewer ensuring driver follows NuttX best practices, handles
 edge cases, and integrates correctly with the RZ/V2H port.
 
 Scope:
@@ -95,7 +106,7 @@ PROMPT:
 
 Task: Audit RZ/V2H <subsystem> subsystem architecture and identify integration gaps.
 
-Role: Systems architect documenting hardware topology, interrupt routing, 
+Role: Systems architect documenting hardware topology, interrupt routing,
 clock dependencies, and driver ownership.
 
 Scope:
@@ -104,7 +115,7 @@ Scope:
 - Clock and reset (CPG) dependencies
 - Pin multiplexing requirements through IOPORT/PFC
 - Driver coverage (which drivers implement which hardware blocks)
-- Known gaps or missing drivers
+- Software gaps and separate physical qualification gates
 
 Subsystem Examples: gpio-icu, uart-scif, spi-b-dmac, ether-dmac, ipc-mhu, adc-gtm
 
@@ -171,7 +182,7 @@ PROMPT:
 
 Task: Create migration strategy for porting <target> from FreeRTOS to NuttX.
 
-Role: Software architect planning phased migration with clear dependencies, 
+Role: Software architect planning phased migration with clear dependencies,
 test gates, and rollback procedures.
 
 Scope:
@@ -187,7 +198,7 @@ Target Examples: gpio-driver-suite, uart-subsystem, ipc-bridge, sensor-manager
 
 Files to Read (Primary):
   - Core-matched EVK project selected through docs/renesas/reference-source-map.md
-  - Integrated implementation at refs/px4-freertos-posix-renesas-fsp/ when system/RDK ownership is relevant
+  - Integrated implementation at refs/rzv2h_drone_px4-dev/ when system/RDK ownership is relevant
   - Equivalent NuttX driver(s) in platforms/nuttx/NuttX/nuttx/
   - docs/renesas/freertos-to-nuttx-mapping.md (API migration cheat sheet)
   - docs/design-guidelines.md (NuttX patterns)
@@ -206,7 +217,10 @@ Analysis Requirements:
 7. Plan build system changes (Kconfig entries, Make.defs rules, cmake refactor if applicable)
 8. Create ordered checklist: clock → driver init → HAL → tests
 9. Define rollback point (when to revert if issues emerge)
-10. Specify validation test (unit tests, integration tests, hardware validation)
+10. Specify validation tests, separating source/build checks from separately
+    scheduled on-target physical qualification. Treat qualification as
+    mandatory for the required port scope; call it optional only when the
+    profile itself is optional.
 
 Deliverable Path:
   plans/reports/migration-strategy-<date>-rzv2h-<target>-migration-plan.md
@@ -252,7 +266,7 @@ PROMPT:
 
 Task: Design and implement PX4 HAL abstraction for <peripheral>.
 
-Role: PX4 HAL architect ensuring the abstraction is compatible with upstream 
+Role: PX4 HAL architect ensuring the abstraction is compatible with upstream
 PX4 device drivers and test frameworks.
 
 Scope:
@@ -325,7 +339,7 @@ PROMPT:
 
 Task: Migrate PX4 application <app> from POSIX task to NuttX work-queue.
 
-Role: PX4 software engineer modernizing app to use NuttX work-queue for 
+Role: PX4 software engineer modernizing app to use NuttX work-queue for
 better schedulability and resource efficiency.
 
 Scope:
@@ -457,7 +471,7 @@ plans/reports/
 
 ---
 
-**Maintenance:** 
+**Maintenance:**
 - Update recipes when new porting patterns emerge
 - Track recipe use via report metadata (date, deliverable path)
 - Promote successful patterns from reports back into playbook / guidelines

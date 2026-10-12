@@ -1,10 +1,44 @@
 # RZ/V2H Pin Ownership Matrix
 
 **Date:** 2026-10-11
-**Status:** Foundational; FSP pin extraction reconciled, target electrical validation pending
-**FSP software configuration source:** [refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
+**Status:** Profile-specific software mapping; extension target validation pending
+**Reference software source:** [selected RDK configuration](../../refs/rzv2h_drone_px4-dev/configuration.xml), [reference hardware guide](../../refs/rzv2h_drone_px4-dev/docs/HARDWARE.md)
 
-Software pin ownership matrix. Each row represents one GPIO pin and its configured alternate function. Cross-referenced against NuttX board configs and active FSP peripherals. Board schematic/pinout authority and target electrical proof remain required.
+Use the selected profile's source, not a single universal sensor assignment.
+Software changes, host checks and builds can proceed from the reference XML and
+board sources. Generated FSP output, fitted-board identification and electrical
+measurements remain target-validation tasks; see [reference sources](./reference-source-map.md).
+
+## Sensor Wiring Profiles
+
+| Connection | Existing native bench/default | Opt-in `drone` extension |
+|---|---|---|
+| SPI0 P90/P91/P92 | MOSI/MISO/SCK, single MPU9250 or ICM20948 | Shared MOSI/MISO/SCK, three ICM-45686 |
+| P93 | Single sensor CS; GPIO or hardware SSLA0 by configuration | IMU #1 CS (reference SSLA0) |
+| P94 | DRDY/TINT for MPU9250/GY912/simple, or exclusive button demo | IMU #2 CS (reference SSLA1); no DRDY |
+| P95 | No sensor ownership in existing bench profile | IMU #3 CS (reference SSLA2); no DRDY |
+| SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x77, INA228 0x45 |
+
+The `drone` profile selects default-off
+`CONFIG_RZV2H_DRONE_SENSOR_EXTENSION`. Its native GPIO CS dispatch uses the
+three actual PX4 descriptor IDs; unknown IDs deassert all CS lines, and startup
+does not configure P94 as DRDY. Host routing/startup tests and the firmware
+build pass; physical qualification remains open. Legacy profiles retain their
+existing pin policies. Reference
+`-c 1/2/3` values are logical SSL indices, not native GPIO pin selectors;
+use native SPI descriptors/CLI semantics. Native polling does not require the
+reference's `-P` option. Keep P94 DRDY/button images exclusive with extension
+CS1 wiring.
+
+### Physical Header Drawing
+
+![RDK physical 40-pin connector](./rzv2h-rdk-40_pin_header_pin.png)
+
+This retained RDK connector drawing maps SoC pads to header positions, not
+sensors or firmware profiles. It labels P93 at pin 24, P94 at pin 26 and P95
+at pin 12; P76/P77 at pins 3/5. Its Raspberry Pi alternate-function labels
+(for example PCM_CLK on P95) do not override selected RZ/V2H pinmux. Verify
+extension-board nets and populated revision separately before target use.
 
 ## Serial Policy
 
@@ -38,23 +72,24 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 | Pin | Port.Bit | Alt-Func | Peripheral | Mode | Pull | Drive | Owner File | FSP Ref |
 |-----|----------|----------|-----------|------|------|-------|------------|---------|
-| **P50** | 5.0 | GPIO | Unused | Input | None | B01 | board.h | MPU9250 DRDY in FSP reference; current DRDY is P94 |
-| **P52** | 5.2 | GPIO | Safety input | Input | Schmitt + noise filter | B01 | board safety (planned) | GPS safety switch |
+| **P50** | 5.0 | Profile-dependent | No native sensor DRDY owner | — | — | — | board.h | Reference SPI table retires INT1; comments reserve pad for debug UART |
+| **P52** | 5.2 | Profile-dependent | Safety candidate not established | — | — | — | board safety (planned) | Selected reference XML uses RSCI1 TX; do not infer safety input from old labels |
 | **P53** | 5.3 | AF=11 | GPT10B (PWM4) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P70** | 7.0 | AF=1 | RSCI4 TXD | Output | None | B01 | rzv_serial.c | TFmini TX |
 | **P71** | 7.1 | AF=1 | RSCI4 RXD | Input | None | B01 | rzv_serial.c | TFmini RX |
 | **P72** | 7.2 | AF=1 | RSCI5 TXD | Output | None | B01 | rzv_serial.c | Telemetry TX |
 | **P73** | 7.3 | AF=1 | RSCI5 RXD | Input | None | B01 | rzv_serial.c | Telemetry RX |
 | **P75** | 7.5 | AF=1 | RSCI6 RXD | Input | Noise-filter | B01 | rzv_serial.c | RC RX |
-| **P76** | 7.6 | AF=1 | RSCI7 SDA (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 3; BMP280 / BMM150 SDA |
-| **P77** | 7.7 | AF=1 | RSCI7 SCL (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 5; BMP280 / BMM150 SCL |
+| **P76** | 7.6 | AF=1 | RSCI7 SDA (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 3; sensors selected by profile above |
+| **P77** | 7.7 | AF=1 | RSCI7 SCL (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 5; sensors selected by profile above |
 | **P82** | 8.2 | AF=6 | RSCI9 TXD | Output | None | B01 | rzv_serial.c | GPS TX; CAN2 CTX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
 | **P83** | 8.3 | AF=6 | RSCI9 RXD | Input | None | B01 | rzv_serial.c | GPS RX; CAN2 CRX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
-| **P90** | 9.0 | AF=1 | RSPI0 MOSI | Output | None | B11 | rzv_spi.c | MPU9250 MOSI |
-| **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | MPU9250 MISO |
-| **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | MPU9250 SCK |
-| **P93** | 9.3 | GPIO | SPI0 CS | Output, initially high | None | B11 | rzv2h_spi.c / PX4 SPI table | SSLA0-capable pin used as GPIO CS |
-| **P94** | 9.4 | GPIO | TINT input | Input | Pull-up | B11 | rzv_gpio.c | MPU9250 DRDY (PX4) / GY-912 INT; FSP reference: unused SSLA1. Shared with the button demo |
+| **P90** | 9.0 | AF=1 | RSPI0 MOSI | Output | None | B11 | rzv_spi.c | Shared sensor bus |
+| **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | Shared sensor bus |
+| **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | Shared sensor bus |
+| **P93** | 9.3 | GPIO or SSLA0 mode 1 | SPI0 CS | Output, initially high | None | B11 | rzv2h_spi.c / PX4 SPI table | `CONFIG_RZV2H_SPI0_HARDWARE_SSL` selects hardware SSL in compatible samples |
+| **P94** | 9.4 | Profile-dependent | DRDY/button or extension CS1 | Input or output by profile | Profile-dependent | B11 | board GPIO/SPI table | Mutually exclusive roles; selected reference XML uses SSLA1 |
+| **P95** | 9.5 | Profile-dependent | Extension CS2 | Output in extension profile | None | B11 | opt-in board SPI table | Selected reference XML uses SSLA2; inactive IMDT P36 does not apply |
 | **P96** | 9.6 | AF=9 | GPT9A (PWM3) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P97** | 9.7 | GPIO | GPS buzzer | Output low | None | B01 | board GPIO (planned) | GPS buzzer |
 | **PA4 / P10_04** | A.4 | AF=11 | GPT6A (PWM1) | Output | None | B01 | rzv_gpt.c | PWM |
@@ -75,30 +110,39 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | RSCI9 | P82 | P83 | None | u-blox M10 | GPS (`/dev/ttyS9`, 115200 8N1) |
 
 **Limitations:** No hardware flow control (RTS/CTS) currently implemented.
+Reference startup selects telemetry 115200; native default and reference hardware
+guide use 57600. Configure the fitted radio explicitly without changing working
+profiles. GPS remains 115200 8N1; SBUS requires the external inverter.
 
 ### SPI Bus (RSPI0)
 
 | Pin | Function | Device | Signal |
 |-----|----------|--------|--------|
-| P90 | MOSI | MPU9250 IMU | Data out |
-| P91 | MISO | MPU9250 IMU | Data in |
-| P92 | SCK | MPU9250 IMU | Clock |
-| P93 | GPIO CS (SSLA0-capable) | MPU9250 IMU / ICM20948 | Active-low chip select |
-| P94 | GPIO / TINT input | MPU9250 IMU / GY-912 test | Data-ready interrupt (not SSLA1) |
+| P90 | MOSI | Selected IMU profile | Data out |
+| P91 | MISO | Selected IMU profile | Data in |
+| P92 | SCK | Selected IMU profile | Clock |
+| P93 | GPIO CS (SSLA0-capable) | Single native sensor / extension IMU #1 | Active-low chip select |
+| P94 | GPIO / TINT or CS1 | Native DRDY/button / extension IMU #2 | Exclusive profile roles |
+| P95 | CS2 (planned native profile) | Extension IMU #3 | Reference SSLA2 |
 
 **Speed:** Driver default 1 MHz; target ceiling unverified.
-**DMA:** Not currently enabled; PIO polling in rzv_spi.c.
+**Transfer backend:** PIO and opt-in SPI0 DMA exist in the native lower half.
+Read the selected defconfig and [SPI source](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c)
+for current channel allocation; neither host checks nor a build prove external
+DMA transfers or CS waveforms. New multi-CS routing starts with PIO.
 
 ### I2C Bus (RSCI7 SCI-mode I2C)
 
 | Pin | Function | Device | Signal |
 |-----|----------|--------|--------|
-| P76 | SDA | BMP280 barometer / BMM150 magnetometer | Data (40-pin header Pin 3) |
-| P77 | SCL | BMP280 barometer / BMM150 magnetometer | Clock (40-pin header Pin 5) |
+| P76 | SDA | Sensors selected by profile | Data (40-pin header Pin 3) |
+| P77 | SCL | Sensors selected by profile | Clock (40-pin header Pin 5) |
 
-**Address:** 0x76 (BMP280, `hil-full`); 0x10–0x13 (BMM150, `bmm150` config, default 0x10).  
-**Speed:** 100 kHz (BMP280 HIL); 400 kHz default for the BMM150 sample. Neither validated on target.  
-**Module power:** Pin 1 3V3, Pin 6 GND. See [bmm150-i2c-validation.md](./bmm150-i2c-validation.md).  
+**Address:** Legacy BMP280 0x76; BMM150 sample defaults to 0x10 with address
+configuration. Planned extension addresses are in the profile table above;
+reference runtime `rcS` selects BMP390L 0x77 despite a legacy 0x76 board macro.
+**Speed:** 100 kHz (BMP280 HIL); 400 kHz default for the BMM150 sample. Neither validated on target.
+**Module power:** Pin 1 3V3, Pin 6 GND. See [bmm150-i2c-validation.md](./bmm150-i2c-validation.md).
 **DMA:** Disabled (PIO mode).
 
 ### PWM / GPT Outputs (ESC Control)
@@ -110,16 +154,16 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | P96 | GPT9A | PWM3 | Motor 3 (front-left) | P96 |
 | P53 | GPT10B | PWM4 | Motor 4 (rear-right) | P53 |
 
-**Frequency:** Configurable (typically 400 Hz for ESC).  
-**Duty Cycle:** 1000–2000 µs (1–2 ms pulse width).  
+**Frequency:** Configurable (typically 400 Hz for ESC).
+**Duty Cycle:** 1000–2000 µs (1–2 ms pulse width).
 **Source:** [rzv_gpt.c](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c), [timer_config.cpp](../../boards/renesas/rdk-rzv2h/src/timer_config.cpp)
 
 ### GPIO / Interrupts
 
 | Pin | Function | Source | Active Config |
 |-----|----------|--------|----------------|
-| P94 | GPIO / TINT | Ext. interrupt | IMU INT (edge-triggered); exclusive with the button demo |
-| P52 | GPIO input | Safety switch candidate | FSP reference config; PX4 consumption pending |
+| P94 | GPIO / TINT or CS1 | Profile-dependent | Native IMU INT/button versus planned extension CS1 |
+| P52 | No ratified GPIO input | Safety switch candidate | Reference active XML is RSCI1 TX; generated symbol and routing need verification |
 | P97 | GPIO output low | GPS buzzer candidate | FSP reference config; PX4 consumption pending |
 | PA6 / P10_06 | GPIO output low | Safety LED candidate | FSP reference config; PX4 consumption pending |
 
@@ -127,20 +171,14 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 ---
 
-## Pin Availability (Reserved for Future Use)
+## Additional Ownership
 
-| Port | Pins | Status | Notes |
-|------|------|--------|-------|
-| P0 | 0–7 | Unused | Available for GPIO expansion |
-| P1 | 0–7 | Unused | Available for GPIO expansion |
-| P2 | 0–7 | Unused | Available for GPIO expansion |
-| P3 | 0–7 | Unused | Available for GPIO expansion |
-| P4 | 0–7 | Unused | Available for GPIO expansion |
-| P5 | 0–1, 4, 6–7 | Unused | P50 was the FSP IMU INT (current INT is P94), P52 safety input, P53 PWM |
-| P6 | 0–7 | Unused | Available for expansion |
-| P8 | 0–1, 4–7 | Unused in PX4 images | P80/P81 = CAN1 (CANFD CH0, `canfd*` NuttX configs); P82/P83 = SCI9 GPS or CAN2 (CANFD CH1) |
-| P9 | 5 | Unused | P90–93 SPI0, P94 IMU INT, P96 PWM, P97 buzzer |
-| PA | 0–3, 5 | Unused | PA4/PA7 PWM; PA6 safety LED |
+Do not infer availability from absence in the sensor table. Check bonded-pad
+definitions, selected native board configuration, reference XML and any CA55
+device tree before adding an owner. Reference SPI comments retire the former
+P50/PA0/P74 DRDY pads and identify debug-UART/SDHI uses; they are not spare
+interrupt inputs. P80/P81 are CANFD CH0 in standalone CAN configs; P82/P83 are
+exclusive SCI9 GPS or CANFD CH1 selections.
 
 ---
 
@@ -151,8 +189,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 ```bash
 python3 test/rzv2h_board_gpio_contract_test.py
 
-rg -n "BSP_IO_PORT_.*PIN" \
-  refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c
+rg -n 'pincfg|active="true"|selected="true"' \
+  refs/rzv2h_drone_px4-dev/configuration.xml
 
 rg -n "P50|P52|P53|P70|P71|P72|P73|P75|P76|P77|P82|P83|P90|P91|P92|P93|P94|P96|P97|PA4|PA6|PA7" \
   boards/renesas/rdk-rzv2h \
@@ -161,7 +199,8 @@ rg -n "P50|P52|P53|P70|P71|P72|P73|P75|P76|P77|P82|P83|P90|P91|P92|P93|P94|P96|P
 
 Defconfigs select peripheral instances, not a complete pin list, so a
 defconfig-only pin diff is not authoritative. The contract test checks the
-board-owned GPIO invariants; the two source scans support human reconciliation.
+board-owned GPIO invariants; source scans support human reconciliation. Read
+only the XML's selected `RDK` set rather than merging inactive profiles.
 None proves drive strength, signal integrity, connector routing, or board
 population.
 
@@ -181,7 +220,8 @@ grep -E "PX4_UART_|GPIO|SPI|I2C" \
 - **Board Config (PX4):** [../../boards/renesas/rdk-rzv2h/src/board_config.h](../../boards/renesas/rdk-rzv2h/src/board_config.h)
 - **NuttX Pin Map Header:** [../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pinmap.h](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pinmap.h)
 - **GPIO Driver:** [../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c)
-- **FSP Source:** [../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c](../../refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c)
+- **Reference SPI descriptors:** [reference spi.cpp](../../refs/rzv2h_drone_px4-dev/px4/boards/renesas/rzv/src/hal/spi.cpp)
+- **Reference startup:** [reference rcS](../../refs/rzv2h_drone_px4-dev/px4/boards/renesas/rzv/init/rcS)
 
 ---
 
@@ -195,20 +235,21 @@ grep -E "PX4_UART_|GPIO|SPI|I2C" \
 
 ---
 
-## Known Limitations (Phase 1)
+## Remaining Target Validation
 
 1. No internal pull-up/pull-down contract is established in `rzv_gpio.c`; SCI7 I2C requires board-level external pull-ups.
-2. SPI DMA not implemented; PIO polling only.
+2. SPI0 DMA is opt-in; fitted-sensor transfers and electrical timing require exact-image evidence.
 3. UART flow control (RTS/CTS) not wired.
 4. Secondary SPI/I2C buses not active; only RSPI0, RSCI7 in use.
 5. Multiplexed pins (e.g., P50 as GPIO vs. TINT) require Kconfig guards; conflicts possible in dynamic reconfiguration.
-6. P52 safety input, P97 buzzer, and PA6 safety LED are present in the FSP pin configuration but remain **needs on-target/schematic validation** for PX4 ownership.
+6. Safety/button, P97 buzzer and PA6 LED ownership need generated-symbol and
+   electrical confirmation. Active XML does not establish P52 as a safety input.
 
 ---
 
 ## Next Steps
 
-- Complete schematic/electrical validation for active pins and the candidate
-  safety/buzzer/LED signals.
+- Proceed with configurable extension software integration and sample regression
+  checks; obtain schematic/electrical evidence for target qualification.
 - Add peripheral-specific CAN-FD and SDHI pin tables only when those optional
   paths enter hardware bring-up.

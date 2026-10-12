@@ -32,8 +32,11 @@ selects forced-high mode.
 
 Disconnect ESCs/motors and other loads before PWM output. Use a high-impedance
 scope/logic-analyzer input referenced to board ground; verify compatible probe
-voltage limits. Resolve connector contacts from the RDK schematic: GPIO labels
-below are not connector contact numbers. Do not use EVK pin assignments.
+voltage limits. Resolve connector contacts from the RDK reference when doing
+physical qualification: GPIO labels below are not connector contact numbers.
+Do not use EVK pin assignments. Software source, host checks, and builds can
+proceed from the named RDK mappings while physical connector and waveform
+qualification remains pending.
 
 | Device | RDK GPIO | Alternate function | Output |
 |--------|----------|--------------------|--------|

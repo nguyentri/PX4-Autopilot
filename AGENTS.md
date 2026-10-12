@@ -58,12 +58,15 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 
 | Path | Content |
 |------|---------|
-| `refs/px4-freertos-posix-renesas-fsp/` | Working PX4-on-FreeRTOS port for CR8-0 on the **RDK** board (FSP config; `rzv_gen/pin_data.c` is the RDK pin authority, but it does not configure every peripheral, e.g. CAN/ADC: then use the RDK schematic) |
+| `refs/rzv2h_drone_px4-dev/` | PX4-on-FreeRTOS CR8-0 **RDK** sensor-extension reference; selected `RDK` XML and pinned board/startup sources support configurable software work; generated pin data/schematic corroboration belongs to target validation |
 | `refs/rzv2h_evk/<periph>/<periph>_rzv2h_evk_{cm33,cr8_0,cr8_1}_ep/` | Renesas FSP example projects per peripheral, **per core**, for the **EVK** board (not RDK). Use them for IP behavior (registers, clocks, IRQ/ELC); never take pins from their `pin_data.c`. |
 | `refs/rzv2h_gb_ether/` | GbEther driver reference |
 | `refs/rzv2h_scripts/` | Pinmap / ELC / CMSIS-header generators, `rzv2h_pin_mapping.csv` |
 
 Evidence precedence and per-driver source picks: `docs/renesas/reference-source-map.md`.
+Keep the new extension opt-in and default-off; preserve GY912/simple P94 DRDY
+while extension P94 serves CS1. Missing generated artifacts or schematic data
+do not block source/host/build work; record remaining physical qualification.
 
 ## 5. Evidence rules
 
@@ -89,7 +92,8 @@ Evidence precedence and per-driver source picks: `docs/renesas/reference-source-
 | Scope, roadmap, code tour | `docs/project-overview-pdr.md`, `docs/project-roadmap.md`, `docs/codebase-summary.md` |
 | Reusable prompts | `docs/renesas/prompt-recipes.md` |
 | Past incidents and lessons | `docs/journals/` |
-| Active plan | `plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md` |
+| Active reference-port plan | `plans/261011-2017-rzv2h-drone-reference-port/plan.md` |
+| Broader driver/multicore roadmap | `plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md` |
 
 ## 7. Conventions
 

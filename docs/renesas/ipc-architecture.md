@@ -1,8 +1,9 @@
 # RZ/V2H IPC Architecture
 
-**Updated:** 2026-07-30
-**Status:** deferred multi-core milestone; source and build contracts exist, but
-the default PX4 and SIH images keep IPC disabled.
+**Updated:** 2026-10-11
+**Status:** source/build contract; the standalone CR8-0 default keeps IPC
+disabled, while peer integration and physical link qualification remain
+optional follow-up work.
 
 This document describes the checked-in design. It is not a claim of
 production readiness or end-to-end target validation.
@@ -13,7 +14,7 @@ production readiness or end-to-end target validation.
 |---|---|---|---|
 | CR8-0 | NuttX/PX4 | Flight stack | `0x40800000`–`0x417fffff` |
 | CR8-1 | NuttX/PX4IO | I/O relay | `0x41800000`–`0x427fffff` |
-| CM33 | separate firmware | boot/safety or ESC peer | secure DDR view; firmware not in this repository |
+| CM33 | NuttX raw sample / PX4IO scaffold | optional safety or ESC peer | Secure SRAM image; secure-DDR shared rings |
 
 See [multicore-memory-map.md](./multicore-memory-map.md) for the authoritative
 boot, TCM, SRAM, DDR, and shared-memory map.
@@ -22,7 +23,9 @@ boot, TCM, SRAM, DDR, and shared-memory map.
 
 Two different paths share the RZ/V2H MHU helpers:
 
-1. CA55 ↔ CR8-0 uses rptun/OpenAMP/RPMsg and registers `/dev/ipcc0`.
+1. CA55 ↔ CR8-0 uses the native rptun/OpenAMP/RPMsg implementation and
+   registers `/dev/ipcc0`. This is a separate, optional later profile from the
+   reference CA55 RPMsg/RPC/uXRCE application path.
 2. Raw CR8/CM33 links use an MHU doorbell plus fixed DDR rings through the
    NuttX IPCC upper half.
 
@@ -38,7 +41,8 @@ The checked-in MHU aliases are:
 | secure CM33 | `0x10481000` |
 
 The raw-link configuration currently selects the non-secure window. A move to
-the secure CR8 alias remains a target-validation decision.
+the secure CR8 alias is a physical target-qualification decision; it does not
+change the native ABI or the current standalone memory map.
 
 ## 3. Raw MHU + Shared-Memory Links
 
@@ -113,20 +117,27 @@ The CR8-0 uORB bridge:
 The raw drivers, shared-memory ABI, bridge, and example profiles are not the
 default runtime path. In particular:
 
-- the CR8-1 `/dev/ipcc1` responder needed by the CR8-0 uORB bridge is not
-  implemented;
-- CM33 peer firmware is outside this repository;
-- no current transcript proves bidirectional target traffic, CRC rejection,
-  sequence-gap handling, timeout recovery, reset recovery, or cache
-  coherency under load.
+- The NuttX raw CR8-0/CR8-1 link has bounded `ipctest` recover/ping/echo
+  100/100 evidence in the [HIL guide](./rzv2h-ipc-hil-test-guide.md). That
+  sample result does not qualify the PX4 uORB bridge or CM33 exchange.
+- The [CR8-1 PX4IO scaffold](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/px4io_cr8.cpp)
+  sends placeholder commands on `/dev/ipcc3`; it is not the CR8-0 uORB
+  bridge's `/dev/ipcc1` responder. That application integration remains open.
+- [CM33 PX4IO sources](../../boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/px4io_m33.cpp)
+  and the NuttX raw sample exist in-tree; CM33 target boot/traffic and real
+  actuator integration remain unproven.
+- PX4 bridge CRC rejection, sequence-gap handling, timeout/reset recovery and
+  cache coherency under load require their own exact-image evidence.
 
-Therefore IPC remains a deferred final milestone. Do not enable it in a flight
-image until both peer implementations, ownership, MPU/cache policy, safety
-behavior, and target validation are complete.
+These are profile-selection and physical-qualification boundaries. They do not
+block standalone CR8 software work. Enable a multi-core flight profile only
+after the peer ownership, MPU/cache policy, safety behavior, and target
+evidence below are recorded for that profile.
 
 ## 6. Required Completion Evidence
 
-Before promoting IPC from deferred to usable:
+Before promoting a selected IPC profile from source/build evidence to usable
+on-target behavior:
 
 1. boot exact recorded CR8-0, CR8-1, and CM33 artifacts from a cold reset;
 2. prove each link independently, including loopback and both directions;

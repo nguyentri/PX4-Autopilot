@@ -23,6 +23,14 @@ The bus needs external 2.2–4.7 kΩ pull-ups to 3V3. Many breakouts include
 them; confirm against the module schematic. Default address is 0x10 (SDO/CSB
 straps select 0x10–0x13). Run `bmm150 -s` when the strap is unknown.
 
+This standalone wiring is also the BMM150 portion of the fitted extension
+reference: SCI7/P76/P77 at 0x10 is a shared bus with the proposed BMP390L
+(0x77) and INA228 (0x45). The extension integration is not implemented in the
+native NuttX/PX4 targets, so this bench remains a valid independent SCI7 gate;
+do not retire it because the barometer or battery-monitor device is proposed.
+Software integration can proceed from the reference source while physical
+pull-up, module, and shared-bus qualification remains a later hardware gate.
+
 ## Build
 
 ```bash

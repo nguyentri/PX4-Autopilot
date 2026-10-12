@@ -35,6 +35,7 @@ renesas_fpb-ra8e1_test
 renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
 renesas_rdk-rzv2h_default
+renesas_rdk-rzv2h_drone
 renesas_rdk-rzv2h_dshot
 renesas_rdk-rzv2h_sih
 renesas_rdk-rzv2h_simple
@@ -45,7 +46,7 @@ renesas_rdk-rzv2h_simple
 Cortex-R8 core 0 runs the PX4 flight stack; CR8-1 and CM33 are IO cores over IPC.
 
 - **NuttX drivers:** a handful have bounded on-target evidence (CR8 startup/IRQ, SCI4 shell, GTM/HRT, DMAC memcpy, CAN-FD and SPI loopback, raw IPC CR8-0 ↔ CR8-1 100/100); most are build-clean or source-audited; none are production.
-- **PX4 HAL (CR8-0):** SPI, I2C, GPIO, PWM, HRT, IPC build-clean; params on volatile TMPFS; xSPI storage and board identity blocked.
+- **PX4 HAL (CR8-0):** SPI, I2C, GPIO, PWM, HRT, IPC build-clean; params on volatile TMPFS; xSPI persistence and per-unit identity remain qualification work.
 - **Integrated PX4:** on-target SIH demo only; sensor/actuator flight path not yet validated.
 
 Authoritative, per-driver tables: [port-status-nuttx.md](./docs/renesas/port-status-nuttx.md) and [port-status-px4-hal.md](./docs/renesas/port-status-px4-hal.md). Do not copy them here.
@@ -71,6 +72,10 @@ See [docs/](./docs/) and [docs/renesas/](./docs/renesas/) for comprehensive guid
 Start at [docs/renesas/README.md](./docs/renesas/README.md) (hardware, pinmap, status, playbook, IPC, validation).
 For the compact PWM + ICM20948 bench target, use the
 [simple validation guide](./docs/renesas/simple-pwm-icm20948-validation.md).
+The current FreeRTOS sensor-extension reference is being integrated through
+the [reference-port plan](./plans/261011-2017-rzv2h-drone-reference-port/plan.md).
+Its planned opt-in wiring preserves existing native samples; source/host/build
+work proceeds independently of later physical qualification.
 The retired core-only target is historical; its NuttX/ROMFS resources and evidence remain archived.
 
 ### AI Agents

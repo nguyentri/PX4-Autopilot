@@ -3,6 +3,10 @@
 **Scope:** source-backed preparation for volatile RAM validation. No target
 reset, load, run, or detach behavior is claimed here.
 
+This contract qualifies an optional multi-core hardware session. It does not
+block the standalone native CR8 profile, and sensor or serial-profile changes
+must not be used to infer different IPC addresses or load spans.
+
 ## Core selection
 
 | Core | SEGGER server device | e2 studio target | Special setting |

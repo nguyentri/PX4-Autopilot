@@ -192,13 +192,13 @@ Contains:
 
 **Root:** `refs/`
 
-### px4-freertos-posix-renesas-fsp  (cr8_0/CR8 core0 only)
+### rzv2h_drone_px4-dev  (cr8_0/CR8 core0 only)
 
 Complete FreeRTOS + POSIX + Renesas FSP reference.
 
 **Key subdirs:**
 ```
-refs/px4-freertos-posix-renesas-fsp/
+refs/rzv2h_drone_px4-dev/
 ├── rzv_cfg/               ← FSP configuration files (pin_data.c source territory)
 ├── rzv_gen/               ← Generated headers from FSP
 │   └── pin_data.c         ← Authoritative pin ownership matrix (source for pinmap.md)
@@ -287,7 +287,7 @@ ls -d boards/renesas/rdk-rzv2h* | xargs -I {} basename {}
 
 **Grep FSP reference:**
 ```bash
-grep -r "register\|bit\|mask" refs/px4-freertos-posix-renesas-fsp/rzv/fsp/src/ | grep <driver>
+grep -r "register\|bit\|mask" refs/rzv2h_drone_px4-dev/rzv/fsp/src/ | grep <driver>
 ```
 
 ---

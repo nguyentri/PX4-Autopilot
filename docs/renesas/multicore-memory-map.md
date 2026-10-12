@@ -1,11 +1,11 @@
-# RZ/V2H Multi-Core Unified Memory Map (Ratified)
+# RZ/V2H Multi-Core Unified Memory Map (Source-Ratified)
 
-**Status:** Phase 1 ratified — 2026-07-12. Single source of truth for CR8-0 / CR8-1 / CM33 addresses.
+**Status:** Source-ratified address contract for CR8-0 / CR8-1 / CM33.
 **Ground truth:** R01UH1032EJ0110 Rev.1.10 §1.8.2 (CM33 address space, `reformatted_cm33_address_space.md`),
 §2.2 CPU (CR8 TCM/boot, `RZV2H_HWM_CPUs.md`), FSP reference projects (`refs/*_cr8_{0,1}_ep`, `refs/*_cm33_ep`),
 and the in-tree linker scripts as corrected in the CR8 boot slice.
 
-Supersedes the stale core table in `ipc-architecture.md` (CR8-1 @0x40000000 / CM33 @0x40100000 — corrected).
+Use this map for the address contract referenced by `ipc-architecture.md`.
 
 ---
 
@@ -20,7 +20,7 @@ core's view an address is in.
 | SRAM code region base | (SRAM$ per core, see §3) | `0x0800_0000` (SRAM0 Code-S) | `0x1800_0000` (SRAM0 Code-NS) |
 | SRAM data alias | — | `0x2800_0000` (+0x20000000) | `0x3800_0000` |
 | DDR base | `0x4000_0000` | `0x8000_0000` (DDR-S) | `0x9000_0000` (DDR-NS) |
-| xSPI flash base | `0x6000_0000` | `0x6000_0000` (xSPI-S) | `0x7000_0000` |
+| xSPI flash base (CS0) | `0x2000_0000` (CS1 `+0x0800_0000`; `0x6000_0000` is the system/srec address) | `0x6000_0000` (xSPI-S) | `0x7000_0000` |
 | CR8-0 ITCM (AXI alias, for loaders) | local `0x0000_0000` | `0x4204_0000` | `0x5204_0000` |
 | CR8-1 ITCM (AXI alias, for loaders) | local `0x0000_0000` | `0x4208_0000` | `0x5208_0000` |
 | CR8-0 DTCM (AXI alias) | local `0x0002_0000` | `0x4206_0000` | `0x5206_0000` |
@@ -103,7 +103,21 @@ CPU-side visibility and cache behavior remain target validation gates.
 
 ---
 
-## Unresolved (carry to CM33 implementation pass)
-1. Prove the CM33 reset/vector/register launch sequence with `R9A09G057H44_M33_0` before execution.
-2. Confirm CM33 CPU access to `0x8382_0000` and MHU NS `0x5048_0000`; DAP readback alone is insufficient.
-3. Persistent ROM/xSPI bootparam acceptance remains outside the volatile-load scope.
+## Physical qualification and optional packaging
+
+The map is usable for source review, linker checks, and guarded volatile-load
+preparation. The following are target or product-profile qualification gates,
+not universal software-port blockers:
+
+1. Prove the CM33 reset/vector/register launch sequence with
+   `R9A09G057H44_M33_0` before executing a CM33 image.
+2. Confirm CM33 CPU access to `0x8382_0000` and MHU NS `0x5048_0000`; DAP
+   readback alone is insufficient.
+3. Persistent ROM/xSPI BOOTPARAM acceptance belongs to an optional persistent
+   image profile. The current native PX4 parameter path remains volatile TMPFS;
+   do not infer hardware persistence from this map.
+
+Sensor or serial-profile changes do not move these IPC addresses. Any future
+configurable native extension remains permanently default-off for compatibility;
+an explicitly selected software build may proceed from the selected XML, while
+physical use waits for its own board and electrical corroboration.

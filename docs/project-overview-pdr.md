@@ -1,14 +1,14 @@
 # RDK-RZ/V2H Port: Project Overview & PDR
 
-**Date:** 2026-10-01  
-**Status:** Active; CR8-0 primary, multicore IPC build-clean  
+**Date:** 2026-10-01
+**Status:** Active; CR8-0 primary, multicore IPC build-clean
 **Scope:** NuttX port + PX4 HAL integration for RDK-RZ/V2H (Renesas R9A09G057H)
 
 ---
 
 ## 1. Target Hardware
 
-**Board:** RDK-RZ/V2H (Renesas RZ/V2H Development Kit)  
+**Board:** RDK-RZ/V2H (Renesas RZ/V2H Development Kit)
 **SoC:** Renesas R9A09G057H (RZ/V2H family)
 
 ### Core Configuration
@@ -29,8 +29,8 @@ Load addresses and per-core aliases: [renesas/multicore-memory-map.md](./renesas
 
 **Primary RTOS:** NuttX (see `platforms/nuttx/NuttX/nuttx/` submodule)
 
-**Reference Implementation:** FreeRTOS + POSIX shim + Renesas FSP  
-- Located at `refs/px4-freertos-posix-renesas-fsp/`
+**Reference Implementation:** FreeRTOS + POSIX shim + Renesas FSP
+- Located at `refs/rzv2h_drone_px4-dev/`
 - Source of truth for hardware register maps, driver implementations, and pinmux
 
 **API Compatibility Layer:** PX4 POSIX shim abstracts FreeRTOS/NuttX differences

@@ -1,10 +1,29 @@
 # FreeRTOS/POSIX to NuttX API Mapping
 
-**Date:** 2026-08-09
-**Status:** Source-checked migration reference
+**Date:** 2026-10-11
+**Status:** Source-checked migration reference; target qualification is separate
 **Purpose:** Cheat sheet for migrating FreeRTOS + POSIX FSP code to native NuttX equivalents
 
-This table maps 15+ common FreeRTOS/POSIX APIs to their NuttX counterparts. Each row includes the header file, any caveats, and a reference PX4 code path demonstrating the pattern.
+This table maps common FreeRTOS/POSIX APIs to their NuttX counterparts. Each
+row includes the header file, caveats, and a reference PX4 code path. It is an
+API migration aid, not a claim that a migrated driver has passed physical
+qualification.
+
+For RDK application ownership, use the recovered reference checkout at
+`refs/rzv2h_drone_px4-dev/`. The [reference source map](./reference-source-map.md#current-rdk-reference-availability)
+owns its comparison provenance and active XML selection. The selected `RDK`
+configuration is the software reference for board ownership; missing generated
+`rzv_gen` output or schematic data is a later physical-qualification input,
+not a reason to stop an otherwise source-backed NuttX migration.
+
+Keep transport contracts distinct. Native raw IPC ABI-v2 is owned by
+`rzv_ipc_channels.h` and the native IPCC code. It is not the reference CA55
+RPMsg/RPC/uXRCE path; the optional CA55 integration is a later profile. Sensor
+selection and extension wiring likewise remain explicit profile decisions:
+the existing GY-912 and simple profiles retain their P93 CS/P94 DRDY wiring.
+A future configurable extension profile remains default-off for compatibility;
+an explicitly selected software build may proceed from the selected XML, while
+physical use waits for generated-output, schematic, and board corroboration.
 
 ---
 

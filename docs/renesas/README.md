@@ -2,7 +2,21 @@
 
 Index for RDK-RZ/V2H (R9A09G057H) PX4 + NuttX porting docs. Agents: read
 [../../AGENTS.md](../../AGENTS.md) first for build, debug, and `refs/` layout.
-Each doc carries its own `**Date:**` header; trust that over this index.
+Use the status documents for evidence levels and the selected board profile
+for wiring; a newer reference does not replace a working sample's pin policy.
+
+The current FreeRTOS reference is `refs/rzv2h_drone_px4-dev/`. Its sensor
+extension replaces the single MPU9250/BMP280 with three ICM-45686 IMUs,
+BMM150, BMP390L and INA228. Native integration is available in the opt-in
+`renesas_rdk-rzv2h_drone` profile;
+existing GY912/default/simple/SIH/DShot profiles retain their current contracts.
+Start with [sensor wiring profiles](./pinmap.md#sensor-wiring-profiles) and
+[reference availability](./reference-source-map.md#current-rdk-reference-availability).
+Source/host/build work proceeds from the selected RDK XML and reference board
+sources. Missing schematic/generated output is later physical-validation work. The
+profile builds with host/artifact checks; it has no target qualification and
+still uses volatile parameters and prototype identity. See the
+[execution checkpoint](../../plans/261011-2017-rzv2h-drone-reference-port/reports/goal-progress.md).
 
 ---
 
@@ -11,7 +25,7 @@ Each doc carries its own `**Date:**` header; trust that over this index.
 | Doc | Use it for |
 |-----|-----------|
 | [hardware.md](./hardware.md) | Clocks, memory map, GIC/ICU, DMAC, MHU, boot flow, DSW1 switches |
-| [pinmap.md](./pinmap.md) | Software pin ownership matrix; cross-check with `pin_data.c` and board electrical authority |
+| [pinmap.md](./pinmap.md) | Native bench versus sensor-extension wiring, selected RDK XML, and physical header drawing |
 | [multicore-memory-map.md](./multicore-memory-map.md) | CR8-0/CR8-1/CM33 unified memory map and per-core aliases (single source of truth) |
 
 ## Driver Development
@@ -32,7 +46,8 @@ Each doc carries its own `**Date:**` header; trust that over this index.
 | [port-status-nuttx.md](./port-status-nuttx.md) | Per-driver NuttX status and evidence tier (authoritative) |
 | [gpio-button-interrupt-validation.md](./gpio-button-interrupt-validation.md) | 2026-10-01 CR8-0 `nsh-leds` P94 external-interrupt confirmation, fixes, and open evidence gates |
 | [port-status-px4-hal.md](./port-status-px4-hal.md) | PX4 HAL integration status per peripheral (authoritative) |
-| [px4-nuttx-rzv2h-sih-transcript.txt](./px4-nuttx-rzv2h-sih-transcript.txt) | Archived 2026-07-30 on-target SIH transcript (evidence) |
+| [px4-nuttx-rzv2h-sih-transcript.txt](./px4-nuttx-rzv2h-sih-transcript.txt) | Unmodified historical SIH evidence with simulated sensors; no extension-bus or physical PWM proof |
+| [gy912-icm20948-rtt-261011.txt](./gy912-icm20948-rtt-261011.txt) | Unmodified legacy single-ICM20948 RTT excerpt; scope and limits in the GY912 guide |
 
 ## Multi-Core IPC
 
@@ -76,9 +91,9 @@ Project-local skills, in order, for a bounded RZ/V2H change:
 
 1. **`firmware-audit`** + [reference-source-map.md](./reference-source-map.md) — bug hunt with core-matched reference inputs.
 2. **[audit-rzv2h-px4-nuttx-port](../../.claude/skills/audit-rzv2h-px4-nuttx-port/SKILL.md)** — FSP/CMSIS-to-PX4 cross-layer audit.
-3. **[ck-debug](../../.claude/skills/ck-debug/SKILL.md)** — root-cause proof for a build or runtime failure.
+3. **`ak-debug`** (installed skill) — root-cause proof for a build or runtime failure.
 4. **[gdb-jlink-debug](../../.claude/skills/gdb-jlink-debug/SKILL.md)** — J-Link/GDB/RTT/SVD hardware evidence.
-5. **[ck-code-review](../../.claude/skills/ck-code-review/SKILL.md)** — review the diff and its verification evidence.
+5. **`ak-code-review`** (installed skill) — review the diff and its verification evidence.
 
 Build success, RTT output, or a static register comparison is not on-target
 evidence. GDB/J-Link reset, ELF load, and target writes require explicit
@@ -95,10 +110,15 @@ authorization.
 
 ## Key Links
 
-- **Active plan:** [../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
+- **Active reference-port plan:** [reference port](../../plans/261011-2017-rzv2h-drone-reference-port/plan.md)
+- **Broader driver/multicore roadmap:** [master plan](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/plan.md)
 - **Roadmap:** [../project-roadmap.md](../project-roadmap.md)
 - **Board pinout / wiring:** [../../boards/renesas/rdk-rzv2h/src/pinout.md](../../boards/renesas/rdk-rzv2h/src/pinout.md)
-- **Pin data source (local `refs/`):** `refs/px4-freertos-posix-renesas-fsp/rzv_gen/pin_data.c`
+- **Software wiring source (local `refs/`):** selected `RDK` pin set in
+  `refs/rzv2h_drone_px4-dev/configuration.xml`; generated `rzv_gen/pin_data.c`
+  and extension schematic are later corroboration inputs.
+- **Physical header drawing:** [RDK 40-pin connector](./rzv2h-rdk-40_pin_header_pin.png)
+  (SoC-to-header connections, not extension sensor assignments).
 - **NuttX arch drivers:** [../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/)
 - **PX4 board:** [../../boards/renesas/rdk-rzv2h/](../../boards/renesas/rdk-rzv2h/)
 - **Register map:** `../../rzv2h.svd` (CMSIS-SVD; use with `platforms/nuttx/Debug/svd_register_tool.py`)
