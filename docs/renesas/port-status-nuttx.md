@@ -124,6 +124,30 @@ limit rather than claiming those FSP files were inspected.
 
 ## Per-PR Update Discipline
 
+### Source limitations awaiting implementation or qualification
+
+These limitations remain open after comment cleanup; no driver evidence tier
+changes as a result of formatting or documentation:
+
+- Clock gate encodings require hardware-manual confirmation. The PLLCM33
+  standby-register offset is unverified, so startup avoids the speculative
+  write. Dynamic frequency changes return `-ENOSYS`.
+- Ethernet requires verified RDK RGMII pins and independent GBETH module,
+  TX/RX reference, and pad clock gates. The current board path relies on
+  earlier boot stages for those clocks and does not configure placeholder
+  pins.
+- SCI early output assumes bootloader SCI3 configuration and 100 MHz P5CLK;
+  board measurements must confirm both and the baud divisor. SCIF pin
+  routing remains unqualified.
+- Serial baud-error tolerance is a driver constant rather than a Kconfig
+  option. DMA transmit interrupt suppression remains a no-op and requires
+  explicit residual-TXI qualification.
+- SCI/SPI timeout recovery masks interrupts, disables transfer, and flushes
+  FIFOs; chip-select release belongs to the upper SPI layer. Concurrent
+  first initialization requires serialization.
+- CAN-FD runtime bitrate changes remain unsupported. The watchdog sample
+  changes software LED state without a qualified LED GPIO route.
+
 When submitting a driver PR:
 1. Update the driver row: status, sample config (if applicable).
 2. Preserve each row's evidence scope and unresolved gates; add or remove rows
@@ -144,3 +168,26 @@ When submitting a driver PR:
 - [DMAC Runtime Verification](../../plans/261002-2129-rzv2h-dshot-runtime-remediation/reports/worker-261002-dmac-runtime-fix.md) — real-driver cache, enabled-channel, and DEM regressions; preserves the August 9 bounded memory-copy evidence.
 - [DShot Runtime Fix Review](../../plans/reports/reviewer-260720-rzv2h-dshot-runtime-fixes.md) — historical July 20 DMAC routing review; superseded runtime findings are covered by the October 2 remediation.
 - [GTM + PX4 HRT Re-audit](../../plans/260718-2242-rzv2h-gtm-hrt-driver-reaudit/reports/review-rzv2h-gtm-hrt-260718-reaudit.md) — GTM lower-half + HRT split-brain findings and remediation order.
+
+### Source failure-path contracts
+
+The current source rejects WDT requests above its representable timeout
+(5592 ms at 24 MHz OSCCLK) without replacing the previous configuration.
+The watchdog sample prepares its feeder before starting the watchdog and
+preserves setup errors across cleanup. Failed timer or signal cleanup retains
+its ownership state for retry and prevents replacement of live resources.
+SCI-SPI deadlines include calculated
+wire time and use relative NuttX semaphore waits; negative waits abort the
+active transfer. SCI-I2C prepares continuation metadata in task context so
+its IRQ path does not scan arbitrarily long message chains.
+
+Board pin failures stop the affected peripheral setup. UART setup retains
+its pinmux retry state on failure and configures only the opened channel;
+bring-up preserves the first reported
+error and skips LED registration after failed pin setup. IPCC registration
+failure releases its watcher exactly once and permits retry. ICU teardown
+holds its local critical section through validation and slot release, and
+the CR8 private timer compensates one pending reload while sampling time.
+Clock status uses the packed CPG monitor indices and reset polarity.
+These contracts have extracted-source host coverage. They do not promote
+hardware status or establish physical timing, pins, cache or CA55 behavior.

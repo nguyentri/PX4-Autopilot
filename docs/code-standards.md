@@ -257,6 +257,62 @@ Per project rule: do NOT use `chore` or `docs` for `.claude/` directory changes 
 
 ## 6. Pre-Commit Checks
 
+The scoped Renesas runner inventories the parent and NuttX repositories
+separately, skips symlinks, and uses each tree's native checker:
+
+```bash
+python3 Tools/renesas-coding-standards.py inventory --output /tmp/renesas-inventory.json
+python3 Tools/renesas-coding-standards.py report --output /tmp/renesas-findings.json
+python3 Tools/renesas-coding-standards.py check --family nuttx
+python3 Tools/renesas-coding-standards.py fix --path boards/renesas/rdk-rzv2h/src/init.c --output /tmp/renesas-fix.json
+python3 test/renesas-coding-standards-test.py
+```
+
+`report` and `check` leave source and Git indexes unchanged. `fix` requires
+explicit paths, checks every proposal before starting replacements, and
+preserves code tokens, directives, literals, attribution and file permissions.
+Each replacement is atomic; detected concurrent edits stop the batch, which
+can already contain completed replacements. A printed recovery manifest in
+`/tmp` retains original and candidate bytes and replacement status; inspect
+the actual file hashes before restoring an interrupted batch. Re-run `check` after applying
+fixes. Exit codes are 0 for success, 1 for remaining eligible findings, and
+2 for an input/tool error. Generated findings remain visible in the report.
+Existing hardware-register macro spellings can have an explicit, reviewed
+disposition in the ownership policy. It must bind the exact source and defining
+header hashes and identify the token at the native diagnostic column. Raw
+diagnostics remain in `findings`, with ownership evidence in
+`reviewed_findings`; `unresolved_findings` controls the check result. Changed
+source, a changed header, missing definitions, other symbols or other rules
+require review again. This does not disable or modify the native checker.
+Incomplete native checker coverage also returns 2 and prevents automatic
+application; it must be repaired through source review. Tool failures print
+a `/tmp` log location containing complete stdout and stderr.
+
+Report destinations must be under `/tmp` or `plans/**/reports`; source and
+tracked destinations are rejected. An explicit fix with no eligible C/C++
+source is an error. Paths missing from the exact ownership manifest are
+reported as unknown and cannot be automatically changed.
+
+The runner covers the three `boards/renesas/rdk-rzv2h*` boards and the NuttX
+RZ/V architecture, include and board directories. RA8 is outside its scope.
+Full reports retain proposed diffs and
+checker fingerprints. `Tools/renesas-coding-standards.json` records exact
+generated-file ownership exceptions. Structural PX4 proposals and uncertain
+NuttX edits require source review. NuttX automatic edits are limited to
+whitespace, path and comment spacing; function contracts and engineering
+rules still require maintainer review. Neither a checker pass nor a clean
+build proves hardware behavior.
+
+Reviewed function headers can be applied with `fix --contracts <file.json>`
+on an explicit NuttX selection. This input contains `schema: 1` and a `files`
+mapping from repository-relative paths to `sha256` and `functions`. Each
+function entry supplies `description`, a `parameters` name-to-description
+mapping, `returns`, and optional `assumptions`. The runner uses these explicit
+contracts rather than inferring behavior. Review them against the actual
+bodies and callees first. A changed source hash, unknown function, comment
+terminator, altered token/directive/license, or new native diagnostic refuses
+application. Contract text remains the reviewer's responsibility.
+
 The project hook is `Tools/astyle/pre-commit`; use it together with the
 language-specific checker owned by the relevant tree. It applies the configured
 formatting, newline, whitespace, and indentation checks.

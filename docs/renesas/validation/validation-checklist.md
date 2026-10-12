@@ -124,6 +124,23 @@ This image's P94 input cannot share the sensor extension's P94 CS output.
 - [ ] If multi-device deployment is selected, prove per-unit identity from its
       approved provisioning source; otherwise limit the result to one prototype.
 
+### SCI0 loopback profile
+
+The native `sci-spi-loopback` profile registers SCI0 as `/dev/spi0` and
+includes NuttX `spitool`; the RSPI loopback example cannot drive SCI-SPI.
+The board source assigns P5_0 to MOSI, P5_1 to MISO and P6_0 to SCK.
+After an authorized image load and wiring check, connect P5_0 to P5_1 and run:
+
+```text
+spi exch -b 0 -f 1000000 -m 0 -w 8 -x 4 a55ac33c
+```
+
+Require `Received:` to contain `A5 5A C3 3C` without a transfer error.
+Repeat with the jumper removed and confirm the exchange still completes
+within its deadline before reconnecting it. The master still supplies clocks;
+an unconnected MISO pin can return arbitrary bytes without a transfer error.
+This procedure is an unexecuted physical gate and does not test timeout recovery.
+
 ## Reliability when required by the profile
 
 State the workload, duration, event rate and pass threshold. For interrupt

@@ -96,6 +96,28 @@ block standalone CR8 software work. Enable a multi-core flight profile only
 after the peer ownership, MPU/cache policy, safety behavior, and target
 evidence below are recorded for that profile.
 
+### Current application and CA55 integration gaps
+
+The CR8-0 bridge sends fixed `armed=1` and `safety_off=1` scaffold values;
+it does not derive them from vehicle arming or safety state. Its heartbeat
+reports zero CPU load without sampling utilization. CM33 feedback echoes
+received commands without programming PWM. These application paths require
+state propagation, real output ownership, and peer-loss safety verification
+before flight use.
+
+The CA55 path still requires agreement with the Linux remoteproc device tree
+on resource-table and vring addresses. Software cache cleaning remains
+necessary until a non-cacheable MPU mapping is verified. Interrupt delivery
+uses `RPTUN_NOTIFY_ALL`; the shared notifyid slot is currently not consumed.
+Per-vqid decoding requires a matching CA55 doorbell contract. The active
+board route returns an ordinary RPTUN resource table while publishing a
+different table in the CA55-visible `.resource_table` section. Their entry
+counts, configuration lengths and vring notify IDs differ. Both consumers
+need one agreed table before CA55 interoperability can be qualified. The local IRQ
+fallback is retained for configurations lacking the canonical IRQ macro.
+Moving raw links into the secure MHU window requires explicit domain
+configuration and qualification.
+
 ## 6. Required Completion Evidence
 
 Before promoting a selected IPC profile from source/build evidence to usable
