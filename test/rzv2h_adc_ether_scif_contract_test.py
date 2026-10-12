@@ -66,7 +66,7 @@ class EthernetContracts(unittest.TestCase):
     def test_dma_and_cpu_share_a_16_byte_descriptor_stride(self) -> None:
         self.assertRegex(
             self.header,
-            r"_Static_assert\s*\(\s*sizeof\(struct rzv_eth_desc_s\)\s*==\s*16",
+            r"(?:_Static_assert|static_assert)\s*\(\s*sizeof\(struct rzv_eth_desc_s\)\s*==\s*16",
         )
         self.assertNotIn("reserved[12]", self.header)
         self.assertIn('section(".noncache_buffer")', self.driver)
@@ -78,6 +78,11 @@ class EthernetContracts(unittest.TestCase):
             self.driver,
             r"rzv_(?:clean|invalidate)_dcache_region\s*\(\s*(?:priv->)?(?:txdesc|rxdesc)\s*,",
         )
+
+    def test_native_assertion_macro_keeps_compile_time_descriptor_check(self) -> None:
+        compiler_header = read("include/assert.h")
+        self.assertIn("#    define static_assert _Static_assert", compiler_header)
+        self.assertIn("#include <assert.h>", self.header)
 
     def test_descriptor_ownership_has_explicit_dma_ordering(self) -> None:
         self.assertIn('"dmb sy"', self.driver)
@@ -197,8 +202,11 @@ class ScifContracts(unittest.TestCase):
             r"RZV_CPG_CLK_SCIF0[^\n]*RZV_CPG_BUS_3_MSTOP[^\n]*14",
         )
         unreset = function_body(self.clock, "rzv_module_unreset")
+        self.assertIn("rzv_cpg_reset_mapping(clk_id, &domain, &bitmask)",
+                      unreset)
+        mapping = function_body(self.clock, "rzv_cpg_reset_mapping")
         self.assertRegex(
-            unreset,
+            mapping,
             r"(?s)clk_id\s*==\s*RZV_CPG_CLK_SCIF0.*?domain\s*=\s*9.*?bitmask\s*=\s*1u\s*<<\s*5",
         )
 

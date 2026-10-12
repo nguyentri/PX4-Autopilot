@@ -45,6 +45,7 @@ class SCITransactions(unittest.TestCase):
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include <semaphore.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -63,10 +64,12 @@ class SCITransactions(unittest.TestCase):
         registers = without_includes((ARCH / "hardware/rzv_sci.h").read_text())
         boundary = r'''
 static struct rzv_sci_i2c_priv_s priv;
-static uint32_t regs[256], tdr[128];
+static uint32_t regs[256], tdr[16384];
 static unsigned mode, starts, stops, restarts, tdr_count, receive_count, polls;
 static atomic_int active, maximum;
 static bool condition_pending;
+static void *kmm_malloc(size_t size) { return mode == 4 ? NULL : malloc(size); }
+static void kmm_free(void *pointer) { free(pointer); }
 static int nxsem_post(sem_t *sem) {
     if (sem == &priv.sem_excl) assert(atomic_fetch_sub(&active, 1) == 1);
     return sem_post(sem) == 0 ? 0 : -errno;
@@ -108,7 +111,7 @@ static void putreg32(uint32_t value, uintptr_t address) {
         if (value & SCI_ICR_IICRSTAREQ) ++restarts;
         value &= ~(SCI_ICR_IICSTAREQ | SCI_ICR_IICSTPREQ | SCI_ICR_IICRSTAREQ);
     }
-    if (address == RZV_SCI_TDR_OFFSET) { assert(tdr_count < 128); tdr[tdr_count++] = value & 0xff; }
+    if (address == RZV_SCI_TDR_OFFSET) { assert(tdr_count < 16384); tdr[tdr_count++] = value & 0xff; }
     if (address == RZV_SCI_ICFCLR_OFFSET) { regs[RZV_SCI_ISR_OFFSET / 4] &= ~SCI_ISR_IICSTIF; condition_pending = false; }
     regs[address / 4] = value;
 }
@@ -122,7 +125,7 @@ static int nxsem_tickwait_uninterruptible(sem_t *sem, uint32_t ticks) {
     if (mode == 1) return -ETIMEDOUT;
     regs[RZV_SCI_ISR_OFFSET / 4] = SCI_ISR_IICSTIF;
     sci_i2c_tei_isr(0, NULL, &priv);
-    for (unsigned count = 0; count < 100; ++count) {
+    for (unsigned count = 0; count < 10000; ++count) {
         if (sem_trywait(sem) == 0) return 0;
         if (condition_pending || priv.state == SCI_I2C_STATE_STOP || priv.state == SCI_I2C_STATE_RESTART_PENDING) {
             regs[RZV_SCI_ISR_OFFSET / 4] = SCI_ISR_IICSTIF;
@@ -165,6 +168,38 @@ int main(int argc, char **argv) {
         messages[1].frequency = 400000;
         assert(sci_i2c_transfer(&priv.dev, messages, 2) == -ENOTSUP);
         assert(!atomic_load(&maximum) && !starts);
+    } else if (!strcmp(argv[1], "allocation")) {
+        mode = 4;
+        assert(sci_i2c_transfer(&priv.dev, messages, 1) == -ENOMEM);
+        assert(starts == 0 && priv.metadata == NULL && !atomic_load(&active));
+        mode = 0;
+        assert(sci_i2c_transfer(&priv.dev, messages, 1) == 0);
+    } else if (!strcmp(argv[1], "empty-continuations")) {
+        struct i2c_msg_s *chain = calloc(4096, sizeof(*chain));
+        assert(chain);
+        chain[0] = messages[0];
+        for (unsigned i = 1; i < 4096; ++i) {
+            chain[i].frequency = 100000; chain[i].addr = 0x10;
+            chain[i].flags = I2C_M_NOSTART;
+        }
+        assert(sci_i2c_transfer(&priv.dev, chain, 4096) == 0);
+        assert(starts == 1 && stops == 1 && tdr_count == 2);
+        assert(priv.metadata == NULL);
+        free(chain);
+    } else if (!strcmp(argv[1], "read-continuations")) {
+        struct i2c_msg_s *chain = calloc(1024, sizeof(*chain));
+        uint8_t *bytes = calloc(1024, 1);
+        assert(chain && bytes);
+        for (unsigned i = 0; i < 1024; ++i) {
+            chain[i].frequency = 100000; chain[i].addr = 0x10;
+            chain[i].flags = I2C_M_READ | (i ? I2C_M_NOSTART : 0);
+            chain[i].buffer = &bytes[i]; chain[i].length = 1;
+        }
+        assert(sci_i2c_transfer(&priv.dev, chain, 1024) == 0);
+        assert(starts == 1 && stops == 1 && receive_count == 1024);
+        for (unsigned i = 0; i < 1024; ++i) assert(bytes[i] == (uint8_t)(0x11 + i));
+        assert(priv.metadata == NULL);
+        free(bytes); free(chain);
     } else if (!strcmp(argv[1], "parallel")) {
         pthread_t clients[3];
         for (unsigned i=0; i<3; ++i) assert(pthread_create(&clients[i], NULL, client, NULL) == 0);
@@ -200,6 +235,10 @@ int main(int argc, char **argv) {
     def case(self, name):
         result = subprocess.run([str(self.binary), name], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_empty_continuations_need_no_recursive_isr_calls(self): self.case("empty-continuations")
+    def test_long_read_segment_delivers_every_byte(self): self.case("read-continuations")
+    def test_metadata_allocation_failure_allows_retry(self): self.case("allocation")
 
     def test_repeated_start_reads_all_bytes(self): self.case("repeated-start")
     def test_separate_messages_issue_separate_start_stop(self): self.case("separate-start")

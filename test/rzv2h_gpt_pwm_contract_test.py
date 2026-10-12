@@ -26,10 +26,13 @@ def read(relative_path: str) -> str:
 
 def function_body(source: str, name: str) -> str:
     start = None
+    # Keep offsets while excluding prose that mentions function calls.
+    code = re.sub(r'/\*[\s\S]*?\*/|//[^\n]*',
+                  lambda match: ' ' * len(match.group()), source)
 
-    for match in reversed(list(re.finditer(rf"\b{name}\s*\(", source))):
-        brace = source.find("{", match.end())
-        semicolon = source.find(";", match.end())
+    for match in reversed(list(re.finditer(rf"\b{name}\s*\(", code))):
+        brace = code.find("{", match.end())
+        semicolon = code.find(";", match.end())
 
         if brace >= 0 and (semicolon < 0 or brace < semicolon):
             start = brace
@@ -678,7 +681,7 @@ class BoardResetSafetyContracts(unittest.TestCase):
         self.assertIn("RZV_WDT_CHANNEL_3", system_reset)
         self.assertIn("RZV_CPG_ERRORRST_SEL2_BIT", body)
         self.assertIn("WDT_WDTRCR_RSTIRQS_RESET_REQ", body)
-        self.assertIn("for (;;)", body)
+        self.assertRegex(body, r"for\s*\(\s*;\s*;\s*\)")
 
 
 class SimpleDemoContracts(unittest.TestCase):
