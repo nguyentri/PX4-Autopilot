@@ -1,0 +1,67 @@
+RDK-RZ/V2H CR8-0 PWM oneshot evidence
+Date: 2026-10-12 (Asia/Bangkok)
+Stock profile: pwm-oneshot (SCI4 shell); loaded and startup wrapper tested with GDB.
+Stock ELF SHA-256: b0b60a017182acb51f7aec6b6e7bce78ada9fa2a854ae827e6d60d1affe7de7d
+RTT profile: temporary pwm-oneshot-rtt-debug, exact saved defconfig and rtt.config.
+RTT ELF SHA-256: 2cf8a23fc8fa6925eb9bcd221fb97050596e6c86547992821de034be7842e0d9
+Device: R9A09G057H44_R8_0; J-Link <probe-sn>; SWD 4000 kHz; GDB 50000; RTT 0x081a2400.
+Authority: user requested build, load, test and fixes. RAM loads and execution only; no reset or persistent flashing.
+The prior GPT software group gates and IRQSEL/edge fixes were retained. No new firmware change was required.
+Startup: hardware breakpoints captured rzv2h_pwm_oneshot_main and its return; r0=0 on both images.
+RTT startup configuration at return: /dev/pwm0, frequency=1000, duty=50, count=10.
+Lower-half after startup: running=false, remaining=0, handle=NULL, irq=-1; GTCR=0, GTIOR=0.
+RTT console: PWM Oneshot example completed successfully; NSH prompt became available.
+
+Shell case results:
+pwm0-1000hz-50pct-count1: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-1000hz-50pct-count2: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-1000hz-50pct-count10: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-1000hz-25pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-50hz-75pct-count3: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-50hz-50pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-finite-invalid-0pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-finite-invalid-100pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm0-continuous-after-finite: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-1000hz-50pct-count1: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-1000hz-50pct-count2: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-1000hz-50pct-count10: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-1000hz-25pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-50hz-75pct-count3: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-50hz-50pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-finite-invalid-0pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-finite-invalid-100pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm1-continuous-after-finite: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-1000hz-50pct-count1: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-1000hz-50pct-count2: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-1000hz-50pct-count10: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-1000hz-25pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-50hz-75pct-count3: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-50hz-50pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-finite-invalid-0pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-finite-invalid-100pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm2-continuous-after-finite: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-1000hz-50pct-count1: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-1000hz-50pct-count2: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-1000hz-50pct-count10: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-1000hz-25pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-50hz-75pct-count3: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-50hz-50pct-count100: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-finite-invalid-0pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-finite-invalid-100pct: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+pwm3-continuous-after-finite: PASS; GTCR=0x00000000, GTIOR=0x00000000, GTINTAD=0x00000000; no pwm task
+
+Active finite readback (50 Hz, 50%, count 100) on each of pwm0..pwm3:
+  GTCR.CST=1, GTPR=3999999, selected GTCCR=1999999, selected compare interrupt enabled.
+  GPT6 A / GPT7 B / logical GPT9 A (SVD GPT11) / logical GPT10 B (SVD GPT12).
+Finite 0%/100% requests on all four devices returned EINVAL (errno 22).
+Continuous count=0 requests after finite completion had CST=1 and GTINTAD=0, then stopped.
+Final ps: Idle Task and nsh_main only; free command responded.
+Result: 36/36 shell/register cases, 40/40 host contract checks; both builds completed.
+Tool/environment failures: unsupported J-Link -ShowEmuList option; use Commander ShowEmuList.
+  First attach reported DBGEN inactive, PC/SP=0 and peripheral fill; these were not accepted as firmware evidence.
+  A read-only Commander retry produced valid DDR bytes; authorized loads subsequently ran normally.
+  Initial RTT build failed sandbox DNS; network-enabled incremental retry downloaded and verified the pinned RTT archive.
+  Stock clean step emitted an existing make jobserver warning; no compiler error/warning remained.
+Full raw artifacts: plans/reports/pwm-oneshot-debug-261012-1209/.
+Cleanup: GDB detached, single-run servers exited, PWM outputs disabled, owned RTT bridge stopped.
+Limits: electrical waveforms and physical pulse count unmeasured; no cold-cycle or live-update qualification; board revision unrecorded.

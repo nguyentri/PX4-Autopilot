@@ -1,0 +1,134 @@
+RDK-RZ/V2H CR8-0 PWM command/register evidence
+Date: 2026-10-12 (Asia/Bangkok)
+ELF SHA-256: f3dcad6fad4e5dfb65d1ae8bf5ee658aa26adfd334ec440a14c0cf46f56ba070
+Device: R9A09G057H44_R8_0; J-Link <probe-sn>; SWD 15000 kHz; GDB 50000
+Profile: temporary pwm-rtt-debug; PWM profile driver settings plus RTT, NSH_MAXARGUMENTS=16, NSH_DISABLE_MW unset
+Authority: user approved load/run and shell tests after scoped PWM/recovery request. No board reset.
+Provenance: final ELF loaded in RAM, DDR code readback matched, board_pwm_initialize returned 0.
+Initial stale IRQ56: one GICC_EOIR write 0x38 at 0x12c10110 cleared active56 and running priority a0 -> ff.
+Observed fixes: software group command gates; edge compare IRQ; IRQSEL compare source values 121/130/220/229.
+Instrument boundary: no scope/logic-analyzer measurement. CPU-side NSH register reads only.
+Full local transcript: plans/reports/pwm-debug-261012-1053/command-matrix.out
+
+Observed command cases:
+pwm0-1000hz-25pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02000001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x0001eb32
+  GTCCRA=0x0000c34f
+  GTPR=0x00030d3f
+  GTCNT_second=0x0000118f
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-1000hz-50pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02000001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x0001b92e
+  GTCCRA=0x0001869f
+  GTPR=0x00030d3f
+  GTCNT_second=0x00005ab5
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-1000hz-75pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02000001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x000118ca
+  GTCCRA=0x000249ef
+  GTPR=0x00030d3f
+  GTCNT_second=0x0000b0c2
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-400hz-25pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02000001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x0006428e
+  GTCCRA=0x0001e847
+  GTPR=0x0007a11f
+  GTCNT_second=0x000195ab
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-50hz-50pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02000001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x000918cc
+  GTCCRA=0x001e847f
+  GTPR=0x003d08ff
+  GTCNT_second=0x00200392
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-1000hz-0pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02020001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x0000ee2f
+  GTCCRA=0x00000000
+  GTPR=0x00030d3f
+  GTCNT_second=0x0000d0ff
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-1000hz-100pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02030001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x0002a395
+  GTCCRA=0x00030d3f
+  GTPR=0x00030d3f
+  GTCNT_second=0x00006394
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm1-1000hz-50pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x00020001
+  GTIOR=0x01090000
+  GTBER=0x00150000
+  GTCNT=0x00013049
+  GTCCRB=0x0001869f
+  GTPR=0x00030d3f
+  GTCNT_second=0x00008563
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm2-1000hz-50pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x02000001
+  GTIOR=0x00000109
+  GTBER=0x00150000
+  GTCNT=0x000031b2
+  GTCCRA=0x0001869f
+  GTPR=0x00030d3f
+  GTCNT_second=0x0001f87a
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm3-1000hz-50pct: PASS
+  GTCR=0x00000001
+  GTUDDTYC=0x00020001
+  GTIOR=0x01090000
+  GTBER=0x00150000
+  GTCNT=0x00004213
+  GTCCRB=0x0001869f
+  GTPR=0x00030d3f
+  GTCNT_second=0x00030b9c
+  After stop: GTCR=0x00000000, GTIOR=0x00000000
+pwm0-finite10: PASS
+  pwm [22:100] | nsh> pwm_main: starting output with frequency: 1000 duty: 00008000 count: a
+  After completion: GTCR=0x00000000, GTIOR=0x00000000; no pwm task in ps
+pwm1-finite10: PASS
+  pwm [23:100] | nsh> pwm_main: starting output with frequency: 1000 duty: 00008000 count: a
+  After completion: GTCR=0x00000000, GTIOR=0x00000000; no pwm task in ps
+pwm2-finite10: PASS
+  pwm [26:100] | nsh> pwm_main: starting output with frequency: 1000 duty: 00008000 count: a
+  After completion: GTCR=0x00000000, GTIOR=0x00000000; no pwm task in ps
+pwm3-finite10: PASS
+  pwm [27:100] | nsh> pwm_main: starting output with frequency: 1000 duty: 00008000 count: a
+  After completion: GTCR=0x00000000, GTIOR=0x00000000; no pwm task in ps
+finite-invalid-0pct: PASS
+  pwm [30:100] | nsh> pwm_main: starting output with frequency: 1000 duty: 00000000 count: a | pwm_main: ioctl(PWMIOC_START) failed: 22
+finite-invalid-100pct: PASS
+  pwm [31:100] | nsh> pwm_main: starting output with frequency: 1000 duty: 00010000 count: a | pwm_main: ioctl(PWMIOC_START) failed: 22
+
+Final shell: only idle and nsh_main; free command responded.
+Result: 16/16 command/register cases; 40/40 host checks; diagnostic build and changed-line NuttX style check passed.
+Cleanup: GDB detached; all PWM outputs stopped/disabled; owned RTT bridge stopped and probe released.
+Limits: pin levels, electrical frequency/duty and exact physical pulse count not measured; live updates, cold-cycle and power-loss qualification not performed; board revision not recorded.

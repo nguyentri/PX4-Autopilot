@@ -1,10 +1,10 @@
 # Standalone GPT PWM pin validation
 
-**Date:** 2026-10-02
+**Updated:** 2026-10-12
 
 Scope: CR8-0 NuttX `pwm` / `pwm-oneshot` configurations and `rzv_gpt.c`, not
-the separate PX4 `io_timer` adapter. Source/host checks are not physical pin
-proof. No board was flashed or measured for this change.
+the separate PX4 `io_timer` adapter. Source/host checks and timer-register
+readback are not physical pin proof. Electrical measurements remain pending.
 
 ## Behavior and limits
 
@@ -12,6 +12,12 @@ Continuous duty accepts Q16 values from zero through `0x10000` inclusive.
 Exact 100% selects GPT forced-high output; fractional near-full values remain
 compare-driven. Values above 100% return `EINVAL`. Finite pulse trains reject
 0% and 100% because there are no falling pulse edges to count.
+
+GPT setup enables software group start/stop/clear through GTSSR, GTPSR and
+GTCSR bit 31 before issuing those commands. Finite compare interrupts use
+CR8 IRQSEL source numbers and edge-triggered GIC delivery. IRQSEL identifiers
+are distinct from ELC event identifiers; the GPT header defines both unit
+compare-source bases from the core-matched FSP `bsp_irq_id.h` table.
 
 Running period/compare updates inhibit GTBER.BD0/BD1, stage all numeric buffers,
 then restore transfer enable. The timer continues counting. A boundary during
@@ -47,6 +53,10 @@ qualification remains pending.
 
 Build with `platforms/nuttx/NuttX/build.sh pwm`. Flash/load requires separate
 approval. These profiles use SCI4 NSH at 115200, not the RTT console.
+
+For the full command lines below, configure `CONFIG_NSH_MAXARGUMENTS=16`.
+CPU-side register reads also require `CONFIG_NSH_DISABLE_MW` to be unset;
+its NuttX default disables `mw`. Use read-only `mw <address>` commands.
 
 ## Steady duty and period checks
 
@@ -92,6 +102,30 @@ Record endpoint-mode transitions separately under the limitation above.
 
 Archive board/core, ELF hash, command transcript, probe GPIO, clock and high/low
 levels, screenshots/raw captures and measured period/high-time/pulse count.
+
+## Bounded command/register evidence
+
+The [2026-10-12 CR8-0 transcript](../evidence/rzv2h-pwm-register-transcript-261012.txt)
+records 16 passing cases on an RTT diagnostic image: four devices, continuous
+frequency/duty and forced endpoint registers, stopped outputs, ten-pulse
+software completion, finite endpoint rejection and post-test shell liveness.
+Its exact ELF hash and RAM-load/recovery provenance are recorded there.
+
+For PWM0 at 1 kHz/25%, CPU reads showed GTCR.CST=1, GTPR=199999 and
+GTCCRA=49999, with a changing GTCNT. After the bounded run, CST=0 and
+GTIOR=0. This proves timer configuration and software lifecycle, without
+establishing electrical pin levels, waveform accuracy or physical pulse count.
+Separate commands exercised stop/restart; live-update ioctl transitions were
+not tested. The board was not reset or cold-cycled during this run.
+
+The [oneshot startup transcript](../evidence/rzv2h-pwm-oneshot-transcript-261012.txt)
+adds the stock `pwm-oneshot` wrapper's successful ten-pulse return and 36 RTT
+shell/register cases. Each device completed counts 1/2/10/100, rejected finite
+endpoint duty, and ran continuous PWM after finite completion. CPU reads
+confirmed the slower finite run's compare interrupt, period and compare value;
+every case ended with CST=0, GTIOR=0, GTINTAD=0 and no PWM task. Both exact
+images and their load provenance are recorded in the transcript. The earlier
+GPT fixes were retained; no new firmware change was needed for this run.
 
 ## Unresolved questions
 
