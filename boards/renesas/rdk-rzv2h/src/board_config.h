@@ -339,17 +339,17 @@
  ****************************************************************************************************/
 
 /* Sensor Availability */
-#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) || defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) || defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948) || defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686)
 #define BOARD_HAS_SENSOR_IMU            1
 #else
 #define BOARD_HAS_SENSOR_IMU            0
 #endif
-#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250)
-#define BOARD_HAS_SENSOR_MAG            1  /* AK8963 internal to MPU9250 */
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) || defined(CONFIG_DRIVERS_MAGNETOMETER_BOSCH_BMM150)
+#define BOARD_HAS_SENSOR_MAG            1
 #else
 #define BOARD_HAS_SENSOR_MAG            0  /* ICM20948 auxiliary mag is an optional manual start */
 #endif
-#if defined(CONFIG_DRIVERS_BAROMETER_BMP280)
+#if defined(CONFIG_DRIVERS_BAROMETER_BMP280) || defined(CONFIG_DRIVERS_BAROMETER_BMP388)
 #define BOARD_HAS_SENSOR_BARO           1
 #else
 #define BOARD_HAS_SENSOR_BARO           0

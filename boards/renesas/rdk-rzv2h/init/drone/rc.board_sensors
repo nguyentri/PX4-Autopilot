@@ -1,0 +1,46 @@
+#!/bin/sh
+# Polled extension IMUs. Native internal -c selects the physical pin field.
+# Rotations and INA228 calibration remain configurable and require fitted-board
+# qualification. No reference-only -P or calibration offsets are imported.
+
+if icm45686 -s -b 0 -c 3 -R 0 start
+then
+	echo "ICM45686 started on SPI0 CS pin 3"
+else
+	echo "ERROR [init] ICM45686 failed on SPI0 CS pin 3"
+fi
+
+if icm45686 -s -b 0 -c 4 -R 0 start
+then
+	echo "ICM45686 started on SPI0 CS pin 4"
+else
+	echo "ERROR [init] ICM45686 failed on SPI0 CS pin 4"
+fi
+
+if icm45686 -s -b 0 -c 5 -R 0 start
+then
+	echo "ICM45686 started on SPI0 CS pin 5"
+else
+	echo "ERROR [init] ICM45686 failed on SPI0 CS pin 5"
+fi
+
+if bmm150 -I -b 7 -a 0x10 start
+then
+	echo "BMM150 started on SCI7"
+else
+	echo "ERROR [init] BMM150 failed on SCI7"
+fi
+
+if bmp388 -I -b 7 -a 0x77 start
+then
+	echo "BMP390 started on SCI7"
+else
+	echo "ERROR [init] BMP390 failed on SCI7"
+fi
+
+if ina228 -I -b 7 -a 0x45 start
+then
+	echo "INA228 started on SCI7"
+else
+	echo "ERROR [init] INA228 failed on SCI7"
+fi

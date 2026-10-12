@@ -171,6 +171,17 @@ endif()
 
 
 # board custom init files
+set(board_init_dir "${PX4_BOARD_DIR}/init")
+if(CONFIG_BOARD_INIT_SUBDIR)
+	if(NOT CONFIG_BOARD_INIT_SUBDIR MATCHES "^[A-Za-z0-9_-]+$")
+		message(FATAL_ERROR "BOARD_INIT_SUBDIR must name one board init subdirectory")
+	endif()
+	set(board_init_dir "${board_init_dir}/${CONFIG_BOARD_INIT_SUBDIR}")
+	if(NOT IS_DIRECTORY "${board_init_dir}")
+		message(FATAL_ERROR "Board init directory does not exist: ${board_init_dir}")
+	endif()
+endif()
+
 set(OPTIONAL_BOARD_RC)
 list(APPEND OPTIONAL_BOARD_RC
 	rc.board_defaults
@@ -187,18 +198,24 @@ endif()
 if(config_romfs_include_board_init)
 	foreach(board_rc_file ${OPTIONAL_BOARD_RC})
 
-		if(EXISTS "${PX4_BOARD_DIR}/init/${board_rc_file}")
-			file(RELATIVE_PATH rc_file_relative ${PX4_SOURCE_DIR} ${PX4_BOARD_DIR}/init/${board_rc_file})
+		# Profile hooks override individual files; retain shared board hooks.
+		set(board_rc_source "${PX4_BOARD_DIR}/init/${board_rc_file}")
+		if(EXISTS "${board_init_dir}/${board_rc_file}")
+			set(board_rc_source "${board_init_dir}/${board_rc_file}")
+		endif()
+
+		if(EXISTS "${board_rc_source}")
+			file(RELATIVE_PATH rc_file_relative ${PX4_SOURCE_DIR} ${board_rc_source})
 			message(STATUS "ROMFS:  Adding ${rc_file_relative} -> /etc/init.d/${board_rc_file}")
 
 			add_custom_command(
 				OUTPUT
 					${romfs_gen_root_dir}/init.d/${board_rc_file}
 					${board_rc_file}.stamp
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PX4_BOARD_DIR}/init/${board_rc_file} ${romfs_gen_root_dir}/init.d/${board_rc_file}
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different ${board_rc_source} ${romfs_gen_root_dir}/init.d/${board_rc_file}
 				COMMAND ${CMAKE_COMMAND} -E touch ${board_rc_file}.stamp
 				DEPENDS
-					${PX4_BOARD_DIR}/init/${board_rc_file}
+					${board_rc_source}
 					romfs_copy.stamp
 				COMMENT "ROMFS: copying ${board_rc_file}"
 			)

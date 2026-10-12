@@ -42,6 +42,7 @@ px4_add_module(
 		ICM45686.hpp
 		InvenSense_ICM45686_registers.hpp
 	DEPENDS
+		drivers__device
 		px4_work_queue
 		drivers_accelerometer
 		drivers_gyroscope

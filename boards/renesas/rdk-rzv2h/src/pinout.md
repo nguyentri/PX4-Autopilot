@@ -1,6 +1,14 @@
-# Hardware Guide
+# Native Legacy Sensor Wiring
 
-Complete bill of materials, 40-pin GPIO pinout, and wiring for the RZ/V2H autonomous drone.
+This guide describes the existing native single-MPU9250/BMP280 board profile;
+the simple/GY912 bench substitutes ICM20948 on the same P93 CS/P94 INT pads.
+Its assembly photos and wiring diagrams do not describe the new extension
+board. For the current reference's three ICM-45686 devices, BMM150, BMP390L
+and INA228, use [sensor wiring profiles](../../../../docs/renesas/pinmap.md#sensor-wiring-profiles)
+and the [reference-source map](../../../../docs/renesas/reference-source-map.md).
+The native extension is the opt-in `renesas_rdk-rzv2h_drone` target (default
+off); it reuses P94 as CS1 and therefore must stay separate from this
+profile's INT wiring.
 
 ---
 
@@ -188,4 +196,4 @@ Real drone assembly and wiring details available in `assets/` directory.
 
 - [PX4 Hardware Setup](https://docs.px4.io/)
 - [Renesas RZ/V2H](https://www.renesas.com/en/products/rz-v2h)
-- [SETUP.md](SETUP.md) — Development environment and deployment
+- [Deployment guide](../../../../docs/deployment-guide.md) — Native build and deployment

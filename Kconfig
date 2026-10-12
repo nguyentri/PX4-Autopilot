@@ -73,6 +73,14 @@ menu "Toolchain"
         help
             relative path to the ROMFS root directory
 
+    config BOARD_INIT_SUBDIR
+        string "Board init script subdirectory"
+        default ""
+        help
+            Optional subdirectory under the board init directory for a
+            profile's startup hook overrides. Files absent from the subdirectory
+            use the shared board init hooks. Empty keeps the standard scripts.
+
     config BOARD_IO
         string "IO board name"
         default "px4_io-v2_default"

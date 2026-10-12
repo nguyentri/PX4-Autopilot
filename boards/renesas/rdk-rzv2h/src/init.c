@@ -69,6 +69,9 @@ static const char hw_type[] = "RDK-RZV2H";
 
 /* External function declarations */
 extern struct i2c_master_s *px4_i2cbus_initialize(int bus);
+#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
+extern int rdk_rzv2h_configure_sensor_cs(void);
+#endif
 #ifdef CONFIG_RDK_RZV2H_XSPI_PARAMFS
 extern int rzv2h_xspi_paramfs_initialize(void);
 #endif
@@ -232,10 +235,10 @@ static void rdk_rzv2h_gpio_initialize(void)
 #endif
 
 	/* Configure only the selected IMU's DRDY input. P94 has one owner. */
-#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+#if !defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) && defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
 	/* The shared board descriptor omits pulls; PX4 configures the pull-up. */
 	px4_arch_configgpio(BOARD_ICM20948_DRDY_GPIO | RZV_GPIO_PULLUP);
-#elif defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
+#elif !defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) && defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
 	px4_arch_configgpio(BOARD_MPU9250_DRDY_GPIO);
 #endif
 
@@ -353,6 +356,14 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	 * the idempotent lower-half through px4_spibus_initialize().
 	 */
 #ifdef CONFIG_RZV_SPI
+#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
+	ret = rdk_rzv2h_configure_sensor_cs();
+
+	if (ret != OK) {
+		return ret;
+	}
+
+#endif
 	ret = board_spi_initialize();
 
 	if (ret != OK) {

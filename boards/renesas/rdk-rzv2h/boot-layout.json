@@ -1,0 +1,33 @@
+{
+  "format": "rzv2h-cr8-split-v1",
+  "core": "cr8_0",
+  "deployment_enabled": false,
+  "image_base": "0x20200000",
+  "header_runtime": "0x0001fe00",
+  "itcm_axi_alias": "0x12040000",
+  "handoff_address": "0x081bfffc",
+  "load_regions": [
+    {
+      "base": "0x00000000",
+      "size": "0x00020000"
+    },
+    {
+      "base": "0x00020000",
+      "size": "0x00020000"
+    },
+    {
+      "base": "0x08180000",
+      "size": "0x00040000"
+    },
+    {
+      "base": "0x40800000",
+      "size": "0x01000000"
+    }
+  ],
+  "reserved_regions": [
+    {
+      "base": "0x081bfffc",
+      "size": 4
+    }
+  ]
+}

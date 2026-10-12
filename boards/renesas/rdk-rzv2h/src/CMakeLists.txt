@@ -41,11 +41,13 @@ set(drivers_board_sources
 	${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_xspi_paramfs.c
 )
 
-if(CONFIG_DRIVERS_BAROMETER_BMP280)
+if(CONFIG_DRIVERS_BAROMETER_BMP280 OR CONFIG_DRIVERS_BAROMETER_BMP388
+   OR CONFIG_DRIVERS_MAGNETOMETER_BOSCH_BMM150 OR CONFIG_DRIVERS_POWER_MONITOR_INA228)
 	list(APPEND drivers_board_sources i2c.cpp)
 endif()
 
-if(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250 OR CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+if(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250 OR CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948
+   OR CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686)
 	list(APPEND drivers_board_sources spi.cpp)
 endif()
 
@@ -160,6 +162,17 @@ add_custom_target(rzv2h_simple_profile_contract_test
 	VERBATIM
 )
 
+add_custom_target(rzv2h_drone_profile_contract_test
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-drone-profile-contract-test.py
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-bmp388-reset-contract-test.py
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-xspi-paramfs-contract-test.py
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-parameter-save-contract-test.py
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-sci-i2c-runtime-test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running RZ/V2H drone routing, startup and barometer reset contracts"
+	VERBATIM
+)
+
 # Source and host MMIO contracts are required by every board variant. Keeping one ALL
 # aggregate makes the normal build the CI gate while preserving focused target
 # names for local diagnosis.
@@ -174,6 +187,7 @@ add_custom_target(rzv2h_source_contract_tests ALL
 		rzv2h_dmac_runtime_test
 		rzv2h_dshot_runtime_test
 		rzv2h_simple_profile_contract_test
+		rzv2h_drone_profile_contract_test
 )
 
 if(PX4_BOARD_LABEL STREQUAL "simple" AND NOT NUTTX_CONFIG STREQUAL "simple")
@@ -241,4 +255,18 @@ endif()
 # not carry a dormant /dev/ipcc1 consumer.
 if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)
 	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
+endif()
+
+if(PX4_BOARD_LABEL STREQUAL "drone")
+	if(NOT NUTTX_CONFIG STREQUAL "drone")
+		message(FATAL_ERROR "The RZ/V2H drone target requires NUTTX_CONFIG=drone")
+	endif()
+	add_custom_target(rzv2h_drone_artifact_contract_test ALL
+		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-drone-artifact-contract-test.py
+			--build-dir ${PX4_BINARY_DIR}
+		DEPENDS ${PX4_BINARY_DIR}/${PX4_CONFIG}.px4 rzv2h_drone_profile_contract_test
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		COMMENT "Auditing resolved RZ/V2H drone firmware artifacts"
+		VERBATIM
+	)
 endif()

@@ -39,6 +39,7 @@ px4_add_module(
 		ina228_main.cpp
 		ina228.cpp
 	DEPENDS
+		drivers__device
 		battery
 		px4_work_queue
 	)

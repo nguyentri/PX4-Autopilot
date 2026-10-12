@@ -139,6 +139,12 @@ git config advice.addIgnoredFile false
 !test/rzv2h_ipc_recovery_contract_test.py
 !test/test_rzv2h_ipc_recovery_contract.py
 !test/rzv2h_remaining_peripherals_contract_test.py
+!test/rzv2h-drone-profile-contract-test.py
+!test/rzv2h-drone-artifact-contract-test.py
+!test/rzv2h-bmp388-reset-contract-test.py
+!test/rzv2h-xspi-paramfs-contract-test.py
+!test/rzv2h-parameter-save-contract-test.py
+!test/rzv2h-sci-i2c-runtime-test.py
 *.csv
 .backup
 *log
@@ -177,3 +183,6 @@ rzv2h_sd.txt
 ak-engineer
 .agentkit
 .claude-plugin
+
+!platforms/nuttx/Debug/rzv2h-boot-package.py
+!test/rzv2h-boot-package-test.py
