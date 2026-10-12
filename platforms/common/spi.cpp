@@ -41,6 +41,17 @@
 #define GPIO_PIN_MASK 0
 #endif
 
+// Pin number of an internal chip-select GPIO. Architectures place the pin field
+// at different bit offsets (bit 0 on STM32, higher on others), so scale it down
+// by the lowest bit of the mask to compare against the CLI pin number.
+static constexpr uint32_t cs_pin_mask = GPIO_PIN_MASK;
+static constexpr uint32_t cs_pin_lsb = cs_pin_mask & (~cs_pin_mask + 1u);
+
+static constexpr int16_t spi_cs_pin(uint32_t cs_gpio)
+{
+	return (int16_t)((cs_gpio & cs_pin_mask) / (cs_pin_lsb != 0 ? cs_pin_lsb : 1u));
+}
+
 #if BOARD_NUM_SPI_CFG_HW_VERSIONS > 1
 void px4_set_spi_buses_from_hw_version()
 {
@@ -154,7 +165,7 @@ bool SPIBusIterator::next()
 						for (int i = _bus_device_index + 1; i < SPI_BUS_MAX_DEVICES; ++i) {
 							if (PX4_SPI_DEVICE_ID == PX4_SPIDEVID_TYPE(bus_data.devices[i].devid) &&
 							    _devid_driver_index == bus_data.devices[i].devtype_driver &&
-							    (_chipselect < 0 || _chipselect == (int16_t)(bus_data.devices[i].cs_gpio & GPIO_PIN_MASK))) {
+							    (_chipselect < 0 || _chipselect == spi_cs_pin(bus_data.devices[i].cs_gpio))) {
 								_bus_device_index = i;
 								return true;
 							}
