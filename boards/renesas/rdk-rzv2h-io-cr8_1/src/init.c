@@ -56,8 +56,8 @@
 void rzv2h_serial_setup(void)
 {
 #if defined(CONFIG_RZV_SCI1) || defined(CONFIG_SCI1_SERIAL_CONSOLE)
-  px4_arch_configgpio(BOARD_SCI1_TXD_GPIO);
-  px4_arch_configgpio(BOARD_SCI1_RXD_GPIO);
+	px4_arch_configgpio(BOARD_SCI1_TXD_GPIO);
+	px4_arch_configgpio(BOARD_SCI1_RXD_GPIO);
 #endif
 }
 #endif
@@ -67,19 +67,19 @@ void rzv2h_serial_setup(void)
  ****************************************************************************************************/
 int board_app_initialize(uintptr_t arg)
 {
-    /* Initialize peripherals */
+	/* Initialize peripherals */
 
-    /* Initialize ADC */
+	/* Initialize ADC */
 #ifdef CONFIG_ADC
-    /* board_adc_initialize(); */
+	/* board_adc_initialize(); */
 #endif
 
-    /* Initialize CAN */
+	/* Initialize CAN */
 #ifdef CONFIG_CAN
-    /* board_can_initialize(); */
+	/* board_can_initialize(); */
 #endif
 
-    return 0;
+	return 0;
 }
 
 /****************************************************************************
@@ -95,9 +95,9 @@ int board_app_initialize(uintptr_t arg)
 
 void rzv_board_initialize(void)
 {
-  /* Minimal initialization for CR8-1 IO processor */
+	/* Minimal initialization for CR8-1 IO processor */
 
-  /* No LEDs to configure - CONFIG_ARCH_LEDS is disabled */
+	/* No LEDs to configure - CONFIG_ARCH_LEDS is disabled */
 
-  /* GPIO and peripheral initialization will be done in board_app_initialize() */
+	/* GPIO and peripheral initialization will be done in board_app_initialize() */
 }

@@ -54,14 +54,14 @@
  ****************************************************************************************************/
 int board_app_initialize(uintptr_t arg)
 {
-    /* Initialize peripherals */
+	/* Initialize peripherals */
 
-    /* Initialize PWM/DShot */
+	/* Initialize PWM/DShot */
 #ifdef CONFIG_PWM
-    /* board_pwm_initialize(); */
+	/* board_pwm_initialize(); */
 #endif
 
-    return 0;
+	return 0;
 }
 
 
@@ -78,9 +78,9 @@ int board_app_initialize(uintptr_t arg)
 
 void rzv_board_initialize(void)
 {
-  /* Minimal initialization for CM33 IO processor */
+	/* Minimal initialization for CM33 IO processor */
 
-  /* No LEDs to configure - CONFIG_ARCH_LEDS is disabled */
+	/* No LEDs to configure - CONFIG_ARCH_LEDS is disabled */
 
-  /* GPIO and peripheral initialization will be done in board_app_initialize() */
+	/* GPIO and peripheral initialization will be done in board_app_initialize() */
 }

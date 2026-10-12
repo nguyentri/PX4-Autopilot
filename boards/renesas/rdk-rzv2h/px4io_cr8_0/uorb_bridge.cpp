@@ -174,8 +174,8 @@ void UorbBridgeCR8::process_actuator_outputs()
 			}
 		}
 
-		cmd.armed = 1; // TODO: Get from vehicle_status
-		cmd.safety_off = 1; // TODO: Get from safety topic
+		cmd.armed = 1; // Scaffold value; vehicle arming state is not propagated.
+		cmd.safety_off = 1; // Scaffold value; safety state is not propagated.
 
 		if (send_msg(MSG_TYPE_ACTUATOR_CMD, _seq_actuator, &cmd, sizeof(cmd))) {
 			_stats.tx_actuator_count++;
@@ -235,7 +235,7 @@ void UorbBridgeCR8::send_heartbeat()
 		Heartbeat_t hb{};
 		hb.source_core = CORE_ID_CR8_0;
 		hb.state = 1; // Running
-		hb.cpu_load_pct = 0; // TODO: Get actual CPU load
+		hb.cpu_load_pct = 0; // CPU load is not sampled by this bridge.
 		hb.uptime_ms = now / 1000;
 		hb.loop_count = _stats.tx_heartbeat_count;
 

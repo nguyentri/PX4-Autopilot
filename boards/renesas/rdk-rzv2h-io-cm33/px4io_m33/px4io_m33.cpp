@@ -120,7 +120,7 @@ void Px4IoM33::run()
 	while (!should_exit()) {
 		// 1. Check for Commands
 		while (_transport.receive_actuator_cmd(cmd)) {
-			// Apply to PWM hardware (TODO)
+			// Feedback currently echoes commands without programming PWM.
 			// PX4_INFO("Got cmd: %d", cmd.commands[0]);
 
 			// Prepare feedback based on command

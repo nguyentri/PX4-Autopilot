@@ -176,16 +176,16 @@ constexpr int8_t kDmaGpt10 =
 constexpr timer_io_channels_t kTimerChannelsRaw[MAX_TIMER_IO_CHANNELS] = {
 	/* PWM0: GPT6 GTIOCA on PA4 (PortA, Pin4) - ESC1 */
 	initIOTimerChannel(kIOTimersRaw, {Timer::Timer6, Timer::Channel1}, {GPIO::PortA, GPIO::Pin4},
-			   makeDshotConf(6, 0, kDmaGpt6, -1)),
+	makeDshotConf(6, 0, kDmaGpt6, -1)),
 	/* PWM1: GPT7 GTIOCB on PA7 (PortA, Pin7) - ESC2 */
 	initIOTimerChannel(kIOTimersRaw, {Timer::Timer7, Timer::Channel2}, {GPIO::PortA, GPIO::Pin7},
-			   makeDshotConf(7, 1, kDmaGpt7, -1)),
+	makeDshotConf(7, 1, kDmaGpt7, -1)),
 	/* PWM2: GPT9 GTIOCA on P96 (Port9, Pin6) - ESC3 */
 	initIOTimerChannel(kIOTimersRaw, {Timer::Timer9, Timer::Channel1}, {GPIO::Port9, GPIO::Pin6},
-			   makeDshotConf(9, 0, kDmaGpt9, -1)),
+	makeDshotConf(9, 0, kDmaGpt9, -1)),
 	/* PWM3: GPT10 GTIOCB on P53 (Port5, Pin3) - ESC4 */
 	initIOTimerChannel(kIOTimersRaw, {Timer::Timer10, Timer::Channel2}, {GPIO::Port5, GPIO::Pin3},
-			   makeDshotConf(10, 1, kDmaGpt10, -1)),
+	makeDshotConf(10, 1, kDmaGpt10, -1)),
 };
 
 template<typename TimerType>
