@@ -6,7 +6,7 @@
 [submodule "platforms/nuttx/NuttX/nuttx"]
 	path = platforms/nuttx/NuttX/nuttx
 	url = https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx_px4.git
-	branch = main
+	branch = nuttx_ra_rzv
 
 [submodule "platforms/nuttx/NuttX/apps"]
 	path = platforms/nuttx/NuttX/apps
