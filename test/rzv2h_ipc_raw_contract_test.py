@@ -310,7 +310,7 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_READY_WAIT_MS", wait)
         self.assertNotIn("RZV_IPC_RAWIOC_RECOVER", wait)
 
-    def test_recovery_reinitializes_both_rings_before_rearming_ack(self) -> None:
+    def test_recovery_arms_ack_before_publishing_both_rings(self) -> None:
         source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")
 
         recover = source[
@@ -318,15 +318,20 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
             : source.index("ssize_t rzv_ipc_raw_read")
         ]
 
+        # A responder adopts the epoch from the shared headers on its own read
+        # or poll, so its ACK can land as soon as they are published: the ACK
+        # is armed first and the doorbell rung last.
+        arm_ack = recover.index("rzv_ipc_arm_ack(priv);")
         tx_init = recover.index("rzv_ipc_initialize_header(priv->tx_hdr, epoch, priv->local_mask);")
         rx_init = recover.index("rzv_ipc_initialize_header(priv->rx_hdr, epoch, priv->local_mask);")
-        arm_ack = recover.index("rzv_ipc_arm_ack(priv);")
-        sem_reset = recover.index("nxsem_reset(&priv->rxsem, 0);", arm_ack)
+        doorbell = recover.index("rzv_ipc_ring_doorbell(priv);")
+        sem_reset = recover.index("nxsem_reset(&priv->rxsem, 0);", doorbell)
         ready_state = recover.index("priv->stats.ready = true;")
 
+        self.assertLess(arm_ack, tx_init)
         self.assertLess(tx_init, rx_init)
-        self.assertLess(rx_init, arm_ack)
-        self.assertLess(arm_ack, sem_reset)
+        self.assertLess(rx_init, doorbell)
+        self.assertLess(doorbell, sem_reset)
         self.assertLess(sem_reset, ready_state)
         self.assertIn("priv->stats.degraded = false;", recover)
         self.assertIn("priv->stats.recoveries++;", recover)
@@ -347,10 +352,28 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         self.assertLess(reset, send)
         self.assertLess(send, enable)
 
+        arm_body = body[: body.index("static void rzv_ipc_ring_doorbell")]
+        self.assertNotIn("rzv_mhu_send", arm_body)
+        self.assertNotIn("up_enable_irq", arm_body)
+
         recover = source[source.index("int rzv_ipc_raw_recover") :]
-        write = source[source.index("ssize_t rzv_ipc_raw_write") :]
         self.assertIn("rzv_ipc_arm_ack(priv);", recover)
-        self.assertIn("rzv_ipc_arm_ack(priv);", write)
+
+        # The peer drains the ring without waiting for the doorbell, so an ACK
+        # may arrive as soon as the tail is published.  Clearing the response
+        # after that point loses it and fails the write after the full timeout.
+        write = source[source.index("ssize_t rzv_ipc_raw_write") : source.index("int rzv_ipc_raw_cleanup")]
+        arm = write.index("rzv_ipc_arm_ack(priv);")
+        slot = write.index("memcpy(slot->payload, buffer, length);")
+        tail = write.index("hdr->tail = (tail + 1u) & priv->local_mask;")
+        doorbell = write.index("rzv_ipc_ring_doorbell(priv);")
+        wait = write.index("nxsem_tickwait_uninterruptible(&priv->acksem")
+        self.assertLess(arm, slot)
+        self.assertLess(slot, tail)
+        self.assertLess(tail, doorbell)
+        self.assertLess(doorbell, wait)
+        self.assertEqual(write.count("rzv_ipc_arm_ack(priv);"), 1)
+        self.assertEqual(write.count("rzv_ipc_ring_doorbell(priv);"), 1)
 
     def test_buffered_rpmsg_admits_only_a_complete_packet(self) -> None:
         source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_ipcc.c")

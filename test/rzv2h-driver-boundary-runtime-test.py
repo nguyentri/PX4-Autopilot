@@ -263,6 +263,28 @@ int main(void) {
 '''
         compile_run(code)
 
+    def test_private_timer_tick_uses_quarter_cpu_clock(self):
+        source = (ARCH / 'rzv_timerisr.c').read_text()
+        kconfig = (ARCH / 'Kconfig').read_text()
+        option = re.search(r'^config RZV_CR8_PERIPHCLK_DIV\n(?:[ \t].*\n|\n)*?(?=^config )',
+                           kconfig, re.M).group()
+        self.assertRegex(option, r'\n\s+default 4\n')
+        block = re.search(r'^#ifndef CONFIG_RZV_CR8_PERIPHCLK_DIV\n.*?'
+                          r'^#define TIMER_PERIPHCLK_RUNTIME\(\) \\\n[^\n]*\n',
+                          source, re.M | re.S).group()
+        code = PRELUDE + r'''
+#define CLOCKS_PER_SEC 1000u
+#define TIMER_PRESCALER 0u
+static uint32_t rzv_get_cpu_frequency(void) { return 800000000u; }
+''' + block + r'''
+int main(void) {
+  uint32_t periphclk = TIMER_PERIPHCLK_RUNTIME();
+  assert(periphclk == 200000000u);
+  assert((periphclk / (TIMER_PRESCALER + 1) / CLOCKS_PER_SEC) - 1 == 199999u);
+}
+'''
+        compile_run(code)
+
     def test_timer_pending_reload_preserves_order(self):
         source = (ARCH / 'rzv_timerisr.c').read_text()
         code = PRELUDE + r'''
