@@ -2,6 +2,7 @@
 """Exercise debug script ownership using isolated host processes and tools."""
 
 import os
+import re
 from pathlib import Path
 import socket
 import subprocess
@@ -136,6 +137,32 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                 self.assertFalse((tmp / 'kills').exists())
                 for path in (tmp / 'commands').read_text().splitlines():
                     self.assertFalse(Path(path).exists())
+
+
+class WarmStart(unittest.TestCase):
+    """A halt-load-jump start must not inherit the halted image's CPSR: with
+    IRQs unmasked, a still-pending GTM/HRT interrupt fires on the first
+    __start instruction, before the new image installs any handler."""
+
+    RESET_CPSR = 0x1d3
+
+    def test_reset_cpsr_is_svc_with_async_abort_irq_and_fiq_masked(self):
+        self.assertEqual(self.RESET_CPSR & 0x1f, 0x13)
+        self.assertEqual(self.RESET_CPSR & 0x1c0, 0x1c0)
+        self.assertEqual(self.RESET_CPSR & 0x20, 0)
+
+    def assert_each_start_masks_interrupts(self, lines, name):
+        starts = [i for i, line in enumerate(lines) if re.match(r'set \$pc = &?__start$', line)]
+        self.assertTrue(starts, name)
+        for i in starts:
+            self.assertEqual(lines[i + 1], f'set $cpsr = {self.RESET_CPSR:#x}', f'{name}:{i + 1}')
+
+    def test_ram_loaders_enter_start_with_reset_cpsr(self):
+        gdb = [line.strip() for line in (DEBUG / 'rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb').read_text().splitlines()]
+        self.assert_each_start_masks_interrupts(gdb, 'loadstart.gdb')
+        self.assertLess(gdb.index('set $cpsr = 0x1d3'), gdb.index('monitor go'))
+        launch = re.findall(r'^\s*"([^"]*)",?\s*$', (DEBUG / 'launch_renesas.json.in').read_text(), re.M)
+        self.assert_each_start_masks_interrupts(launch, 'launch_renesas.json.in')
 
 
 if __name__ == '__main__':
