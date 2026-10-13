@@ -48,6 +48,7 @@
 #include <px4_platform_common/px4_config.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/esc_status.h>
 #include <uORB/topics/battery_status.h>
@@ -76,6 +77,8 @@ public:
 
 	bool is_io_alive() const { return _io_alive; }
 	uint64_t get_last_io_heartbeat() const { return _last_io_heartbeat_us; }
+	uint32_t get_io_fault_flags() const { return _io_fault_flags; }
+	uint8_t get_io_armed_state() const { return _io_armed_state; }
 
 	struct Stats {
 		uint32_t tx_actuator_count;
@@ -86,6 +89,7 @@ public:
 		uint32_t rx_battery_count;
 		uint32_t rx_safety_count;
 		uint32_t rx_heartbeat_count;
+		uint32_t rx_fault_count;
 		uint32_t crc_errors;
 		uint32_t sequence_gaps;
 	};
@@ -108,12 +112,23 @@ private:
 	uint16_t _expected_seq_safety{0};
 
 	uint64_t _last_io_heartbeat_us{0};
+	uint64_t _last_heartbeat_tx_us{0};
 	bool _io_alive{false};
+	bool _io_lost_reported{false};
+
+	/* Latest CR8-1 fault status (FAULT_FLAG_* and relayed armed state) */
+	uint32_t _io_fault_flags{0};
+	uint8_t _io_armed_state{0};
 
 	Stats _stats{};
 
 	/* uORB subscriptions (CR8-0 sources) */
+	actuator_outputs_s _actuator_outputs{};
+	actuator_armed_s _actuator_armed{};
+	vehicle_status_s _safety_status{};
 	uORB::Subscription _actuator_outputs_sub{ORB_ID(actuator_outputs)};
+	uORB::Subscription _actuator_armed_sub{ORB_ID(actuator_armed)};
+	uORB::Subscription _safety_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 
@@ -138,6 +153,9 @@ private:
 
 	/* RX: CR8-1 -> CR8-0 (single read+dispatch loop) + heartbeat liveness */
 	void process_rx();
+	void handle_heartbeat(const Heartbeat_t &hb_msg, uint64_t now);
+	void handle_fault_status(const FaultStatus_t &fault_msg);
+	void update_io_liveness(uint64_t now);
 	void publish_input_rc(const InputRC_t &rc_msg);
 	void publish_esc_status(const ESCStatus_t &esc_msg);
 	void publish_battery_status(const BatteryStatus_t &batt_msg);

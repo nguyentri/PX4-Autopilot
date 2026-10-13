@@ -176,12 +176,16 @@ int Px4IoBridge::print_status()
 		 (unsigned long)stats.tx_actuator_count,
 		 (unsigned long)stats.tx_vehicle_cmd_count,
 		 (unsigned long)stats.tx_heartbeat_count);
-	PX4_INFO("RX: rc=%lu esc=%lu batt=%lu safety=%lu hb=%lu",
+	PX4_INFO("RX: rc=%lu esc=%lu batt=%lu safety=%lu hb=%lu fault=%lu",
 		 (unsigned long)stats.rx_rc_count,
 		 (unsigned long)stats.rx_esc_count,
 		 (unsigned long)stats.rx_battery_count,
 		 (unsigned long)stats.rx_safety_count,
-		 (unsigned long)stats.rx_heartbeat_count);
+		 (unsigned long)stats.rx_heartbeat_count,
+		 (unsigned long)stats.rx_fault_count);
+	PX4_INFO("CR8-1 fault flags: 0x%lx, armed: %u",
+		 (unsigned long)_bridge.get_io_fault_flags(),
+		 _bridge.get_io_armed_state());
 	PX4_INFO("Errors: crc=%lu seq_gap=%lu",
 		 (unsigned long)stats.crc_errors,
 		 (unsigned long)stats.sequence_gaps);
@@ -209,6 +213,7 @@ via shared memory IPC.
 ### Topics Bridged
 - TX (CR8-0 -> CR8-1): actuator_outputs, vehicle_command, vehicle_status
 - RX (CR8-1 -> CR8-0): input_rc, esc_status, battery_status, safety
+- RX liveness: CR8-1 heartbeat and fault status (10 Hz); "lost" after 500 ms
 
 ### Implementation
 Runs as a thread at 400Hz.

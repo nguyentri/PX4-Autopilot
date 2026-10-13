@@ -122,9 +122,9 @@ typedef struct {
  */
 typedef struct {
 	MessageHeader_t header;
-	uint16_t outputs[IPC_MAX_ACTUATORS];  // PWM: 1000-2000us, DShot: 48-2047
+	uint16_t outputs[IPC_MAX_ACTUATORS];  // PWM us, 0: off, else PWM_LOWEST_MIN..PWM_HIGHEST_MAX
 	uint8_t  mixer_select;                // 0: quad+, 1: quadx, 2: hex, etc.
-	uint8_t  armed;                       // 0: disarmed, 1: armed
+	uint8_t  armed;                       // 1: armed or flight-termination failsafe outputs
 	uint8_t  safety_off;                  // 0: safety on (outputs disabled), 1: safety off
 	uint8_t  dshot_cmd;                   // DShot command (beep, reverse, etc.)
 } __attribute__((packed)) ActuatorCommand_t;

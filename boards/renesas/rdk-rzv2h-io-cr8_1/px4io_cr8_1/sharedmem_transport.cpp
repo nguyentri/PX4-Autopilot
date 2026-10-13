@@ -40,8 +40,8 @@
 #include <drivers/drv_hrt.h>
 
 /* The IPCC ring entry payload is 64 bytes (RZV_IPC_*_RING_ENTRY_SZ); every
- * protocol message fits in one entry. read() returns one entry; write()
- * zero-pads a short message up to the entry size.
+ * protocol message fits in one entry. read() returns one entry and write()
+ * takes exactly one entry.
  */
 static constexpr size_t IPC_ENTRY_SIZE = 64;
 
@@ -105,8 +105,15 @@ bool SharedMemTransport::send_framed(MessageType_e type, uint16_t &seq,
 	hdr->crc32    = 0;
 	hdr->crc32    = calculate_crc32(reinterpret_cast<const uint8_t *>(msg), len);
 
-	ssize_t n = write(_fd, msg, len);
-	return n == static_cast<ssize_t>(len);
+	/* The raw IPC driver moves exactly one ring entry per write() and
+	 * rejects any other length with EMSGSIZE, so the frame is zero-padded to
+	 * a full entry.  Receivers check the CRC over the message length only.
+	 */
+	uint8_t entry[IPC_ENTRY_SIZE] {};
+	memcpy(entry, msg, len);
+
+	ssize_t n = write(_fd, entry, sizeof(entry));
+	return n == static_cast<ssize_t>(sizeof(entry));
 }
 
 bool SharedMemTransport::receive_framed(MessageType_e want, void *msg, size_t len)
@@ -115,32 +122,105 @@ bool SharedMemTransport::receive_framed(MessageType_e want, void *msg, size_t le
 		return false;
 	}
 
-	uint8_t frame[IPC_ENTRY_SIZE];
-	ssize_t n = read(_fd, frame, sizeof(frame));
+	for (size_t i = 0; i < _pending_count; i++) {
+		const auto *header = reinterpret_cast<const MessageHeader_t *>(_pending[i]);
 
-	if (n <= 0) {
-		return false;   /* empty ring or error */
+		if (header->msg_type == static_cast<uint8_t>(want)) {
+			memcpy(msg, _pending[i], len);
+
+			if (i + 1 < _pending_count) {
+				memmove(_pending[i], _pending[i + 1], (_pending_count - i - 1) * IPC_ENTRY_SIZE);
+			}
+
+			_pending_count--;
+			return true;
+		}
 	}
 
-	const MessageHeader_t *hdr = reinterpret_cast<const MessageHeader_t *>(frame);
+	/* Stop consuming when storage is full.  The other receiver drains its
+	 * retained messages before this path reads more entries from the fd.
+	 */
+	for (size_t scanned = 0; scanned < PENDING_CAPACITY && _pending_count < PENDING_CAPACITY; scanned++) {
+		uint8_t frame[IPC_ENTRY_SIZE] {};
+		ssize_t n = read(_fd, frame, sizeof(frame));
 
-	if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION ||
-	    hdr->msg_type != static_cast<uint8_t>(want)) {
-		return false;   /* wrong magic/version/type: drop */
+		if (n <= 0) {
+			return false;
+		}
+
+		if (n < static_cast<ssize_t>(sizeof(MessageHeader_t))) {
+			continue;
+		}
+
+		auto *hdr = reinterpret_cast<MessageHeader_t *>(frame);
+		size_t frame_size;
+
+		switch (hdr->msg_type) {
+		case MSG_TYPE_ACTUATOR_CMD:
+			frame_size = sizeof(ActuatorCommand_t);
+			break;
+
+		case MSG_TYPE_PWM_FEEDBACK:
+			frame_size = sizeof(PWMFeedback_t);
+			break;
+
+		case MSG_TYPE_FAULT_STATUS:
+			frame_size = sizeof(FaultStatus_t);
+			break;
+
+		default:
+			continue;
+		}
+
+		if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION ||
+		    (n != static_cast<ssize_t>(frame_size) && n != static_cast<ssize_t>(IPC_ENTRY_SIZE))) {
+			continue;
+		}
+
+		uint32_t received_crc = hdr->crc32;
+		hdr->crc32 = 0;
+
+		if (calculate_crc32(frame, frame_size) != received_crc) {
+			continue;
+		}
+
+		hdr->crc32 = received_crc;
+
+		if (hdr->msg_type == static_cast<uint8_t>(want)) {
+			memcpy(msg, frame, len);
+			return true;
+		}
+
+		/* Only the ESC-leg replies have a second reader.  The FMU leg has a
+		 * single actuator-command reader, so a reply type arriving there, or
+		 * an actuator command read while another type is wanted, has no
+		 * consumer and would otherwise occupy retained storage forever.
+		 */
+		if (want == MSG_TYPE_ACTUATOR_CMD || hdr->msg_type == static_cast<uint8_t>(MSG_TYPE_ACTUATOR_CMD)) {
+			continue;
+		}
+
+		memcpy(_pending[_pending_count++], frame, IPC_ENTRY_SIZE);
 	}
 
-	uint32_t received_crc = hdr->crc32;
+	return false;
+}
 
-	uint8_t tmp[IPC_ENTRY_SIZE];
-	memcpy(tmp, frame, len);
-	reinterpret_cast<MessageHeader_t *>(tmp)->crc32 = 0;
+bool SharedMemTransport::receive_actuator_command(ActuatorCommand_t &cmd)
+{
+	return receive_framed(MSG_TYPE_ACTUATOR_CMD, &cmd, sizeof(cmd));
+}
 
-	if (calculate_crc32(tmp, len) != received_crc) {
-		return false;   /* CRC mismatch */
-	}
+bool SharedMemTransport::send_heartbeat(const Heartbeat_t &heartbeat)
+{
+	Heartbeat_t msg = heartbeat;
+	return send_framed(MSG_TYPE_HEARTBEAT, _tx_seq_heartbeat, &msg, sizeof(msg));
+}
 
-	memcpy(msg, frame, len);
-	return true;
+bool SharedMemTransport::send_fault_status(const FaultStatus_t &status)
+{
+	FaultStatus_t msg = status;
+	return send_framed(MSG_TYPE_FAULT_STATUS, _tx_seq_fault, &msg, sizeof(msg));
 }
 
 bool SharedMemTransport::send_actuator_cmd(const ActuatorCmdToM33_t &cmd)

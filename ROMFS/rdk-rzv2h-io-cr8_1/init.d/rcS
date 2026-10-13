@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# RDK-RZ/V2H CR8-1 IO core startup.
+#
+# px4_platform_init() has already initialized HRT, work queues, parameters,
+# and uORB. This core only relays FMU actuator commands and reports its
+# heartbeat and fault status back to CR8-0.
+#
+set +e
+
+if ! px4io_cr8 start
+then
+	echo "ERROR [init] px4io_cr8 start failed"
+fi

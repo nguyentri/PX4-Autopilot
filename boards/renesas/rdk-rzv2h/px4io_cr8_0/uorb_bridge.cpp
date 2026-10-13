@@ -42,7 +42,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <cmath>
 #include <drivers/drv_hrt.h>
+#include <drivers/drv_pwm_output.h>
+#include <lib/mathlib/mathlib.h>
 #include <px4_platform_common/log.h>
 
 /* IPCC ring entry payload size; every protocol message fits in one entry. */
@@ -148,8 +151,15 @@ bool UorbBridgeCR8::send_msg(MessageType_e type, uint16_t &seq, void *msg, size_
 	header->crc32 = 0;
 	header->crc32 = calculate_crc32(reinterpret_cast<const uint8_t *>(msg), len);
 
-	ssize_t n = write(_fd, msg, len);
-	return n == static_cast<ssize_t>(len);
+	/* The raw IPC driver moves exactly one ring entry per write() and
+	 * rejects any other length with EMSGSIZE, so the frame is zero-padded to
+	 * a full entry.  Receivers check the CRC over the message length only.
+	 */
+	uint8_t entry[IPC_ENTRY_SIZE] {};
+	memcpy(entry, msg, len);
+
+	ssize_t n = write(_fd, entry, sizeof(entry));
+	return n == static_cast<ssize_t>(sizeof(entry));
 }
 
 /*===========================================================================
@@ -158,24 +168,36 @@ bool UorbBridgeCR8::send_msg(MessageType_e type, uint16_t &seq, void *msg, size_
 
 void UorbBridgeCR8::process_actuator_outputs()
 {
-	actuator_outputs_s actuator_outputs;
+	bool updated = _actuator_outputs_sub.update(&_actuator_outputs);
+	updated |= _actuator_armed_sub.update(&_actuator_armed);
+	updated |= _safety_status_sub.update(&_safety_status);
 
-	if (_actuator_outputs_sub.update(&actuator_outputs)) {
+	if (updated) {
 		ActuatorCommand_t cmd{};
+		const bool valid = _actuator_outputs.noutputs <= actuator_outputs_s::NUM_ACTUATOR_OUTPUTS;
 
-		for (int i = 0; i < IPC_MAX_ACTUATORS && i < actuator_outputs_s::NUM_ACTUATOR_OUTPUTS; i++) {
-			float output = actuator_outputs.output[i];
+		/* The mixer already selects armed, disarmed or failsafe values per
+		 * channel, so forward them like px4io: channels beyond the IPC frame
+		 * are dropped, 0 keeps an output off and other values are bounded to
+		 * the PWM pulse range PX4IO enforces.  Only a malformed count clears
+		 * the frame.
+		 */
+		for (unsigned i = 0; valid && i < IPC_MAX_ACTUATORS && i < _actuator_outputs.noutputs; i++) {
+			const float output = _actuator_outputs.output[i];
 
-			if (output >= 0.0f) {
-				cmd.outputs[i] = (uint16_t)(1000.0f + output * 1000.0f);
-
-			} else {
-				cmd.outputs[i] = 1000; // Minimum
+			if (std::isfinite(output) && output >= 0.5f) {
+				const float pulse = math::constrain(output, static_cast<float>(PWM_LOWEST_MIN),
+								    static_cast<float>(PWM_HIGHEST_MAX));
+				cmd.outputs[i] = static_cast<uint16_t>(lroundf(pulse));
 			}
 		}
 
-		cmd.armed = 1; // Scaffold value; vehicle arming state is not propagated.
-		cmd.safety_off = 1; // Scaffold value; safety state is not propagated.
+		/* Lockdown wins over flight termination, as on PX4IO; termination
+		 * keeps outputs active so failsafe values (e.g. parachute) apply.
+		 */
+		cmd.safety_off = _safety_status.safety_off;
+		cmd.armed = valid && !_actuator_armed.lockdown && !_actuator_armed.manual_lockdown &&
+			    (_actuator_armed.force_failsafe || (_actuator_armed.armed && cmd.safety_off));
 
 		if (send_msg(MSG_TYPE_ACTUATOR_CMD, _seq_actuator, &cmd, sizeof(cmd))) {
 			_stats.tx_actuator_count++;
@@ -228,10 +250,9 @@ void UorbBridgeCR8::process_vehicle_status()
 
 void UorbBridgeCR8::send_heartbeat()
 {
-	static uint64_t last_heartbeat_us = 0;
 	uint64_t now = hrt_absolute_time();
 
-	if (now - last_heartbeat_us >= 100000) { // 10Hz
+	if (now - _last_heartbeat_tx_us >= 100000) { // 10Hz
 		Heartbeat_t hb{};
 		hb.source_core = CORE_ID_CR8_0;
 		hb.state = 1; // Running
@@ -243,7 +264,7 @@ void UorbBridgeCR8::send_heartbeat()
 			_stats.tx_heartbeat_count++;
 		}
 
-		last_heartbeat_us = now;
+		_last_heartbeat_tx_us = now;
 	}
 }
 
@@ -291,8 +312,14 @@ void UorbBridgeCR8::process_rx()
 
 		case MSG_TYPE_HEARTBEAT:
 			if (validate_message_crc(frame, sizeof(Heartbeat_t))) {
-				_last_io_heartbeat_us = hrt_absolute_time();
-				_stats.rx_heartbeat_count++;
+				handle_heartbeat(*reinterpret_cast<const Heartbeat_t *>(frame), hrt_absolute_time());
+			}
+
+			break;
+
+		case MSG_TYPE_FAULT_STATUS:
+			if (validate_message_crc(frame, sizeof(FaultStatus_t))) {
+				handle_fault_status(*reinterpret_cast<const FaultStatus_t *>(frame));
 			}
 
 			break;
@@ -302,26 +329,56 @@ void UorbBridgeCR8::process_rx()
 		}
 	}
 
-	/* CR8-1 liveness. NOTE: the CR8_1 side of /dev/ipcc1 (the FMU leg) is not yet
-	 * implemented (px4io_cr8 only services the ESC leg /dev/ipcc3), so until that
-	 * peer exists no heartbeat is received: _last_io_heartbeat_us stays 0, the
-	 * `> 0` guard below suppresses the "lost" ERR, and is_io_alive() reads false.
-	 * This is a known milestone gap, not a regression. */
-	uint64_t now = hrt_absolute_time();
-	_io_alive = (now - _last_io_heartbeat_us) < FMU_LOSS_TIMEOUT_US;
+	update_io_liveness(hrt_absolute_time());
+}
 
-	if (!_io_alive && _last_io_heartbeat_us > 0) {
-		static bool reported = false;
+void UorbBridgeCR8::handle_heartbeat(const Heartbeat_t &hb_msg, uint64_t now)
+{
+	/* Only the CR8-1 px4io_cr8 heartbeat proves the I/O processor is alive. */
+	if (hb_msg.source_core != CORE_ID_CR8_1) {
+		return;
+	}
 
-		if (!reported) {
-			PX4_ERR("CR8-1 I/O processor heartbeat lost!");
-			reported = true;
-		}
+	_last_io_heartbeat_us = now;
+	_stats.rx_heartbeat_count++;
+}
+
+void UorbBridgeCR8::handle_fault_status(const FaultStatus_t &fault_msg)
+{
+	if (fault_msg.error_flags != _io_fault_flags) {
+		PX4_WARN("CR8-1 I/O fault flags: 0x%lx", (unsigned long)fault_msg.error_flags);
+	}
+
+	_io_fault_flags = fault_msg.error_flags;
+	_io_armed_state = fault_msg.armed_state;
+	_stats.rx_fault_count++;
+}
+
+void UorbBridgeCR8::update_io_liveness(uint64_t now)
+{
+	/* px4io_cr8 sends a heartbeat every 100 ms, so loss means several missed
+	 * heartbeats, not one late one.  Nothing is reported before the first
+	 * heartbeat arrives, so a missing peer at boot stays quiet.
+	 */
+	const bool was_alive = _io_alive;
+	_io_alive = _last_io_heartbeat_us != 0 && now - _last_io_heartbeat_us < HEARTBEAT_TIMEOUT_US;
+
+	if (_io_alive && !was_alive) {
+		PX4_INFO("CR8-1 I/O processor heartbeat %s", _io_lost_reported ? "recovered" : "acquired");
+		_io_lost_reported = false;
+
+	} else if (!_io_alive && was_alive) {
+		PX4_ERR("CR8-1 I/O processor heartbeat lost!");
+		_io_lost_reported = true;
 	}
 }
 
 void UorbBridgeCR8::publish_input_rc(const InputRC_t &rc_msg)
 {
+	if (rc_msg.channel_count > IPC_MAX_RC_CHANNELS || rc_msg.channel_count > input_rc_s::RC_INPUT_MAX_CHANNELS) {
+		return;
+	}
+
 	if (rc_msg.header.sequence != _expected_seq_rc) {
 		_stats.sequence_gaps++;
 	}

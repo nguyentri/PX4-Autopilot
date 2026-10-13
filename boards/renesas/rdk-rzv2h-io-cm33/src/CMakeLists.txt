@@ -33,12 +33,17 @@
 
 add_library(drivers_board
 	init.c
+	${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc.c
 	timer_config.cpp
 )
 
 target_link_libraries(drivers_board
 	PRIVATE
 		nuttx_arch
+		px4_layer
+		parameters
+		arch_hrt
+		rzv2h_micro_hal
 )
 
 # Build the board-local px4io_m33 module (ESC controller) so it is compiled

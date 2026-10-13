@@ -36,6 +36,7 @@
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/getopt.h>
 #include <drivers/drv_hrt.h>
+#include <drivers/drv_pwm_output.h>
 #include <errno.h>
 
 #include "sharedmem_transport.h"
@@ -57,7 +58,20 @@ public:
 	void run() override;
 
 private:
+	static bool command_valid(const ActuatorCmdToM33_t &cmd);
+	bool update_outputs(hrt_abstime now);
+
 	SharedMemTransport _transport;
+
+	ActuatorCmdToM33_t _cmd{};		// latest valid CR8-1 command
+	hrt_abstime _last_cmd_us{0};		// local receive time of _cmd
+
+	/* Output state a PWM backend must drive.  No CM33 PWM backend exists yet,
+	 * so these values are only reported in feedback and fault status.
+	 */
+	uint16_t _outputs[IPC_MAX_ACTUATORS] {};
+	bool _armed{false};
+	bool _command_timeout{true};
 };
 
 int Px4IoM33::task_spawn(int argc, char *argv[])
@@ -79,7 +93,19 @@ int Px4IoM33::task_spawn(int argc, char *argv[])
 
 Px4IoM33 *Px4IoM33::instantiate(int argc, char *argv[])
 {
-	return new Px4IoM33();
+	Px4IoM33 *instance = new Px4IoM33();
+
+	if (instance == nullptr) {
+		return nullptr;
+	}
+
+	if (!instance->_transport.init(false)) {
+		PX4_ERR("transport initialization failed");
+		delete instance;
+		return nullptr;
+	}
+
+	return instance;
 }
 
 int Px4IoM33::custom_command(int argc, char *argv[])
@@ -97,6 +123,11 @@ int Px4IoM33::print_usage(const char *reason)
 		R"DESCR_STR(
 ### Description
 PX4IO driver for RZV2H CM33.
+
+Applies PWM actuator commands relayed by CR8-1 over /dev/ipcc3. Each fresh
+channel is held as commanded; invalid frames are ignored. When no valid command
+arrives for 100 ms, all outputs stop (0) and the CR8 timeout fault is reported.
+No PWM backend drives pins yet; the applied values are reported as feedback.
 )DESCR_STR");
 
 	PRINT_MODULE_USAGE_NAME("px4io_m33", "driver");
@@ -106,40 +137,77 @@ PX4IO driver for RZV2H CM33.
 	return 0;
 }
 
+bool Px4IoM33::command_valid(const ActuatorCmdToM33_t &cmd)
+{
+	/* PWM-only contract: 0 keeps an output off, anything else is a pulse
+	 * width within the range PX4IO accepts.
+	 */
+	if (cmd.armed > 1 || cmd.safety_off > 1 || cmd.output_mode != 0) {
+		return false;
+	}
+
+	for (unsigned i = 0; i < IPC_MAX_ACTUATORS; i++) {
+		const uint16_t command = cmd.commands[i];
+
+		if (command != 0 && (command < PWM_LOWEST_MIN || command > PWM_HIGHEST_MAX)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Px4IoM33::update_outputs(hrt_abstime now)
+{
+	ActuatorCmdToM33_t cmd{};
+	bool applied = false;
+
+	/* Bounded drain: keep only the newest valid command. */
+	for (int budget = 2 * IPC_BUFFER_SIZE; budget > 0 && _transport.receive_actuator_cmd(cmd); budget--) {
+		if (command_valid(cmd)) {
+			_cmd = cmd;
+			_last_cmd_us = now;
+			applied = true;
+		}
+	}
+
+	/* Hold each channel as commanded while commands stay fresh, so a disarmed
+	 * FMU keeps its disarmed values.  Without a valid command for 100 ms there
+	 * is no failsafe table to fall back to, so every output stops.
+	 */
+	_command_timeout = _last_cmd_us == 0 || now - _last_cmd_us >= FMU_LOSS_TIMEOUT_US;
+
+	for (unsigned i = 0; i < IPC_MAX_ACTUATORS; i++) {
+		_outputs[i] = _command_timeout ? 0 : _cmd.commands[i];
+	}
+
+	_armed = !_command_timeout && _cmd.armed;
+	return applied;
+}
+
 void Px4IoM33::run()
 {
 	PX4_INFO("PX4IO M33 starting");
 
-	// Initialize transport as Slave (M33)
-	_transport.init(false);
-
-	ActuatorCmdToM33_t cmd{};
 	PWMFeedback_t feedback{};
 	FaultStatus_t fault{};
+	hrt_abstime last_fault_time = 0;
 
 	while (!should_exit()) {
-		// 1. Check for Commands
-		while (_transport.receive_actuator_cmd(cmd)) {
-			// Feedback currently echoes commands without programming PWM.
-			// PX4_INFO("Got cmd: %d", cmd.commands[0]);
+		const hrt_abstime now = hrt_absolute_time();
 
-			// Prepare feedback based on command
-			feedback.header.timestamp_us = hrt_absolute_time();
-			for (int i = 0; i < 8; i++) {
-				feedback.current_outputs[i] = cmd.commands[i];
+		if (update_outputs(now)) {
+			for (unsigned i = 0; i < IPC_MAX_ACTUATORS; i++) {
+				feedback.current_outputs[i] = _outputs[i];
 			}
 
-			// Send Feedback
 			_transport.send_pwm_feedback(feedback);
 		}
 
-		// 2. Send Fault Status (Periodic)
-		static uint64_t last_fault_time = 0;
-		uint64_t now = hrt_absolute_time();
 		if (now - last_fault_time > 100000) { // 10Hz
-			fault.header.timestamp_us = now;
 			fault.watchdog_count = 0;
-			fault.error_flags = 0;
+			fault.error_flags = _command_timeout ? FAULT_FLAG_CR8_TIMEOUT : 0;
+			fault.armed_state = _armed;
 			_transport.send_fault_status(fault);
 			last_fault_time = now;
 		}

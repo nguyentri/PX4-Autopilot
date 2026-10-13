@@ -42,26 +42,60 @@
 #include <nuttx/board.h>
 #include <nuttx/arch.h>
 #include <nuttx/leds/userled.h>
+#include <errno.h>
 
 #include "board_config.h"
+#include "rzv_gpio.h"
+#include "rzv_serial.h"
+#include <px4_platform_common/micro_hal.h>
+
+#ifdef CONFIG_RZV_IPC_RAW
+extern int board_ipc_initialize(void);
+#endif
 
 /****************************************************************************************************
  * Public Functions
  ****************************************************************************************************/
 
 /****************************************************************************************************
- * Name: board_app_initialize
+ * Name: rzv2h_serial_setup
  ****************************************************************************************************/
+int rzv2h_serial_setup(int channel)
+{
+	if (channel < -1 || channel >= RZV_SCI_MAX_CHANNELS) {
+		return -EINVAL;
+	}
+
+#if defined(CONFIG_RZV_SCI1) || defined(CONFIG_SCI1_SERIAL_CONSOLE)
+
+	if (channel < 0 || channel == RZV_SCI_CHANNEL_1) {
+		int ret = px4_arch_configgpio(GPIO_TXD1_MOSI1_SDA1_P5_2_M1);
+
+		if (ret < 0) {
+			return ret;
+		}
+
+		return px4_arch_configgpio(GPIO_RXD1_MISO1_SCL1_P5_3_M1);
+	}
+
+#endif
+	return 0;
+}
+
 int board_app_initialize(uintptr_t arg)
 {
-	/* Initialize peripherals */
+	(void)arg;
+	int ret = px4_platform_init();
 
-	/* Initialize PWM/DShot */
-#ifdef CONFIG_PWM
-	/* board_pwm_initialize(); */
-#endif
+	if (ret < 0) {
+		return ret;
+	}
 
+#ifdef CONFIG_RZV_IPC_RAW
+	return board_ipc_initialize();
+#else
 	return 0;
+#endif
 }
 
 

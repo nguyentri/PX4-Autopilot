@@ -40,8 +40,8 @@
 #include <drivers/drv_hrt.h>
 
 /* The IPCC ring entry payload is 64 bytes (RZV_IPC_*_RING_ENTRY_SZ); every
- * protocol message fits in one entry. read() returns one entry; write()
- * zero-pads a short message up to the entry size.
+ * protocol message fits in one entry. read() returns one entry and write()
+ * takes exactly one entry.
  */
 static constexpr size_t IPC_ENTRY_SIZE = 64;
 
@@ -105,8 +105,15 @@ bool SharedMemTransport::send_framed(MessageType_e type, uint16_t &seq,
 	hdr->crc32    = 0;
 	hdr->crc32    = calculate_crc32(reinterpret_cast<const uint8_t *>(msg), len);
 
-	ssize_t n = write(_fd, msg, len);
-	return n == static_cast<ssize_t>(len);
+	/* The raw IPC driver moves exactly one ring entry per write() and
+	 * rejects any other length with EMSGSIZE, so the frame is zero-padded to
+	 * a full entry.  Receivers check the CRC over the message length only.
+	 */
+	uint8_t entry[IPC_ENTRY_SIZE] {};
+	memcpy(entry, msg, len);
+
+	ssize_t n = write(_fd, entry, sizeof(entry));
+	return n == static_cast<ssize_t>(sizeof(entry));
 }
 
 bool SharedMemTransport::receive_framed(MessageType_e want, void *msg, size_t len)

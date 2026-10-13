@@ -34,13 +34,13 @@
 #pragma once
 
 /*
- * CR8_1 (I/O) side of the CR8_1 <-> M33 relay leg (ESC).
+ * CR8_1 (I/O) side of the FMU -> I/O -> ESC relay.
  *
- * Transport is the NuttX IPCC character device (/dev/ipcc3), backed by the raw
- * MHU doorbell + DDR shared-ring lower half (see rzv_ipc_channels.h). This
- * replaces the legacy raw-pointer ring at 0x70000000. One protocol message per
- * ring entry; each message is framed by MessageHeader_t and validated by CRC32.
- * CR8_1 is the IPCC initiator for this link; M33 is the responder.
+ * One instance serves each NuttX IPCC character device: /dev/ipcc1 (CR8_0 FMU
+ * leg, CR8_1 is the responder) and /dev/ipcc3 (M33 ESC leg, CR8_1 is the
+ * initiator). Both are backed by the raw MHU doorbell + DDR shared-ring lower
+ * half (see rzv_ipc_channels.h). One protocol message per ring entry; each
+ * message is framed by MessageHeader_t and validated by CRC32.
  */
 
 #include "protocol.h"
@@ -57,6 +57,13 @@ public:
 	/* Open the IPCC device. is_master is accepted for source compatibility. */
 	bool init(bool is_master);
 
+	/* CR8_0 -> CR8_1 */
+	bool receive_actuator_command(ActuatorCommand_t &cmd);
+
+	/* CR8_1 -> CR8_0 */
+	bool send_heartbeat(const Heartbeat_t &heartbeat);
+	bool send_fault_status(const FaultStatus_t &status);
+
 	/* CR8_1 -> M33 */
 	bool send_actuator_cmd(const ActuatorCmdToM33_t &cmd);
 
@@ -68,6 +75,12 @@ private:
 	const char *_dev_path;
 	int         _fd{-1};
 	uint16_t    _tx_seq_actuator{0};
+	uint16_t    _tx_seq_heartbeat{0};
+	uint16_t    _tx_seq_fault{0};
+
+	static constexpr size_t PENDING_CAPACITY = 16;
+	uint8_t _pending[PENDING_CAPACITY][64] {};
+	size_t _pending_count{0};
 
 	static uint32_t calculate_crc32(const uint8_t *data, size_t len);
 	bool send_framed(MessageType_e type, uint16_t &seq, void *msg, size_t len);
