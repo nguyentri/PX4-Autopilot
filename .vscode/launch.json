@@ -33,11 +33,13 @@
             "overrideLaunchCommands": [
                 "monitor halt",
                 "load",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "overrideResetCommands": [
                 "monitor halt",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "runToEntryPoint": "arm_boot",
             "liveWatch": {
@@ -63,11 +65,13 @@
             "overrideLaunchCommands": [
                 "monitor halt",
                 "load",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "overrideResetCommands": [
                 "monitor halt",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "runToEntryPoint": "arm_boot",
             // CR8-1 NSH console over SEGGER RTT; control block at 0x081E0000.
@@ -201,7 +205,7 @@
             "cwd": "${workspaceRoot}",
             "name": "Debug RZV2H CR8 (Core0)",
             "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_sih/renesas_rdk-rzv2h_sih.elf",
-            //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf",
+            //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.elf",
             "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
             "request": "launch",
             "type": "cortex-debug",
@@ -218,12 +222,14 @@
                 "monitor halt",
                 "monitor reset",
                 "load",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "overrideResetCommands": [
                 "monitor halt",
                 "monitor reset",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "runToEntryPoint": "arm_boot",
             "rttConfig": {
@@ -262,12 +268,14 @@
                 "monitor halt",
                 "monitor reset",
                 "load",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "overrideResetCommands": [
                 "monitor halt",
                 "monitor reset",
-                "set $pc = __start"
+                "set $pc = __start",
+                "set $cpsr = 0x1d3"
             ],
             "runToEntryPoint": "arm_boot",
             "rttConfig": {
