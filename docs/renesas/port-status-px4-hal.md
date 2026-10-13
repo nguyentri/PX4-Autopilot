@@ -23,7 +23,7 @@ publishing the module instance; failure is reported and releases the instance.
 The [expanded remediation record](../../plans/261013-0624-rzv2h-expanded-remediation/reports/remediation.md)
 tracks verification. The staged demo ramp and echo are replaced: CR8-1 relays
 the CR8-0 bridge's actuator commands to CM33, and both peers drive commanded
-values only while frames stay fresh, then output `0` after 100 ms (see the
+values only while frames stay fresh, then output `0` after the 50 ms output lease; CR8-1 gates outputs through a Safe/Ready/Armed/SafeFault lease and reports from a separate thread (see the
 [IPC architecture](ipc-architecture.md#current-application-and-ca55-integration-gaps)).
 The return path is CR8-1 heartbeat and fault status at 10 Hz; the CR8-0
 bridge tracks CR8-1 liveness with a 500 ms timeout. On 2026-10-13 the CR8-1 IO

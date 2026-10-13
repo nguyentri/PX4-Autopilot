@@ -93,13 +93,25 @@ The CR8-0 uORB bridge:
 - accepts RC input, ESC status, battery status, and heartbeat frames;
 - rejects bad magic, version, type, or CRC;
 - counts per-topic sequence gaps;
-- bounds receive draining to preserve the transmit/heartbeat schedule.
+- bounds receive draining to preserve the transmit/heartbeat schedule;
+- as the `/dev/ipcc1` initiator, treats `ENOLINK`, `ETIMEDOUT` or `EPROTO`
+  from a read or write as a quarantined link (`EAGAIN` is flow control). It
+  then sends nothing, keeps ageing CR8-1 liveness, and retries `RECOVER` at
+  most once per second. A successful `RECOVER` starts a new epoch, resets the
+  RX sequence tracking and resumes transmission. Old commands are never
+  replayed.
+
+The bridge compiles only with the raw IPC initiator role
+(`CONFIG_RZV_IPC_RAW`, `CONFIG_RZV_IPC_ROLE_INITIATOR`) and with
+`CONFIG_RZV_IPC_RECOVERY_WAIT_MS` ≤ 100, so its `RECOVER` call stays bounded
+on the flight core. These are `#error` guards in `uorb_bridge.cpp`.
 
 ## 5. Configuration and Availability
 
 | Target/profile | IPC state | Evidence |
 |---|---|---|
 | PX4 default (`renesas_rdk-rzv2h_default`) | disabled | PX4/NuttX configuration |
+| PX4 single-core CR8-0 profiles (`default`, `drone`, `simple`, `sih`, `dshot`) | PX4IO bridge off (`CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE` defaults to `n`; `drone`/`simple` set it explicitly) | host contract test over every `rdk-rzv2h/*.px4board` |
 | PX4 SIH (`renesas_rdk-rzv2h_sih`) | disabled | source and post-build contracts |
 | NuttX `:nsh` | disabled | defconfig |
 | NuttX `:ipcc` | CA55/OpenAMP smoke profile | build/source only |
@@ -117,11 +129,16 @@ default runtime path. In particular:
 - The [CR8-1 PX4IO relay](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/px4io_cr8.cpp)
   responds on `/dev/ipcc1` to the CR8-0 uORB bridge and relays actuator
   commands to CM33 on `/dev/ipcc3` when that link opens (CM33 is optional).
-  At 10 Hz it reports a heartbeat (`source_core=1`, loop count) and a fault
-  status to CR8-0. The fault status carries `FAULT_FLAG_CR8_TIMEOUT` while
-  no fresh FMU command exists, plus CM33 flags only while CM33 reported
-  them within 500 ms. The CR8-0 bridge accepts heartbeats from CR8-1 only
-  and declares the IO core lost after 500 ms without one.
+  Output authority follows the CR8-1 output lease described below.
+  A separate lower-priority reporter thread sends a heartbeat
+  (`source_core=1`, loop count) and a fault status to CR8-0 at 10 Hz. It
+  reads only values the control loop publishes (atomics), so a stop-and-wait
+  report write never stalls the control loop. A stalled control loop shows
+  as a frozen `loop_count`. The fault status carries `FAULT_FLAG_CR8_TIMEOUT`
+  while no fresh FMU command exists, the lease flags below, and CM33 flags
+  only while CM33 reported them within 500 ms. The CR8-0 bridge accepts
+  heartbeats from CR8-1 only and declares the IO core lost after 500 ms
+  without one.
 - Board evidence (2026-10-13, CR8-0 NuttX `ipcc-raw-cr8_0` as initiator,
   CR8-1 PX4 IO image):
   - `px4io_cr8` autostarts and opens `/dev/ipcc3`;
@@ -134,12 +151,29 @@ default runtime path. In particular:
 
   This is not PX4-bridge evidence: no CR8-0 PX4 profile enables the bridge
   (`CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE`).
+- Board evidence for the output lease and reporter thread (2026-10-13, same
+  setup, A/B against the previous CR8-1 image):
+  - recover to epoch 15, then 16: CR8-1 adopts each epoch through `read()`,
+    and every frame is CRC-valid with zero padding;
+  - fault flags stay `0x4` (`CR8_TIMEOUT`), armed 0: a session change while
+    Safe latches no fault;
+  - the control loop holds 117–131 Hz (`loop_count` per heartbeat
+    interval) both while `hexdump` reads and over about 100 s with no
+    reader. The previous image runs at the same base rate (about 124 Hz) but
+    drops to 79 and 48 Hz while the reader paces its in-loop report writes.
+    The 250 Hz figure recorded earlier did not reproduce.
+
+  The command, arm and SafeFault paths have no board evidence yet: `ipctest`
+  cannot send actuator frames, and no CR8-0 PX4 image enables the bridge.
 - Known limits for the dual-CR8 milestone:
-  - The relay's report writes are stop-and-wait in its control loop.
-    Unpaced, the loop measured about 250 Hz; a slow reader cut it to about
-    93 Hz.
-  - The CR8-0 bridge is the `/dev/ipcc1` initiator and has no `RECOVER`
-    path, so one acknowledgment timeout ends the link until reboot.
+  - The control loop period is about 8 ms (about 124 Hz), not the 2.5 ms
+    sleep it requests. The cause is not yet measured.
+  - The CM33 actuator write is still stop-and-wait inside the CR8-1 control
+    loop. CM33 is optional.
+  - The CR8-0 bridge tracks IO health but does not yet report an I/O failure
+    to commander.
+  - No dual-CR8 CR8-0 PX4 profile exists. One needs the raw IPC initiator,
+    the bridge enabled and `CONFIG_RZV_IPC_RECOVERY_WAIT_MS` ≤ 100.
 - [CM33 PX4IO sources](../../boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/px4io_m33.cpp)
   apply the peer output rule below to an output state that only feeds
   feedback and fault status. CM33 will not drive PWM. It is low priority and
@@ -170,15 +204,44 @@ values such as a parachute; otherwise it requires vehicle arming and
 precedence. The peer rule: each received channel is driven exactly as commanded while
 frames stay fresh, so `armed=0` holds the mixer's disarmed values (`0` stays
 no pulse) as PX4IO does; invalid frames are ignored, and when no valid frame
-arrives for `FMU_LOSS_TIMEOUT_US` (100 ms) all outputs become `0`.
+arrives for `FMU_LOSS_TIMEOUT_US` (50 ms, the output lease) all outputs
+become `0`. The 50 ms lease is the system-specification candidate. Its
+end-to-end latency is still to be measured.
+
+#### CR8-1 output lease
+
+CR8-1 drives outputs only through the
+[output lease](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.h),
+which implements the software-specification state machine
+(ResetSafe → PeerReady → ArmedLease, any failure → SafeFault):
+
+| State | Entered by | Outputs |
+|---|---|---|
+| Safe | boot; lease expiry or session change while not armed | all `0`, disarmed |
+| Ready | a fresh disarmed command in the current link epoch | command forwarded, `armed=0` |
+| Armed | a fresh armed command while Ready or Armed | command forwarded, armed |
+| Fault | lease expiry or session change while Armed (latched) | all `0`, disarmed |
+
+- An armed command is refused (`FAULT_FLAG_ARM_REJECTED`) unless the current
+  session saw a disarmed handshake first. Fault never goes straight to
+  output: only a disarmed command in the current epoch leaves it, and
+  arming again needs another command.
+- The relay reads the link epoch (`RZV_IPC_RAWIOC_GET_STATS`) after every
+  read. A new CR8-0 epoch (`FAULT_FLAG_PEER_SESSION`) ends the session
+  before that read's command is used. If the epoch cannot be read, every
+  command is refused.
+- Fault status adds `FAULT_FLAG_OUTPUT_SAFE_FAULT` with the latched reason
+  (`FAULT_FLAG_CR8_TIMEOUT` or `FAULT_FLAG_PEER_SESSION`) while in Fault.
+- `GET_STATS` takes the driver's `rxlock`, not the write lock held across the
+  ACK wait, so the epoch query never waits behind a blocked writer.
 
 - CR8-1 accepts a frame only if `armed`/`safety_off` are 0 or 1 and every
-  nonzero output lies in 90–2500 µs. It keeps the newest valid frame from a
-  bounded drain (32 reads per cycle) and sends CM33 one command per loop
-  cycle (2.5 ms sleep): the fresh frame, or all-zero and disarmed after the
-  timeout.
+  nonzero output lies in 90–2500 µs. It applies valid frames to the lease in
+  order from a bounded drain (32 reads per cycle) and sends CM33 the lease
+  output once per loop cycle: the fresh command in Ready or Armed, otherwise
+  all-zero and disarmed.
 - CM33 applies the same checks plus `output_mode == 0` (PWM only), holds the
-  newest valid command and zeroes its outputs after 100 ms without one. It
+  newest valid command and zeroes its outputs after 50 ms without one. It
   reports `FAULT_FLAG_CR8_TIMEOUT` while timed out and echoes the applied
   outputs in feedback.
 - Freshness uses each core's local receive time because the cores do not
@@ -187,8 +250,9 @@ arrives for `FMU_LOSS_TIMEOUT_US` (100 ms) all outputs become `0`.
   safety publication, so if the mixer stops publishing, the peers time out
   and stop outputs.
 
-Host checks cover the bridge, the relay, the CM33 rule, the CR8-1 transport and
-every sender's one-entry write. The CR8-1 heartbeat reports zero CPU load
+Host checks cover the bridge (including link recovery), the relay, the output
+lease state machine, the CM33 rule, the CR8-1 transport and every sender's
+one-entry write. The CR8-1 heartbeat reports zero CPU load
 without sampling utilization.
 CM33 drives no physical PWM yet. Real output ownership and peer-loss safety
 verification on target remain required before flight use.
