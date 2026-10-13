@@ -162,15 +162,47 @@ payload validation result.
 ## 6. Real-Time Transfer (RTT) Console
 
 `JLinkGDBServer` does not bridge RTT on the CR8 cores. Use JLinkExe through the
-repository bridge, which attaches without reset or halt and serves RTT channel
-0 on `127.0.0.1:19021`:
+repository bridge, which serves RTT channel 0 on `127.0.0.1:19021`. Start with
+the host-only preflight, which prints the probe serial, current probe owners,
+busy ports and the core and `_SEGGER_RTT` address of each ELF:
 
 ```bash
-JLINK_SERIAL=<probe-serial> \
-  platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>
-platforms/nuttx/Debug/nsh_console_exec.py 'uname -a' 'free' 'dmesg'
+platforms/nuttx/Debug/jlink-debug-preflight.py
+export JLINK_SERIAL=$(platforms/nuttx/Debug/jlink-debug-preflight.py --print-serial)
+platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>
+platforms/nuttx/Debug/nsh_console_exec.py --marker 'uname -a' 'free' 'dmesg'
 platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop
 ```
+
+The bridge attaches without reset or halt only when the first connect
+succeeds. By default the J-Link DLL answers a failed connect with a reset-pin
+pulse and a cold reset, which removes the RAM images (observed on CR8-0 with
+JLinkExe V8.94). The bridge sets `InhibitConnectRetries = 1` before `connect`
+and exits 3 when its log still shows a reset or a failed connect. After exit
+3, report that the images are gone; do not retry or reload without approval.
+
+Use `--marker` on PX4 images: their tasks log while the shell is idle, which
+hides the NSH prompt that the default mode waits for. Pass the ELF to the
+bridge: PX4 CR8-0 images place `_SEGGER_RTT` at a different address than the
+NuttX demo default.
+
+For a read-only GDB snapshot of a running core, use the oneshot helper. It
+starts the server with `-noreset -noir -singlerun`, refuses commands that
+could change the target, always detaches, exits 5 if the server log shows
+a reset, and exits 6 if gdb reported errors (unknown symbol or unreadable
+memory), because the read is then incomplete. The core halts for 1-3 s
+during the read:
+
+```bash
+platforms/nuttx/Debug/jlink-gdb-oneshot.py cr8_0 <elf> -ex 'bt' -ex 'info registers pc cpsr'
+platforms/nuttx/Debug/jlink-gdb-oneshot.py cr8_1 <cr8_1-elf> \
+  -x platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_1-io-health.gdb
+```
+
+To load one CR8 image (approval required), use
+`platforms/nuttx/Debug/rzv2h-ipc/rzv2h-load-one-core.sh <cr8_0|cr8_1> <elf>`.
+Never connect to the CM33: SEGGER's RZ/V2H support resets the SoC on a CM33
+connect.
 
 The bridge records the group leader's start time, command file, probe and core
 identity. A stale or legacy numeric PID record is retired without signalling

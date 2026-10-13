@@ -45,10 +45,19 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 ## 3. Run and debug on hardware
 
 - Console is **SEGGER RTT**, not UART (SCI4 shell only in `nsh`/`nsh-scif` style configs).
+- Start with `platforms/nuttx/Debug/jlink-debug-preflight.py` (host-only: probe serial, owners, ports, ELF → core/RTT map;
+  `--print-serial` for `JLINK_SERIAL`). Do not probe with `JLinkExe -ShowEmuList` (invalid) or `-?` (exits 1).
 - RTT: `JLinkGDBServer` **cannot** bridge RTT on CR8. Use `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>`
-  (JLinkExe attaches without reset, serves channel 0 on `127.0.0.1:19021`), then send NSH commands with
-  `platforms/nuttx/Debug/nsh_console_exec.py`. Stop the bridge before starting a GDB session (one probe, one owner).
-- Discover `_SEGGER_RTT` from the exact loaded ELF; historical defaults are CR8-0 `0x081A0000`, CR8-1 `0x081E0000`. J-Link devices: `R9A09G057H44_R8_0`, `_R8_1`.
+  (JLinkExe, serves channel 0 on `127.0.0.1:19021`), then send NSH commands with
+  `platforms/nuttx/Debug/nsh_console_exec.py --marker ...` (`--marker` is required on PX4 images, which log while the shell idles).
+  Stop the bridge before starting a GDB session (one probe, one owner).
+- **A failed J-Link connect can reset the board** (DLL default: reset pin + cold reset; the RAM images are lost). The bridge sets
+  `InhibitConnectRetries` and exits 3 on reset/connect-failure markers; after exit 3, report and do not retry without approval.
+  Never connect to the CM33 (its connect resets the SoC).
+- Read-only GDB snapshot: `platforms/nuttx/Debug/jlink-gdb-oneshot.py <cr8_0|cr8_1> <elf> -ex 'bt'` (`-noreset -noir -singlerun`,
+  refuses mutating commands, exit 5 on reset, exit 6 when gdb reported errors). PX4 health snippets: `platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_{0-bridge,1-io}-health.gdb`.
+  Approved loads: `rzv2h-ipc/rzv2h-load-one-core.sh <core> <elf>` (one core) or `rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>`.
+- Discover `_SEGGER_RTT` from the exact loaded ELF (PX4 CR8-0 images use `0x081a2400`); the NuttX demo defaults are CR8-0 `0x081A0000`, CR8-1 `0x081E0000`. J-Link devices: `R9A09G057H44_R8_0`, `_R8_1`.
 - Register decode: `platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd ...`.
 - Skills: `gdb-jlink-debug` (J-Link/GDB/RTT/SVD workflows), `audit-rzv2h-px4-nuttx-port` (cross-layer audit), `firmware-audit`.
 - J-Link reset, ELF load, and target memory writes need explicit user approval.
