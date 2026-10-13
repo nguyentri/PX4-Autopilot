@@ -646,12 +646,12 @@
       "classification": "handwritten",
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "native_symbol_dispositions": {
-        "source_sha256": "da8fbf35656f0e31d1b8b2ae7c0c30b9f44b8699c6fc61e350485382d22793dc",
+        "source_sha256": "3826c965216948ee52a0e247159c8e48e9026d479e09cb4ec195069af8573aa3",
         "symbols": {
           "SYSC_SYS_ADC_CFG_sy_mstp_ada": {
             "evidence": "Existing register-interface spelling in the defining hardware header; preserve these external register names and their definitions. Raw nxstyle mixed-case diagnostics remain visible.",
             "path": "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_sysc.h",
-            "sha256": "d1bccb85ae5aaba884d3f99d9553cb7d4983929bf695b1e873c08caac824fe7c"
+            "sha256": "cedc3b07685441375fe3d0fac7cad42c403a7df9baf06018418ebe814378633e"
           }
         }
       },

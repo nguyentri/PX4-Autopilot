@@ -114,7 +114,7 @@ static struct {
 /**
  * Get GPT base address from timer ID
  *
- * FSP logical GPT channels 0-7 use physical GPT0-7.  Logical channels 8-15
+ * Logical GPT channels 0-7 use physical GPT0-7.  Logical channels 8-15
  * use physical GPT10-17.  RZV_GPT_LOGICAL_BASE() owns the translation.
  */
 static uint32_t get_gpt_base(uint8_t timer_id)

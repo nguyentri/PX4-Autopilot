@@ -48,6 +48,7 @@
 #include <drivers/drv_hrt.h>
 
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -58,6 +59,7 @@
 
 #include <arch/board/board.h>
 #include <nuttx/analog/adc.h>
+#include <nuttx/analog/ioctl.h>
 #include <nuttx/arch.h>
 
 #include <board_config.h>
@@ -71,6 +73,8 @@
 #define ADC_BASE_PATH          "/dev/adc"
 #define ADC_MAX_CHANNELS       8
 #define ADC_SAMPLE_COUNT       8
+#define ADC_CONVERSION_TIMEOUT_US 1000
+#define ADC_POLL_INTERVAL_US    10
 
 /****************************************************************************
  * Private Data
@@ -78,6 +82,9 @@
 
 static int g_adc_fd = -1;
 static px4_adc_msg_t g_samples[ADC_MAX_CHANNELS];
+static bool g_sample_valid[ADC_MAX_CHANNELS];
+
+int px4_arch_adc_update();
 
 /****************************************************************************
  * Public Functions
@@ -85,6 +92,7 @@ static px4_adc_msg_t g_samples[ADC_MAX_CHANNELS];
 
 int px4_arch_adc_init(uint32_t base_address)
 {
+	(void)base_address;
 	/* Open ADC device */
 	g_adc_fd = open(ADC_BASE_PATH "0", O_RDONLY | O_NONBLOCK);
 
@@ -94,6 +102,7 @@ int px4_arch_adc_init(uint32_t base_address)
 	}
 
 	memset(g_samples, 0, sizeof(g_samples));
+	memset(g_sample_valid, 0, sizeof(g_sample_valid));
 
 	PX4_INFO("ADC initialized on %s", ADC_BASE_PATH "0");
 	return OK;
@@ -101,24 +110,69 @@ int px4_arch_adc_init(uint32_t base_address)
 
 void px4_arch_adc_uninit(uint32_t base_address)
 {
+	(void)base_address;
+
 	if (g_adc_fd >= 0) {
 		close(g_adc_fd);
 		g_adc_fd = -1;
 	}
+
+	memset(g_sample_valid, 0, sizeof(g_sample_valid));
 }
 
-uint32_t px4_arch_adc_sample(unsigned channel)
+uint32_t px4_arch_adc_sample(uint32_t base_address, unsigned channel)
 {
+	(void)base_address;
+
 	if (g_adc_fd < 0 || channel >= ADC_MAX_CHANNELS) {
-		return 0;
+		return UINT32_MAX;
 	}
 
-	return g_samples[channel].am_data;
+	int ret = px4_arch_adc_update();
+
+	if (ret < 0 && ret != -EAGAIN) {
+		return UINT32_MAX;
+	}
+
+	/* Discard previous results before requesting a single scan. Opening the
+	 * native ADC enables scan-end interrupts but does not start conversion.
+	 */
+	memset(g_sample_valid, 0, sizeof(g_sample_valid));
+
+	if (ioctl(g_adc_fd, ANIOC_TRIGGER, 0) < 0 && errno != EBUSY) {
+		return UINT32_MAX;
+	}
+
+	/* An in-flight scan may still complete after EBUSY. Never serve an old
+	 * cached value if the requested channel does not arrive in this wait.
+	 */
+	for (unsigned elapsed = 0; elapsed < ADC_CONVERSION_TIMEOUT_US; elapsed += ADC_POLL_INTERVAL_US) {
+		ret = px4_arch_adc_update();
+
+		if (ret < 0 && ret != -EAGAIN) {
+			return UINT32_MAX;
+		}
+
+		if (g_sample_valid[channel]) {
+			return g_samples[channel].am_data;
+		}
+
+		up_udelay(ADC_POLL_INTERVAL_US);
+	}
+
+	memset(g_sample_valid, 0, sizeof(g_sample_valid));
+	return UINT32_MAX;
 }
 
 float px4_arch_adc_reference_v()
 {
 	return BOARD_ADC_VREF / 1000.0f;  /* Convert mV to V */
+}
+
+uint32_t px4_arch_adc_temp_sensor_mask()
+{
+	/* This adapter exposes the eight external ADC channels. */
+	return 0;
 }
 
 uint32_t px4_arch_adc_dn_fullcount()
@@ -132,7 +186,7 @@ int px4_arch_adc_px4_to_channel(int px4_channel)
 	return px4_channel;
 }
 
-/* Periodic update function - call from work queue or timer */
+/* Drain available samples before serving a channel from the cache. */
 int px4_arch_adc_update()
 {
 	if (g_adc_fd < 0) {
@@ -140,14 +194,27 @@ int px4_arch_adc_update()
 	}
 
 	struct adc_msg_s samples[ADC_SAMPLE_COUNT];
+
 	ssize_t nbytes = read(g_adc_fd, samples, sizeof(samples));
 
 	if (nbytes < 0) {
-		if (errno != EAGAIN) {
-			PX4_ERR("ADC read failed: %d", errno);
+		const int error = errno;
+
+		if (error != EAGAIN) {
+			PX4_ERR("ADC read failed: %d", error);
+			memset(g_sample_valid, 0, sizeof(g_sample_valid));
 		}
 
-		return -errno;
+		return -error;
+	}
+
+	if (nbytes == 0) {
+		return -EAGAIN;
+	}
+
+	if (nbytes % sizeof(struct adc_msg_s) != 0) {
+		memset(g_sample_valid, 0, sizeof(g_sample_valid));
+		return -EIO;
 	}
 
 	/* Update sample cache */
@@ -159,6 +226,7 @@ int px4_arch_adc_update()
 		if (chan < ADC_MAX_CHANNELS) {
 			g_samples[chan].am_channel = chan;
 			g_samples[chan].am_data = samples[i].am_data;
+			g_sample_valid[chan] = true;
 		}
 	}
 

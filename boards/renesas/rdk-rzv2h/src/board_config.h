@@ -31,11 +31,9 @@
  *
  ****************************************************************************/
 
-/**
- * @file board_config.h
+/** @file board_config.h
  *
- * Renesas RDK-RZV2H board configuration for PX4
- * Based on PX4 FreeRTOS+FSP reference implementation
+ * Renesas RDK-RZV2H board configuration for PX4.
  */
 
 #pragma once
@@ -64,7 +62,7 @@
  * - ARM Cortex-A55 cores for Linux/application processing
  * - 24 MHz crystal oscillator
  *
- * PX4 Sensor Configuration (matches FSP rzv_gen/pin_data.c + configuration.xml RDK pinconfig):
+ * PX4 Sensor Configuration:
  * - MPU9250 IMU on RSPI0 (P90=MOSI, P91=MISO, P92=SCK, P93=GPIO CS) with INT on P94 (TINT)
  * - The simple bench profile substitutes ICM20948 on the same SPI0/CS/INT wiring
  * - BMP280 barometer on RSCI7 SCI-mode I2C (P76=SDA, P77=SCL) at address 0x76
@@ -108,7 +106,7 @@
  * UART/Serial Configuration
  ****************************************************************************************************/
 
-/* UART Device Mapping (matches FSP RSCI channel numbering; console = RTT, no debug UART)
+/* UART Device Mapping (sparse SCI channels; console = RTT, no debug UART)
  * RSCI4 (ttyS4): TFminiPlus LiDAR  (P70=TXD4, P71=RXD4)
  * RSCI5 (ttyS5): Sik Telemetry v3  (P72=TXD5, P73=RXD5)
  * RSCI6 (ttyS6): fs-a8s RC input   (P75=RXD6 only)
@@ -135,7 +133,7 @@
 
 /* I2C Bus Configuration
  * I2C7 = RSCI7 in SCI-mode I2C (NOT a standalone RIIC peripheral): BMP280 barometer
- * (P76=SDA, P77=SCL). Driver: rzv_sci_i2c.c. PIO mode (DMAC disabled per FSP).
+ * (P76=SDA, P77=SCL). Driver: rzv_sci_i2c.c. PIO mode; DMAC is disabled.
  */
 #define PX4_NUMBER_I2C_BUSES            1
 #define BOARD_NUMBER_I2C_BUSES          1
@@ -154,7 +152,7 @@
  * SPI Configuration
  ****************************************************************************************************/
 
-/* SPI Bus Configuration (matches FSP module.driver.spi_b.channel = 0)
+/* SPI Bus Configuration
  * RSPI0: one selected MPU9250 or ICM20948 IMU on the shared wiring.
  * P90 = MOSI A, P91 = MISO A, P92 = SCK A. P93 is configured as an
  * active-low GPIO chip select by the NuttX board layer.

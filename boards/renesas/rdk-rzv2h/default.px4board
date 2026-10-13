@@ -11,7 +11,7 @@ CONFIG_BOARD_CONSTRAINED_MEMORY=y
 CONFIG_BOARD_NO_HELP=y
 
 # Serial port configuration
-# RSCI4 (ttyS4): NSH console
+# SCI4 (ttyS4): TFmini payload UART; RTT0 provides the NSH console
 # RSCI5 (ttyS5): Sik MAVLink telemetry
 # RSCI6 (ttyS6): fs-a8s SBUS RC (RX-only)
 # RSCI9 (ttyS9): GPS M10
@@ -21,22 +21,8 @@ CONFIG_BOARD_SERIAL_RC="/dev/ttyS6"
 #CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"
 CONFIG_COMMON_SERIAL_PORT_MAPPING=y
 
-# Serial Configuration (SCI4 for NSH console)
-CONFIG_SERIAL=y
-CONFIG_STANDARD_SERIAL=y
-CONFIG_SCI4_SERIALDRIVER=y
-CONFIG_SCI4_SERIAL_CONSOLE=y
-CONFIG_SCI4_RXBUFSIZE=256
-CONFIG_SCI4_TXBUFSIZE=256
-CONFIG_SCI4_BAUD=115200
-CONFIG_SCI4_BITS=8
-CONFIG_SCI4_PARITY=0
-CONFIG_SCI4_2STOP=0
-CONFIG_RZV_SCI4=y
-
-# Console support (SCI4 will be console)
-CONFIG_DEV_CONSOLE=y
-CONFIG_SERIAL_CONSOLE=y
+# Console and UART lower-half selectors are owned by nuttx-config/nsh/defconfig.
+# Integrated /dev/console uses SEGGER RTT channel 0; SCI4 remains a payload UART.
 
 # NuttX specific configuration
 CONFIG_ARCH_BOARD_CUSTOM=y

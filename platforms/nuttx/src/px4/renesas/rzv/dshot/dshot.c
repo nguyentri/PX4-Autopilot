@@ -71,8 +71,9 @@
 #define DSHOT600_FREQ             600000u
 #define DSHOT1200_FREQ            1200000u
 
-/* DMkSEL uses the DMAC activation-source numbering from Renesas bsp_dmac.h,
- * not the ELC interrupt numbering in rzv2h_irq.h. */
+/* DMkSEL uses DMAC activation-source numbers, distinct from the ELC
+ * interrupt event numbering.
+ */
 
 #define DSHOT_GPT_CMPA_EVENT_U0_BASE  209u
 #define DSHOT_GPT_CMPB_EVENT_U0_BASE  217u
