@@ -180,6 +180,11 @@ pulse and a cold reset, which removes the RAM images (observed on CR8-0 with
 JLinkExe V8.94). The bridge sets `InhibitConnectRetries = 1` before `connect`
 and exits 3 when its log still shows a reset or a failed connect. After exit
 3, report that the images are gone; do not retry or reload without approval.
+JLinkExe opens the RTT port before its connect has a result, so the bridge
+waits for the end of its command file (up to `CONNECT_TIMEOUT`, 90 s: on a
+stopped CR8 the J-Link start sequence takes about 60 s to fail). Exit 3 with
+"held in reset or was never started" means the core runs no image (DBGEN not
+asserted); no reset was logged.
 
 Use `--marker` on PX4 images: their tasks log while the shell is idle, which
 hides the NSH prompt that the default mode waits for. Pass the ELF to the

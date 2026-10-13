@@ -53,6 +53,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
   Stop the bridge before starting a GDB session (one probe, one owner).
 - **A failed J-Link connect can reset the board** (DLL default: reset pin + cold reset; the RAM images are lost). The bridge sets
   `InhibitConnectRetries` and exits 3 on reset/connect-failure markers; after exit 3, report and do not retry without approval.
+  Exit 3 with "held in reset or was never started" (DBGEN) means no image runs on that core; no reset was logged.
   Never connect to the CM33 (its connect resets the SoC).
 - Read-only GDB snapshot: `platforms/nuttx/Debug/jlink-gdb-oneshot.py <cr8_0|cr8_1> <elf> -ex 'bt'` (`-noreset -noir -singlerun`,
   refuses mutating commands, exit 5 on reset, exit 6 when gdb reported errors). PX4 health snippets: `platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_{0-bridge,1-io}-health.gdb`.
