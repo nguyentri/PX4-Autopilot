@@ -81,10 +81,7 @@ CONFIG_SYSTEMCMDS_UORB=y
 CONFIG_SYSTEMCMDS_VER=y
 CONFIG_SYSTEMCMDS_WORK_QUEUE=y
 
-# Disable optional board payload capabilities for this isolated image.
-CONFIG_BOARD_RDK_RZV2H_HAS_IMU=y
-CONFIG_BOARD_RDK_RZV2H_HAS_MAG=n
-CONFIG_BOARD_RDK_RZV2H_HAS_BARO=n
+# Keep the CR8-1 PX4IO bridge out of this isolated image.
 CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=n
 
 # Board-specific PWM contract used by the PWMOut driver.

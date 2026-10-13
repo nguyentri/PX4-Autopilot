@@ -37,6 +37,7 @@ renesas_rdk-rzv2h-io-cr8_1_default
 renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_drone
 renesas_rdk-rzv2h_dshot
+renesas_rdk-rzv2h_dualcr8
 renesas_rdk-rzv2h_sih
 renesas_rdk-rzv2h_simple
 ```

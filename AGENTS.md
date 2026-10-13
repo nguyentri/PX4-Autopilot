@@ -35,7 +35,8 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 |------|--------------------------|--------|
 | Full PX4 firmware | `./build.sh renesas_rdk-rzv2h_default` (`--list` for all targets, `--no-clean` to iterate) | `build/<target>/<target>.elf` |
 | NuttX only (driver bring-up, NSH samples) | `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `.bin`, `.hex` |
-- PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot}`, `renesas_rdk-rzv2h-io-cr8_1_default`, `renesas_rdk-rzv2h-io-cm33_default`.
+- PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot,drone,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_default`, `renesas_rdk-rzv2h-io-cm33_default`.
+- `dualcr8` is the dual-CR8 staging profile: `drone` plus raw `/dev/ipcc1` and the CR8-1 PX4IO bridge; pair it with the `io-cr8_1` image. Commander blocks arming until CR8-1 reports a fresh lease and heartbeat.
 - `simple` is the isolated RTT PWM + ICM20948 accel/gyro bench profile; see `docs/renesas/validation/simple-pwm-icm20948-validation.md`. Retired core-only resources/evidence remain historical.
 - NuttX configs: `platforms/nuttx/NuttX/build.sh --list` (e.g. `nsh-rtt`, `nsh-scif`, `ipcc`, `adc`, `canfd`, `hil-full`). `--no-clean <config>` rebuilds the same config incrementally. Exit codes: 0 ok, 1 build failed, 2 bad usage.
 - Never hand-run `tools/configure.sh` + `make`; the scripts handle distclean and stale arch symlinks.

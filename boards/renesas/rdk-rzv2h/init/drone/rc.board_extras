@@ -1,0 +1,14 @@
+#!/bin/sh
+# Only the dual-CR8 image registers /dev/ipcc1, and it always carries the CR8-1
+# PX4IO bridge; the single-core drone image has neither. Commander blocks
+# arming while the bridge reports CR8-1 missing, stale or in SafeFault.
+
+if [ -e /dev/ipcc1 ]
+then
+	if px4io_bridge start
+	then
+		echo "px4io_bridge started on /dev/ipcc1"
+	else
+		echo "ERROR [init] px4io_bridge failed on /dev/ipcc1"
+	fi
+fi

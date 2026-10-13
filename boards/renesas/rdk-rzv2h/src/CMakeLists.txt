@@ -61,6 +61,14 @@ if(CONFIG_RZV_SPI)
 	)
 endif()
 
+# The raw CR8-0 <-> CR8-1 link (/dev/ipcc1) is registered by the shared board
+# IPC table, which libboards leaves out as well.
+if(CONFIG_RZV_IPC_RAW)
+	list(APPEND drivers_board_sources
+		${PX4_SOURCE_DIR}/platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc.c
+	)
+endif()
+
 add_library(drivers_board ${drivers_board_sources})
 
 target_link_libraries(drivers_board

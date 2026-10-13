@@ -62,6 +62,16 @@ static const char hw_type[] = "RDK-RZV2H";
 #endif
 #endif
 
+#ifdef CONFIG_RZV_IPC_RAW
+/* The shared board IPC table also brings up OpenAMP, which this board
+ * initializes itself; keep a single owner for each link.
+ */
+#  ifdef CONFIG_RZV_OPENAMP
+#    error "CR8-0 PX4 images support either OpenAMP or the raw IPC links, not both"
+#  endif
+extern int board_ipc_initialize(void);
+#endif
+
 #include "board_config.h"
 /* board_config.h includes board_common.h at the end, so redundant include removed */
 /* Undefine macros from board_common.h so we can implement the functions */
@@ -327,6 +337,19 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		syslog(LOG_WARNING,
 		       "board_app_initialize: optional OpenAMP unavailable (%d); continuing CR8-0 standalone\n",
 		       ret);
+	}
+
+#endif
+
+#if defined(CONFIG_RZV_IPC_RAW)
+	/* The dual-CR8 profile registers /dev/ipcc1 for the CR8-1 IO link. A
+	 * failure leaves the px4io bridge without a link, so commander blocks
+	 * arming on the missing I/O processor status instead of failing boot.
+	 */
+	ret = board_ipc_initialize();
+
+	if (ret != OK) {
+		syslog(LOG_ERR, "board_app_initialize: raw IPC links unavailable (%d)\n", ret);
 	}
 
 #endif
