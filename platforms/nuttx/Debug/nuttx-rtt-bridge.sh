@@ -13,7 +13,9 @@
 # the J-Link DLL retries a failed connect by pulsing the reset pin, which kills
 # the running image. The command file sets InhibitConnectRetries before its
 # own connect, and start fails with exit 3 if the log still shows a reset or a
-# failed connect.
+# failed connect. JLinkExe serves the RTT port before that connect finishes, so
+# start waits for the command file to finish. On a core that is not running the
+# J-Link R8 script tries to start its clocks and can take 60 s to give up.
 #
 # Usage:
 #   JLINK_SERIAL=<sn> nuttx-rtt-bridge.sh start <target> [elf|0xADDR]
@@ -27,8 +29,9 @@
 # Then:  nsh_console_exec.py --rtt 'ps'      or      nc 127.0.0.1 19021
 #
 # Env: JLINK_SERIAL (required for start), RTT_PORT (19021), RTT_ADDR,
-#      JLINK_IF (SWD), JLINK_SPEED (auto), STATE_DIR (${TMPDIR:-/tmp}/nuttx-rtt-bridge).
-# Exit: 0 up, 1 failed (probe busy, port in use, no RTT), 2 usage,
+#      JLINK_IF (SWD), JLINK_SPEED (auto), STATE_DIR (${TMPDIR:-/tmp}/nuttx-rtt-bridge),
+#      CONNECT_TIMEOUT (90 s, longer than the J-Link R8 script's 60 s InitTarget).
+# Exit: 0 up, 1 failed (probe busy, port in use, connect timeout), 2 usage,
 #       3 the J-Link log shows a target reset or failed connect (bridge stopped).
 
 set -eu
@@ -36,12 +39,16 @@ set -eu
 RTT_PORT="${RTT_PORT:-19021}"
 STATE_DIR="${STATE_DIR:-${TMPDIR:-/tmp}/nuttx-rtt-bridge}"
 PIDFILE="${STATE_DIR}/bridge.pid"
+CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-90}"
 LOG="${STATE_DIR}/jlinkexe.log"
 JLINKEXE=$(command -v JLinkExe || echo /opt/SEGGER/JLink/JLinkExe)
 
 # J-Link log lines that mean the probe reset the core, or never attached.
-RESET_MARKERS='Resetting via Reset pin|cold reset sequence|DBGEN is not asserted'
-CONNECT_MARKERS="${RESET_MARKERS}|Connect failed|Cannot connect"
+# DBGEN alone means the core is held in reset or was never started.
+RESET_MARKERS='Resetting via Reset pin|cold reset sequence'
+CONNECT_MARKERS="${RESET_MARKERS}|DBGEN is not asserted|Connect failed|Cannot connect|Could not connect"
+# JLinkExe prints this once the command file, connect included, has run.
+SCRIPT_DONE='Script processing completed'
 
 port_up() { nc -z 127.0.0.1 "${RTT_PORT}" 2>/dev/null; }
 
@@ -67,9 +74,12 @@ stop_owned() {
 	if running; then
 		kill -- "-${bridge_pid}" 2>/dev/null || return 1
 		stop_tries=0
-		while running || port_up; do
+		# The session outlives its leader while JLinkExe still runs.
+		while pgrep -s "${bridge_pid}" >/dev/null || port_up; do
 			stop_tries=$((stop_tries + 1))
-			[ "${stop_tries}" -lt 50 ] || { echo "RTT bridge has not released its port" >&2; return 1; }
+			# JLinkExe ignores SIGTERM while its InitTarget script runs.
+			[ "${stop_tries}" -ne 50 ] || kill -s KILL -- "-${bridge_pid}" 2>/dev/null || true
+			[ "${stop_tries}" -lt 80 ] || { echo "RTT bridge has not released its port" >&2; return 1; }
 			sleep 0.1
 		done
 	fi
@@ -127,21 +137,26 @@ start)
 	echo "${sid}" >"${PIDFILE}"
 	bridge_start=$(awk '{sub(/^.*\) /, ""); print $20}' "/proc/${sid}/stat")
 	printf '%s\n' "${bridge_start}" "${cmdfile}" "${JLINK_SERIAL}" "${dev}" >"${PIDFILE}.identity"
-	fail() { echo "$1" >&2; stop_owned; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"; exit 1; }
+	fail() { echo "$1" >&2; stop_owned || true; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"; exit 1; }
+	# JLinkExe serves the RTT port before its connect has finished, so an
+	# open port proves nothing: wait for the command file to finish too.
 	i=0
-	until port_up; do
-		# A failed connect never opens the port: stop waiting, report below.
+	while :; do
+		# A failed connect is reported below.
 		! grep -Eq "${CONNECT_MARKERS}" "${LOG}" || break
+		! { grep -q "${SCRIPT_DONE}" "${LOG}" && port_up; } || break
 		# The sleep keeps the session alive, so look for JLinkExe itself in it
 		# (after a short grace for it to spawn).
 		[ "${i}" -lt 5 ] || pgrep -s "${sid}" -x JLinkExe >/dev/null || fail "JLinkExe exited early:"
-		i=$((i + 1)); [ "${i}" -gt 150 ] && fail "RTT port not up:"
+		i=$((i + 1)); [ "${i}" -le $((CONNECT_TIMEOUT * 10)) ] || fail "J-Link connect not finished or RTT port not up after ${CONNECT_TIMEOUT} s:"
 		sleep 0.1
 	done
 	if grep -Eq "${CONNECT_MARKERS}" "${LOG}"; then
 		grep -E "${CONNECT_MARKERS}" "${LOG}" >&2
 		if grep -Eq "${RESET_MARKERS}" "${LOG}"; then
 			echo "!! J-Link RESET ${target}: the image that was running there is gone. Tell the user; reload it before trusting any output." >&2
+		elif grep -q 'DBGEN is not asserted\|Enabling CR8 clocks' "${LOG}"; then
+			echo "!! ${target} is held in reset or was never started (DBGEN, or J-Link had to start its clocks); no reset was logged. No image runs there: tell the user; a reload needs approval." >&2
 		else
 			echo "!! J-Link could not attach to ${target}; no reset was logged. Check the core is powered and running, then retry once." >&2
 		fi
@@ -167,5 +182,5 @@ status)
 	else echo "not running"; fi
 	;;
 *)
-	sed -n '2,33p' "$0"; exit 2 ;;
+	sed -n '2,36p' "$0"; exit 2 ;;
 esac
