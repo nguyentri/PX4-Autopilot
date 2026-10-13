@@ -49,7 +49,8 @@ class ProcessOwnership(unittest.TestCase):
             executable(tmp / 'JLinkExe', '''#!/usr/bin/env python3
 import os,socket,sys,time
 s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen();time.sleep(60)
+s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen()
+print('Script processing completed.',flush=True);time.sleep(60)
 ''')
             executable(tmp / 'nc', '''#!/usr/bin/env python3
 import socket,sys

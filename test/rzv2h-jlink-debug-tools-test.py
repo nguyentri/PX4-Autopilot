@@ -234,7 +234,7 @@ class NshMarkerMode(unittest.TestCase):
 
 
 class RttBridgeConnectGuard(unittest.TestCase):
-    def start_bridge(self, tmp, jlink_body):
+    def start_bridge(self, tmp, jlink_body, **extra_env):
         executable(tmp / 'JLinkExe', jlink_body)
         executable(tmp / 'nc', '''#!/usr/bin/env python3
 import socket,sys
@@ -243,7 +243,7 @@ except OSError: sys.exit(1)
 ''')
         port = free_port()
         env = dict(os.environ, PATH=f'{tmp}:{os.environ["PATH"]}', STATE_DIR=str(tmp / 'state'),
-                   JLINK_SERIAL='fixture', RTT_PORT=str(port))
+                   JLINK_SERIAL='fixture', RTT_PORT=str(port), **extra_env)
         command = ['sh', str(DEBUG / 'nuttx-rtt-bridge.sh')]
         result = subprocess.run(command + ['start', 'cr8_0', '0x081a2400'], env=env,
                                 capture_output=True, text=True, timeout=30)
@@ -257,7 +257,8 @@ except OSError: sys.exit(1)
 import os,shutil,socket,sys,time
 shutil.copy(sys.argv[sys.argv.index('-CommandFile')+1], os.environ['STATE_DIR']+'/seen.jlink')
 s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen();time.sleep(60)
+s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen()
+print('Script processing completed.',flush=True);time.sleep(60)
 ''')
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             lines = (tmp / 'state/seen.jlink').read_text().splitlines()
@@ -280,6 +281,42 @@ s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen();time.sleep(60)
             with socket.socket() as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.bind(('127.0.0.1', port))
+
+    def test_connect_failure_after_the_port_opens_still_fails(self):
+        # JLinkExe serves the RTT port before its connect result is known.
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            # A /bin/sh fake keeps the JLinkExe process name the bridge checks.
+            result, _ = self.start_bridge(tmp, '''#!/bin/sh
+python3 -c "import os,socket,time
+s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen();time.sleep(60)" &
+sleep 1
+echo '****** Error: Cortex-A/R (connect): Core internal signal DBGEN is not asserted.'
+echo 'Error occurred: Could not connect to the target device.'
+echo 'Script processing completed.'
+sleep 60
+''')
+            self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+            self.assertNotIn('RESET', result.stderr)
+            self.assertIn('held in reset or was never started', result.stderr)
+
+    def test_connect_timeout_kills_a_stuck_jlinkexe_and_cleans_up(self):
+        # On a stopped CR8 the J-Link InitTarget script blocks for 60 s and
+        # JLinkExe ignores SIGTERM meanwhile.
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            result, _ = self.start_bridge(tmp, '''#!/bin/sh
+trap '' TERM
+echo '  Enabling CR8 clocks...'
+sleep 60
+''', CONNECT_TIMEOUT='2')
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('not finished', result.stderr)
+            self.assertNotIn('not released', result.stderr)
+            self.assertEqual(sorted(p.name for p in (tmp / 'state').iterdir()), ['jlinkexe.log'])
+            stuck = subprocess.run(['pgrep', '-f', str(tmp / 'JLinkExe')], capture_output=True)
+            self.assertEqual(stuck.returncode, 1, stuck.stdout)
 
     def test_failed_connect_fails_fast_without_claiming_a_reset(self):
         with tempfile.TemporaryDirectory() as directory:
