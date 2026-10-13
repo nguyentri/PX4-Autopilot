@@ -77,6 +77,7 @@ def cr8_1_transport_harness(owner=ROOT / 'boards/renesas/rdk-rzv2h-io-cr8_1/px4i
 #include <array>
 #include <unistd.h>
 #include <fcntl.h>
+#include <poll.h>
 ''' + header(owner / 'protocol.h').replace('#pragma once', '')
     code += header(owner / 'sharedmem_transport.h').replace('#pragma once', '')
     code += r'''
@@ -89,6 +90,14 @@ static ssize_t test_read(int fd, void *data, size_t size) {
 static int test_open(const char *path, int flags) { return 123; }
 static int test_close(int fd) { return 0; }
 static uint64_t hrt_absolute_time() { return 10; }
+[[maybe_unused]] static int poll_calls, poll_timeout, poll_result = 1;
+[[maybe_unused]] static short poll_revents = POLLIN;
+[[maybe_unused]] static int test_poll(struct pollfd *fds, nfds_t count, int timeout) {
+  assert(count == 1 && fds[0].fd == 123 && fds[0].events == POLLIN);
+  ++poll_calls; poll_timeout = timeout; fds[0].revents = poll_result > 0 ? poll_revents : 0;
+  return poll_result;
+}
+#define poll test_poll
 #define read test_read
 #define write test_write
 #define open test_open
@@ -600,9 +609,14 @@ struct PublicationBoundary {
   input_rc_s value{}; unsigned count{};
   void publish(const input_rc_s &message) { value = message; ++count; }
 };
-static uint64_t hrt_absolute_time() { return 123; }
+static uint64_t now_us = 123;
+static uint64_t hrt_absolute_time() { return now_us; }
 class UorbBridgeCR8 {
 public:
+''' + re.search(r'\n(\tstatic constexpr uint64_t DISARMED_REFRESH_US = [^;]+;)',
+                (ROOT / 'boards/renesas/rdk-rzv2h/px4io_cr8_0/uorb_bridge.h').read_text()).group(1) + r'''
+  uint64_t _last_actuator_tx_us{0};
+  bool _actuator_cmd_armed{false};
   actuator_outputs_s _actuator_outputs{};
   actuator_armed_s _actuator_armed{};
   vehicle_status_s _safety_status{};
@@ -662,6 +676,29 @@ int main() {
     assert(bridge.sent.armed == valid);
     for (unsigned i = 0; i < IPC_MAX_ACTUATORS; ++i) assert(bridge.sent.outputs[i] == (valid ? 1500 : 0));
   }
+  // A quiet mixer: the disarmed command is resent within the lease, an armed
+  // one never, so only fresh mixer output keeps an armed lease alive.
+  static_assert(UorbBridgeCR8::DISARMED_REFRESH_US == 20000, "PX4IO 20 ms floor");
+  out.value.noutputs = 2; out.ready = true; arm.value = {}; arm.ready = true;
+  safety.value.safety_off = false; safety.ready = true;
+  bridge.process_actuator_outputs();
+  unsigned sends = bridge._stats.tx_actuator_count; const uint16_t sequence = bridge._seq_actuator;
+  assert(!bridge.sent.armed && bridge.sent.outputs[0] == 1500);
+  now_us += UorbBridgeCR8::DISARMED_REFRESH_US - 1; bridge.process_actuator_outputs();
+  assert(bridge._stats.tx_actuator_count == sends);
+  memset(&bridge.sent, 0, sizeof(bridge.sent));
+  now_us += 1; bridge.process_actuator_outputs();
+  assert(bridge._stats.tx_actuator_count == sends + 1 && bridge._seq_actuator == uint16_t(sequence + 1));
+  assert(!bridge.sent.armed && bridge.sent.outputs[0] == 1500 && bridge.sent.outputs[1] == 1500);
+  arm.value.armed = true; arm.ready = true; safety.value.safety_off = true; safety.ready = true;
+  bridge.process_actuator_outputs(); assert(bridge.sent.armed);
+  sends = bridge._stats.tx_actuator_count;
+  for (int i = 0; i < 10; ++i) { now_us += UorbBridgeCR8::DISARMED_REFRESH_US; bridge.process_actuator_outputs(); }
+  assert(bridge._stats.tx_actuator_count == sends);
+  arm.value.armed = false; arm.ready = true; bridge.process_actuator_outputs();
+  assert(!bridge.sent.armed && bridge._stats.tx_actuator_count == sends + 1);
+  now_us += UorbBridgeCR8::DISARMED_REFRESH_US; bridge.process_actuator_outputs();
+  assert(bridge._stats.tx_actuator_count == sends + 2);
   InputRC_t message{};
   for (unsigned count : {0u, 16u, 17u, 18u, 255u}) {
     unsigned before = bridge._input_rc_pub.count; message.channel_count = count;

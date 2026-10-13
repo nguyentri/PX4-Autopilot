@@ -4,6 +4,7 @@
 from pathlib import Path
 import re
 import runpy
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -205,6 +206,46 @@ ina228() { echo "CALL ina228 $*"; return 0; }
         for line in script.splitlines():
             if line.strip() and not line.lstrip().startswith("#"):
                 self.assertIn(line.split()[0], ("if", "then", "else", "fi", "echo"))
+
+    def test_drone_profiles_parse_the_px4_startup_script(self):
+        # NSH keeps one if-stack across sourced scripts and silently skips
+        # lines past its limits, so a short config breaks rcS mid-boot.
+        roots = (BOARD.parent / "init/drone", ROOT / "ROMFS/px4fmu_common/init.d")
+
+        def needs(script, depth, seen):
+            deepest, words, width = depth, 0, 0
+            for line in script.read_text().splitlines():
+                # NSH drops trailing comments, keeps a quoted string as one
+                # argument and counts the command after "if" against the cap.
+                tokens = shlex.split(line, comments=True)
+                if not tokens:
+                    continue
+                command = tokens[1:] if tokens[0] in ("if", "while", "until") else tokens
+                words, width = max(words, len(command)), max(width, len(line))
+                if tokens[0] == "if":
+                    depth += 1
+                    deepest = max(deepest, depth)
+                elif tokens[0] == "fi":
+                    depth -= 1
+                elif tokens[0] == "." and len(tokens) > 1:
+                    name = tokens[1].rsplit("/", 1)[-1]
+                    child = next((root / name for root in roots if (root / name).exists()), None)
+                    if child and child not in seen:
+                        inner = needs(child, depth, seen | {child})
+                        deepest, words, width = (max(deepest, inner[0]), max(words, inner[1]),
+                                                 max(width, inner[2]))
+            return deepest, words, width
+
+        deepest, words, width = needs(roots[1] / "rcS", 0, frozenset())
+        self.assertGreaterEqual(deepest, 7)
+        for label in ("drone", "dualcr8"):
+            config = (BOARD.parent / "nuttx-config" / label / "defconfig").read_text()
+            value = lambda name: int(re.search(rf"(?m)^CONFIG_{name}=(\d+)$", config).group(1))
+            with self.subTest(profile=label):
+                self.assertLessEqual(deepest, value("NSH_NESTDEPTH") - 1)
+                self.assertLessEqual(words, value("NSH_MAXARGUMENTS"))
+                self.assertLess(width, value("NSH_LINELEN"))
+                self.assertGreaterEqual(value("SYSTEM_NSH_STACKSIZE"), 3072)
 
     def test_extension_config_is_separate_from_working_samples(self):
         profile = (BOARD.parent / "drone.px4board").read_text()

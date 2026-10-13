@@ -4,6 +4,7 @@ the build guards that keep the PX4IO bridge out of single-core images."""
 
 import importlib.util
 import re
+import subprocess
 from pathlib import Path
 import unittest
 
@@ -44,7 +45,7 @@ static ssize_t fault_read(int fd, void *data, size_t size) { errno = read_errno 
 static uint64_t clock_us;
 static uint64_t hrt_absolute_time() { return clock_us; }
 static constexpr size_t IPC_ENTRY_SIZE = 64;
-static int liveness_checks, tx_rounds;
+static int liveness_checks, tx_rounds, status_publishes;
 class UorbBridgeCR8 {public:
 ''' + '  ' + interval + r'''
   int _fd{3}; bool _link_down{false}; uint64_t _last_recover_attempt_us{0};
@@ -65,6 +66,7 @@ class UorbBridgeCR8 {public:
   void handle_heartbeat(const Heartbeat_t &, uint64_t) { assert(false); }
   void handle_fault_status(const FaultStatus_t &) { assert(false); }
   void update_io_liveness(uint64_t) { ++liveness_checks; }
+  void publish_io_status(uint64_t) { ++status_publishes; }
   void publish_input_rc(const InputRC_t &) { assert(false); }
   void publish_esc_status(const ESCStatus_t &) { assert(false); }
   void publish_battery_status(const BatteryStatus_t &) { assert(false); }
@@ -102,6 +104,8 @@ int main() {
   b.update();
   assert(recover_calls() == 1 && b._stats.recover_failures == 1 && b._link_down);
   assert(tx_rounds == 3 && written.size() == 1 && liveness_checks == 4);
+  // Commander keeps seeing the IO status on healthy and quarantined ticks.
+  assert(status_publishes == 4);
 
   // Rate limit: no second RECOVER inside the retry interval.
   clock_us = 2000 + R - 1; b.update();
@@ -131,23 +135,23 @@ int main() {
     def test_cr8_1_output_lease_follows_the_safe_fault_state_machine(self):
         owner = BOARDS / 'rdk-rzv2h-io-cr8_1/px4io_cr8_1'
         source = (owner / 'px4io_cr8.cpp').read_text()
-        code = EXPANDED.io_prelude(owner) + EXPANDED.output_lease(owner) + r'''
-struct FmuTransport {
-  std::deque<ActuatorCommand_t> queue; uint32_t epoch = 1; bool epoch_ok = true;
-  int switch_after = -1; uint32_t next_epoch = 0; int reads = 0;
-  bool receive_actuator_command(ActuatorCommand_t &cmd) {
-    if (reads++ == switch_after) epoch = next_epoch;  // the read adopts a new epoch
-    if (queue.empty()) return false;
-    cmd = queue.front(); queue.pop_front(); return true;
+        code = EXPANDED.io_prelude(owner) + EXPANDED.output_lease(owner) + EXPANDED.fmu_inbox(owner) + r'''
+struct FmuTransport : FmuInbox {
+  uint32_t epoch = 1; bool epoch_ok = true; int switch_after = -1; uint32_t next_epoch = 0;
+  bool receive_fmu_message(FmuMessage &msg) {
+    if (reads == switch_after) epoch = next_epoch;  // the read adopts a new epoch
+    return next(msg);
   }
   bool link_epoch(uint32_t &value) const { value = epoch; return epoch_ok; }
 };
 class Px4IoCr8 {public:
   static bool fmu_command_valid(const ActuatorCommand_t &cmd);
+  static bool fmu_heartbeat_valid(const Heartbeat_t &heartbeat);
   void receive_fmu_commands(hrt_abstime now);
   FmuTransport _fmu_transport; OutputLease _lease;};
 '''
-        for name in ('bool Px4IoCr8::fmu_command_valid(', 'void Px4IoCr8::receive_fmu_commands('):
+        for name in ('bool Px4IoCr8::fmu_command_valid(', 'bool Px4IoCr8::fmu_heartbeat_valid(',
+                     'void Px4IoCr8::receive_fmu_commands('):
             code += extract(source, name)
         code += r'''
 using S = OutputLease::State;
@@ -156,7 +160,7 @@ static ActuatorCommand_t cmd(unsigned armed) {
   c.armed = armed; c.safety_off = 1; return c;
 }
 static void feed(Px4IoCr8 &io, std::initializer_list<unsigned> armed, hrt_abstime now) {
-  for (unsigned a : armed) io._fmu_transport.queue.push_back(cmd(a));
+  for (unsigned a : armed) io._fmu_transport.push(cmd(a));
   io._fmu_transport.reads = 0; io.receive_fmu_commands(now);
 }
 static bool off(const ActuatorCmdToM33_t &o) {
@@ -166,10 +170,11 @@ static bool off(const ActuatorCmdToM33_t &o) {
 int main() {
   const hrt_abstime T = FMU_LOSS_TIMEOUT_US;
   const uint32_t SAFE = FAULT_FLAG_OUTPUT_SAFE_FAULT, TIMEOUT = FAULT_FLAG_CR8_TIMEOUT;
+  const uint32_t HEARTBEAT = FAULT_FLAG_FMU_HEARTBEAT;
   Px4IoCr8 io; auto &l = io._lease; auto &fmu = io._fmu_transport;
 
   // Booting never arms: an armed command without a disarmed handshake is refused.
-  assert(l.state() == S::Safe && l.fault_flags(0) == TIMEOUT && off(l.output(0)));
+  assert(l.state() == S::Safe && l.fault_flags(0) == (TIMEOUT | HEARTBEAT) && off(l.output(0)));
   feed(io, {1}, 1000);
   assert(l.state() == S::Safe && off(l.output(1000)));
   assert(l.fault_flags(1000) == FAULT_FLAG_ARM_REJECTED);
@@ -227,7 +232,94 @@ int main() {
   // A peer epoch change while merely Ready also returns to Safe.
   feed(io, {0}, 11000 + 3 * T);
   fmu.epoch = 3; feed(io, {}, 12000 + 3 * T);
-  assert(l.state() == S::Safe && l.fault_flags(12000 + 3 * T) == TIMEOUT);
+  assert(l.state() == S::Safe && l.fault_flags(12000 + 3 * T) == (TIMEOUT | HEARTBEAT));
+
+  // The CR8-0 heartbeat is a separate condition: commands alone never leave Safe.
+  const hrt_abstime B = 1000000, H = HEARTBEAT_TIMEOUT_US;
+  fmu.auto_beat = false;
+  feed(io, {0, 1}, B);
+  assert(l.state() == S::Safe && off(l.output(B)));
+  assert(l.fault_flags(B) == (HEARTBEAT | FAULT_FLAG_ARM_REJECTED));
+
+  // Only the running CR8-0 heartbeat counts.
+  fmu.beat(CORE_ID_CR8_1); fmu.beat(CORE_ID_CR8_0, 0); feed(io, {0}, B + 1000);
+  assert(l.state() == S::Safe && !l.peer_alive(B + 1000) && off(l.output(B + 1000)));
+
+  // A disarmed command sent before the first heartbeat is no handshake.
+  fmu.push(cmd(0)); fmu.beat(); fmu.push(cmd(1)); feed(io, {}, B + 1500);
+  assert(l.state() == S::Safe && off(l.output(B + 1500)));
+  assert(l.fault_flags(B + 1500) == FAULT_FLAG_ARM_REJECTED);
+  fmu.beat(); feed(io, {0, 1}, B + 2000);
+  assert(l.state() == S::Armed && l.output(B + 2000).armed == 1 && l.fault_flags(B + 2000) == 0);
+
+  // Fresh commands keep outputs armed only until the heartbeat ages out;
+  // then SafeFault latches with the heartbeat as the reason.
+  for (hrt_abstime t = B + 2000; t + T / 2 <= B + 2000 + H; t += T / 2) {
+    feed(io, {1}, t);
+    assert(l.state() == S::Armed && l.output(t).armed == 1 && l.fault_flags(t) == 0);
+  }
+  // output() itself refuses a stale heartbeat before the loop runs update().
+  assert(l.state() == S::Armed && off(l.output(B + 2000 + H)));
+  feed(io, {1}, B + 2000 + H);
+  assert(l.state() == S::Fault && off(l.output(B + 2000 + H)));
+  assert(l.fault_flags(B + 2000 + H) == (SAFE | HEARTBEAT | FAULT_FLAG_ARM_REJECTED));
+
+  // The heartbeat alone does not resume output; a disarmed handshake does.
+  fmu.beat(); feed(io, {1}, B + 3000 + H);
+  assert(l.state() == S::Fault && off(l.output(B + 3000 + H)));
+  fmu.beat(); feed(io, {0}, B + 4000 + H);
+  assert(l.state() == S::Ready && l.fault_flags(B + 4000 + H) == 0);
+
+  // update() alone ends a Ready session when the heartbeat stops.
+  feed(io, {0}, B + 4000 + H + T / 2);
+  feed(io, {}, B + 4000 + 2 * H);
+  assert(l.state() == S::Safe && (l.fault_flags(B + 4000 + 2 * H) & HEARTBEAT));
+
+  // A heartbeat read without a valid session proves nothing.
+  fmu.epoch_ok = false; fmu.beat(); feed(io, {}, B + 5000 + 2 * H);
+  assert(!l.peer_alive(B + 5000 + 2 * H));
+}
+'''
+        REPAIR.run(code, cpp=True)
+
+    def test_cr8_1_esc_worker_sends_only_a_fresh_control_loop_snapshot(self):
+        """The CM33 worker never holds outputs on for a stalled control loop,
+        and a snapshot stamped after the worker read the clock is fresh."""
+        owner = BOARDS / 'rdk-rzv2h-io-cr8_1/px4io_cr8_1'
+        source = (owner / 'px4io_cr8.cpp').read_text()
+        code = EXPANDED.io_prelude(owner) + EXPANDED.output_lease(owner) + r'''
+#include <pthread.h>
+class Px4IoCr8 {public:
+  void publish_esc_command(hrt_abstime now);
+  ActuatorCmdToM33_t esc_command(hrt_abstime now);
+  OutputLease _lease;
+  pthread_mutex_t _esc_cmd_lock = PTHREAD_MUTEX_INITIALIZER;
+  ActuatorCmdToM33_t _esc_cmd{}; hrt_abstime _esc_cmd_us{0};};
+'''
+        for name in ('void Px4IoCr8::publish_esc_command(', 'ActuatorCmdToM33_t Px4IoCr8::esc_command('):
+            code += extract(source, name)
+        code += r'''
+static bool off(const ActuatorCmdToM33_t &o) {
+  for (unsigned i = 0; i < IPC_MAX_ACTUATORS; ++i) if (o.commands[i] != 0) return false;
+  return o.armed == 0 && o.safety_off == 0;
+}
+int main() {
+  const hrt_abstime T = FMU_LOSS_TIMEOUT_US, N = 1000000;
+  Px4IoCr8 io;
+  assert(off(io.esc_command(N)));
+
+  ActuatorCommand_t cmd{}; cmd.outputs[0] = 1500; cmd.safety_off = 1;
+  io._lease.observe_session(1); io._lease.heartbeat(N); io._lease.accept(cmd, N);
+  cmd.armed = 1; io._lease.accept(cmd, N);
+  io.publish_esc_command(N);
+  ActuatorCmdToM33_t out = io.esc_command(N + T - 1);
+  assert(out.armed == 1 && out.commands[0] == 1500 && out.safety_off == 1);
+
+  // Stamped after the worker read the clock: still the newest command.
+  assert(io.esc_command(N - 1).armed == 1);
+
+  // The control loop stopped publishing: all outputs off at the lease age.
+  assert(off(io.esc_command(N + T)));
 }
 '''
         REPAIR.run(code, cpp=True)
@@ -255,22 +347,130 @@ int main() {
         self.assertIn('nxmutex_unlock(&priv->rxlock)', stats)
         self.assertNotIn('&priv->lock', stats)
 
-    def test_single_core_images_never_build_the_px4io_bridge(self):
-        kconfig = (BOARDS / 'rdk-rzv2h/Kconfig').read_text()
+    def test_poll_does_not_wait_behind_a_blocked_writer(self):
+        # The writer keeps priv->lock across its ACK wait.  A poller queued on
+        # it cannot consume the peer's frame, so two cores writing at once
+        # wait for each other until both writes time out.
+        source = (NUTTX / 'arch/arm/src/rzv/rzv_ipc_raw.c').read_text()
+        write = extract(source, 'ssize_t rzv_ipc_raw_write(')
+        self.assertLess(write.index('nxmutex_lock(&priv->lock)'), write.index('nxsem_tickwait_uninterruptible(&priv->acksem'))
+        chardev = (NUTTX / 'arch/arm/src/rzv/rzv_ipc_raw_chardev.c').read_text()
+        poll = extract(chardev, 'static int rzv_raw_poll(')
+        self.assertIn('nxmutex_lock(&priv->rxlock)', poll)
+        self.assertEqual(poll.count('nxmutex_lock('), 1)
+        self.assertEqual(poll.count('nxmutex_unlock(&priv->rxlock)'), poll.count('nxmutex_unlock('))
+        self.assertNotIn('&priv->lock', poll)
+
+    def test_cr8_0_bridge_runs_in_the_actuator_output_band(self):
+        # The bridge refreshes a 50 ms CR8-1 lease: a default-priority task
+        # (an NSH command, a log dump) must not be able to preempt it.
+        source = (BOARDS / 'rdk-rzv2h/px4io_cr8_0/px4io_bridge.cpp').read_text()
+        spawn = extract(source, 'int Px4IoBridge::task_spawn(')
+        self.assertRegex(spawn, r'px4_task_spawn_cmd\("px4io_bridge",\s*SCHED_DEFAULT,\s*'
+                                r'SCHED_PRIORITY_ACTUATOR_OUTPUTS,')
+
+    def test_only_the_dual_cr8_image_builds_the_px4io_bridge(self):
+        board = BOARDS / 'rdk-rzv2h'
+        kconfig = (board / 'Kconfig').read_text()
         entry = kconfig[kconfig.index('config BOARD_RDK_RZV2H_PX4IO_BRIDGE'):]
         entry = entry[:entry.index('\nconfig ') if '\nconfig ' in entry else len(entry)]
         self.assertRegex(entry, r'default n\b')
-        for board in sorted((BOARDS / 'rdk-rzv2h').glob('*.px4board')):
-            self.assertNotRegex(board.read_text(), r'(?m)^CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=y',
-                                board.name)
-        bridge = (BOARDS / 'rdk-rzv2h/px4io_cr8_0/uorb_bridge.cpp').read_text()
+        bridged = []
+        for profile in sorted(board.glob('*.px4board')):
+            label = profile.stem
+            config = board / 'nuttx-config' / label / 'defconfig'
+            nuttx = (config if config.exists() else board / 'nuttx-config/nsh/defconfig').read_text()
+            has_bridge = re.search(r'(?m)^CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=y', profile.read_text()) is not None
+            has_link = re.search(r'(?m)^CONFIG_RZV_IPC_CR8_CR8=y', nuttx) is not None
+            # The drone hooks start the bridge whenever /dev/ipcc1 exists.
+            self.assertEqual(has_bridge, has_link, label)
+            if has_bridge:
+                bridged.append(label)
+                for line in ('CONFIG_RZV_IPC_RAW=y', 'CONFIG_RZV_IPC_ROLE_INITIATOR=y'):
+                    self.assertRegex(nuttx, rf'(?m)^{line}$', label)
+                wait = re.search(r'(?m)^CONFIG_RZV_IPC_RECOVERY_WAIT_MS=(\d+)$', nuttx)
+                self.assertTrue(wait and int(wait.group(1)) <= 100, label)
+                self.assertNotRegex(nuttx, r'(?m)^CONFIG_RZV_(OPENAMP|IPC_CR8_CR8_LOOPBACK)=y', label)
+        self.assertEqual(bridged, ['dualcr8'])
+
+    def test_profiles_only_set_board_options_kconfig_can_apply(self):
+        # Options inside 'if BOARD_RDK_RZV2H' are forced off unless a profile
+        # selects the board symbol; setting them otherwise is silently ignored.
+        board = BOARDS / 'rdk-rzv2h'
+        kconfig = (board / 'Kconfig').read_text()
+        guarded = kconfig[kconfig.index('if BOARD_RDK_RZV2H\n'):kconfig.index('endif # BOARD_RDK_RZV2H')]
+        hidden = set(re.findall(r'(?m)^config (\w+)', guarded))
+        self.assertIn('BOARD_RDK_RZV2H_HAS_IMU', hidden)
+        self.assertNotIn('BOARD_RDK_RZV2H_PX4IO_BRIDGE', hidden)
+        for profile in sorted(board.glob('*.px4board')):
+            text = profile.read_text()
+            if re.search(r'(?m)^CONFIG_BOARD_RDK_RZV2H=y$', text):
+                continue
+            for option in hidden:
+                self.assertNotRegex(text, rf'(?m)^CONFIG_{option}=', profile.stem)
+        bridge = (board / 'px4io_cr8_0/uorb_bridge.cpp').read_text()
         self.assertRegex(bridge, r'#if !defined\(CONFIG_RZV_IPC_RAW\) \|\| '
                                  r'!defined\(CONFIG_RZV_IPC_ROLE_INITIATOR\)\n#\s*error')
         self.assertRegex(bridge, r'CONFIG_RZV_IPC_RECOVERY_WAIT_MS > 100\n#\s*error')
 
+    def test_px4_kconfig_resolves_the_bridge_only_for_dual_cr8(self):
+        # A board option that PX4 Kconfig never parses is silently dropped.
+        probe = r"""
+import os, sys, kconfiglib
+board = 'boards/renesas/rdk-rzv2h/'
+for model, label in [(m, l) for m, l in (a.split(':') for a in sys.argv[1:])]:
+    os.environ.update(VENDOR='renesas', MODEL=model, LABEL=label, PLATFORM='nuttx')
+    k = kconfiglib.Kconfig('Kconfig', warn=False)
+    if model == 'rdk-rzv2h':
+        k.load_config(board + 'default.px4board')
+        k.load_config(board + label + '.px4board', replace=False)
+    print(model, label, k.syms['BOARD_RDK_RZV2H_PX4IO_BRIDGE'].str_value)
+"""
+        labels = sorted(p.stem for p in (BOARDS / 'rdk-rzv2h').glob('*.px4board'))
+        args = ['rdk-rzv2h:' + label for label in labels] + ['rdk-rzv2h-io-cr8_1:default']
+        result = subprocess.run(['python3', '-c', probe] + args, cwd=ROOT, capture_output=True, text=True)
+        if 'No module named' in result.stderr:
+            self.skipTest('kconfiglib is not installed')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        resolved = dict((' '.join(line.split()[:2]), line.split()[2]) for line in result.stdout.splitlines())
+        expected = {f'rdk-rzv2h {label}': 'y' if label == 'dualcr8' else 'n' for label in labels}
+        expected['rdk-rzv2h-io-cr8_1 default'] = 'n'
+        self.assertEqual(resolved, expected)
+
+    def test_dual_cr8_image_registers_the_link_and_starts_the_bridge(self):
+        board = BOARDS / 'rdk-rzv2h'
+        cmake = (board / 'src/CMakeLists.txt').read_text()
+        self.assertRegex(cmake, r'if\(CONFIG_RZV_IPC_RAW\)\n\tlist\(APPEND drivers_board_sources\n'
+                                r'\t\t\S+/rdk-rzv2h/src/rzv2h_ipc\.c\n')
+        init = (board / 'src/init.c').read_text()
+        self.assertRegex(init, r'#ifdef CONFIG_RZV_IPC_RAW\n(?:[/ ]\*.*\n)*#  ifdef CONFIG_RZV_OPENAMP\n#    error')
+        app = extract(init, '__EXPORT int board_app_initialize(')
+        raw = app[app.index('#if defined(CONFIG_RZV_IPC_RAW)'):]
+        self.assertIn('ret = board_ipc_initialize();', raw[:raw.index('#endif')])
+        self.assertIn('CONFIG_BOARD_INIT_SUBDIR="drone"', (board / 'dualcr8.px4board').read_text())
+
+        script = board / 'init/drone/rc.board_extras'
+        for line in script.read_text().splitlines():
+            if line.strip() and not line.lstrip().startswith('#'):
+                self.assertIn(line.split()[0], ('if', 'then', 'else', 'fi', 'echo'))
+        host = """
+[() { [[ "$*" == "-e /dev/ipcc1 ]" && $IPCC1 == yes ]]; }
+px4io_bridge() { echo "CALL px4io_bridge $*"; [[ $FAIL != yes ]]; }
+"""
+        for ipcc1, fail, expected in (('no', 'no', None), ('yes', 'no', 'px4io_bridge started'),
+                                      ('yes', 'yes', 'ERROR [init] px4io_bridge failed')):
+            result = subprocess.run(['bash', '-c', host + '\n. "$1"', 'host', str(script)], capture_output=True,
+                                    text=True, env={'IPCC1': ipcc1, 'FAIL': fail, 'PATH': '/usr/bin:/bin'})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            if expected is None:
+                self.assertEqual(result.stdout, '')
+            else:
+                self.assertIn('CALL px4io_bridge start\n', result.stdout)
+                self.assertIn(expected, result.stdout)
+
     def test_every_core_shares_the_lease_and_safe_fault_contract(self):
         names = ('FMU_LOSS_TIMEOUT_US', 'FAULT_FLAG_CR8_TIMEOUT', 'FAULT_FLAG_OUTPUT_SAFE_FAULT',
-                 'FAULT_FLAG_PEER_SESSION', 'FAULT_FLAG_ARM_REJECTED')
+                 'FAULT_FLAG_PEER_SESSION', 'FAULT_FLAG_ARM_REJECTED', 'FAULT_FLAG_FMU_HEARTBEAT')
         texts = [path.read_text() for path in PROTOCOLS]
         for name in names:
             values = {re.search(rf'#define {name}\s+(\S+)', text).group(1) for text in texts}

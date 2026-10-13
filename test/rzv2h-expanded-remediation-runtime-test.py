@@ -29,6 +29,30 @@ def output_lease(owner):
         '#pragma once', '')
 
 
+def fmu_inbox(owner):
+    """The transport's FmuMessage plus an in-memory CR8-0 stream.  push()
+    precedes each command with a CR8-0 heartbeat unless auto_beat is off."""
+    header = (owner / 'sharedmem_transport.h').read_text()
+    message = re.search(r'struct FmuMessage \{.*?\n\};', header, flags=re.S).group(0)
+    return message + r'''
+struct FmuInbox {
+  std::deque<FmuMessage> queue; int reads = 0; bool auto_beat = true;
+  void beat(uint8_t core = CORE_ID_CR8_0, uint8_t state = 1) {
+    FmuMessage msg{}; msg.type = MSG_TYPE_HEARTBEAT;
+    msg.heartbeat.source_core = core; msg.heartbeat.state = state; queue.push_back(msg);
+  }
+  void push(const ActuatorCommand_t &cmd) {
+    if (auto_beat) beat();
+    FmuMessage msg{}; msg.type = MSG_TYPE_ACTUATOR_CMD; msg.command = cmd; queue.push_back(msg);
+  }
+  bool next(FmuMessage &msg) {
+    ++reads; if (queue.empty()) return false;
+    msg = queue.front(); queue.pop_front(); return true;
+  }
+};
+'''
+
+
 class ExpandedRuntime(unittest.TestCase):
     def test_buffered_tx_recovers_without_another_write_and_stops_after_cleanup(self):
         source = (ARCH / 'rzv_ipc_ipcc.c').read_text()
@@ -448,21 +472,20 @@ int main(void) {
     def test_cr8_1_relays_fresh_fmu_commands_and_stops_after_timeout(self):
         owner = ROOT / 'boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1'
         source = (owner / 'px4io_cr8.cpp').read_text()
-        code = io_prelude(owner) + output_lease(owner) + r'''
-struct FmuTransport {
-  std::deque<ActuatorCommand_t> queue; int reads = 0; uint32_t epoch = 1;
-  bool receive_actuator_command(ActuatorCommand_t &cmd) {
-    ++reads; if (queue.empty()) return false;
-    cmd = queue.front(); queue.pop_front(); return true;
-  }
+        code = io_prelude(owner) + output_lease(owner) + fmu_inbox(owner) + r'''
+struct FmuTransport : FmuInbox {
+  uint32_t epoch = 1;
+  bool receive_fmu_message(FmuMessage &msg) { return next(msg); }
   bool link_epoch(uint32_t &value) const { value = epoch; return true; }
 };
 class Px4IoCr8 {public:
   static bool fmu_command_valid(const ActuatorCommand_t &cmd);
+  static bool fmu_heartbeat_valid(const Heartbeat_t &heartbeat);
   void receive_fmu_commands(hrt_abstime now);
   FmuTransport _fmu_transport; OutputLease _lease;};
 '''
-        for name in ('bool Px4IoCr8::fmu_command_valid(', 'void Px4IoCr8::receive_fmu_commands('):
+        for name in ('bool Px4IoCr8::fmu_command_valid(', 'bool Px4IoCr8::fmu_heartbeat_valid(',
+                     'void Px4IoCr8::receive_fmu_commands('):
             code += extract(source, name)
         code += r'''
 static ActuatorCommand_t frame(unsigned base, unsigned armed = 0, unsigned safety_off = 0) {
@@ -486,11 +509,11 @@ int main() {
   expect(io._lease.output(1000), 0, 0, 0);
 
   // Disarmed handshake, then armed values; a zero channel stays off.
-  io._fmu_transport.queue.push_back(frame(1000));
+  io._fmu_transport.push(frame(1000));
   io.receive_fmu_commands(1000);
   expect(io._lease.output(1000), 1000, 0, 0);
   ActuatorCommand_t zero = frame(1500, 1, 1); zero.outputs[3] = 0;
-  io._fmu_transport.queue.push_back(zero);
+  io._fmu_transport.push(zero);
   io.receive_fmu_commands(2000);
   expect(io._lease.output(2000), 1500, 1, 1, 3);
 
@@ -498,39 +521,39 @@ int main() {
   const uint16_t bad_outputs[] = {PWM_LOWEST_MIN - 1, PWM_HIGHEST_MAX + 1, 65535};
   for (uint16_t bad : bad_outputs) {
     ActuatorCommand_t cmd = frame(1000, 1, 1); cmd.outputs[bad == 65535 ? 0 : 7] = bad;
-    io._fmu_transport.queue.push_back(cmd);
+    io._fmu_transport.push(cmd);
   }
-  io._fmu_transport.queue.push_back(frame(1000, 2, 1));
-  io._fmu_transport.queue.push_back(frame(1000, 1, 2));
+  io._fmu_transport.push(frame(1000, 2, 1));
+  io._fmu_transport.push(frame(1000, 1, 2));
   io.receive_fmu_commands(2000 + T - 1);
   assert(io._fmu_transport.queue.empty());
   expect(io._lease.output(2000 + T - 1), 1500, 1, 1, 3);
   expect(io._lease.output(2000 + T), 0, 0, 0);
 
   // PWM bounds are inclusive.
-  io._fmu_transport.queue.push_back(frame(1000));
+  io._fmu_transport.push(frame(1000));
   ActuatorCommand_t bounds = frame(1000, 1, 1);
   bounds.outputs[0] = PWM_LOWEST_MIN; bounds.outputs[7] = PWM_HIGHEST_MAX;
-  io._fmu_transport.queue.push_back(bounds);
+  io._fmu_transport.push(bounds);
   io.receive_fmu_commands(500000);
   const ActuatorCmdToM33_t edge = io._lease.output(500000);
   assert(edge.armed == 1 && edge.commands[0] == PWM_LOWEST_MIN && edge.commands[7] == PWM_HIGHEST_MAX);
 
   // In-order drain: the newest valid command wins, an invalid one is skipped.
-  io._fmu_transport.queue.push_back(frame(1100));
-  io._fmu_transport.queue.push_back(frame(1200));
-  io._fmu_transport.queue.push_back(frame(1300, 2));
+  io._fmu_transport.push(frame(1100));
+  io._fmu_transport.push(frame(1200));
+  io._fmu_transport.push(frame(1300, 2));
   io.receive_fmu_commands(510000);
   expect(io._lease.output(510000), 1200, 0, 0);
   expect(io._lease.output(510000 + T - 1), 1200, 0, 0);
   expect(io._lease.output(510000 + T), 0, 0, 0);
 
-  // Bounded drain.
-  io._fmu_transport.reads = 0;
-  for (unsigned i = 0; i < 40; ++i) io._fmu_transport.queue.push_back(frame(1000 + i));
+  // Bounded drain: one heartbeat, then 40 commands.
+  io._fmu_transport.reads = 0; io._fmu_transport.auto_beat = false; io._fmu_transport.beat();
+  for (unsigned i = 0; i < 40; ++i) io._fmu_transport.push(frame(1000 + i));
   io.receive_fmu_commands(600000);
-  assert(io._fmu_transport.reads == 2 * IPC_BUFFER_SIZE && io._fmu_transport.queue.size() == 8);
-  expect(io._lease.output(600000), 1031, 0, 0);
+  assert(io._fmu_transport.reads == 2 * IPC_BUFFER_SIZE && io._fmu_transport.queue.size() == 9);
+  expect(io._lease.output(600000), 1030, 0, 0);
 }
 '''
         REPAIR.run(code, cpp=True)
@@ -539,7 +562,8 @@ int main() {
         owner = ROOT / 'boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1'
         source = (owner / 'px4io_cr8.cpp').read_text()
         interval = re.search(r'static constexpr hrt_abstime REPORT_INTERVAL_US = \d+;', source).group(0)
-        code = io_prelude(owner) + output_lease(owner) + r'''
+        initial = re.search(r'px4::atomic<uint32_t> _report_fault_flags\{[^}]*\};', source).group(0)
+        code = io_prelude(owner) + output_lease(owner) + fmu_inbox(owner) + r'''
 static int warnings;
 #define PX4_WARN(...) (++warnings)
 namespace px4 {
@@ -550,13 +574,10 @@ template<typename T> class atomic {public:
   T fetch_add(T num) { T old = _value; _value += num; return old; }
 private: T _value;};
 }
-struct FmuTransport {
-  std::deque<ActuatorCommand_t> queue; std::deque<Heartbeat_t> heartbeats; std::deque<FaultStatus_t> faults;
+struct FmuTransport : FmuInbox {
+  std::deque<Heartbeat_t> heartbeats; std::deque<FaultStatus_t> faults;
   bool accept = true;
-  bool receive_actuator_command(ActuatorCommand_t &cmd) {
-    if (queue.empty()) return false;
-    cmd = queue.front(); queue.pop_front(); return true;
-  }
+  bool receive_fmu_message(FmuMessage &msg) { return next(msg); }
   bool link_epoch(uint32_t &value) const { value = 1; return true; }
   bool send_heartbeat(const Heartbeat_t &hb) { if (accept) heartbeats.push_back(hb); return accept; }
   bool send_fault_status(const FaultStatus_t &fault) { if (accept) faults.push_back(fault); return accept; }
@@ -575,21 +596,23 @@ struct EscTransport {
 class Px4IoCr8 {public:
 ''' + '  ' + interval + r'''
   static bool fmu_command_valid(const ActuatorCommand_t &cmd);
+  static bool fmu_heartbeat_valid(const Heartbeat_t &heartbeat);
   void receive_fmu_commands(hrt_abstime now);
   void receive_esc_status(hrt_abstime now);
   FaultStatus_t fault_status(hrt_abstime now) const;
   void publish_report_state(hrt_abstime now);
   void report_to_fmu(hrt_abstime now);
   FmuTransport _fmu_transport; EscTransport _esc_transport; OutputLease _lease;
-  uint32_t _esc_fault_flags{0}; hrt_abstime _last_esc_fault_us{0}; uint32_t _loop_count{0};
-  px4::atomic<uint32_t> _report_fault_flags{FAULT_FLAG_CR8_TIMEOUT};
+  px4::atomic<uint32_t> _esc_fault_flags{0}; px4::atomic<hrt_abstime> _esc_fault_us{0};
+  uint32_t _loop_count{0};
+''' + '  ' + initial + r'''
   px4::atomic<uint32_t> _report_armed{0};
   px4::atomic<uint32_t> _report_state{static_cast<uint32_t>(OutputLease::State::Safe)};
   px4::atomic<uint32_t> _report_loop_count{0};
   hrt_abstime _last_report_us{0}; px4::atomic<uint32_t> _report_count{0};};
 '''
-        for name in ('bool Px4IoCr8::fmu_command_valid(', 'void Px4IoCr8::receive_fmu_commands(',
-                     'void Px4IoCr8::receive_esc_status(', 'FaultStatus_t Px4IoCr8::fault_status(',
+        for name in ('bool Px4IoCr8::fmu_command_valid(', 'bool Px4IoCr8::fmu_heartbeat_valid(',
+                     'void Px4IoCr8::receive_fmu_commands(', 'void Px4IoCr8::receive_esc_status(', 'FaultStatus_t Px4IoCr8::fault_status(',
                      'void Px4IoCr8::publish_report_state(', 'void Px4IoCr8::report_to_fmu('):
             code += extract(source, name)
         code += r'''
@@ -606,19 +629,20 @@ int main() {
   assert(fmu.heartbeats.size() == 1 && fmu.faults.size() == 1 && io._report_count.load() == 1);
   Heartbeat_t hb = fmu.heartbeats.back();
   assert(hb.source_core == CORE_ID_CR8_1 && hb.state == 1 && hb.uptime_ms == 5 && hb.loop_count == 0);
-  assert(fmu.faults.back().error_flags == FAULT_FLAG_CR8_TIMEOUT && fmu.faults.back().armed_state == 0);
+  const uint32_t SILENT = FAULT_FLAG_CR8_TIMEOUT | FAULT_FLAG_FMU_HEARTBEAT;
+  assert(fmu.faults.back().error_flags == SILENT && fmu.faults.back().armed_state == 0);
 
   // 10 Hz: nothing until a full interval has passed.
   io.report_to_fmu(5000 + T - 1);
   assert(fmu.heartbeats.size() == 1 && fmu.faults.size() == 1);
 
   // The reporter sends only what the control loop published, never live state.
-  fmu.queue.push_back(command(0)); fmu.queue.push_back(command(1));
+  fmu.push(command(0)); fmu.push(command(1));
   io.receive_fmu_commands(5000 + T);
   assert(io._lease.output(5000 + T).armed == 1);
   io._loop_count = 7;
   io.report_to_fmu(5000 + T);
-  assert(fmu.faults.back().error_flags == FAULT_FLAG_CR8_TIMEOUT && fmu.faults.back().armed_state == 0);
+  assert(fmu.faults.back().error_flags == SILENT && fmu.faults.back().armed_state == 0);
   assert(fmu.heartbeats.back().loop_count == 0 && io._report_count.load() == 2);
   io.publish_report_state(5000 + T);
   assert(io._report_state.load() == static_cast<uint32_t>(OutputLease::State::Armed));
@@ -645,16 +669,16 @@ int main() {
   io._esc_transport.faults.push_back(cm33_fault(FAULT_FLAG_PWM_FAULT));
   io.receive_esc_status(1000000);
   assert(io._esc_transport.feedback.empty() && io._esc_transport.faults.empty() && warnings == 1);
-  fmu.queue.push_back(command(0));
+  fmu.push(command(0));
   io.receive_fmu_commands(1000000);
   assert(io.fault_status(1000000).error_flags == FAULT_FLAG_PWM_FAULT);
   assert(io.fault_status(1000000 + HEARTBEAT_TIMEOUT_US - 1).error_flags ==
          (FAULT_FLAG_PWM_FAULT | FAULT_FLAG_CR8_TIMEOUT));
-  assert(io.fault_status(1000000 + HEARTBEAT_TIMEOUT_US).error_flags == FAULT_FLAG_CR8_TIMEOUT);
+  assert(io.fault_status(1000000 + HEARTBEAT_TIMEOUT_US).error_flags == SILENT);
 
   io._esc_transport.faults.push_back(cm33_fault(0));
   io.receive_esc_status(2000000);
-  assert(warnings == 2 && io.fault_status(2000000).error_flags == FAULT_FLAG_CR8_TIMEOUT);
+  assert(warnings == 2 && io.fault_status(2000000).error_flags == SILENT);
 }
 '''
         REPAIR.run(code, cpp=True)
@@ -848,34 +872,49 @@ int main() {
 '''
         REPAIR.run(code, cpp=True)
 
-    def test_cr8_1_transport_reads_fmu_commands_and_drops_unconsumed_ones(self):
+    def test_cr8_1_transport_reads_fmu_messages_in_order_and_drops_the_rest(self):
         code = REPAIR.cr8_1_transport_harness() + r'''
 int main() {
   SharedMemTransport fmu("/dev/ipcc1"); assert(fmu.init(false));
-  ActuatorCommand_t cmd{};
-  enqueue<Heartbeat_t>(MSG_TYPE_HEARTBEAT, 1);
+  FmuMessage msg{};
+  Heartbeat_t beat{}; beat.source_core = CORE_ID_CR8_0; beat.state = 1; beat.loop_count = 9;
+  push(beat, MSG_TYPE_HEARTBEAT, 1);
   enqueue<VehicleStatus_t>(MSG_TYPE_VEHICLE_STATUS, 2);
   enqueue<VehicleCommand_t>(MSG_TYPE_VEHICLE_CMD, 3);
   ActuatorCommand_t sent{}; sent.outputs[0] = 1234; sent.armed = 1; sent.safety_off = 1;
   push(sent, MSG_TYPE_ACTUATOR_CMD, 4, true);
   push(sent, MSG_TYPE_ACTUATOR_CMD, 5);
-  assert(fmu.receive_actuator_command(cmd) && cmd.header.sequence == 5);
-  assert(cmd.outputs[0] == 1234 && cmd.armed == 1 && cmd.safety_off == 1);
-  assert(!fmu.receive_actuator_command(cmd) && entries.empty());
+  enqueue<Heartbeat_t>(MSG_TYPE_HEARTBEAT, 6, true);
+  push(beat, MSG_TYPE_HEARTBEAT, 7);
+
+  // Heartbeats and commands arrive in order; other types and bad frames are dropped.
+  assert(fmu.receive_fmu_message(msg) && msg.type == MSG_TYPE_HEARTBEAT);
+  assert(msg.heartbeat.header.sequence == 1 && msg.heartbeat.source_core == CORE_ID_CR8_0);
+  assert(msg.heartbeat.state == 1 && msg.heartbeat.loop_count == 9);
+  assert(fmu.receive_fmu_message(msg) && msg.type == MSG_TYPE_ACTUATOR_CMD && msg.command.header.sequence == 5);
+  assert(msg.command.outputs[0] == 1234 && msg.command.armed == 1 && msg.command.safety_off == 1);
+  assert(fmu.receive_fmu_message(msg) && msg.type == MSG_TYPE_HEARTBEAT && msg.heartbeat.header.sequence == 7);
+  assert(!fmu.receive_fmu_message(msg) && entries.empty());
 
   // Reply types echoed onto the FMU leg have no reader there and must not
-  // fill retained storage and stall actuator commands.
+  // fill retained storage and stall actuator commands.  One call scans a
+  // bounded number of entries.
   for (unsigned i = 0; i < 20; ++i) {
     if (i % 2) enqueue<FaultStatus_t>(MSG_TYPE_FAULT_STATUS, i);
     else enqueue<PWMFeedback_t>(MSG_TYPE_PWM_FEEDBACK, i);
   }
   enqueue<ActuatorCommand_t>(MSG_TYPE_ACTUATOR_CMD, 50);
-  bool delivered = false;
-  for (unsigned call = 0; call < 3 && !delivered; ++call) delivered = fmu.receive_actuator_command(cmd);
-  assert(delivered && cmd.header.sequence == 50 && entries.empty());
+  assert(!fmu.receive_fmu_message(msg) && entries.size() == 5);
+  assert(fmu.receive_fmu_message(msg) && msg.command.header.sequence == 50 && entries.empty());
   enqueue<FaultStatus_t>(MSG_TYPE_FAULT_STATUS, 60);
   enqueue<ActuatorCommand_t>(MSG_TYPE_ACTUATOR_CMD, 51);
-  assert(fmu.receive_actuator_command(cmd) && cmd.header.sequence == 51 && entries.empty());
+  assert(fmu.receive_fmu_message(msg) && msg.command.header.sequence == 51 && entries.empty());
+
+  // Waiting polls the device for input with the caller's timeout.
+  assert(fmu.wait_readable(2) && poll_calls == 1 && poll_timeout == 2);
+  poll_result = 0; assert(!fmu.wait_readable(2));
+  poll_result = 1; poll_revents = POLLERR; assert(!fmu.wait_readable(2));
+  SharedMemTransport closed("/dev/ipcc1"); assert(!closed.wait_readable(2) && poll_calls == 3);
 
   SharedMemTransport esc("/dev/ipcc3"); assert(esc.init(true));
   PWMFeedback_t pwm{}; FaultStatus_t fault{};
