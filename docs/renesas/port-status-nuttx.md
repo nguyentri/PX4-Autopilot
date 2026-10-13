@@ -156,6 +156,13 @@ changes as a result of formatting or documentation:
   first initialization requires serialization.
 - CAN-FD runtime bitrate changes remain unsupported. The watchdog sample
   changes software LED state without a qualified LED GPIO route.
+- A TCSETS on an open SCI port re-runs `rzv_setup()`, which rewrites CCR0
+  without RIE. The upper half probably re-enables RX interrupts on the next
+  read; this is unconfirmed on target.
+- Open decision (2026-10-13): RTT up-buffer trim mode
+  (`CONFIG_SEGGER_RTT_UP_MODE_TRIM`) is set only in the PX4 rdk-rzv2h
+  defconfigs. The NuttX-only RZ/V configs (`nsh-rtt` and others) and the
+  RA8 `fpb-ra8e1` / `evk-ra8p1` nsh defconfigs still block on a full buffer.
 
 When submitting a driver PR:
 1. Update the driver row: status, sample config (if applicable).

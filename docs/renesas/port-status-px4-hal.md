@@ -105,6 +105,36 @@ FIFO/P94 and PWM physical measurements remain separate target gates.
   utilities, board-enabled absent hardware probes, a non-NuttX `pipe()`, split
   image/package mismatch, or undefined ELF symbols.
 
+### Open decisions (2026-10-13)
+
+These need an owner decision; none blocks the single-core CR8-0 demo build.
+Dual-CR8 questions live in
+[IPC architecture: open dual-CR8 decisions](ipc-architecture.md#open-dual-cr8-decisions).
+
+1. **`CONFIG_DEBUG_INFO=y`** is set in all six rdk-rzv2h profiles, so every
+   `*info` line reaches the RTT console. The SCI clock line no longer repeats
+   on each `rc_input` reconfigure (NuttX `1c39b91c59`). Board check
+   2026-10-13 (drone and dualcr8 at PX4 `c07a3c19eec`): 10 s of idle RTT
+   showed no `SCI6 clocks` line. `SCI9 clocks disabled/enabled` pairs remain
+   (7-8 lines per 10 s); they are real gate changes from the GPS driver
+   closing and reopening `/dev/ttyS9` while no GPS answers. Keep
+   `DEBUG_INFO` for bring-up, or turn it off for demo images.
+2. **Board Kconfig `BOARD_RDK_RZV2H_HAS_{BARO,IMU,MAG}`** are default-on,
+   unused, and their help text names MPU9250/AK8963 sensors this board does
+   not carry. Remove them, or rewrite them for the real sensors.
+3. **Runtime warnings seen on the dualcr8 bench:** low free stack on
+   `wq:ttyS6` (232 B) and `navigator` (280 B), five `param 65535` warnings,
+   `battery_status: command not found`, "Too many arming check events
+   (14>14)", and boot-time `recover_failures` reaching 16. Decide which are
+   in scope for the demo.
+4. **NSH limits.** Only `drone` and `dualcr8` set
+   `CONFIG_NSH_MAXARGUMENTS=15` (with `CONFIG_NSH_LINELEN=128`). Decide
+   whether the other profiles get the same limit.
+5. **`boards/renesas/evk-ra8p1/Kconfig`** writes its prompts with escaped
+   quotes (`bool \"...\"`), which Kconfig rejects if that file is ever
+   sourced. The RZ/V2H build sources only its own board Kconfig, so this RA8
+   file is left untouched as out of scope.
+
 ---
 
 ## Roadmap Link

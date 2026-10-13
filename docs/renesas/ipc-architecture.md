@@ -338,6 +338,28 @@ fallback is retained for configurations lacking the canonical IRQ macro.
 Moving raw links into the secure MHU window requires explicit domain
 configuration and qualification.
 
+#### Open dual-CR8 decisions
+
+These questions are open as of 2026-10-13 and need an owner decision; the
+code keeps the behavior described above until then.
+
+1. **Armed lease test on the board.** Lease expiry and SafeFault are covered
+   by host tests only. An armed bench run (`commander arm -f`, props off,
+   with approval) would prove them on target.
+2. **TX ACK wait vs. lease.** The CR8-0 bridge is one thread, and a raw write
+   waits up to `CONFIG_RZV_IPC_TX_TIMEOUT_MS` (100 ms in `dualcr8`) for the
+   peer ACK, twice the 50 ms output lease. Options: split the send and
+   receive paths, or lower the timeout for `dualcr8`.
+3. **CR8-0 heartbeat freshness.** CR8-1 reuses `HEARTBEAT_TIMEOUT_US`
+   (500 ms) for a 10 Hz CR8-0 heartbeat. A tighter value would detect a
+   silent bridge sooner.
+4. **CR8-1 thread priorities.** The ESC worker runs at
+   `SCHED_PRIORITY_DEFAULT - 5` and the reporter at `- 10`, so reports to
+   CR8-0 can lag by up to 100 ms. Confirm this is acceptable for the demo.
+5. **`px4ioCheck` scope.** The check also runs on any board whose `px4io`
+   driver publishes `px4io_status`. This fork does not target upstream, so it
+   is kept as is unless that changes.
+
 ## 6. Required Completion Evidence
 
 Before promoting a selected IPC profile from source/build evidence to usable
