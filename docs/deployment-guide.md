@@ -156,6 +156,12 @@ platforms/nuttx/Debug/nsh_console_exec.py 'uname -a' 'free' 'dmesg'
 platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop
 ```
 
+The bridge records the group leader's start time, command file, probe and core
+identity. A stale or legacy numeric PID record is retired without signalling
+another process. The IPC loaders retain and reap their own server children;
+an occupied GDB port is an error that requires releasing its existing owner.
+The uploader retries GDB without terminating external J-Link servers.
+
 Discover `_SEGGER_RTT` from the exact loaded ELF:
 
 ```bash

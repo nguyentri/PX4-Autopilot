@@ -4,6 +4,15 @@
 
 This document defines coding conventions for the RDK-RZ/V2H port. Standards diverge between PX4 code and the NuttX submodule; follow the section matching your target directory.
 
+## Control flow
+
+`goto` is prohibited in hand-written RZ/V2H port code, including error and
+cleanup paths in PX4 and NuttX. Use structured conditionals, early returns,
+and small helpers that express resource ownership. Failures must release
+only acquired resources in reverse order and preserve the original error.
+Apply this rule to new and modified code; upstream and vendor files retain
+their owning conventions.
+
 ---
 
 ## 1. Directory-Based Convention Split

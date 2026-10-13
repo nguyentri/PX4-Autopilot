@@ -51,6 +51,20 @@ identifiers from applicable CMSIS, manual, and FSP evidence. Follow the layout
 of the nearest current header and use NuttX register access helpers. Do not seed
 the file with illustrative addresses or IRQ values.
 
+For compiler-derived offsets and widths, use the repository
+[CMSIS layout tool](../../Tools/rzv2h-register-layout.py) with the selected
+core's header and type:
+
+```bash
+python3 Tools/rzv2h-register-layout.py <cmsis-header> R_XSPI_Type --offset-prefix RZV_XSPI
+```
+
+It includes write-only members, nested arrays and named byte/halfword access
+views. Compare all intended cores with the register contract tests under
+`test/`; review address families and bit masks against the same authority.
+The older reference-tree generator omits write-only members and flattens
+nested blocks incorrectly; do not use that output as a register contract.
+
 Cross-check the selected core and silicon view. Pin alternate functions come
 from board IOPORT/PFC configuration and the selected profile, not from ICU
 routing tables. Confirm ownership against [pinmap.md](./pinmap.md) and the

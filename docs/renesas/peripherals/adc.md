@@ -1,6 +1,6 @@
 # ADC Peripheral Notes
 
-**Date:** 2026-10-01
+**Date:** 2026-10-13
 **Hardware:** Renesas RZ/V2H (R9A09G057H), RDK-RZ/V2H
 **Status:** blocked, no target conversion evidence. Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #1. PX4 HAL: deferred/non-gating (post-G9).
 
@@ -49,7 +49,15 @@ calibration, and DMA are outside its contract. The NuttX ADC upper-half owns
 the `/dev/adc0` open/ioctl/read interface; read the driver and selected
 `apps/examples/adc` configuration for the current call and message contract.
 
-`apps/examples/adc` (`adc -n 1`) is the usual NSH test if enabled in the config.
+The `adc` profile selects the stock `apps/examples/adc` command with software
+triggering and a bounded default of eight sample groups. Use `adc -n 1` for
+one group. The wrapper build links `adc_main`; pin routing and a named
+trigger/read/error/close transcript remain unverified.
+
+Initialization failure restores the ADC module-stop bit, destroys an acquired
+semaphore, reasserts reset and disables the acquired clock. Registration
+success retains the clock and semaphore across upper-half open/close cycles;
+repeated board initialization does not reinitialize a registered device.
 
 ## Interrupt
 
