@@ -32,15 +32,19 @@
  ****************************************************************************/
 
 #include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/atomic.h>
 #include <px4_platform_common/tasks.h>
 #include <px4_platform_common/module.h>
+#include <px4_platform_common/posix.h>
 #include <px4_platform_common/getopt.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 
+#include "output-lease.h"
 #include "sharedmem_transport.h"
 #include "board_config.h"
 #include <errno.h>
+#include <pthread.h>
 
 extern "C" __EXPORT int px4io_cr8_main(int argc, char *argv[]);
 
@@ -60,28 +64,40 @@ public:
 
 private:
 	static constexpr hrt_abstime REPORT_INTERVAL_US = 100000;	// 10 Hz
+	static constexpr hrt_abstime REPORTER_POLL_US = 10000;
+	static constexpr int REPORTER_PRIORITY = SCHED_PRIORITY_DEFAULT - 10;
+	static constexpr size_t REPORTER_STACK_SIZE = 2048;
 
 	static bool fmu_command_valid(const ActuatorCommand_t &cmd);
 	void receive_fmu_commands(hrt_abstime now);
-	bool fmu_command_fresh(hrt_abstime now) const;
-	ActuatorCmdToM33_t esc_command(hrt_abstime now) const;
 	void receive_esc_status(hrt_abstime now);
 	FaultStatus_t fault_status(hrt_abstime now) const;
+	void publish_report_state(hrt_abstime now);
+
+	static void *reporter_trampoline(void *arg);
+	bool start_reporter();
 	void report_to_fmu(hrt_abstime now);
 
 	SharedMemTransport _fmu_transport;	// CR8-0 FMU leg, CR8-1 is the responder
 	SharedMemTransport _esc_transport;	// optional CM33 ESC leg, CR8-1 is the initiator
 	bool _esc_enabled{false};		// CM33 leg opened at startup
 
-	ActuatorCommand_t _fmu_cmd{};		// latest valid FMU command
-	hrt_abstime _last_fmu_cmd_us{0};	// local receive time of _fmu_cmd
-
+	/* Control loop only. */
+	OutputLease _lease;			// output safety state for CR8-0 commands
 	uint32_t _esc_fault_flags{0};		// latest CM33 fault flags
 	hrt_abstime _last_esc_fault_us{0};	// local receive time of _esc_fault_flags
-
-	hrt_abstime _last_report_us{0};
 	uint32_t _loop_count{0};
-	uint32_t _report_count{0};		// heartbeats written to the FMU ring
+
+	/* Published by the control loop, read by the reporter and status. */
+	px4::atomic<uint32_t> _report_fault_flags{FAULT_FLAG_CR8_TIMEOUT};
+	px4::atomic<uint32_t> _report_armed{0};
+	px4::atomic<uint32_t> _report_state{static_cast<uint32_t>(OutputLease::State::Safe)};
+	px4::atomic<uint32_t> _report_loop_count{0};
+
+	/* Reporter thread only, except _report_count which status reads. */
+	pthread_t _reporter{};
+	hrt_abstime _last_report_us{0};
+	px4::atomic<uint32_t> _report_count{0};	// heartbeats written to the FMU ring
 };
 
 int Px4IoCr8::task_spawn(int argc, char *argv[])
@@ -134,13 +150,15 @@ int Px4IoCr8::custom_command(int argc, char *argv[])
 
 int Px4IoCr8::print_status()
 {
-	const hrt_abstime now = hrt_absolute_time();
-	const FaultStatus_t fault = fault_status(now);
+	static const char *const state_names[] = {"safe", "ready", "armed", "safe fault"};
+	const uint32_t state = _report_state.load();
 
-	PX4_INFO("FMU commands: %s", fmu_command_fresh(now) ? "fresh" : "timed out");
+	PX4_INFO("Output state: %s", state < 4 ? state_names[state] : "?");
 	PX4_INFO("ESC relay: %s", _esc_enabled ? "enabled" : "disabled");
-	PX4_INFO("Fault flags: 0x%lx, armed: %u", (unsigned long)fault.error_flags, fault.armed_state);
-	PX4_INFO("Reports sent: %lu", (unsigned long)_report_count);
+	PX4_INFO("Fault flags: 0x%lx, armed: %lu", (unsigned long)_report_fault_flags.load(),
+		 (unsigned long)_report_armed.load());
+	PX4_INFO("Loops: %lu, reports sent: %lu", (unsigned long)_report_loop_count.load(),
+		 (unsigned long)_report_count.load());
 
 	return 0;
 }
@@ -157,13 +175,15 @@ int Px4IoCr8::print_usage(const char *reason)
 PX4IO driver for RZV2H CR8 Core 1.
 
 Relays PWM actuator commands from the CR8-0 FMU (/dev/ipcc1) to the CM33
-(/dev/ipcc3). Each fresh channel is forwarded as commanded, so a disarmed FMU
-holds its disarmed values. Invalid frames are ignored. When no valid command
-arrives for 100 ms, all outputs are commanded off (0) and disarmed.
+(/dev/ipcc3). Outputs start safe. A fresh disarmed command in the current
+CR8-0 link session enables disarmed values; only then may an armed command
+enable armed values. Each command is a 50 ms lease. Lease expiry or a CR8-0
+link epoch change while armed latches a safe fault: outputs stay off and
+disarmed until CR8-0 sends a disarmed command again. Invalid frames are
+ignored.
 
-The CM33 leg is optional. At 10 Hz this core sends CR8-0 a heartbeat and a
-fault status that flags an expired FMU command lease, plus the CM33 fault
-flags while the CM33 reports them.
+The CM33 leg is optional. A lower-priority thread sends CR8-0 a heartbeat and
+a fault status at 10 Hz, so a slow CR8-0 reader never stalls the output loop.
 )DESCR_STR");
 
 	PRINT_MODULE_USAGE_NAME("px4io_cr8", "driver");
@@ -197,42 +217,30 @@ void Px4IoCr8::receive_fmu_commands(hrt_abstime now)
 {
 	ActuatorCommand_t cmd{};
 
-	/* Bounded drain: keep only the newest valid command so a backlog never
-	 * replays stale outputs, and never starve the ESC leg.
+	/* Bounded drain, in order, so the newest valid command wins and a backlog
+	 * never starves the ESC leg.  A read may adopt a new CR8-0 link epoch, so
+	 * the session is checked after every read, before its command is used.
 	 */
-	for (int budget = 2 * IPC_BUFFER_SIZE; budget > 0 && _fmu_transport.receive_actuator_command(cmd); budget--) {
+	for (int budget = 2 * IPC_BUFFER_SIZE; budget > 0; budget--) {
+		const bool received = _fmu_transport.receive_actuator_command(cmd);
+		uint32_t epoch = 0;
+
+		if (!_fmu_transport.link_epoch(epoch)) {
+			epoch = 0;
+		}
+
+		_lease.observe_session(epoch);
+
+		if (!received) {
+			break;
+		}
+
 		if (fmu_command_valid(cmd)) {
-			_fmu_cmd = cmd;
-			_last_fmu_cmd_us = now;
+			_lease.accept(cmd, now);
 		}
 	}
-}
 
-bool Px4IoCr8::fmu_command_fresh(hrt_abstime now) const
-{
-	/* Local receive time, because the cores do not share a timebase. */
-	return _last_fmu_cmd_us != 0 && now - _last_fmu_cmd_us < FMU_LOSS_TIMEOUT_US;
-}
-
-ActuatorCmdToM33_t Px4IoCr8::esc_command(hrt_abstime now) const
-{
-	/* Default: every output off, disarmed, PWM mode. */
-	ActuatorCmdToM33_t cmd{};
-
-	/* The FMU mixer already selected armed, disarmed or failsafe values, so a
-	 * fresh command is forwarded channel for channel, as PX4IO does while the
-	 * FMU is alive.
-	 */
-	if (fmu_command_fresh(now)) {
-		for (unsigned i = 0; i < IPC_MAX_ACTUATORS; i++) {
-			cmd.commands[i] = _fmu_cmd.outputs[i];
-		}
-
-		cmd.armed = _fmu_cmd.armed;
-		cmd.safety_off = _fmu_cmd.safety_off;
-	}
-
-	return cmd;
+	_lease.update(now);
 }
 
 void Px4IoCr8::receive_esc_status(hrt_abstime now)
@@ -258,12 +266,8 @@ FaultStatus_t Px4IoCr8::fault_status(hrt_abstime now) const
 {
 	FaultStatus_t fault{};
 
-	/* This core's own view: the FMU command lease expired, so every output
-	 * is commanded off.
-	 */
-	if (!fmu_command_fresh(now)) {
-		fault.error_flags |= FAULT_FLAG_CR8_TIMEOUT;
-	}
+	/* This core's own output state: lease, latched safe fault, rejected arm. */
+	fault.error_flags = _lease.fault_flags(now);
 
 	/* CM33 flags count only while the CM33 keeps reporting them (10 Hz); a
 	 * silent CM33 must not leave a stale fault latched on the FMU.
@@ -272,8 +276,18 @@ FaultStatus_t Px4IoCr8::fault_status(hrt_abstime now) const
 		fault.error_flags |= _esc_fault_flags;
 	}
 
-	fault.armed_state = esc_command(now).armed;
+	fault.armed_state = _lease.output(now).armed;
 	return fault;
+}
+
+void Px4IoCr8::publish_report_state(hrt_abstime now)
+{
+	const FaultStatus_t fault = fault_status(now);
+
+	_report_fault_flags.store(fault.error_flags);
+	_report_armed.store(fault.armed_state);
+	_report_state.store(static_cast<uint32_t>(_lease.state()));
+	_report_loop_count.store(_loop_count);
 }
 
 void Px4IoCr8::report_to_fmu(hrt_abstime now)
@@ -282,26 +296,74 @@ void Px4IoCr8::report_to_fmu(hrt_abstime now)
 		return;
 	}
 
+	/* Only the atomics the control loop publishes are read here; a stalled
+	 * control loop shows as a frozen loop_count.
+	 */
 	Heartbeat_t heartbeat{};
 	heartbeat.source_core = CORE_ID_CR8_1;
 	heartbeat.state = 1; // Running
 	heartbeat.uptime_ms = now / 1000;
-	heartbeat.loop_count = _loop_count;
+	heartbeat.loop_count = _report_loop_count.load();
 
-	/* Writes never block; a full ring drops this report and the next one
-	 * follows 100 ms later.
+	FaultStatus_t fault{};
+	fault.error_flags = _report_fault_flags.load();
+	fault.armed_state = static_cast<uint8_t>(_report_armed.load());
+
+	/* A write may wait for the CR8-0 ACK; that blocks only this thread.  A
+	 * failed write drops this report and the next one follows 100 ms later.
 	 */
 	if (_fmu_transport.send_heartbeat(heartbeat)) {
-		_report_count++;
+		_report_count.fetch_add(1);
 	}
 
-	_fmu_transport.send_fault_status(fault_status(now));
+	_fmu_transport.send_fault_status(fault);
 	_last_report_us = now;
+}
+
+void *Px4IoCr8::reporter_trampoline(void *arg)
+{
+	Px4IoCr8 *self = static_cast<Px4IoCr8 *>(arg);
+
+	while (!self->should_exit()) {
+		self->report_to_fmu(hrt_absolute_time());
+		px4_usleep(REPORTER_POLL_US);
+	}
+
+	return nullptr;
+}
+
+bool Px4IoCr8::start_reporter()
+{
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, PX4_STACK_ADJUSTED(REPORTER_STACK_SIZE));
+
+	struct sched_param param;
+	pthread_attr_getschedparam(&attr, &param);
+	param.sched_priority = REPORTER_PRIORITY;
+	pthread_attr_setschedparam(&attr, &param);
+
+	const int ret = pthread_create(&_reporter, &attr, &Px4IoCr8::reporter_trampoline, this);
+	pthread_attr_destroy(&attr);
+
+	if (ret != 0) {
+		PX4_ERR("reporter thread start failed (%d)", ret);
+		return false;
+	}
+
+	return true;
 }
 
 void Px4IoCr8::run()
 {
 	PX4_INFO("PX4IO CR8 starting");
+
+	/* Without the reporter CR8-0 would see a silent I/O core, so the relay
+	 * does not run without it.
+	 */
+	if (!start_reporter()) {
+		return;
+	}
 
 	while (!should_exit()) {
 		const hrt_abstime now = hrt_absolute_time();
@@ -310,19 +372,21 @@ void Px4IoCr8::run()
 
 		if (_esc_enabled) {
 			/* Sent every cycle so the CM33 timeout only fires when this core
-			 * or the link stops.  A full ring drops this cycle; the next one
-			 * resends.
+			 * or the link stops.  A failed write drops this cycle; the next
+			 * one resends.
 			 */
-			_esc_transport.send_actuator_cmd(esc_command(now));
+			_esc_transport.send_actuator_cmd(_lease.output(now));
 			receive_esc_status(now);
 		}
 
-		report_to_fmu(now);
 		_loop_count++;
+		publish_report_state(now);
 
 		// Run at 400Hz
 		px4_usleep(2500);
 	}
+
+	pthread_join(_reporter, nullptr);
 }
 
 int px4io_cr8_main(int argc, char *argv[])

@@ -79,6 +79,7 @@ public:
 	uint64_t get_last_io_heartbeat() const { return _last_io_heartbeat_us; }
 	uint32_t get_io_fault_flags() const { return _io_fault_flags; }
 	uint8_t get_io_armed_state() const { return _io_armed_state; }
+	bool is_link_down() const { return _link_down; }
 
 	struct Stats {
 		uint32_t tx_actuator_count;
@@ -92,12 +93,23 @@ public:
 		uint32_t rx_fault_count;
 		uint32_t crc_errors;
 		uint32_t sequence_gaps;
+		uint32_t link_faults;
+		uint32_t link_recoveries;
+		uint32_t recover_failures;
 	};
 	const Stats &get_stats() const { return _stats; }
 
 private:
+	/* Retry interval for RECOVER after the raw link quarantines. */
+	static constexpr uint64_t RECOVER_RETRY_INTERVAL_US = 1000000;
+
 	const char *_dev_path;
 	int         _fd{-1};
+
+	/* Raw-link quarantine: set by a link-level read/write error, cleared by a
+	 * successful RECOVER, which starts a new epoch. */
+	bool _link_down{false};
+	uint64_t _last_recover_attempt_us{0};
 
 	/* TX sequence numbers */
 	uint16_t _seq_actuator{0};
@@ -144,6 +156,10 @@ private:
 
 	/* Stamp header (magic/version/type/seq/timestamp/crc) and write one frame. */
 	bool send_msg(MessageType_e type, uint16_t &seq, void *msg, size_t len);
+
+	/* Raw-link fault handling (this core is the /dev/ipcc1 initiator). */
+	void note_link_error(int err);
+	void recover_link(uint64_t now);
 
 	/* TX: CR8-0 -> CR8-1 */
 	void process_actuator_outputs();

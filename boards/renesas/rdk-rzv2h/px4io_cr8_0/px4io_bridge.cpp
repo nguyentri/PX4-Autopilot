@@ -189,6 +189,11 @@ int Px4IoBridge::print_status()
 	PX4_INFO("Errors: crc=%lu seq_gap=%lu",
 		 (unsigned long)stats.crc_errors,
 		 (unsigned long)stats.sequence_gaps);
+	PX4_INFO("IPC link: %s, faults=%lu recoveries=%lu recover_failures=%lu",
+		 _bridge.is_link_down() ? "DOWN" : "up",
+		 (unsigned long)stats.link_faults,
+		 (unsigned long)stats.link_recoveries,
+		 (unsigned long)stats.recover_failures);
 
 	perf_print_counter(_loop_perf);
 	perf_print_counter(_loop_interval_perf);
@@ -214,6 +219,9 @@ via shared memory IPC.
 - TX (CR8-0 -> CR8-1): actuator_outputs, vehicle_command, vehicle_status
 - RX (CR8-1 -> CR8-0): input_rc, esc_status, battery_status, safety
 - RX liveness: CR8-1 heartbeat and fault status (10 Hz); "lost" after 500 ms
+- Link faults: a quarantined /dev/ipcc1 is recovered (new epoch) at most once
+  per second; nothing is sent meanwhile. CR8-1 then needs a disarmed command
+  before it accepts armed outputs again.
 
 ### Implementation
 Runs as a thread at 400Hz.

@@ -71,6 +71,12 @@ public:
 	bool receive_pwm_feedback(PWMFeedback_t &feedback);
 	bool receive_fault_status(FaultStatus_t &status);
 
+	/* Current raw-link epoch.  A read may adopt a new initiator epoch, so a
+	 * caller compares it after each read.  False when the device cannot
+	 * report it.
+	 */
+	bool link_epoch(uint32_t &epoch) const;
+
 private:
 	const char *_dev_path;
 	int         _fd{-1};

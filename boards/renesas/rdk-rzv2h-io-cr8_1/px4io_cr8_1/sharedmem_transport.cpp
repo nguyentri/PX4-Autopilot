@@ -37,7 +37,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 #include <drivers/drv_hrt.h>
+#include <nuttx/ipc/rzv_ipc_raw.h>
 
 /* The IPCC ring entry payload is 64 bytes (RZV_IPC_*_RING_ENTRY_SZ); every
  * protocol message fits in one entry. read() returns one entry and write()
@@ -237,4 +239,16 @@ bool SharedMemTransport::receive_pwm_feedback(PWMFeedback_t &feedback)
 bool SharedMemTransport::receive_fault_status(FaultStatus_t &status)
 {
 	return receive_framed(MSG_TYPE_FAULT_STATUS, &status, sizeof(status));
+}
+
+bool SharedMemTransport::link_epoch(uint32_t &epoch) const
+{
+	struct rzv_ipc_raw_stats_s stats {};
+
+	if (_fd < 0 || ioctl(_fd, RZV_IPC_RAWIOC_GET_STATS, reinterpret_cast<unsigned long>(&stats)) < 0) {
+		return false;
+	}
+
+	epoch = stats.epoch;
+	return true;
 }

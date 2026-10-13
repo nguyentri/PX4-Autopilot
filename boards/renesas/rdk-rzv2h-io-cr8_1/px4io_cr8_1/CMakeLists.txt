@@ -5,6 +5,7 @@ px4_add_module(
 	PRIORITY 100
 	SRCS
 		px4io_cr8.cpp
+		output-lease.cpp
 		sharedmem_transport.cpp
 		# rc_decoder.cpp
 		# can_uavcan.cpp

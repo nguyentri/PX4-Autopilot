@@ -69,7 +69,11 @@
 /* Timeout definitions (in microseconds) */
 #define HEARTBEAT_TIMEOUT_US    500000   // 500ms - M33 watchdog trigger
 #define RC_LOSS_TIMEOUT_US      100000   // 100ms - RC loss detection
-#define FMU_LOSS_TIMEOUT_US     100000   // 100ms - FMU loss detection (CR8-1 view)
+/* Output lease: an actuator command keeps outputs enabled for at most this
+ * long (CR8-1 for CR8-0 commands, CM33 for CR8-1 commands).  50 ms is the
+ * candidate lease of the RZ/V2H software specification and still needs
+ * measurement against the aircraft hazards. */
+#define FMU_LOSS_TIMEOUT_US     50000    // 50ms - output lease expiry
 
 /*===========================================================================
  * Message Types
@@ -316,6 +320,9 @@ typedef struct {
 #define FAULT_FLAG_SAFETY_VIOLATION     (1 << 5)
 #define FAULT_FLAG_MEMORY_CORRUPTION    (1 << 6)
 #define FAULT_FLAG_OVERTEMP             (1 << 7)
+#define FAULT_FLAG_OUTPUT_SAFE_FAULT    (1 << 8)  // CR8-1 latched SafeFault; needs a disarmed handshake
+#define FAULT_FLAG_PEER_SESSION        (1 << 9)  // SafeFault reason: CR8-0 link epoch changed while armed
+#define FAULT_FLAG_ARM_REJECTED        (1 << 10) // CR8-1 holds an armed command safe (no handshake)
 
 /* SafetyStatus error_flags */
 #define IO_ERROR_RC_LOSS                (1 << 0)

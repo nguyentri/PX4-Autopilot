@@ -39,14 +39,30 @@
 
 #include "uorb_bridge.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <cmath>
+#include <nuttx/ipc/rzv_ipc_raw.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 #include <lib/mathlib/mathlib.h>
 #include <px4_platform_common/log.h>
+
+/* This bridge initiates /dev/ipcc1 and recovers it after quarantine. */
+#if !defined(CONFIG_RZV_IPC_RAW) || !defined(CONFIG_RZV_IPC_ROLE_INITIATOR)
+#  error "px4io_bridge needs the raw IPC initiator on /dev/ipcc1 (CONFIG_RZV_IPC_RAW, CONFIG_RZV_IPC_ROLE_INITIATOR)"
+#endif
+
+/* RECOVER blocks the bridge thread for up to the rendezvous wait.  Liveness
+ * and lease reporting must not stall behind it, so the wait stays short; a
+ * missing peer is retried every RECOVER_RETRY_INTERVAL_US instead.
+ */
+#if defined(CONFIG_RZV_IPC_RECOVERY_WAIT_MS) && CONFIG_RZV_IPC_RECOVERY_WAIT_MS > 100
+#  error "px4io_bridge needs CONFIG_RZV_IPC_RECOVERY_WAIT_MS <= 100"
+#endif
 
 /* IPCC ring entry payload size; every protocol message fits in one entry. */
 static constexpr size_t IPC_ENTRY_SIZE = 64;
@@ -81,6 +97,19 @@ bool UorbBridgeCR8::init()
 
 void UorbBridgeCR8::update()
 {
+	if (_link_down) {
+		/* Nothing is sent while quarantined.  CR8-1 holds its outputs safe
+		 * after the lease and, if it was armed, until a disarmed command
+		 * arrives in the new epoch; old commands are never replayed.
+		 */
+		recover_link(hrt_absolute_time());
+
+		if (_link_down) {
+			update_io_liveness(hrt_absolute_time());
+			return;
+		}
+	}
+
 	/* TX: CR8-0 -> CR8-1 */
 	process_actuator_outputs();
 	process_vehicle_command();
@@ -159,7 +188,52 @@ bool UorbBridgeCR8::send_msg(MessageType_e type, uint16_t &seq, void *msg, size_
 	memcpy(entry, msg, len);
 
 	ssize_t n = write(_fd, entry, sizeof(entry));
+
+	if (n < 0) {
+		note_link_error(errno);
+	}
+
 	return n == static_cast<ssize_t>(sizeof(entry));
+}
+
+void UorbBridgeCR8::note_link_error(int err)
+{
+	/* The raw driver quarantines the link on an ACK timeout or a protocol
+	 * error and reports ENOLINK until RECOVER.  EAGAIN (ring full or empty)
+	 * is flow control, not a fault.
+	 */
+	if (err != ENOLINK && err != ETIMEDOUT && err != EPROTO) {
+		return;
+	}
+
+	if (!_link_down) {
+		PX4_ERR("CR8-1 IPC link down (%d), recovering", err);
+		_link_down = true;
+		_stats.link_faults++;
+	}
+}
+
+void UorbBridgeCR8::recover_link(uint64_t now)
+{
+	if (_last_recover_attempt_us != 0 && now - _last_recover_attempt_us < RECOVER_RETRY_INTERVAL_US) {
+		return;
+	}
+
+	_last_recover_attempt_us = now;
+
+	if (ioctl(_fd, RZV_IPC_RAWIOC_RECOVER, 0) < 0) {
+		_stats.recover_failures++;
+		return;
+	}
+
+	/* A new epoch: CR8-1 restarts its streams, so sequence gaps restart too. */
+	_link_down = false;
+	_stats.link_recoveries++;
+	_expected_seq_rc = 0;
+	_expected_seq_esc = 0;
+	_expected_seq_battery = 0;
+	_expected_seq_safety = 0;
+	PX4_INFO("CR8-1 IPC link recovered");
 }
 
 /*===========================================================================
@@ -280,8 +354,13 @@ void UorbBridgeCR8::process_rx()
 	/* Bounded drain: cap frames processed per tick so a flooded ring cannot
 	 * starve the TX/heartbeat path on this flight-critical loop. */
 	for (int budget = 2 * IPC_BUFFER_SIZE;
-	     budget > 0 && (n = read(_fd, frame, sizeof(frame))) > 0;
+	     budget > 0 && (n = read(_fd, frame, sizeof(frame))) != 0;
 	     budget--) {
+		if (n < 0) {
+			note_link_error(errno);
+			break;
+		}
+
 		const MessageHeader_t *hdr = reinterpret_cast<const MessageHeader_t *>(frame);
 
 		if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION) {
