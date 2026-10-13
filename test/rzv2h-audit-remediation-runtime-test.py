@@ -51,6 +51,25 @@ static ssize_t test_write(int fd, const void *data, size_t size) {
 '''
 
 
+def raw_ioctl_fake():
+    """Host ioctl() over the public raw IPC contract (stats and recovery
+    request codes from the real header); tests set the stats or an errno."""
+    contract = header(NUTTX / 'include/nuttx/ipc/rzv_ipc_raw.h')
+    return '#define _DIOC(nr) (0x0d00 | (nr))\n' + contract + r'''
+#include <vector>
+static struct rzv_ipc_raw_stats_s raw_stats{};
+static int raw_ioctl_errno;
+static std::vector<int> raw_ioctl_calls;
+inline int test_ioctl(int fd, int cmd, unsigned long arg) {
+  raw_ioctl_calls.push_back(cmd);
+  if (raw_ioctl_errno != 0) { errno = raw_ioctl_errno; return -1; }
+  if (cmd == RZV_IPC_RAWIOC_GET_STATS) memcpy(reinterpret_cast<void *>(arg), &raw_stats, sizeof(raw_stats));
+  return 0;
+}
+#define ioctl test_ioctl
+'''
+
+
 def cr8_1_transport_harness(owner=ROOT / 'boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1'):
     """IO-core SharedMemTransport over an in-memory IPCC entry queue."""
     code = PRE + r'''
@@ -66,7 +85,7 @@ static ssize_t test_read(int fd, void *data, size_t size) {
   if (entries.empty()) { errno = EAGAIN; return -1; }
   memcpy(data, entries.front().data(), size); entries.pop_front(); return size;
 }
-''' + raw_write_fake() + r'''
+''' + raw_write_fake() + raw_ioctl_fake() + r'''
 static int test_open(const char *path, int flags) { return 123; }
 static int test_close(int fd) { return 0; }
 static uint64_t hrt_absolute_time() { return 10; }

@@ -23,6 +23,12 @@ def io_prelude(owner):
     return code + REPAIR.header(owner / 'protocol.h').replace('#pragma once', '')
 
 
+def output_lease(owner):
+    """CR8-1 OutputLease class and methods, compiled as written."""
+    return (REPAIR.header(owner / 'output-lease.h') + REPAIR.header(owner / 'output-lease.cpp')).replace(
+        '#pragma once', '')
+
+
 class ExpandedRuntime(unittest.TestCase):
     def test_buffered_tx_recovers_without_another_write_and_stops_after_cleanup(self):
         source = (ARCH / 'rzv_ipc_ipcc.c').read_text()
@@ -442,23 +448,21 @@ int main(void) {
     def test_cr8_1_relays_fresh_fmu_commands_and_stops_after_timeout(self):
         owner = ROOT / 'boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1'
         source = (owner / 'px4io_cr8.cpp').read_text()
-        code = io_prelude(owner) + r'''
+        code = io_prelude(owner) + output_lease(owner) + r'''
 struct FmuTransport {
-  std::deque<ActuatorCommand_t> queue; int reads = 0;
+  std::deque<ActuatorCommand_t> queue; int reads = 0; uint32_t epoch = 1;
   bool receive_actuator_command(ActuatorCommand_t &cmd) {
     ++reads; if (queue.empty()) return false;
     cmd = queue.front(); queue.pop_front(); return true;
   }
+  bool link_epoch(uint32_t &value) const { value = epoch; return true; }
 };
 class Px4IoCr8 {public:
   static bool fmu_command_valid(const ActuatorCommand_t &cmd);
   void receive_fmu_commands(hrt_abstime now);
-  bool fmu_command_fresh(hrt_abstime now) const;
-  ActuatorCmdToM33_t esc_command(hrt_abstime now) const;
-  FmuTransport _fmu_transport; ActuatorCommand_t _fmu_cmd{}; hrt_abstime _last_fmu_cmd_us{0};};
+  FmuTransport _fmu_transport; OutputLease _lease;};
 '''
-        for name in ('bool Px4IoCr8::fmu_command_valid(', 'void Px4IoCr8::receive_fmu_commands(',
-                     'bool Px4IoCr8::fmu_command_fresh(', 'ActuatorCmdToM33_t Px4IoCr8::esc_command('):
+        for name in ('bool Px4IoCr8::fmu_command_valid(', 'void Px4IoCr8::receive_fmu_commands('):
             code += extract(source, name)
         code += r'''
 static ActuatorCommand_t frame(unsigned base, unsigned armed = 0, unsigned safety_off = 0) {
@@ -475,20 +479,22 @@ static void expect(const ActuatorCmdToM33_t &cmd, unsigned base, unsigned armed,
   assert(cmd.armed == armed && cmd.safety_off == safety_off && cmd.output_mode == 0);
 }
 int main() {
+  const hrt_abstime T = FMU_LOSS_TIMEOUT_US;
   Px4IoCr8 io;
   io.receive_fmu_commands(1000);
-  assert(io._fmu_transport.reads == 1 && io._last_fmu_cmd_us == 0);
-  expect(io.esc_command(1000), 0, 0, 0);
+  assert(io._fmu_transport.reads == 1);
+  expect(io._lease.output(1000), 0, 0, 0);
 
+  // Disarmed handshake, then armed values; a zero channel stays off.
   io._fmu_transport.queue.push_back(frame(1000));
   io.receive_fmu_commands(1000);
-  expect(io.esc_command(1000), 1000, 0, 0);
-
+  expect(io._lease.output(1000), 1000, 0, 0);
   ActuatorCommand_t zero = frame(1500, 1, 1); zero.outputs[3] = 0;
   io._fmu_transport.queue.push_back(zero);
   io.receive_fmu_commands(2000);
-  expect(io.esc_command(2000), 1500, 1, 1, 3);
+  expect(io._lease.output(2000), 1500, 1, 1, 3);
 
+  // Invalid frames never refresh or replace the lease.
   const uint16_t bad_outputs[] = {PWM_LOWEST_MIN - 1, PWM_HIGHEST_MAX + 1, 65535};
   for (uint16_t bad : bad_outputs) {
     ActuatorCommand_t cmd = frame(1000, 1, 1); cmd.outputs[bad == 65535 ? 0 : 7] = bad;
@@ -496,31 +502,35 @@ int main() {
   }
   io._fmu_transport.queue.push_back(frame(1000, 2, 1));
   io._fmu_transport.queue.push_back(frame(1000, 1, 2));
-  io.receive_fmu_commands(50000);
-  assert(io._fmu_transport.queue.empty() && io._last_fmu_cmd_us == 2000);
-  expect(io.esc_command(50000), 1500, 1, 1, 3);
+  io.receive_fmu_commands(2000 + T - 1);
+  assert(io._fmu_transport.queue.empty());
+  expect(io._lease.output(2000 + T - 1), 1500, 1, 1, 3);
+  expect(io._lease.output(2000 + T), 0, 0, 0);
 
+  // PWM bounds are inclusive.
+  io._fmu_transport.queue.push_back(frame(1000));
   ActuatorCommand_t bounds = frame(1000, 1, 1);
   bounds.outputs[0] = PWM_LOWEST_MIN; bounds.outputs[7] = PWM_HIGHEST_MAX;
   io._fmu_transport.queue.push_back(bounds);
-  io.receive_fmu_commands(60000);
-  assert(io._last_fmu_cmd_us == 60000);
-  const ActuatorCmdToM33_t edge = io.esc_command(60000);
-  assert(edge.commands[0] == PWM_LOWEST_MIN && edge.commands[7] == PWM_HIGHEST_MAX);
+  io.receive_fmu_commands(500000);
+  const ActuatorCmdToM33_t edge = io._lease.output(500000);
+  assert(edge.armed == 1 && edge.commands[0] == PWM_LOWEST_MIN && edge.commands[7] == PWM_HIGHEST_MAX);
 
+  // In-order drain: the newest valid command wins, an invalid one is skipped.
   io._fmu_transport.queue.push_back(frame(1100));
   io._fmu_transport.queue.push_back(frame(1200));
   io._fmu_transport.queue.push_back(frame(1300, 2));
-  io.receive_fmu_commands(70000);
-  expect(io.esc_command(70000), 1200, 0, 0);
-  expect(io.esc_command(70000 + FMU_LOSS_TIMEOUT_US - 1), 1200, 0, 0);
-  expect(io.esc_command(70000 + FMU_LOSS_TIMEOUT_US), 0, 0, 0);
+  io.receive_fmu_commands(510000);
+  expect(io._lease.output(510000), 1200, 0, 0);
+  expect(io._lease.output(510000 + T - 1), 1200, 0, 0);
+  expect(io._lease.output(510000 + T), 0, 0, 0);
 
+  // Bounded drain.
   io._fmu_transport.reads = 0;
-  for (unsigned i = 0; i < 40; ++i) io._fmu_transport.queue.push_back(frame(1000 + i, 1, 1));
-  io.receive_fmu_commands(200000);
+  for (unsigned i = 0; i < 40; ++i) io._fmu_transport.queue.push_back(frame(1000 + i));
+  io.receive_fmu_commands(600000);
   assert(io._fmu_transport.reads == 2 * IPC_BUFFER_SIZE && io._fmu_transport.queue.size() == 8);
-  expect(io.esc_command(200000), 1031, 1, 1);
+  expect(io._lease.output(600000), 1031, 0, 0);
 }
 '''
         REPAIR.run(code, cpp=True)
@@ -529,9 +539,17 @@ int main() {
         owner = ROOT / 'boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1'
         source = (owner / 'px4io_cr8.cpp').read_text()
         interval = re.search(r'static constexpr hrt_abstime REPORT_INTERVAL_US = \d+;', source).group(0)
-        code = io_prelude(owner) + r'''
+        code = io_prelude(owner) + output_lease(owner) + r'''
 static int warnings;
 #define PX4_WARN(...) (++warnings)
+namespace px4 {
+template<typename T> class atomic {public:
+  explicit atomic(T value) : _value(value) {}
+  T load() const { return _value; }
+  void store(T value) { _value = value; }
+  T fetch_add(T num) { T old = _value; _value += num; return old; }
+private: T _value;};
+}
 struct FmuTransport {
   std::deque<ActuatorCommand_t> queue; std::deque<Heartbeat_t> heartbeats; std::deque<FaultStatus_t> faults;
   bool accept = true;
@@ -539,6 +557,7 @@ struct FmuTransport {
     if (queue.empty()) return false;
     cmd = queue.front(); queue.pop_front(); return true;
   }
+  bool link_epoch(uint32_t &value) const { value = 1; return true; }
   bool send_heartbeat(const Heartbeat_t &hb) { if (accept) heartbeats.push_back(hb); return accept; }
   bool send_fault_status(const FaultStatus_t &fault) { if (accept) faults.push_back(fault); return accept; }
 };
@@ -557,57 +576,68 @@ class Px4IoCr8 {public:
 ''' + '  ' + interval + r'''
   static bool fmu_command_valid(const ActuatorCommand_t &cmd);
   void receive_fmu_commands(hrt_abstime now);
-  bool fmu_command_fresh(hrt_abstime now) const;
-  ActuatorCmdToM33_t esc_command(hrt_abstime now) const;
   void receive_esc_status(hrt_abstime now);
   FaultStatus_t fault_status(hrt_abstime now) const;
+  void publish_report_state(hrt_abstime now);
   void report_to_fmu(hrt_abstime now);
-  FmuTransport _fmu_transport; EscTransport _esc_transport;
-  ActuatorCommand_t _fmu_cmd{}; hrt_abstime _last_fmu_cmd_us{0};
-  uint32_t _esc_fault_flags{0}; hrt_abstime _last_esc_fault_us{0};
-  hrt_abstime _last_report_us{0}; uint32_t _loop_count{0}; uint32_t _report_count{0};};
+  FmuTransport _fmu_transport; EscTransport _esc_transport; OutputLease _lease;
+  uint32_t _esc_fault_flags{0}; hrt_abstime _last_esc_fault_us{0}; uint32_t _loop_count{0};
+  px4::atomic<uint32_t> _report_fault_flags{FAULT_FLAG_CR8_TIMEOUT};
+  px4::atomic<uint32_t> _report_armed{0};
+  px4::atomic<uint32_t> _report_state{static_cast<uint32_t>(OutputLease::State::Safe)};
+  px4::atomic<uint32_t> _report_loop_count{0};
+  hrt_abstime _last_report_us{0}; px4::atomic<uint32_t> _report_count{0};};
 '''
         for name in ('bool Px4IoCr8::fmu_command_valid(', 'void Px4IoCr8::receive_fmu_commands(',
-                     'bool Px4IoCr8::fmu_command_fresh(', 'ActuatorCmdToM33_t Px4IoCr8::esc_command(',
                      'void Px4IoCr8::receive_esc_status(', 'FaultStatus_t Px4IoCr8::fault_status(',
-                     'void Px4IoCr8::report_to_fmu('):
+                     'void Px4IoCr8::publish_report_state(', 'void Px4IoCr8::report_to_fmu('):
             code += extract(source, name)
         code += r'''
 static FaultStatus_t cm33_fault(uint32_t flags) { FaultStatus_t f{}; f.error_flags = flags; return f; }
+static ActuatorCommand_t command(unsigned armed) {
+  ActuatorCommand_t cmd{}; cmd.outputs[0] = 1500; cmd.armed = armed; cmd.safety_off = 1; return cmd;
+}
 int main() {
   Px4IoCr8 io; auto &fmu = io._fmu_transport;
   const hrt_abstime T = Px4IoCr8::REPORT_INTERVAL_US;
 
-  // Before any FMU command the lease is expired and outputs are off.
-  io._loop_count = 7;
+  // Before the control loop publishes anything the report says outputs are off.
   io.report_to_fmu(5000);
-  assert(fmu.heartbeats.size() == 1 && fmu.faults.size() == 1 && io._report_count == 1);
-  const Heartbeat_t hb = fmu.heartbeats.back();
-  assert(hb.source_core == CORE_ID_CR8_1 && hb.state == 1 && hb.uptime_ms == 5 && hb.loop_count == 7);
+  assert(fmu.heartbeats.size() == 1 && fmu.faults.size() == 1 && io._report_count.load() == 1);
+  Heartbeat_t hb = fmu.heartbeats.back();
+  assert(hb.source_core == CORE_ID_CR8_1 && hb.state == 1 && hb.uptime_ms == 5 && hb.loop_count == 0);
   assert(fmu.faults.back().error_flags == FAULT_FLAG_CR8_TIMEOUT && fmu.faults.back().armed_state == 0);
 
   // 10 Hz: nothing until a full interval has passed.
   io.report_to_fmu(5000 + T - 1);
   assert(fmu.heartbeats.size() == 1 && fmu.faults.size() == 1);
-  io.report_to_fmu(5000 + T);
-  assert(fmu.heartbeats.size() == 2 && fmu.faults.size() == 2 && io._report_count == 2);
 
-  // A full ring is not counted, and the next report still waits a full interval.
-  fmu.accept = false;
+  // The reporter sends only what the control loop published, never live state.
+  fmu.queue.push_back(command(0)); fmu.queue.push_back(command(1));
+  io.receive_fmu_commands(5000 + T);
+  assert(io._lease.output(5000 + T).armed == 1);
+  io._loop_count = 7;
+  io.report_to_fmu(5000 + T);
+  assert(fmu.faults.back().error_flags == FAULT_FLAG_CR8_TIMEOUT && fmu.faults.back().armed_state == 0);
+  assert(fmu.heartbeats.back().loop_count == 0 && io._report_count.load() == 2);
+  io.publish_report_state(5000 + T);
+  assert(io._report_state.load() == static_cast<uint32_t>(OutputLease::State::Armed));
   io.report_to_fmu(5000 + 2 * T);
-  assert(io._report_count == 2 && io._last_report_us == 5000 + 2 * T);
+  assert(fmu.faults.back().error_flags == 0 && fmu.faults.back().armed_state == 1);
+  assert(fmu.heartbeats.back().loop_count == 7);
+
+  // A failed write is not counted, and the next report still waits a full interval.
+  fmu.accept = false;
+  io.report_to_fmu(5000 + 3 * T);
+  assert(io._report_count.load() == 3 && io._last_report_us == 5000 + 3 * T);
   fmu.accept = true;
 
-  // A fresh armed command clears the timeout and reports the relayed armed state.
-  ActuatorCommand_t cmd{}; cmd.outputs[0] = 1500; cmd.armed = 1; cmd.safety_off = 1;
-  fmu.queue.push_back(cmd);
-  io.receive_fmu_commands(400000);
-  FaultStatus_t fault = io.fault_status(400000);
+  // Fault status: lease expiry while armed latches a safe fault.
+  FaultStatus_t fault = io.fault_status(5000 + T + FMU_LOSS_TIMEOUT_US - 1);
   assert(fault.error_flags == 0 && fault.armed_state == 1);
-  fault = io.fault_status(400000 + FMU_LOSS_TIMEOUT_US - 1);
-  assert(fault.error_flags == 0 && fault.armed_state == 1);
-  fault = io.fault_status(400000 + FMU_LOSS_TIMEOUT_US);
-  assert(fault.error_flags == FAULT_FLAG_CR8_TIMEOUT && fault.armed_state == 0);
+  io.receive_fmu_commands(5000 + T + FMU_LOSS_TIMEOUT_US);
+  fault = io.fault_status(5000 + T + FMU_LOSS_TIMEOUT_US);
+  assert(fault.error_flags == (FAULT_FLAG_CR8_TIMEOUT | FAULT_FLAG_OUTPUT_SAFE_FAULT) && fault.armed_state == 0);
 
   // CM33 flags are merged while it keeps reporting, and logged once per change.
   io._esc_transport.feedback.push_back(PWMFeedback_t{});
@@ -615,7 +645,7 @@ int main() {
   io._esc_transport.faults.push_back(cm33_fault(FAULT_FLAG_PWM_FAULT));
   io.receive_esc_status(1000000);
   assert(io._esc_transport.feedback.empty() && io._esc_transport.faults.empty() && warnings == 1);
-  fmu.queue.push_back(cmd);
+  fmu.queue.push_back(command(0));
   io.receive_fmu_commands(1000000);
   assert(io.fault_status(1000000).error_flags == FAULT_FLAG_PWM_FAULT);
   assert(io.fault_status(1000000 + HEARTBEAT_TIMEOUT_US - 1).error_flags ==
@@ -653,8 +683,9 @@ static constexpr size_t IPC_ENTRY_SIZE = 64;
 class UorbBridgeCR8 {public:
   int _fd{3};
   uint64_t _last_io_heartbeat_us{0}; bool _io_alive{false}; bool _io_lost_reported{false};
-  uint32_t _io_fault_flags{0}; uint8_t _io_armed_state{0};
-  struct { uint32_t rx_heartbeat_count{}, rx_fault_count{}, crc_errors{}; } _stats;
+  uint32_t _io_fault_flags{0}; uint8_t _io_armed_state{0}; bool _link_down{false};
+  struct { uint32_t rx_heartbeat_count{}, rx_fault_count{}, crc_errors{}, link_faults{}; } _stats;
+  void note_link_error(int err);
   static uint32_t calculate_crc32(const uint8_t *data, size_t len);
   bool validate_message_crc(const void *frame, size_t msg_size);
   void process_rx();
@@ -668,7 +699,8 @@ class UorbBridgeCR8 {public:
 '''
         for name in ('uint32_t UorbBridgeCR8::calculate_crc32(', 'bool UorbBridgeCR8::validate_message_crc(',
                      'void UorbBridgeCR8::process_rx(', 'void UorbBridgeCR8::handle_heartbeat(',
-                     'void UorbBridgeCR8::handle_fault_status(', 'void UorbBridgeCR8::update_io_liveness('):
+                     'void UorbBridgeCR8::handle_fault_status(', 'void UorbBridgeCR8::update_io_liveness(',
+                     'void UorbBridgeCR8::note_link_error('):
             code += extract(source, name)
         code += r'''
 template<typename T> static void push(T msg, int type, bool bad = false) {
@@ -777,7 +809,7 @@ int main() {
   io._transport.queue.push_back(command(1000));
   assert(io.update_outputs(1000));
   expect(io, 1000, false);
-  assert(!io.update_outputs(50000));
+  assert(!io.update_outputs(1000 + FMU_LOSS_TIMEOUT_US / 2));
   expect(io, 1000, false);
 
   ActuatorCmdToM33_t mode = command(1000, 1, 1); mode.output_mode = 1;
@@ -785,7 +817,7 @@ int main() {
   ActuatorCmdToM33_t high = command(1000, 1, 1); high.commands[7] = PWM_HIGHEST_MAX + 1;
   const ActuatorCmdToM33_t invalid[] = {mode, low, high, command(1000, 2, 1), command(1000, 1, 2)};
   for (const ActuatorCmdToM33_t &cmd : invalid) io._transport.queue.push_back(cmd);
-  assert(!io.update_outputs(60000));
+  assert(!io.update_outputs(1000 + FMU_LOSS_TIMEOUT_US / 2 + 1000));
   assert(io._transport.queue.empty() && io._last_cmd_us == 1000);
   expect(io, 1000, false);
 
@@ -913,6 +945,7 @@ int main() {
         source = (owner / 'uorb_bridge.cpp').read_text()
         bridge = io_prelude(owner) + '#include <unistd.h>\n' + REPAIR.raw_write_fake() + r'''
 #define write test_write
+#define PX4_ERR(...) ((void)0)
 static uint64_t hrt_absolute_time() { return 10; }
 static constexpr size_t IPC_ENTRY_SIZE = 64;
 class UorbBridgeCR8 {public:
@@ -920,11 +953,13 @@ class UorbBridgeCR8 {public:
   static uint32_t calculate_crc32(const uint8_t *data, size_t len);
   bool validate_message_crc(const void *frame, size_t msg_size);
   bool send_msg(MessageType_e type, uint16_t &seq, void *msg, size_t len);
-  struct { uint32_t crc_errors{}; } _stats;
+  void note_link_error(int err);
+  bool _link_down{false};
+  struct { uint32_t crc_errors{}, link_faults{}; } _stats;
 };
 '''
         for name in ('uint32_t UorbBridgeCR8::calculate_crc32(', 'bool UorbBridgeCR8::validate_message_crc(',
-                     'bool UorbBridgeCR8::send_msg('):
+                     'bool UorbBridgeCR8::send_msg(', 'void UorbBridgeCR8::note_link_error('):
             bridge += extract(source, name)
         bridge += r'''
 int main() {
