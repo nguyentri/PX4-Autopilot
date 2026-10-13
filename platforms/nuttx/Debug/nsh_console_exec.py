@@ -19,6 +19,12 @@ timed out without a prompt (hung shell / wrong console / CPU halted).
   nsh_console_exec.py --timeout 60 --until 'IPCTEST_RESULT .*mode=ping' \
       'ipctest --ping -d /dev/ipcc1'          # wait for a background builtin
 
+--marker ends each command on an `echo <unique marker>` sent right after it
+instead of on the trailing prompt. Use it when tasks print log lines while the
+shell is idle (PX4 images with DEBUG_INFO): a line that lands after `nsh> `
+leaves the buffer not ending in a prompt, and the prompt mode times out.
+  nsh_console_exec.py --marker 'ps' 'free' 'uorb top -1'
+
 --monitor sends nothing: it prints console output until --timeout or SIGTERM.
 Use it to drain lines a background task printed while no client was attached
 (RTT keeps them in the target's up-buffer) without disturbing the shell.
@@ -27,6 +33,7 @@ Never send commands the user did not ask for: NSH can write memory (mw addr=v),
 reboot, or kill tasks. Read-only commands are safe defaults.
 """
 import argparse
+import os
 import re
 import signal
 import socket
@@ -137,6 +144,36 @@ def read_until_match(io, pattern, buf, deadline):
     return buf, False
 
 
+def read_until_marker(io, marker, timeout):
+    """Read until a complete line equals `marker` (the output of `echo marker`,
+    not its echo, which carries the `echo ` prefix)."""
+    want = marker.encode()
+    buf, deadline = b"", time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        lines = ANSI_CSI.sub(b"", buf).replace(b"\r", b"").split(b"\n")
+        if any(ln.strip() == want for ln in lines[:-1]):
+            return buf, True
+        buf += io.read()
+    return buf, False
+
+
+def clean_marker(raw, cmd, marker):
+    """Drop the echoed command, the marker echo and output, and bare prompts."""
+    text = ANSI_CSI.sub(b"", raw).decode(errors="replace").replace("\r", "")
+    drop = {cmd.strip(), f"echo {marker}", marker, ""}
+    out = []
+    for line in text.split("\n"):
+        body = line.strip()
+        while body.startswith("nsh>"):
+            body = body[4:].strip()
+        if body in drop and (body or not out):
+            continue
+        out.append(line)
+    while out and not out[-1].strip():
+        out.pop()
+    return "\n".join(out)
+
+
 def clean(raw, cmd):
     text = ANSI_CSI.sub(b"", raw).decode(errors="replace").replace("\r", "")
     lines = text.split("\n")
@@ -180,6 +217,9 @@ def main():
     ap.add_argument("--until", metavar="REGEX",
                     help="after the LAST command, keep reading (within --timeout) "
                     "until an output line matches REGEX; for background builtins")
+    ap.add_argument("--marker", action="store_true",
+                    help="end each command on an echoed unique marker line, not "
+                    "on the prompt; robust against log lines after the prompt")
     ap.add_argument("commands", nargs="*")
     a = ap.parse_args()
 
@@ -206,28 +246,41 @@ def main():
     io = open_io()
     log = open(a.log, "ab") if a.log else None
     rc = 0
+    tag = f"NSHX_{os.getpid()}"
     try:
-        io.write(a.eol.encode())  # sync: get a fresh prompt, flush stale output
-        raw, ok = read_until_prompt(io, a.timeout)
+        if a.marker:
+            # Sync on a marker too: stale up-buffer output is read and dropped.
+            io.write(f"echo {tag}_0".encode() + a.eol.encode())
+            raw, ok = read_until_marker(io, f"{tag}_0", a.timeout)
+        else:
+            io.write(a.eol.encode())  # sync: get a fresh prompt, flush stale output
+            raw, ok = read_until_prompt(io, a.timeout)
         if log:
             log.write(raw)
         if not ok:
             hint = ("0 bytes: core not running this console image, halted, or hung"
                     if not raw else f"{len(raw)} bytes, no prompt: wrong baud or "
                     f"not NSH; tail={raw[-40:]!r}")
-            sys.exit(f"no '{PROMPT.decode()}' prompt within {a.timeout}s ({hint})")
+            what = "sync marker" if a.marker else f"'{PROMPT.decode()}' prompt"
+            sys.exit(f"no {what} within {a.timeout}s ({hint})")
         for n, cmd in enumerate(cmds, 1):
             io.write(cmd.encode() + a.eol.encode())
             deadline = time.monotonic() + a.timeout
-            raw, ok = read_until_prompt(io, a.timeout)
-            what = "no prompt"
+            if a.marker:
+                marker = f"{tag}_{n}"
+                io.write(f"echo {marker}".encode() + a.eol.encode())
+                raw, ok = read_until_marker(io, marker, a.timeout)
+                what = f"no {marker} line"
+            else:
+                raw, ok = read_until_prompt(io, a.timeout)
+                what = "no prompt"
             if ok and a.until and n == len(cmds):
                 raw, ok = read_until_match(io, a.until, raw, deadline)
                 what = f"no line matching {a.until!r}"
             if log:
                 log.write(raw)
             print(f"### nsh> {cmd}")
-            print(clean(raw, cmd))
+            print(clean_marker(raw, cmd, marker) if a.marker else clean(raw, cmd))
             if not ok:
                 print(f"### TIMEOUT after {a.timeout}s ({what})", file=sys.stderr)
                 rc = 1

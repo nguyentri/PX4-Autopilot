@@ -2,8 +2,9 @@
 #
 # Silent, self-verifying single-probe loader for the RZ/V2H IPC demo.
 #
-# Same volatile RAM load as rzv2h-ipc-demo-load-both.sh (CR8-0 SCI4 image first,
-# CR8-1 RTT image last), but hardened for unattended use:
+# Same volatile RAM load as rzv2h-ipc-demo-load-both.sh (CR8-0 image first,
+# CR8-1 image last), but hardened for unattended use. Works for any CR8 pair:
+# the NuttX IPC demo (SCI4 or RTT CR8-0 console) or PX4 dualcr8 + io-cr8_1:
 #   * preflight refuses an occupied GDB port; release its existing owner
 #     before loading and keep one probe owner at a time;
 #   * each connect is retried (3x) with a longer timeout and without -strict;
@@ -16,7 +17,7 @@
 # it is safe to chain in a build+load pipeline.
 #
 # Usage:
-#   JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh <cr8_0-sci4-elf> <cr8_1-elf>
+#   JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>
 #   JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh --verbose <elf0> <elf1>
 #
 # Env:
@@ -52,7 +53,7 @@ CR8_0_ELF="${1:-}"
 CR8_1_ELF="${2:-}"
 
 if [ -z "${CR8_0_ELF}" ] || [ -z "${CR8_1_ELF}" ]; then
-	echo "usage: JLINK_SERIAL=<probe-sn> $0 [--verbose] <cr8_0-sci4-elf> <cr8_1-elf>" >&2
+	echo "usage: JLINK_SERIAL=<probe-sn> $0 [--verbose] <cr8_0-elf> <cr8_1-elf>" >&2
 	exit 2
 fi
 if [ -z "${JLINK_SERIAL:-}" ]; then
@@ -67,26 +68,30 @@ resolve_tools || exit 2
 mkdir -p "${LOG_DIR}"
 
 # --- load: initiator first so the responder adopts its recovery epoch -------
-load_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0 (SCI4 console)" || exit 1
-load_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1 (RTT console)"  || exit 1
+load_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
+load_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
 
 # --- verify both are actually running ---------------------------------------
 rc=0
-verify_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0 (SCI4 console)" || rc=1
-verify_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1 (RTT console)"  || rc=1
+verify_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || rc=1
+verify_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || rc=1
 
 if [ "${rc}" -ne 0 ]; then
 	echo "!! one or more cores failed verification (logs in ${LOG_DIR})" >&2
 	exit 1
 fi
 
-cat <<EOF
+# Suggest an RTT bridge only for an image that has an RTT control block.
+has_rtt() {
+	nm_bin=$(command -v "${NM:-arm-none-eabi-nm}") || return 0
+	"${nm_bin}" "$1" 2>/dev/null | grep -q ' _SEGGER_RTT$'
+}
 
-Both images resident, running, and verified.
-  CR8-0 NSH  -> SCI4 / FT232 USB-serial (e.g. /dev/ttyUSB0, 115200 8N1)
-  CR8-1 NSH  -> RTT block 0x081E0000 (bridge on 127.0.0.1:19021)
-
-Open the consoles (manual step, needs the now-free probe for RTT):
-  ${HERE}/rzv2h-ipc-demo-load-both-manual.sh rtt     # CR8-1 RTT bridge -> :19021
-  ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0   # CR8-0 NSH on SCI4
-EOF
+echo
+echo "Both images resident, running, and verified; the probe is free."
+echo "Open a console (one RTT bridge at a time; it takes the probe):"
+has_rtt "${CR8_0_ELF}" && echo "  ${HERE}/../nuttx-rtt-bridge.sh start cr8_0 ${CR8_0_ELF}"
+has_rtt "${CR8_1_ELF}" && echo "  ${HERE}/../nuttx-rtt-bridge.sh start cr8_1 ${CR8_1_ELF}"
+echo "  ${HERE}/../nsh_console_exec.py --marker 'ps'"
+has_rtt "${CR8_0_ELF}" || echo "  ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0   # CR8-0 NSH on SCI4"
+exit 0

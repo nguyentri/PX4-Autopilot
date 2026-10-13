@@ -97,12 +97,13 @@ _server_owns_port() {
 # --- launch a single-run GDB server and wait until it listens ---------------
 # Retains the owned child PID in this shell; output is appended to $log.
 # Drops -strict and uses a longer -timeout than the original loader so a slow
-# SWD bring-up does not abort the connect.
+# SWD bring-up does not abort the connect. Extra arguments after <log> go to
+# the server (verify_core passes -noreset -noir to attach without side effects).
 _start_server() {
-	dev="$1"; log="$2"
+	dev="$1"; log="$2"; shift 2
 	"${JLINK_GDB_BIN}" -device "${dev}" -select "usb=${JLINK_SERIAL}" \
 		-if SWD -speed auto -LocalhostOnly 1 -singlerun \
-		-timeout 15000 -powertarget 0 -port "${GDB_PORT}" -nogui \
+		-timeout 15000 -powertarget 0 -port "${GDB_PORT}" -nogui "$@" \
 		>>"${log}" 2>&1 &
 	srv_pid=$!
 	srv_start=$(awk '{sub(/^.*\) /, ""); print $20}' "/proc/${srv_pid}/stat") || { _stop_server; return 1; }
@@ -114,6 +115,16 @@ _start_server() {
 		sleep 0.1
 	done
 	return 0
+}
+
+# A failed first connect makes the J-Link DLL pulse the reset pin and cold
+# reset the core, which also kills an image this run did not mean to touch.
+# Prints the first reset marker in $1 from line $2 (default 1), so a retry
+# only judges its own part of an appended log. "DBGEN is not asserted" alone
+# means the core was held in reset or never started (normal for a dead core
+# before a load; a failure on an attach).
+_log_reset_marker() {
+	tail -n +"${2:-1}" "$1" | grep -Eo 'Resetting via Reset pin|cold reset sequence|DBGEN is not asserted' | head -n1
 }
 
 # --- volatile RAM load of one core (mutating), with connect retry -----------
@@ -129,6 +140,7 @@ load_core() {
 		echo "== ${label}: load attempt ${attempt} (log: ${log}) =="
 		preflight_probe_free || { sleep 1; continue; }
 
+		from=$(($(wc -l <"${log}") + 1))
 		_start_server "${dev}" "${log}" || {
 			echo "-- ${label}: J-Link connect failed (attempt ${attempt})"
 			sleep 1; continue
@@ -141,6 +153,11 @@ load_core() {
 
 		_stop_server
 
+		case "$(_log_reset_marker "${log}" "${from}")" in
+		"") ;;
+		DBGEN*) echo "-- ${label}: DBGEN not asserted on connect (core held in reset or not started)" >&2 ;;
+		*) echo "!! ${label}: the J-Link log shows a reset-pin / cold reset; check every core's image" >&2 ;;
+		esac
 		if [ "${gdb_ret}" -eq 0 ] && echo "${out}" | grep -q 'SET_PC='; then
 			echo "== ${label}: loaded, probe released =="
 			return 0
@@ -162,7 +179,7 @@ verify_core() {
 	: >"${log}"
 
 	preflight_probe_free || return 1
-	_start_server "${dev}" "${log}" || {
+	_start_server "${dev}" "${log}" -noreset -noir || {
 		echo "!! ${label}: verify connect failed" >&2; return 1
 	}
 	gdb_ret=0
@@ -172,6 +189,10 @@ verify_core() {
 	_stop_server
 
 	[ "${gdb_ret}" -eq 0 ] || return 1
+	if [ -n "$(_log_reset_marker "${log}")" ]; then
+		echo "== ${label}: VERIFY FAIL (J-Link reset the core while attaching, see ${log}) =="
+		return 1
+	fi
 	pc=$(echo "${out}" | sed -n 's/^RUN_PC=\([0-9a-fA-Fx]*\).*/\1/p' | head -n1)
 	# gdb's printf "%#x" prints zero as a bare "0": a core parked at the
 	# reset vector must not pass as running.

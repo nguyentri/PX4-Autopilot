@@ -9,6 +9,12 @@
 # a debugger. The bridge owns the probe while up: stop it before starting
 # JLinkGDBServer / a VS Code debug session.
 #
+# Attach-without-reset holds only while the first connect succeeds: by default
+# the J-Link DLL retries a failed connect by pulsing the reset pin, which kills
+# the running image. The command file sets InhibitConnectRetries before its
+# own connect, and start fails with exit 3 if the log still shows a reset or a
+# failed connect.
+#
 # Usage:
 #   JLINK_SERIAL=<sn> nuttx-rtt-bridge.sh start <target> [elf|0xADDR]
 #   nuttx-rtt-bridge.sh status
@@ -22,6 +28,8 @@
 #
 # Env: JLINK_SERIAL (required for start), RTT_PORT (19021), RTT_ADDR,
 #      JLINK_IF (SWD), JLINK_SPEED (auto), STATE_DIR (${TMPDIR:-/tmp}/nuttx-rtt-bridge).
+# Exit: 0 up, 1 failed (probe busy, port in use, no RTT), 2 usage,
+#       3 the J-Link log shows a target reset or failed connect (bridge stopped).
 
 set -eu
 
@@ -30,6 +38,10 @@ STATE_DIR="${STATE_DIR:-${TMPDIR:-/tmp}/nuttx-rtt-bridge}"
 PIDFILE="${STATE_DIR}/bridge.pid"
 LOG="${STATE_DIR}/jlinkexe.log"
 JLINKEXE=$(command -v JLinkExe || echo /opt/SEGGER/JLink/JLinkExe)
+
+# J-Link log lines that mean the probe reset the core, or never attached.
+RESET_MARKERS='Resetting via Reset pin|cold reset sequence|DBGEN is not asserted'
+CONNECT_MARKERS="${RESET_MARKERS}|Connect failed|Cannot connect"
 
 port_up() { nc -z 127.0.0.1 "${RTT_PORT}" 2>/dev/null; }
 
@@ -95,17 +107,21 @@ start)
 	mkdir -p "${STATE_DIR}"
 	cmdfile=$(mktemp "${STATE_DIR}/bridge.XXXXXX.jlink")
 	{
+		# A failed connect must fail, not fall back to a reset-pin pulse.
+		echo "exec InhibitConnectRetries = 1"
 		# No address -> J-Link scans RAM for the "SEGGER RTT" control block.
 		[ -z "${addr}" ] || echo "exec SetRTTAddr ${addr}"
 		# 19021 is JLinkExe's default; only override when asked.
 		[ "${RTT_PORT}" = 19021 ] || echo "exec SetRTTTelnetPort ${RTT_PORT}"
-		echo "rtt start"
+		# Device, interface and speed come from the command line, so connect
+		# does not prompt. It runs after the settings above, never before.
+		echo "connect"
 	} >"${cmdfile}"
 	# A never-ending stdin keeps JLinkExe at its prompt so the port stays served.
 	# JLinkExe selects the probe with -USB <sn> (it rejects GDB server's -select).
 	setsid sh -c 'sleep 2147483647 | "$@"' nuttx-rtt-bridge \
 		"${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${dev}" \
-		-if "${JLINK_IF:-SWD}" -speed "${JLINK_SPEED:-auto}" -AutoConnect 1 \
+		-if "${JLINK_IF:-SWD}" -speed "${JLINK_SPEED:-auto}" \
 		-CommandFile "${cmdfile}" >"${LOG}" 2>&1 &
 	sid=$!
 	echo "${sid}" >"${PIDFILE}"
@@ -114,12 +130,25 @@ start)
 	fail() { echo "$1" >&2; stop_owned; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"; exit 1; }
 	i=0
 	until port_up; do
+		# A failed connect never opens the port: stop waiting, report below.
+		! grep -Eq "${CONNECT_MARKERS}" "${LOG}" || break
 		# The sleep keeps the session alive, so look for JLinkExe itself in it
 		# (after a short grace for it to spawn).
 		[ "${i}" -lt 5 ] || pgrep -s "${sid}" -x JLinkExe >/dev/null || fail "JLinkExe exited early:"
 		i=$((i + 1)); [ "${i}" -gt 150 ] && fail "RTT port not up:"
 		sleep 0.1
 	done
+	if grep -Eq "${CONNECT_MARKERS}" "${LOG}"; then
+		grep -E "${CONNECT_MARKERS}" "${LOG}" >&2
+		if grep -Eq "${RESET_MARKERS}" "${LOG}"; then
+			echo "!! J-Link RESET ${target}: the image that was running there is gone. Tell the user; reload it before trusting any output." >&2
+		else
+			echo "!! J-Link could not attach to ${target}; no reset was logged. Check the core is powered and running, then retry once." >&2
+		fi
+		stop_owned || true
+		rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"
+		exit 3
+	fi
 	echo "RTT bridge up: ${target} (${dev}) _SEGGER_RTT=${addr:-auto-search} -> 127.0.0.1:${RTT_PORT}"
 	echo "log: ${LOG}"
 	;;
@@ -138,5 +167,5 @@ status)
 	else echo "not running"; fi
 	;;
 *)
-	sed -n '2,25p' "$0"; exit 2 ;;
+	sed -n '2,33p' "$0"; exit 2 ;;
 esac
