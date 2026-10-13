@@ -85,6 +85,12 @@ and its selected BSP inputs for clock sources, module gates and divider
 calculations. GPT uses P4CLK and GTM uses P1CLK; their nominal frequencies do
 not prove the live loader state.
 
+The CR8 private timer behind the NuttX tick counts at I6CLK / 4 (200 MHz with
+I6CLK at 800 MHz), set by `CONFIG_RZV_CR8_PERIPHCLK_DIV`. The ratio comes
+from the SoC integration, not the Cortex-R8 core: assuming CPU / 2 ran the
+tick at half rate. On 2026-10-13 the corrected tick (load `0x30d3f` for
+1 kHz) matched the GTM-based HRT on both CR8 cores.
+
 Audit clock setup against selected XML and core-matched FSP/BSP sources.
 Corroborate with generated output and live measurements for target timing
 acceptance. Validate clocks before investigating baud, bus-rate, PWM or HRT

@@ -29,8 +29,14 @@ The return path is CR8-1 heartbeat and fault status at 10 Hz; the CR8-0
 bridge tracks CR8-1 liveness with a 500 ms timeout. On 2026-10-13 the CR8-1 IO
 image autostarted from ROMFS on the board and streamed 20 consecutive
 CRC-valid heartbeat/fault frames to a CR8-0 `ipcc-raw` reader (bounded
-on-target for the CR8-1 side only). No CR8-0 PX4 profile enables the bridge
-yet, so the full CR8-0 → CR8-1 command path has no target evidence. CM33 has
+on-target for the CR8-1 side only). The `renesas_rdk-rzv2h_dualcr8` CR8-0
+profile (the `drone` profile plus the bridge and the raw `/dev/ipcc1`
+initiator) runs the full CR8-0 → CR8-1 command path on the disarmed bench:
+CR8-1 holds a 404 Hz ESC worker and a 370 Hz control loop, the CR8-1 lease
+also requires a fresh CR8-0 heartbeat, and the bridge publishes
+`px4io_status`, on which commander's I/O-processor check blocks arming when
+CR8-1 is silent, in SafeFault or not receiving FMU outputs (bounded
+on-target, 2026-10-13; armed and SafeFault paths host-tested only). CM33 has
 no PWM backend and is optional and low priority; the single-core CR8-0 drone
 demo comes first, dual CR8 later.
 

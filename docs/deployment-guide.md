@@ -74,6 +74,22 @@ gdb-multiarch -q -batch <elf> \
 The [IPC HIL guide](./renesas/validation/rzv2h-ipc-hil-test-guide.md) owns the exact
 two-core order and the image-specific load contract.
 
+The load script and the VS Code launch configurations can start an image on
+a core that was halted while running a previous image. After the load they
+set `$pc` to the entry point and `$cpsr = 0x1d3` (SVC mode, ARM state, IRQ,
+FIQ and asynchronous aborts masked), so the new image never starts in the
+halted image's mode or with its interrupts enabled.
+
+To run the dual-CR8 PX4 pair, load `renesas_rdk-rzv2h_dualcr8` on CR8-0 and
+`renesas_rdk-rzv2h-io-cr8_1_default` on CR8-1:
+
+```bash
+JLINK_SERIAL=<probe-serial> timeout 300 \
+  platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh \
+  build/renesas_rdk-rzv2h_dualcr8/renesas_rdk-rzv2h_dualcr8.elf \
+  build/renesas_rdk-rzv2h-io-cr8_1_default/renesas_rdk-rzv2h-io-cr8_1_default.elf
+```
+
 J-Link reset, image load, and target memory writes require explicit user
 authorization. No raw `.bin` or xSPI flashing command is approved. The boot
 package checker below performs host-only structural validation and does not
@@ -171,6 +187,21 @@ arm-none-eabi-nm <elf>
 Historical addresses are not a substitute for symbol discovery. Keep NSH
 commands short because the configured argument limit and RTT input path can
 drop long lines.
+
+RTT has two side effects on the target:
+
+- J-Link reaches CR8 RTT only in stop mode. Every RTT poll halts the core
+  (about a quarter of wall time with the bridge attached). The NuttX tick
+  loses that time; the GTM-based HRT does not. Inter-core timeouts,
+  lease expiries and fault counters measured with the bridge attached are
+  skewed: CR8-1 keeps running while CR8-0 is halted. Detach the probe for
+  timing or link-loss measurements and read counters afterwards. A GDB
+  attach halts the core in the same way.
+- The rdk-rzv2h PX4 profiles select `CONFIG_SEGGER_RTT_UP_MODE_TRIM`: a full
+  up-buffer drops the excess output instead of spinning with interrupts
+  masked until a host drains it. Output written while no probe is attached
+  is lost once the buffer fills; the NuttX-only configurations keep the
+  stock blocking mode.
 
 To inspect an SVD register definition on the host:
 
