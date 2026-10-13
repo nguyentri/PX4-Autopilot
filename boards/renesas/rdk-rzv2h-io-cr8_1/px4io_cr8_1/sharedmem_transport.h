@@ -48,6 +48,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* One CR8_0 -> CR8_1 message: type selects the valid member. */
+struct FmuMessage {
+	uint8_t type;			// MSG_TYPE_ACTUATOR_CMD or MSG_TYPE_HEARTBEAT
+	ActuatorCommand_t command;
+	Heartbeat_t heartbeat;
+};
+
 class SharedMemTransport
 {
 public:
@@ -57,8 +64,15 @@ public:
 	/* Open the IPCC device. is_master is accepted for source compatibility. */
 	bool init(bool is_master);
 
-	/* CR8_0 -> CR8_1 */
-	bool receive_actuator_command(ActuatorCommand_t &cmd);
+	/* CR8_0 -> CR8_1: the next actuator command or heartbeat, in arrival
+	 * order.  Other CR8_0 message types are read and dropped.
+	 */
+	bool receive_fmu_message(FmuMessage &msg);
+
+	/* Wait up to timeout_ms for a readable entry.  False on timeout and on a
+	 * link error, which poll() reports at once.
+	 */
+	bool wait_readable(int timeout_ms) const;
 
 	/* CR8_1 -> CR8_0 */
 	bool send_heartbeat(const Heartbeat_t &heartbeat);
@@ -91,4 +105,7 @@ private:
 	static uint32_t calculate_crc32(const uint8_t *data, size_t len);
 	bool send_framed(MessageType_e type, uint16_t &seq, void *msg, size_t len);
 	bool receive_framed(MessageType_e want, void *msg, size_t len);
+
+	enum class ReadResult { Empty, Invalid, Valid };
+	ReadResult read_frame(uint8_t (&frame)[64]);
 };

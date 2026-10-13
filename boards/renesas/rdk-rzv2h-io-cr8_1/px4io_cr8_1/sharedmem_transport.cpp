@@ -34,6 +34,7 @@
 #include "sharedmem_transport.h"
 
 #include <fcntl.h>
+#include <poll.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -144,73 +145,138 @@ bool SharedMemTransport::receive_framed(MessageType_e want, void *msg, size_t le
 	 */
 	for (size_t scanned = 0; scanned < PENDING_CAPACITY && _pending_count < PENDING_CAPACITY; scanned++) {
 		uint8_t frame[IPC_ENTRY_SIZE] {};
-		ssize_t n = read(_fd, frame, sizeof(frame));
+		const ReadResult result = read_frame(frame);
 
-		if (n <= 0) {
+		if (result == ReadResult::Empty) {
 			return false;
 		}
 
-		if (n < static_cast<ssize_t>(sizeof(MessageHeader_t))) {
+		if (result == ReadResult::Invalid) {
 			continue;
 		}
 
-		auto *hdr = reinterpret_cast<MessageHeader_t *>(frame);
-		size_t frame_size;
+		const uint8_t type = reinterpret_cast<const MessageHeader_t *>(frame)->msg_type;
 
-		switch (hdr->msg_type) {
-		case MSG_TYPE_ACTUATOR_CMD:
-			frame_size = sizeof(ActuatorCommand_t);
-			break;
-
-		case MSG_TYPE_PWM_FEEDBACK:
-			frame_size = sizeof(PWMFeedback_t);
-			break;
-
-		case MSG_TYPE_FAULT_STATUS:
-			frame_size = sizeof(FaultStatus_t);
-			break;
-
-		default:
-			continue;
-		}
-
-		if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION ||
-		    (n != static_cast<ssize_t>(frame_size) && n != static_cast<ssize_t>(IPC_ENTRY_SIZE))) {
-			continue;
-		}
-
-		uint32_t received_crc = hdr->crc32;
-		hdr->crc32 = 0;
-
-		if (calculate_crc32(frame, frame_size) != received_crc) {
-			continue;
-		}
-
-		hdr->crc32 = received_crc;
-
-		if (hdr->msg_type == static_cast<uint8_t>(want)) {
+		if (type == static_cast<uint8_t>(want)) {
 			memcpy(msg, frame, len);
 			return true;
 		}
 
-		/* Only the ESC-leg replies have a second reader.  The FMU leg has a
-		 * single actuator-command reader, so a reply type arriving there, or
-		 * an actuator command read while another type is wanted, has no
-		 * consumer and would otherwise occupy retained storage forever.
+		/* Only the ESC-leg replies have a second reader.  Any other type has
+		 * no consumer here and would otherwise occupy retained storage
+		 * forever.
 		 */
-		if (want == MSG_TYPE_ACTUATOR_CMD || hdr->msg_type == static_cast<uint8_t>(MSG_TYPE_ACTUATOR_CMD)) {
-			continue;
+		if (type == MSG_TYPE_PWM_FEEDBACK || type == MSG_TYPE_FAULT_STATUS) {
+			memcpy(_pending[_pending_count++], frame, IPC_ENTRY_SIZE);
 		}
-
-		memcpy(_pending[_pending_count++], frame, IPC_ENTRY_SIZE);
 	}
 
 	return false;
 }
 
-bool SharedMemTransport::receive_actuator_command(ActuatorCommand_t &cmd)
+SharedMemTransport::ReadResult SharedMemTransport::read_frame(uint8_t (&frame)[64])
 {
-	return receive_framed(MSG_TYPE_ACTUATOR_CMD, &cmd, sizeof(cmd));
+	ssize_t n = read(_fd, frame, IPC_ENTRY_SIZE);
+
+	if (n <= 0) {
+		return ReadResult::Empty;
+	}
+
+	if (n < static_cast<ssize_t>(sizeof(MessageHeader_t))) {
+		return ReadResult::Invalid;
+	}
+
+	auto *hdr = reinterpret_cast<MessageHeader_t *>(frame);
+	size_t frame_size;
+
+	switch (hdr->msg_type) {
+	case MSG_TYPE_HEARTBEAT:
+		frame_size = sizeof(Heartbeat_t);
+		break;
+
+	case MSG_TYPE_ACTUATOR_CMD:
+		frame_size = sizeof(ActuatorCommand_t);
+		break;
+
+	case MSG_TYPE_PWM_FEEDBACK:
+		frame_size = sizeof(PWMFeedback_t);
+		break;
+
+	case MSG_TYPE_FAULT_STATUS:
+		frame_size = sizeof(FaultStatus_t);
+		break;
+
+	default:
+		return ReadResult::Invalid;
+	}
+
+	if (hdr->magic != IPC_MAGIC || hdr->version != IPC_PROTOCOL_VERSION ||
+	    (n != static_cast<ssize_t>(frame_size) && n != static_cast<ssize_t>(IPC_ENTRY_SIZE))) {
+		return ReadResult::Invalid;
+	}
+
+	uint32_t received_crc = hdr->crc32;
+	hdr->crc32 = 0;
+
+	if (calculate_crc32(frame, frame_size) != received_crc) {
+		return ReadResult::Invalid;
+	}
+
+	hdr->crc32 = received_crc;
+	return ReadResult::Valid;
+}
+
+bool SharedMemTransport::receive_fmu_message(FmuMessage &msg)
+{
+	if (_fd < 0) {
+		return false;
+	}
+
+	uint8_t frame[IPC_ENTRY_SIZE] {};
+
+	/* The FMU leg has a single reader, so nothing is retained: every frame is
+	 * delivered in order or dropped.
+	 */
+	for (size_t scanned = 0; scanned < PENDING_CAPACITY; scanned++) {
+		const ReadResult result = read_frame(frame);
+
+		if (result == ReadResult::Empty) {
+			return false;
+		}
+
+		if (result == ReadResult::Invalid) {
+			continue;
+		}
+
+		msg.type = reinterpret_cast<const MessageHeader_t *>(frame)->msg_type;
+
+		if (msg.type == MSG_TYPE_ACTUATOR_CMD) {
+			memcpy(&msg.command, frame, sizeof(msg.command));
+			return true;
+		}
+
+		if (msg.type == MSG_TYPE_HEARTBEAT) {
+			memcpy(&msg.heartbeat, frame, sizeof(msg.heartbeat));
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool SharedMemTransport::wait_readable(int timeout_ms) const
+{
+	if (_fd < 0) {
+		return false;
+	}
+
+	struct pollfd fds {};
+
+	fds.fd = _fd;
+
+	fds.events = POLLIN;
+
+	return poll(&fds, 1, timeout_ms) > 0 && (fds.revents & POLLIN) != 0;
 }
 
 bool SharedMemTransport::send_heartbeat(const Heartbeat_t &heartbeat)

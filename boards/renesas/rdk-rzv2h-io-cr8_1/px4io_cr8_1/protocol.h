@@ -323,6 +323,7 @@ typedef struct {
 #define FAULT_FLAG_OUTPUT_SAFE_FAULT    (1 << 8)  // CR8-1 latched SafeFault; needs a disarmed handshake
 #define FAULT_FLAG_PEER_SESSION        (1 << 9)  // SafeFault reason: CR8-0 link epoch changed while armed
 #define FAULT_FLAG_ARM_REJECTED        (1 << 10) // CR8-1 holds an armed command safe (no handshake)
+#define FAULT_FLAG_FMU_HEARTBEAT       (1 << 11) // CR8-1: no fresh CR8-0 heartbeat in the current session
 
 /* SafetyStatus error_flags */
 #define IO_ERROR_RC_LOSS                (1 << 0)

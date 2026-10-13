@@ -39,6 +39,11 @@ bool OutputLease::fresh(uint64_t now) const
 	return _last_cmd_us != 0 && now - _last_cmd_us < FMU_LOSS_TIMEOUT_US;
 }
 
+bool OutputLease::peer_alive(uint64_t now) const
+{
+	return _last_heartbeat_us != 0 && now - _last_heartbeat_us < HEARTBEAT_TIMEOUT_US;
+}
+
 void OutputLease::end_session(uint32_t reason)
 {
 	if (_state == State::Armed || _state == State::Fault) {
@@ -59,13 +64,36 @@ void OutputLease::observe_session(uint32_t epoch)
 	/* A command from the new session never continues the old lease. */
 	end_session(FAULT_FLAG_PEER_SESSION);
 	_last_cmd_us = 0;
+	_last_heartbeat_us = 0;
 	_epoch = epoch;
 }
 
 void OutputLease::update(uint64_t now)
 {
-	if (_state != State::Safe && _state != State::Fault && !fresh(now)) {
-		end_session(FAULT_FLAG_CR8_TIMEOUT);
+	if (_state != State::Ready && _state != State::Armed) {
+		return;
+	}
+
+	uint32_t reason = 0;
+
+	if (!fresh(now)) {
+		reason |= FAULT_FLAG_CR8_TIMEOUT;
+	}
+
+	if (!peer_alive(now)) {
+		reason |= FAULT_FLAG_FMU_HEARTBEAT;
+	}
+
+	if (reason != 0) {
+		end_session(reason);
+	}
+}
+
+void OutputLease::heartbeat(uint64_t now)
+{
+	/* Only a heartbeat read in a valid session proves that session alive. */
+	if (_epoch != 0) {
+		_last_heartbeat_us = now;
 	}
 }
 
@@ -83,7 +111,13 @@ void OutputLease::accept(const ActuatorCommand_t &cmd, uint64_t now)
 
 	_last_cmd_us = now;
 
-	if (cmd.armed == 0) {
+	if (!peer_alive(now)) {
+		/* Fresh commands without the CR8-0 heartbeat never leave Safe or
+		 * Fault; update() already ended a Ready or Armed session.
+		 */
+		_arm_rejected = cmd.armed != 0;
+
+	} else if (cmd.armed == 0) {
 		/* Disarmed handshake in the current session: the only way out of
 		 * Safe and Fault.
 		 */
@@ -111,7 +145,7 @@ ActuatorCmdToM33_t OutputLease::output(uint64_t now) const
 	 * fresh accepted command is forwarded channel for channel, as PX4IO does
 	 * while the FMU is alive.
 	 */
-	if ((_state == State::Ready || _state == State::Armed) && fresh(now)) {
+	if ((_state == State::Ready || _state == State::Armed) && fresh(now) && peer_alive(now)) {
 		for (unsigned i = 0; i < IPC_MAX_ACTUATORS; i++) {
 			out.commands[i] = _cmd.outputs[i];
 		}
@@ -129,6 +163,10 @@ uint32_t OutputLease::fault_flags(uint64_t now) const
 
 	if (!fresh(now)) {
 		flags |= FAULT_FLAG_CR8_TIMEOUT;
+	}
+
+	if (!peer_alive(now)) {
+		flags |= FAULT_FLAG_FMU_HEARTBEAT;
 	}
 
 	if (_state == State::Fault) {

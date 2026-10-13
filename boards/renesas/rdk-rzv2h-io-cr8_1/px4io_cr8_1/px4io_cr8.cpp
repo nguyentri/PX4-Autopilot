@@ -37,6 +37,7 @@
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/getopt.h>
+#include <px4_platform_common/sem.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 
@@ -68,28 +69,66 @@ private:
 	static constexpr int REPORTER_PRIORITY = SCHED_PRIORITY_DEFAULT - 10;
 	static constexpr size_t REPORTER_STACK_SIZE = 2048;
 
+	/* The control loop wakes on every CR8-0 entry, so a stop-and-wait CR8-0
+	 * write is acknowledged at once, and at least every FMU_WAIT_MS to age
+	 * the lease.
+	 */
+	static constexpr int FMU_WAIT_MS = 2;
+
+	/* The ESC worker sends the CM33 one command per HRT period. */
+	static constexpr hrt_abstime ESC_PERIOD_US = 2500;	// 400 Hz
+	static constexpr int ESC_PRIORITY = SCHED_PRIORITY_DEFAULT - 5;
+	static constexpr size_t ESC_STACK_SIZE = 2048;
+
 	static bool fmu_command_valid(const ActuatorCommand_t &cmd);
+	static bool fmu_heartbeat_valid(const Heartbeat_t &heartbeat);
 	void receive_fmu_commands(hrt_abstime now);
-	void receive_esc_status(hrt_abstime now);
+	void wait_for_fmu();
 	FaultStatus_t fault_status(hrt_abstime now) const;
 	void publish_report_state(hrt_abstime now);
 
+	void publish_esc_command(hrt_abstime now);
+	ActuatorCmdToM33_t esc_command(hrt_abstime now);
+	void receive_esc_status(hrt_abstime now);
+	void run_esc_worker();
+	static void esc_tick(void *arg);
+	static void *esc_trampoline(void *arg);
+	bool start_esc_worker();
+	void stop_esc_worker();
+
 	static void *reporter_trampoline(void *arg);
-	bool start_reporter();
+	bool start_thread(pthread_t &thread, void *(*entry)(void *), int priority, size_t stack_size);
 	void report_to_fmu(hrt_abstime now);
 
 	SharedMemTransport _fmu_transport;	// CR8-0 FMU leg, CR8-1 is the responder
-	SharedMemTransport _esc_transport;	// optional CM33 ESC leg, CR8-1 is the initiator
-	bool _esc_enabled{false};		// CM33 leg opened at startup
+	SharedMemTransport _esc_transport;	// optional CM33 ESC leg, CR8-1 is the initiator; ESC worker only
+	bool _esc_enabled{false};		// CM33 leg opened at startup and its worker running
 
 	/* Control loop only. */
 	OutputLease _lease;			// output safety state for CR8-0 commands
-	uint32_t _esc_fault_flags{0};		// latest CM33 fault flags
-	hrt_abstime _last_esc_fault_us{0};	// local receive time of _esc_fault_flags
 	uint32_t _loop_count{0};
 
+	/* Control loop -> ESC worker: newest output-stage command and when the
+	 * control loop made it.  The worker sends all outputs off once the
+	 * snapshot is older than the lease, so a stalled control loop cannot
+	 * hold outputs on.
+	 */
+	pthread_mutex_t _esc_cmd_lock = PTHREAD_MUTEX_INITIALIZER;
+	ActuatorCmdToM33_t _esc_cmd{};
+	hrt_abstime _esc_cmd_us{0};
+
+	/* ESC worker -> control loop and status. */
+	px4::atomic<uint32_t> _esc_fault_flags{0};		// latest CM33 fault flags
+	px4::atomic<hrt_abstime> _esc_fault_us{0};		// local receive time of _esc_fault_flags
+	px4::atomic<uint32_t> _esc_loop_count{0};
+
+	/* ESC worker pacing. */
+	pthread_t _esc_worker{};
+	struct hrt_call _esc_call {};
+	px4_sem_t _esc_tick_sem{};
+
 	/* Published by the control loop, read by the reporter and status. */
-	px4::atomic<uint32_t> _report_fault_flags{FAULT_FLAG_CR8_TIMEOUT};
+	px4::atomic<uint32_t> _report_fault_flags{FAULT_FLAG_CR8_TIMEOUT | FAULT_FLAG_FMU_HEARTBEAT};
 	px4::atomic<uint32_t> _report_armed{0};
 	px4::atomic<uint32_t> _report_state{static_cast<uint32_t>(OutputLease::State::Safe)};
 	px4::atomic<uint32_t> _report_loop_count{0};
@@ -157,8 +196,8 @@ int Px4IoCr8::print_status()
 	PX4_INFO("ESC relay: %s", _esc_enabled ? "enabled" : "disabled");
 	PX4_INFO("Fault flags: 0x%lx, armed: %lu", (unsigned long)_report_fault_flags.load(),
 		 (unsigned long)_report_armed.load());
-	PX4_INFO("Loops: %lu, reports sent: %lu", (unsigned long)_report_loop_count.load(),
-		 (unsigned long)_report_count.load());
+	PX4_INFO("Loops: %lu, ESC loops: %lu, reports sent: %lu", (unsigned long)_report_loop_count.load(),
+		 (unsigned long)_esc_loop_count.load(), (unsigned long)_report_count.load());
 
 	return 0;
 }
@@ -177,13 +216,17 @@ PX4IO driver for RZV2H CR8 Core 1.
 Relays PWM actuator commands from the CR8-0 FMU (/dev/ipcc1) to the CM33
 (/dev/ipcc3). Outputs start safe. A fresh disarmed command in the current
 CR8-0 link session enables disarmed values; only then may an armed command
-enable armed values. Each command is a 50 ms lease. Lease expiry or a CR8-0
-link epoch change while armed latches a safe fault: outputs stay off and
-disarmed until CR8-0 sends a disarmed command again. Invalid frames are
-ignored.
+enable armed values. Each command is a 50 ms lease, and every command also
+needs a CR8-0 heartbeat from the same session no older than 500 ms. Lease
+expiry, heartbeat loss or a CR8-0 link epoch change while armed latches a
+safe fault: outputs stay off and disarmed until CR8-0 sends a disarmed
+command again. Invalid frames are ignored.
 
-The CM33 leg is optional. A lower-priority thread sends CR8-0 a heartbeat and
-a fault status at 10 Hz, so a slow CR8-0 reader never stalls the output loop.
+The control loop wakes on every CR8-0 message. The CM33 leg is optional; a
+worker thread sends it the newest output state at 400 Hz, so a slow CM33
+never stalls the control loop. A lower-priority thread sends CR8-0 a
+heartbeat and a fault status at 10 Hz, so a slow CR8-0 reader never stalls
+it either.
 )DESCR_STR");
 
 	PRINT_MODULE_USAGE_NAME("px4io_cr8", "driver");
@@ -213,16 +256,23 @@ bool Px4IoCr8::fmu_command_valid(const ActuatorCommand_t &cmd)
 	return true;
 }
 
+bool Px4IoCr8::fmu_heartbeat_valid(const Heartbeat_t &heartbeat)
+{
+	/* Only the CR8-0 bridge's own running heartbeat proves CR8-0 alive. */
+	return heartbeat.source_core == CORE_ID_CR8_0 && heartbeat.state == 1;
+}
+
 void Px4IoCr8::receive_fmu_commands(hrt_abstime now)
 {
-	ActuatorCommand_t cmd{};
+	FmuMessage msg{};
 
 	/* Bounded drain, in order, so the newest valid command wins and a backlog
-	 * never starves the ESC leg.  A read may adopt a new CR8-0 link epoch, so
-	 * the session is checked after every read, before its command is used.
+	 * never starves the lease update.  A read may adopt a new CR8-0 link
+	 * epoch, so the session is checked after every read, before its message
+	 * is used.
 	 */
 	for (int budget = 2 * IPC_BUFFER_SIZE; budget > 0; budget--) {
-		const bool received = _fmu_transport.receive_actuator_command(cmd);
+		const bool received = _fmu_transport.receive_fmu_message(msg);
 		uint32_t epoch = 0;
 
 		if (!_fmu_transport.link_epoch(epoch)) {
@@ -235,30 +285,28 @@ void Px4IoCr8::receive_fmu_commands(hrt_abstime now)
 			break;
 		}
 
-		if (fmu_command_valid(cmd)) {
-			_lease.accept(cmd, now);
+		if (msg.type == MSG_TYPE_HEARTBEAT) {
+			if (fmu_heartbeat_valid(msg.heartbeat)) {
+				_lease.heartbeat(now);
+			}
+
+		} else if (fmu_command_valid(msg.command)) {
+			_lease.accept(msg.command, now);
 		}
 	}
 
 	_lease.update(now);
 }
 
-void Px4IoCr8::receive_esc_status(hrt_abstime now)
+void Px4IoCr8::wait_for_fmu()
 {
-	PWMFeedback_t feedback{};
-	FaultStatus_t fault{};
+	const hrt_abstime start = hrt_absolute_time();
 
-	while (_esc_transport.receive_pwm_feedback(feedback)) {
-		/* Feedback is not consumed yet. */
-	}
-
-	while (_esc_transport.receive_fault_status(fault)) {
-		if (fault.error_flags != _esc_fault_flags) {
-			PX4_WARN("CM33 fault flags: 0x%lx", (unsigned long)fault.error_flags);
-		}
-
-		_esc_fault_flags = fault.error_flags;
-		_last_esc_fault_us = now;
+	/* A quarantined link makes poll() return at once; sleep instead so the
+	 * loop never spins while CR8-0 is gone.
+	 */
+	if (!_fmu_transport.wait_readable(FMU_WAIT_MS) && hrt_elapsed_time(&start) < FMU_WAIT_MS * 1000 / 2) {
+		px4_usleep(FMU_WAIT_MS * 1000);
 	}
 }
 
@@ -266,14 +314,18 @@ FaultStatus_t Px4IoCr8::fault_status(hrt_abstime now) const
 {
 	FaultStatus_t fault{};
 
-	/* This core's own output state: lease, latched safe fault, rejected arm. */
+	/* This core's own output state: lease, heartbeat, latched safe fault,
+	 * rejected arm.
+	 */
 	fault.error_flags = _lease.fault_flags(now);
 
 	/* CM33 flags count only while the CM33 keeps reporting them (10 Hz); a
 	 * silent CM33 must not leave a stale fault latched on the FMU.
 	 */
-	if (_last_esc_fault_us != 0 && now - _last_esc_fault_us < HEARTBEAT_TIMEOUT_US) {
-		fault.error_flags |= _esc_fault_flags;
+	const hrt_abstime esc_fault_us = _esc_fault_us.load();
+
+	if (esc_fault_us != 0 && now - esc_fault_us < HEARTBEAT_TIMEOUT_US) {
+		fault.error_flags |= _esc_fault_flags.load();
 	}
 
 	fault.armed_state = _lease.output(now).armed;
@@ -288,6 +340,113 @@ void Px4IoCr8::publish_report_state(hrt_abstime now)
 	_report_armed.store(fault.armed_state);
 	_report_state.store(static_cast<uint32_t>(_lease.state()));
 	_report_loop_count.store(_loop_count);
+}
+
+void Px4IoCr8::publish_esc_command(hrt_abstime now)
+{
+	const ActuatorCmdToM33_t cmd = _lease.output(now);
+
+	pthread_mutex_lock(&_esc_cmd_lock);
+	_esc_cmd = cmd;
+	_esc_cmd_us = now;
+	pthread_mutex_unlock(&_esc_cmd_lock);
+}
+
+ActuatorCmdToM33_t Px4IoCr8::esc_command(hrt_abstime now)
+{
+	/* Default: every output off and disarmed. */
+	ActuatorCmdToM33_t cmd{};
+
+	pthread_mutex_lock(&_esc_cmd_lock);
+
+	/* The control loop may stamp a snapshot after this thread read now; that
+	 * snapshot is fresh, not 2^64 us old.
+	 */
+	if (_esc_cmd_us != 0 && (now <= _esc_cmd_us || now - _esc_cmd_us < FMU_LOSS_TIMEOUT_US)) {
+		cmd = _esc_cmd;
+	}
+
+	pthread_mutex_unlock(&_esc_cmd_lock);
+	return cmd;
+}
+
+void Px4IoCr8::receive_esc_status(hrt_abstime now)
+{
+	PWMFeedback_t feedback{};
+	FaultStatus_t fault{};
+
+	while (_esc_transport.receive_pwm_feedback(feedback)) {
+		/* Feedback is not consumed yet. */
+	}
+
+	while (_esc_transport.receive_fault_status(fault)) {
+		if (fault.error_flags != _esc_fault_flags.load()) {
+			PX4_WARN("CM33 fault flags: 0x%lx", (unsigned long)fault.error_flags);
+		}
+
+		_esc_fault_flags.store(fault.error_flags);
+		_esc_fault_us.store(now);
+	}
+}
+
+void Px4IoCr8::run_esc_worker()
+{
+	while (!should_exit()) {
+		px4_sem_wait(&_esc_tick_sem);
+
+		/* A CM33 write that waited past several periods resumes on the next
+		 * one instead of sending a burst.
+		 */
+		while (px4_sem_trywait(&_esc_tick_sem) == 0) {
+		}
+
+		if (should_exit()) {
+			break;
+		}
+
+		/* Sent every period so the CM33 timeout only fires when this core or
+		 * the link stops.  A write may wait for the CM33 ACK; that blocks only
+		 * this thread.  A failed write drops this period; the next resends.
+		 */
+		const hrt_abstime now = hrt_absolute_time();
+		_esc_transport.send_actuator_cmd(esc_command(now));
+		receive_esc_status(now);
+		_esc_loop_count.fetch_add(1);
+	}
+}
+
+void Px4IoCr8::esc_tick(void *arg)
+{
+	/* HRT callout (interrupt context): only wake the worker. */
+	px4_sem_post(&static_cast<Px4IoCr8 *>(arg)->_esc_tick_sem);
+}
+
+void *Px4IoCr8::esc_trampoline(void *arg)
+{
+	static_cast<Px4IoCr8 *>(arg)->run_esc_worker();
+	return nullptr;
+}
+
+bool Px4IoCr8::start_esc_worker()
+{
+	px4_sem_init(&_esc_tick_sem, 0, 0);
+	px4_sem_setprotocol(&_esc_tick_sem, SEM_PRIO_NONE);
+
+	if (!start_thread(_esc_worker, &Px4IoCr8::esc_trampoline, ESC_PRIORITY, ESC_STACK_SIZE)) {
+		px4_sem_destroy(&_esc_tick_sem);
+		return false;
+	}
+
+	hrt_call_every(&_esc_call, ESC_PERIOD_US, ESC_PERIOD_US, &Px4IoCr8::esc_tick, this);
+	return true;
+}
+
+void Px4IoCr8::stop_esc_worker()
+{
+	hrt_cancel(&_esc_call);
+	px4_sem_post(&_esc_tick_sem);
+	pthread_join(_esc_worker, nullptr);
+	px4_sem_destroy(&_esc_tick_sem);
 }
 
 void Px4IoCr8::report_to_fmu(hrt_abstime now)
@@ -332,22 +491,22 @@ void *Px4IoCr8::reporter_trampoline(void *arg)
 	return nullptr;
 }
 
-bool Px4IoCr8::start_reporter()
+bool Px4IoCr8::start_thread(pthread_t &thread, void *(*entry)(void *), int priority, size_t stack_size)
 {
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, PX4_STACK_ADJUSTED(REPORTER_STACK_SIZE));
+	pthread_attr_setstacksize(&attr, PX4_STACK_ADJUSTED(stack_size));
 
 	struct sched_param param;
 	pthread_attr_getschedparam(&attr, &param);
-	param.sched_priority = REPORTER_PRIORITY;
+	param.sched_priority = priority;
 	pthread_attr_setschedparam(&attr, &param);
 
-	const int ret = pthread_create(&_reporter, &attr, &Px4IoCr8::reporter_trampoline, this);
+	const int ret = pthread_create(&thread, &attr, entry, this);
 	pthread_attr_destroy(&attr);
 
 	if (ret != 0) {
-		PX4_ERR("reporter thread start failed (%d)", ret);
+		PX4_ERR("thread start failed (%d)", ret);
 		return false;
 	}
 
@@ -361,8 +520,13 @@ void Px4IoCr8::run()
 	/* Without the reporter CR8-0 would see a silent I/O core, so the relay
 	 * does not run without it.
 	 */
-	if (!start_reporter()) {
+	if (!start_thread(_reporter, &Px4IoCr8::reporter_trampoline, REPORTER_PRIORITY, REPORTER_STACK_SIZE)) {
 		return;
+	}
+
+	if (_esc_enabled && !start_esc_worker()) {
+		PX4_WARN("ESC worker start failed, ESC relay disabled");
+		_esc_enabled = false;
 	}
 
 	while (!should_exit()) {
@@ -371,19 +535,17 @@ void Px4IoCr8::run()
 		receive_fmu_commands(now);
 
 		if (_esc_enabled) {
-			/* Sent every cycle so the CM33 timeout only fires when this core
-			 * or the link stops.  A failed write drops this cycle; the next
-			 * one resends.
-			 */
-			_esc_transport.send_actuator_cmd(_lease.output(now));
-			receive_esc_status(now);
+			publish_esc_command(now);
 		}
 
 		_loop_count++;
 		publish_report_state(now);
 
-		// Run at 400Hz
-		px4_usleep(2500);
+		wait_for_fmu();
+	}
+
+	if (_esc_enabled) {
+		stop_esc_worker();
 	}
 
 	pthread_join(_reporter, nullptr);

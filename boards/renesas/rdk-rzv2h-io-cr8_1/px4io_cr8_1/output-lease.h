@@ -41,12 +41,17 @@
  *
  *   Safe  --fresh disarmed command, valid session-->  Ready
  *   Ready --fresh armed command-->                    Armed
- *   Armed --lease expiry or session change-->         Fault (latched)
- *   Ready --lease expiry or session change-->         Safe
+ *   Armed --lease expiry, heartbeat loss or
+ *           session change-->                         Fault (latched)
+ *   Ready --lease expiry, heartbeat loss or
+ *           session change-->                         Safe
  *   Fault --fresh disarmed command, valid session-->  Ready
  *
- * Outputs are forwarded only in Ready (disarmed values) and Armed, and only
- * while the newest command is younger than the lease.  An armed command in
+ * A command counts only while a CR8-0 heartbeat from the current session is
+ * fresh, so a command stream that outlives the CR8-0 bridge's own liveness
+ * signal never drives outputs.  Outputs are forwarded only in Ready
+ * (disarmed values) and Armed, and only while the newest command is younger
+ * than the lease and the heartbeat is fresh.  An armed command in
  * Safe or Fault is held safe and reported, so a CR8-0 that was armed across
  * a link loss must disarm before outputs return; no path leads from Fault
  * straight to armed output.
@@ -70,24 +75,31 @@ public:
 	 */
 	void observe_session(uint32_t epoch);
 
+	/* Record a validated CR8-0 heartbeat received at local time now. */
+	void heartbeat(uint64_t now);
+
 	/* Apply one validated CR8-0 command received at local time now. */
 	void accept(const ActuatorCommand_t &cmd, uint64_t now);
 
-	/* Expire the lease when no command arrived within FMU_LOSS_TIMEOUT_US. */
+	/* End the session when no command arrived within FMU_LOSS_TIMEOUT_US or
+	 * no heartbeat within HEARTBEAT_TIMEOUT_US.
+	 */
 	void update(uint64_t now);
 
 	/* Command for the output stage: every output off and disarmed unless the
-	 * state is Ready or Armed with a fresh command.
+	 * state is Ready or Armed with a fresh command and a fresh heartbeat.
 	 */
 	ActuatorCmdToM33_t output(uint64_t now) const;
 
 	/* FAULT_FLAG_* bits for this core's output state.  With
-	 * FAULT_FLAG_OUTPUT_SAFE_FAULT set, FAULT_FLAG_CR8_TIMEOUT and
-	 * FAULT_FLAG_PEER_SESSION also name the latch reason.
+	 * FAULT_FLAG_OUTPUT_SAFE_FAULT set, FAULT_FLAG_CR8_TIMEOUT,
+	 * FAULT_FLAG_FMU_HEARTBEAT and FAULT_FLAG_PEER_SESSION also name the
+	 * latch reason.
 	 */
 	uint32_t fault_flags(uint64_t now) const;
 
 	bool fresh(uint64_t now) const;
+	bool peer_alive(uint64_t now) const;
 	State state() const { return _state; }
 
 private:
@@ -96,6 +108,7 @@ private:
 	State _state{State::Safe};
 	ActuatorCommand_t _cmd{};	// newest command accepted in Ready or Armed
 	uint64_t _last_cmd_us{0};	// local receive time of the newest valid command
+	uint64_t _last_heartbeat_us{0};	// local receive time of the newest CR8-0 heartbeat
 	uint32_t _epoch{0};		// CR8-0 link epoch of the current session
 	uint32_t _latched_reason{0};	// fault flags that latched Fault
 	bool _arm_rejected{false};	// newest command was armed but held safe
