@@ -5,7 +5,7 @@
 #
 # Sourced, not executed. Provides:
 #   resolve_tools           locate JLinkGDBServerCLExe + gdb-multiarch
-#   preflight_probe_free    drop stale J-Link owners of our probe / GDB port
+#   preflight_probe_free    refuse an occupied GDB port
 #   port_listening <port>   true if a TCP listener is up on the port
 #   load_core   <dev> <elf> <label>   volatile RAM load via loadstart.gdb
 #   verify_core <dev> <elf> <label>   non-destructive halt/PC/resume check
@@ -50,42 +50,52 @@ port_listening() {
 	fi
 }
 
-# --- free the probe before we grab it ---------------------------------------
-# The demo runs one active J-Link owner at a time. A stale GDB server (crashed
-# load) or an open JLinkExe RTT bridge keeps the USB claimed and makes the next
-# "Connecting to J-Link..." fail. Drop any owner tied to *our* serial, then any
-# leftover listener on our GDB port. Matches on "usb=<serial>" so it never
-# touches a probe the user is using for something unrelated.
+# A port or probe identifier does not establish process ownership.
 preflight_probe_free() {
-	killed=0
-	# JLinkGDBServer: "-select usb=<sn>"; JLinkExe (RTT bridge): "-USB <sn>".
-	for pat in "usb=${JLINK_SERIAL}" "-select ${JLINK_SERIAL}" "-USB ${JLINK_SERIAL}"; do
-		# "--": the "-select ..." pattern must not be parsed as an option.
-		if pgrep -f -- "${pat}" >/dev/null 2>&1; then
-			echo "-- preflight: releasing stale J-Link owner of <probe-sn>"
-			pkill -f -- "${pat}" 2>/dev/null || true
-			killed=1
-		fi
-	done
-	# A GDB server still holding our TCP port would collide with -port.
 	if port_listening "${GDB_PORT}"; then
-		echo "-- preflight: GDB port ${GDB_PORT} still bound; clearing"
-		pkill -f "port ${GDB_PORT}" 2>/dev/null || true
-		killed=1
+		echo "GDB port ${GDB_PORT} is already in use; release its owner first" >&2
+		return 1
 	fi
-	[ "${killed}" -eq 1 ] && sleep 1
-	# Wait (up to ~5s) for the port to actually free.
-	tries=0
-	while port_listening "${GDB_PORT}"; do
-		tries=$((tries + 1))
-		[ "${tries}" -gt 50 ] && { echo "GDB port ${GDB_PORT} still busy after preflight" >&2; return 1; }
-		sleep 0.1
-	done
 	return 0
 }
 
+_server_identity() {
+	[ -n "${srv_pid:-}" ] && [ -r "/proc/${srv_pid}/stat" ] || return 1
+	server_identity=$(awk '{sub(/^.*\) /, ""); if ($1 != "Z") print $2, $20}' "/proc/${srv_pid}/stat") || return 1
+	[ "${server_identity}" = "$$ ${srv_start:-}" ]
+}
+
+_stop_server() {
+	if _server_identity; then
+		kill "${srv_pid}" 2>/dev/null || true
+		stop_tries=0
+		while _server_identity; do
+			stop_tries=$((stop_tries + 1))
+			if [ "${stop_tries}" -ge 50 ]; then
+				kill -KILL "${srv_pid}" 2>/dev/null || true
+				break
+			fi
+			sleep 0.1
+		done
+	fi
+	[ -z "${srv_pid:-}" ] || wait "${srv_pid}" 2>/dev/null || true
+	srv_pid=
+}
+
+_server_owns_port() {
+	_server_identity || return 1
+	server_hex=$(printf '%04X' "${GDB_PORT}")
+	server_inodes=$(awk -v port="${server_hex}" '$4 == "0A" && toupper($2) ~ (":" port "$") {print $10}' /proc/net/tcp /proc/net/tcp6)
+	for server_inode in ${server_inodes}; do
+		for server_fd in /proc/"${srv_pid}"/fd/*; do
+			[ "$(readlink "${server_fd}" 2>/dev/null)" != "socket:[${server_inode}]" ] || return 0
+		done
+	done
+	return 1
+}
+
 # --- launch a single-run GDB server and wait until it listens ---------------
-# Echoes the server PID on success; server output is appended to $log.
+# Retains the owned child PID in this shell; output is appended to $log.
 # Drops -strict and uses a longer -timeout than the original loader so a slow
 # SWD bring-up does not abort the connect.
 _start_server() {
@@ -95,14 +105,14 @@ _start_server() {
 		-timeout 15000 -powertarget 0 -port "${GDB_PORT}" -nogui \
 		>>"${log}" 2>&1 &
 	srv_pid=$!
+	srv_start=$(awk '{sub(/^.*\) /, ""); print $20}' "/proc/${srv_pid}/stat") || { _stop_server; return 1; }
 	tries=0
-	while ! port_listening "${GDB_PORT}"; do
-		kill -0 "${srv_pid}" 2>/dev/null || return 1
+	while ! _server_owns_port; do
+		_server_identity || { _stop_server; return 1; }
 		tries=$((tries + 1))
-		[ "${tries}" -gt 150 ] && { kill "${srv_pid}" 2>/dev/null || true; return 1; }
+		[ "${tries}" -gt 150 ] && { _stop_server; return 1; }
 		sleep 0.1
 	done
-	echo "${srv_pid}"
 	return 0
 }
 
@@ -119,18 +129,19 @@ load_core() {
 		echo "== ${label}: load attempt ${attempt} (log: ${log}) =="
 		preflight_probe_free || { sleep 1; continue; }
 
-		srv_pid=$(_start_server "${dev}" "${log}") || {
+		_start_server "${dev}" "${log}" || {
 			echo "-- ${label}: J-Link connect failed (attempt ${attempt})"
 			sleep 1; continue
 		}
 
-		out=$("${GDB_BIN}" -q -batch "${elf}" -x "${LOADSTART}" 2>&1)
+		gdb_ret=0
+		out=$("${GDB_BIN}" -q -batch "${elf}" -x "${LOADSTART}" 2>&1) || gdb_ret=$?
 		echo "${out}" >>"${log}"
 		[ "${VERBOSE:-0}" = "1" ] && echo "${out}" >&2
 
-		wait "${srv_pid}" 2>/dev/null || true
+		_stop_server
 
-		if echo "${out}" | grep -q 'SET_PC='; then
+		if [ "${gdb_ret}" -eq 0 ] && echo "${out}" | grep -q 'SET_PC='; then
 			echo "== ${label}: loaded, probe released =="
 			return 0
 		fi
@@ -151,17 +162,21 @@ verify_core() {
 	: >"${log}"
 
 	preflight_probe_free || return 1
-	srv_pid=$(_start_server "${dev}" "${log}") || {
+	_start_server "${dev}" "${log}" || {
 		echo "!! ${label}: verify connect failed" >&2; return 1
 	}
-	out=$("${GDB_BIN}" -q -batch "${elf}" -x "${VERIFY}" 2>&1)
+	gdb_ret=0
+	out=$("${GDB_BIN}" -q -batch "${elf}" -x "${VERIFY}" 2>&1) || gdb_ret=$?
 	echo "${out}" >>"${log}"
 	[ "${VERBOSE:-0}" = "1" ] && echo "${out}" >&2
-	wait "${srv_pid}" 2>/dev/null || true
+	_stop_server
 
+	[ "${gdb_ret}" -eq 0 ] || return 1
 	pc=$(echo "${out}" | sed -n 's/^RUN_PC=\([0-9a-fA-Fx]*\).*/\1/p' | head -n1)
+	# gdb's printf "%#x" prints zero as a bare "0": a core parked at the
+	# reset vector must not pass as running.
 	case "${pc}" in
-		""|0x0|0x00000000|0xffffffff)
+		""|0|0x0|0x00000000|0xffffffff)
 			echo "== ${label}: VERIFY FAIL (RUN_PC='${pc:-none}', see ${log}) =="
 			return 1 ;;
 		*)

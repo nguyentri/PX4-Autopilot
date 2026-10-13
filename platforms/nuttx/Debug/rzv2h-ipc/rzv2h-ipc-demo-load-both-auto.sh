@@ -4,8 +4,8 @@
 #
 # Same volatile RAM load as rzv2h-ipc-demo-load-both.sh (CR8-0 SCI4 image first,
 # CR8-1 RTT image last), but hardened for unattended use:
-#   * preflight releases any stale J-Link owner of the probe / GDB port so a
-#     leftover server or open RTT bridge cannot make "Connecting..." fail;
+#   * preflight refuses an occupied GDB port; release its existing owner
+#     before loading and keep one probe owner at a time;
 #   * each connect is retried (3x) with a longer timeout and without -strict;
 #   * server + gdb chatter is captured to per-core logs, so the console shows
 #     only step and PASS/FAIL lines (pass --verbose to tee the logs);
@@ -29,7 +29,11 @@
 set -eu
 
 HERE=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=rzv2h-ipc-demo-jlink-lib.sh
 . "${HERE}/rzv2h-ipc-demo-jlink-lib.sh"
+trap '_stop_server' EXIT
+trap '_stop_server; exit 130' INT
+trap '_stop_server; exit 143' HUP TERM
 
 LOADSTART="${HERE}/rzv2h-ipc-hil-loadstart.gdb"
 VERIFY="${HERE}/rzv2h-ipc-hil-verify-resume.gdb"

@@ -33,7 +33,35 @@ JLINKEXE=$(command -v JLinkExe || echo /opt/SEGGER/JLink/JLinkExe)
 
 port_up() { nc -z 127.0.0.1 "${RTT_PORT}" 2>/dev/null; }
 
-running() { [ -f "${PIDFILE}" ] && kill -0 "$(cat "${PIDFILE}")" 2>/dev/null; }
+# A numeric PID alone cannot identify a detached bridge after PID reuse.
+running() {
+	[ -r "${PIDFILE}" ] && [ -r "${PIDFILE}.identity" ] || return 1
+	bridge_pid=$(cat "${PIDFILE}")
+	case "${bridge_pid}" in ''|*[!0-9]*) return 1 ;; esac
+	{
+		read -r bridge_start && read -r bridge_cmd &&
+		read -r bridge_probe && read -r bridge_core
+	} <"${PIDFILE}.identity" || return 1
+	[ -r "/proc/${bridge_pid}/stat" ] || return 1
+	bridge_identity=$(awk '{sub(/^.*\) /, ""); print $3, $4, $20}' "/proc/${bridge_pid}/stat") || return 1
+	[ "${bridge_identity}" = "${bridge_pid} ${bridge_pid} ${bridge_start}" ] || return 1
+	tr '\000' '\n' <"/proc/${bridge_pid}/cmdline" | grep -Fxq 'nuttx-rtt-bridge' || return 1
+	for bridge_arg in "${bridge_cmd}" "${bridge_probe}" "${bridge_core}"; do
+		tr '\000' '\n' <"/proc/${bridge_pid}/cmdline" | grep -Fxq -- "${bridge_arg}" || return 1
+	done
+}
+
+stop_owned() {
+	if running; then
+		kill -- "-${bridge_pid}" 2>/dev/null || return 1
+		stop_tries=0
+		while running || port_up; do
+			stop_tries=$((stop_tries + 1))
+			[ "${stop_tries}" -lt 50 ] || { echo "RTT bridge has not released its port" >&2; return 1; }
+			sleep 0.1
+		done
+	fi
+}
 
 case "${1:-}" in
 start)
@@ -65,7 +93,7 @@ start)
 		sleep 0.1
 	done
 	mkdir -p "${STATE_DIR}"
-	cmdfile="${STATE_DIR}/bridge.jlink"
+	cmdfile=$(mktemp "${STATE_DIR}/bridge.XXXXXX.jlink")
 	{
 		# No address -> J-Link scans RAM for the "SEGGER RTT" control block.
 		[ -z "${addr}" ] || echo "exec SetRTTAddr ${addr}"
@@ -75,12 +103,15 @@ start)
 	} >"${cmdfile}"
 	# A never-ending stdin keeps JLinkExe at its prompt so the port stays served.
 	# JLinkExe selects the probe with -USB <sn> (it rejects GDB server's -select).
-	setsid sh -c "sleep 2147483647 | '${JLINKEXE}' -USB ${JLINK_SERIAL} \
-		-device ${dev} -if ${JLINK_IF:-SWD} -speed ${JLINK_SPEED:-auto} -AutoConnect 1 \
-		-CommandFile '${cmdfile}'" >"${LOG}" 2>&1 &
-	echo $! >"${PIDFILE}"
-	sid=$(cat "${PIDFILE}")
-	fail() { echo "$1" >&2; kill -- "-${sid}" 2>/dev/null || true; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}"; exit 1; }
+	setsid sh -c 'sleep 2147483647 | "$@"' nuttx-rtt-bridge \
+		"${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${dev}" \
+		-if "${JLINK_IF:-SWD}" -speed "${JLINK_SPEED:-auto}" -AutoConnect 1 \
+		-CommandFile "${cmdfile}" >"${LOG}" 2>&1 &
+	sid=$!
+	echo "${sid}" >"${PIDFILE}"
+	bridge_start=$(awk '{sub(/^.*\) /, ""); print $20}' "/proc/${sid}/stat")
+	printf '%s\n' "${bridge_start}" "${cmdfile}" "${JLINK_SERIAL}" "${dev}" >"${PIDFILE}.identity"
+	fail() { echo "$1" >&2; stop_owned; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"; exit 1; }
 	i=0
 	until port_up; do
 		# The sleep keeps the session alive, so look for JLinkExe itself in it
@@ -94,12 +125,13 @@ start)
 	;;
 stop)
 	if running; then
-		kill -- "-$(cat "${PIDFILE}")" 2>/dev/null || kill "$(cat "${PIDFILE}")"
+		stop_owned
+		rm -f "${bridge_cmd}"
 		echo "RTT bridge stopped, probe released"
 	else
 		echo "no bridge running"
 	fi
-	rm -f "${PIDFILE}"
+	rm -f "${PIDFILE}" "${PIDFILE}.identity"
 	;;
 status)
 	if running; then echo "running pid $(cat "${PIDFILE}"), port ${RTT_PORT} $(port_up && echo up || echo DOWN)"

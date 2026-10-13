@@ -23,7 +23,11 @@
 set -eu
 
 HERE=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=rzv2h-ipc-demo-jlink-lib.sh
 . "${HERE}/rzv2h-ipc-demo-jlink-lib.sh"
+trap '_stop_server' EXIT
+trap '_stop_server; exit 130' INT
+trap '_stop_server; exit 143' HUP TERM
 
 LOADSTART="${HERE}/rzv2h-ipc-hil-loadstart.gdb"
 VERIFY="${HERE}/rzv2h-ipc-hil-verify-resume.gdb"
@@ -86,7 +90,9 @@ EOF
 }
 
 cmd="${1:-guide}"
-[ "$#" -gt 0 ] && shift || true
+if [ "$#" -gt 0 ]; then
+	shift
+fi
 
 case "${cmd}" in
 	guide|help|-h|--help)
@@ -128,7 +134,7 @@ case "${cmd}" in
 		[ -f "${RTT_JLINK}" ] || { echo "not found: ${RTT_JLINK}" >&2; exit 2; }
 		JLINKEXE=$(find_jlinkexe)
 		[ -n "${JLINKEXE}" ] || { echo "JLinkExe not found (needed for the RTT bridge)" >&2; exit 2; }
-		echo "Freeing probe, then opening CR8-1 RTT bridge on 127.0.0.1:19021 ..."
+		echo "Checking the GDB port, then opening CR8-1 RTT bridge on 127.0.0.1:19021 ..."
 		echo "Leave this running; connect a client with: telnet 127.0.0.1 19021"
 		preflight_probe_free || exit 1
 		exec "${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${DEV_CR8_1}" \
