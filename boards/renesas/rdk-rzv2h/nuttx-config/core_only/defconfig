@@ -92,6 +92,9 @@ CONFIG_SEGGER_RTT=y
 CONFIG_SEGGER_RTT_SECTION=".noncache_buffer"
 CONFIG_SEGGER_RTT_BUFFER_SIZE_UP=8192
 CONFIG_SEGGER_RTT_BUFFER_SIZE_DOWN=1024
+# A full RTT buffer drops console output instead of spinning with interrupts
+# masked until a host drains it; with no probe attached, that spin never ends.
+CONFIG_SEGGER_RTT_UP_MODE_TRIM=y
 
 # Scheduler support required by PX4 work queues and shell diagnostics.
 CONFIG_SCHED_BACKTRACE=y
