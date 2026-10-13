@@ -52,6 +52,7 @@
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/esc_status.h>
 #include <uORB/topics/battery_status.h>
+#include <uORB/topics/px4io_status.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/Subscription.hpp>
@@ -103,6 +104,10 @@ private:
 	/* Retry interval for RECOVER after the raw link quarantines. */
 	static constexpr uint64_t RECOVER_RETRY_INTERVAL_US = 1000000;
 
+	/* Minimum disarmed command rate, as PX4IO's 20 ms update floor: a quiet
+	 * mixer must not let the 50 ms CR8-1 lease lapse while disarmed. */
+	static constexpr uint64_t DISARMED_REFRESH_US = FMU_LOSS_TIMEOUT_US * 2 / 5;
+
 	const char *_dev_path;
 	int         _fd{-1};
 
@@ -125,6 +130,8 @@ private:
 
 	uint64_t _last_io_heartbeat_us{0};
 	uint64_t _last_heartbeat_tx_us{0};
+	uint64_t _last_actuator_tx_us{0};
+	bool _actuator_cmd_armed{false};
 	bool _io_alive{false};
 	bool _io_lost_reported{false};
 
@@ -148,6 +155,10 @@ private:
 	uORB::Publication<input_rc_s> _input_rc_pub{ORB_ID(input_rc)};
 	uORB::Publication<esc_status_s> _esc_status_pub{ORB_ID(esc_status)};
 	uORB::Publication<battery_status_s> _battery_status_pub{ORB_ID(battery_status)};
+
+	/* CR8-1 output state for commander, in the PX4IO status form. */
+	uORB::Publication<px4io_status_s> _px4io_status_pub{ORB_ID(px4io_status)};
+	px4io_status_s _px4io_status{};		// last published
 	/* NOTE: the legacy `safety` uORB topic was removed upstream; SafetyStatus_t
 	 * frames are received but not republished (no current uORB equivalent). */
 
@@ -172,6 +183,7 @@ private:
 	void handle_heartbeat(const Heartbeat_t &hb_msg, uint64_t now);
 	void handle_fault_status(const FaultStatus_t &fault_msg);
 	void update_io_liveness(uint64_t now);
+	void publish_io_status(uint64_t now);
 	void publish_input_rc(const InputRC_t &rc_msg);
 	void publish_esc_status(const ESCStatus_t &esc_msg);
 	void publish_battery_status(const BatteryStatus_t &batt_msg);

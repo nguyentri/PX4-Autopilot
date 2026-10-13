@@ -48,6 +48,7 @@
 #include "checks/distanceSensorChecks.hpp"
 #include "checks/opticalFlowCheck.hpp"
 #include "checks/escCheck.hpp"
+#include "checks/px4ioCheck.hpp"
 #include "checks/estimatorCheck.hpp"
 #include "checks/failureDetectorCheck.hpp"
 #include "checks/navigatorCheck.hpp"
@@ -133,6 +134,7 @@ private:
 	DistanceSensorChecks _distance_sensor_checks;
 	OpticalFlowCheck _optical_flow_check;
 	EscChecks _esc_checks;
+	Px4ioChecks _px4io_checks;
 	EstimatorChecks _estimator_checks;
 	FailureDetectorChecks _failure_detector_checks;
 	NavigatorChecks _navigator_checks;
@@ -173,6 +175,7 @@ private:
 		&_distance_sensor_checks,
 		&_optical_flow_check,
 		&_esc_checks,
+		&_px4io_checks,
 		&_estimator_checks,
 		&_failure_detector_checks,
 		&_navigator_checks,

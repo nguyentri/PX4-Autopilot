@@ -107,9 +107,12 @@ Px4IoBridge::~Px4IoBridge()
 
 int Px4IoBridge::task_spawn(int argc, char *argv[])
 {
+	// The bridge carries the actuator stream and refreshes the CR8-1 output
+	// lease: run it in the actuator-output band so a busy default-priority
+	// task (an NSH command, a log dump) cannot starve the lease into SafeFault.
 	_task_id = px4_task_spawn_cmd("px4io_bridge",
 				      SCHED_DEFAULT,
-				      SCHED_PRIORITY_DEFAULT,
+				      SCHED_PRIORITY_ACTUATOR_OUTPUTS,
 				      2048,
 				      (px4_main_t)&run_trampoline,
 				      (char *const *)argv);

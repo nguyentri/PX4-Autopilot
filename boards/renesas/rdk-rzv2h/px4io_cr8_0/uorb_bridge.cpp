@@ -106,6 +106,7 @@ void UorbBridgeCR8::update()
 
 		if (_link_down) {
 			update_io_liveness(hrt_absolute_time());
+			publish_io_status(hrt_absolute_time());
 			return;
 		}
 	}
@@ -118,6 +119,7 @@ void UorbBridgeCR8::update()
 
 	/* RX: CR8-1 -> CR8-0 (multiplexed; one read+dispatch loop) */
 	process_rx();
+	publish_io_status(hrt_absolute_time());
 }
 
 /*===========================================================================
@@ -246,7 +248,13 @@ void UorbBridgeCR8::process_actuator_outputs()
 	updated |= _actuator_armed_sub.update(&_actuator_armed);
 	updated |= _safety_status_sub.update(&_safety_status);
 
-	if (updated) {
+	/* Unchanged state is resent only while disarmed, so a stalled mixer
+	 * still lets an armed CR8-1 lease expire into its safe state.
+	 */
+	const uint64_t now = hrt_absolute_time();
+	const bool refresh = !_actuator_cmd_armed && now - _last_actuator_tx_us >= DISARMED_REFRESH_US;
+
+	if (updated || refresh) {
 		ActuatorCommand_t cmd{};
 		const bool valid = _actuator_outputs.noutputs <= actuator_outputs_s::NUM_ACTUATOR_OUTPUTS;
 
@@ -275,6 +283,8 @@ void UorbBridgeCR8::process_actuator_outputs()
 
 		if (send_msg(MSG_TYPE_ACTUATOR_CMD, _seq_actuator, &cmd, sizeof(cmd))) {
 			_stats.tx_actuator_count++;
+			_last_actuator_tx_us = now;
+			_actuator_cmd_armed = cmd.armed;
 		}
 	}
 }
@@ -449,6 +459,38 @@ void UorbBridgeCR8::update_io_liveness(uint64_t now)
 	} else if (!_io_alive && was_alive) {
 		PX4_ERR("CR8-1 I/O processor heartbeat lost!");
 		_io_lost_reported = true;
+	}
+}
+
+void UorbBridgeCR8::publish_io_status(uint64_t now)
+{
+	/* Commander blocks arming on this, as for PX4IO: the FMU is OK for CR8-1
+	 * only while the link is up, CR8-1 is alive and its lease and CR8-0
+	 * heartbeat are fresh; failsafe is the latched CR8-1 SafeFault.  The
+	 * flags of a silent CR8-1 are not trusted.
+	 */
+	const uint32_t flags = _io_alive ? _io_fault_flags : 0;
+
+	px4io_status_s status{};
+	status.status_init_ok = _io_alive;
+	status.status_fmu_ok = !_link_down && _io_alive &&
+			       (flags & (FAULT_FLAG_CR8_TIMEOUT | FAULT_FLAG_FMU_HEARTBEAT)) == 0;
+	status.status_failsafe = (flags & FAULT_FLAG_OUTPUT_SAFE_FAULT) != 0;
+	status.status_outputs_armed = _io_alive && _io_armed_state != 0;
+	status.alarm_pwm_error = (flags & FAULT_FLAG_PWM_FAULT) != 0;
+	status.arming_io_arm_ok = status.status_fmu_ok && !status.status_failsafe;
+
+	const bool changed = status.status_init_ok != _px4io_status.status_init_ok ||
+			     status.status_fmu_ok != _px4io_status.status_fmu_ok ||
+			     status.status_failsafe != _px4io_status.status_failsafe ||
+			     status.status_outputs_armed != _px4io_status.status_outputs_armed ||
+			     status.alarm_pwm_error != _px4io_status.alarm_pwm_error;
+
+	/* At least 1 Hz, as PX4IO publishes it, and at once on a change. */
+	if (changed || _px4io_status.timestamp == 0 || now - _px4io_status.timestamp >= 1000000) {
+		status.timestamp = now;
+		_px4io_status_pub.publish(status);
+		_px4io_status = status;
 	}
 }
 
