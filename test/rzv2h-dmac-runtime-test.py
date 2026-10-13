@@ -61,6 +61,12 @@ class DmacRuntimeTests(unittest.TestCase):
     def test_enabled_channel_rejects_restart(self):
         self.run_scenario("enabled-start")
 
+    def test_clock_failure_prevents_register_writes_and_allows_retry(self):
+        self.run_scenario("clock-failure")
+
+    def test_reset_failure_prevents_register_writes_and_allows_retry(self):
+        self.run_scenario("reset-failure")
+
     def test_enabled_channel_rejects_buffer_replacement(self):
         self.run_scenario("enabled-buffer")
 

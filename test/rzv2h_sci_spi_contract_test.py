@@ -59,14 +59,14 @@ class SciSpiSampleContracts(unittest.TestCase):
         self.assertIn("CONFIG_SPITOOL_MAXBUS=0", self.defconfig)
         self.assertIn("CONFIG_SPITOOL_DEFFREQ=1000000", self.defconfig)
 
-    def test_sample_contains_exact_loopback_wiring_and_oracle(self) -> None:
-        self.assertIn("P5_0 (MOSI)", self.defconfig)
-        self.assertIn("P5_1 (MISO)", self.defconfig)
-        self.assertIn(
-            "spi exch -b 0 -f 1000000 -m 0 -w 8 -x 4 a55ac33c",
-            self.defconfig,
-        )
-        self.assertIn('exactly "A5 5A C3 3C"', self.defconfig)
+    def test_sample_uses_the_documented_loopback_wiring_and_oracle(self) -> None:
+        guide = read("docs/renesas/validation/validation-checklist.md")
+        self.assertIn("P5_0 to MOSI, P5_1 to MISO and P6_0 to SCK", guide)
+        self.assertIn("spi exch -b 0 -f 1000000 -m 0 -w 8 -x 4 a55ac33c", guide)
+        self.assertIn("`A5 5A C3 3C`", guide)
+        body = function_body(self.board, "rzv2h_sci0_spi_setup")
+        for pin in ("RZV_SCI0_MOSI_PIN", "RZV_SCI0_MISO_PIN", "RZV_SCI0_SCK_PIN"):
+            self.assertIn(f"rzv_gpioconfig({pin})", body)
 
 
 if __name__ == "__main__":

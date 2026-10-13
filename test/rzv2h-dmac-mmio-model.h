@@ -20,6 +20,9 @@ struct host_register_s
 static struct host_register_s registers[2048];
 static unsigned int register_count;
 static unsigned int writes;
+static unsigned int reset_calls;
+static int clock_error;
+static int reset_error;
 static unsigned int cache_calls;
 static unsigned int destination_invalidations;
 static unsigned int peripheral_cache_calls;
@@ -174,11 +177,12 @@ void host_dsb(void)
 int rzv_clock_enable(uint32_t clock)
 {
   (void)clock;
-  return 0;
+  return clock_error;
 }
 
 int rzv_module_unreset(uint32_t clock)
 {
   (void)clock;
-  return 0;
+  reset_calls++;
+  return reset_error;
 }

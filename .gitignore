@@ -132,6 +132,8 @@ git config advice.addIgnoredFile false
 !test/renesas-coding-standards-test.py
 !test/rzv2h-wdt-runtime-test.py
 !test/rzv2h-driver-boundary-runtime-test.py
+!test/rzv2h-audit-remediation-runtime-test.py
+!test/rzv2h-io-serial-adc-runtime-test.py
 !platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py
 !platforms/nuttx/Debug/nsh_console_exec.py
 !platforms/nuttx/Debug/svd_register_tool.py
@@ -192,3 +194,11 @@ ak-engineer
 !test/rzv2h-boot-package-test.py
 
 !test/rzv2h-board-failure-runtime-test.py
+
+!Tools/rzv2h-register-layout.py
+!test/rzv2h-driver-unwind-runtime-test.py
+!test/rzv2h-register-base-contract-test.py
+!test/rzv2h-register-layout-contract-test.py
+!test/rzv2h-expanded-remediation-runtime-test.py
+!test/rzv2h-debug-process-ownership-test.py
+!test/rzv2h-optional-config-contract-test.py

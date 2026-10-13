@@ -51,6 +51,26 @@ int main(int argc, char **argv)
   const char *scenario = argv[1];
   struct rzv_dmac_config_s config = configuration(false);
 
+  if (strcmp(scenario, "clock-failure") == 0 ||
+      strcmp(scenario, "reset-failure") == 0)
+    {
+      bool clock_fails = strcmp(scenario, "clock-failure") == 0;
+      clock_error = clock_fails ? -ETIMEDOUT : 0;
+      reset_error = clock_fails ? 0 : -EIO;
+      CHECK(rzv_dmac_channel_initialize(0) ==
+            (clock_fails ? -ETIMEDOUT : -EIO),
+            "initialization error was discarded");
+      CHECK(writes == 0, "DMAC registers written after clock/reset error");
+      CHECK(reset_calls == (clock_fails ? 0 : 1),
+            "reset attempted after clock failure");
+      clock_error = 0;
+      reset_error = 0;
+      CHECK(rzv_dmac_channel_initialize(0) == 0,
+            "failed initialization could not be retried");
+      CHECK(writes > 0, "retry did not initialize hardware");
+      return 0;
+    }
+
   if (strcmp(scenario, "invalid") == 0)
     {
       config.callback = callback;

@@ -365,7 +365,7 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         blocked = body[admission:dequeue]
         self.assertIn("ipcc->overflow = 1", blocked)
         self.assertIn("ret = total", blocked)
-        self.assertIn("goto out", blocked)
+        self.assertIn("break;", blocked)
         self.assertIn("nwritten = circbuf_write(rxbuf, tmp, nread)", body)
         self.assertIn("if (nwritten != nread)", body)
 
