@@ -1,0 +1,1880 @@
+{
+  "schema_version": 1,
+  "scope": "RDK-RZ/V2H source/host, build, offline artifact and explicitly gated HIL tools",
+  "default_run_group": "sample-host",
+  "sample_manifest": "platforms/nuttx/Debug/rzv2h-sample-profiles.json",
+  "scripts": [
+    {
+      "id": "rzv2h-adc-irq-selector-test",
+      "path": "test/rzv2h-adc-irq-selector-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-adc-irq-selector-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Check the ADC route against the RZ/V2H INTR8SEL scan-end selector."
+    },
+    {
+      "id": "rzv2h-audit-remediation-runtime-test",
+      "path": "test/rzv2h-audit-remediation-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-audit-remediation-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ],
+        "modules": [
+          "em",
+          "genmsg"
+        ]
+      },
+      "note": "Run repaired production entry points at explicit host I/O boundaries."
+    },
+    {
+      "id": "rzv2h-bmp388-reset-contract-test",
+      "path": "test/rzv2h-bmp388-reset-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-bmp388-reset-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ]
+      },
+      "note": "Compile the production BMP388 reset method with a controlled bus boundary."
+    },
+    {
+      "id": "rzv2h-board-failure-runtime-test",
+      "path": "test/rzv2h-board-failure-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-board-failure-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Run board pin and watchdog setup failures through production functions."
+    },
+    {
+      "id": "rzv2h-board-sample-runtime-test",
+      "path": "test/rzv2h-board-sample-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-board-sample-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Exercise retained board owners and negative sample paths with real C."
+    },
+    {
+      "id": "rzv2h-boot-package-test",
+      "path": "test/rzv2h-boot-package-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-boot-package-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_drone"
+        ]
+      },
+      "note": "Exercise the boot packager against actual linked CR8 firmware artifacts."
+    },
+    {
+      "id": "rzv2h-debug-process-ownership-test",
+      "path": "test/rzv2h-debug-process-ownership-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-debug-process-ownership-test.py"
+      ],
+      "note": "Exercise debug script ownership using isolated host processes and tools."
+    },
+    {
+      "id": "rzv2h-dmac-runtime-test",
+      "path": "test/rzv2h-dmac-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-dmac-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Exercise the complete RZ/V2H DMAC driver at its host MMIO boundary."
+    },
+    {
+      "id": "rzv2h-driver-boundary-runtime-test",
+      "path": "test/rzv2h-driver-boundary-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-driver-boundary-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute production clock, timer, and SCI-SPI deadline boundaries."
+    },
+    {
+      "id": "rzv2h-driver-unwind-runtime-test",
+      "path": "test/rzv2h-driver-unwind-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-driver-unwind-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Inject acquisition failures into production driver initialization paths."
+    },
+    {
+      "id": "rzv2h-drone-artifact-contract-test",
+      "path": "test/rzv2h-drone-artifact-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-drone-artifact-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_drone"
+        ]
+      },
+      "note": "Audit the resolved opt-in drone firmware and execute its serial startup."
+    },
+    {
+      "id": "rzv2h-drone-profile-contract-test",
+      "path": "test/rzv2h-drone-profile-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-drone-profile-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "bash",
+          "c++",
+          "cc",
+          "cmake"
+        ]
+      },
+      "note": "Exercise actual board source selection and sensor descriptor dispatch."
+    },
+    {
+      "id": "rzv2h-dshot-runtime-test",
+      "path": "test/rzv2h-dshot-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-dshot-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the complete DShot C driver against a GPT/DMAC boundary model."
+    },
+    {
+      "id": "rzv2h-dual-cr8-output-lease-runtime-test",
+      "path": "test/rzv2h-dual-cr8-output-lease-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-dual-cr8-output-lease-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ],
+        "modules": [
+          "kconfiglib"
+        ]
+      },
+      "note": "Dual-CR8 output safety: CR8-0 link recovery, the CR8-1 epoch query, and"
+    },
+    {
+      "id": "rzv2h-ether-runtime-test",
+      "path": "test/rzv2h-ether-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ether-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the real CPG span and reset code against a host MMIO recorder."
+    },
+    {
+      "id": "rzv2h-expanded-remediation-runtime-test",
+      "path": "test/rzv2h-expanded-remediation-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-expanded-remediation-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ]
+      },
+      "note": "Exercise deferred TX progress, callback publication, shared-GIC routing, IO startup, relay and reporting."
+    },
+    {
+      "id": "rzv2h-gtm-status-runtime-test",
+      "path": "test/rzv2h-gtm-status-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-gtm-status-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the native GTM timeout and countdown-status operations on the host."
+    },
+    {
+      "id": "rzv2h-icm20948-contract-test",
+      "path": "test/rzv2h-icm20948-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-icm20948-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute real board CS dispatch and ICM20948 SPI framing on the host."
+    },
+    {
+      "id": "rzv2h-io-core-health-runtime-test",
+      "path": "test/rzv2h-io-core-health-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-io-core-health-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ]
+      },
+      "note": "IO-core health reaches commander: the CR8-0 bridge maps CR8-1 link,"
+    },
+    {
+      "id": "rzv2h-io-serial-adc-runtime-test",
+      "path": "test/rzv2h-io-serial-adc-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-io-serial-adc-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ]
+      },
+      "note": "Exercise native serial/address contracts and the PX4 ADC scan lifecycle."
+    },
+    {
+      "id": "rzv2h-irq-routing-runtime-test",
+      "path": "test/rzv2h-irq-routing-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-irq-routing-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ]
+      },
+      "note": "Exercise CPU IRQ routing against core-matched Renesas source contracts."
+    },
+    {
+      "id": "jlink-host-contracts",
+      "path": "test/rzv2h-jlink-debug-tools-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "debug-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-jlink-debug-tools-test.py",
+        "OneShotReadOnlyFilter.test_inspection_commands_pass",
+        "OneShotReadOnlyFilter.test_shipped_snippets_are_read_only",
+        "OneShotReadOnlyFilter.test_target_changing_commands_are_refused",
+        "OneShotRunner.test_read_attaches_without_reset_and_always_detaches_last",
+        "OneShotRunner.test_mutation_is_refused_before_the_probe_is_touched",
+        "OneShotRunner.test_reset_in_server_log_is_reported",
+        "OneShotRunner.test_failed_gdb_command_is_reported_after_detaching",
+        "OneShotRunner.test_failed_attach_retries_three_times",
+        "NshMarkerMode.test_marker_mode_survives_log_lines_after_the_prompt",
+        "RttBridgeConnectGuard.test_command_file_inhibits_reset_retries_before_connecting",
+        "RttBridgeConnectGuard.test_readiness_does_not_consume_a_single_client_boot_buffer",
+        "RttBridgeConnectGuard.test_logged_reset_fails_the_start_and_releases_the_port",
+        "RttBridgeConnectGuard.test_connect_failure_after_the_port_opens_still_fails",
+        "RttBridgeConnectGuard.test_connect_timeout_kills_a_stuck_jlinkexe_and_cleans_up",
+        "RttBridgeConnectGuard.test_failed_connect_fails_fast_without_claiming_a_reset",
+        "LoaderVerifyGuard.test_verify_attaches_without_reset_and_fails_on_a_logged_reset",
+        "LoaderVerifyGuard.test_load_retry_judges_only_its_own_attempt",
+        "LoaderVerifyGuard.test_one_core_loader_loads_then_verifies",
+        "Preflight.test_elf_entry_maps_to_the_linked_core",
+        "Preflight.test_report_runs_without_touching_a_probe"
+      ],
+      "requires": {
+        "tools": [
+          "bash"
+        ]
+      },
+      "note": "Fake J-Link/GDB processes and local sockets only; excludes the real-ELF snippet case."
+    },
+    {
+      "id": "jlink-elf-snippets",
+      "path": "test/rzv2h-jlink-debug-tools-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-jlink-debug-tools-test.py",
+        "OneShotReadOnlyFilter.test_shipped_snippets_resolve_against_their_elfs"
+      ],
+      "requires": {
+        "tools": [
+          "gdb-multiarch"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_dualcr8/renesas_rdk-rzv2h_dualcr8.elf",
+          "build/renesas_rdk-rzv2h-io-cr8_1_default/renesas_rdk-rzv2h-io-cr8_1_default.elf"
+        ]
+      },
+      "note": "Offline GDB type resolution; never attaches to a target."
+    },
+    {
+      "id": "rzv2h-optional-config-contract-test",
+      "path": "test/rzv2h-optional-config-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-optional-config-contract-test.py"
+      ],
+      "requires": {
+        "modules": [
+          "kconfiglib"
+        ]
+      },
+      "note": "Evaluate actual optional driver and six-channel PWM Kconfig contracts."
+    },
+    {
+      "id": "rzv2h-parameter-save-contract-test",
+      "path": "test/rzv2h-parameter-save-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-parameter-save-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++",
+          "cc"
+        ]
+      },
+      "note": "Exercise native param_save_default on real files with faulted I/O boundaries."
+    },
+    {
+      "id": "rzv2h-pwm-oneshot-dshot-contract-test",
+      "path": "test/rzv2h-pwm-oneshot-dshot-contract-test.sh",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "bash",
+        "test/rzv2h-pwm-oneshot-dshot-contract-test.sh"
+      ],
+      "note": "Host source contract."
+    },
+    {
+      "id": "rzv2h-register-base-contract-test",
+      "path": "test/rzv2h-register-base-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-register-base-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ],
+        "paths": [
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_1_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cm33_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cm/iodefines"
+        ]
+      },
+      "note": "Compile core-specific register bases against the local CMSIS authority."
+    },
+    {
+      "id": "rzv2h-register-layout-contract-test",
+      "path": "test/rzv2h-register-layout-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-register-layout-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ],
+        "paths": [
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_1_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cm33_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cm/iodefines"
+        ]
+      },
+      "note": "Compile every repaired register offset and access width against CMSIS."
+    },
+    {
+      "id": "rtt-profile-source",
+      "path": "test/rzv2h-rtt-console-nonblocking-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-rtt-console-nonblocking-test.py",
+        "RttProfileSelection"
+      ],
+      "note": "Source checks only; vendor execution is the separate rtt-buffer-runtime entry."
+    },
+    {
+      "id": "rtt-buffer-runtime",
+      "path": "test/rzv2h-rtt-console-nonblocking-test.py",
+      "kind": "test",
+      "groups": [
+        "vendor-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-rtt-console-nonblocking-test.py",
+        "RttUpBufferMode"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ],
+        "paths": [
+          "platforms/nuttx/NuttX/nuttx/drivers/segger/RTT/RTT/SEGGER_RTT.c"
+        ]
+      },
+      "note": "Requires unpacked vendor sources in the checkout; isolated sample builds do not populate this path."
+    },
+    {
+      "id": "sample-artifact-unit",
+      "path": "test/rzv2h-sample-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sample-artifact-test.py",
+        "--unit-only"
+      ]
+    },
+    {
+      "id": "sample-artifact-integration",
+      "path": "test/rzv2h-sample-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sample-artifact-test.py",
+        "--builds",
+        "{sample_builds}",
+        "--source-state",
+        "{sample_source_state}"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm",
+          "arm-none-eabi-ar",
+          "arm-none-eabi-strings"
+        ]
+      },
+      "note": "Requires the completed 14-profile archive and source-state; missing receipts fail."
+    },
+    {
+      "id": "rzv2h-sample-lifecycle-test",
+      "path": "test/rzv2h-sample-lifecycle-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sample-lifecycle-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute sample descriptor cleanup under host-injected transfer failures."
+    },
+    {
+      "id": "rzv2h-sample-runner-test",
+      "path": "test/rzv2h-sample-runner-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sample-runner-test.py"
+      ],
+      "note": "Exercise evidence failures independently of any board connection."
+    },
+    {
+      "id": "rzv2h-sci-i2c-runtime-test",
+      "path": "test/rzv2h-sci-i2c-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sci-i2c-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Exercise production SCI-I2C transfer and ISR code through host boundaries."
+    },
+    {
+      "id": "rzv2h-scif-runtime-test",
+      "path": "test/rzv2h-scif-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-scif-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute SCIF framing, drain and interrupt-preservation contracts."
+    },
+    {
+      "id": "rzv2h-sdhi-lower-only-runtime-test",
+      "path": "test/rzv2h-sdhi-lower-only-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sdhi-lower-only-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute idle/repeated SDHI cancellation and safe snapshot contracts."
+    },
+    {
+      "id": "rzv2h-serial-board-runtime-test",
+      "path": "test/rzv2h-serial-board-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-serial-board-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Exercise route rejection, isolation and pin-error propagation."
+    },
+    {
+      "id": "rzv2h-simple-artifact-contract-test",
+      "path": "test/rzv2h-simple-artifact-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-simple-artifact-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_simple"
+        ]
+      },
+      "note": "Audit resolved simple firmware, installed ROMFS and packaged image."
+    },
+    {
+      "id": "rzv2h-simple-profile-contract-test",
+      "path": "test/rzv2h-simple-profile-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-simple-profile-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "bash",
+          "c++",
+          "cc",
+          "cmake"
+        ]
+      },
+      "note": "Compile real descriptors/IRQ guard and check isolated simple startup."
+    },
+    {
+      "id": "rzv2h-simple-test-support",
+      "path": "test/rzv2h-simple-test-support.py",
+      "kind": "helper",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Imported descriptor/IRQ fixture generator; not a standalone suite."
+    },
+    {
+      "id": "rzv2h-wdt-runtime-test",
+      "path": "test/rzv2h-wdt-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-wdt-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Check production watchdog timeout selection and failure-state preservation."
+    },
+    {
+      "id": "rzv2h-xspi-paramfs-contract-test",
+      "path": "test/rzv2h-xspi-paramfs-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-xspi-paramfs-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute production xSPI MTD callbacks; replace only platform boundaries."
+    },
+    {
+      "id": "rzv2h_adc_ether_scif_contract_test",
+      "path": "test/rzv2h_adc_ether_scif_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_adc_ether_scif_contract_test.py"
+      ],
+      "note": "Source-contract regressions for audited RZ/V2H ADC, GBETH, and SCIF fixes."
+    },
+    {
+      "id": "rzv2h_bmm150_sample_contract_test",
+      "path": "test/rzv2h_bmm150_sample_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_bmm150_sample_contract_test.py"
+      ],
+      "note": "Host contract checks for the RZ/V2H standalone BMM150 SCI7 I2C sample."
+    },
+    {
+      "id": "rzv2h_board_gpio_contract_test",
+      "path": "test/rzv2h_board_gpio_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_board_gpio_contract_test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Board-level GPIO ownership contracts for the RDK-RZ/V2H port."
+    },
+    {
+      "id": "rzv2h_cm33_startup_mpu_contract_test",
+      "path": "test/rzv2h_cm33_startup_mpu_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_cm33_startup_mpu_contract_test.py"
+      ],
+      "note": "Static contracts for the RZ/V2H CM33 stack and ARMv8-M MPU."
+    },
+    {
+      "id": "rzv2h_core_irq_contract_test",
+      "path": "test/rzv2h_core_irq_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_core_irq_contract_test.py"
+      ],
+      "note": "Static contracts for the RZ/V2H CM33 interrupt architecture."
+    },
+    {
+      "id": "rzv2h_default_board_contract_test",
+      "path": "test/rzv2h_default_board_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_default_board_contract_test.py"
+      ],
+      "note": "Source contract for the integrated RZ/V2H default PX4 board."
+    },
+    {
+      "id": "rzv2h_gpt_pwm_contract_test",
+      "path": "test/rzv2h_gpt_pwm_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_gpt_pwm_contract_test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Source/model regressions for the RZ/V2H GPT PWM integration."
+    },
+    {
+      "id": "rzv2h_gtm_contract_test",
+      "path": "test/rzv2h_gtm_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_gtm_contract_test.py"
+      ],
+      "note": "Source regressions for the RZ/V2H GTM timer lifecycle."
+    },
+    {
+      "id": "rzv2h_ipc_elf_allowlist_test",
+      "path": "test/rzv2h_ipc_elf_allowlist_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_ipc_elf_allowlist_test.py"
+      ],
+      "note": "Unit tests for the RZ/V2H IPC ELF address allowlist checker."
+    },
+    {
+      "id": "rzv2h_ipc_raw_contract_test",
+      "path": "test/rzv2h_ipc_raw_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_ipc_raw_contract_test.py"
+      ],
+      "note": "Static contracts for the RZ/V2H three-core raw IPC lab profiles."
+    },
+    {
+      "id": "rzv2h_payload_artifact_contract_test",
+      "path": "test/rzv2h_payload_artifact_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_payload_artifact_contract_test.py"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_default"
+        ]
+      },
+      "note": "Post-build contracts for the RZ/V2H CR8-0 payload firmware."
+    },
+    {
+      "id": "rzv2h_remaining_peripherals_contract_test",
+      "path": "test/rzv2h_remaining_peripherals_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_remaining_peripherals_contract_test.py"
+      ],
+      "note": "Host source contract."
+    },
+    {
+      "id": "rzv2h_sci_spi_contract_test",
+      "path": "test/rzv2h_sci_spi_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_sci_spi_contract_test.py"
+      ],
+      "note": "Source/config regressions for the isolated RZ/V2H SCI-SPI sample."
+    },
+    {
+      "id": "rzv2h_sih_artifact_contract_test",
+      "path": "test/rzv2h_sih_artifact_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_sih_artifact_contract_test.py"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_sih"
+        ]
+      },
+      "note": "Post-build contracts for the RZ/V2H FC-SIH firmware artifacts."
+    },
+    {
+      "id": "rzv2h_sih_demo_contract_test",
+      "path": "test/rzv2h_sih_demo_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_sih_demo_contract_test.py"
+      ],
+      "note": "Source contracts for the RZ/V2H flight-controller SIH demonstration."
+    },
+    {
+      "id": "test_rzv2h_ipc_recovery_contract",
+      "path": "test/test_rzv2h_ipc_recovery_contract.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/test_rzv2h_ipc_recovery_contract.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Executable recovery and readiness contracts for the RZ/V2H IPC demo."
+    },
+    {
+      "id": "rzv2h-dmac-mmio-harness",
+      "path": "test/rzv2h-dmac-mmio-harness.c",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-dmac-mmio-model",
+      "path": "test/rzv2h-dmac-mmio-model.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-drone-spi-host-fixture",
+      "path": "test/rzv2h-drone-spi-host-fixture.cpp",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-dshot-boundary",
+      "path": "test/rzv2h-dshot-boundary.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-dshot-gpt-model",
+      "path": "test/rzv2h-dshot-gpt-model.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-dshot-mmio-harness",
+      "path": "test/rzv2h-dshot-mmio-harness.c",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-dshot-waveform-checks",
+      "path": "test/rzv2h-dshot-waveform-checks.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-gpt-pwm-endpoint-harness",
+      "path": "test/rzv2h-gpt-pwm-endpoint-harness.c",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-gpt-pwm-live-checks",
+      "path": "test/rzv2h-gpt-pwm-live-checks.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-gpt-pwm-mmio-harness",
+      "path": "test/rzv2h-gpt-pwm-mmio-harness.c",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-gpt-pwm-overflow-model",
+      "path": "test/rzv2h-gpt-pwm-overflow-model.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-icm20948-host-fixture",
+      "path": "test/rzv2h-icm20948-host-fixture.c",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-icm20948-host-stubs",
+      "path": "test/rzv2h-icm20948-host-stubs.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-simple-spi-descriptor-test",
+      "path": "test/rzv2h-simple-spi-descriptor-test.cpp",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "px4-build",
+      "path": "build.sh",
+      "kind": "build",
+      "groups": [
+        "build"
+      ],
+      "target_access": "none",
+      "command": [
+        "bash",
+        "build.sh",
+        "<target>"
+      ],
+      "note": "Host build/setup only; use the documented specific target/config. Sample builder isolates and archives the 14 RTT profiles."
+    },
+    {
+      "id": "build_setup",
+      "path": "build_setup.sh",
+      "kind": "build",
+      "groups": [
+        "build"
+      ],
+      "target_access": "none",
+      "note": "Source build_setup.sh to retain environment cleanup; checks host prerequisites and initializes submodules.",
+      "shell_invocation": "source ./build_setup.sh"
+    },
+    {
+      "id": "nuttx-build",
+      "path": "platforms/nuttx/NuttX/build.sh",
+      "kind": "build",
+      "groups": [
+        "build"
+      ],
+      "target_access": "none",
+      "command": [
+        "bash",
+        "platforms/nuttx/NuttX/build.sh",
+        "<config>"
+      ],
+      "note": "Host build/setup only; use the documented specific target/config. Sample builder isolates and archives the 14 RTT profiles."
+    },
+    {
+      "id": "rzv2h-sample-build",
+      "path": "platforms/nuttx/Debug/rzv2h-sample-build.py",
+      "kind": "build",
+      "groups": [
+        "build"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-sample-build.py",
+        "--output",
+        "<new-archive>"
+      ],
+      "note": "Host build/setup only; use the documented specific target/config. Sample builder isolates and archives the 14 RTT profiles."
+    },
+    {
+      "id": "rzv2h-register-layout",
+      "path": "Tools/rzv2h-register-layout.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "Tools/rzv2h-register-layout.py",
+        "--help"
+      ],
+      "note": "Host-only CLI. Use --help for required arguments; preflight does not open the probe."
+    },
+    {
+      "id": "rzv2h-sample-artifact-check",
+      "path": "platforms/nuttx/Debug/rzv2h-sample-artifact-check.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-sample-artifact-check.py",
+        "--help"
+      ],
+      "note": "Host-only CLI. Use --help for required arguments; preflight does not open the probe."
+    },
+    {
+      "id": "rzv2h-sample-runner",
+      "path": "platforms/nuttx/Debug/rzv2h-sample-runner.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-sample-runner.py",
+        "--help"
+      ],
+      "note": "Host-only CLI. Use --help for required arguments; preflight does not open the probe."
+    },
+    {
+      "id": "rzv2h-boot-package",
+      "path": "platforms/nuttx/Debug/rzv2h-boot-package.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-boot-package.py",
+        "--help"
+      ],
+      "note": "Host-only CLI. Use --help for required arguments; preflight does not open the probe."
+    },
+    {
+      "id": "svd_register_tool",
+      "path": "platforms/nuttx/Debug/svd_register_tool.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/svd_register_tool.py",
+        "--help"
+      ],
+      "note": "Host-only CLI. Use --help for required arguments; preflight does not open the probe."
+    },
+    {
+      "id": "jlink-debug-preflight",
+      "path": "platforms/nuttx/Debug/jlink-debug-preflight.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/jlink-debug-preflight.py",
+        "--help"
+      ],
+      "note": "Host-only CLI. Use --help for required arguments; preflight does not open the probe."
+    },
+    {
+      "id": "rzv2h-ipc-elf-allowlist",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py",
+        "--help"
+      ],
+      "note": "Offline inspection by default. --authorize-load plus loader options changes this into a mutating operation requiring separate approval."
+    },
+    {
+      "id": "nuttx-rtt-bridge",
+      "path": "platforms/nuttx/Debug/nuttx-rtt-bridge.sh",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "attach",
+      "note": "RTT bridge owns one probe; derive address from exact ELF, stop on exit3/reset markers and clean only owned processes.",
+      "command": [
+        "bash",
+        "platforms/nuttx/Debug/nuttx-rtt-bridge.sh",
+        "start",
+        "cr8_0",
+        "<exact-elf>"
+      ],
+      "cleanup_command": [
+        "bash",
+        "platforms/nuttx/Debug/nuttx-rtt-bridge.sh",
+        "stop"
+      ],
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL"
+        ]
+      }
+    },
+    {
+      "id": "nsh_console_exec",
+      "path": "platforms/nuttx/Debug/nsh_console_exec.py",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "console",
+      "note": "Arbitrary NSH command can mutate the board; command/action and loaded ELF must be approved for HIL.",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/nsh_console_exec.py",
+        "--rtt",
+        "19021",
+        "--marker",
+        "ps",
+        "free"
+      ]
+    },
+    {
+      "id": "jlink-gdb-oneshot",
+      "path": "platforms/nuttx/Debug/jlink-gdb-oneshot.py",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "halt-read",
+      "note": "Guarded read-only snapshot halts the core; --allow-mutation needs separate action approval.",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/jlink-gdb-oneshot.py",
+        "cr8_0",
+        "<exact-elf>",
+        "-ex",
+        "bt"
+      ],
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL"
+        ],
+        "tools": [
+          "gdb-multiarch",
+          "JLinkGDBServer"
+        ]
+      }
+    },
+    {
+      "id": "rzv2h-ipc-demo-autotest",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-autotest.sh",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "note": "Requires explicit action approval and exact loaded ELF/core/probe; one probe owner. Existing load helper can retry; inspect reset/connect logs and stop on failure markers per project policy.",
+      "command": [
+        "bash",
+        "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-autotest.sh",
+        "<cr8_0-elf>",
+        "<cr8_1-elf>"
+      ],
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL",
+          "LOG_DIR"
+        ]
+      }
+    },
+    {
+      "id": "rzv2h-ipc-demo-build-and-load",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh",
+      "kind": "tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
+    },
+    {
+      "id": "rzv2h-ipc-demo-cr8_1-rtt",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-cr8_1-rtt.jlink",
+      "kind": "snippet",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
+    },
+    {
+      "id": "rzv2h-ipc-demo-jlink-lib",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-jlink-lib.sh",
+      "kind": "helper",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "note": "Sourced J-Link ownership/load/verify implementation; not a standalone test."
+    },
+    {
+      "id": "rzv2h-ipc-demo-load-both-auto",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "note": "Requires explicit action approval and exact loaded ELF/core/probe; one probe owner. Existing load helper can retry; inspect reset/connect logs and stop on failure markers per project policy.",
+      "command": [
+        "bash",
+        "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh",
+        "<cr8_0-elf>",
+        "<cr8_1-elf>"
+      ],
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL"
+        ]
+      }
+    },
+    {
+      "id": "rzv2h-ipc-demo-load-both-manual",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-manual.sh",
+      "kind": "tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
+    },
+    {
+      "id": "rzv2h-ipc-demo-load-both",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both.sh",
+      "kind": "tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
+    },
+    {
+      "id": "rzv2h-ipc-demo-run",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-run.sh",
+      "kind": "tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
+    },
+    {
+      "id": "rzv2h-ipc-demo-type-cr8_0-sci4",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-sci4.sh",
+      "kind": "tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
+    },
+    {
+      "id": "rzv2h-ipc-hil-crash-diag",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-crash-diag.gdb",
+      "kind": "snippet",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "halt-read",
+      "note": "Legacy fixed port/address diagnostic; review/rebind to exact ELF before use."
+    },
+    {
+      "id": "rzv2h-ipc-hil-frame-diag",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-frame-diag.gdb",
+      "kind": "snippet",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "halt-read",
+      "note": "Legacy fixed port/address diagnostic; review/rebind to exact ELF before use."
+    },
+    {
+      "id": "rzv2h-ipc-hil-loadstart",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb",
+      "kind": "snippet",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "note": "Requires explicit action approval and exact loaded ELF/core/probe; one probe owner."
+    },
+    {
+      "id": "rzv2h-ipc-hil-readonly",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-readonly.gdb",
+      "kind": "snippet",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "halt-read",
+      "note": "Legacy fixed port/address diagnostic; review/rebind to exact ELF before use."
+    },
+    {
+      "id": "rzv2h-ipc-hil-rtt-hold",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-rtt-hold.gdb",
+      "kind": "snippet",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Historical fixed-address GDB-server RTT path; unsupported on CR8. Use the ELF-aware JLinkExe RTT bridge instead."
+    },
+    {
+      "id": "rzv2h-ipc-hil-verify-resume",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-verify-resume.gdb",
+      "kind": "snippet",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "note": "Requires explicit action approval and exact loaded ELF/core/probe; one probe owner."
+    },
+    {
+      "id": "rzv2h-load-one-core",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-load-one-core.sh",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "note": "Requires explicit action approval and exact loaded ELF/core/probe; one probe owner. Existing load helper can retry; inspect reset/connect logs and stop on failure markers per project policy.",
+      "command": [
+        "bash",
+        "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-load-one-core.sh",
+        "cr8_0",
+        "<exact-elf>"
+      ],
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL"
+        ]
+      }
+    },
+    {
+      "id": "rzv2h-px4-cr8_0-bridge-health",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_0-bridge-health.gdb",
+      "kind": "snippet",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "halt-read",
+      "note": "Print-only health fragment for matching ELF through guarded one-shot wrapper; not a standalone command."
+    },
+    {
+      "id": "rzv2h-px4-cr8_1-io-health",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_1-io-health.gdb",
+      "kind": "snippet",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "halt-read",
+      "note": "Print-only health fragment for matching ELF through guarded one-shot wrapper; not a standalone command."
+    },
+    {
+      "id": "upload_jlink_gdb",
+      "path": "platforms/nuttx/Debug/upload_jlink_gdb.sh",
+      "kind": "legacy-tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Generic historical/template debug route; not the guarded RZ/V2H CI path."
+    },
+    {
+      "id": "jlink_gdb_backtrace",
+      "path": "platforms/nuttx/Debug/jlink_gdb_backtrace.sh",
+      "kind": "legacy-tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Generic historical/template debug route; not the guarded RZ/V2H CI path."
+    },
+    {
+      "id": "jlink_gdb_backtrace_simple",
+      "path": "platforms/nuttx/Debug/jlink_gdb_backtrace_simple.sh",
+      "kind": "legacy-tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Generic historical/template debug route; not the guarded RZ/V2H CI path."
+    },
+    {
+      "id": "jlink_gdb_start.sh",
+      "path": "platforms/nuttx/Debug/jlink_gdb_start.sh.in",
+      "kind": "legacy-tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Generic historical/template debug route; not the guarded RZ/V2H CI path."
+    },
+    {
+      "id": "jlink_debug_gdb.sh",
+      "path": "platforms/nuttx/Debug/jlink_debug_gdb.sh.in",
+      "kind": "legacy-tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Generic historical/template debug route; not the guarded RZ/V2H CI path."
+    },
+    {
+      "id": "jlink_debug_ozone.sh",
+      "path": "platforms/nuttx/Debug/jlink_debug_ozone.sh.in",
+      "kind": "legacy-tool",
+      "groups": [
+        "legacy-hardware"
+      ],
+      "target_access": "mutates",
+      "note": "Generic historical/template debug route; not the guarded RZ/V2H CI path."
+    },
+    {
+      "id": "Nuttx",
+      "path": "platforms/nuttx/Debug/Nuttx.py",
+      "kind": "helper",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "GDB Python extension; requires a matching NuttX ELF and debugger context."
+    },
+    {
+      "id": "regression-catalog",
+      "path": "Tools/rzv2h-regression.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "Tools/rzv2h-regression.py",
+        "list"
+      ],
+      "note": "Lists the machine inventory; run subcommand accepts only host tests."
+    },
+    {
+      "id": "rzv2h-ci-tools-test",
+      "path": "test/rzv2h-ci-tools-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ci-tools-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "bash",
+          "sleep",
+          "rsync"
+        ]
+      },
+      "note": "CI catalog/runner selection, real child-process timeout cleanup and archive/input boundaries."
+    },
+    {
+      "id": "renesas-coding-standards-test",
+      "path": "test/renesas-coding-standards-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "policy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/renesas-coding-standards-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc",
+          "make",
+          "bash"
+        ]
+      },
+      "note": "Formatter adapters, ownership and source-preservation host fixtures; does not enforce all legacy port source in this test run."
+    },
+    {
+      "id": "renesas-coding-standards",
+      "path": "Tools/renesas-coding-standards.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "Tools/renesas-coding-standards.py",
+        "--help"
+      ],
+      "note": "Source inventory/report/check tool; optional fix mode rewrites owned source. Use check/report explicitly in CI."
+    }
+  ]
+}

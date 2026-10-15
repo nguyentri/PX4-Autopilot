@@ -128,10 +128,13 @@ git config advice.addIgnoredFile false
 .vscode/targets.log
 
 *.py
+!test/rzv2h-irq-routing-runtime-test.py
 !Tools/renesas-coding-standards.py
 !test/renesas-coding-standards-test.py
 !test/rzv2h-wdt-runtime-test.py
 !test/rzv2h-driver-boundary-runtime-test.py
+!test/rzv2h-gtm-status-runtime-test.py
+!test/rzv2h-adc-irq-selector-test.py
 !test/rzv2h-audit-remediation-runtime-test.py
 !test/rzv2h-io-serial-adc-runtime-test.py
 !platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py
@@ -202,3 +205,19 @@ ak-engineer
 !test/rzv2h-expanded-remediation-runtime-test.py
 !test/rzv2h-debug-process-ownership-test.py
 !test/rzv2h-optional-config-contract-test.py
+!platforms/nuttx/Debug/rzv2h-sample-runner.py
+!test/rzv2h-sample-runner-test.py
+!test/rzv2h-scif-runtime-test.py
+!test/rzv2h-serial-board-runtime-test.py
+!test/rzv2h-sdhi-lower-only-runtime-test.py
+!test/rzv2h-ether-runtime-test.py
+!test/rzv2h-board-sample-runtime-test.py
+!/platforms/nuttx/Debug/rzv2h-sample-artifact-check.py
+!/test/rzv2h-sample-artifact-test.py
+
+!test/rzv2h-sample-lifecycle-test.py
+
+!/Tools/rzv2h-regression.py
+!/Tools/rzv2h-regression-catalog.json
+!/platforms/nuttx/Debug/rzv2h-sample-build.py
+!/test/rzv2h-ci-tools-test.py

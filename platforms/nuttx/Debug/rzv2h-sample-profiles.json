@@ -1,0 +1,1012 @@
+{
+  "schema_version": 1,
+  "state": "planning-specification-not-executed-manifests",
+  "created_at": "2026-10-14T14:16:48+07:00",
+  "scope": "14 proposed CR8-0 profiles; no implementation or target run implied",
+  "execution_authority": "future concrete artifact/action approval; no rawwrites, peer/CM33, new wires/cards/jumpers, parameter writes or WDT start/expiry",
+  "grammar": "existing TEST_ENV/TEST/TEST_SUMMARY/TEST_DONE plus NEW additive TEST_STATE snapshots",
+  "global_negatives": [
+    "fatal",
+    "data abort",
+    "unexplained initialization failure",
+    "missing required ID",
+    "duplicate terminal ID",
+    "unexpected required-case SKIP",
+    "wrong counts",
+    "stale transcript",
+    "missing prompt",
+    "residual per-case task or resource",
+    "bridge cleanup failure"
+  ],
+  "profiles": [
+    {
+      "profile": "scif-internal-loopback-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_SCIF_INTERNAL_LOOPBACK",
+      "mode": "scif-internal-loopback",
+      "phase": 5,
+      "evidence_class": "function",
+      "required_case_ids": [
+        "scif.function_internal_loopback",
+        "scif.function_close_reopen"
+      ],
+      "expected_summary": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "loop": 0,
+        "case_fds": 0,
+        "case_irqs": 0,
+        "rxi_delta": {
+          "op": "gt",
+          "value": 0
+        },
+        "txi_delta": {
+          "op": "gt",
+          "value": 0
+        }
+      },
+      "resource_lifetime_contract": "profile ttyS0; per-case open/IRQ/loop state",
+      "runtime_prerequisites": [
+        "primary LOOP data-path semantics",
+        "pad ownership/output behavior declared before TE; occupied ICM pins protected; suppression requires separate evidence if claimed",
+        "SCIF only; all SCI channels disabled"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": [
+          {
+            "register": "R_SCIFA0.SMR",
+            "address": "0x11c01400",
+            "width_bits": 16,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "driver configured=true, SCIF0 clock enabled and reset released; no FIFO/status/data reads",
+            "source": "rzv2h.svd R_SCIFA0; arch/arm/src/rzv/hardware/rzv_scifa.h; actual FCR read while open"
+          },
+          {
+            "register": "R_SCIFA0.BRR",
+            "address": "0x11c01402",
+            "width_bits": 8,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "driver configured=true, SCIF0 clock enabled and reset released; no FIFO/status/data reads",
+            "source": "rzv2h.svd R_SCIFA0; arch/arm/src/rzv/hardware/rzv_scifa.h; actual FCR read while open"
+          },
+          {
+            "register": "R_SCIFA0.SCR",
+            "address": "0x11c01404",
+            "width_bits": 16,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "driver configured=true, SCIF0 clock enabled and reset released; no FIFO/status/data reads",
+            "source": "rzv2h.svd R_SCIFA0; arch/arm/src/rzv/hardware/rzv_scifa.h; actual FCR read while open"
+          },
+          {
+            "register": "R_SCIFA0.FCR",
+            "address": "0x11c0140c",
+            "width_bits": 16,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "driver configured=true, SCIF0 clock enabled and reset released; no FIFO/status/data reads",
+            "source": "rzv2h.svd R_SCIFA0; arch/arm/src/rzv/hardware/rzv_scifa.h; actual FCR read while open"
+          }
+        ]
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/scif/scif_internal_loopback_test.c",
+      "target_state_types": {
+        "loop": "integer",
+        "case_fds": "integer",
+        "case_irqs": "integer",
+        "rxi_delta": "integer",
+        "txi_delta": "integer"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "serial-board-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_SERIAL_BOARD",
+      "mode": "serial-board",
+      "phase": 5,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "serial.guard_invalid_channel",
+        "serial.guard_route_isolation",
+        "serial.guard_pin_ownership"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "case_fds": 0,
+        "transfers": 0,
+        "pin_owner": "declared"
+      },
+      "resource_lifetime_contract": "profile serial registration; guard calls return before unintended MMIO",
+      "runtime_prerequisites": [
+        "controlled early pinmux; any valid init explicitly declared"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/uart/serial_board_test.c",
+      "target_state_types": {
+        "case_fds": "integer",
+        "transfers": "integer",
+        "pin_owner": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "sci-spi-board-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_SCI_SPI_BOARD",
+      "mode": "sci-spi-board",
+      "phase": 5,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "sci_spi.guard_pin_map",
+        "sci_spi.guard_known_device",
+        "sci_spi.guard_registration",
+        "sci_spi.guard_no_transfer"
+      ],
+      "expected_summary": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "case_fds": 0,
+        "transfers": 0,
+        "registered_identity": "stable"
+      },
+      "resource_lifetime_contract": "profile bus registration; no byte exchange",
+      "runtime_prerequisites": [
+        "exact P5/P6 pins and initializer side effects declared"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/spi/sci_spi_board_test.c",
+      "target_state_types": {
+        "case_fds": "integer",
+        "transfers": "integer",
+        "registered_identity": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "sdhi-lower-only-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_SDHI_LOWER_ONLY",
+      "mode": "sdhi-lower-only",
+      "phase": 6,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "sdhi.guard_lower_initialized",
+        "sdhi.guard_media_absent",
+        "sdhi.guard_cancel_idle"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "initialized": true,
+        "cpu_irq_attached": false,
+        "wdog": "idle",
+        "waiters": 0,
+        "transfer_buffer": "none",
+        "controller_interrupts": "masked",
+        "identity": "stable"
+      },
+      "resource_lifetime_contract": "profile lower half, semaphore and clocks; repeated STATUS/CANCEL, no close/reopen claim",
+      "runtime_prerequisites": [
+        "IMCLK/IMCLK2/CLK_HS/ACLK and reset handoff proved",
+        "media absent; no attach or protocol commands"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": [
+          {
+            "register": "SDHI0.SD_INFO1_MASK",
+            "address": "0x15c00080",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "lower initialization succeeded; source snapshot only; no whole-peripheral or FIFO dump",
+            "source": "arch/arm/src/rzv/hardware/rzv_sdhi.h; rzv_sdhi.c snapshot; absent from SVD"
+          },
+          {
+            "register": "SDHI0.SD_INFO2_MASK",
+            "address": "0x15c00088",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "lower initialization succeeded; source snapshot only; no whole-peripheral or FIFO dump",
+            "source": "arch/arm/src/rzv/hardware/rzv_sdhi.h; rzv_sdhi.c snapshot; absent from SVD"
+          }
+        ]
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/sdhi/sdhi_lower_only_test.c",
+      "target_state_types": {
+        "initialized": "boolean",
+        "cpu_irq_attached": "boolean",
+        "wdog": "string-or-declared-predicate",
+        "waiters": "integer",
+        "transfer_buffer": "string-or-declared-predicate",
+        "controller_interrupts": "string-or-declared-predicate",
+        "identity": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "ether-register-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_ETHER_REGISTER",
+      "mode": "ether-register",
+      "phase": 7,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "ether.guard_registration",
+        "ether.guard_no_autostart",
+        "ether.guard_pinmap_unavailable"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "netdevs": 1,
+        "identity": "stable",
+        "dma": "stopped",
+        "phy_writes": 0,
+        "queued_work": 0,
+        "case_irqs": 0
+      },
+      "resource_lifetime_contract": "profile inert netdev and allocations; no ifup",
+      "runtime_prerequisites": [
+        "distinct GBETH clock/reset/monitor/MSTOP IDs; no SCI aliases",
+        "board-level failure unwind and controlled initialization"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": [
+          {
+            "register": "GBETH0.MAC_CONF",
+            "address": "0x15c30000",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "board clock/reset handoff reviewed and registration succeeded; source snapshot only",
+            "source": "arch/arm/src/rzv/hardware/rzv_ether.h; rzv_ether.c snapshot; absent from SVD"
+          },
+          {
+            "register": "GBETH0.DMA_CH0_TX_CTRL",
+            "address": "0x15c31104",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "board clock/reset handoff reviewed and registration succeeded; source snapshot only",
+            "source": "arch/arm/src/rzv/hardware/rzv_ether.h; rzv_ether.c snapshot; absent from SVD"
+          },
+          {
+            "register": "GBETH0.DMA_CH0_RX_CTRL",
+            "address": "0x15c31108",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "board clock/reset handoff reviewed and registration succeeded; source snapshot only",
+            "source": "arch/arm/src/rzv/hardware/rzv_ether.h; rzv_ether.c snapshot; absent from SVD"
+          }
+        ]
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/ether/ether_register_test.c",
+      "target_state_types": {
+        "netdevs": "integer",
+        "identity": "string-or-declared-predicate",
+        "dma": "string-or-declared-predicate",
+        "phy_writes": "integer",
+        "queued_work": "integer",
+        "case_irqs": "integer"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "ether-mac-loopback-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_ETHER_MAC_LOOPBACK",
+      "mode": "ether-mac-loopback",
+      "phase": 7,
+      "evidence_class": "function",
+      "required_case_ids": [
+        "ether.function_mac_loopback",
+        "ether.function_loopback_cleanup"
+      ],
+      "expected_summary": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "loop": 0,
+        "dma": "stopped",
+        "phy_writes": 0,
+        "queued_work": 0,
+        "case_irqs": 0,
+        "case_buffers": 0,
+        "byte_compare": "exact",
+        "repeat": 2
+      },
+      "resource_lifetime_contract": "profile netdev; per-case rings/IRQ/work/test frames",
+      "runtime_prerequisites": [
+        "all Ethernet registration prerequisites",
+        "MAC LOOP data path and PHY bypass semantics",
+        "pad ownership/output behavior and reference/pad clocks proved; suppression requires separate evidence if claimed",
+        "DMA addressability, cache and descriptor ownership proved"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": [
+          {
+            "register": "GBETH0.MAC_CONF",
+            "address": "0x15c30000",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "board clock/reset handoff reviewed and registration succeeded; source snapshot only",
+            "source": "arch/arm/src/rzv/hardware/rzv_ether.h; rzv_ether.c snapshot; absent from SVD"
+          },
+          {
+            "register": "GBETH0.DMA_CH0_TX_CTRL",
+            "address": "0x15c31104",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "board clock/reset handoff reviewed and registration succeeded; source snapshot only",
+            "source": "arch/arm/src/rzv/hardware/rzv_ether.h; rzv_ether.c snapshot; absent from SVD"
+          },
+          {
+            "register": "GBETH0.DMA_CH0_RX_CTRL",
+            "address": "0x15c31108",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "board clock/reset handoff reviewed and registration succeeded; source snapshot only",
+            "source": "arch/arm/src/rzv/hardware/rzv_ether.h; rzv_ether.c snapshot; absent from SVD"
+          }
+        ]
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/ether/ether_mac_loopback_test.c",
+      "target_state_types": {
+        "loop": "integer",
+        "dma": "string-or-declared-predicate",
+        "phy_writes": "integer",
+        "queued_work": "integer",
+        "case_irqs": "integer",
+        "case_buffers": "integer",
+        "byte_compare": "string-or-declared-predicate",
+        "repeat": "integer"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "riic-board-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_RIIC_BOARD",
+      "mode": "riic-board",
+      "phase": 8,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "riic.guard_invalid_bus",
+        "riic.guard_bus3_unassigned",
+        "riic.guard_device_ownership"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "case_fds": 0,
+        "transfers": 0,
+        "identity": "stable",
+        "registration": "singleton"
+      },
+      "resource_lifetime_contract": "profile registered cached lower-half reference",
+      "runtime_prerequisites": [
+        "bus pin/clock initialization declared; no slave operation"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/riic/riic_board_test.c",
+      "target_state_types": {
+        "case_fds": "integer",
+        "transfers": "integer",
+        "identity": "string-or-declared-predicate",
+        "registration": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ],
+      "allowed_diagnostics_by_case": {
+        "riic.guard_invalid_bus": [
+          "ERROR: Invalid I2C bus (?:-1|4)\\s*$"
+        ],
+        "riic.guard_bus3_unassigned": [
+          "ERROR: I2C3 is not enabled\\s*$"
+        ]
+      }
+    },
+    {
+      "profile": "sci-i2c-board-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_SCI_I2C_BOARD",
+      "mode": "sci-i2c-board",
+      "phase": 8,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "sci_i2c.guard_bus_map",
+        "sci_i2c.guard_device_ownership",
+        "sci_i2c.guard_no_slave"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "case_fds": 0,
+        "transfers": 0,
+        "identity": "stable",
+        "registration": "singleton"
+      },
+      "resource_lifetime_contract": "profile registered static buses; no_slave is configured-operation guard, not physical absence",
+      "runtime_prerequisites": [
+        "channel/bus pin and clock init declared; no slave operation"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/sci_i2c/sci_i2c_board_test.c",
+      "target_state_types": {
+        "case_fds": "integer",
+        "transfers": "integer",
+        "identity": "string-or-declared-predicate",
+        "registration": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "gpio-board-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_GPIO_BOARD",
+      "mode": "gpio-board",
+      "phase": 8,
+      "evidence_class": "function",
+      "required_case_ids": [
+        "gpio.function_led_pb4",
+        "gpio.function_led_pb5",
+        "gpio.guard_p94_ownership"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "pins_restored": [
+          "PB4",
+          "PB5"
+        ],
+        "p94_accesses": 0,
+        "readback": "expected"
+      },
+      "resource_lifetime_contract": "per-case PB4/PB5 output state; external P94 unchanged",
+      "runtime_prerequisites": [
+        "PB4/PB5 ownership exclusive; automatic LED updates cannot race",
+        "P94 access and button init disabled"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": [
+          {
+            "register": "GPIO.PIN11",
+            "address": "0x1041082b",
+            "width_bits": 8,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "fitted PB4/PB5 LED configuration; only two selected bits; no P94 read",
+            "source": "arch/arm/src/rzv/hardware/rzv_gpio.h PIN_OFFSET(11); rzv_gpioread"
+          }
+        ]
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/gpio/gpio_board_test.c",
+      "target_state_types": {
+        "pins_restored": "array",
+        "p94_accesses": "integer",
+        "readback": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "dmac-board-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_DMAC_BOARD",
+      "mode": "dmac-board",
+      "phase": 8,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "dmac.guard_board_map",
+        "dmac.guard_initialized_units",
+        "dmac.guard_unassigned_selector"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "mapping": "resolved",
+        "units": "expected",
+        "transfers": 0,
+        "case_channels": 0
+      },
+      "resource_lifetime_contract": "profile initialized units; no board-glue memcpy function claim",
+      "runtime_prerequisites": [
+        "nonpanic valid board allocation map; expected used units known"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/dmac/dmac_board_test.c",
+      "target_state_types": {
+        "mapping": "string-or-declared-predicate",
+        "units": "string-or-declared-predicate",
+        "transfers": "integer",
+        "case_channels": "integer"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "ipc-local-loopback-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_IPC_LOCAL_LOOPBACK",
+      "mode": "ipc-local-loopback",
+      "phase": 8,
+      "evidence_class": "function",
+      "required_case_ids": [
+        "ipc.guard_peer_disabled",
+        "ipc.guard_local_ownership",
+        "ipc.function_local_echo"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "device": "/dev/ipcc4",
+        "peer_devices": 0,
+        "matches": 100,
+        "bytes_per_message": 64,
+        "repeat": 2,
+        "case_fds": 0,
+        "case_tasks": 0,
+        "ipi_irq_delta": {
+          "op": "gt",
+          "value": 0
+        }
+      },
+      "resource_lifetime_contract": "profile local device; per-case descriptors/buffers/worker",
+      "runtime_prerequisites": [
+        "RZV_IPC_LOCAL only; non-SMP SGI15 exclusively owned; native arm_cpu_sgi physical map verified",
+        "no peer/OpenAMP/CM33 registration or shared-ring operation"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/ipc/ipc_local_loopback_test.c",
+      "target_state_types": {
+        "device": "string-or-declared-predicate",
+        "peer_devices": "integer",
+        "matches": "integer",
+        "bytes_per_message": "integer",
+        "repeat": "integer",
+        "case_fds": "integer",
+        "case_tasks": "integer",
+        "ipi_irq_delta": "integer"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ],
+      "state_notes": {
+        "matches": "observed messages per completed repeat; target verifies both repeats=100 and total=200"
+      }
+    },
+    {
+      "profile": "volatile-paramfs-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_PARAMFS_BOARD",
+      "mode": "volatile-paramfs",
+      "phase": 8,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "paramfs.guard_tmpfs_identity",
+        "paramfs.guard_idempotent_mount",
+        "paramfs.guard_no_data_write"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "filesystem": "tmpfs",
+        "mountpoint": "/fs",
+        "identity": "stable",
+        "data_writes": 0,
+        "case_fds": 0
+      },
+      "resource_lifetime_contract": "profile matching TMPFS mount; no unmount/reopen claim",
+      "runtime_prerequisites": [
+        "/fs type/source proven TMPFS; reject foreign EBUSY",
+        "declare RAM directory/mount metadata only"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/paramfs/volatile_paramfs_test.c",
+      "target_state_types": {
+        "filesystem": "string-or-declared-predicate",
+        "mountpoint": "string-or-declared-predicate",
+        "identity": "string-or-declared-predicate",
+        "data_writes": "integer",
+        "case_fds": "integer"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "xspi-authority-guard-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_XSPI_AUTHORITY_GUARD",
+      "mode": "xspi-authority-guard",
+      "phase": 8,
+      "evidence_class": "guard",
+      "required_case_ids": [
+        "xspi.guard_authority_denied",
+        "xspi.guard_no_mmio"
+      ],
+      "expected_summary": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "result": -134,
+        "mmio_operations": 0,
+        "registrations": 0,
+        "storage_operations": 0,
+        "result_symbol": "-ENOTSUP"
+      },
+      "resource_lifetime_contract": "no xSPI acquisition; ENOTSUP value verified for target errno ABI",
+      "runtime_prerequisites": [
+        "weak default validator remains ENOTSUP; no persistent initializer"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": []
+      },
+      "errno_source": "platforms/nuttx/NuttX/nuttx/include/errno.h:293",
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/paramfs/xspi_authority_guard_test.c",
+      "target_state_types": {
+        "result": "integer",
+        "mmio_operations": "integer",
+        "registrations": "integer",
+        "storage_operations": "integer",
+        "result_symbol": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    },
+    {
+      "profile": "wdt-nonstart-rtt",
+      "artifact_state": "implemented-source",
+      "mode_key": "CONFIG_TESTING_RZV_HWTEST_MODE_WDT_NONSTART",
+      "mode": "wdt-nonstart",
+      "phase": 8,
+      "evidence_class": "diagnostic",
+      "required_case_ids": [
+        "wdt.guard_hardware_stopped",
+        "wdt.guard_nonstart_registration",
+        "wdt.guard_still_stopped"
+      ],
+      "expected_summary": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0
+      },
+      "invocation": {
+        "command": "hwtest",
+        "helper": "platforms/nuttx/Debug/nsh_console_exec.py",
+        "until": "TEST_DONE: exit=",
+        "timeout_seconds": 30,
+        "foreground_required": true,
+        "post_commands": [
+          "ps",
+          "free"
+        ]
+      },
+      "terminal": "TEST_DONE: exit=0",
+      "prompt_required": true,
+      "target_state_required": {
+        "hardware_active": false,
+        "software_active": false,
+        "start_calls": 0,
+        "feed_calls": 0,
+        "case_fds": 0,
+        "identity": "stable"
+      },
+      "resource_lifetime_contract": "profile registered WDT0 only after stopped predicate; execution gated if predicate unavailable",
+      "runtime_prerequisites": [
+        "authoritative hardware/boot-state stopped predicate BEFORE clock enable",
+        "no START/STOP/reprogram/feed/expiry to manufacture pre-state",
+        "software GETSTATUS inactive alone insufficient"
+      ],
+      "required_case_skip": "blocks-profile-and-never-pass",
+      "safe_register_reads": {
+        "state": "reviewed-source-read-allowlist; runtime-preconditions-still-required",
+        "allowlist": [
+          {
+            "register": "R_SYSC.SYS_WDT0_CTRL",
+            "address": "0x10430c00",
+            "width_bits": 32,
+            "access": "ordinary readable control/input; no read-to-clear or write-only register",
+            "precondition": "always-on SYSC; before any WDT clock enable; require bp_halted=1 and no automonitor",
+            "source": "rzv2h.svd R_SYSC.SYS_WDT0_CTRL; hardware/rzv_sysc.h; matched CR8 FSP bsp_wdt.h"
+          }
+        ]
+      },
+      "suite_source": "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/wdt/wdt_nonstart_test.c",
+      "target_state_types": {
+        "hardware_active": "boolean",
+        "software_active": "boolean",
+        "start_calls": "integer",
+        "feed_calls": "integer",
+        "case_fds": "integer",
+        "identity": "string-or-declared-predicate"
+      },
+      "forbidden_patterns": [
+        "(?i)\\b(?:panic|data abort|hardfault|assertion failed)\\b"
+      ]
+    }
+  ],
+  "required_resolved_config": {
+    "CONFIG_TESTING_RZV_HWTEST": "y",
+    "CONFIG_TESTING_RZV_HWTEST_PROGNAME": "hwtest",
+    "CONFIG_NSH_BUILTIN_APPS": "y",
+    "CONFIG_SCHED_WAITPID": "y",
+    "CONFIG_INIT_ENTRYPOINT": "nsh_main",
+    "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+    "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+    "CONFIG_SCHED_HAVE_PARENT": "y",
+    "CONFIG_SCHED_CHILD_STATUS": "y",
+    "CONFIG_RZV2H_BUILD_CR8_0": "y",
+    "CONFIG_ARCH_ARMV7R": "y",
+    "CONFIG_ARCH_CORTEXR8": "y"
+  },
+  "resolved_config_note": "also verify foreground parent/child dependencies, exact mode selection, RTT input/output, callable builtin and phase-specific exclusions",
+  "planned_public_header": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/include/rzv2h-sample-test.h",
+  "state_matching": "Scalar expected values require exact equality; op=gt predicates require an actual decoded integer (not bool or comparator text) greater than value.",
+  "log_contract": {
+    "required_priority": "INFO TEST/result markers remain visible",
+    "CONFIG_SEGGER_RTT_UP_MODE_TRIM": "y",
+    "missing_or_truncated_required_markers": "cannot-pass"
+  },
+  "executable_contract": "platforms/nuttx/Debug/rzv2h-sample-profiles.json"
+}
