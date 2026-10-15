@@ -15,7 +15,7 @@ static void verify_requests(void)
     struct host_gpt *gpt=&model_gpt[ch];
     CHECK(model_dma[i].armed_gtintad == (1u<<output),
           "compare DMA request disabled or wrong output selected");
-    CHECK(model_dma[i].config.elc_event == events[i], "wrong DMA event route");
+    CHECK(model_dma[i].config.irq_sel == events[i], "wrong DMA event route");
     CHECK(model_dma[i].config.dst_addr == RZV_GPT_LOGICAL_BASE(ch)+
           RZV_GPT_GTCCRA_OFFSET+output*4, "DMA destination not active selected compare");
     CHECK(gpt->reg[RZV_GPT_GTBER_OFFSET/4] == 0 &&

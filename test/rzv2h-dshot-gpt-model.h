@@ -115,7 +115,7 @@ static void dma_event(int event)
   if (suppress_dma) return;
   for (unsigned ch=0; ch<4; ch++) {
     struct host_dma *dma=&model_dma[ch];
-    if (!dma->enabled || dma->config.elc_event != event) continue;
+    if (!dma->enabled || dma->config.irq_sel != event) continue;
     unsigned offset;
     unsigned target=decode_gpt(dma->config.dst_addr, &offset);
     if (!bypass_dma_wp &&

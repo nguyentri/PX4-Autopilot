@@ -33,7 +33,7 @@ static struct rzv_dmac_config_s configuration(bool hardware)
     .src_addr = SOURCE,
     .dst_addr = hardware ? 0x13014054u : DESTINATION,
     .length = LENGTH,
-    .elc_event = hardware ? 263 : -1
+    .irq_sel = hardware ? 263 : -1
   };
   return config;
 }
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
       CHECK(rzv_dmac_channel_configure(0, &config) == -EINVAL,
             "cross-TCM range accepted");
       config = configuration(true);
-      config.elc_event = 0x3ff;
+      config.irq_sel = 0x3ff;
       CHECK(rzv_dmac_channel_configure(0, &config) == -EINVAL,
             "disabled route accepted");
       config = configuration(false);
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     {
       config = configuration(true);
       CHECK(rzv_dmac_channel_configure(8, &config) == 0, "route 8 configure");
-      config.elc_event = 264;
+      config.irq_sel = 264;
       CHECK(rzv_dmac_channel_configure(9, &config) == 0, "route 9 configure");
       uintptr_t route = RZV_INTC_BASE + RZV_INTC_DM4SEL0_OFFSET + 16u;
       CHECK((getreg32(route) & 0x3ffu) == 263, "route 8 overwritten");

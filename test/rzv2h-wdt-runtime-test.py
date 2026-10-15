@@ -86,5 +86,91 @@ int main(void) {
             subprocess.run([str(path / 'test')], check=True)
 
 
+
+class WatchdogInitialization(unittest.TestCase):
+    def test_clock_reset_registration_failures_restore_prestate(self):
+        source = SOURCE.read_text()
+        arch = SOURCE.parent
+        headers = '\n'.join(re.sub(r'^\s*#\s*include[^\n]*$', '',
+                                      (arch / 'hardware' / name).read_text(), flags=re.M)
+                            for name in ('rzv_wdt.h', 'rzv_cpg.h', 'rzv_sysc.h'))
+        code = r'''
+#include <assert.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <errno.h>
+#include <string.h>
+#define OK 0
+#define FAR
+#define CONFIG_RZV2H_SAMPLE_TEST_API 1
+#define CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT 1
+#define RZV_WDT_MAX_CHANNELS 4
+#define wdinfo(...) ((void)0)
+#define wderr(...) ((void)0)
+typedef void *xcpt_t;
+struct watchdog_ops_s {int unused;};
+struct watchdog_lowerhalf_s {const void *ops;};
+''' + headers
+        code += definition(source, 'struct rzv_wdt_clock_state_s\n{') + ';\n'
+        code += definition(source, 'struct rzv_wdt_priv_s\n{') + ';\n'
+        code += r'''
+static struct rzv_wdt_priv_s g_wdt_priv[4];
+static struct watchdog_lowerhalf_s g_wdt_dev[4];
+static const struct watchdog_ops_s g_wdt_ops={0};
+static int failed, inhibited=1, writes, registrations;
+static uint32_t gate4, gate5, reset7;
+static uint32_t getreg32(uintptr_t address)
+{
+ if(address==RZV_SYSC_SYS_WDT0_CTRL) return inhibited?SYS_WDT_CTRL_BP_HALTED:0;
+ if(address==RZV_CPG_CLKON(4)) return gate4;
+ if(address==RZV_CPG_CLKON(5)) return gate5;
+ if(address==RZV_CPG_RST(7)) return reset7;
+ if(address==RZV_CPG_CLKMON(RZV_CPG_CLKMON_WDT_M))
+  return failed==1?0:RZV_CPG_CLKMON_WDT_CLKP_BIT(0)|RZV_CPG_CLKMON_WDT_LOCO_BIT(0);
+ if(address==RZV_CPG_RSTMON(RZV_CPG_RSTMON_WDT_M))
+  return failed==2?RZV_CPG_RSTMON_WDT_BIT(0):0;
+ assert(0);return 0;
+}
+static void putreg32(uint32_t value,uintptr_t address)
+{
+ uint32_t *reg=address==RZV_CPG_CLKON(4)?&gate4:address==RZV_CPG_CLKON(5)?&gate5:address==RZV_CPG_RST(7)?&reset7:NULL;
+ assert(reg);uint32_t mask=value>>16;*reg=(*reg&~mask)|(value&mask);writes++;
+}
+static int rzv_wdt_calculate_timeout(struct rzv_wdt_priv_s *p,uint32_t timeout)
+{(void)p;(void)timeout;return 0;}
+static void *watchdog_register(const char *path,struct watchdog_lowerhalf_s *lower)
+{(void)path;(void)lower;registrations++;return failed==3?NULL:lower;}
+'''
+        for signature in ('static uintptr_t rzv_wdt_sysc_ctrl(',
+                          'static void rzv_wdt_clock_restore(',
+                          'static int rzv_wdt_clock_enable(',
+                          'int rzv_wdt_initialize('):
+            code += definition(source, signature)
+        code += r'''
+int main(void)
+{
+ inhibited=0;assert(rzv_wdt_initialize("/dev/watchdog0",0)==-EBUSY && !writes && !registrations);
+ inhibited=1;
+ for(failed=1;failed<=3;failed++)
+ {
+  gate4=1;gate5=2;reset7=4;writes=0;registrations=0;
+  assert(rzv_wdt_initialize("/dev/watchdog0",0)==(failed==3?-EIO:-ETIMEDOUT));
+  assert(gate4==1 && gate5==2 && reset7==4 && !g_wdt_priv[0].registered);
+  assert(registrations==(failed==3));
+ }
+ failed=0;assert(rzv_wdt_initialize("/dev/watchdog0",0)==0);
+ assert(g_wdt_priv[0].registered && !g_wdt_priv[0].started);
+ int before=writes;assert(rzv_wdt_initialize("/dev/watchdog0",0)==-EALREADY && writes==before);
+ return 0;
+}
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            (path/'test.c').write_text(code)
+            subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror',
+                            str(path/'test.c'),'-o',str(path/'test')],check=True)
+            subprocess.run([str(path/'test')],check=True)
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise native serial/address contracts and the PX4 ADC scan lifecycle."""
 from pathlib import Path
+import os
 import importlib.util
 import re
 import unittest
@@ -85,7 +86,7 @@ int main(void) {
                     run(code)
 
     def test_adc_samples_trigger_native_scans_and_bound_failures(self):
-        native = (ARCH / 'rzv_adc.c').read_text()
+        native = Path(os.environ.get('RZV_ADC_SOURCE', ARCH / 'rzv_adc.c')).read_text()
         adc_header = (RUNTIME.NUTTX / 'include/nuttx/analog/adc.h').read_text()
         record = re.search(r'struct adc_msg_s\s*\{.*?\n\}[^;]*;', adc_header, re.S).group()
         code = PRE + r'''
@@ -126,12 +127,27 @@ static void rzv_adc_modifyreg(rzv_adc_priv_s *, unsigned off, uint16_t clear, ui
   if (off == RZV_ADC_E_ADCSR_OFFSET && (set & ADC_ADCSR_ADST)) { ++starts; elapsed = 0; }
   regs[off] = (regs[off] & ~clear) | set;
 }
-static int rzv_icu_attach(int, int (*)(int, void *, void *), void *, bool) { return 400; }
+static bool irq_enabled, irq_edge;
+static int attach_error;
+static int rzv_icu_attach(int, int (*)(int, void *, void *), void *, bool enable) {
+  if (attach_error) return attach_error;
+  irq_enabled = enable; irq_edge = false; return 400;
+}
+[[maybe_unused]] static void rzv_gic_set_irq_type(int irq, bool edge) {
+  assert(irq == 400 && !irq_enabled); irq_edge = edge;
+}
+[[maybe_unused]] static void up_enable_irq(int irq) {
+  assert(irq == 400 && irq_edge); irq_enabled = true;
+}
+static int rzv_icu_detach(int irq) {
+  assert(irq == 400); irq_enabled = false; return 0;
+}
 static int nxsem_wait_uninterruptible(int *) { return 0; }
 static int nxsem_post(int *) { return 0; }
 '''
         for signature in ('static void rzv_adc_reset(', 'static int rzv_adc_interrupt(',
-                          'static int rzv_adc_setup(', 'static void rzv_adc_rxint(',
+                          'static int rzv_adc_setup(', 'static void rzv_adc_shutdown(',
+                          'static void rzv_adc_rxint(',
                           'static int rzv_adc_ioctl('):
             code += extract(native, signature)
         code += r'''
@@ -148,7 +164,11 @@ static void complete_scan() {
   regs[RZV_ADC_E_ADDR_OFFSET(0)] = 1000 + starts;
   regs[RZV_ADC_E_ADDR_OFFSET(7)] = 2000 + starts;
   regs[RZV_ADC_E_ADCSR_OFFSET] &= ~ADC_ADCSR_ADST;
-  assert(rzv_adc_interrupt(400, nullptr, &priv) == 0);
+  // A completed scan leaves a short request pulse. A level route has no
+  // pending request after the pulse; the edge latch preserves delivery.
+  if (irq_enabled && irq_edge && (regs[RZV_ADC_E_ADCSR_OFFSET] & ADC_ADCSR_ADIE)) {
+    assert(rzv_adc_interrupt(400, nullptr, &priv) == 0);
+  }
 }
 [[maybe_unused]] static void up_udelay(unsigned us) { elapsed += us; complete_scan(); }
 [[maybe_unused]] static int adapter_ioctl(int, int command, unsigned long arg) {
@@ -162,7 +182,11 @@ static int adapter_open(const char *, int) {
   priv.chanmask = 0x81; priv.nchannels = 2;
   fifo.clear(); assert(rzv_adc_setup(&dev) == 0); rzv_adc_rxint(&dev, true); return 9;
 }
-static int adapter_close(int) { rzv_adc_rxint(&dev, false); rzv_adc_reset(&priv); return 0; }
+static int adapter_close(int) {
+  rzv_adc_shutdown(&dev);
+  assert(!irq_enabled && priv.icu_irq == -1);
+  return 0;
+}
 static ssize_t adapter_read(int, void *data, size_t size) {
   if (read_error) { errno = read_error; return -1; }
   if (malformed) { memset(data, 0, 1); return 1; }
@@ -185,6 +209,10 @@ int main() {
   static_assert(sizeof(adc_msg_s) == 5 && sizeof(px4_adc_msg_t) == 5);
   uint32_t (*sample)(uint32_t, unsigned) = &px4_arch_adc_sample;
   assert(sample(0, 0) == UINT32_MAX);
+  priv.config = &config;
+  attach_error = -ENOSPC;
+  assert(rzv_adc_setup(&dev) == -ENOSPC && !irq_enabled);
+  attach_error = 0;
   assert(px4_arch_adc_init(0) == 0 && starts == 0);
   for (unsigned i = 1; i <= 10; ++i) {
     assert(sample(0, 0) == 1000 + i && starts == i);

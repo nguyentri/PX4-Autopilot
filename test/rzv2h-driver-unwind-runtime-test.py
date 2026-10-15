@@ -136,7 +136,10 @@ int main(void) {
 
     def test_ethernet_partial_allocation_and_registration_cleanup(self):
         source = (ARCH / "rzv_ether.c").read_text()
-        code = BOUNDARY.PRELUDE + r'''
+        irq_header = ROOT / "platforms/nuttx/NuttX/nuttx/arch/arm/include/rzv/rzv2h_irq.h"
+        code = BOUNDARY.PRELUDE + re.sub(
+            r'^\s*#\s*include[^\n]*$', '', irq_header.read_text(), flags=re.M)
+        code += r'''
 #include <stdlib.h>
 #define RZV_ETHER_DMA_ALIGN 32
 #define CONFIG_RZV_ETHER_TXDESC 2
@@ -145,8 +148,6 @@ int main(void) {
 #define RZV_ETHER_PKTSIZE 64
 #define RZV_ETHER0_BASE 1
 #define RZV_ETHER1_BASE 2
-#define RZV_ELC_GBETH_PORT0_MACIRQ 3
-#define RZV_ELC_GBETH_PORT1_MACIRQ 4
 #define NET_LL_ETHERNET 1
 #define nerr(...) ((void)0)
 struct net_driver_s { void *d_buf,*d_private; int d_ifup,d_ifdown,d_txavail; };

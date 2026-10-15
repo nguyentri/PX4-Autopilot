@@ -342,7 +342,7 @@ static int dshot_dma_setup(dshot_channel_t *channel)
 	config.src_addr = (uintptr_t)channel->dma_buffer;
 	config.dst_addr = channel->gpt_base + channel->active_compare_offset;
 	config.length = sizeof(channel->dma_buffer);
-	config.elc_event = dshot_gpt_compare_event(channel->gpt_channel,
+	config.irq_sel = dshot_gpt_compare_event(channel->gpt_channel,
 			   channel->channel_b);
 
 	return rzv_dmac_channel_configure(channel->dma_channel, &config);

@@ -226,7 +226,9 @@ int main(void) {
 
     def test_riic_short_reads_and_continuations_program_nack_before_data(self):
         source = (ARCH / 'rzv_i2c.c').read_text()
-        code = '#define _POSIX_C_SOURCE 200809L\n' + PRE + header(ARCH / 'hardware/rzv_i2c.h') + r'''
+        code = '#define _POSIX_C_SOURCE 200809L\n' + PRE
+        code += header(NUTTX / 'include/nuttx/nuttx.h')
+        code += header(ARCH / 'hardware/rzv_i2c.h') + r'''
 #include <time.h>
 #define RIIC_TIMEOUT_MS 1000
 #define i2cerr(...) ((void)0)
@@ -370,11 +372,14 @@ int main(void) {
 
     def test_riic_routes_attach_and_unwind_fixed_stop(self):
         source = (ARCH / 'rzv_i2c.c').read_text()
-        code = PRE + header(ARCH / 'hardware/rzv_i2c.h')
+        code = PRE + header(NUTTX / 'include/nuttx/nuttx.h')
+        code += header(ARCH / 'hardware/rzv_i2c.h')
         code += header(NUTTX / 'arch/arm/include/rzv/rzv2h_irq.h')
         code += '#define RZV_IRQ_FIRST 32\n'
         code += re.search(r'enum rzv_i2c_state_e\n\{.*?\n\};', source, re.S).group() + '\n'
-        code += re.search(r'struct rzv_i2c_priv_s\n\{.*?\n\};', source, re.S).group().replace('struct i2c_master_s dev;', 'int dev;').replace('sem_t ', 'int ') + '\n'
+        state = re.search(r'struct rzv_i2c_priv_s\n\{.*?\n\};', source, re.S).group()
+        code += state.replace('struct i2c_master_s dev;', 'int dev;').replace('sem_t ', 'int ') + '\n'
+        fields = re.findall(r'int (irq_\w+);', state)
         code += r'''
 #define RZV_CPG_DOMAIN(x) (x)
 #define RZV_CPG_BIT(x) (x)
@@ -382,7 +387,8 @@ int main(void) {
 #define RZV_MODULE_CLKOFF(domain, bit) ((void)(domain), (void)(bit))
 #define i2cerr(...) ((void)0)
 typedef int (*xcpt_t)(int, void *, void *);
-static int fail_slot, attached, detached, enabled, disabled, fixed, fixed_error;
+static bool installed[512], enabled[512], typed[512], edge[512];
+static int failure_at, attempts, port;
 static void up_udelay(int delay) {}
 static void rzv_i2c_set_frequency(struct rzv_i2c_priv_s *p, uint32_t f) {}
 static void rzv_i2c_putreg(struct rzv_i2c_priv_s *p, unsigned off, uint8_t val) {}
@@ -391,37 +397,61 @@ static int rzv_i2c_txi_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_tei_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_err_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_stp_interrupt(int irq, void *ctx, void *arg) { return 0; }
-static int rzv_icu_attach(int event, xcpt_t handler, void *arg, bool edge) {
-  int slot = attached++; return slot == fail_slot ? -ENOMEM : 385 + slot;
+static int rzv_icu_attach(int event, xcpt_t handler, void *arg, bool enable) {
+  assert(!enable);
+  assert((event == 84 + 2 * port && handler == rzv_i2c_rxi_interrupt) ||
+         (event == 83 + 2 * port && handler == rzv_i2c_txi_interrupt));
+  if (++attempts == failure_at) return -ENOMEM;
+  int irq = event == 84 + 2 * port ? 385 : 386;
+  assert(!installed[irq]); installed[irq] = true; return irq;
 }
-static void rzv_icu_detach(int irq) { assert(irq >= 385 && irq < 389); ++detached; }
+static void rzv_icu_detach(int irq) {
+  assert(irq == 385 || irq == 386); assert(installed[irq]);
+  installed[irq] = enabled[irq] = false;
+}
 static int irq_attach(int irq, xcpt_t handler, void *arg) {
-  assert(handler == rzv_i2c_stp_interrupt); fixed = irq; return fixed_error;
+  int base = 206 + 6 * port;
+  assert((irq == base && handler == rzv_i2c_tei_interrupt) ||
+         (irq == base + 2 && handler == rzv_i2c_stp_interrupt) ||
+         ((irq == base + 1 || irq == base + 4 || irq == base + 5) && handler == rzv_i2c_err_interrupt));
+  if (++attempts == failure_at) return -EIO;
+  assert(!installed[irq]); installed[irq] = true; return 0;
 }
-static void up_enable_irq(int irq) { assert(irq == fixed); ++enabled; }
-static void up_disable_irq(int irq) { assert(irq == fixed); ++disabled; }
-static void irq_detach(int irq) { assert(irq == fixed); fixed = -1; }
-''' + extract(source, 'static int rzv_i2c_init(') + extract(source, 'static void rzv_i2c_deinit(')
+static void __attribute__((unused)) rzv_gic_set_irq_type(int irq, bool pulse) {
+  assert(installed[irq] && !enabled[irq]); typed[irq] = true; edge[irq] = pulse;
+}
+static void up_enable_irq(int irq) { assert(typed[irq] && installed[irq]); enabled[irq] = true; }
+static void up_disable_irq(int irq) { enabled[irq] = false; }
+static void irq_detach(int irq) {
+  assert(irq < 385 && installed[irq] && !enabled[irq]); installed[irq] = false;
+}
+'''
+        if 'static void rzv_i2c_detach_irqs(' in source:
+            code += extract(source, 'static void rzv_i2c_detach_irqs(')
+        code += extract(source, 'static int rzv_i2c_init(') + extract(source, 'static void rzv_i2c_deinit(')
         code += r'''
 int main(void) {
-  for (int port = 0; port < 4; ++port) {
-    for (int failure = 0; failure < 6; ++failure) {
-      struct rzv_i2c_priv_s p = {.port = port, .irq_rxi = -1, .irq_txi = -1,
-        .irq_tei = -1, .irq_err = -1, .irq_stp = -1};
-      attached = detached = enabled = disabled = 0; fixed = -1;
-      fail_slot = failure < 4 ? failure : -1; fixed_error = failure == 4 ? -EIO : 0;
-      int result = rzv_i2c_init(&p);
-      if (failure < 4) assert(result == -ENOMEM && attached == failure + 1 && detached == failure && !enabled);
-      else if (failure == 4) assert(result == -EIO && detached == 4 && !enabled && p.irq_stp == -1);
-      else {
-        assert(result == 0 && fixed == 208 + 6 * port && enabled == 1);
-        rzv_i2c_deinit(&p); assert(disabled == 1 && detached == 4 && fixed == -1 && p.irq_stp == -1);
-      }
+  for (port = 0; port < 4; ++port) for (failure_at = 0; failure_at <= 7; ++failure_at) {
+    attempts = 0; memset(typed, 0, sizeof(typed));
+    struct rzv_i2c_priv_s p = {.port = port,
+''' + ', '.join(f'.{field} = -1' for field in fields) + r'''};
+    int ret = rzv_i2c_init(&p);
+    if (failure_at) assert(ret == (failure_at <= 2 ? -ENOMEM : -EIO));
+    else {
+      assert(ret == 0 && attempts == 7 && edge[385] && edge[386]);
+      int expected[] = {385, 386, 206 + 6 * port, 207 + 6 * port,
+                        208 + 6 * port, 210 + 6 * port, 211 + 6 * port};
+      for (unsigned i = 0; i < sizeof(expected) / sizeof(expected[0]); ++i)
+        assert(installed[expected[i]] && enabled[expected[i]]);
+      rzv_i2c_deinit(&p);
     }
+    for (int irq = 0; irq < 512; ++irq) assert(!installed[irq] && !enabled[irq]);
+''' + '\n'.join(f'    assert(p.{field} == -1);' for field in fields) + r'''
   }
 }
 '''
         run(code)
+
 
     def test_io_board_initializers_propagate_service_errors(self):
         for core in ('cm33', 'cr8_1'):
