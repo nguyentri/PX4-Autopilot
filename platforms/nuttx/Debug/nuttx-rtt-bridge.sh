@@ -50,7 +50,15 @@ CONNECT_MARKERS="${RESET_MARKERS}|DBGEN is not asserted|Connect failed|Cannot co
 # JLinkExe prints this once the command file, connect included, has run.
 SCRIPT_DONE='Script processing completed'
 
-port_up() { nc -z 127.0.0.1 "${RTT_PORT}" 2>/dev/null; }
+port_up() {
+	# Opening a readiness connection can drain the single-client RTT boot
+	# buffer. Inspect listeners without creating a terminal client.
+	port_hex=$(printf '%04X' "${RTT_PORT}")
+	awk -v port="${port_hex}" '
+		$4 == "0A" && toupper($2) ~ (":" port "$") { found = 1 }
+		END { exit !found }
+	' /proc/net/tcp /proc/net/tcp6 2>/dev/null
+}
 
 # A numeric PID alone cannot identify a detached bridge after PID reuse.
 running() {

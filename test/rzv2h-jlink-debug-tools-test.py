@@ -267,6 +267,26 @@ print('Script processing completed.',flush=True);time.sleep(60)
             self.assertIn('exec SetRTTAddr 0x081a2400', lines)
             self.assertNotIn('rtt start', lines)
 
+    def test_readiness_does_not_consume_a_single_client_boot_buffer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            result, _ = self.start_bridge(tmp, '''#!/usr/bin/env python3
+import os,socket,time
+seen=os.environ['STATE_DIR']+'/clients'
+open(seen,'w').close()
+s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+s.bind(('127.0.0.1',int(os.environ['RTT_PORT'])));s.listen()
+print('Script processing completed.',flush=True)
+while True:
+    conn,_=s.accept()
+    with open(seen,'a') as output: output.write('boot buffer consumed\\n')
+    try: conn.sendall(b'RETAINED BOOT RESULT\\r\\n')
+    except OSError: pass
+    conn.close()
+''')
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((tmp / 'state/clients').read_text(), '')
+
     def test_logged_reset_fails_the_start_and_releases_the_port(self):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)
