@@ -70,6 +70,23 @@ from board IOPORT/PFC configuration and the selected profile, not from ICU
 routing tables. Confirm ownership against [pinmap.md](./pinmap.md) and the
 profile's defconfig; flag a conflict instead of choosing a convenient pin.
 
+Keep ELC events (`bsp_elc.h`), CPU IRQSEL sources (`bsp_irq_id.h`), and DMAC
+activation sources (`bsp_dmac.h`) separate. `rzv_icu_attach()` writes a CPU
+IRQSEL source into INTR8SEL/INTM33SEL; it does not translate an ELC event.
+Fixed SCI inputs use `irq_attach()` on both CR8 and CM33, with the appropriate
+core prefix. RIIC data uses selectable sources while completion and errors use
+fixed inputs. On CR8, selectable attachments start with level sensitivity;
+attach pulse sources disabled, select edge sensitivity, then enable. Teardown
+must release fixed inputs with `irq_detach()` and selectable slots with
+`rzv_icu_detach()`. The
+[IRQ routing regression](../../test/rzv2h-irq-routing-runtime-test.py) exercises
+these boundaries and partial-attach cleanup.
+
+Hardware WDT2/3 use fixed CR8 interrupt inputs 348/349 plus the core prefix.
+CR8 watchdog interrupt mode rejects WDT0/1 with `-ENOTSUP` before acquiring
+resources, because those channels have no CR8 WDT interrupt input. The public
+channel numbers are hardware channel numbers; reset mode retains all four.
+
 The header and driver should make the following contract reviewable from their
 own owners:
 

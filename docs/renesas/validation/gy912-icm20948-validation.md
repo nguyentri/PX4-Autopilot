@@ -101,7 +101,7 @@ returned to GPIO CS with DMA on to separate the DMA path from SSL framing.
 That GPIO CS + DMA image (ELF SHA-256 `4f8fe869…e4b`, RAM-loaded on CR8-0
 with `rzv2h-ipc-hil-loadstart.gdb`, no reset) also **fails**: every exchange
 logs `RX DMA error CHSTAT=0x00000010` (ER set, EN clear) and `-EIO`, so
-`WHO_AM_I=0xff`, `result=-19`, `IRQ=0`. The DMA receive path is therefore
+`WHO_AM_I=0xff`, `result=-19`, `IRQ=0`. That archived DMA receive path was therefore
 broken independently of SSL framing. One known difference from FSP: our
 hardware-trigger path sets CHCFG.HIEN (rising-edge detect), while FSP's SPI_B
 channels use no detection (LOEN/HIEN/LVL = 0); this is unproven as the
@@ -170,6 +170,24 @@ The console helper's process exit status checks prompt/transport completion,
 not the builtin command's result. Read the diagnostic result and NSH error
 output in the captured transcript; reaching another `nsh>` prompt does not
 prove sensor success.
+
+## Complete standalone sample capture — 2026-10-14
+
+The [current report](../../../plans/reports/test-261014-0904-rzv2h-rtt-sample-validation.md)
+records independent `gy912-polled-gpio-cs` and `gy912-dma-ssl-rtt` images on
+CR8-0. Both reduced-log fixtures pass `gy912_test 1`, `20` and a repeated
+`20`, with WHOAMI `0xea`, configuration readbacks, exact sample totals,
+positive cumulative P94 IRQ counts and clean reentry. GPIO-CS also passes
+20 P93 readbacks and leaves CS high. Gated CPU SPCR2/SPSR snapshots accompany
+each image; full hashes/configs and transcripts are linked from the report.
+
+These are bounded standalone results. The original verbose 8 KiB RTT images
+faulted during twenty-sample runs; the reduced-log fixtures retain WARN/ERROR
+and essential sensor output with assertions/stack coloration. That workaround
+does not prove the original crash mechanism is repaired. Large cumulative IRQ
+counts do not qualify distinct physical edges, rate, latency, bus waveforms,
+FIFO, magnetometer, calibration, PX4 integration or production behavior.
+Shipped `gy912` is preserved; earlier failed DMA/SSL images remain historical.
 
 ## On-target sensor checkpoint
 

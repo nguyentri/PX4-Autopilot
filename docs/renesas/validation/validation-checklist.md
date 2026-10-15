@@ -30,6 +30,37 @@ A missing schematic or generated pin artifact can remain a physical gate while
 source/host/build work proceeds from the selected RDK reference. A known
 software correctness failure cannot be waived as a hardware follow-up.
 
+### Isolated RTT sample fixtures
+
+The [native board configurations](../../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/)
+include separately named CR8-0 validation fixtures. List them with
+`platforms/nuttx/NuttX/build.sh --list`; build one at a time through that script.
+`nsh-rtt-interactive` provides the baseline; `dmac-memcpy-rtt`, `gtm-rtt`,
+`canfd-rtt`, `hil-spi-loopback-rtt` and `spi-loopback-rtt` provide internal
+tests. `pwm-rtt`, `pwm-oneshot-rtt` and `adc-rtt` check software completion
+without qualifying a physical waveform or analog input.
+
+These fixtures use RTT console input/output, foreground builtin completion,
+nonblocking trim and NSH memory commands. Use only address-only `mb`/`mh`/`mw`
+reads, after validating the named peripheral's clock/reset/MSTOP gates.
+Missing log markers cannot pass. Use READLINE for these RTT fixtures; the
+cursor-position editor can wait for an unsupported terminal response. The
+legacy SPI and PWM oneshot examples run during boot; drain retained RTT
+output before console synchronization. Bridge readiness checks must not open
+a client and consume that single-client stream.
+
+`gy912-polled-gpio-cs` and `gy912-dma-ssl-rtt` preserve the standalone
+ICM20948 SPI0/P94 wiring in separate polling/GPIO-CS and DMA48/49/hardware-SSL
+fixtures. Both require positive sensor IRQ evidence. Their validation
+configs retain sensor identity/configuration/sample/result output and SPI
+WARN/ERROR while disabling per-transaction SPI INFO flooding; assertions and
+stack coloration remain enabled. Original verbose images faulted during the
+[2026-10-14 campaign](../../../plans/reports/test-261014-0904-rzv2h-rtt-sample-validation.md);
+reduced-log passes do not establish a repair for that fault. Add no wiring
+for this suite. IPC peer state, WDT, storage writes and external SCI-SPI loopback are
+outside its contract. Archive each exact ELF and resolved configuration before
+building the next image; obtain explicit approval before RAM-loading it.
+
 ## Initialization, failure and reset
 
 - [ ] Clock, module reset, pins, peripheral state, IRQ attachment and delivery

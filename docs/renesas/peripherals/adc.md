@@ -1,8 +1,8 @@
 # ADC Peripheral Notes
 
-**Date:** 2026-10-13
+**Date:** 2026-10-14
 **Hardware:** Renesas RZ/V2H (R9A09G057H), RDK-RZ/V2H
-**Status:** blocked, no target conversion evidence. Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #1. PX4 HAL: deferred/non-gating (post-G9).
+**Status:** bounded on-target for CR8-0 software trigger/read/close; analog accuracy remains unqualified. Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #1. PX4 HAL: deferred/non-gating (post-G9).
 
 Source-verified notes for `rzv_adc.c` (ADC_E, 12-bit SAR). Audit:
 [audit-260809-rzv2h-adc-ether-phy-scif-mission1-report.md](../../../plans/reports/audit-260809-rzv2h-adc-ether-phy-scif-mission1-report.md)
@@ -51,8 +51,9 @@ the `/dev/adc0` open/ioctl/read interface; read the driver and selected
 
 The `adc` profile selects the stock `apps/examples/adc` command with software
 triggering and a bounded default of eight sample groups. Use `adc -n 1` for
-one group. The wrapper build links `adc_main`; pin routing and a named
-trigger/read/error/close transcript remain unverified.
+one group. The wrapper build links `adc_main`; pin routing remains unverified.
+The isolated `adc-rtt` fixture has a named trigger/read/close transcript; see
+the evidence below.
 
 Initialization failure restores the ADC module-stop bit, destroys an acquired
 semaphore, reasserts reset and disables the acquired clock. Registration
@@ -61,9 +62,16 @@ repeated board initialization does not reinitialize a registered device.
 
 ## Interrupt
 
-Scan-end event `RZV_ELC_ADC0_ADA_ADELCREQ` is routed through the ICU with
-`rzv_icu_attach()` on open. That route is selectable, so the INTID is
-allocated at runtime; there is no fixed ADC IRQ number.
+Group-A scan-end uses `RZV_INTC_IRQSEL_ADC0_ADA_ADIREQ_N` (575) through
+`rzv_icu_attach()` on open. INTR8SEL requires an IRQ selector, not ELC event
+256. The physical GIC INTID is allocated at runtime; there is no fixed ADC
+IRQ number. Attach disabled, select edge sensitivity with
+`rzv_gic_set_irq_type(irq, true)`, then enable the allocated line. ICU defaults
+to level sensitivity; the observed scan-end request needs edge latching.
+The [ADC repair report](../../../plans/reports/debug-261014-1122-rzv2h-adc-completion.md)
+records missing ISR delivery before this repair, a passing edge comparator,
+and 105 completed scan groups on the uninstrumented image. Earlier selector-only
+results remain historical; analog value accuracy is unverified.
 
 ## Register authority
 
@@ -77,7 +85,7 @@ second register inventory into this note.
 | Item | State |
 |------|-------|
 | Source audit, clock/ELC/`ADELCCR` fixes | done (2026-08-09) |
-| `/dev/adc0` register + open on target | open |
+| `/dev/adc0` trigger/read/close on target | bounded CR8-0 proof: 105 groups /420 records across two warm loads (2026-10-14) |
 | Conversion of a known voltage (analog HIL) | open |
 | RDK pin routing for AN000–AN007 | open |
 | PX4 `adc` consumer (battery etc.) | deferred, post-G9 |

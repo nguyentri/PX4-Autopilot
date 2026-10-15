@@ -61,6 +61,8 @@ what was actually observed.
 | Standalone SPI0/P94 ICM20948 | [GY-912 validation](validation/gy912-icm20948-validation.md) |
 | Standalone GPT PWM | [PWM pin validation](validation/pwm-pin-validation.md) |
 | Integrated simple PWM/ICM20948 bench | [Simple profile validation](validation/simple-pwm-icm20948-validation.md) |
+| Regression/build/offline checks for future CI | [Regression tooling](validation/rzv2h-regression-ci.md) |
+| Isolated CR8-0 driver samples over RTT | [Board sample procedure](validation/rzv2h-rtt-board-samples.md) |
 | CR8-0 ↔ CR8-1 raw IPC | [IPC HIL guide](validation/rzv2h-ipc-hil-test-guide.md) |
 
 ## Multicore and customer design
