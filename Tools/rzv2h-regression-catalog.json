@@ -1875,6 +1875,104 @@
         "--help"
       ],
       "note": "Source inventory/report/check tool; optional fix mode rewrites owned source. Use check/report explicitly in CI."
+    },
+    {
+      "id": "rzv2h-px4-ci-test",
+      "path": "test/rzv2h-px4-ci-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-px4-ci-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "git",
+          "bash"
+        ],
+        "modules": [
+          "kconfiglib"
+        ]
+      },
+      "note": "Hardware-free PX4 build/archive contracts; no target operations."
+    },
+    {
+      "id": "rzv2h-px4-artifact-units",
+      "path": "test/rzv2h-px4-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-px4-artifact-test.py",
+        "--unit-only"
+      ],
+      "requires": {
+        "tools": []
+      },
+      "note": "Hardware-free PX4 build/archive contracts; no target operations."
+    },
+    {
+      "id": "rzv2h-px4-archive-artifacts",
+      "path": "test/rzv2h-px4-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-archive-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-px4-artifact-test.py",
+        "--archive",
+        "{px4_archive}"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm",
+          "arm-none-eabi-readelf",
+          "arm-none-eabi-objcopy"
+        ]
+      },
+      "note": "Hardware-free PX4 build/archive contracts; no target operations."
+    },
+    {
+      "id": "rzv2h-px4-build",
+      "path": "Tools/rzv2h-px4-build.py",
+      "kind": "build",
+      "groups": [
+        "build"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "Tools/rzv2h-px4-build.py"
+      ],
+      "requires": {
+        "tools": []
+      },
+      "note": "Hardware-free PX4 build/archive contracts; no target operations."
+    },
+    {
+      "id": "rzv2h-px4-artifact-check",
+      "path": "Tools/rzv2h-px4-artifact-check.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "Tools/rzv2h-px4-artifact-check.py"
+      ],
+      "requires": {
+        "tools": []
+      },
+      "note": "Hardware-free PX4 build/archive contracts; no target operations."
     }
   ]
 }

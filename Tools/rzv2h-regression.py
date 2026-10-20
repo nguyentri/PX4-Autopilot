@@ -124,6 +124,8 @@ def execute(entry, argv, log, timeout):
         except KeyboardInterrupt:
             cancelled = True
             stop_process(process)
+        finally:
+            stop_process(process)
     output = log.read_text(errors='replace')
     skipped = any(int(count) > 0 for count in re.findall(r'\bskipped=(\d+)', output)) or bool(
         re.search(r'\.\.\. skipped\b|^SKIP\b', output, re.M))
@@ -169,6 +171,7 @@ def main():
     parser.add_argument('--timeout', type=float, default=180, help='per-script timeout in seconds')
     parser.add_argument('--sample-builds', type=Path)
     parser.add_argument('--sample-source-state', type=Path)
+    parser.add_argument('--px4-archive', type=Path)
     args = parser.parse_args()
     output = None
     results = []
@@ -192,6 +195,8 @@ def main():
         if any(entry['kind'] != 'test' or entry['target_access'] != 'none' for entry in selected):
             raise ValueError('host runner refuses tools/HIL entries; select a host test group')
         output = args.output.resolve()
+        if args.px4_archive and output.is_relative_to(args.px4_archive.resolve()):
+            raise ValueError('run output must be outside the PX4 archive')
         output.mkdir(parents=True, exist_ok=True)
         if any(output.iterdir()):
             raise ValueError('output directory must be new or empty')
@@ -200,6 +205,12 @@ def main():
             variables['sample_builds'] = str(args.sample_builds.resolve())
             variables['sample_source_state'] = str((args.sample_source_state or
                                                     args.sample_builds.resolve().parent/'source-state.json').resolve())
+        if args.px4_archive:
+            if not args.px4_archive.is_dir():
+                raise ValueError('PX4 archive directory missing')
+            variables['px4_archive'] = str(args.px4_archive.resolve())
+        if any('{px4_archive}' in part for entry in selected for part in entry['command']) and not args.px4_archive:
+            raise ValueError('missing artifact option: px4_archive')
         results = [{'id': entry['id'], 'path': entry['path'], 'status': 'NOT-RUN',
                     'reason': 'not executed'} for entry in selected]
         write_reports(output, results)

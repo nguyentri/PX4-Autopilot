@@ -38,6 +38,7 @@ python3 Tools/rzv2h-regression.py list --json
 | `vendor-host` | Native RTT buffer tests; requires the downloaded SEGGER source in the checkout |
 | `sample-artifacts` | Actual sample ELF/config/map/archive/receipt checks after building the full sample matrix |
 | `px4-artifacts` | Existing PX4 artifact/ROMFS/package or offline GDB type checks; requires the named complete builds |
+| `px4-archive-artifacts` | Full sealed PX4 matrix admission and rehashed negative controls; requires `--px4-archive` |
 | `build`, `offline-tools`, `hardware-tools`, `legacy-hardware`, `support` | Catalog/reference entries; the host test runner refuses to execute these groups |
 
 Use repeated `--group` or `--test <exact-id>` to select a union. A bad ID or an
@@ -148,6 +149,97 @@ Existing PX4 artifact suites accept their own `--build-dir` options. Their
 catalog notes name the default build targets. They require installed ROMFS,
 resolved config, maps and package outputs as well as ELFs; do not substitute a
 standalone NuttX ELF for a complete PX4 build.
+
+## Build and check the PX4 matrix without hardware
+
+The [PX4 policy](../../../Tools/rzv2h-px4-profiles.json) classifies all eight
+RZ/V2H targets exposed by the root `build.sh`. RA8 targets are outside this gate.
+Use a new or empty job directory:
+
+```sh
+python3 Tools/rzv2h-px4-build.py --list
+python3 Tools/rzv2h-px4-build.py --output build/rzv2h-px4-matrix
+
+python3 Tools/rzv2h-px4-artifact-check.py \
+  --archive build/rzv2h-px4-matrix/archive \
+  --output build/rzv2h-px4-recheck.json
+
+python3 Tools/rzv2h-regression.py run --group px4-archive-artifacts \
+  --px4-archive build/rzv2h-px4-matrix/archive \
+  --output build/rzv2h-px4-archive-tests
+```
+
+The builder makes independent local Git copies of working sources and initialized
+repositories, including nested `pymavlink`. It retains staged/working edits,
+eligible untracked sources, deletions, commits, tag identities and repository
+origins. Untracked additions must match source/configuration names within the
+builder's declared build roots; unrelated root files and private configuration
+are omitted. It omits generated configuration links and unsafe source symlinks with
+diagnostics. It runs `port-host` inside that same snapshot before sequential
+root-script builds. It never configures or cleans the original checkout.
+Input rescans detect source drift before another image is accepted.
+
+Repeat `--target <canonical-name>` for a subset. Selecting `dualcr8` adds its
+CR8-1 peer; duplicate explicit selections fail. Subset success has
+`full_matrix: false`. The initial per-image timeout is 1800 seconds, configurable
+with `--timeout`; `--host-timeout` bounds the complete host stage. Cancellation
+stops owned process groups, including children whose leader exited. Commands
+must remain in their owned groups; daemonizing commands are unsupported.
+
+The existing build prerequisites apply, with local Git metadata and ARM binutils
+(`nm`, `readelf`, `objcopy`) plus `gdb-multiarch` for offline compiled pair types.
+Fake-debug host tests require ordinary loopback socket permissions. Declared
+dependency downloads remain enabled. Optional `--cache-dir` uses the same
+`RTT.zip`/LittleFS cache route as the sample builder, recording the override in
+the source snapshot. RTT archive and patched source/header hashes must match the
+source-pinned contract.
+
+Retain the whole job directory:
+
+| Location | Contents |
+|---|---|
+| `build-results.json`, `junit.xml` | Mutable job status, elapsed times and failure/pending entries |
+| `archive/source-state.json`, `px4-profiles.json` | Frozen effective inputs, original inputs, Git/tool/cache provenance and policy |
+| `archive/host/` | Host results, JUnit and individual logs |
+| `archive/builds/<target>/` | Complete required firmware/config/ROMFS/metadata, focused-check logs and immutable target receipt |
+| `archive/pair-receipt.json` | Both finalized dual-CR8 member digests and compatibility/type evidence |
+| `archive/inventory.json` | Exact file sizes and hashes, excluding the inventory itself |
+
+Checker reports stay outside `archive/`. Rechecks preserve its bytes and work
+after disposable sources are removed or the archive is relocated. The checker
+uses its installation-local policy; an archived policy cannot authorize changed
+limits. Missing scheduled outputs, skipped/zero checks, timeouts and malformed
+or coherently rehashed semantic mutants fail. The artifact test command requires
+the complete real matrix. For parser development only, use
+`python3 test/rzv2h-px4-artifact-test.py --unit-only`.
+
+The CR8-1 package maximum is **8,650,368 uncompressed bytes**: 128 header +
+130,560 ITCM + 131,072 cache SRAM + 8,388,608 cache DDR, from the active linker
+and CMake split-section mapping. Independent descriptor, ELF/runtime reservation
+and per-region bounds still apply. This software-format envelope does not
+establish a physical flash partition or a loader/deployment capacity. Board ID
+14 and `PX4FWv2` remain unchanged.
+
+Console evidence follows the selected sources: CR8-1 uses SCI1 without a selected
+RTT provider; CM33's current defconfig leaves RTT in ordinary SRAM rather than
+selecting the dedicated linker RTT section. Private CR8 TCM addresses may match
+between cores. Pair checks distinguish these local aliases from private SRAM/DDR
+and intentional shared-memory windows.
+
+CR8-1 uses the dedicated raw MHU/shared-memory character transport for
+`/dev/ipcc1` and `/dev/ipcc3`. The generic experimental `IPCC` upper half and
+`IPCC_BUFFERED` are independent of that transport; requested defconfig entries
+do not establish resolved selections. Admission checks the raw selectors and
+compiled registration provider.
+
+CM33 selects `NSH_ARCHROMFS` so NSH mounts the generated PX4 ROMFS rather than
+NuttX's built-in 1 KiB sample. The archive checker compares the bytes linked into
+the ELF with that generated image and its installed tree.
+
+Successful software admission remains `BUILD-CHECKED`, on-target `NOT-RUN`, with
+`target_actions: []`. It establishes no electrical, silicon IRQ/DMA/cache,
+timing, persistence or flight qualification. Legacy `px4-artifacts`, sample
+groups and their argument contracts remain available.
 
 ## Use a board runner later
 

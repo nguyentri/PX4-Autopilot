@@ -7,7 +7,7 @@
     "summary": "RZV2H_IO_CR8_1",
     "version": "2.0",
     "image_size": 0,
-    "image_maxsize": 131072,
+    "image_maxsize": 8650368,
     "git_identity": "",
     "board_revision": 0
 }

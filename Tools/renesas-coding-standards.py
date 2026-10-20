@@ -947,8 +947,10 @@ def main(argv=None):
             output = output.resolve()
             args.output = output
             reports = ROOT / "plans"
-            if not (output.is_relative_to(Path("/tmp")) or
-                    output.is_relative_to(reports) and "reports" in output.relative_to(reports).parts[:-1]):
+            repository_report = (output.is_relative_to(reports) and
+                                 "reports" in output.relative_to(reports).parts[:-1])
+            temporary_report = output.is_relative_to(Path("/tmp")) and not output.is_relative_to(ROOT)
+            if not (temporary_report or repository_report):
                 raise ToolError("Report output must be in /tmp or plans/**/reports")
             if output.is_relative_to(ROOT) and inside(output.relative_to(ROOT),
                     PX4_ROOTS + tuple(NUTTX / x for x in NUTTX_ROOTS)):

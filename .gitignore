@@ -221,3 +221,8 @@ ak-engineer
 !/Tools/rzv2h-regression-catalog.json
 !/platforms/nuttx/Debug/rzv2h-sample-build.py
 !/test/rzv2h-ci-tools-test.py
+
+!/Tools/rzv2h-px4-build.py
+!/Tools/rzv2h-px4-artifact-check.py
+!/test/rzv2h-px4-ci-test.py
+!/test/rzv2h-px4-artifact-test.py
