@@ -1,0 +1,591 @@
+{
+  "schema": "px4-rzv2h-hardware-evidence/v1",
+  "campaign_time": "2026-10-21T02:03:30.420806+07:00",
+  "outcome": "INCOMPLETE: available CR8-0 tests executed; fixture/architecture cases remain blocked",
+  "scope": "existing PX4 tests plus available disarmed CR8-0 HAL checks; optional scope clarification received no reply",
+  "image": {
+    "core": "cr8_0",
+    "elf": "build/px4-hardware-tests-261021-0151/test-fixture/renesas_rdk-rzv2h_dshot.elf",
+    "sha256": "128824d6622df542b9085d7b5e53c3484eba85d901653f59a92f6fa7f8f0ad8f",
+    "rtt": "0x081a2400",
+    "parent_commit": "f14154dac18770a06e5c6a5e1f88167621146571",
+    "nuttx_commit": "5cf2c27ac7ac77cf9df4b7f78f4981e7b4f3c72b",
+    "temporary_tests_enabled": true
+  },
+  "counts": {
+    "total": 32,
+    "pass": 21,
+    "fail": 0,
+    "blocked": 11
+  },
+  "tests": [
+    {
+      "id": "file",
+      "command": "tests file",
+      "admission": "RUN",
+      "reason": "PX4_STORAGEDIR resolves to /fs RAM TMPFS; test covers RAM file operations, not physical storage.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 2.155,
+      "log": "test-file.log",
+      "collector_initial_result": "FAIL",
+      "collector_correction": "Initial collector required every verbose progress line; RTT TRIM drops lines. Source reaches final directory listing only after all comparisons and loops; both final directory completion and explicit file PASSED are observed, and no marker/input was queued during execution.",
+      "captured_alignment_rows": 102,
+      "expected_alignment_rows": 561
+    },
+    {
+      "id": "led",
+      "command": "tests led",
+      "admission": "BLOCKED",
+      "reason": "Requires LED0 character device; absent from /dev.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "mount",
+      "command": "tests mount",
+      "admission": "BLOCKED",
+      "reason": "Reboot stress test calls px4_reboot_request; reset excluded from this bench scope. /fs is RAM TMPFS, so this cannot qualify physical storage.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "time",
+      "command": "tests time",
+      "admission": "BLOCKED",
+      "reason": "Cortex-M DWT/DEMCR fixed addresses 0xe000xxxx are unsuitable for Cortex-R8; direct MMIO excluded.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "uart_baudchange",
+      "command": "tests uart_baudchange",
+      "admission": "BLOCKED",
+      "reason": "Hard-coded /dev/ttyS2 absent.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "uart_break",
+      "command": "tests uart_break",
+      "admission": "BLOCKED",
+      "reason": "Hard-coded /dev/ttyS1 absent.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "uart_console",
+      "command": "tests uart_console",
+      "admission": "BLOCKED",
+      "reason": "Requires /dev/ttyACM0; absent and test has unbounded reader.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "atomic_bitset",
+      "command": "tests atomic_bitset",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 0.983,
+      "log": "test-atomic_bitset.log"
+    },
+    {
+      "id": "bitset",
+      "command": "tests bitset",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 0.879,
+      "log": "test-bitset.log"
+    },
+    {
+      "id": "bson",
+      "command": "tests bson",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 0.961,
+      "log": "test-bson.log"
+    },
+    {
+      "id": "dataman",
+      "command": "tests dataman",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 17.608,
+      "log": "test-dataman.log"
+    },
+    {
+      "id": "file2",
+      "command": "tests file2",
+      "admission": "RUN",
+      "reason": "PX4_STORAGEDIR resolves to /fs RAM TMPFS; test covers RAM file operations, not physical storage.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.028,
+      "log": "test-file2.log"
+    },
+    {
+      "id": "float",
+      "command": "tests float",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.03,
+      "log": "test-float.log"
+    },
+    {
+      "id": "hott_telemetry",
+      "command": "tests hott_telemetry",
+      "admission": "BLOCKED",
+      "reason": "Requires HoTT receiver/fixture and /dev/ttyS1; absent.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "hrt",
+      "command": "tests hrt",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 7.322,
+      "log": "test-hrt.log"
+    },
+    {
+      "id": "int",
+      "command": "tests int",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.154,
+      "log": "test-int.log"
+    },
+    {
+      "id": "i2c_spi_cli",
+      "command": "tests i2c_spi_cli",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.388,
+      "log": "test-i2c_spi_cli.log"
+    },
+    {
+      "id": "IntrusiveQueue",
+      "command": "tests IntrusiveQueue",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.414,
+      "log": "test-IntrusiveQueue.log"
+    },
+    {
+      "id": "IntrusiveSortedList",
+      "command": "tests IntrusiveSortedList",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.091,
+      "log": "test-IntrusiveSortedList.log"
+    },
+    {
+      "id": "List",
+      "command": "tests List",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.326,
+      "log": "test-List.log"
+    },
+    {
+      "id": "mathlib",
+      "command": "tests mathlib",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.513,
+      "log": "test-mathlib.log"
+    },
+    {
+      "id": "matrix",
+      "command": "tests matrix",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.421,
+      "log": "test-matrix.log"
+    },
+    {
+      "id": "param",
+      "command": "tests param",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.074,
+      "log": "test-param.log"
+    },
+    {
+      "id": "parameters",
+      "command": "tests parameters",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.503,
+      "log": "test-parameters.log"
+    },
+    {
+      "id": "perf",
+      "command": "tests perf",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.164,
+      "log": "test-perf.log"
+    },
+    {
+      "id": "ppm",
+      "command": "tests ppm",
+      "admission": "BLOCKED",
+      "reason": "HRT_PPM_CHANNEL not configured; stock test returns success without exercising PPM.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "rc",
+      "command": "tests rc",
+      "admission": "BLOCKED",
+      "reason": "No receiver frames or input_rc publication; fixture absent.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "search_min",
+      "command": "tests search_min",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.14,
+      "log": "test-search_min.log"
+    },
+    {
+      "id": "sleep",
+      "command": "tests sleep",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 3.903,
+      "log": "test-sleep.log"
+    },
+    {
+      "id": "uart_loopback",
+      "command": "tests uart_loopback",
+      "admission": "BLOCKED",
+      "reason": "Requires /dev/ttyS1 and /dev/ttyS2 with physical loopback; absent.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "uart_send",
+      "command": "tests uart_send",
+      "admission": "BLOCKED",
+      "reason": "Default /dev/ttyS3 absent; no unowned wired UART fixture.",
+      "result": "BLOCKED"
+    },
+    {
+      "id": "versioning",
+      "command": "tests versioning",
+      "admission": "RUN",
+      "reason": "Existing finite PX4 target test; outputs stopped before execution.",
+      "result": "PASS",
+      "terminal_observed": true,
+      "prompt_recovered": true,
+      "elapsed_s": 1.066,
+      "log": "test-versioning.log"
+    }
+  ],
+  "focused_checks": {
+    "dshot_motor_stop": {
+      "result": "PASS",
+      "channels": "0xf",
+      "bytes_per_channel": 128,
+      "successful_initializations": 2,
+      "nonzero_throttle": false,
+      "electrical_waveform_verified": false
+    },
+    "hrt_detached_fixture": {
+      "result": "PASS",
+      "sleep_us": 11041,
+      "callback_latency_us": 4
+    },
+    "hrt_rtt_attached_failure_us": 133603
+  },
+  "cleanup": {
+    "commander_disarmed": true,
+    "output_modules_stopped": true,
+    "hal_armed": false,
+    "dma_remaining": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "dma_channel_status": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "gpt_counters_stopped": true,
+    "gpt_output_enables_clear": true,
+    "temporary_files_removed": true,
+    "source_config_restored": true,
+    "probe_owners": [],
+    "debug_listeners": []
+  },
+  "source_digests": [
+    {
+      "path": "src/systemcmds/tests/tests_main.c",
+      "sha256": "d434c0da6fbf0cf5263ffa34f68e195a253e9f8365a9a8aaf81894467fea220b",
+      "bytes": 7284
+    },
+    {
+      "path": "src/systemcmds/tests/test_time.c",
+      "sha256": "cd2bd09a6fa198f8ec81e622ad30c67e4ba8bb3b9856762c08e22c52bafaa640",
+      "bytes": 3643
+    },
+    {
+      "path": "src/systemcmds/tests/test_mount.cpp",
+      "sha256": "41ba13e767dcf482120aed435f131bb51fef7d96323b3309acbb9f3889396739",
+      "bytes": 7599
+    },
+    {
+      "path": "platforms/common/include/px4_platform_common/defines.h",
+      "sha256": "792f226af4c6f876abdbb4b04cc54a4b2b9625a7ef1d1ea795698c542f91a5bc",
+      "bytes": 5210
+    },
+    {
+      "path": "plans/reports/tester-261021-0151-px4-hardware-tests.md",
+      "sha256": "00bd4e9df560808b2b1193bfe7ddde0e6bdf61a51e42f19034699a58eb287b98",
+      "bytes": 6744
+    },
+    {
+      "path": "plans/reports/tester-261021-0151-px4-hardware-result.json",
+      "sha256": "6d9b4d460a36194595047e6af88d3ee8b921e24148edf0cd7434599bb4c414f4",
+      "bytes": 2500
+    },
+    {
+      "path": "build/px4-hardware-tests-261021-0151/target-test-results.json",
+      "sha256": "8ffd56b8cb36473fec3ec80cd16d2b8e4ccdf1b4245b85dc7fc6f84870c791b5",
+      "bytes": 9839
+    }
+  ],
+  "capture_digests": [
+    {
+      "source": "build/px4-hardware-tests-261021-0151/baseline-hardware.log",
+      "sha256": "106ec615dd50af607d06cd9c19b69053048df3eb80c9555db764d192790995e4",
+      "bytes": 3933
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/hrt-detached-result-recovery.log",
+      "sha256": "4ce3b17d3a0888bab9708d4ba374e4a1c9e67ba65c3d9af8c24b4f4a61a18baa",
+      "bytes": 1542
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-fixture-boot.log",
+      "sha256": "e4deab77307a36aab7e6de59989e8892018b81b3b63f95024404073b8beab70d",
+      "bytes": 2974
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-fixture-admission.log",
+      "sha256": "93099193ea3c117d5ba5f5ddcf0d3f544bd47cb1ae4360fc739404579d5d4dcf",
+      "bytes": 2976
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-file.log",
+      "sha256": "cdd57fb771204965b23b94a7107eaccacc8615360a75af69a8273ab09227a669",
+      "bytes": 22762
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-atomic_bitset.log",
+      "sha256": "2021fc13877351e1e151ddb205c7f30ba850b00808ecb6a3487efa20a9f4c14a",
+      "bytes": 466
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-bitset.log",
+      "sha256": "71b15e01f7c6d4bcfc30d0b9b4bbaefee0405ef56e0ee05b4a73d57b21fb8d49",
+      "bytes": 452
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-bson.log",
+      "sha256": "42dbba17a8bd780daa47e741c9fca0a77a05ba05cc0c7419ddfc27d218955e08",
+      "bytes": 266
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-dataman.log",
+      "sha256": "5e36d53c78eb1d86cbafbc61ad32455a698ba849d3b7822f94d9c1b159b8c74b",
+      "bytes": 3524
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-file2.log",
+      "sha256": "e36456e017fe2d6d70939b9244ed1a43dc81264cf4d90044bbe6090ce545e9ee",
+      "bytes": 181
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-float.log",
+      "sha256": "40b7fa2cf321bacfb27c310d863b22bd8a0995e92f04a5d2ae78741c9d1b8a6f",
+      "bytes": 398
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-hrt.log",
+      "sha256": "14d0fbffcd3558f4056b8ee2e8d53b15ca873995db3d4884e8a3ce3fc772de17",
+      "bytes": 736
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-int.log",
+      "sha256": "44db01af80aed6b4cc08ba074abf466735f2e5213892c4aec3505cb87b7554f9",
+      "bytes": 406
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-i2c_spi_cli.log",
+      "sha256": "9a7b177cd26ba421b2ca78dfbeb5124d73e3db56685fd16a9a95a227910d2ea0",
+      "bytes": 630
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-IntrusiveQueue.log",
+      "sha256": "22f5e32f2ac9d8888eef1c459c5b091bf3a481c1248f021f8aed7e75c7e53879",
+      "bytes": 633
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-IntrusiveSortedList.log",
+      "sha256": "e77e0f74b672628eef204c52c6cfce9b961f124ee0bec0c55eb101c600301b6c",
+      "bytes": 569
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-List.log",
+      "sha256": "263c1216b6c2fc0f10390f92f79af080eaa0fdb67e2cf4b3449a63751384eb96",
+      "bytes": 559
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-mathlib.log",
+      "sha256": "5039a8ce8aff58c478a78cc90637a0c8e9c8b926b4832582c8f1453ad3ef415a",
+      "bytes": 3014
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-matrix.log",
+      "sha256": "8a37962350fee191fecbe18fbad1fb596c979d8611cfd74f692df93f11a30975",
+      "bytes": 1848
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-param.log",
+      "sha256": "87fb1e5c0cecb2b328e9ac9233a6b3fcf604ced7a20bccbae53627f82d92a824",
+      "bytes": 90
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-parameters.log",
+      "sha256": "b466f4a7e710ec897b814a306822ed90059e171d624eff4868aaf779159173c6",
+      "bytes": 1104
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-perf.log",
+      "sha256": "7167a2694b6cac64ce88d41af26c9bb5429d459bdf17b66efca72cbf9927299d",
+      "bytes": 204
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-search_min.log",
+      "sha256": "6640e3831fe3e88f7b82ce90fc7f6e7ee5aa40558c186d036d0d9d4a29847c3e",
+      "bytes": 814
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-sleep.log",
+      "sha256": "ec5fb31fa4773577142283cdb556ab3376d043aefb9a56da42cc51b79a09a33c",
+      "bytes": 140
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/test-versioning.log",
+      "sha256": "70f059ce9d3be70a1b51c06fca1c1bec5adb25892db12fa18220969c2e4b61a9",
+      "bytes": 212
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/after-suite.log",
+      "sha256": "b499cc6d491eeed0600e089bd36c8524652add332c9115ebee77eeba4ce47e44",
+      "bytes": 4184
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/dshot-restart.log",
+      "sha256": "fb831f673acc6a55ac3aa8fd6f08caddf8b22b853e56370dddf6deee0d4dc14d",
+      "bytes": 3053
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/fixture-hrt-result.log",
+      "sha256": "f9e150f614b2e39ed98edc70e6860ebfa5b6b16c0f3f1c40201bafc33afc06ed",
+      "bytes": 1396
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/final-state.log",
+      "sha256": "5a3839d2bcc8820db110d6971bbcd90f979a2e02e01dbdbabb25a78234e1a8ba",
+      "bytes": 2447
+    },
+    {
+      "source": "build/px4-hardware-tests-261021-0151/cleanup-preflight.log",
+      "sha256": "58c1cde41dbabbb0f6f21c0824186325275f938602aa52ade2734f5b5051ef8b",
+      "bytes": 2703
+    }
+  ],
+  "transcript": {
+    "source_path": "plans/reports/tester-261021-0151-px4-hardware-transcript.txt",
+    "source_sha256": "708183bacea2d4db83480c682ee056888e5791b0b4c717544d2d05219b9c333a",
+    "source_bytes": 67584,
+    "retained_path": "docs/renesas/evidence/px4-hardware-tests-cr8-0-261021.txt",
+    "retained_sha256": "037139462b845b0f28565c5db98c50c56dfe4aad4fb0a46228c4948395c92e1d",
+    "retained_bytes": 67571,
+    "normalization": "trailing spaces and tabs removed per line; terminal blank lines removed with one final newline retained; ANSI bytes retained"
+  },
+  "limitations": [
+    "11 native tests blocked; see test-inventory.json",
+    "IMU/barometer absent or not responding; GPS/RC/payload RX counters zero",
+    "No physical PWM/DShot waveform, powered ESC, nonzero throttle, cold cycle or soak qualification",
+    "Other PX4 profiles and IO cores not executed; planned eight-profile observer remains absent",
+    "Verbose file progress was partly lost by RTT TRIM; final loop/directory completion and native success terminal observed"
+  ],
+  "execution_anomalies": [
+    "Initial sandbox build could not resolve github.com; approved network build succeeded",
+    "Initial load-wrapper host setup errors were corrected before any target attempt",
+    "Two fresh RTT sessions lost the first shell marker; NSH resynchronization succeeded with no probe reconnect",
+    "Initial host collector incorrectly required every verbose file progress row; corrected using source-backed final directory completion, retaining the original raw log"
+  ],
+  "notes": [
+    "All files used by the native file and parameter checks were RAM TMPFS under /fs; no persistence claim follows.",
+    "RTT TRIM dropped verbose file progress rows; source-backed completion and the explicit file PASSED terminal were retained.",
+    "The time test targets Cortex-M DWT/DEMCR addresses and was not admitted on Cortex-R8.",
+    "No physical sensor, waveform, powered ESC, persistent storage, cold-cycle, soak, other-profile, or IO-core qualification was performed."
+  ]
+}

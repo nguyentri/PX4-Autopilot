@@ -1,0 +1,2240 @@
+PX4 hardware test evidence, CR8-0, 2026-10-21. Source captures are local.
+Probe identifiers are masked in retained host logs. Raw ANSI console bytes are preserved.
+
+===== baseline-hardware.log =====
+SHA256: 106ec615dd50af607d06cd9c19b69053048df3eb80c9555db764d192790995e4
+
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+echo NSHX_427152_0
+NSHX_427152_0
+nsh> [K
+nsh> [Kls /dev
+/dev:
+ console
+ console_buf
+ null
+ ram0
+ ttyS4
+ ttyS5
+ ttyS6
+ ttyS9
+nsh> [K
+nsh> [Kecho NSHX_427152_1
+NSHX_427152_1
+nsh> [K
+nsh> [Ksystem_time
+ERROR [system_time] system_time: not enough arguments
+Usage: system_time See:https://docs.px4.io/main/en/modules/modules_main.html
+nsh> [K
+nsh> [Kecho NSHX_427152_2
+NSHX_427152_2
+nsh> [K
+nsh> [Ksystem_time hrt-test
+SCI9 clocks disabled
+ERROR [system_time] HRT sleep out of bounds: 133603 us
+nsh> [K
+nsh> [Kecho NSHX_427152_3
+NSHX_427152_3
+nsh> [K
+nsh> [Kserial_status
+Usage: serial_status <device> [device ...]
+Counters are boot-lifetime modulo 2^32 snapshots.
+nsh> [K
+nsh> [Kecho NSHX_427152_4
+NSHX_427152_4
+nsh> [K
+nsh> [Kmpu9250 status
+INFO  [SPI_I2C] Not running
+nsh> [K
+nsh> [Kecho NSHX_427152_5
+NSHX_427152_5
+nsh> [K
+nsh> [Kmpu9250_i2c status
+INFO  [SPI_I2C] Not running
+nsh> [K
+nsh> [Kecho NSHX_427152_6
+NSHX_427152_6
+nsh> [K
+nsh> [Kbmp280 status
+INFO  [SPI_I2C] Not running
+nsh> [K
+nsh> [Kecho NSHX_427152_7
+NSHX_427152_7
+nsh> [K
+nsh> [Krc_input status
+INFO  [rc_input] Max update rate: 250 Hz
+INFO  [rc_input] UART device: /dev/ttyS6
+INFO  [rc_input] UART RX bytes: 0
+INFO  [rc_input] RC state: searching for signal: SBUS
+rc_input: cycle time: 1711023 events, 16809618us elapsed, 9.82us avg, min 4us max 30370us 40.224us rms
+rc_input: publish interval: 0 events, 0.00us avg, min 0us max 0us 0.000us rms
+nsh> [K
+nsh> [Kecho NSHX_427152_8
+NSHX_427152_8
+nsh> [K
+nsh> [Kgps status
+INFO  [gps] Main GPS
+INFO  [gps] protocol: UBX
+INFO  [gps] status: NOT OK, port: /dev/ttyS9, baudrate: 115200
+INFO  [gps] sat info: disabled
+INFO  [gps] rate reading: 		     0 B/s
+nsh> [K
+nsh> [Kecho NSHX_427152_9
+NSHX_427152_9
+nsh> [K
+nsh> [Ktfmini status
+state @ 0x40973c20
+Using port '/dev/ttyS4'
+tfmini: read: 978677 events, 5028571us elapsed, 5.14us avg, min 2us max 21507us 23.422us rms
+tfmini: com_err: 0 events
+nsh> [K
+nsh> [Kecho NSHX_427152_10
+NSHX_427152_10
+nsh> [K
+nsh> [Kuorb top -1
+[2J
+SCI9 clocks enabled
+[Kupdate: 1s, topics: 77, total publications: 152, 12.6 kB/s
+[KTOPIC NAME                          INST #SUB RATE #Q SIZE
+[Kactuator_armed                         0    5    2  1   16
+[Kcontrol_allocator_status               0    2   19  1   56
+[Kcpuload                                0    3    2  1   16
+[Kfailure_detector_status                0    1    2  1   24
+[Knavigator_status                       0    1    2  1   16
+[Kposition_setpoint_triplet              0    1    2  1  248
+[Krtl_time_estimate                      0    2    1  1   24
+[Ksensors_status_imu                     0    1   93  1   96
+[Ktelemetry_status                       0    1    2  1   88
+[Kvehicle_control_mode                   0   11    2  1   24
+[Kvehicle_land_detected                  0    6    1  1   24
+[Kvehicle_status                         0   23    2  1   80
+nsh> [K
+nsh> [Kecho NSHX_427152_11
+NSHX_427152_11
+nsh> [K
+nsh> [KSCI9 clocks disabled
+listener actuator_armed -n 1
+
+TOPIC: actuator_armed
+ actuator_armed
+    timestamp: 6872557895 (0.177861 seconds ago)
+    armed: False
+    prearmed: False
+    ready_to_arm: False
+    lockdown: False
+    manual_lockdown: False
+    force_failsafe: False
+    in_esc_calibration_mode: False
+
+nsh> [K
+nsh> [Kecho NSHX_427152_12
+NSHX_427152_12
+nsh> [K
+nsh> [Klistener sensor_accel -n 1
+never published
+nsh> [K
+nsh> [Kecho NSHX_427152_13
+NSHX_427152_13
+nsh> [K
+nsh> [Klistener sensor_gyro -n 1
+never published
+nsh> [K
+nsh> [Kecho NSHX_427152_14
+NSHX_427152_14
+nsh> [K
+nsh> [Klistener sensor_baro -n 1
+never published
+nsh> [K
+nsh> [Kecho NSHX_427152_15
+NSHX_427152_15
+nsh> [K
+nsh> [K
+
+===== hrt-detached-result-recovery.log =====
+SHA256: 4ce3b17d3a0888bab9708d4ba374e4a1c9e67ba65c3d9af8c24b4f4a61a18baa
+
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+echo NSHX_439879_0
+NSHX_439879_0
+nsh> [K
+nsh> [Kcat /fs/hrt-261021.log
+INFO  [system_time] HRT test PASS: sleep=10164 us, callback latency=4 us
+HRT_261021_DONE
+nsh> [K
+nsh> [Kecho NSHX_439879_1
+NSHX_439879_1
+nsh> [K
+nsh> [Kserial_status /dSCI9 clocks disabled
+ev/ttyS4 /dev/ttyS5 /dev/ttyS6 /dev/ttyS9
+/dev/ttyS4: rx=0 tx=0 frame=0 overrun=0 parity=0 buf_overrun=0
+/dev/ttyS5: rx=0 tx=543184 frame=0 overrun=0 parity=0 buf_overrun=0
+/dev/ttyS6: rx=0 tx=0 frame=0 overrun=0 parity=0 buf_overrun=0
+/dev/ttyS9: rx=0 tx=233700 frame=0 overrun=0 parity=0 buf_overrun=0
+nsh> [K
+nsh> [Kecho NSHX_439879_2
+NSHX_439879_2
+nsh> [K
+nsh> [Kcommander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 621304 events, 46414002us elapsed, 74.70us avg, min 51us max 410644us 688.890us rms
+commander: preflight check: 62542 events, 8010820us elapsed, 128.09us avg, min 106us max 336934us 1396.026us rms
+nsh> [K
+nsh> [Kecho NSHX_439879_3
+NSHX_439879_3
+nsh> [K
+nsh> [Kls /fs
+/fs:
+ hrt-261021.log
+ hrt-261021.sh
+nsh> [K
+nsh> [Kecho NSHX_439879_4
+NSHX_439879_4
+nsh> [K
+nsh> [Krm /fs/hrt-261021.sh
+nsh> [K
+nsh> [Kecho NSHX_439879_5
+NSHX_439879_5
+nsh> [K
+nsh> [Krm /fs/hrt-261021.log
+nsh> [K
+nsh> [Kecho NSHX_439879_6
+NSHX_439879_6
+nsh> [K
+nsh> [K
+
+===== test-fixture-boot.log =====
+SHA256: e4deab77307a36aab7e6de59989e8892018b81b3b63f95024404073b8beab70d
+
+NUTTX
+Clock enabled: domain=0 bit=5
+Reset deasserted: domain=3 mask=0x40
+Clock enabled: domain=4 bit=10
+Reset deasserted: domain=7 mask=0x10
+Clock enabled: domain=5 bit=4
+Reset deasserted: domain=7 mask=0x1800
+SPI0 initialized
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: f14154dac18770a06e5c6a5e1f88167621146571
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 5cf2c27ac7ac77cf9df4b7f78f4981e7b4f3c72b
+Build datetime: Oct 21 2026 01:56:19
+Build uri: localhost
+Build variant: dshot
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/4014_s500
+INFO  [dataman] data manager RAM size is 68528 bytes
+Board sensors: /etc/init.d/rc.board_sensors
+ERROR [SPI_I2C] bmp280: no instance started (no device on bus?)
+ERROR [init] BMP280 failed on SCI7 I2C bus 7
+WARN  [SPI_I2C] mpu9250: no instance started (no device on bus?)
+ERROR [init] MPU9250 failed on SPI bus 0
+ekf2 [526:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+INFO  [arch_dshot] DShot TX initialized: 600000 Hz, channels 0xf
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+SCI4 clocks disabled
+SCI4 clocks enabled
+INFO  [mavlink] mode: Normal, data rate: 4000 B/s on /dev/ttyS5 @ 57600B
+ERROR [parameters] get: param 65535 invalid
+
+NuttShell (NSH)
+nsh> [KINFO  [arch_dshot] DShot TX frame complete: channels 0xf, 128 bytes each
+WARN  [health_and_arming_checks] Too many arming check events (1, 14 > 14). Not reporting all
+WARN  [health_and_arming_checks] Preflight Fail: Accel Sensor 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: barometer 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+WARN  [health_and_arming_checks] Preflight Fail: Gyro Sensor 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: Found 0 compass (required: 1)
+WARN  [health_and_arming_checks] Preflight Fail: system power unavailable
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+
+
+===== test-fixture-admission.log =====
+SHA256: 93099193ea3c117d5ba5f5ddcf0d3f544bd47cb1ae4360fc739404579d5d4dcf
+
+echo NSHX_451981_0
+NSHX_451981_0
+nsh> [K
+nsh> [Kver all
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: f14154dac18770a06e5c6a5e1f88167621146571
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 5cf2c27ac7ac77cf9df4b7f78f4981e7b4f3c72b
+Build datetime: Oct 21 2026 01:56:19
+Build uri: localhost
+Build variant: dshot
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+nsh> [K
+nsh> [Kecho NSHX_451981_1
+NSHX_451981_1
+nsh> [K
+nsh> [Kcommander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 2761 events, 206176us elapsed, 74.67us avg, min 50us max 994us 45.231us rms
+commander: preflight check: 287 events, 35897us elapsed, 125.08us avg, min 108us max 935us 53.192us rms
+nsh> [K
+nsh> [Kecho NSHX_451981_2
+NSHX_451981_2
+nsh> [K
+nsh> [Kdshot status
+INFO  [dshot] Outputs initialized: yes
+INFO  [dshot] Outputs used: 0xf
+INFO  [dshot] Outputs on: yes
+dshot: cycle: 818 events, 122719us elapsed, 150.02us avg, min 73us max 320us 32.086us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 1: func: 102, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 2: func: 103, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 3: func: 104, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+nsh> [K
+nsh> [Kecho NSHX_451981_3
+NSHX_451981_3
+nsh> [K
+nsh> [Kdshot stop
+nsh> [K
+nsh> [Kecho NSHX_451981_4
+NSHX_451981_4
+nsh> [K
+nsh> [Kpwm_out stop
+SCI9 clocks disabled
+nsh> [K
+nsh> [Kecho NSHX_451981_5
+NSHX_451981_5
+nsh> [K
+nsh> [Kdshot status
+INFO  [dshot] not running
+nsh> [K
+nsh> [Kecho NSHX_451981_6
+NSHX_451981_6
+nsh> [K
+nsh> [Kpwm_out status
+INFO  [pwm_out] not running
+nsh> [K
+nsh> [Kecho NSHX_451981_7
+NSHX_451981_7
+nsh> [K
+nsh> [Ktests help
+Available tests:
+  help
+  all
+  jig
+  file
+  led
+  mount
+  time
+  uart_baudchange
+  uart_break
+  uart_console
+  atomic_bitset
+  bitset
+  bson
+  dataman
+  file2
+  float
+  hott_telemetry
+  hrt
+  int
+  i2c_spi_cli
+  IntrusiveQueue
+  IntrusiveSortedList
+  List
+  mathlib
+  matrix
+  param
+  parameters
+  perf
+  ppm
+  rc
+  search_min
+  sleep
+  uart_loopback
+  uart_send
+  versioning
+INFO  [tests] help PASSED
+nsh> [K
+nsh> [Kecho NSHX_451981_8
+NSHX_451981_8
+nsh> [K
+nsh> [Kls /fs
+/fs:
+nsh> [K
+nsh> [Kecho NSHX_451981_9
+NSHX_451981_9
+nsh> [K
+nsh> [Kls /dev
+/dev:
+ console
+ console_buf
+ null
+ ram0
+ ttyS4
+ ttyS5
+ ttyS6
+ ttyS9
+nsh> [K
+nsh> [Kecho NSHX_451981_10
+NSHX_451981_10
+nsh> [K
+nsh> [Kparam save /fs/pre-tests-261021.bson
+nsh> [K
+nsh> [Kecho NSHX_451981_11
+NSHX_451981_11
+nsh> [K
+nsh> [K
+
+===== test-file.log =====
+SHA256: cdd57fb771204965b23b94a7107eaccacc8615360a75af69a8273ab09227a669
+
+tests file
+
+====== FILE TEST: 1 bytes chunks ======
+
+----- alignment test: 0 bytes -----
+testing unaligned writes - please wait..
+write took 17 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 1 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 2 bytes -----
+testing unaligned writes - please wait..
+write took 12 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 3 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 4 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 5 bytes -----
+testing unaligned writes - please wait..
+write took 12 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 6 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 7 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 8 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 9 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 10 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 11 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 12 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 13 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 14 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 15 bytes -----
+testing unaligned writes - please wait..
+write took 12 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 16 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 17 bytes -----
+testing unaligned writes - please wait..
+write took 12 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 18 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 19 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 20 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 21 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 22 bytes -----
+testing unaligned writes - please wait..
+write took 38165 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 23 bytes -----
+testing unaligned writes - please wait..
+write took 12 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 24 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 25 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 26 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 27 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 28 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 29 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 30 bytes -----
+testing unaligned writes - please wait..
+write took 11 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 31 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 32 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+====== FILE TEST: 5 bytes chunks ======
+
+----- alignment test: 0 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 1 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 2 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 3 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 4 bytes -----
+testing unaligned writes - please wait..
+write took 9 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 5 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 6 bytes -----
+testing unaligned writes - please wait..
+write took 10 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 7 bytes -----
+testing unaligned writes - please
+----- alignment test: 7 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 8 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 9 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 10 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 11 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 12 bytes -----
+testing unaligned writes - please wait..
+write took 17 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 13 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 14 bytes -----
+testing unaligned writes - please wait..
+write took 20 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 15 bytes -----
+testing unaligned writes - please wait..
+write took 15 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 16 bytes -----
+testing unaligned writes - please wait..
+write took 12 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 17 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 18 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 19 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 20 bytes -----
+testing unaligned writes - please wait..
+write took 15 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 21 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 22 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 23 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 24 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 25 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 26 bytes -----
+testing unaligned writes - please wait..
+write took 55 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 27 bytes -----
+testing unaligned writes - please wait..
+write took 15 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 28 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 29 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 30 bytes -----
+testing unaligned writes - please wait..
+write took 14 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 31 bytes -----
+testing unaligned writes - please wait..
+write took 15 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 32 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+====== FILE TEST: 555 bytes chunks ======
+
+----- alignment test: 0 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 1 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 2 bytes -----
+testing unaligned writes - please wait..
+write took 17 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 3 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 4 bytes -----
+testing unaligned writes - please wait..
+write took 16 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 5 bytes -----
+testing unaligned writes - please wait..
+write took 17 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 6 bytes -----
+testing unaligned writes - please wait..
+write took 19 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 7 bytes -----
+testing unaligned writes - please wait..
+write took 13 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 8 bytes -----
+testing unaligned writes - please wait..
+write took 18 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 9 bytes -----
+testing unaligned writes - please wait..
+write took 17 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 10 bytes -----
+testing unaligned writes - please wait..
+write took 17 us
+testing aligned writes - please wait.align read result: OK
+reading data unaligned..
+
+----- alignment test: 9 bytes -----
+testing unaligned writes - please wait..
+write took 26 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 10 bytes -----
+testing unaligned writes - please wait..
+write took 23 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 11 bytes -----
+testing unaligned writes - please wait..
+write took 27 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 12 bytes -----
+testing unaligned writes - please wait..
+write took 24 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 13 bytes -----
+testing unaligned writes - please wait..
+write took 22 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 14 bytes -----
+testing unaligned writes - please wait..
+write took 23 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 15 bytes -----
+testing unaligned writes - please wait..
+write took 22 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 16 bytes -----
+testing unaligned writes - please wait..
+write took 69 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 17 bytes -----
+testing unaligned writes - please wait..
+write took 23 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 18 bytes -----
+testing unaligned writes - please wait..
+write took 22 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 19 bytes -----
+testing unaligned writes - please wait..
+write took 25 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 20 bytes -----
+testing unaligned writes - please wait..
+write took 24 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 21 bytes -----
+testing unaligned writes - please wait..
+write took 22 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 22 bytes -----
+testing unaligned writes - please wait..
+write took 26 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 23 bytes -----
+testing unaligned writes - please wait..
+write took 24 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 24 bytes -----
+testing unaligned writes - please wait..
+write took 28 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 25 bytes -----
+testing unaligned writes - please wait..
+write took 24 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 26 bytes -----
+testing unaligned writes - please wait..
+write took 23 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 27 bytes -----
+testing unaligned writes - please wait..
+write took 24 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 28 bytes -----
+testing unaligned writes - please wait..
+write took 26 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 29 bytes -----
+testing unaligned writes - please wait..
+write took 28 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 30 bytes -----
+testing unaligned writes - please wait..
+write took 25 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 31 bytes -----
+testing unaligned writes - please wait..
+write took 24 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+
+----- alignment test: 32 bytes -----
+testing unaligned writes - please wait..
+write took 25 us
+testing aligned writes - please wait.. (CTRL^C to abort)
+reading data aligned..
+align read result: OK
+reading data unaligned..
+pre-tests-261021.bson
+directory listing ok (FS mounted and readable)
+INFO  [tests] file PASSED
+nsh> [K
+nsh> [K
+
+===== test-atomic_bitset.log =====
+SHA256: 2021fc13877351e1e151ddb205c7f30ba850b00808ecb6a3487efa20a9f4c14a
+
+tests atomic_bitset
+INFO  [tests] RUNNING TEST: constructTest
+INFO  [tests] TEST PASSED: constructTest
+
+INFO  [tests] RUNNING TEST: setAllTest
+INFO  [tests] TEST PASSED: setAllTest
+
+INFO  [tests] RUNNING TEST: setRandomTest
+INFO  [tests] TEST PASSED: setRandomTest
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      3
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 3322
+INFO  [tests] atomic_bitset PASSED
+nsh> [K
+nsh> [K
+
+===== test-bitset.log =====
+SHA256: 71b15e01f7c6d4bcfc30d0b9b4bbaefee0405ef56e0ee05b4a73d57b21fb8d49
+
+tests bitset
+INFO  [tests] RUNNING TEST: constructTest
+INFO  [tests] TEST PASSED: constructTest
+
+INFO  [tests] RUNNING TEST: setAllTest
+INFO  [tests] TEST PASSED: setAllTest
+
+INFO  [tests] RUNNING TEST: setRandomTest
+INFO  [tests] TEST PASSED: setRandomTest
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      3
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 3322
+INFO  [tests] bitset PASSED
+nsh> [K
+nsh> [K
+
+===== test-bson.log =====
+SHA256: 42dbba17a8bd780daa47e741c9fca0a77a05ba05cc0c7419ddfc27d218955e08
+
+tests bson
+INFO  [tests] PASS: decoder: bool1
+INFO  [tests] PASS: decoder: int1
+INFO  [tests] PASS: decoder: int2
+INFO  [tests] PASS: decoder: double1
+INFO  [tests] PASS: decoder: string1
+INFO  [tests] PASS: decoder: data1
+INFO  [tests] bson PASSED
+nsh> [K
+nsh> [K
+
+===== test-dataman.log =====
+SHA256: 5e36d53c78eb1d86cbafbc61ad32455a698ba849d3b7822f94d9c1b159b8c74b
+
+tests dataman
+INFO  [tests] RUNNING TEST: testSyncReadInvalidItem
+ERROR [dataman_client] readSync failed! status=3, item=10, index=0, length=2
+INFO  [tests] TEST PASSED: testSyncReadInvalidItem
+
+INFO  [tests] RUNNING TEST: testSyncWriteInvalidItem
+ERROR [dataman_client] writeSync failed! status=4, item=10, index=0, length=2
+INFO  [tests] TEST PASSED: testSyncWriteInvalidItem
+
+INFO  [tests] RUNNING TEST: testSyncReadInvalidIndex
+ERROR [dataman_client] readSync failed! status=3, item=0, index=32, length=2
+INFO  [tests] TEST PASSED: testSyncReadInvalidIndex
+
+INFO  [tests] RUNNING TEST: testSyncWriteInvalidIndex
+ERROR [dataman_client] writeSync failed! status=4, item=0, index=32, length=2
+INFO  [tests] TEST PASSED: testSyncWriteInvalidIndex
+
+INFO  [tests] RUNNING TEST: testSyncReadBufferOverflow
+ERROR [dataman_client] Length  57 can't fit in data size for item  6
+INFO  [tests] TEST PASSED: testSyncReadBufferOverflow
+
+INFO  [tests] RUNNING TEST: testSyncWriteBufferOverflow
+ERROR [dataman_client] Length  57 can't fit in data size for item  6
+INFO  [tests] TEST PASSED: testSyncWriteBufferOverflow
+
+INFO  [tests] RUNNING TEST: testSyncMutipleClients
+INFO  [tests] TEST PASSED: testSyncMutipleClients
+
+INFO  [tests] RUNNING TEST: testSyncWriteReadAllItemsMaxSize
+INFO  [tests] TEST PASSED: testSyncWriteReadAllItemsMaxSize
+
+INFO  [tests] RUNNING TEST: testSyncClearAll
+INFO  [tests] TEST PASSED: testSyncClearAll
+
+INFO  [tests] RUNNING TEST: testAsyncReadInvalidItem
+ERROR [dataman_client] Async request type 2 failed! status=3 item=10 index=0
+INFO  [tests] TEST PASSED: testAsyncReadInvalidItem
+
+INFO  [tests] RUNNING TEST: testAsyncWriteInvalidItem
+ERROR [dataman_client] Async request type 1 failed! status=4 item=10 index=0
+INFO  [tests] TEST PASSED: testAsyncWriteInvalidItem
+
+INFO  [tests] RUNNING TEST: testAsyncReadInvalidIndex
+ERROR [dataman_client] Async request type 2 failed! status=3 item=0 index=32
+INFO  [tests] TEST PASSED: testAsyncReadInvalidIndex
+
+INFO  [tests] RUNNING TEST: testAsyncWriteInvalidIndex
+ERROR [dataman_client] Async request type 1 failed! status=4 item=0 index=32
+INFO  [tests] TEST PASSED: testAsyncWriteInvalidIndex
+
+INFO  [tests] RUNNING TEST: testAsyncReadBufferOverflow
+ERROR [dataman_client] Length  57 can't fit in data size for item  0
+INFO  [tests] TEST PASSED: testAsyncReadBufferOverflow
+
+INFO  [tests] RUNNING TEST: testAsyncWriteBufferOverflow
+ERROR [dataman_client] Length  57 can't fit in data size for item  0
+INFO  [tests] TEST PASSED: testAsyncWriteBufferOverflow
+
+INFO  [tests] RUNNING TEST: testAsyncMutipleClients
+INFO  [tests] Thread 2 finished!
+INFO  [tests] Thread 1 finished!
+INFO  [tests] Thread 0 finished!
+SCI9 clocks enabled
+INFO  [tests] TEST PASSED: testAsyncMutipleClients
+
+INFO  [tests] RUNNING TEST: testAsyncWriteReadAllItemsMaxSize
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+INFO  [tests] TEST PASSED: testAsyncWriteReadAllItemsMaxSize
+
+INFO  [tests] RUNNING TEST: testAsyncClearAll
+INFO  [tests] TEST PASSED: testAsyncClearAll
+
+INFO  [tests] RUNNING TEST: testCache
+INFO  [tests] TEST PASSED: testCache
+
+INFO  [tests] RUNNING TEST: testResetItems
+INFO  [tests] TEST PASSED: testResetItems
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      20
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 0
+INFO  [tests] dataman PASSED
+nsh> [K
+nsh> [K
+
+===== test-file2.log =====
+SHA256: e36456e017fe2d6d70939b9244ed1a43dc81264cf4d90044bbe6090ce545e9ee
+
+tests file2
+Testing on /fs/testfile2.dat with write_chunk=64 write_size=5120
+write ofs=64write ofs=5120
+read ofs=0read ofs=5120
+All OK
+INFO  [tests] file2 PASSED
+nsh> [K
+nsh> [K
+
+===== test-float.log =====
+SHA256: 40b7fa2cf321bacfb27c310d863b22bd8a0995e92f04a5d2ae78741c9d1b8a6f
+
+tests float
+INFO  [tests] RUNNING TEST: singlePrecisionTests
+INFO  [tests] TEST PASSED: singlePrecisionTests
+
+INFO  [tests] RUNNING TEST: doublePrecisionTests
+INFO  [tests] TEST PASSED: doublePrecisionTests
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      2
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 50
+INFO  [tests] float PASSED
+nsh> [K
+nsh> [K
+
+===== test-hrt.log =====
+SHA256: 14d0fbffcd3558f4056b8ee2e8d53b15ca873995db3d4884e8a3ce3fc772de17
+
+tests hrt
+start-time (hrt, sec/usec), end-time (hrt, sec/usec), microseconds per 1/10 second
+83261443 (61/867000), 83452616 (61/968000), 191176
+83452674 (61/968000), 83629990 (62/69000), 177319
+83630049 (62/69000), 83809146 (62/170000), 179100
+83809202 (62/170000), 83986590 (62/271000), 177391
+SCI9 clocks enabled
+83986643 (62/271000), 84165801 (62/372000), 179161
+84165859 (62/372000), 84267794 (62/473000), 101937
+84267851 (62/473000), 84451709 (62/574000), 183861
+84451766 (62/574000), 84629089 (62/675000), 177326
+84629148 (62/675000), 84806498 (62/776000), 177353
+84806555 (62/776000), 84983923 (62/877000), 177371
+one-second ticks
+SCI9 clocks disabled
+SCI9 clocks enabled
+tick
+tick
+tick
+INFO  [tests] hrt PASSED
+nsh> [K
+nsh> [K
+
+===== test-int.log =====
+SHA256: 44db01af80aed6b4cc08ba074abf466735f2e5213892c4aec3505cb87b7554f9
+
+tests int
+INFO  [tests] RUNNING TEST: math64bitTests
+INFO  [tests] TEST PASSED: math64bitTests
+
+INFO  [tests] RUNNING TEST: math3264MixedMathTests
+INFO  [tests] TEST PASSED: math3264MixedMathTests
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      2
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 2
+INFO  [tests] int PASSED
+nsh> [K
+nsh> [KSCI9 clocks disabled
+
+
+===== test-i2c_spi_cli.log =====
+SHA256: 9a7b177cd26ba421b2ca78dfbeb5124d73e3db56685fd16a9a95a227910d2ea0
+
+tests i2c_spi_cli
+INFO  [tests] RUNNING TEST: test_basic
+INFO  [tests] TEST PASSED: test_basic
+
+INFO  [tests] RUNNING TEST: test_invalid
+ERROR [SPI_I2C] Bug: driver tests does not set default_i2c_frequency
+ERROR [SPI_I2C] Bug: driver tests does not set default_spi_frequency
+INFO  [tests] TEST PASSED: test_invalid
+
+INFO  [tests] RUNNING TEST: test_custom
+ERROR [SPI_I2C] conflicting option: I
+INFO  [tests] TEST PASSED: test_custom
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      3
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 25
+INFO  [tests] i2c_spi_cli PASSED
+nsh> [K
+nsh> [K
+
+===== test-IntrusiveQueue.log =====
+SHA256: 22f5e32f2ac9d8888eef1c459c5b091bf3a481c1248f021f8aed7e75c7e53879
+
+tests IntrusiveQueue
+INFO  [tests] RUNNING TEST: test_push
+INFO  [tests] TEST PASSED: test_push
+
+INFO  [tests] RUNNING TEST: test_pop
+INFO  [tests] TEST PASSED: test_pop
+
+INFO  [tests] RUNNING TEST: test_push_duplicate
+INFO  [tests] TEST PASSED: test_push_duplicate
+
+INFO  [tests] RUNNING TEST: test_remove
+INFO  [tests] TEST PASSED: test_remove
+
+INFO  [tests] RUNNING TEST: test_reinsert
+INFO  [tests] TEST PASSED: test_reinsert
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      5
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 17789
+INFO  [tests] IntrusiveQueue PASSED
+nsh> [K
+nsh> [K
+
+===== test-IntrusiveSortedList.log =====
+SHA256: e77e0f74b672628eef204c52c6cfce9b961f124ee0bec0c55eb101c600301b6c
+
+tests IntrusiveSortedList
+INFO  [tests] RUNNING TEST: test_add
+INFO  [tests] TEST PASSED: test_add
+
+INFO  [tests] RUNNING TEST: test_remove
+INFO  [tests] TEST PASSED: test_remove
+
+INFO  [tests] RUNNING TEST: test_range_based_for
+INFO  [tests] TEST PASSED: test_range_based_for
+
+INFO  [tests] RUNNING TEST: test_reinsert
+INFO  [tests] TEST PASSED: test_reinsert
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      4
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 16575
+INFO  [tests] IntrusiveSortedList PASSED
+nsh> [K
+nsh> [K
+
+===== test-List.log =====
+SHA256: 263c1216b6c2fc0f10390f92f79af080eaa0fdb67e2cf4b3449a63751384eb96
+
+tests List
+INFO  [tests] RUNNING TEST: test_add
+INFO  [tests] TEST PASSED: test_add
+
+INFO  [tests] RUNNING TEST: test_remove
+INFO  [tests] TEST PASSED: test_remove
+
+INFO  [tests] RUNNING TEST: test_range_based_for
+INFO  [tests] TEST PASSED: test_range_based_for
+
+INFO  [tests] RUNNING TEST: test_reinsert
+INFO  [tests] TEST PASSED: test_reinsert
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      4
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 16677
+INFO  [tests] List PASSED
+nsh> [K
+nsh> [KSCI9 clocks enabled
+
+
+===== test-mathlib.log =====
+SHA256: 5039a8ce8aff58c478a78cc90637a0c8e9c8b926b4832582c8f1453ad3ef415a
+
+tests mathlib
+INFO  [tests] RUNNING TEST: testVector2
+INFO  [tests] Constructor matrix::Vector2f(): 0.000033us
+INFO  [tests] Constructor matrix::Vector2f(matrix::Vector2f): 0.035433us
+INFO  [tests] Constructor matrix::Vector2f(float[]): 0.000033us
+INFO  [tests] Constructor matrix::Vector2f(float, float): 0.000033us
+INFO  [tests] matrix::Vector2f = matrix::Vector2f: 0.000000us
+INFO  [tests] matrix::Vector2f + matrix::Vector2f: 0.000033us
+INFO  [tests] matrix::Vector2f - matrix::Vector2f: 0.000033us
+INFO  [tests] matrix::Vector2f += matrix::Vector2f: 0.000033us
+INFO  [tests] matrix::Vector2f -= matrix::Vector2f: 0.000033us
+INFO  [tests] matrix::Vector2f * matrix::Vector2f: 0.000000us
+INFO  [tests] matrix::Vector2f % matrix::Vector2f: 0.000033us
+INFO  [tests] TEST PASSED: testVector2
+
+INFO  [tests] RUNNING TEST: testVector3
+INFO  [tests] Constructor matrix::Vector3f(): 0.000033us
+INFO  [tests] Constructor matrix::Vector3f(matrix::Vector3f): 2.979800us
+INFO  [tests] Constructor matrix::Vector3f(float[]): 0.000033us
+INFO  [tests] Constructor matrix::Vector3f(float, float, float): 0.000033us
+INFO  [tests] matrix::Vector3f = matrix::Vector3f: 0.000033us
+INFO  [tests] matrix::Vector3f + matrix::Vector3f: 0.000033us
+INFO  [tests] matrix::Vector3f - matrix::Vector3f: 0.000000us
+INFO  [tests] matrix::Vector3f += matrix::Vector3f: 0.000000us
+INFO  [tests] matrix::Vector3f -= matrix::Vector3f: 0.000033us
+INFO  [tests] matrix::Vector3f * float: 0.000033us
+INFO  [tests] matrix::Vector3f / float: 0.000000us
+INFO  [tests] matrix::Vector3f *= float: 2.273233us
+INFO  [tests] matrix::Vector3f /= float: 0.008600us
+INFO  [tests] matrix::Vector3f * matrix::Vector3f: 0.000033us
+INFO  [tests] matrix::Vector3f % matrix::Vector3f: 0.000033us
+INFO  [tests] matrix::Vector3f length: 0.000033us
+INFO  [tests] matrix::Vector3f element read: 0.002566us
+INFO  [tests] matrix::Vector3f element write: 0.000033us
+INFO  [tests] TEST PASSED: testVector3
+
+INFO  [tests] RUNNING TEST: testMatrix3x3
+INFO  [tests] matrix::Matrix3f * matrix::Vector3f: 0.000033us
+INFO  [tests] matrix::Matrix3f + matrix::Matrix3f: 0.000033us
+INFO  [tests] matrix::Matrix3f * matrix::Matrix3f: 0.000033us
+INFO  [tests] TEST PASSED: testMatrix3x3
+
+INFO  [tests] RUNNING TEST: testMatrixNonsymmetric
+INFO  [tests] TEST PASSED: testMatrixNonsymmetric
+
+INFO  [tests] RUNNING TEST: testRotationMatrixQuaternion
+INFO  [tests] TEST PASSED: testRotationMatrixQuaternion
+
+INFO  [tests] RUNNING TEST: testQuaternionfrom_dcm
+INFO  [tests] TEST PASSED: testQuaternionfrom_dcm
+
+INFO  [tests] RUNNING TEST: testQuaternionfrom_euler
+INFO  [tests] TEST PASSED: testQuaternionfrom_euler
+
+INFO  [tests] RUNNING TEST: testQuaternionRotate
+INFO  [tests] TEST PASSED: testQuaternionRotate
+
+INFO  [tests] RUNNING TEST: testFinite
+INFO  [tests] TEST PASSED: testFinite
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      9
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 256651
+INFO  [tests] mathlib PASSED
+nsh> [K
+nsh> [K
+
+===== test-matrix.log =====
+SHA256: 8a37962350fee191fecbe18fbad1fb596c979d8611cfd74f692df93f11a30975
+
+tests matrix
+INFO  [tests] RUNNING TEST: attitudeTests
+INFO  [tests] TEST PASSED: attitudeTests
+
+INFO  [tests] RUNNING TEST: filterTests
+INFO  [tests] TEST PASSED: filterTests
+
+INFO  [tests] RUNNING TEST: helperTests
+INFO  [tests] TEST PASSED: helperTests
+
+INFO  [tests] RUNNING TEST: integrationTests
+INFO  [tests] TEST PASSED: integrationTests
+
+INFO  [tests] RUNNING TEST: inverseTests
+INFO  [tests] TEST PASSED: inverseTests
+
+INFO  [tests] RUNNING TEST: matrixAssignmentTests
+INFO  [tests] TEST PASSED: matrixAssignmentTests
+
+INFO  [tests] RUNNING TEST: matrixMultTests
+INFO  [tests] TEST PASSED: matrixMultTests
+
+INFO  [tests] RUNNING TEST: matrixScalarMultTests
+INFO  [tests] TEST PASSED: matrixScalarMultTests
+
+INFO  [tests] RUNNING TEST: setIdentityTests
+INFO  [tests] TEST PASSED: setIdentityTests
+
+INFO  [tests] RUNNING TEST: sliceTests
+INFO  [tests] TEST PASSED: sliceTests
+
+INFO  [tests] RUNNING TEST: squareMatrixTests
+INFO  [tests] TEST PASSED: squareMatrixTests
+
+INFO  [tests] RUNNING TEST: transposeTests
+INFO  [tests] TEST PASSED: transposeTests
+
+INFO  [tests] RUNNING TEST: vectorTests
+INFO  [tests] TEST PASSED: vectorTests
+
+INFO  [tests] RUNNING TEST: vector2Tests
+INFO  [tests] TEST PASSED: vector2Tests
+
+INFO  [tests] RUNNING TEST: vector3Tests
+INFO  [tests] TEST PASSED: vector3Tests
+
+INFO  [tests] RUNNING TEST: vectorAssignmentTests
+INFO  [tests] TEST PASSED: vectorAssignmentTests
+
+INFO  [tests] RUNNING TEST: dcmRenormTests
+error: 1.486540e-04
+renorm error: 0.000000e+00
+INFO  [tests] TEST PASSED: dcmRenormTests
+
+INFO  [tests] RUNNING TEST: pseudoInverseTests
+INFO  [tests] TEST PASSED: pseudoInverseTests
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      18
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 200
+INFO  [tests] matrix PASSED
+nsh> [K
+nsh> [KSCI9 clocks disabled
+
+
+===== test-param.log =====
+SHA256: 87fb1e5c0cecb2b328e9ac9233a6b3fcf604ced7a20bccbae53627f82d92a824
+
+tests param
+INFO  [tests] parameter test PASS
+INFO  [tests] param PASSED
+nsh> [K
+nsh> [K
+
+===== test-parameters.log =====
+SHA256: b466f4a7e710ec897b814a306822ed90059e171d624eff4868aaf779159173c6
+
+tests parameters
+INFO  [tests] RUNNING TEST: ResetAll
+INFO  [tests] TEST PASSED: ResetAll
+
+INFO  [tests] RUNNING TEST: SimpleFind
+INFO  [tests] TEST PASSED: SimpleFind
+
+INFO  [tests] RUNNING TEST: ResetAll
+INFO  [tests] TEST PASSED: ResetAll
+
+INFO  [tests] RUNNING TEST: ResetAllExcludesOne
+INFO  [tests] TEST PASSED: ResetAllExcludesOne
+
+INFO  [tests] RUNNING TEST: ResetAllExcludesTwo
+INFO  [tests] TEST PASSED: ResetAllExcludesTwo
+
+INFO  [tests] RUNNING TEST: ResetAllExcludesBoundaryCheck
+INFO  [tests] TEST PASSED: ResetAllExcludesBoundaryCheck
+
+INFO  [tests] RUNNING TEST: ResetAllExcludesWildcard
+INFO  [tests] TEST PASSED: ResetAllExcludesWildcard
+
+INFO  [tests] RUNNING TEST: CustomDefaults
+INFO  [tests] TEST PASSED: CustomDefaults
+
+INFO  [tests] RUNNING TEST: exportImport
+INFO  [parameters] BSON document size 76 bytes, decoded 76 bytes (INT32:4, FLOAT:1)
+INFO  [tests] TEST PASSED: exportImport
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      9
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 49
+INFO  [tests] parameters PASSED
+nsh> [K
+nsh> [K
+
+===== test-perf.log =====
+SHA256: 7167a2694b6cac64ce88d41af26c9bb5429d459bdf17b66efca72cbf9927299d
+
+tests perf
+perf: expect count of 4
+test_count: 4 events
+perf: expect count of 1
+test_elapsed: 1 events, 53us elapsed, 53.00us avg, min 53us max 53us   nanus rms
+INFO  [tests] perf PASSED
+nsh> [K
+nsh> [K
+
+===== test-search_min.log =====
+SHA256: 6640e3831fe3e88f7b82ce90fc7f6e7ee5aa40558c186d036d0d9d4a29847c3e
+
+tests search_min
+INFO  [tests] RUNNING TEST: _init_inputs
+INFO  [tests] TEST PASSED: _init_inputs
+
+INFO  [tests] RUNNING TEST: _init_inputs_flipped
+INFO  [tests] TEST PASSED: _init_inputs_flipped
+
+INFO  [tests] RUNNING TEST: _init_inputs_negative
+INFO  [tests] TEST PASSED: _init_inputs_negative
+
+INFO  [tests] RUNNING TEST: _init_tol_larger_than_range
+INFO  [tests] TEST PASSED: _init_tol_larger_than_range
+
+INFO  [tests] RUNNING TEST: _init_tol_larger_than_range_flipped
+INFO  [tests] TEST PASSED: _init_tol_larger_than_range_flipped
+
+INFO  [tests] RUNNING TEST: _no_extremum
+INFO  [tests] TEST PASSED: _no_extremum
+
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      6
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 11
+INFO  [tests] search_min PASSED
+nsh> [K
+nsh> [K
+
+===== test-sleep.log =====
+SHA256: ec5fb31fa4773577142283cdb556ab3376d043aefb9a56da42cc51b79a09a33c
+
+tests sleep
+	 20 100ms sleeps
+SCI9 clocks enabled
+SCI9 clocks disabled
+	 Sleep test successful.
+INFO  [tests] sleep PASSED
+nsh> [K
+nsh> [K
+
+===== test-versioning.log =====
+SHA256: 70f059ce9d3be70a1b51c06fca1c1bec5adb25892db12fa18220969c2e4b61a9
+
+tests versioning
+INFO  [tests] ALL TESTS PASSED
+INFO  [tests]   Tests passed :      0
+INFO  [tests]   Tests failed :      0
+INFO  [tests]   Tested assertions : 85
+INFO  [tests] versioning PASSED
+nsh> [K
+nsh> [K
+
+===== after-suite.log =====
+SHA256: b499cc6d491eeed0600e089bd36c8524652add332c9115ebee77eeba4ce47e44
+
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+echo NSHX_452735_0
+NSHX_452735_0
+nsh> [K
+nsh> [Kparam load /fs/pre-tests-261021.bson
+INFO  [parameters] BSON document size 5 bytes, decoded 5 bytes (INT32:0, FLOAT:0)
+nsh> [K
+nsh> [Kecho NSHX_452735_1
+NSHX_452735_1
+nsh> [K
+nsh> [Kparam show PWM_MAIN_TIM*
+Symbols: x = used, + = saved, * = unsaved
+x   PWM_MAIN_TIM0 [601,939] : -3
+x   PWM_MAIN_TIM1 [602,940] : -3
+x   PWM_MAIN_TIM2 [603,941] : -3
+x   PWM_MAIN_TIM3 [604,942] : -3
+
+ 808/1414 parameters used.
+nsh> [K
+nsh> [Kecho NSHX_452735_2
+NSHX_452735_2
+nsh> [K
+nsh> [Kparam show DSHOT_CONFIG
+Symbols: x = used, + = saved, * = unsaved
+
+ 808/1414 parameters used.
+nsh> [K
+nsh> [Kecho NSHX_452735_3
+NSHX_452735_3
+nsh> [K
+nsh> [Kcommander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 7727 events, 1282573us elapsed, 165.99us avg, min 50us max 72112us 2059.957us rms
+commander: preflight check: 1057 events, 311847us elapsed, 295.03us avg, min 104us max 55005us 2575.834us rms
+nsh> [K
+nsh> [Kecho NSHX_452735_4
+NSHX_452735_4
+nsh> [K
+nsh> [KdSCI9 clocks disabled
+shot status
+INFO  [dshot] not running
+nsh> [K
+nsh> [Kecho NSHX_452735_5
+NSHX_452735_5
+nsh> [K
+nsh> [Kpwm_out status
+INFO  [pwm_out] not running
+nsh> [K
+nsh> [Kecho NSHX_452735_6
+NSHX_452735_6
+nsh> [K
+nsh> [Kfree
+                   total       used       free    largest  nused  nfree
+        Umem:    6869072     214016    6655056    6653840    636     19
+nsh> [K
+nsh> [Kecho NSHX_452735_7
+NSHX_452735_7
+nsh> [K
+nsh> [Kls -l /fs
+/fs:
+ -rwxrwxrwx      76 params
+ -rwxrwxrwx       5 pre-tests-261021.bson
+nsh> [K
+nsh> [Kecho NSHX_452735_8
+NSHX_452735_8
+nsh> [K
+nsh> [Kps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK   USED  FILLED COMMAND
+    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 000692  34.1%  Idle Task
+    1     1 224 FIFO     Kthread --- Waiting  Semaphore 00000000 001744 000268  15.3%  hpwork 0x4092d174
+    2     2 100 FIFO     Kthread --- Waiting  Semaphore 00000000 001976 000268  13.5%  lpwork 0x4092d160
+    3     3 100 FIFO     Task    --- Running            00000000 002896 002144  74.0%  nsh_main
+    4     4 255 FIFO     Task    --- Waiting  Semaphore 00000000 001232 000388  31.4%  wq:manager
+    5     4 205 FIFO     pthread --- Waiting  Semaphore 00000000 003472 001240  35.7%  wq:lp_default 0x40965134
+  422   422  90 FIFO     Task    --- Waiting  Semaphore 00000000 001376 001000  72.6%  dataman
+  523     4 242 FIFO     pthread --- Waiting  Semaphore 00000000 002216 001448  65.3%  wq:nav_and_controllers 0x40948624
+  524     4 255 FIFO     pthread --- Waiting  Semaphore 00000000 003120 002168  69.4%  wq:rate_ctrl 0x40961bf8
+  527     4 241 FIFO     pthread --- Waiting  Semaphore 00000000 005976 001064  17.8%  wq:INS0 0x40945d48
+  848     4 228 FIFO     pthread --- Waiting  Semaphore 00000000 001704 001252  73.4%  wq:ttyS6 0x4096540c
+  853   853 105 FIFO     Task    --- Waiting  Semaphore 00000000 002144 001532  71.4%  navigator start
+  823   823 100 FIFO     Task    --- Ready              00000000 002704 002200  81.3%! mavlink_if0 mavlink start -d /dev/ttyS5 -b p:SER_TEL1_BAUD -m p:MAV_0_MODE -r p:MAV_0_RATE -f -s -x
+  568   568 140 FIFO     Task    --- Waiting  Signal    00000000 003192 001896  59.3%  commander start
+  633     4 230 FIFO     pthread --- Waiting  Semaphore 00000000 001704 000960  56.3%  wq:ttyS4 0x4096541c
+  826   823 175 FIFO     pthread --- Waiting  Semaphore 00000000 004688 001832  39.0%  mavlink_rcv_if0 0x4099fe98
+  541     4 237 FIFO     pthread --- Waiting  Semaphore 00000000 002776 001016  36.5%  wq:hp_default 0x4094858c
+  702   702 205 FIFO     Task    --- Waiting  Signal    00000000 001936 001368  70.6%  gps start -d /dev/ttyS9 -b p:SER_GPS1_BAUD
+nsh> [K
+nsh> [Kecho NSHX_452735_9
+NSHX_452735_9
+nsh> [K
+nsh> [K
+
+===== dshot-restart.log =====
+SHA256: fb831f673acc6a55ac3aa8fd6f08caddf8b22b853e56370dddf6deee0d4dc14d
+
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+SCI9 clocks disabled
+SCI9 clocks enabled
+echo NSHX_452918_0
+NSHX_452918_0
+nsh> [K
+nsh> [Kcommander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 9909 events, 1669227us elapsed, 168.46us avg, min 50us max 72112us 2101.163us rms
+commander: preflight check: 1355 events, 375288us elapsed, 276.97us avg, min 104us max 55005us 2317.039us rms
+nsh> [K
+nsh> [Kecho NSHX_452918_1
+NSHX_452918_1
+nsh> [K
+nsh> [Kdshot start
+INFO  [arch_dshot] DShot TX initialized: 600000 Hz, channels 0xf
+nsh> [K
+nsh> [Kecho NSHX_452918_2
+NSHX_452918_2
+nsh> [K
+nsh> [KINFO  [arch_dshot] DShot TX frame complete: channels 0xf, 128 bytes each
+sleep 1
+SCI9 clocks disabled
+nsh> [K
+nsh> [Kecho NSHX_452918_3
+NSHX_452918_3
+nsh> [K
+nsh> [Kdshot status
+INFO  [dshot] Outputs initialized: yes
+INFO  [dshot] Outputs used: 0xf
+INFO  [dshot] Outputs on: yes
+dshot: cycle: 43 events, 6628us elapsed, 154.14us avg, min 47us max 286us 37.326us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 1: func: 102, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 2: func: 103, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 3: func: 104, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+nsh> [K
+nsh> [Kecho NSHX_452918_4
+NSHX_452918_4
+nsh> [K
+nsh> [Kdshot stop
+nsh> [K
+nsh> [Kecho NSHX_452918_5
+NSHX_452918_5
+nsh> [K
+nsh> [KSCI9 clocks enabled
+pwm_out stop
+nsh> [K
+nsh> [Kecho NSHX_452918_6
+NSHX_452918_6
+nsh> [K
+nsh> [Kdshot status
+INFO  [dshot] not running
+nsh> [K
+nsh> [Kecho NSHX_452918_7
+NSHX_452918_7
+nsh> [K
+nsh> [Kpwm_out status
+INFO  [pwm_out] not running
+nsh> [K
+nsh> [Kecho NSHX_452918_8
+NSHX_452918_8
+nsh> [K
+nsh> [Klistener actuator_armed -n 1
+
+TOPIC: actuator_armed
+ actuator_armed
+    timestamp: 170999545 (0.803924 seconds ago)
+    armed: False
+    prearmed: False
+    ready_to_arm: False
+    lockdown: False
+    manual_lockdown: False
+    force_failsafe: False
+    in_esc_calibration_mode: False
+
+nsh> [K
+nsh> [Kecho NSHX_452918_9
+NSHX_452918_9
+nsh> [K
+nsh> [Krm /fs/pre-tests-261021.bson
+nsh> [K
+nsh> [Kecho NSHX_452918_10
+NSHX_452918_10
+nsh> [K
+nsh> [Krm /fs/params
+nsh> [K
+nsh> [Kecho NSHX_452918_11
+NSHX_452918_11
+nsh> [K
+nsh> [KSCI9 clocks disabled
+ls /fs
+/fs:
+nsh> [K
+nsh> [Kecho NSHX_452918_12
+NSHX_452918_12
+nsh> [K
+nsh> [K
+
+===== fixture-hrt-result.log =====
+SHA256: f9e150f614b2e39ed98edc70e6860ebfa5b6b16c0f3f1c40201bafc33afc06ed
+
+echo NSHX_453643_0
+NSHX_453643_0
+nsh> [K
+nsh> [Kcat /fs/hrt-261021.log
+INFO  [system_time] HRT test PASS: sleep=11041 us, callback latency=4 us
+HRT_261021_FIXTURE_DONE
+nsh> [K
+nsh> [Kecho NSHX_453643_1
+NSHX_453643_1
+nsh> [K
+nsh> [Krm /fs/hrt-261021.sh
+nsh> [K
+nsh> [Kecho NSHX_453643_2
+NSHX_453643_2
+nsh> [K
+nsh> [Krm /fs/hrt-261021.log
+nsh> [K
+nsh> [Kecho NSHX_453643_3
+NSHX_453643_3
+nsh> [K
+nsh> [Kcommander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 13629 events, 2162249us elapsed, 158.65us avg, min 50us max 74863us 2017.651us rms
+commander: preflight check: 1802 events, 594476us elapsed, 329.90us avg, min 104us max 74797us 3190.687us rms
+nsh> [K
+nsh> [Kecho NSHX_453643_4
+NSHX_453643_4
+nsh> [K
+nsh> [Kdshot status
+INFO  [dshot] not running
+nsh> [K
+nsh> [Kecho NSHX_453643_5
+NSHX_453643_5
+nsh> [K
+nsh> [Kpwm_out status
+INFO  [pwm_out] not running
+nsh> [K
+nsh> [Kecho NSHX_453643_6
+NSHX_453643_6
+nsh> [K
+nsh> [KlSCI9 clocks disabled
+s /fs
+/fs:
+nsh> [K
+nsh> [Kecho NSHX_453643_7
+NSHX_453643_7
+nsh> [K
+nsh> [Kfree
+                   total       used       free    largest  nused  nfree
+        Umem:    6869072     213104    6655968    6648752    633     20
+nsh> [K
+nsh> [Kecho NSHX_453643_8
+NSHX_453643_8
+nsh> [K
+nsh> [K
+
+===== final-state.log =====
+SHA256: 5a3839d2bcc8820db110d6971bbcd90f979a2e02e01dbdbabb25a78234e1a8ba
+
+0x40802430 in memcpy (dest=0x4099fb70, src=<optimized out>, n=<optimized out>) at string/lib_memcpy.c:44
+44	  while (n-- > 0) *pout++ = *pin++;
+ONESHOT_ATTACHED pc=0x40802430
+#0  0x40802430 in memcpy (dest=0x4099fb70, src=<optimized out>, n=<optimized out>) at string/lib_memcpy.c:44
+#1  0x4092250c in uORB::DeviceNode::copy (generation=@0x409a1928: 486, dst=<optimized out>, this=0x4099e900) at /home/tringuyen/PX4-Autopilot/platforms/common/uORB/uORBDeviceNode.hpp:230
+#2  uORB::Manager::orb_data_copy (node_handle=0x4099e900, dst=<optimized out>, generation=@0x409a1928: 486, only_if_updated=<optimized out>) at /home/tringuyen/PX4-Autopilot/platforms/common/uORB/uORBManager.cpp:458
+#3  0x40874ec8 in MavlinkStreamPositionTargetGlobalInt::send (this=0x409a18f0) at /home/tringuyen/PX4-Autopilot/src/modules/mavlink/streams/POSITION_TARGET_GLOBAL_INT.hpp:73
+#4  0x408820e0 in MavlinkStream::update (this=this@entry=0x409a18f0, t=@0x4099fcc8: 255403534) at /home/tringuyen/PX4-Autopilot/build/renesas_rdk-rzv2h_dshot/src/modules/mavlink/modules__mavlink_unity.cpp:12947
+#5  0x408862f8 in Mavlink::task_main (this=this@entry=0x4099fe80, argc=12, argc@entry=14, argv=0x4099f340, argv@entry=0x4099f338) at /home/tringuyen/PX4-Autopilot/build/renesas_rdk-rzv2h_dshot/src/modules/mavlink/modules__mavlink_unity.cpp:4680
+#6  0x408864d8 in Mavlink::start_helper (argc=argc@entry=14, argv=argv@entry=0x4099f338) at /home/tringuyen/PX4-Autopilot/build/renesas_rdk-rzv2h_dshot/src/modules/mavlink/modules__mavlink_unity.cpp:5147
+#7  0x4080ebfc in nxtask_startup (entrypt=0x408864a8 <Mavlink::start_helper(int, char**)>, entrypt@entry=0xe <matrix::Quaternion<float>::Quaternion(matrix::Euler<float> const&)+14>, argc=14, argv=0x4099f338) at sched/task_startup.c:70
+#8  0x408038e4 in nxtask_start () at task/task_start.c:134
+#9  0x00000000 in ?? ()
+$1 = false
+$2 = true
+$3 = false
+$4 = false
+$5 = false
+$6 = false
+DMAC3 remaining and channel status
+0x12000420:	0x00000000	0x00000000
+0x12000460:	0x00000000	0x00000000
+0x120004a0:	0x00000000	0x00000000
+0x120004e0:	0x00000000	0x00000000
+DMAC3 group1 enable/error/terminal state
+0x12000710:	0x00000000	0x00000000	0x00000000	0x00000000
+0x12000720:	0x00000000
+GPT control/output gate pairs
+0x1301062c:	0x00000000
+0x13010634:	0x00000007
+0x1301072c:	0x00000000
+0x13010734:	0x00070000
+0x1302012c:	0x00000000
+0x13020134:	0x00000007
+0x1302022c:	0x00000000
+0x13020234:	0x00070000
+[Inferior 1 (Remote target) detached]
+
+
+===== cleanup-preflight.log =====
+SHA256: 58c1cde41dbabbb0f6f21c0824186325275f938602aa52ade2734f5b5051ef8b
+
+== tools
+  JLinkExe               /opt/SEGGER/JLink/JLinkExe
+  JLinkGDBServerCLExe    /opt/SEGGER/JLink/JLinkGDBServerCLExe
+  gdb-multiarch          /usr/bin/gdb-multiarch
+  arm-none-eabi-nm       /opt/arm-gnu-toolchain-13.2.Rel1/bin/arm-none-eabi-nm
+== USB
+  J-Link    usb 1-2    J-Link       JLINK_SERIAL=<probe-sn>
+  FTDI 6001 usb 1-1    FT232R USB UART    tty=/dev/ttyUSB0  (RZ/V2H SCI4 NSH console in nsh/nsh-scif images)
+== probe owners (stop these before taking the probe; kill by PID)
+  none
+== ports
+  19021 free      RTT telnet (JLinkExe bridge or GDB server)
+  50000 free      GDB (rzv2h loaders, one-shot)
+   2331 free      GDB (J-Link default, upload_jlink_gdb.sh)
+   2341 free      GDB (ad-hoc)
+== ELFs (entry / _SEGGER_RTT / core / age)
+  0x40800000 rtt=0x081a2400  cr8_0     0.1h  build/px4-hardware-tests-261021-0151/test-fixture/renesas_rdk-rzv2h_dshot.elf
+  0x020e669d rtt=none        ?      1997.2h  build/renesas_evk-ra8p1-io-cm33_default/renesas_evk-ra8p1-io-cm33_default.elf
+  0x02000000 rtt=0x2200d8ec  ?      1997.1h  build/renesas_evk-ra8p1_default/renesas_evk-ra8p1_default.elf
+  0x02000000 rtt=0x2200d8f4  ?      1997.1h  build/renesas_evk-ra8p1_dshot/renesas_evk-ra8p1_dshot.elf
+  0x02000000 rtt=0x2200d8ec  ?      1997.0h  build/renesas_evk-ra8p1_test/renesas_evk-ra8p1_test.elf
+  0x08002fc1 rtt=0x08020880  cm33    158.1h  build/renesas_rdk-rzv2h-io-cm33_default/renesas_rdk-rzv2h-io-cm33_default.elf
+  0x41800000 rtt=none        cr8_1   158.2h  build/renesas_rdk-rzv2h-io-cr8_1_default/renesas_rdk-rzv2h-io-cr8_1_default.elf
+  0x40800000 rtt=0x081a2400  cr8_0  1898.0h  build/renesas_rdk-rzv2h_core_only/renesas_rdk-rzv2h_core_only.elf
+  0x40800000 rtt=0x081a2400  cr8_0     2.0h  build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf
+  0x40800000 rtt=0x081a2400  cr8_0   172.0h  build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.elf
+  0x40800000 rtt=0x081a2400  cr8_0     0.1h  build/renesas_rdk-rzv2h_dshot/renesas_rdk-rzv2h_dshot.elf
+  0x40800000 rtt=0x081a2400  cr8_0   171.9h  build/renesas_rdk-rzv2h_dualcr8/renesas_rdk-rzv2h_dualcr8.elf
+  0x40800000 rtt=0x081a2400  cr8_0   175.3h  build/renesas_rdk-rzv2h_sih/renesas_rdk-rzv2h_sih.elf
+  0x40800000 rtt=0x081a2400  cr8_0   175.1h  build/renesas_rdk-rzv2h_simple/renesas_rdk-rzv2h_simple.elf
+  0x40800000 rtt=none        cr8_0  1193.3h  platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf
+  0x40800000 rtt=0x081a0000  cr8_0  1192.1h  platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0.elf
+  0x41800000 rtt=0x081e0000  cr8_1  1193.3h  platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf
+Core is guessed from the link address; the loaded image is what the board runs, not necessarily the newest ELF.

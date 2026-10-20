@@ -47,6 +47,7 @@ scope and provenance when citing these historical records:
 | [SIH transcript](evidence/px4-nuttx-rzv2h-sih-transcript.txt) | Simulation/HRT evidence, no physical sensor or PWM proof |
 | [Three-core IPC artifacts](evidence/rzv2h-three-core-ipc-artifacts.md) | Historical hashes/address checks, not runtime qualification |
 | [PX4 software checkpoints](evidence/px4-hal-software-checkpoints.md) | Historical builds, reset-symbol checks and SIH/DShot provenance |
+| [PX4 CR8-0 hardware tests](evidence/px4-hardware-tests-cr8-0-261021.md) | 21/32 native entries passed; 11 blocked, with bounded DShot/HRT observations and physical qualification limits |
 
 ## Validation procedures
 
