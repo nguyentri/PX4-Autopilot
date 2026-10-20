@@ -100,6 +100,7 @@ typedef struct {
 
 static dshot_channel_t g_channels[DSHOT_MAX_CHANNELS];
 static uint32_t g_active_channels;
+static bool g_frame_complete_logged;
 static uint32_t g_allocated_channels;
 static uint32_t g_gpt_channels;
 static uint32_t g_dma_channels;
@@ -591,6 +592,7 @@ int up_dshot_init(uint32_t channel_mask, unsigned int dshot_pwm_freq,
 	g_armed = false;
 	PX4_INFO("DShot TX initialized: %u Hz, channels 0x%lx",
 		 dshot_pwm_freq, (unsigned long)channel_mask);
+	g_frame_complete_logged = false;
 	return (int)channel_mask;
 
 fail:
@@ -704,12 +706,20 @@ void up_dshot_trigger(void)
 	}
 
 	if (ret < 0) {
+		g_armed = false;
 		PX4_ERR("DShot frame completion failed: %d", ret);
+
+	} else if (!g_frame_complete_logged) {
+		g_frame_complete_logged = true;
+		PX4_INFO("DShot TX frame complete: channels 0x%lx, %u bytes each",
+			 (unsigned long)g_active_channels,
+			 (unsigned)sizeof(g_channels[0].dma_buffer));
 	}
 
 	return;
 
 fail:
+	g_armed = false;
 	PX4_ERR("DShot frame arm failed: %d", ret);
 	stop_ret = dshot_quiesce();
 

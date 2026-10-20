@@ -159,6 +159,14 @@ int main(int argc, char **argv)
       if ((int)i != fail_disable)
         CHECK(!model_dma[i].enabled, "fault cleanup left DMA enabled");
     }
+    unsigned fault_errors=errors;
+    unsigned fault_starts[4];
+    for (unsigned i=0;i<4;i++) fault_starts[i]=model_dma[i].starts;
+    send_frame();
+    CHECK(errors == fault_errors, "failed frame kept retrying and flooding logs");
+    for (unsigned i=0;i<4;i++)
+      CHECK(model_dma[i].starts == fault_starts[i],
+            "failed frame rearmed without explicit recovery");
     suppress_dma=false;
     error_dma=fail_start=fail_disable=-1;
     CHECK(up_dshot_arm(false) == 0, "fault recovery disarm failed");

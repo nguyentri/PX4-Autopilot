@@ -149,6 +149,22 @@ class CompiledSensorSelection(unittest.TestCase):
 
 
 class ProfileStartup(unittest.TestCase):
+    def test_shared_dshot_profile_selects_distinct_rcpu_dma_channels(self):
+        config = (BOARD.parent / "nuttx-config/nsh/defconfig").read_text()
+        values = dict(re.findall(r"(?m)^CONFIG_RZV_DMAC_(\w+)_CHANNEL=(-?\d+)$",
+                                 config))
+        channels = []
+        for gpt in (6, 7, 9, 10):
+            key = f"GPT{gpt}"
+            self.assertIn(key, values, "DShot must not inherit the generic DMA unit")
+            channel = int(values[key])
+            self.assertIn(channel // 16, (3, 4), "RDK GPT requires its RCPU DMA path")
+            channels.append(channel)
+        self.assertEqual(len(set(channels)), 4, "DShot DMA channels must be unique")
+        for key in ("SPI0_TX", "SPI0_RX"):
+            if key in values and int(values[key]) >= 0:
+                self.assertNotIn(int(values[key]), channels, "SPI/DShot DMA overlap")
+
     def init_directory(self, subdir):
         source = (ROOT / "ROMFS/CMakeLists.txt").read_text()
         source = source.split("# board custom init files", 1)[1].split("set(OPTIONAL_BOARD_RC)", 1)[0]
@@ -207,11 +223,9 @@ ina228() { echo "CALL ina228 $*"; return 0; }
             if line.strip() and not line.lstrip().startswith("#"):
                 self.assertIn(line.split()[0], ("if", "then", "else", "fi", "echo"))
 
-    def test_drone_profiles_parse_the_px4_startup_script(self):
+    def test_integrated_profiles_parse_the_px4_startup_script(self):
         # NSH keeps one if-stack across sourced scripts and silently skips
         # lines past its limits, so a short config breaks rcS mid-boot.
-        roots = (BOARD.parent / "init/drone", ROOT / "ROMFS/px4fmu_common/init.d")
-
         def needs(script, depth, seen):
             deepest, words, width = depth, 0, 0
             for line in script.read_text().splitlines():
@@ -236,11 +250,18 @@ ina228() { echo "CALL ina228 $*"; return 0; }
                                                  max(width, inner[2]))
             return deepest, words, width
 
-        deepest, words, width = needs(roots[1] / "rcS", 0, frozenset())
-        self.assertGreaterEqual(deepest, 7)
-        for label in ("drone", "dualcr8"):
+        for label, init_subdir in (("nsh", ""), ("drone", "drone"), ("dualcr8", "drone")):
+            roots = (BOARD.parent / "init" / init_subdir,
+                     ROOT / "ROMFS/px4fmu_common/init.d")
+            deepest, words, width = needs(roots[1] / "rcS", 0, frozenset())
+            self.assertGreaterEqual(deepest, 7)
             config = (BOARD.parent / "nuttx-config" / label / "defconfig").read_text()
-            value = lambda name: int(re.search(rf"(?m)^CONFIG_{name}=(\d+)$", config).group(1))
+
+            def value(name):
+                match = re.search(rf"(?m)^CONFIG_{name}=(\d+)$", config)
+                self.assertIsNotNone(match, f"{label} must reserve {name} for full PX4 startup")
+                return int(match.group(1))
+
             with self.subTest(profile=label):
                 self.assertLessEqual(deepest, value("NSH_NESTDEPTH") - 1)
                 self.assertLessEqual(words, value("NSH_MAXARGUMENTS"))

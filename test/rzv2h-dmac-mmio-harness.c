@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #include "rzv_dmac.h"
 #include "rzv2h-dmac-mmio-model.h"
@@ -20,6 +21,17 @@
         } \
     } \
   while (0)
+
+static char error_log[8192];
+
+void host_dma_error(const char *format, ...)
+{
+  size_t used = strlen(error_log);
+  va_list args;
+  va_start(args, format);
+  vsnprintf(error_log + used, sizeof(error_log) - used, format, args);
+  va_end(args);
+}
 
 static struct rzv_dmac_config_s configuration(bool hardware)
 {
@@ -50,6 +62,183 @@ int main(int argc, char **argv)
   CHECK(argc == 2, "scenario required");
   const char *scenario = argv[1];
   struct rzv_dmac_config_s config = configuration(false);
+
+  if (strcmp(scenario, "stale-route") == 0)
+    {
+      uintptr_t route = RZV_INTC_BASE + RZV_INTC_DM4SEL0_OFFSET;
+      *register_value(route) = 215u | (224u << 16) | (1u << 15);
+      CHECK(rzv_dmac_channel_configure(0, &config) == 0,
+            "software configure with stale route failed");
+      CHECK((getreg32(route) & 0x3ffu) == 0x3ffu,
+            "software owner inherited a peripheral activation route");
+      CHECK((getreg32(route) >> 16) == 224u,
+            "software configure changed its sibling route");
+      CHECK(rzv_dmac_channel_stop(0) == 0, "software release failed");
+      config = configuration(true);
+      CHECK(rzv_dmac_channel_configure(0, &config) == 0,
+            "hardware configure failed");
+      CHECK((getreg32(route) & (1u << 15)) == 0,
+            "polling owner inherited route auto-clear");
+      *register_value(route) |= 0x3ffu;
+      CHECK(rzv_dmac_channel_start(0) == 0, "hardware start failed");
+      CHECK((getreg32(route) & 0x3ffu) == 263u,
+            "start did not restore its activation route");
+      CHECK(rzv_dmac_channel_stop(0) == 0, "hardware release failed");
+      suppress_route_write = true;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -EIO,
+            "ignored route write was reported as successful");
+      suppress_route_write = false;
+      CHECK(rzv_dmac_channel_configure(0, &config) == 0,
+            "rejected route leaked a configuration claim");
+      return 0;
+    }
+
+  if (strcmp(scenario, "warm-configure") == 0)
+    {
+      *register_value(RZV_DMAC_CHSTAT(0, 0)) =
+        DMAC_CHSTAT_ER | DMAC_CHSTAT_END | DMAC_CHSTAT_TC;
+      CHECK(rzv_dmac_channel_configure(0, &config) == 0,
+            "inactive channel with stale error could not configure");
+      CHECK(getreg32(RZV_DMAC_CHSTAT(0, 0)) == 0,
+            "new owner inherited completion/error from previous image");
+      for (unsigned int active = DMAC_CHSTAT_EN;
+           active <= DMAC_CHSTAT_TACT; active = DMAC_CHSTAT_TACT)
+        {
+          *register_value(RZV_DMAC_CHSTAT(0, 1)) = active;
+          *register_value(RZV_DMAC_N0SA(0, 1)) = 0xfeed0000;
+          unsigned int before = writes;
+          CHECK(rzv_dmac_channel_configure(1, &config) == -EBUSY,
+                "new owner overwrote a live hardware channel");
+          CHECK(writes == before &&
+                getreg32(RZV_DMAC_N0SA(0, 1)) == 0xfeed0000,
+                "busy rejection reset or changed live hardware");
+          if (active == DMAC_CHSTAT_TACT)
+            {
+              break;
+            }
+        }
+
+      *register_value(RZV_DMAC_CHSTAT(0, 1)) = 0;
+      CHECK(rzv_dmac_channel_configure(1, &config) == 0,
+            "busy configure left a leaked software claim");
+      return 0;
+    }
+
+  if (strcmp(scenario, "priority-protection") == 0)
+    {
+      config.priority = 1;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -ENOTSUP,
+            "arbitration priority silently changed AXI protection");
+      CHECK(writes == 0 && cache_calls == 0,
+            "unsupported priority touched hardware");
+
+      config.priority = 0;
+      config.src_prot = 8;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -EINVAL,
+            "out-of-range source protection accepted");
+      config.src_prot = 0;
+      config.dst_prot = 8;
+      CHECK(rzv_dmac_channel_configure(0, &config) == -EINVAL,
+            "out-of-range destination protection accepted");
+      CHECK(writes == 0 && cache_calls == 0,
+            "invalid protection touched hardware");
+
+      for (int unit = 0; unit < 5; unit++)
+        {
+          int channel = unit * 16 + 8;
+          config.src_prot = 1;
+          config.dst_prot = 2;
+          CHECK(rzv_dmac_channel_configure(channel, &config) == 0,
+                "explicit protection configure failed");
+          CHECK(getreg32(RZV_DMAC_CHEXT(unit, 8)) == 0x201,
+                "source/destination protection not independent");
+          CHECK(rzv_dmac_channel_stop(channel) == 0,
+                "protection channel release failed");
+          config.src_prot = 0;
+          config.dst_prot = 0;
+          CHECK(rzv_dmac_channel_configure(channel, &config) == 0,
+                "default protection configure failed");
+          CHECK(getreg32(RZV_DMAC_CHEXT(unit, 8)) == 0,
+                "explicit protection leaked into next owner");
+        }
+
+      return 0;
+    }
+
+  if (strcmp(scenario, "error-diagnostics") == 0)
+    {
+      CHECK(RZV_INTC_BEISR(0) == 0x10400070u &&
+            RZV_INTC_BEISR(3) == 0x1040007cu,
+            "bus-error diagnostics use incorrect register offsets");
+      for (int unit = 0; unit < 3; unit++)
+        {
+          int channel = unit * 16 + 8;
+          char identity[64];
+          CHECK(rzv_dmac_channel_configure(channel, &config) == 0,
+                "diagnostic configure failed");
+          CHECK(rzv_dmac_channel_start(channel) == 0,
+                "diagnostic start failed");
+          *register_value(RZV_DMAC_CHSTAT(unit, 8)) = DMAC_CHSTAT_ER;
+          *register_value(RZV_DMAC_CRTB(unit, 8)) = LENGTH - 4;
+          error_log[0] = '\0';
+          restrict_diagnostic_reads = true;
+          CHECK(rzv_dmac_channel_disable(channel) == -EIO,
+                "diagnostic error was discarded");
+          restrict_diagnostic_reads = false;
+          CHECK(getreg32(RZV_DMAC_CHSTAT(unit, 8)) == 0,
+                "diagnostics prevented normal reset cleanup");
+          snprintf(identity, sizeof(identity), "DMAC%d group1 ch0 global%d",
+                   unit, channel);
+          CHECK(strstr(error_log, identity) != NULL,
+                "error log lost unit/group/channel identity");
+          CHECK(strstr(error_log, "CHSTAT=0x00000010") != NULL,
+                "error status was not logged before reset");
+          CHECK(strstr(error_log, "CRTB=60") != NULL,
+                "error log lost the failure byte count");
+          *register_value(RZV_DMAC_CHSTAT(unit, 8)) = DMAC_CHSTAT_ER;
+          error_log[0] = '\0';
+          CHECK(rzv_dmac_channel_disable(channel) == -EIO,
+                "repeated error was discarded");
+          CHECK(error_log[0] == '\0',
+                "repeated frames flooded the error log");
+          CHECK(rzv_dmac_channel_stop(channel) == 0,
+                "diagnostic release failed");
+          CHECK(rzv_dmac_channel_configure(channel, &config) == 0,
+                "diagnostic reconfigure failed");
+          *register_value(RZV_DMAC_CHSTAT(unit, 8)) = DMAC_CHSTAT_ER;
+          CHECK(rzv_dmac_channel_disable(channel) == -EIO,
+                "new owner error was discarded");
+          CHECK(strstr(error_log, identity) != NULL,
+                "new owner could not report its first error");
+        }
+
+      return 0;
+    }
+
+  if (strcmp(scenario, "enable-diagnostics") == 0)
+    {
+      suppress_enable = true;
+      for (int unit = 0; unit < 3; unit++)
+        {
+          int channel = unit * 16 + 8;
+          char identity[64];
+          CHECK(rzv_dmac_channel_configure(channel, &config) == 0,
+                "enable diagnostic configure failed");
+          error_log[0] = '\0';
+          CHECK(rzv_dmac_channel_start(channel) == -ETIMEDOUT,
+                "missing enable did not time out");
+          snprintf(identity, sizeof(identity), "DMAC%d group1 ch0 global%d",
+                   unit, channel);
+          CHECK(strstr(error_log, identity) != NULL,
+                "enable failure lost unit/group/channel identity");
+          CHECK(strstr(error_log, "N0TB=64") != NULL,
+                "enable failure lost descriptor readback");
+          CHECK(rzv_dmac_channel_stop(channel) == 0,
+                "enable failure prevented release");
+        }
+
+      return 0;
+    }
 
   if (strcmp(scenario, "clock-failure") == 0 ||
       strcmp(scenario, "reset-failure") == 0)

@@ -18,6 +18,36 @@ TYPES = [("i3c", "i3c_b", "R_I3C_B0_Type"), ("ssi", "ssi", "R_SSI0_Type"),
 
 
 class RegisterLayouts(unittest.TestCase):
+    def test_bus_error_status_offsets_match_cmsis(self):
+        for core, sample in (("cr", "cr8_0"), ("cr", "cr8_1"), ("cm", "cm33")):
+            authority = ROOT / (
+                f"refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_{sample}_ep/"
+                "e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/"
+                f"R9A09G057H/{core}/iodefines/intc_iodefine.h")
+            if not authority.is_file():
+                self.skipTest(f"local CMSIS authority unavailable: {authority}")
+            with tempfile.TemporaryDirectory(prefix="rzv2h-bus-error-") as d:
+                tmp = Path(d)
+                (tmp / "nuttx").mkdir()
+                (tmp / "nuttx/config.h").write_text(
+                    "#define CONFIG_RZV2H_BUILD_CM33 1\n" if core == "cm" else "")
+                code = ('#include <stdint.h>\n#include <stddef.h>\n'
+                        '#define __IM volatile const\n#define __OM volatile\n'
+                        '#define __IOM volatile\n'
+                        f'#include "{authority}"\n'
+                        f'#include "{HW / "rzv_intc.h"}"\n')
+                for index in range(4):
+                    code += (f'_Static_assert(RZV_INTC_BEISR_OFFSET({index}) == '
+                             f'offsetof(R_INTC_Type, BEISR{index}), '
+                             f'"BEISR{index} offset");\n')
+                (tmp / "check.c").write_text(code)
+                with self.subTest(core=sample):
+                    result = subprocess.run(
+                        ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                         "-fsyntax-only", "-I", str(tmp), str(tmp / "check.c")],
+                        capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_offsets_widths_and_nested_access_views(self):
         for core, sample in (("cr", "cr8_0"), ("cr", "cr8_1"), ("cm", "cm33")):
             ref = ROOT / (f"refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_{sample}_ep/"

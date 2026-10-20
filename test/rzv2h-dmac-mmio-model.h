@@ -31,6 +31,8 @@ static unsigned int barriers;
 static bool destination_dirty;
 static bool destination_corrupted;
 static bool suppress_enable;
+static bool restrict_diagnostic_reads;
+static bool suppress_route_write;
 
 static uint32_t *register_value(uintptr_t address)
 {
@@ -53,6 +55,22 @@ static uint32_t *register_value(uintptr_t address)
 
 uint32_t getreg32(uintptr_t address)
 {
+  if (restrict_diagnostic_reads)
+    {
+      bool channel_register = false;
+      for (int unit = 0; unit < RZV_DMAC_NUM_UNITS; unit++)
+        {
+          uintptr_t base = rzv_dmac_get_base(unit);
+          channel_register |= address >= base && address < base + 0x800u;
+        }
+
+      if (!channel_register)
+        {
+          fprintf(stderr, "FAIL: error dump accessed unqualified system MMIO\n");
+          exit(1);
+        }
+    }
+
   return *register_value(address);
 }
 
@@ -68,6 +86,12 @@ static void complete_channel(int channel)
 void putreg32(uint32_t value, uintptr_t address)
 {
   writes++;
+  if (suppress_route_write && address >= RZV_INTC_BASE + 0x420u &&
+      address <= RZV_INTC_BASE + 0x4bcu)
+    {
+      return;
+    }
+
   *register_value(address) = value;
 
   for (unsigned int channel = 0; channel < RZV_DMAC_MAX_CHANNELS; channel++)
