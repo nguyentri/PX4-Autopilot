@@ -14,6 +14,8 @@
 #   JLINK_SERIAL=<probe-sn> ./rzv2h-load-one-core.sh [--verbose] <cr8_0|cr8_1> <elf>
 #
 # Env: JLINK_SERIAL (required), JLINK_GDB, GDB, GDB_PORT (50000), LOG_DIR.
+# LOAD_ATTEMPTS=1 selects a single no-reset load attempt, rejecting reset/DBGEN
+# log markers. The legacy default is 3; another guarded attempt needs approval.
 # Exit: 0 loaded and verified, 1 load or verify failed, 2 usage.
 
 set -eu

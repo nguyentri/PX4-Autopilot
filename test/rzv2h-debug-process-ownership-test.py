@@ -122,6 +122,48 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                                         capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, status, pc + result.stdout + result.stderr)
 
+    def test_single_attempt_loader_stops_on_failure_or_reset(self):
+        for gdb_result, marker, expected in (
+                ('0', '', 0), ('1', '', 1),
+                ('0', 'Resetting via Reset pin', 1),
+                ('0', 'DBGEN is not asserted', 1),
+                ('0', 'Connect failed', 1)):
+            with self.subTest(gdb_result=gdb_result, marker=marker), \
+                    tempfile.TemporaryDirectory() as directory:
+                tmp = Path(directory)
+                executable(tmp / 'server', '''#!/usr/bin/env python3
+import json,os,socket,sys,time
+with open(os.environ['ARG_LOG'],'a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
+print(os.environ['CONNECT_MARKER'],flush=True)
+s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();time.sleep(60)
+''')
+                executable(tmp / 'gdb', '#!/bin/sh\necho SET_PC=0x40800000\nexit "$GDB_RESULT"\n')
+                env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'),
+                           JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory,
+                           LOADSTART='fixture', LOAD_ATTEMPTS='1', GDB_RESULT=gdb_result,
+                           CONNECT_MARKER=marker, ARG_LOG=str(tmp / 'arguments'))
+                shell = '. "$1"; trap _stop_server EXIT; resolve_tools; load_core fixture fixture.elf test'
+                result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
+                                        capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                attempts = (tmp / 'arguments').read_text().splitlines()
+                self.assertEqual(len(attempts), 1, result.stdout + result.stderr)
+                self.assertIn('-noreset', attempts[0])
+                self.assertIn('-noir', attempts[0])
+
+    def test_invalid_loader_attempt_limit_is_rejected_before_probe_access(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            executable(tmp / 'server', '#!/bin/sh\necho touched >>"$PROBE_LOG"\nexit 1\n')
+            env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB='/bin/false',
+                       JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory,
+                       LOADSTART='fixture', LOAD_ATTEMPTS='0', PROBE_LOG=str(tmp / 'probe'))
+            shell = '. "$1"; trap _stop_server EXIT; resolve_tools; load_core fixture fixture.elf test'
+            result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
+                                    capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertFalse((tmp / 'probe').exists())
+
     def test_uploader_leaves_external_server_alone_and_removes_command_file(self):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)

@@ -14,6 +14,8 @@
 # LOADSTART, VERIFY, LOG_DIR, VERBOSE (0/1). resolve_tools sets JLINK_GDB_BIN
 # and GDB_BIN. Server + gdb chatter goes to per-core logs under LOG_DIR; only
 # VERBOSE=1 tees it to stderr so the default run stays quiet.
+# LOAD_ATTEMPTS defaults to 3. Set it to 1 for one guarded load attempt:
+# request no reset/init reset and reject reset/DBGEN markers even on GDB success.
 
 # --- tool discovery ---------------------------------------------------------
 resolve_tools() {
@@ -131,17 +133,26 @@ _log_reset_marker() {
 # Returns 0 on a clean loadstart (ENTRY/SET_PC seen), 1 otherwise.
 load_core() {
 	dev="$1"; elf="$2"; label="$3"
+	load_attempts="${LOAD_ATTEMPTS:-3}"
+	case "${load_attempts}" in
+	1|2|3) ;;
+	*) echo "LOAD_ATTEMPTS must be 1, 2, or 3" >&2; return 2 ;;
+	esac
 	log="${LOG_DIR}/load-$(echo "${label}" | tr ' /()' '____').log"
 	: >"${log}"
 
 	attempt=0
-	while [ "${attempt}" -lt 3 ]; do
+	while [ "${attempt}" -lt "${load_attempts}" ]; do
 		attempt=$((attempt + 1))
 		echo "== ${label}: load attempt ${attempt} (log: ${log}) =="
 		preflight_probe_free || { sleep 1; continue; }
 
 		from=$(($(wc -l <"${log}") + 1))
-		_start_server "${dev}" "${log}" || {
+		if [ "${load_attempts}" -eq 1 ]; then
+			_start_server "${dev}" "${log}" -noreset -noir
+		else
+			_start_server "${dev}" "${log}"
+		fi || {
 			echo "-- ${label}: J-Link connect failed (attempt ${attempt})"
 			sleep 1; continue
 		}
@@ -153,17 +164,25 @@ load_core() {
 
 		_stop_server
 
-		case "$(_log_reset_marker "${log}" "${from}")" in
+		reset_marker=$(_log_reset_marker "${log}" "${from}")
+		case "${reset_marker}" in
 		"") ;;
 		DBGEN*) echo "-- ${label}: DBGEN not asserted on connect (core held in reset or not started)" >&2 ;;
 		*) echo "!! ${label}: the J-Link log shows a reset-pin / cold reset; check every core's image" >&2 ;;
 		esac
+		if [ "${load_attempts}" -eq 1 ] && {
+			[ -n "${reset_marker}" ] || tail -n +"${from}" "${log}" |
+				grep -Eq 'Connect failed|Cannot connect|Could not connect'
+		}; then
+			echo "!! ${label}: guarded load failed; no automatic retry" >&2
+			return 1
+		fi
 		if [ "${gdb_ret}" -eq 0 ] && echo "${out}" | grep -q 'SET_PC='; then
 			echo "== ${label}: loaded, probe released =="
 			return 0
 		fi
 		echo "-- ${label}: load did not report SET_PC (attempt ${attempt})"
-		sleep 1
+		[ "${attempt}" -ge "${load_attempts}" ] || sleep 1
 	done
 	echo "!! ${label}: load FAILED after ${attempt} attempts (see ${log})" >&2
 	return 1
