@@ -216,8 +216,41 @@ Configuration:
   opt-in DShot and SPI0 DMA paths. Read consumer Kconfig/defconfig channel
   selections before allocating a channel; do not reuse historical allocations.
 - Completion is polling-only. Callbacks and linked-list mode are unsupported.
-- Software and DShot variants build clean; target request routing, ordering,
-  re-arm behavior, and waveforms remain unvalidated.
+- `rzv_dmac_config_s.src_prot` and `dst_prot` select the read/write AXI
+  protection attributes in CHEXT (three bits each). Zero preserves secure,
+  unprivileged data access. The legacy `priority` field must be zero;
+  nonzero priorities are unsupported, rather than changing access protection.
+  SYS master overrides and slave security controls remain board policy.
+- With `CONFIG_DEBUG_DMA_ERROR`, the first enable/stop failure per channel
+  configuration dumps unit/group/channel identity, descriptor/current addresses,
+  byte counts, CHSTAT/DSTAT_ER, CHCFG/CHEXT and DCTRL before reset. Retained
+  rearm does not repeat the dump; release/configure permits a fresh report.
+  Keep this error hook within the initialized DMAC unit: SYS/security reads
+  caused a target abort. Inspect global registers separately with the debugger;
+  `0xaaaaaaaa` is not a valid policy measurement.
+- New configuration rejects enabled/bus-active hardware and resets stale status
+  only on an inactive channel. Software transfers clear their channel's old
+  activation route. Hardware transfers disable route auto-clear, restore the
+  selected source before each arm and verify writes; a rejected route returns
+  `-EIO`. Neighboring channel selections are preserved.
+- Shared PX4 `nsh` assigns DShot to DMAC3 channels 56–59, separate from SPI0's
+  48/49 allocation. The named [CR8-0 repair run](evidence/dshot-dmac-cr8-0-validation-261020.md)
+  completes four DShot600 motor-stop frames, including module restart, with
+  128 bytes consumed per channel. The same driver passes 26 memory-copy
+  comparisons across both groups of all five units. These are bounded runs;
+  electrical waveforms, nonzero throttle and ESC response remain unqualified.
+- DShot latches its HAL output state off after a frame/start failure until
+  explicit recovery. It logs the first complete frame once per initialization.
+  Flight arming is separate from this HAL state.
+
+Renesas's [public hardware manual](https://www.renesas.com/en/document/mah/rzv2h-group-users-manual-hardware),
+R01UH1032EJ0140, defines CHEXT protection in §4.7.5.2.14 and ICU_BEISR0–3
+at offsets `0x70..0x7c` in §4.6.1.2.2(15). Table 1.7-1 lists GPT access
+from all five DMAC units. A DMAC0 GPT write-bus error and the older SPI
+observations do not establish a universal bus-topology restriction.
+§4.6.1.2.2(32) defines request selection/CLRON and prohibits duplicate event
+assignments. When changing DMA units between RAM images, release the old
+image's owned routes first; stopping outputs retains its DMA configuration.
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.c`
 

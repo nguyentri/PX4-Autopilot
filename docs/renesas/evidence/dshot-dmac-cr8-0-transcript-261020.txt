@@ -1,0 +1,721 @@
+CR8-0 DShot/DMAC bench transcripts, 2026-10-20/21 Asia/Bangkok
+
+Captured sanitized logs; probe serial is masked.
+Trailing spaces are trimmed in retained copies; source and retained hashes follow. See the companion validation
+record for ELF identities, interpretation and qualification limits.
+
+===== DMAC0 control failure =====
+Source: debugger-261020-2331-control-boot.log
+Source SHA-256: 5d086063f97ca70b3a10568f60ef907b1f536d06d37cd70418e34d75cbee3991
+Retained SHA-256: 5d086063f97ca70b3a10568f60ef907b1f536d06d37cd70418e34d75cbee3991
+
+NUTTX
+Clock enabled: domain=0 bit=5
+Reset deasserted: domain=3 mask=0x40
+Clock enabled: domain=4 bit=10
+Reset deasserted: domain=7 mask=0x10
+Clock enabled: domain=5 bit=4
+Reset deasserted: domain=7 mask=0x1800
+SPI0 initialized
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: 62b798a32e07df8e89fe3831971d32ea39682dba
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 68b60a174ca98782f3aed089c3ca2d2ecf49087e
+Build datetime: Oct 20 2026 23:37:49
+Build uri: localhost
+Build variant: dshot
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/4014_s500
+INFO  [dataman] data manager RAM size is 68528 bytes
+Board sensors: /etc/init.d/rc.board_sensors
+ERROR [SPI_I2C] bmp280: no instance started (no device on bus?)
+ERROR [init] BMP280 failed on SCI7 I2C bus 7
+WARN  [SPI_I2C] mpu9250: no instance started (no device on bus?)
+ERROR [init] MPU9250 failed on SPI bus 0
+ekf2 [526:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+INFO  [arch_dshot] DShot TX initialized: 600000 Hz, channels 0xf
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+SCI4 clocks disabled
+SCI4 clocks enabled
+INFO  [mavlink] mode: Normal, data rate: 4000 B/s on /dev/ttyS5 @ 57600B
+ERROR [parameters] get: param 65535 invalid
+
+NuttShell (NSH)
+nsh> [Krzv_dmac_channel_dump: stop error before reset DMAC0 group1 ch0 global8 CHSTAT=0x00000010 DSTAT_ER=0x0000000f CHCFG=0x01222028 CHEXT=0x00000000
+rzv_dmac_channel_dump: N0SA=0x40948fc0 N0DA=0x1301064c N0TB=128 CRSA=0x40948fc4 CRDA=0x1301064c CRTB=124
+rzv_dmac_channel_dump: CPU src=0x40948fc0 dst=0x1301064c length=128 HW=1 request=215 ack=0 DCTRL=0x00000001
+rzv_dmac_channel_dump: stop error before reset DMAC0 group1 ch1 global9 CHSTAT=0x00000010 DSTAT_ER=0x0000000e CHCFG=0x01222029 CHEXT=0x00000000
+rzv_dmac_channel_dump: N0SA=0x40949080 N0DA=0x13010750 N0TB=128 CRSA=0x40949084 CRDA=0x13010750 CRTB=124
+rzv_dmac_channel_dump: CPU src=0x40949080 dst=0x13010750 length=128 HW=1 request=224 ack=0 DCTRL=0x00000001
+rzv_dmac_channel_dump: stop error before reset DMAC0 group1 ch2 global10 CHSTAT=0x00000010 DSTAT_ER=0x0000000c CHCFG=0x0122202a CHEXT=0x00000000
+rzv_dmac_channel_dump: N0SA=0x40949140 N0DA=0x1302014c N0TB=128 CRSA=0x40949144 CRDA=0x1302014c CRTB=124
+rzv_dmac_channel_dump: CPU src=0x40949140 dst=0x1302014c length=128 HW=1 request=274 ack=0 DCTRL=0x00000001
+rzv_dmac_channel_dump: stop error before reset DMAC0 group1 ch3 global11 CHSTAT=0x00000010 DSTAT_ER=0x00000008 CHCFG=0x0122202b CHEXT=0x00000000
+rzv_dmac_channel_dump: N0SA=0x40949200 N0DA=0x13020250 N0TB=128 CRSA=0x40949204 CRDA=0x13020250 CRTB=124
+rzv_dmac_channel_dump: CPU src=0x40949200 dst=0x13020250 length=128 HW=1 request=283 ack=0 DCTRL=0x00000001
+ERROR [arch_dshot] DShot frame completion failed: -5
+WARN  [health_and_arming_checks] Too many arming check events (1, 14 > 14). Not reporting all
+WARN  [health_and_arming_checks] Preflight Fail: Accel Sensor 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: barometer 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+WARN  [health_and_arming_checks] Preflight Fail: Gyro Sensor 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: Found 0 compass (required: 1)
+WARN  [health_and_arming_checks] Preflight Fail: system power unavailable
+SCI9 clocks disabled
+SCI9 clocks enabled
+
+===== DMAC0 control status and attached HRT timing failure =====
+Source: debugger-261020-2331-control-nsh.log
+Source SHA-256: 36df9d053996f8a1d0c3a78da9e264e751d454889c11de73e70107bcef703c65
+Retained SHA-256: f66c490d07061b7aa8e1ea4b48faa2c9efbb0e2f724aa215c7752dd1b191c316
+
+### nsh> commander status
+SCI9 clocks disabled
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 315 events, 26202us elapsed, 83.18us avg, min 53us max 1125us 76.501us rms
+commander: preflight check: 43 events, 6069us elapsed, 141.14us avg, min 108us max 1059us 144.217us rms
+nsh>
+nsh>
+nsh>
+### nsh> listener actuator_armed 1
+TOPIC: actuator_armed
+ actuator_armed
+    timestamp: 5399826 (0.500035 seconds ago)
+    armed: False
+    prearmed: False
+    ready_to_arm: False
+    lockdown: False
+    manual_lockdown: False
+    force_failsafe: False
+    in_esc_calibration_mode: False
+
+nsh>
+nsh>
+nsh>
+### nsh> dshot status
+INFO  [dshot] Outputs initialized: yes
+INFO  [dshot] Outputs used: 0xf
+INFO  [dshot] Outputs on: yes
+dshot: cycle: 118 events, 4439us elapsed, 37.62us avg, min 12us max 955us 85.699us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 1: func: 102, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 2: func: 103, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 3: func: 104, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+nsh>
+nsh>
+nsh>
+### nsh> pwm_out status
+pwm_out: cycle: 23 events, 325us elapsed, 14.13us avg, min 5us max 75us 14.004us rms
+pwm_out: interval: 23 events, 273916.35us avg, min 77us max 529394us 117712.969us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+Channel Configuration:
+Channel 0: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+Channel 1: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+Channel 2: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+Channel 3: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+nsh>
+nsh>
+nsh>
+### nsh> system_time hrt-test
+ERROR [system_time] HRT sleep out of bounds: 113116 us
+nsh>
+nsh>
+nsh>
+### nsh> dshot stop
+
+### nsh> pwm_out stop
+
+### nsh> dshot status
+INFO  [dshot] not running
+nsh>
+nsh>
+nsh> SCI9 clocks enabled
+### nsh> pwm_out status
+INFO  [pwm_out] not running
+nsh>
+nsh>
+nsh>
+### nsh> commander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 364 events, 76316us elapsed, 209.66us avg, min 53us max 28586us 1700.686us rms
+commander: preflight check: 66 events, 8814us elapsed, 133.55us avg, min 108us max 1059us 116.597us rms
+nsh>
+nsh>
+nsh>
+### nsh> ps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK   USED  FILLED COMMAND
+    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 000692  34.1%  Idle Task
+    1     1 224 FIFO     Kthread --- Waiting  Semaphore 00000000 001744 000268  15.3%  hpwork 0x4090e4b4
+    2     2 100 FIFO     Kthread --- Waiting  Semaphore 00000000 001976 000268  13.5%  lpwork 0x4090e4a0
+    3     3 100 FIFO     Task    --- Running            00000000 002896 002168  74.8%  nsh_main
+    4     4 255 FIFO     Task    --- Waiting  Semaphore 00000000 001232 000388  31.4%  wq:manager
+    5     4 205 FIFO     pthread --- Waiting  Semaphore 00000000 003472 001016  29.2%  wq:lp_default 0x4093eb40
+  422   422  90 FIFO     Task    --- Waiting  Semaphore 00000000 001376 000736  53.4%  dataman
+  523     4 242 FIFO     pthread --- Waiting  Semaphore 00000000 002216 001408  63.5%  wq:nav_and_controllers 0x409296c4
+  524     4 255 FIFO     pthread --- Waiting  Semaphore 00000000 003120 002168  69.4%  wq:rate_ctrl 0x4093b660
+  527     4 241 FIFO     pthread --- Waiting  Semaphore 00000000 005976 000964  16.1%  wq:INS0 0x40926de8
+  848     4 228 FIFO     pthread --- Waiting  Semaphore 00000000 001704 001200  70.4%  wq:ttyS6 0x4093ee18
+  853   853 105 FIFO     Task    --- Waiting  Semaphore 00000000 002144 001696  79.1%  navigator start
+  823   823 100 FIFO     Task    --- Waiting  Signal    00000000 002704 001688  62.4%  mavlink_if0 mavlink start -d /dev/ttyS5 -b p:SER_TEL1_BAUD -m p:MAV_0_MODE -r p:MAV_0_RATE -f -s -x
+  568   568 140 FIFO     Task    --- Waiting  Signal    00000000 003192 001392  43.6%  commander start
+  633     4 230 FIFO     pthread --- Waiting  Semaphore 00000000 001704 000912  53.5%  wq:ttyS4 0x4093ee28
+  826   823 175 FIFO     pthread --- Waiting  Semaphore 00000000 004688 001440  30.7%  mavlink_rcv_if0 0x40979958
+  541     4 237 FIFO     pthread --- Waiting  Semaphore 00000000 002776 000944  34.0%  wq:hp_default 0x4092962c
+  702   702 205 FIFO     Task    --- Waiting  Semaphore 00000000 001936 001280  66.1%  gps start -d /dev/ttyS9 -b p:SER_GPS1_BAUD
+nsh>
+nsh>
+nsh>
+### nsh> free
+                   total       used       free    largest  nused  nfree
+        Umem:    7026064     212736    6813328    6810832    629     18
+nsh>
+nsh>
+nsh>
+
+===== Stale event routes before repair cleanup =====
+Source: debugger-261020-2331-route-conflict.log
+Source SHA-256: 797a0f5ce37d7f7a376a0ad896528b3b3d58458a840c73f88c5b8d95957d1f8c
+Retained SHA-256: 797a0f5ce37d7f7a376a0ad896528b3b3d58458a840c73f88c5b8d95957d1f8c
+
+up_idle () at chip/rzv_idle.c:229
+229	  END_IDLE();
+ONESHOT_ATTACHED pc=0x4080c680
+0x10400420:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400430:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400440:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400450:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400460:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400470:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400480:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400490:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x104004a0:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x104004b0:	0x00e000d7	0x011b0112	0x03ff03ff	0x03ff03ff
+[Inferior 1 (Remote target) detached]
+
+===== All-unit repaired RAM copies =====
+Source: debugger-261020-2331-memcpy.log
+Source SHA-256: c24ea4a93a8a771522955a2caf6e17f79573bade45363bb018170a0720d75c0f
+Retained SHA-256: a4de06b8d6965450108b64134e99174ddb36759186647dc352112366f274965f
+
+### nsh> rzv_dmac 0 8 9 10 11 16 24 32 40 48 56 64 72
+DMAC memcpy: unit=0 ch=0 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=0
+DMAC memcpy: unit=0 ch=8 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=8
+DMAC memcpy: unit=0 ch=9 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=9
+DMAC memcpy: unit=0 ch=10 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=10
+DMAC memcpy: unit=0 ch=11 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=11
+DMAC memcpy: unit=1 ch=16 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=16
+DMAC memcpy: unit=1 ch=24 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=24
+DMAC memcpy: unit=2 ch=32 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=32
+DMAC memcpy: unit=2 ch=40 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=40
+DMAC memcpy: unit=3 ch=48 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=48
+DMAC memcpy: unit=3 ch=56 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000044
+PASS: DMAC memcpy ch=56
+DMAC memcpy: unit=4 ch=64 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=64
+DMAC memcpy: unit=4 ch=72 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=72
+nsh>
+nsh>
+nsh>
+### nsh> rzv_dmac 0 8 9 10 11 16 24 32 40 48 56 64 72
+DMAC memcpy: unit=0 ch=0 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=0
+DMAC memcpy: unit=0 ch=8 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=8
+DMAC memcpy: unit=0 ch=9 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=9
+DMAC memcpy: unit=0 ch=10 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=10
+DMAC memcpy: unit=0 ch=11 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=11
+DMAC memcpy: unit=1 ch=16 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=16
+DMAC memcpy: unit=1 ch=24 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=24
+DMAC memcpy: unit=2 ch=32 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=32
+DMAC memcpy: unit=2 ch=40 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=40
+DMAC memcpy: unit=3 ch=48 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=48
+DMAC memcpy: unit=3 ch=56 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=56
+DMAC memcpy: unit=4 ch=64 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=64
+DMAC memcpy: unit=4 ch=72 cpu src=0x4081bc00 dst=0x4081b800 bytes=1024
+DMAC memcpy: status=0x00000040
+PASS: DMAC memcpy ch=72
+nsh>
+nsh>
+nsh>
+### nsh> ps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK COMMAND
+    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 Idle Task
+    1     1 100 FIFO     Task    --- Running            00000000 002000 nsh_main
+nsh>
+nsh>
+nsh>
+### nsh> free
+                   total       used       free    largest  nused  nfree
+        Umem:    8269088       5744    8263344    8263344     28      1
+nsh>
+nsh>
+nsh>
+
+===== Old route cleanup =====
+Source: debugger-261020-2331-route-cleanup.log
+Source SHA-256: ca90b1a1fac4d9a8aefedf2f9d922c92a7750d09d6ca2931e17fab4625ad2dbf
+Retained SHA-256: ca90b1a1fac4d9a8aefedf2f9d922c92a7750d09d6ca2931e17fab4625ad2dbf
+
+up_idle () at chip/rzv_idle.c:229
+229	  END_IDLE();
+ONESHOT_ATTACHED pc=0x40805d30
+0x10400420:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400430:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400440:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400450:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400460:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400470:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400480:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x10400490:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x104004a0:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+0x104004b0:	0x03ff03ff	0x03ff03ff	0x03ff03ff	0x03ff03ff
+[Inferior 1 (Remote target) detached]
+
+===== Repaired DShot boot =====
+Source: debugger-261020-2331-repaired-boot.log
+Source SHA-256: 71d977a6a84d5e8c9c3c922e1ee06ba6f62776ad93a5f27702aae9fbaa609a10
+Retained SHA-256: 71d977a6a84d5e8c9c3c922e1ee06ba6f62776ad93a5f27702aae9fbaa609a10
+
+NUTTX
+Clock enabled: domain=0 bit=5
+Reset deasserted: domain=3 mask=0x40
+Clock enabled: domain=4 bit=10
+Reset deasserted: domain=7 mask=0x10
+Clock enabled: domain=5 bit=4
+Reset deasserted: domain=7 mask=0x1800
+SPI0 initialized
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: 62b798a32e07df8e89fe3831971d32ea39682dba
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 68b60a174ca98782f3aed089c3ca2d2ecf49087e
+Build datetime: Oct 20 2026 23:56:14
+Build uri: localhost
+Build variant: dshot
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/4014_s500
+INFO  [dataman] data manager RAM size is 68528 bytes
+Board sensors: /etc/init.d/rc.board_sensors
+ERROR [SPI_I2C] bmp280: no instance started (no device on bus?)
+ERROR [init] BMP280 failed on SCI7 I2C bus 7
+WARN  [SPI_I2C] mpu9250: no instance started (no device on bus?)
+ERROR [init] MPU9250 failed on SPI bus 0
+ekf2 [526:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+INFO  [arch_dshot] DShot TX initialized: 600000 Hz, channels 0xf
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+SCI4 clocks disabled
+SCI4 clocks enabled
+SCI9 clocks enabled
+INFO  [mavlink] mode: Normal, data rate: 4000 B/s on /dev/ttyS5 @ 57600B
+ERROR [parameters] get: param 65535 invalid
+
+NuttShell (NSH)
+nsh> [KINFO  [arch_dshot] DShot TX frame complete: channels 0xf, 128 bytes each
+WARN  [health_and_arming_checks] Too many arming check events (1, 14 > 14). Not reporting all
+WARN  [health_and_arming_checks] Preflight Fail: Accel Sensor 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: barometer 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+WARN  [health_and_arming_checks] Preflight Fail: Gyro Sensor 0 missing
+WARN  [health_and_arming_checks] Preflight Fail: Found 0 compass (required: 1)
+WARN  [health_and_arming_checks] Preflight Fail: system power unavailable
+SCI9 clocks disabled
+SCI9 clocks enabled
+
+===== Repaired NSH status and stop =====
+Source: debugger-261020-2331-repaired-nsh.log
+Source SHA-256: 1340012a97d341350bf73d4c80b0c50ee733a71f49c34e2ba3a58e125071e6cf
+Retained SHA-256: 133802c7f3590b203e813b53d4add1bc03d78b6bf5707afdfbbe80b8c6ef2498
+
+### nsh> commander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 302 events, 25140us elapsed, 83.25us avg, min 52us max 1109us 78.175us rms
+commander: preflight check: 41 events, 5923us elapsed, 144.46us avg, min 106us max 1019us 141.641us rms
+nsh>
+nsh>
+nsh>
+### nsh> listener actuator_armed 1
+listener actuator_armSCI9 clocks disabled
+ed 1
+
+TOPIC: actuator_armed
+ actuator_armed
+    timestamp: 5825707 (0.136771 seconds ago)
+    armed: False
+    prearmed: False
+    ready_to_arm: False
+    lockdown: False
+    manual_lockdown: False
+    force_failsafe: False
+    in_esc_calibration_mode: False
+
+nsh>
+nsh>
+nsh>
+### nsh> dshot status
+INFO  [dshot] Outputs initialized: yes
+INFO  [dshot] Outputs used: 0xf
+INFO  [dshot] Outputs on: yes
+dshot: cycle: 121 events, 18656us elapsed, 154.18us avg, min 75us max 248us 31.028us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 1: func: 102, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 2: func: 103, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 3: func: 104, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+nsh>
+nsh>
+nsh>
+### nsh> pwm_out status
+pwm_out: cycle: 21 events, 289us elapsed, 13.76us avg, min 6us max 76us 14.748us rms
+pwm_out: interval: 21 events, 300488.14us avg, min 78us max 638343us 123798.797us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+Channel Configuration:
+Channel 0: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+Channel 1: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+Channel 2: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+Channel 3: func:   0, value: 0, failsafe: 1000, disarmed: 1000, min: 1100, max: 1900
+nsh>
+nsh>
+nsh>
+### nsh> system_time hrt-test
+INFO  [system_time] HRT test PASS: sleep=88215 us, callback latency=4975 us
+nsh>
+nsh>
+nsh>
+### nsh> dshot stop
+
+### nsh> pwm_out stop
+nsh> SCI9 clocks enabled
+### nsh> dshot status
+INFO  [dshot] not running
+nsh>
+nsh>
+nsh>
+### nsh> pwm_out status
+INFO  [pwm_out] not running
+nsh>
+nsh>
+nsh>
+### nsh> commander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 361 events, 79262us elapsed, 219.56us avg, min 52us max 23279us 1543.940us rms
+commander: preflight check: 65 events, 56107us elapsed, 863.18us avg, min 106us max 23212us 3573.931us rms
+nsh>
+nsh>
+nsh>
+### nsh> ps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK   USED  FILLED COMMAND
+    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 000692  34.1%  Idle Task
+    1     1 224 FIFO     Kthread --- Waiting  Semaphore 00000000 001744 000268  15.3%  hpwork 0x4090e614
+    2     2 100 FIFO     Kthread --- Waiting  Semaphore 00000000 001976 000268  13.5%  lpwork 0x4090e600
+    3     3 100 FIFO     Task    --- Running            00000000 002896 002168  74.8%  nsh_main
+    4     4 255 FIFO     Task    --- Waiting  Semaphore 00000000 001232 000388  31.4%  wq:manager
+    5     4 205 FIFO     pthread --- Waiting  Semaphore 00000000 003472 001160  33.4%  wq:lp_default 0x4093ece8
+  422   422  90 FIFO     Task    --- Waiting  Semaphore 00000000 001376 000824  59.8%  dataman
+  523     4 242 FIFO     pthread --- Waiting  Semaphore 00000000 002216 001400  63.1%  wq:nav_and_controllers 0x4092986c
+  524     4 255 FIFO     pthread --- Waiting  Semaphore 00000000 003120 002168  69.4%  wq:rate_ctrl 0x4093b808
+  527     4 241 FIFO     pthread --- Waiting  Semaphore 00000000 005976 001024  17.1%  wq:INS0 0x40926f90
+  848     4 228 FIFO     pthread --- Waiting  Semaphore 00000000 001704 001240  72.7%  wq:ttyS6 0x4093efc0
+  853   853 105 FIFO     Task    --- Waiting  Semaphore 00000000 002144 001656  77.2%  navigator start
+  823   823 100 FIFO     Task    --- Waiting  Signal    00000000 002704 002032  75.1%  mavlink_if0 mavlink start -d /dev/ttyS5 -b p:SER_TEL1_BAUD -m p:MAV_0_MODE -r p:MAV_0_RATE -f -s -x
+  568   568 140 FIFO     Task    --- Waiting  Signal    00000000 003192 001728  54.1%  commander start
+  633     4 230 FIFO     pthread --- Waiting  Semaphore 00000000 001704 000960  56.3%  wq:ttyS4 0x4093efd0
+  826   823 175 FIFO     pthread --- Waiting  Semaphore 00000000 004688 001440  30.7%  mavlink_rcv_if0 0x40979b58
+  541     4 237 FIFO     pthread --- Waiting  Semaphore 00000000 002776 000944  34.0%  wq:hp_default 0x409297d4
+  702   702 205 FIFO     Task    --- Waiting  Semaphore 00000000 001936 001344  69.4%  gps start -d /dev/ttyS9 -b p:SER_GPS1_BAUD
+nsh>
+nsh>
+nsh>
+### nsh> free
+                   total       used       free    largest  nused  nfree
+        Umem:    7025552     212736    6812816    6810320    629     18
+nsh>
+nsh>
+nsh>
+
+===== Module restart and attached HRT timing failure =====
+Source: debugger-261020-2331-restart.log
+Source SHA-256: 762f4bab36d5f0ba59cd4d305d20ae7b46edd217e378e83a526385a382785794
+Retained SHA-256: 58820db671f11a28c41826a17156a122424dcdf42ab34dd1bdcee52b668b4533
+
+### nsh> commander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 15073 events, 1502869us elapsed, 99.71us avg, min 51us max 337017us 2758.803us rms
+commander: preflight check: 1553 events, 583262us elapsed, 375.57us avg, min 106us max 336934us 8586.772us rms
+nsh>
+nsh>
+nsh>
+### nsh> dshot start
+INFO  [arch_dshot] DShot TX initialized: 600000 Hz, channels 0xf
+nsh>
+nsh> echo NSINFO  [arch_dshot] DShot TX frame complete: channels 0xf, 128 bytes each
+HX_414322_2
+nsh>
+nsh>
+### nsh> sleep 1
+SCI9 clocks enabled
+nsh>
+nsh>
+nsh>
+### nsh> dshot status
+INFO  [dshot] Outputs initialized: yes
+INFO  [dshot] Outputs used: 0xf
+INFO  [dshot] Outputs on: yes
+dshot: cycle: 43 events, 6583us elapsed, 153.09us avg, min 51us max 249us 37.086us rms
+INFO  [mixer_module] Param prefix: PWM_MAIN
+control latency: 0 events, 0us elapsed, 0.00us avg, min 0us max 0us 0.000us rms
+INFO  [mixer_module] Switched to rate_ctrl work queue
+Channel Configuration:
+Channel 0: func: 101, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 1: func: 102, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 2: func: 103, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+Channel 3: func: 104, value: 0, failsafe: 0, disarmed: 0, min: 109, max: 1999
+nsh>
+nsh>
+nsh>
+### nsh> dshot stop
+
+### nsh> pwm_out stop
+
+### nsh> dshot status
+INFO  [dshot] not running
+nsh>
+nsh>
+nsh>
+### nsh> pwm_out status
+INFO  [pwm_out] not running
+nsh>
+nsh>
+nsh>
+### nsh> commander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 15193 events, 1542380us elapsed, 101.52us avg, min 51us max 337017us 2753.365us rms
+commander: preflight check: 1583 events, 606280us elapsed, 382.99us avg, min 106us max 336934us 8518.878us rms
+nsh>
+nsh>
+nsh>
+### nsh> system_time hrt-test
+SCI9 clocks disabled
+ERROR [system_time] HRT sleep out of bounds: 177030 us
+nsh>
+nsh>
+nsh>
+
+===== Probe-detached HRT check and temporary-file cleanup =====
+Source: debugger-261020-2331-hrt-detached.log
+Source SHA-256: 209f80302343afd722bc6d8372746017301d3fa90fca3e0838625a1896c57fa5
+Retained SHA-256: 3584292d5ba33e3fc77f1d0c9c57ef18592de8414c71c9413f8f3ec61164a751
+
+### nsh> cat /fs/dmac-hrt-2610202331.log
+INFO  [system_time] HRT test PASS: sleep=10167 us, callback latency=4 us
+HRT_PROBE_FREE_DONE
+nsh>
+nsh>
+nsh>
+### nsh> rm /fs/dmac-hrt-2610202331.sh
+
+### nsh> rm /fs/dmac-hrt-2610202331.log
+
+### nsh> dshot status
+INFO  [dshot] not running
+nsh>
+nsh>
+nsh>
+### nsh> pwm_out status
+INFO  [pwm_out] not running
+nsh>
+nsh>
+nsh>
+### nsh> commander status
+INFO  [commander] Disarmed
+INFO  [commander] navigation mode: Hold
+INFO  [commander] user intended navigation mode: Hold
+INFO  [commander] in failsafe: no
+commander: cycle: 31526 events, 2852027us elapsed, 90.47us avg, min 51us max 337017us 1938.024us rms
+commander: preflight check: 3255 events, 883732us elapsed, 271.50us avg, min 106us max 336934us 5988.441us rms
+nsh>
+nsh>
+nsh>
+### nsh> ps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK   USED  FILLED COMMAND
+    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 000692  34.1%  Idle Task
+    1     1 224 FIFO     Kthread --- Waiting  Semaphore 00000000 001744 000268  15.3%  hpwork 0x4090e614
+    2     2 100 FIFO     Kthread --- Waiting  Semaphore 00000000 001976 000268  13.5%  lpwork 0x4090e600
+    3     3 100 FIFO     Task    --- Running            00000000 002896 002168  74.8%  nsh_main
+    4     4 255 FIFO     Task    --- Waiting  Semaphore 00000000 001232 000388  31.4%  wq:manager
+    5     4 205 FIFO     pthread --- Waiting  Semaphore 00000000 003472 001160  33.4%  wq:lp_default 0x4093ece8
+  422   422  90 FIFO     Task    --- Waiting  Semaphore 00000000 001376 001000  72.6%  dataman
+  523     4 242 FIFO     pthread --- Waiting  Semaphore 00000000 002216 001440  64.9%  wq:nav_and_controllers 0x4092986c
+  524     4 255 FIFO     pthread --- Waiting  Semaphore 00000000 003120 002168  69.4%  wq:rate_ctrl 0x4093b808
+  527     4 241 FIFO     pthread --- Waiting  Semaphore 00000000 005976 001072  17.9%  wq:INS0 0x40926f90
+  848     4 228 FIFO     pthread --- Waiting  Semaphore 00000000 001704 001240  72.7%  wq:ttyS6 0x4093efc0
+  853   853 105 FIFO     Task    --- Waiting  Semaphore 00000000 002144 001776  82.8%! navigator start
+  823   823 100 FIFO     Task    --- Ready              00000000 002704 002232  82.5%! mavlink_if0 mavlink start -d /dev/ttyS5 -b p:SER_TEL1_BAUD -m p:MAV_0_MODE -r p:MAV_0_RATE -f -s -x
+  568   568 140 FIFO     Task    --- Waiting  Signal    00000000 003192 001896  59.3%  commander start
+  633     4 230 FIFO     pthread --- Waiting  Semaphore 00000000 001704 000960  56.3%  wq:ttyS4 0x4093efd0
+  826   823 175 FIFO     pthread --- Waiting  Semaphore 00000000 004688 001520  32.4%  mavlink_rcv_if0 0x40979b58
+  541     4 237 FIFO     pthread --- Waiting  Semaphore 00000000 002776 000992  35.7%  wq:hp_default 0x409297d4
+  702   702 205 FIFO     Task    --- Waiting  Semaphore 00000000 001936 001368  70.6%  gps start -d /dev/ttyS9 -b p:SER_GPS1_BAUD
+nsh>
+nsh>
+nsh>
+
+===== Final DMA/GPT register snapshot =====
+Source: debugger-261020-2331-final-state.log
+Source SHA-256: 2857e94466772f1decac13c31b2e89472a6cdbdec02afbe8304e04de344e4fd1
+Retained SHA-256: 2857e94466772f1decac13c31b2e89472a6cdbdec02afbe8304e04de344e4fd1
+
+up_idle () at chip/rzv_idle.c:229
+229	  END_IDLE();
+ONESHOT_ATTACHED pc=0x4080c680
+$1 = false
+$2 = true
+$3 = {logical_channel = 0 '\000', timer_index = 0 '\000', gpt_channel = 6 '\006', channel_b = false, dma_channel = 56 '8', gpt_base = 318834176, active_compare_offset = 76, bit_period_ticks = 333, t0h_ticks = 124, t1h_ticks = 249, first_compare = 333, throttle_value = 0, telemetry_request = false, dma_buffer = {457, 666, 790, 999, 1123, 1332, 1456, 1665, 1789, 1998, 2122, 2331, 2455, 2664, 2788, 2997, 3121, 3330, 3454, 3663, 3787, 3996, 4120, 4329, 4453, 4662, 4786, 4995, 5119, 5328, 5452, 4294967295}}
+$4 = {open_id = 1145913667, unit = 3 '\003', local_ch = 8 '\b', in_use = true, configuring = false, operating = false, error_logged = false, hw_trigger = true, config = {src_size = RZV_DMAC_SIZE_4BYTE, dst_size = RZV_DMAC_SIZE_4BYTE, src_addr_mode = RZV_DMAC_ADDR_INCREMENT, dst_addr_mode = RZV_DMAC_ADDR_FIXED, trigger = RZV_DMAC_TRIGGER_HW, src_addr = 1083478464, dst_addr = 318834252, length = 128, priority = 0 '\000', transfer_interval = 0, src_prot = 0 '\000', dst_prot = 0 '\000', irq_sel = 215, ack_mode = 0 '\000', source_request = false, callback = 0x0 <rzv_dmac_get_remaining_bytes>, user_data = 0x0 <rzv_dmac_get_remaining_bytes>}}
+DMAC3 group1 completed byte counts and status
+0x12000400:	0x409491c0	0x1301064c	0x00000080	0x00000000
+0x12000410:	0x00000000	0x00000000	0x40949240	0x1301064c
+0x12000420:	0x00000000	0x00000000	0x00000000	0x00222028
+0x12000430:	0x00000000	0x00000000	0x00000000	0x00000000
+0x12000440:	0x40949280	0x13010750	0x00000080	0x00000000
+0x12000450:	0x00000000	0x00000000	0x40949300	0x13010750
+0x12000460:	0x00000000	0x00000000	0x00000000	0x00222029
+0x12000470:	0x00000000	0x00000000	0x00000000	0x00000000
+0x12000480:	0x40949340	0x1302014c	0x00000080	0x00000000
+0x12000490:	0x00000000	0x00000000	0x409493c0	0x1302014c
+0x120004a0:	0x00000000	0x00000000	0x00000000	0x0022202a
+0x120004b0:	0x00000000	0x00000000	0x00000000	0x00000000
+0x120004c0:	0x40949400	0x13020250	0x00000080	0x00000000
+0x120004d0:	0x00000000	0x00000000	0x40949480	0x13020250
+0x120004e0:	0x00000000	0x00000000	0x00000000	0x0022202b
+0x120004f0:	0x00000000	0x00000000	0x00000000	0x00000000
+0x12000710:	0x00000000	0x00000000	0x00000000	0x00000000
+0x12000720:	0x00000000
+GPT counters and output gates after cleanup
+0x1301062c:	0x00000000	0x02000001	0x00000007
+0x1301072c:	0x00000000	0x00020001	0x00070000
+0x1302012c:	0x00000000	0x02000001	0x00000007
+0x1302022c:	0x00000000	0x00020001	0x00070000
+Retained owned DMAC3 event routes, old DMAC0 routes
+0x10400470:	0x00e000d7	0x011b0112
+0x104004b0:	0x03ff03ff	0x03ff03ff
+[Inferior 1 (Remote target) detached]
