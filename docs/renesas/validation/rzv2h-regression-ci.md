@@ -152,8 +152,8 @@ standalone NuttX ELF for a complete PX4 build.
 
 ## Build and check the PX4 matrix without hardware
 
-The [PX4 policy](../../../Tools/rzv2h-px4-profiles.json) classifies all eight
-RZ/V2H targets exposed by the root `build.sh`. RA8 targets are outside this gate.
+The [PX4 policy](../../../Tools/rzv2h-px4-profiles.json) classifies all nine
+RZ/V2H profiles exposed by the root `build.sh`. RA8 targets are outside this gate.
 Use a new or empty job directory:
 
 ```sh
@@ -179,8 +179,10 @@ diagnostics. It runs `port-host` inside that same snapshot before sequential
 root-script builds. It never configures or cleans the original checkout.
 Input rescans detect source drift before another image is accepted.
 
-Repeat `--target <canonical-name>` for a subset. Selecting `dualcr8` adds its
-CR8-1 peer; duplicate explicit selections fail. Subset success has
+Repeat `--target <canonical-name>` for a subset. Policy revision **3** selects
+`dualcr8` alone when a sensor bring-up subset is requested: it has no qualified
+CR8-1 peer. Duplicate explicit selections fail. The retired separate demo
+target is rejected. Subset success has
 `full_matrix: false`. The initial per-image timeout is 1800 seconds, configurable
 with `--timeout`; `--host-timeout` bounds the complete host stage. Cancellation
 stops owned process groups, including children whose leader exited. Commands
@@ -202,7 +204,7 @@ Retain the whole job directory:
 | `archive/source-state.json`, `px4-profiles.json` | Frozen effective inputs, original inputs, Git/tool/cache provenance and policy |
 | `archive/host/` | Host results, JUnit and individual logs |
 | `archive/builds/<target>/` | Complete required firmware/config/ROMFS/metadata, focused-check logs and immutable target receipt |
-| `archive/pair-receipt.json` | Both finalized dual-CR8 member digests and compatibility/type evidence |
+| `archive/pair-receipt.json` | Only generated for a policy-qualified pair; absent under revision 3 while the actuator pair is unqualified |
 | `archive/inventory.json` | Exact file sizes and hashes, excluding the inventory itself |
 
 Checker reports stay outside `archive/`. Rechecks preserve its bytes and work
@@ -240,6 +242,13 @@ Successful software admission remains `BUILD-CHECKED`, on-target `NOT-RUN`, with
 `target_actions: []`. It establishes no electrical, silicon IRQ/DMA/cache,
 timing, persistence or flight qualification. Legacy `px4-artifacts`, sample
 groups and their argument contracts remain available.
+
+The current reviewed software receipt records **61 host suites / 583 cases
+passed**, the `mixer_module_tests` and `CollisionPrevention` functional suites,
+three firmware targets (`default`, canonical `dualcr8`, and CR8-1 `pwm`), and
+five candidate artifact cases. See [dual-CR8 software validation](../evidence/dualcr8-software-validation-261021.md)
+for the durable hashes and the boundary that keeps the CR8-1 identity and
+actuator pair unconfigured.
 
 ## Use a board runner later
 

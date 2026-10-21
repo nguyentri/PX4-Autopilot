@@ -13,6 +13,12 @@ architecture for one central compute SoC.
 | [Development ecosystem](./rzv2h-development-ecosystem.md) | Select a Linux/ROS 2/AI profile, find repositories, evaluate YOLO compatibility and reproduce a pinned demo | Solution architects, BSP, AI and integration teams |
 | [System specification](./rzv2h-system-specification.md) | Allocate hardware resources, design power and external interfaces, define device contracts and prepare board reviews | Systems, hardware, payload and validation teams |
 | [Software specification](./rzv2h-software-specification.md) | Locate build inputs and source owners, design inter-core communication, integrate devices and plan software bring-up | Flight, RTOS, Linux, autonomy and validation teams |
+| [Dual-CR8 demo architecture](./rzv2h-dualcr8-demo-architecture.md) | Review complete subsystem ownership, lifecycle, battery/persistence and output-inhibit flows | Demo and product integration teams |
+| [Dual-CR8 engineering design](./rzv2h-dualcr8-demo-design.md) | Review proposed exact-BOM resources, IPC wire contracts, state/sequence diagrams and qualification gaps | Firmware, board and validation teams |
+
+## Demo module contracts
+
+The [shared requirements registry](./rzv2h-demo-requirements.md) owns new module IDs and links seven specifications: sensors/navigation, flight control, battery/power, calibration/storage, IPC, actuator safety and diagnostics/release. CR8-0 performs standard mixing; CR8-1 validates and owns physical outputs. Initial qualification is props-off with full battery/persistence requirements. Key production decisions are frozen: DShot is selected as the primary ESC protocol (with 400Hz PWM backup), and the production hardware layout targets a fully custom discrete RZ/V2H board derived directly from the working RDK-RZ/V2H multicore demo.
 
 ## Recommended reading paths
 
@@ -50,6 +56,8 @@ pre-development references, not customer pinouts or production evidence.
 | Plan integration evidence and a reproducible release | Software [bring-up gates](./rzv2h-software-specification.md#343-bring-up-gates-and-evidence-to-save) and [release manifest](./rzv2h-software-specification.md#104-minimum-release-manifest) |
 
 ## Requirements, evidence and maintenance
+
+The dual-CR8 evaluation covers sensors/navigation, flight control, battery/power, calibration/storage, IPC, actuator safety and diagnostics/release. Full acceptance requires real battery health and persistent calibration. Props-off bring-up, configured disarmed pulses and electrically inactive outputs are separately identified; the engineering design does not promote an incomplete bench milestone to product compliance.
 
 The system and software specifications define target requirements. Current
 implementation status and named hardware evidence are maintained in the

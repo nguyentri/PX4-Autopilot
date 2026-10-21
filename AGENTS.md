@@ -17,6 +17,7 @@ focus here.
 | NuttX apps (submodule) | `platforms/nuttx/NuttX/apps/` |
 | PX4 platform HAL (RZ/V) | `platforms/nuttx/src/px4/renesas/rzv/` (hrt, dshot, io_pins, board_reset, ...) |
 | PX4 boards | `boards/renesas/rdk-rzv2h/` (CR8-0), `rdk-rzv2h-io-cr8_1/`, `rdk-rzv2h-io-cm33/` |
+| Shared RZ/V2H demo contracts | `src/apps/` (CMake target `rzv2h_demo`; board-local entry points remain under the PX4 boards) |
 | Debug / RTT / SVD tools | `platforms/nuttx/Debug/` (`rzv2h-ipc/` holds IPC HIL scripts) |
 | Host contract tests | `test/rzv2h_*` (python3 / bash, run directly) |
 | Register map (CMSIS-SVD) | `rzv2h.svd` (repo root) |
@@ -35,8 +36,9 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 |------|--------------------------|--------|
 | Full PX4 firmware | `./build.sh renesas_rdk-rzv2h_default` (`--list` for all targets, `--no-clean` to iterate) | `build/<target>/<target>.elf` |
 | NuttX only (driver bring-up, NSH samples) | `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `.bin`, `.hex` |
-- PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot,drone,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_default`, `renesas_rdk-rzv2h-io-cm33_default`.
-- `dualcr8` is the dual-CR8 staging profile: `drone` plus raw `/dev/ipcc1` and the CR8-1 PX4IO bridge; pair it with the `io-cr8_1` image. Commander blocks arming until CR8-1 reports a fresh lease and heartbeat.
+- PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot,drone,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_{default,pwm}`, `renesas_rdk-rzv2h-io-cm33_default`.
+- `dualcr8` is the canonical exact-BOM sensor bring-up profile: one polled ICM-45686/P93, BMM150, BMP390, M10 and TFmini. CR8-0 motor outputs and the legacy bridge are disabled; commander requires first I/O status. No CR8-1 actuator pair is qualified yet. The former separate demo target was merged here; old staging evidence remains historical.
+- `pwm` on CR8-1 is the build-clean v3 supervisor candidate for `dualcr8`; zero hardware identities prevent physical resource claim. Current software evidence and open service/qualification gates: `docs/renesas/evidence/dualcr8-software-validation-261021.md`. Shared demo helpers live directly in `src/apps/` (CMake target `rzv2h_demo`).
 - `simple` is the isolated RTT PWM + ICM20948 accel/gyro bench profile; see `docs/renesas/validation/simple-pwm-icm20948-validation.md`. Retired core-only resources/evidence remain historical.
 - NuttX configs: `platforms/nuttx/NuttX/build.sh --list` (e.g. `nsh-rtt`, `nsh-scif`, `ipcc`, `adc`, `canfd`, `hil-full`). `--no-clean <config>` rebuilds the same config incrementally. Exit codes: 0 ok, 1 build failed, 2 bad usage.
 - Never hand-run `tools/configure.sh` + `make`; the scripts handle distclean and stale arch symlinks.

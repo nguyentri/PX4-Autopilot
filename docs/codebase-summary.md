@@ -53,6 +53,13 @@ with `./build.sh --list`; do not copy a target inventory into this document.
 The retired core-only resources under the RDK board tree are historical and do
 not represent an active target.
 
+Shared dual-CR8 demo code lives directly in [`src/apps/`](../src/apps/):
+wire codecs, actuator lease/snapshots, output worker/status contracts, battery
+validation and private gateway/perception validation. Its CMake target remains
+`rzv2h_demo`; the root CMake and Kconfig files register that directory.
+Consumers include these headers as `<apps/...>`. The `rzv2h_outputs` and
+`rzv2h_io` entry points remain in their board-local source directories.
+
 ## 4. References (Source of Truth)
 
 Local, gitignored reference material is under `refs/` when present:

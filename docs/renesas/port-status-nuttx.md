@@ -81,6 +81,18 @@ timing and its RTT-attached failure. It does not qualify sensors, electrical
 waveforms, persistent storage, cold-cycle/soak behavior, other profiles, or IO
 cores.
 
+The current PX4 software receipt records the canonical `dualcr8` CR8-0 sensor
+profile and the compiled CR8-1 `pwm` supervisor candidate:
+[dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md).
+Those checks are host/build evidence only and add no lower-half hardware tier;
+the receipt preserves the existing named NuttX board evidence and its physical
+qualification limits.
+
+The default-off `CONFIG_RZV2H_DUALCR8_DRONE` board selector registers exactly
+one polled SPI0 device on P93 and excludes P94/P95 sensor or button ownership.
+The three-CS extension and native GY912 paths remain separate. This selector
+has source/host/build evidence, not a new physical SPI qualification result.
+
 ### Reference extension boundary
 
 The opt-in `drone` profile has host/build evidence and no extension target

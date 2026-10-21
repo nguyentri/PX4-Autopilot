@@ -48,6 +48,7 @@ scope and provenance when citing these historical records:
 | [Three-core IPC artifacts](evidence/rzv2h-three-core-ipc-artifacts.md) | Historical hashes/address checks, not runtime qualification |
 | [PX4 software checkpoints](evidence/px4-hal-software-checkpoints.md) | Historical builds, reset-symbol checks and SIH/DShot provenance |
 | [PX4 CR8-0 hardware tests](evidence/px4-hardware-tests-cr8-0-261021.md) | 21/32 native entries passed; 11 blocked, with bounded DShot/HRT observations and physical qualification limits |
+| [Dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md) | Current host/build receipt: 61 suites/583 cases, three firmware builds and five candidate artifact cases; no hardware tier or actuator-pair admission |
 
 ## Validation procedures
 
@@ -62,6 +63,7 @@ what was actually observed.
 | Standalone SPI0/P94 ICM20948 | [GY-912 validation](validation/gy912-icm20948-validation.md) |
 | Standalone GPT PWM | [PWM pin validation](validation/pwm-pin-validation.md) |
 | Integrated simple PWM/ICM20948 bench | [Simple profile validation](validation/simple-pwm-icm20948-validation.md) |
+| Canonical dual-CR8 v3 candidates | [Sensor/actuator candidate validation](validation/dualcr8-sensor-actuator-demo.md) and [software receipt](evidence/dualcr8-software-validation-261021.md) |
 | Regression/build/offline checks for future CI | [Regression tooling](validation/rzv2h-regression-ci.md) |
 | Isolated CR8-0 driver samples over RTT | [Board sample procedure](validation/rzv2h-rtt-board-samples.md) |
 | CR8-0 ↔ CR8-1 raw IPC | [IPC HIL guide](validation/rzv2h-ipc-hil-test-guide.md) |

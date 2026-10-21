@@ -64,7 +64,7 @@ separate validation surfaces. A raw NuttX IPC transcript therefore does not
 promote PX4 multicore integration.
 
 The [IPC architecture](./renesas/ipc-architecture.md) owns transport and
-application-protocol boundaries. Helper symbols and linker carveouts do not
+application-protocol boundaries. Shared dual-core application logic (wire codecs, lease enforcement, atomic snapshots, output workers, battery translation, and intent gateway) is implemented in [`src/apps/`](../src/apps/) under the `rzv2h_demo` library. Helper symbols and linker carveouts do not
 establish an enabled runtime link.
 
 ## 5. PX4 Board Layout

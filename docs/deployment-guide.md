@@ -80,15 +80,13 @@ set `$pc` to the entry point and `$cpsr = 0x1d3` (SVC mode, ARM state, IRQ,
 FIQ and asynchronous aborts masked), so the new image never starts in the
 halted image's mode or with its interrupts enabled.
 
-To run the dual-CR8 PX4 pair, load `renesas_rdk-rzv2h_dualcr8` on CR8-0 and
-`renesas_rdk-rzv2h-io-cr8_1_default` on CR8-1:
-
-```bash
-JLINK_SERIAL=<probe-serial> timeout 300 \
-  platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh \
-  build/renesas_rdk-rzv2h_dualcr8/renesas_rdk-rzv2h_dualcr8.elf \
-  build/renesas_rdk-rzv2h-io-cr8_1_default/renesas_rdk-rzv2h-io-cr8_1_default.elf
-```
+The current `renesas_rdk-rzv2h_dualcr8` image is exact-BOM sensor bring-up
+with CR8-0 motor outputs and the legacy bridge disabled. It is not qualified
+with `renesas_rdk-rzv2h-io-cr8_1_default`. The older dual-CR8 bridge captures
+apply only to their recorded image hashes. Follow the
+[active plan](../plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md) for the
+pending compatible actuator pair; no current two-image deployment command is
+provided before that gate closes.
 
 J-Link reset, image load, and target memory writes require explicit user
 authorization. No raw `.bin` or xSPI flashing command is approved. The boot

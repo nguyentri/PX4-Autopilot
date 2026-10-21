@@ -1,6 +1,6 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-10-11
+**Date:** 2026-10-21
 **Status:** Profile-specific software mapping; extension target validation pending
 **Reference software source:** [selected RDK configuration](../../refs/rzv2h_drone_px4-dev/configuration.xml), [reference hardware guide](../../refs/rzv2h_drone_px4-dev/docs/HARDWARE.md)
 
@@ -11,13 +11,17 @@ measurements remain target-validation tasks; see [reference sources](./reference
 
 ## Sensor Wiring Profiles
 
-| Connection | Existing native bench/default | Opt-in `drone` extension |
-|---|---|---|
-| SPI0 P90/P91/P92 | MOSI/MISO/SCK, single MPU9250 or ICM20948 | Shared MOSI/MISO/SCK, three ICM-45686 |
-| P93 | Single sensor CS; GPIO or hardware SSLA0 by configuration | IMU #1 CS (reference SSLA0) |
-| P94 | DRDY/TINT for MPU9250/GY912/simple, or exclusive button demo | IMU #2 CS (reference SSLA1); no DRDY |
-| P95 | No sensor ownership in existing bench profile | IMU #3 CS (reference SSLA2); no DRDY |
-| SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x77, INA228 0x45 |
+| Connection | Existing native bench/default | Opt-in `drone` extension | Canonical `dualcr8` sensor profile |
+|---|---|---|---|
+| SPI0 P90/P91/P92 | MOSI/MISO/SCK, single MPU9250 or ICM20948 | Shared MOSI/MISO/SCK, three ICM-45686 | MOSI/MISO/SCK, one ICM-45686 |
+| P93 | Single sensor CS; GPIO or hardware SSLA0 by configuration | IMU #1 CS (reference SSLA0) | Single GPIO CS, polled sensor |
+| P94 | DRDY/TINT for MPU9250/GY912/simple, or exclusive button demo | IMU #2 CS (reference SSLA1); no DRDY | No sensor ownership |
+| P95 | No sensor ownership in existing bench profile | IMU #3 CS (reference SSLA2); no DRDY | No sensor ownership |
+| SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x77, INA228 0x45 | BMM150 0x10, BMP390 via `bmp388` 0x77; battery hardware unselected |
+
+The `dualcr8` profile selects `CONFIG_RZV2H_DUALCR8_DRONE` exclusively
+with the other SPI sensor layouts. Its source/host contracts and firmware build
+pass; fitted wiring, orientation and electrical behavior remain unqualified.
 
 The `drone` profile selects default-off
 `CONFIG_RZV2H_DRONE_SENSOR_EXTENSION`. Its native GPIO CS dispatch uses the

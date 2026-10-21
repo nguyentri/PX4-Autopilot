@@ -1,7 +1,7 @@
 ---
 title: RZ/V2H Development Ecosystem and RDK Pre-Development Guide
-version: 1.1
-date: 2026-10-11
+version: 1.3
+date: 2026-10-21
 status: Ecosystem snapshot; verify releases before product freeze
 audience: Customers, solution architects, BSP teams, AI teams, and integrators
 ---
@@ -51,6 +51,50 @@ all three target domains into a flight-qualified release.
 
 ### 1.2 Choose one coherent profile per workstream
 
+**Figure 1: RZ/V2H development ecosystem software landscape and profiles**
+
+```mermaid
+flowchart TD
+    subgraph Host["Host Development & Tooling Environment"]
+        DevPC["Linux Host Workstation / Docker Container"]
+        DRPTool["DRP-AI Translator & RUHMI Compiler<br/>(ONNX/PyTorch → DRP-AI3 Binaries)"]
+        IDE["e² studio / GCC ARM Toolchain<br/>(Cross-compilation for CR8 & A55)"]
+        Debug["SEGGER J-Link / RTT Console<br/>(SWD debug & multi-core tracing)"]
+        GCS["QGroundControl (QGC)<br/>(MAVLink telemetry & mission planner)"]
+    end
+
+    subgraph RZV2H["RZ/V2H Heterogeneous Compute SoC"]
+        subgraph A55_Domain["Perception & Autonomy (Quad Cortex-A55)"]
+            OS1["Profile A: RDK Ubuntu 24.04 + ROS 2 Jazzy"]
+            OS2["Profile B: RZ/V AI SDK v8.00 + Yocto Scarthgap"]
+            OS3["Profile C: Supplier SOM BSP (OneKiwi)"]
+            DRPAI_HW["DRP-AI3 Hardware Accelerator<br/>(YOLOv8n 14.4ms, YOLOv5s 19.3ms)"]
+        end
+
+        subgraph Interconnect["On-Chip Interconnect & Shared SRAM"]
+            IPCLink["Shared SRAM Ring Buffers & MHU Mailbox<br/>(/dev/ipcc1, 64-byte packets, causal freshness token)"]
+        end
+
+        subgraph CR8_Domain["Real-Time Avionics (Dual Cortex-R8)"]
+            CR8_0["CR8-0: Primary Flight Core (NuttX + PX4)<br/>EKF2, Commander, Position/Attitude Controllers"]
+            CR8_1["CR8-1: I/O & Safety Core (NuttX)<br/>Output Lease Guard, GPT PWM Worker, Battery Ingress"]
+        end
+    end
+
+    DevPC --> DRPTool
+    DevPC --> IDE
+    IDE --> A55_Domain
+    IDE --> CR8_Domain
+    Debug --> CR8_Domain
+    GCS <--> A55_Domain
+    GCS <--> CR8_0
+
+    A55_Domain <--> IPCLink
+    IPCLink <--> CR8_0
+    CR8_0 <--> IPCLink
+    IPCLink <--> CR8_1
+```
+
 | Profile | Best use | Integration boundary |
 |---|---|---|
 | RDK Ubuntu/ROS 2 | Fast camera, AI, networking and ROS 2 evaluation | Ubuntu/Jazzy application baseline; RDK wiring and boot assets are board-specific |
@@ -65,6 +109,10 @@ specification](./rzv2h-system-specification.md#3-rzv2h-allocation) and [software
 specification](./rzv2h-software-specification.md#3-deployment-by-compute-domain).
 Choose an A55 cold-boot path without a CM33 dependency; run the public FreeRTOS
 sample separately when it is useful for peripheral or transport study.
+
+### 1.3 Dual-CR8 real-sensor evaluation
+
+The [demo architecture](./rzv2h-dualcr8-demo-architecture.md) and [engineering design](./rzv2h-dualcr8-demo-design.md) define a proposed CR8-only NuttX/PX4 evaluation with full battery, persistent-calibration and electrical-inhibit acceptance. The historical `dualcr8`/CR8-1 `default` pair is a dated staging reference; `dualcr8` is now a sensor bring-up target with outputs unavailable, while the proposed CR8-1 `pwm` target and accepted image pair remain pending. Freeze both image/config hashes, raw/application IPC revisions, parameter/calibration identity, battery/ESC ICDs and named evidence together. A55/camera/CM33 are absent from this demo runtime; retain the broader product's Linux/AI profiles below. This local design addition is dated 2026-10-21 and does not refresh the upstream version snapshot checked on 2026-10-11. The approved [seven-module requirements registry](./rzv2h-demo-requirements.md) defines the props-off-first acceptance contracts; hardware selection remains gated.
 
 ## 2. Verified software snapshot
 
@@ -218,6 +266,40 @@ The software specification maps the actual PX4 topic and landing interfaces.
 
 ## 4. AI and YOLO guidance
 
+**Figure 2: RUHMI/DRP-AI TVM compiler artifacts and application/runtime deployment boundary**
+
+```mermaid
+flowchart LR
+    subgraph ModelTrain["1. Model Training & Export"]
+        PyTorch["PyTorch / Ultralytics<br/>(YOLOv8n / YOLOv5s)"]
+        ONNX["ONNX Graph Export<br/>(Fixed shape e.g. 640x640)"]
+        PyTorch --> ONNX
+    end
+
+    subgraph Compile["2. DRP-AI Offline Toolchain (Host)"]
+        RUHMI["RUHMI / DRP-AI TVM compile script<br/>(Pinned SDK, Translator, Quantizer and calibration data)"]
+        ONNX --> RUHMI
+    end
+
+    subgraph Artifacts["3. Deployable Model Package"]
+        Binaries["deploy.json + deploy.params + deploy.so<br/>Preprocessing artifacts when generated"]
+        RUHMI --> Binaries
+    end
+
+    subgraph Target["4. Onboard Execution (RZ/V2H A55 Linux)"]
+        Driver["DRP-AI Kernel Driver<br/>(/dev/drpai0)"]
+        Runtime["DRP-AI TVM runtime library"]
+        ROS2Node["Inference application / ROS 2 wrapper<br/>(Profile-specific capture and processing)"]
+        Detections["Detections for the planner<br/>(Accuracy and full-path latency require measurement)"]
+        Binaries --> Runtime
+        ROS2Node --> Runtime
+        Runtime --> Driver
+        ROS2Node --> Detections
+    end
+```
+
+The [Renesas RZ/V2H compiler tutorial](https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/tutorials/tutorial_RZV2H.md#c-interpreter-mode) identifies this TVM artifact set; the [application guide](https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/apps/build_appV2H.md) describes the C++ application and runtime-library boundary. Pin the compiler release/commit and retain its complete generated directory with the application/runtime build receipt. This diagram does not prescribe another toolchain's file format or establish a deployed ROS 2/DRP-AI path in this firmware workspace.
+
 “YOLO version” is not sufficient configuration. The RDK ecosystem exposes
 YOLOv8, YOLOX, and Gold-YOLO packages, while the current
 [RZ/V2H model list](https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/docs/model_list/Model_List_V2H.md)
@@ -264,6 +346,45 @@ segmentation and pose as future additions. The broader compiler model list
 does not mean the RDK wrapper implements every task.
 
 ## 5. From RDK to a customer board
+
+**Figure 3: Customer journey from RDK evaluation bench to flight-qualified aircraft**
+
+```mermaid
+flowchart TD
+    subgraph Phase1["Phase 1: RDK Bench Pre-Development"]
+        Step1_1["RDK Ubuntu 24.04 / ROS 2 Bring-Up"]
+        Step1_2["Evaluate YOLOv8 & Camera pipelines"]
+        Step1_3["NuttX CR8-0 flight & exact sensor bring-up"]
+    end
+
+    subgraph Phase2["Phase 2: Custom Architecture & Hardware Design"]
+        Step2_1["Design Custom Discrete Board based on RDK Demo"]
+        Step2_2["Pinmux, Power Tree & High-Speed Memory Design"]
+        Step2_3["BMS & DShot ESC (PWM Backup) ICD Freezing"]
+    end
+
+    subgraph Phase3["Phase 3: Board Bring-Up & BSP Customization"]
+        Step3_1["Port Yocto BSP, Device Tree & Clocks"]
+        Step3_2["Qualify Dedicated CSI-2 Camera Inputs"]
+        Step3_3["Dual-CR8 NuttX Port Deployment"]
+    end
+
+    subgraph Phase4["Phase 4: Multi-Core Safety & Bench Qualification"]
+        Step4_1["Props-Off Physical Tests (Waveforms, 50ms lease shutdown)"]
+        Step4_2["Atomic Storage & Battery Failsafe Verification"]
+        Step4_3["Paired ELF Hash Release Manifest Binding"]
+    end
+
+    subgraph Phase5["Phase 5: Flight Validation & Deployment"]
+        Step5_1["Tethered Hover & Gain Tuning"]
+        Step5_2["Autonomous AI Navigation & Precision Landing"]
+    end
+
+    Phase1 --> Phase2
+    Phase2 --> Phase3
+    Phase3 --> Phase4
+    Phase4 --> Phase5
+```
 
 ### 5.1 Reproduce one Linux/AI demonstration
 
@@ -312,15 +433,14 @@ are already integrated. Do not start flight testing from a successful AI demo.
 
 ### 5.3 Transfer to customer hardware
 
-1. Select a SOM/carrier or discrete SoC design. Obtain the released hardware
-   design package; a connector family name is not a compatible pinout.
+1. Derive the custom discrete SoC board layout directly from the verified RDK-RZ/V2H drone demo reference architecture, pinout, and clock trees established in this workspace.
 2. Choose direct CSI-2, SerDes, USB or Ethernet cameras using bandwidth,
    synchronization, harness and driver evidence.
 3. Port boot/DDR initialization, device tree, memory reservations, pinmux,
    clocks, transceivers, sensor rails and storage ownership.
 4. Qualify the chosen Linux profile and both NuttX images together, with CM33
    unused. Treat the FreeRTOS sample as reference evidence only.
-5. Add customer BMS, RC, ESC, GNSS and payload services through their ICDs.
+5. Add customer BMS, RC, ESC (DShot primary, PWM 400Hz backup), GNSS and payload services through their ICDs.
 6. Re-run the same perception and flight bench tests, then simultaneous-load,
    reset, power and thermal campaigns before aircraft qualification.
 

@@ -89,12 +89,11 @@ Raw-link semantics that callers must design around:
 
 ## 4. PX4IO Message Protocol
 
-The [PX4IO protocol](../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h)
-owns message types, sizes, magic/version, sequence and CRC fields. Frames must
-fit a raw entry. Messages are 28–52 bytes, so every sender (CR8-0 bridge,
-CR8-1 relay, CM33) zero-pads each frame to one 64-byte entry. Receivers check
+The canonical application wire codec is defined in [`src/apps/protocol.hpp`](../../src/apps/protocol.hpp) and [`src/apps/protocol.cpp`](../../src/apps/protocol.cpp) as part of the shared `rzv2h_demo` library, mirrored by the board protocol headers ([CR8-0 protocol.h](../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h), [CR8-1 protocol.h](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h)). It owns message types, sizes, magic/version, sequence, CRC fields and little-endian serialization. Frames must
+fit a raw entry. Messages are 28–52 bytes (v2) or exactly 44–64 bytes (v3), so every sender (CR8-0 bridge/producer,
+CR8-1 relay/worker, CM33) zero-pads each frame to one 64-byte entry (`RZV_IPC_RAW_PAYLOAD_SIZE`). Receivers check
 the CRC over the message length only. Its application CRC is distinct from the transport ABI;
-OpenAMP/RPMsg does not acquire that framing merely by using the same MHU.
+OpenAMP/RPMsg does not acquire that framing merely by using the same MHU. Transport abstraction over `/dev/ipcc1` is wrapped by [`src/apps/raw-link.hpp`](../../src/apps/raw-link.hpp).
 
 The CR8-0 uORB bridge:
 
@@ -129,7 +128,8 @@ on the flight core. These are `#error` guards in `uorb_bridge.cpp`.
 |---|---|---|
 | PX4 default (`renesas_rdk-rzv2h_default`) | disabled | PX4/NuttX configuration |
 | PX4 single-core CR8-0 profiles (`default`, `drone`, `simple`, `sih`, `dshot`) | PX4IO bridge off (`CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE` defaults to `n`; `drone`/`simple` set it explicitly) | host contract test over every `rdk-rzv2h/*.px4board` |
-| PX4 dual-CR8 CR8-0 (`renesas_rdk-rzv2h_dualcr8`) | `drone` plus raw `/dev/ipcc1` initiator (recovery wait ≤ 100 ms) and the PX4IO bridge; pair with the `io-cr8_1` image | bounded on-target bridge, lease and commander capture (below) |
+| PX4 dual-CR8 CR8-0 (`renesas_rdk-rzv2h_dualcr8`) | Exact-BOM sensor profile and coherent v3 `rzv2h_outputs` producer; no local motor outputs or legacy bridge; no qualified peer | [Candidate source/host/build procedure](validation/dualcr8-sensor-actuator-demo.md); earlier bridge captures remain historical |
+| PX4 CR8-1 `pwm` | V3 `rzv2h_io` controller, independent output worker and reporter; hardware identity unconfigured, resources unclaimed | Candidate build/host evidence only; default retains its legacy relay |
 | PX4 SIH (`renesas_rdk-rzv2h_sih`) | disabled | source and post-build contracts |
 | NuttX `:nsh` | disabled | defconfig |
 | NuttX `:ipcc` | CA55/OpenAMP smoke profile | build/source only |
@@ -242,10 +242,9 @@ end-to-end latency is still to be measured.
 
 #### CR8-1 output lease
 
-CR8-1 drives outputs only through the
-[output lease](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.h),
+CR8-1 drives outputs through the output lease tracker (implemented in [`src/apps/actuator-lease.hpp`](../../src/apps/actuator-lease.hpp), [`src/apps/actuator-lease.cpp`](../../src/apps/actuator-lease.cpp), and legacy [output-lease.h](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.h)),
 which implements the software-specification state machine
-(ResetSafe → PeerReady → ArmedLease, any failure → SafeFault):
+(Unclaimed → InitializedSafe → Ready → Armed, any failure or timeout → Inhibited / SafeFault):
 
 | State | Entered by | Outputs |
 |---|---|---|

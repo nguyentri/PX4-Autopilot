@@ -16,8 +16,10 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 (Default)** — Build-Clean; RTT0 console, volatile `/fs/params`, WDT-backed reset chain linked, SPI0/SCI7/PWM/serial adapters wired; on-target hardware validation pending
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DShot** — Bounded on-target motor-stop TX (opt-in DShot600 via GPT+DMAC); electrical waveform, ESC, and nonzero-throttle proof pending ([latest evidence](./docs/renesas/evidence/px4-hardware-tests-cr8-0-261021.md))
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Simple** — Build-Clean bench profile: RTT, four-channel PWMOut and SPI0 ICM20948 raw accel/gyro; fresh four-profile software checks passed; hardware untested
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DualCR8** — Build-Clean exact-BOM sensor profile with a supervised remote-output producer; hardware identity unconfigured, no admitted actuator pair
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** — On-Target Bounded Demo; simulated sensors (accel/gyro/baro/mag/GPS), HIL sensors, `pwm_out_sim`; GTM7 HRT callback pass; cold-cycle, pin-safety, and soak gates pending
 - ⏸ **Renesas RDK-RZV2H IO CR8_1** — Build Only (raw IPC / IPCC build-clean with distinct RTT console and ABI-v2 sequence recovery; NuttX-only raw IPC demo passes 100/100 on target; this PX4 image is not target-proven)
+- ⏸ **Renesas RDK-RZV2H IO CR8_1 PWM** — Build-Clean ABI-v3 supervisor candidate; physical resources remain unclaimed until a selected hardware contract is admitted
 - ⏸ **Renesas RDK-RZV2H IO CM33** — Build Only (raw IPC / IPCC build-clean with secure SRAM `0x08002800` vectors, non-secure MHU `0x50480000`; target boot/IPC proof pending)
 
 ### Build Targets
@@ -34,6 +36,7 @@ renesas_fpb-ra8e1_dshot
 renesas_fpb-ra8e1_test
 renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
+renesas_rdk-rzv2h-io-cr8_1_pwm
 renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_drone
 renesas_rdk-rzv2h_dshot
@@ -48,7 +51,7 @@ Cortex-R8 core 0 runs the PX4 flight stack; CR8-1 and CM33 are IO cores over IPC
 
 - **NuttX drivers:** a handful have bounded on-target evidence (CR8 startup/IRQ, SCI4 shell, GTM/HRT, DMAC memcpy, CAN-FD and SPI loopback, raw IPC CR8-0 ↔ CR8-1 100/100); most are build-clean or source-audited; none are production.
 - **PX4 HAL (CR8-0):** SPI, I2C, GPIO, PWM, HRT, IPC build-clean; params on volatile TMPFS; xSPI persistence and per-unit identity remain qualification work.
-- **Integrated PX4:** on-target SIH demo only; sensor/actuator flight path not yet validated.
+- **Integrated PX4:** bounded SIH and DShot motor-stop evidence; the dual-CR8 sensor/output application is host-tested and build-clean. The sensor/actuator flight path remains unqualified.
 
 Authoritative, per-driver tables: [port-status-nuttx.md](./docs/renesas/port-status-nuttx.md) and [port-status-px4-hal.md](./docs/renesas/port-status-px4-hal.md). Do not copy them here.
 
@@ -76,6 +79,18 @@ the [reference-port plan](./plans/261011-2017-rzv2h-drone-reference-port/plan.md
 Its profile wiring preserves existing native samples; source/host/build
 work proceeds independently of later physical qualification.
 The retired core-only target is historical; its NuttX/ROMFS resources and evidence remain archived.
+
+The `dualcr8` target is build-clean for the exact-BOM sensor bring-up in the
+[dual-CR8 demo plan](./plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md).
+It leaves CR8-0 motor outputs unclaimed and requires I/O status before arming.
+The v3 producer and `renesas_rdk-rzv2h-io-cr8_1_pwm` supervisor candidate have
+host/build checks and a [validation procedure](./docs/renesas/validation/dualcr8-sensor-actuator-demo.md).
+The [software validation record](./docs/renesas/evidence/dualcr8-software-validation-261021.md)
+records the current checks and remaining application gaps.
+Their hardware identity remains unconfigured and
+physical outputs stay unclaimed. Selected ESC/power/storage contracts and
+physical qualification are still pending; this is not an accepted actuator pair.
+The CR8-1 `default` image retains its legacy relay role and is not its peer.
 
 ### AI Agents
 

@@ -10,7 +10,6 @@ does not qualify an integrated physical HAL.
 - **in-progress**: Skeleton drafted; driver integration underway.
 - **bounded on-target**: A named image/run demonstrates the stated behavior; fixture, timing and physical qualification limits remain explicit.
 - **build-clean**: HAL adapter implemented and wired into its named board target; compiles/links. No on-target hardware validation yet.
-- **bounded on-target**: A named CR8-0 evidence record verifies a limited integration path; physical behavior and untested profiles remain open.
 - **deferred**: HAL adapter present but the feature is intentionally disabled in the default build pending hardware enablement (documented in board defconfig).
 - **validated**: On-target integration tests pass; used in application code.
 
@@ -20,27 +19,53 @@ does not validate physical payload buses or motor outputs. Historical build
 hashes, reset-symbol checks, SIH provenance limits and DShot host results are
 kept in [software checkpoints](evidence/px4-hal-software-checkpoints.md).
 
-CR8-1 and CM33 PX4IO startup now checks transport initialization before
-publishing the module instance; failure is reported and releases the instance.
-The [expanded remediation record](../../plans/261013-0624-rzv2h-expanded-remediation/reports/remediation.md)
-tracks verification. The staged demo ramp and echo are replaced: CR8-1 relays
-the CR8-0 bridge's actuator commands to CM33, and both peers drive commanded
-values only while frames stay fresh, then output `0` after the 50 ms output lease; CR8-1 gates outputs through a Safe/Ready/Armed/SafeFault lease and reports from a separate thread (see the
-[IPC architecture](ipc-architecture.md#current-application-and-ca55-integration-gaps)).
-The return path is CR8-1 heartbeat and fault status at 10 Hz; the CR8-0
-bridge tracks CR8-1 liveness with a 500 ms timeout. On 2026-10-13 the CR8-1 IO
-image autostarted from ROMFS on the board and streamed 20 consecutive
-CRC-valid heartbeat/fault frames to a CR8-0 `ipcc-raw` reader (bounded
-on-target for the CR8-1 side only). The `renesas_rdk-rzv2h_dualcr8` CR8-0
-profile (the `drone` profile plus the bridge and the raw `/dev/ipcc1`
-initiator) runs the full CR8-0 → CR8-1 command path on the disarmed bench:
-CR8-1 holds a 404 Hz ESC worker and a 370 Hz control loop, the CR8-1 lease
-also requires a fresh CR8-0 heartbeat, and the bridge publishes
-`px4io_status`, on which commander's I/O-processor check blocks arming when
-CR8-1 is silent, in SafeFault or not receiving FMU outputs (bounded
-on-target, 2026-10-13; armed and SafeFault paths host-tested only). CM33 has
-no PWM backend and is optional and low priority; the single-core CR8-0 drone
-demo comes first, dual CR8 later.
+The legacy v2 CR8-0 `px4io_bridge`/`uorb_bridge` path has a real PX4 uORB to
+raw-IPC transport and publishes `px4io_status` for Commander's I/O-processor
+arming check. Its source loop sleeps 2.5 ms (400 Hz); the named 2026-10-13
+disarmed bench observation measured the historical CR8-1 relay worker at about
+404 Hz and its control loop at about 370 Hz. That observation also recorded the
+CR8-1 image autostarting from ROMFS and streaming 20 consecutive CRC-valid
+heartbeat/fault frames to a CR8-0 `ipcc-raw` reader. It is bounded historical
+evidence for the then-staged v2 image; armed and SafeFault paths were
+host-tested only. CM33 has no PWM backend and remains optional and low
+priority.
+
+The current v3 path is separate. Canonical `dualcr8` links the
+`rzv2h_outputs` producer with PX4 mixer/uORB and the Commander I/O-status gate,
+but deliberately has no local PWM/DShot driver or legacy bridge. The CR8-1
+`pwm` image is a compiled v3 supervisor candidate with a 400 Hz worker and a
+separate status reporter. The worker uses a 50 ms logical lease and inhibits
+stale output; its hardware identity, output rate, output mask and hardware
+contract are all zero, so it remains unconfigured/inhibited. The current
+software receipt records the exact builds, host checks and review repairs
+without promoting either image to a hardware-qualified actuator pair:
+[dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md).
+
+The `src/apps/gateway.*` advisory validator is a host-tested component contract.
+Its A55 transport, deployment, uORB handoff and Commander fallback remain
+future integration work; it does not change the compiled CR8-0 v3 status path.
+
+### Canonical dual-CR8 sensor preparation
+
+`renesas_rdk-rzv2h_dualcr8` is **build-clean for sensor bring-up only**:
+one polled ICM-45686/P93, BMM150, BMP390, M10 and TFmini startup routes.
+Host tests execute the selected SPI descriptors/CS dispatch, initialization
+failure/retry, remote-owner reset/timer exclusion, first-status arming failure
+and final TFmini 115200 8N1 application. The linked image contains no local
+PWM/DShot driver or legacy bridge. It cannot arm normally without I/O status.
+The [dual-CR8 software validation receipt](evidence/dualcr8-software-validation-261021.md)
+records the current build hashes, host checks and evidence boundary. Earlier
+execution and consolidation records contain historical pre-merge hashes and
+remain stateful records rather than current release proof.
+The v3 `rzv2h_outputs` producer and CR8-1 `pwm` supervisor now have source,
+host and build evidence. CR8-1 separates controller, worker and reporter;
+worker faults and stale control/status cannot remain arm-ready. Default-off
+delayed bench hooks and candidate ELF/ROMFS/package checks are described in
+the [candidate validation procedure](validation/dualcr8-sensor-actuator-demo.md).
+The compiled hardware identity remains unconfigured (zero output profiles,
+rate, mask and contract), so physical output resources remain unclaimed.
+Selected ESC, battery/storage/command hardware, accepted pair identity and all
+physical qualification remain open.
 
 ### Reference extension boundary
 
