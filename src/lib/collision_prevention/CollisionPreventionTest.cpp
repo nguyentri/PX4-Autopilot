@@ -94,6 +94,23 @@ protected:
 
 TEST_F(CollisionPreventionTest, instantiation) { CollisionPrevention cp(nullptr); }
 
+TEST_F(CollisionPreventionTest, narrowBodyObstacleUsesOnlyAvailableBins)
+{
+	TestCollisionPrevention cp;
+	obstacle_distance_s message{};
+	message.frame = obstacle_distance_s::MAV_FRAME_BODY_FRD;
+	message.increment = 1.f;
+	message.min_distance = 10;
+	message.max_distance = 1000;
+	for (uint16_t &distance : message.distances) { distance = UINT16_MAX; }
+	message.distances[0] = 200;
+	cp.test_addObstacleSensorData(message, 0.f);
+	EXPECT_EQ(cp.getObstacleMap().distances[0], 200);
+	for (int bin = 1; bin < CollisionPrevention::BIN_COUNT; ++bin) {
+		EXPECT_EQ(cp.getObstacleMap().distances[bin], UINT16_MAX);
+	}
+}
+
 TEST_F(CollisionPreventionTest, behaviorOff)
 {
 	// GIVEN: a simple setup condition
