@@ -167,14 +167,14 @@ The methods below define required future proof. Existing source/reference covera
 
 | ID | Method | Level | Pass criterion | Existing test/gap | Code-review criterion |
 |---|---|---|---|---|---|
-| SDS-STORE-001 | analysis + test | integration/system | Exact eligible calibration values restore after power removal on the selected medium. | gap: new-pair tests and physical evidence pending | Durability through complete stack |
-| SDS-STORE-002 | analysis + test | integration/system | Injected interruption never exposes a mix of old and new record fields. | gap: new-pair tests and physical evidence pending | Atomic replace and publication boundary |
-| SDS-STORE-003 | analysis + test | integration/system | Truncation and corruption produce explicit invalid calibration/readiness. | gap: new-pair tests and physical evidence pending | Integrity coverage before activation |
-| SDS-STORE-004 | analysis + test | integration/system | Unsupported version cannot silently load as current calibration. | gap: new-pair tests and physical evidence pending | Version validation and explicit migration |
-| SDS-STORE-005 | analysis + test | integration/system | Same-model same-route replacement cannot silently inherit old calibration without qualified identity/replacement maintenance. | gap: new-pair tests and physical evidence pending | DeviceId limitations |
-| SDS-STORE-006 | analysis + test | integration/system | Each write/erase/rename interruption recovers last complete set or safe defaults marked uncalibrated. | gap: new-pair tests and physical evidence pending | Recovery state selection |
-| SDS-STORE-007 | analysis + test | integration/system | Maximum selected save/load/logger workload leaves measured control and output deadlines intact. | gap: new-pair tests and physical evidence pending | Context and bounded access |
-| SDS-STORE-008 | analysis + test | integration/system | Image/schema/hardware mismatch on rollback cannot activate incompatible saved records. | gap: new-pair tests and physical evidence pending | Compatible release-set restore |
+| SDS-STORE-001 | analysis + test | integration/system | Exact eligible calibration values restore after power removal on the selected medium. | gap: full integration and physical acceptance evidence pending | Durability through complete stack |
+| SDS-STORE-002 | analysis + test | integration/system | Injected interruption never exposes a mix of old and new record fields. | gap: full integration and physical acceptance evidence pending | Atomic replace and publication boundary |
+| SDS-STORE-003 | analysis + test | integration/system | Truncation and corruption produce explicit invalid calibration/readiness. | gap: full integration and physical acceptance evidence pending | Integrity coverage before activation |
+| SDS-STORE-004 | analysis + test | integration/system | Unsupported version cannot silently load as current calibration. | gap: full integration and physical acceptance evidence pending | Version validation and explicit migration |
+| SDS-STORE-005 | analysis + test | integration/system | Same-model same-route replacement cannot silently inherit old calibration without qualified identity/replacement maintenance. | gap: full integration and physical acceptance evidence pending | DeviceId limitations |
+| SDS-STORE-006 | analysis + test | integration/system | Each write/erase/rename interruption recovers last complete set or safe defaults marked uncalibrated. | gap: full integration and physical acceptance evidence pending | Recovery state selection |
+| SDS-STORE-007 | analysis + test | integration/system | Maximum selected save/load/logger workload leaves measured control and output deadlines intact. | gap: full integration and physical acceptance evidence pending | Context and bounded access |
+| SDS-STORE-008 | analysis + test | integration/system | Image/schema/hardware mismatch on rollback cannot activate incompatible saved records. | gap: full integration and physical acceptance evidence pending | Compatible release-set restore |
 
 ## Traceability
 

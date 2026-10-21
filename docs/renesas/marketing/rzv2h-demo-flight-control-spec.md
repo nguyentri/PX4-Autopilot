@@ -2,7 +2,7 @@
 title: "RZ/V2H demo: Flight control and command authority"
 version: 1.0
 date: 2026-10-21
-status: Approved target contract; implementation and qualification pending
+status: Approved target contract; software subset delivered, full qualification pending
 registry: rzv2h-demo-requirements.md
 ---
 
@@ -93,50 +93,43 @@ These are target integration states, not claims that enums or handlers already e
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Boot : Cold Power-On
-
-    Boot --> Disarmed : Health checks complete & backend ready
-    note right of Disarmed : Flight authority established; outputs electrically inactive
-
-    Disarmed --> Armed : Arm command & all preflight gates satisfied
-    note right of Armed : Advance control generations; publish live motor setpoints
-
-    Armed --> Inhibited : Disarm / Lockdown / Failsafe / Command loss
-    note right of Inhibited : Physical outputs clamped; prevent stale armed command replay
-
-    Inhibited --> Disarmed : Valid recovery & fresh disarmed generation
-    note right of Disarmed : Safety loop cleared; ready for new arming cycle
+    [*] --> Disarmed : Boot, outputs inhibited
+    Disarmed --> Armed : Ordinary arm checks and fresh backend readiness pass
+    Armed --> FlightFailsafe : RC / GCS / Offboard loss, configured PX4 response
+    FlightFailsafe --> Armed : PX4-authorized mode recovery
+    note right of FlightFailsafe : Feasible RTL / land / hold still needs fresh armed motor commands
+    Armed --> Inhibited : Disarm / lockdown / termination / local kill / output-authority expiry
+    FlightFailsafe --> Inhibited : Disarm / lockdown / termination / local kill / output-authority expiry
+    Inhibited --> Disarmed : Output-safe recovery and fresh disarmed handshake
 ```
 
 | From | Event / guard | To | Action / recovery constraint |
 |---|---|---|---|
-| Boot | Health not yet complete | Disarmed | No arm eligibility |
+| Boot | Health not yet complete | Disarmed | Outputs inhibited; no arm eligibility |
 | Disarmed | Ordinary checks and valid command authority | Armed | Produce fresh coherent controlled outputs |
-| Armed | Disarm/lockdown/termination transition | Inhibited | Fresh state cannot overlay old values |
+| Armed | RC/GCS/Offboard loss | Flight failsafe | Configured feasible PX4 response retains fresh armed output authority |
+| Armed / flight failsafe | Disarm/lockdown/termination/kill/authority expiry | Inhibited | Fresh state cannot overlay old values |
 | Inhibited | Valid recovery and new disarmed generation | Disarmed | No cached armed replay |
 
-**Figure 3: Real-time 400Hz flight control loop and actuator dispatch sequence**
+**Figure 3: Independently scheduled flight processing and candidate PWM dispatch; timing remains unqualified**
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant IMU as ICM-45686 (SPI0)
-    participant EKF2 as PX4 EKF2 Estimator
-    participant Ctrl as Rate & Attitude Controller
-    participant Mixer as Mixer Module
-    participant IPC as Shared Memory IPC
-    participant CR8_1 as CR8-1 PWM Worker
-    participant ESC as Quad ESCs
-
-    Note over IMU,ESC: Deterministic 2.5 ms (400 Hz) Control Execution
-    IMU->>EKF2: High-rate IMU delta angle & delta velocity sample
-    EKF2->>Ctrl: Updated vehicle attitude & angular rate estimate
-    Ctrl->>Mixer: Desired 3-axis torque setpoints (Roll, Pitch, Yaw, Thrust)
-    Mixer->>Mixer: Compute Quad-X motor thrusts (Channels 1-4)
-    Mixer->>IPC: Atomic commit: 4 channel values + causal token + Gen ID
-    IPC->>CR8_1: Fetch snapshot, verify lease validity (< 50 ms)
-    CR8_1->>ESC: Update GPT6/7/9/10 compare registers (PA4, PA7, P96, P53)
-    ESC-->>ESC: Synchronous motor pulse train applied to 4 motors
+    participant IMU as Polled ICM-45686 FIFO
+    participant PX4 as Sensors, EKF2 and controllers
+    participant Mixer as PWM_MAIN mixer and snapshot
+    participant Sender as CR8-0 sender task
+    participant IO as CR8-1 control and worker tasks
+    participant GPT as Candidate PWM hardware
+    IMU->>PX4: Timestamped samples at configured driver cadence
+    PX4->>Mixer: New allocator publication and coherent safety state
+    Mixer->>Mixer: Bind consumed control progress, values and current token
+    Mixer-->>Sender: Bounded atomic snapshot
+    Sender->>IO: CRC-checked command via raw write, outside mixer callback
+    IO->>IO: Validate epoch, token and generation before worker submission
+    IO->>GPT: Apply only after selected hardware and readiness gates pass
+    Note over IMU,GPT: Mixer throttle and worker sleep are 2.5 ms candidates, not a shared cyclic deadline
+    Note over IMU,GPT: Measure scheduling, transport, HAL latency and connector timing separately
 ```
 
 ### Configuration and persistence
@@ -167,14 +160,14 @@ The methods below define required future proof. Existing source/reference covera
 
 | ID | Method | Level | Pass criterion | Existing test/gap | Code-review criterion |
 |---|---|---|---|---|---|
-| SDS-FLIGHT-001 | analysis + test | integration/system | One PWM_MAIN producer exists; no second mapping or reversal occurs on CR8-1. | gap: new-pair tests and physical evidence pending | Single mixer ownership |
-| SDS-FLIGHT-002 | analysis + test | integration/system | I/O or telemetry messages cannot arm the aircraft independently of commander. | gap: new-pair tests and physical evidence pending | Command authorization and mode arbitration |
-| SDS-FLIGHT-003 | analysis + test | integration/system | Every interleaving contains values and effective safety state from the same transaction. | gap: new-pair tests and physical evidence pending | Bounded atomic/seqlock snapshot |
-| SDS-FLIGHT-004 | analysis + test | integration/system | Callback call graph has no raw IPC write/recovery, filesystem or blocking logging. | gap: new-pair tests and physical evidence pending | Real-time context boundary |
-| SDS-FLIGHT-005 | analysis + test | integration/system | Token-only callbacks over cached controls cannot extend output authority. | gap: new-pair tests and physical evidence pending | Allocator generation and token binding |
-| SDS-FLIGHT-006 | analysis + test | integration/system | Missing first status, stale status, backend fault or rate mismatch blocks ordinary arming. | gap: new-pair tests and physical evidence pending | Selected-profile health integration |
-| SDS-FLIGHT-007 | analysis + test | integration/system | RC loss, GCS loss and local inhibit retain separate reason codes and selected policy results. | gap: new-pair tests and physical evidence pending | No link-health conflation |
-| SDS-FLIGHT-008 | analysis + test | integration/system | Nonzero DIS survives snapshot/transport unchanged while standby pins remain inhibited. | gap: new-pair tests and physical evidence pending | Configuration versus final physical inhibit |
+| SDS-FLIGHT-001 | analysis + test | integration/system | One PWM_MAIN producer exists; no second mapping or reversal occurs on CR8-1. | gap: full integration and physical acceptance evidence pending | Single mixer ownership |
+| SDS-FLIGHT-002 | analysis + test | integration/system | I/O or telemetry messages cannot arm the aircraft independently of commander. | gap: full integration and physical acceptance evidence pending | Command authorization and mode arbitration |
+| SDS-FLIGHT-003 | analysis + test | integration/system | Every interleaving contains values and effective safety state from the same transaction. | gap: full integration and physical acceptance evidence pending | Bounded atomic/seqlock snapshot |
+| SDS-FLIGHT-004 | analysis + test | integration/system | Callback call graph has no raw IPC write/recovery, filesystem or blocking logging. | gap: full integration and physical acceptance evidence pending | Real-time context boundary |
+| SDS-FLIGHT-005 | analysis + test | integration/system | Token-only callbacks over cached controls cannot extend output authority. | gap: full integration and physical acceptance evidence pending | Allocator generation and token binding |
+| SDS-FLIGHT-006 | analysis + test | integration/system | Missing first status, stale status, backend fault or rate mismatch blocks ordinary arming. | gap: full integration and physical acceptance evidence pending | Selected-profile health integration |
+| SDS-FLIGHT-007 | analysis + test | integration/system | RC loss, GCS loss and local inhibit retain separate reason codes and selected policy results. | gap: full integration and physical acceptance evidence pending | No link-health conflation |
+| SDS-FLIGHT-008 | analysis + test | integration/system | Nonzero DIS survives snapshot/transport unchanged while standby pins remain inhibited. | gap: full integration and physical acceptance evidence pending | Configuration versus final physical inhibit |
 
 ## Traceability
 
@@ -202,7 +195,7 @@ Review each verification-row boundary against the actual selected profile and so
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 
-Partial existing coverage: [mixer_module_tests.cpp](../../../src/lib/mixer_module/mixer_module_tests.cpp). Native mixer behavior only; remote producer interleavings remain pending. This test was not executed during specification authoring.
+Partial existing coverage: [mixer_module_tests.cpp](../../../src/lib/mixer_module/mixer_module_tests.cpp). Native mixer behavior plus candidate coherent-producer/runtime coverage is recorded in the [software receipt](../evidence/dualcr8-software-validation-261021.md); physical control and full acceptance remain pending. This test was not executed during specification authoring.
 
 ## Open inputs and acceptance gaps
 

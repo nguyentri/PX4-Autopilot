@@ -18,7 +18,7 @@ architecture for one central compute SoC.
 
 ## Demo module contracts
 
-The [shared requirements registry](./rzv2h-demo-requirements.md) owns new module IDs and links seven specifications: sensors/navigation, flight control, battery/power, calibration/storage, IPC, actuator safety and diagnostics/release. CR8-0 performs standard mixing; CR8-1 validates and owns physical outputs. Initial qualification is props-off with full battery/persistence requirements. Key production decisions are frozen: DShot is selected as the primary ESC protocol (with 400Hz PWM backup), and the production hardware layout targets a fully custom discrete RZ/V2H board derived directly from the working RDK-RZ/V2H multicore demo.
+The [shared requirements registry](./rzv2h-demo-requirements.md) owns new module IDs and links seven specifications: sensors/navigation, flight control, battery/power, calibration/storage, IPC, actuator safety and diagnostics/release. CR8-0 performs standard mixing; CR8-1 validates and owns physical outputs. Initial qualification is props-off with full battery/persistence requirements. Key production decisions are frozen: DShot is selected as the primary ESC protocol (with 400Hz PWM backup), and the production hardware layout targets a fully custom discrete RZ/V2H board derived from the RDK reference architecture, with customer-board qualification required.
 
 ## Recommended reading paths
 
@@ -63,7 +63,7 @@ The system and software specifications define target requirements. Current
 implementation status and named hardware evidence are maintained in the
 [NuttX port status](../port-status-nuttx.md) and
 [PX4 HAL status](../port-status-px4-hal.md). Use those records when assessing
-what the repository currently demonstrates. Product performance and aircraft
+what the repository currently demonstrates. The [dual-CR8 software receipt](../evidence/dualcr8-software-validation-261021.md) records the delivered candidate and remaining service/pair gates. Product performance and aircraft
 qualification require results from the selected hardware and released workload.
 
 The ecosystem guide owns the researched version snapshot and upstream links.

@@ -2,7 +2,7 @@
 title: "RZ/V2H demo: Sensors and navigation"
 version: 1.0
 date: 2026-10-21
-status: Approved target contract; implementation and qualification pending
+status: Approved target contract; software subset delivered, full qualification pending
 registry: rzv2h-demo-requirements.md
 ---
 
@@ -18,7 +18,7 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 
 | Path | Classification | Owner | Notes |
 |---|---|---|---|
-| [rc.board_sensors](../../../boards/renesas/rdk-rzv2h/init/drone/rc.board_sensors) | legacy/reference | CR8-0 sensor/navigation integration | Sensor startup migration reference; new exact-BOM selector is pending |
+| [rc.board_sensors](../../../boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_sensors) | product-owned | CR8-0 sensor/navigation integration | Canonical one-P93 exact-BOM startup; fitted-device qualification remains open |
 | [spi.cpp](../../../boards/renesas/rdk-rzv2h/src/spi.cpp) | product-owned | CR8-0 sensor/navigation integration | Selected SPI descriptor integration |
 | [TFMINI.cpp](../../../src/drivers/distance_sensor/tfmini/TFMINI.cpp) | product-owned | CR8-0 sensor/navigation integration | Serial acquisition and final termios ordering |
 | [sensors](../../../src/modules/sensors/) | product-owned | CR8-0 sensor/navigation integration | Sensor validity/calibration consumption |
@@ -90,13 +90,13 @@ stateDiagram-v2
     [*] --> Boot : Cold Power-On
 
     Boot --> Acquiring : Exact demo sensor profile selected
-    note right of Acquiring : Start declared driver instances; verify bus communication
+    note right of Acquiring : Start declared driver instances - verify bus communication
 
     Acquiring --> Eligible : Required samples & calibration valid
-    note right of Eligible : Publish valid sensor_combined; expose healthy status to EKF2
+    note right of Eligible : Publish valid sensor_combined - expose healthy status to EKF2
 
     Eligible --> Degraded : Communication timeout OR samples stale/out-of-range
-    note right of Degraded : Invalidate aiding data; EKF2 falls back to dead-reckoning or failsafe
+    note right of Degraded : Invalidate aiding data - EKF2 falls back to dead-reckoning or failsafe
 
     Degraded --> Acquiring : Bus recovered & qualified fresh samples restored
     note right of Acquiring : Re-evaluate calibration & stability before restoring eligibility
@@ -178,14 +178,14 @@ The methods below define required future proof. Existing source/reference covera
 
 | ID | Method | Level | Pass criterion | Existing test/gap | Code-review criterion |
 |---|---|---|---|---|---|
-| SDS-SENS-001 | analysis + test | integration/system | One ICM-45686, BMM150, BMP390, M10 and TFmini Plus instance; no hidden second IMU. | gap: new-pair tests and physical evidence pending | Profile enumeration and artifact inspection |
-| SDS-SENS-002 | analysis + test | integration/system | Selected table and init/reset paths contain no P94/P95 sensor touches; legacy roles remain unchanged. | gap: new-pair tests and physical evidence pending | Selector exclusivity and conditional pin ownership |
-| SDS-SENS-003 | analysis + test | integration/system | Stopped acquisition cannot be refreshed by republishing cached samples under the selected stale thresholds. | gap: new-pair tests and physical evidence pending | Timestamp origin and stale rejection |
-| SDS-SENS-004 | analysis + test | integration/system | Known axis stimuli produce the signed expected body-axis response after reboot. | gap: new-pair tests and physical evidence pending | Rotation and calibration application once |
-| SDS-SENS-005 | analysis + test | integration/system | Missing declared barometer/GPS/magnetometer/rangefinder fails its normal readiness check. | gap: new-pair tests and physical evidence pending | SYS_HAS declarations and no bypass |
-| SDS-SENS-006 | analysis + test | integration/system | Captured configured attributes are 115200 8N1 before first accepted frame. | gap: new-pair tests and physical evidence pending | tcsetattr ordering and malformed framing |
-| SDS-SENS-007 | analysis + test | integration/system | Invalid GNSS fix or out-of-policy range cannot be treated as a valid aiding measurement. | gap: new-pair tests and physical evidence pending | Fix/range quality and estimator eligibility |
-| SDS-SENS-008 | analysis + test | integration/system | Injected stuck sensor bus causes no measured output deadline violation. | gap: new-pair tests and physical evidence pending | Bounded transaction/recovery ownership |
+| SDS-SENS-001 | analysis + test | integration/system | One ICM-45686, BMM150, BMP390, M10 and TFmini Plus instance; no hidden second IMU. | gap: full integration and physical acceptance evidence pending | Profile enumeration and artifact inspection |
+| SDS-SENS-002 | analysis + test | integration/system | Selected table and init/reset paths contain no P94/P95 sensor touches; legacy roles remain unchanged. | gap: full integration and physical acceptance evidence pending | Selector exclusivity and conditional pin ownership |
+| SDS-SENS-003 | analysis + test | integration/system | Stopped acquisition cannot be refreshed by republishing cached samples under the selected stale thresholds. | gap: full integration and physical acceptance evidence pending | Timestamp origin and stale rejection |
+| SDS-SENS-004 | analysis + test | integration/system | Known axis stimuli produce the signed expected body-axis response after reboot. | gap: full integration and physical acceptance evidence pending | Rotation and calibration application once |
+| SDS-SENS-005 | analysis + test | integration/system | Missing declared barometer/GPS/magnetometer/rangefinder fails its normal readiness check. | gap: full integration and physical acceptance evidence pending | SYS_HAS declarations and no bypass |
+| SDS-SENS-006 | analysis + test | integration/system | Captured configured attributes are 115200 8N1 before first accepted frame. | gap: full integration and physical acceptance evidence pending | tcsetattr ordering and malformed framing |
+| SDS-SENS-007 | analysis + test | integration/system | Invalid GNSS fix or out-of-policy range cannot be treated as a valid aiding measurement. | gap: full integration and physical acceptance evidence pending | Fix/range quality and estimator eligibility |
+| SDS-SENS-008 | analysis + test | integration/system | Injected stuck sensor bus causes no measured output deadline violation. | gap: full integration and physical acceptance evidence pending | Bounded transaction/recovery ownership |
 
 ## Traceability
 
@@ -213,7 +213,7 @@ Review each verification-row boundary against the actual selected profile and so
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 
-Partial existing coverage: [rzv2h-drone-profile-contract-test.py](../../../test/rzv2h-drone-profile-contract-test.py). Legacy profile checks only; new exact-BOM integration remains pending. This test was not executed during specification authoring.
+The [software validation receipt](../evidence/dualcr8-software-validation-261021.md) records current exact-BOM profile/artifact and TFmini serial checks. The [drone profile fixture](../../../test/rzv2h-drone-profile-contract-test.py) separately preserves legacy selection. Fitted sensors, navigation and integrated physical freshness remain unqualified.
 
 ## Open inputs and acceptance gaps
 

@@ -524,10 +524,10 @@ isolation for the IMU and a conductive cooling path need a joint mechanical desi
 keep-outs determine the minimum carrier, not a generic 50 mm square envelope.
 ### 5.5 Board-design start package
 #### 5.5.1 Choose the implementation path
-**Selected production path:** The production aircraft layout selects a **fully custom discrete RZ/V2H board** directly
-derived from the multicore drone demo on the RDK-RZ/V2H board in this workspace. This guarantees complete mechanical,
-thermal, mass, and BOM authority while directly inheriting the validated pinmux, clock trees, power sequencing, and
-sensor/actuator HAL established on the RDK.
+**Selected production path:** The aircraft uses a **fully custom discrete RZ/V2H board** derived from the RDK reference
+architecture and reviewed port sources. The [software receipt](../evidence/dualcr8-software-validation-261021.md) records
+bounded source/host/build evidence, not qualified sensors, actuators or a working physical pair. Customer pinmux, clocks,
+power/reset sequencing and electrical interfaces require independent qualification.
 
 A SOM/carrier route remains an evaluation alternative. For a OneKiwi option, obtain its [published module and carrier
 resources](https://onekiwi.com.vn/products/som-renesas-ai-rz-v2h/) and the exact revision's released connector pinout.
@@ -609,21 +609,21 @@ stateDiagram-v2
     }
 
     Armed_Autonomous --> Degraded_Hold : GPS denial or partial sensor failure
-    note right of Degraded_Hold : Maintain altitude with Baro/IMU; warn operator
+    note right of Degraded_Hold : Reassess remaining estimates - altitude hold requires eligible attitude and height
 
     Armed_Manual --> Standby_Disarmed : Throttle down & Disarm
     Armed_Autonomous --> Standby_Disarmed : Mission Touchdown & Disarm
 
-    Armed_Manual --> Failsafe_RTL : RC Loss / Geofence Breach
-    Armed_Autonomous --> Failsafe_RTL : Critical Battery / Comms Timeout
-    Degraded_Hold --> Failsafe_EmergencyLand : Battery Critical
+    Armed_Manual --> Failsafe_Response : RC loss / geofence, configured PX4 policy
+    Armed_Autonomous --> Failsafe_Response : Battery / link event, configured PX4 policy
+    Degraded_Hold --> Failsafe_Response : Battery event, configured PX4 policy
 
-    Failsafe_RTL --> Failsafe_EmergencyLand : Home unreachable / Battery Low
-    Failsafe_EmergencyLand --> Standby_Disarmed : Touchdown verified
+    note right of Failsafe_Response : Warn / hold / RTL / land requires eligible estimates and selected policy
+    Failsafe_Response --> Standby_Disarmed : Normal touchdown/disarm or explicit disarm policy
 
     Armed_Manual --> Emergency_Cutoff : Hardware Kill / E-Stop Asserted
     Armed_Autonomous --> Emergency_Cutoff : Lease Expiry (>50ms) / Structural Fault
-    note right of Emergency_Cutoff : CR8-1 immediately terminates PWM pulses to ESCs
+    note right of Emergency_Cutoff : Inhibit outputs - qualify lease, worker and scheduler/HAL physical bound
 ```
 | State | Outputs | Linux autonomy | Exit condition |
 |---|---|---|---|
@@ -789,7 +789,7 @@ not promote evidence between these levels without the named test result.
 | Decision | Closure evidence |
 |---|---|
 | Exact RZ/V2H ordering code | BOM plus datasheet option review |
-| Airframe/motor count and DShot versus CAN ESC | Propulsion trade study, harness and latency/safety analysis |
+| Airframe/ESC model, DShot speed and PWM400 backup qualification | Preserve selected DShot primary; freeze device ICD, harness, timing and physical proof |
 | BMS CAN/DroneCAN/vendor versus SMBus | Selected BMS datasheet, ICD, EMI/harness review |
 | Optional customer-board voltage/current monitor | Safety rationale, schematic, interface, accuracy/error budget, calibration method |
 | Camera count/type/rate and synchronization | Perception/VIO requirements and bandwidth/timing measurements |

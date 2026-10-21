@@ -10,11 +10,11 @@ status: Non-normative target HOW; proposed demo allocation, not implementation e
 
 This page describes how the proposed real-sensor and actuator demonstration is assembled. It is a non-normative companion to the [system specification](./rzv2h-system-specification.md) and [software specification](./rzv2h-software-specification.md). The [detailed demo design](./rzv2h-dualcr8-demo-design.md) carries the deeper transport, state, and evidence detail. The product set remains indexed by the [marketing guide](./README.md).
 
-The former staging pair is historical reference behavior; canonical dualcr8 now owns the merged exact-BOM sensor configuration. The new two-CR8 pair and its physical-output allocation are backed by the compiled shared application library [`src/apps/`](../../../src/apps/) (`rzv2h_demo`), which implements the wire codecs, actuator lease tracker, atomic seqlock snapshots, remote output producer, output worker, battery formatting/parsing, and intent gateway. The CR8-0 `dualcr8` sensor bring-up source now exists with local outputs and the legacy bridge disabled; remote output producer integration and CR8-1 output supervisor coordinate across this shared foundation. The battery hardware interface, persistent store and powered ESC path remain open hardware qualification tasks.
+The former staging pair is historical. Canonical `dualcr8` and CR8-1 `pwm` have a [host-tested, build-clean software candidate](../evidence/dualcr8-software-validation-261021.md), with shared contracts in [`src/apps/`](../../../src/apps/). Hardware identities remain unconfigured, physical output resources remain unclaimed, and no actuator pair is admitted. Battery acquisition, persistent storage, command/local-kill integration, the production DShot backend and physical qualification remain open. The intent gateway is a host-tested validator component; its A55 transport and runtime publication remain pending.
 
 ## 1. Boundary and allocation
 
-The exact demo BOM is one ICM-45686, one BMM150, one BMP390, one Holybro M10, one TFmini Plus, four SunnySky X2216 motors, and four ESCs whose model and input protocol are still unselected. CR8-0 owns the sensors, estimator, controllers, flight modes, command authority, and canonical calibration/configuration state. The proposed CR8-1 image owns the physical output backend, battery acquisition, and local output inhibit after compatible peer negotiation.
+The exact demo BOM is one ICM-45686, one BMM150, one BMP390, one Holybro M10, one TFmini Plus, four SunnySky X2216 motors, and four ESCs whose exact model and DShot speed remain unselected. DShot primary/PWM400 backup is the frozen protocol decision; both require selected-device qualification. CR8-0 owns the sensors, estimator, controllers, flight modes, command authority, and canonical calibration/configuration state. The proposed CR8-1 image owns the physical output backend, battery acquisition, and local output inhibit after compatible peer negotiation.
 
 A55 Linux, cameras, DRP-AI3, and autonomy services remain in the broader product architecture but are absent from this demo runtime. CM33 is excluded from the target product as well as this demo; it is not an alternate output owner.
 
@@ -83,10 +83,10 @@ flowchart TB
 
 The component decomposition follows [software specification §2](./rzv2h-software-specification.md#2-software-decomposition) and deployment ownership follows [§3](./rzv2h-software-specification.md#3-deployment-by-compute-domain). The shared dual-core implementation is factored into [`src/apps/`](../../../src/apps/):
 - **Producer:** [`output-producer.hpp`](../../../src/apps/output-producer.hpp) and [`output-snapshot.hpp`](../../../src/apps/output-snapshot.hpp) (`AtomicRecord`)
-- **Lease authority:** [`actuator-lease.hpp`](../../../src/apps/actuator-lease.hpp) and [`actuator-lease.cpp`](../../../src/apps/actuator-lease.cpp) (`ActuatorLeaseTracker`)
+- **Lease authority:** [`actuator-lease.hpp`](../../../src/apps/actuator-lease.hpp) and [`actuator-lease.cpp`](../../../src/apps/actuator-lease.cpp) (`ActuatorLease`)
 - **Output worker:** [`output-worker.hpp`](../../../src/apps/output-worker.hpp) and [`output-configuration.hpp`](../../../src/apps/output-configuration.hpp) (`OutputWorker`)
 - **Status reporting:** [`output-status.hpp`](../../../src/apps/output-status.hpp) (`OutputStatusStore`, `supervised_status`)
-- **Battery translation:** [`battery.hpp`](../../../src/apps/battery.hpp) and [`battery.cpp`](../../../src/apps/battery.cpp) (`BatteryFrameParser`)
+- **Battery translation:** [`battery.hpp`](../../../src/apps/battery.hpp) and [`battery.cpp`](../../../src/apps/battery.cpp) (`BatteryReceiver`)
 - **Wire framing & transport:** [`protocol.hpp`](../../../src/apps/protocol.hpp), [`protocol.cpp`](../../../src/apps/protocol.cpp), and [`raw-link.hpp`](../../../src/apps/raw-link.hpp)
 - **Bench diagnostics:** [`bench-fault.hpp`](../../../src/apps/bench-fault.hpp) (`BenchFaultSchedule`) and [`hardware-contract.hpp`](../../../src/apps/hardware-contract.hpp)
 
@@ -99,8 +99,8 @@ The component decomposition follows [software specification §2](./rzv2h-softwar
 | BMP390 ×1 | CR8-0 SCI7 I2C, address 0x77 | Target device through the existing BMP390-capable barometer path; pressure proof open |
 | Holybro M10 ×1 | CR8-0 serial channel 9 | Target GNSS; framing, antenna/power, orientation and timing evidence open |
 | TFmini Plus ×1 | CR8-0 serial channel 4 | Target rangefinder; framing, orientation, range validity and supply evidence open |
-| SunnySky X2216 ×4 | Driven by four external ESCs | Motor count/model selected; ESC protocol, rate, direction and timeout open |
-| ESCs ×4 | CR8-1 DShot backend (PWM 400Hz backup) | DShot selected as primary protocol; PWM 400Hz retained as qualified backup |
+| SunnySky X2216 ×4 | Driven by four external ESCs | Motor count/model selected; ESC model, DShot speed, direction and timeout open |
+| ESCs ×4 | Target: CR8-1 DShot primary / PWM400 backup | Current source: unqualified PWM candidate only; DShot backend/wire adaptation and both physical qualifications remain open |
 | BMS or power monitor | CR8-1 acquisition to CR8-0 policy | Hardware, protocol, address, calibration and source identity unselected |
 | Persistent medium | CR8-0 canonical calibration/configuration owner | Medium, controller and partition unselected |
 
@@ -176,37 +176,32 @@ The complete sensor interface and navigation boundary remain in [system specific
 
 CR8-0 is the only flight decision maker. It turns validated sensor state, operator input, and configured mode policy into one coherent four-channel snapshot. The snapshot carries the effective safety state, generation and source freshness needed for CR8-1 to reject stale combinations.
 
-The target producer follows the standard PX4 remote-output pattern: mixing, function mapping, reversal, limits, configured disarmed values and failsafe values are chosen once on CR8-0; CR8-1 checks the received contract and generates the physical waveform. The historical staging pair had CR8-0 physical output ownership; canonical dualcr8 now leaves local outputs unavailable while its CR8-1 backend remains pending. Software specification §5.6 now records the approved CR8-0 mixer allocation; CR8-1 validates bounds and applies its final inhibit without mapping twice. The [shared registry](./rzv2h-demo-requirements.md) links the seven approved module specifications.
+The target producer follows the standard PX4 remote-output pattern: mixing, function mapping, reversal, limits, configured disarmed values and failsafe values are chosen once on CR8-0; CR8-1 checks the received contract and generates the physical waveform. The historical staging pair had CR8-0 physical output ownership; canonical dualcr8 disables local outputs and has a compiled CR8-1 PWM supervisor candidate whose hardware contract is unconfigured. Software specification §5.6 now records the approved CR8-0 mixer allocation; CR8-1 validates bounds and applies its final inhibit without mapping twice. The [shared registry](./rzv2h-demo-requirements.md) links the seven approved module specifications.
 
-DShot is selected as the primary ESC protocol, with fixed-rate PWM (400Hz) retained as a qualified backup mode. The selected ESC ICD defines the exact DShot speed (e.g. DShot300/DShot600), timer DMA configuration, direction, and local command-timeout safe state before powered tests.
+DShot is selected as the primary ESC protocol, with fixed-rate PWM (400Hz) retained as a backup mode requiring qualification. The selected ESC ICD defines the exact DShot speed (e.g. DShot300/DShot600), timer DMA configuration, direction, and local command-timeout safe state before powered tests.
 
 The remote producer must not block the flight mixer on inter-core transport. Its bounded snapshot is consumed by a sender/support context; stop-and-wait transport and recovery remain outside the flight-control callback. The design details are linked in [the proposed companion](./rzv2h-dualcr8-demo-design.md) and the ownership boundary is described in [software specification §5.6](./rzv2h-software-specification.md#56-esc-and-actuator-software).
 
-**Figure 5-A — Deterministic real-time 400Hz cyclic execution timeline and deadline budget.**
+**Figure 5-A — Independently scheduled candidate stages; no end-to-end deadline is established.**
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant HRT as HRT High-Res Timer
-    participant SENS as Sensor Driver (SPI0)
-    participant EKF as PX4 EKF2 Estimator
-    participant CTRL as Controllers & Mixer
-    participant IPC as Shared Memory IPC
-    participant IO as CR8-1 Output Worker
-    participant TIM as GPT Timers (PWM)
-
-    Note over HRT,TIM: Real-Time Cycle Budget: T_cycle = 2.5 ms (400 Hz)
-    HRT->>SENS: 400Hz timer tick / SPI data ready interrupt
-    SENS->>EKF: Poll ICM-45686 sample (ΔAngle, ΔVelocity) (~0.2 ms)
-    EKF->>CTRL: Run navigation filter update (~0.6 ms)
-    CTRL->>CTRL: Attitude & rate loop calculation (~0.3 ms)
-    CTRL->>CTRL: Single mixer allocation transaction (~0.1 ms)
-    CTRL->>IPC: Atomic snapshot commit (Values 1-4 + Causal Token) (~0.05 ms)
-    IPC->>IO: IPC doorbell notification (MHU software interrupt)
-    IO->>IO: Lease check (< 50ms) & safety state verify (~0.05 ms)
-    IO->>TIM: Write compare registers PA4, PA7, P96, P53 (~0.1 ms)
-    TIM-->>TIM: New PWM pulse width active on next timer period
-    Note over HRT,TIM: Total task execution latency < 1.4 ms (Slack > 1.1 ms)
+    participant SENS as Polled SPI0 FIFO driver
+    participant PX4 as Sensor processing, EKF2 and controllers
+    participant MIX as PWM_MAIN callback
+    participant TX as Raw sender task
+    participant CT as CR8-1 control task
+    participant WK as CR8-1 output worker
+    participant GPT as Selected candidate PWM backend
+    SENS->>PX4: Timestamped samples at configured cadence
+    PX4->>MIX: Advancing control publication
+    MIX-->>TX: Coherent atomic snapshot with current token
+    TX->>CT: Raw write and consumption ACK outside callback
+    CT->>WK: Validated plan with receiver-local authority deadline
+    WK->>GPT: Apply or inhibit only owned, qualified resources
+    Note over SENS,GPT: Work queues and tasks run independently
+    Note over MIX,WK: 2.5 ms throttle / worker sleep are source candidates, not measured WCET
+    Note over TX,GPT: Logical lease 50 ms, physical cutoff adds worker period and measured scheduler/HAL budget
 ```
 
 ## 6. Battery and power
@@ -229,7 +224,7 @@ sequenceDiagram
     end
     alt Source unavailable or stale
         IO-->>FC: Explicit unavailable or degraded state
-        FC->>FC: Use configured policy; do not reuse stale values
+        FC->>FC: Use configured policy - do not reuse stale values
     end
 ```
 
@@ -264,23 +259,23 @@ The storage design remains open under [software specification §10](./rzv2h-soft
 ```mermaid
 sequenceDiagram
     participant FC as CR8-0 producer
-    participant Link as Inter-core transport
+    participant Transport as Inter-core transport
     participant IO as CR8-1 lease
     participant PWM as CR8-1 output worker
     IO-->>FC: Current-epoch receiver-issued freshness token
     FC->>FC: New valid control generation after token receipt
-    FC->>Link: Current-epoch coherent snapshot and heartbeat
-    Link->>IO: Validated message
+    FC->>Transport: Current-epoch coherent snapshot and heartbeat
+    Transport->>IO: Validated message
     IO->>IO: Check epoch, sequence, integrity, state and token deadline
     IO->>PWM: Lease-approved snapshot
     PWM->>PWM: Apply or inhibit physical outputs
     PWM-->>IO: Applied status and fault state
-    IO-->>Link: Health, backend state and heartbeat
-    Link-->>FC: Status and readiness
+    IO-->>Transport: Health, backend state and heartbeat
+    Transport-->>FC: Status and readiness
     alt Authority expires or session changes
         IO->>PWM: Inhibit and clear expired authority
-        FC->>Link: Recovery creates a new session
-        Link->>IO: Fresh session; old commands rejected
+        FC->>Transport: Recovery creates a new session
+        Transport->>IO: Fresh session - old commands rejected
     end
 ```
 
@@ -385,7 +380,7 @@ The detailed companion owns the implementation-oriented transition contract: [rz
 ## 12. Open decisions
 
 1. Qualify the CR8-1 sole-owner migration with the approved CR8-0 mixing allocation in software §5.6.
-2. Select ESC models, input protocol, fixed rate, pulse bounds, timeout,
+2. Select ESC models, DShot speed and protocol-specific limits, timeout,
    direction, wiring order, and motor rotation.
 3. Select the BMS or power monitor, protocol, electrical interface, calibration
    source, source identity, and health policy.

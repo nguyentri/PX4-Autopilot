@@ -75,14 +75,14 @@ flowchart TD
     subgraph SoC["RZ/V2H Single Central Compute SoC"]
         subgraph A55_Subsystem["Perception & Autonomy Domain (Quad Cortex-A55)"]
             Linux["Linux OS (Ubuntu 24.04 / Yocto)"]
-            DRPAI["DRP-AI3 Inference Engine<br/>(Object Detection, AprilTag, VIO, Obstacle Avoidance)"]
+            DRPAI["DRP-AI3 neural inference<br/>A55 CPU VIO and AprilTag unless separately accelerated"]
             ROS2["ROS 2 Application Framework<br/>(Mission Logic, Path Planning, MAVLink Gateway)"]
             Linux --- DRPAI
             Linux --- ROS2
         end
 
-        subgraph Interconnect["High-Speed On-Chip Interconnect & Shared SRAM"]
-            IPC["Zero-Copy Shared SRAM IPC<br/>(Causal Freshness Tokens, MHU Mailbox)"]
+        subgraph Interconnect["Separate On-Chip Communication Paths"]
+            IPC["A55 gateway transport target<br/>Separate CR8 shared-DDR rings and MHU"]
         end
 
         subgraph CR8_Subsystem["Deterministic Real-Time Avionics Domain (Dual Cortex-R8)"]
@@ -135,10 +135,10 @@ Use **“single central compute SoC”** when the audience might interpret
 
 | Route | Customer advantage | Design responsibility |
 |---|---|---|
-| Discrete RZ/V2H board *(Selected for Production)* | Own the mechanical layout, component selection, thermal path, and production BOM based on the verified RDK-RZ/V2H demo | Own high-speed memory, power sequencing, signal/power integrity, boot, and full board bring-up derived from the working demo |
+| Discrete RZ/V2H board *(Selected for Production)* | Own mechanical layout, thermal path and production BOM using the RDK reference architecture | Qualify high-speed memory, power sequencing, pinmux, boot and the complete customer board |
 | SOM + custom carrier *(Evaluation Alternative)* | Reuse a supplier's compute, memory and local power implementation; concentrate on aircraft interfaces | Verify module pinout, thermal limits, BSP, lifecycle, debug and CR8 access; design and qualify the carrier |
 
-**Production architecture decision:** The production aircraft layout selects a **fully custom discrete RZ/V2H board** derived directly from the multicore drone demo architecture running on the RDK-RZ/V2H board in this workspace. This provides full mechanical, thermal, and BOM authority while leveraging the verified pinout, clocks, and peripheral drivers from the RDK bring-up.
+**Production architecture decision:** The production aircraft uses a fully custom discrete RZ/V2H board derived from the RDK reference architecture. Reviewed source and bounded port evidence provide starting points; the [dual-CR8 software receipt](../evidence/dualcr8-software-validation-261021.md) does not establish validated physical sensors, actuators, power sequencing or a qualified image pair. Customer-board pinmux, clocks, power/reset and electrical behavior require their own qualification.
 
 [OneKiwi's RZ/V2H SOM](https://onekiwi.com.vn/products/som-renesas-ai-rz-v2h/)
 is an available supplier option with carrier and Linux BSP resources for evaluation. Request the
@@ -297,33 +297,25 @@ goal to validate across wind, lighting, target loss and approach conditions.
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant GCS as GCS / Operator
-    participant ROS2 as ROS 2 Planner (A55)
-    participant DRPAI as DRP-AI3 Perception (A55)
-    participant PX4 as PX4 Flight Core (CR8-0)
-    participant IO as I/O Safety Core (CR8-1)
-    participant Dock as Drone-in-a-Box Dock
-
-    Note over GCS,Dock: Phase 1: Waypoint Navigation & Approach
-    GCS->>PX4: Mission complete; initiate Return-to-Dock
-    PX4->>ROS2: Approaching dock landing zone (Altitude 15m)
-    ROS2->>DRPAI: Activate downward camera & fiducial detection
-
-    Note over ROS2,PX4: Phase 2: Visual Guidance & Precision Alignment
-    DRPAI->>DRPAI: Detect AprilTag / Visual Docking Marker (< 15ms latency)
-    DRPAI->>ROS2: 3D relative pose vector (Δx, Δy, Δz, yaw)
-    ROS2->>PX4: MAVLink LANDING_TARGET message (Sub-cm offset)
-    PX4->>PX4: Transition to PRECISION_LAND mode
-    PX4->>IO: Dynamic positioning setpoints via lease
-
-    Note over PX4,Dock: Phase 3: Controlled Descent & Touchdown
-    PX4->>PX4: Optical descent alignment (Descent rate: 0.5 m/s)
-    PX4->>PX4: Touchdown detection (Baro + Rangefinder + Accelerometer)
-    PX4->>IO: Release actuator lease (Immediate motor stop)
-    IO->>IO: Inhibit GPT outputs; motors electrically safe
-    PX4->>Dock: MAVLink notification: Landed & Disarmed
-    Dock->>Dock: Engage mechanical locking clamps & charging handshake
+    participant GCS as GCS / operator
+    participant Detector as A55 CPU fiducial detector
+    participant Adapter as A55 calibrated pose adapter, target integration
+    participant PX4 as CR8-0 flight authority
+    participant IO as CR8-1 leased actuator worker
+    participant Dock as External dock controller
+    GCS->>PX4: Approved return-to-dock mission
+    PX4-->>Adapter: Timestamped vehicle pose and landing eligibility
+    Detector->>Adapter: Camera-relative target pose and capture time
+    Adapter->>Adapter: Validate calibration, time, quality and camera-to-body transform
+    Adapter->>Adapter: Transform target into absolute local NED using eligible vehicle pose
+    Adapter->>PX4: Validated LANDING_TARGET, position_valid and LOCAL_NED
+    PX4->>PX4: Configured precision-landing logic, controllers, allocator and mixer
+    PX4->>IO: Fresh final actuator values under current output authority
+    Note over Adapter,PX4: Target loss follows configured policy, precision and latency require qualification
+    PX4->>PX4: Verify touchdown and execute normal disarm
+    PX4->>IO: Fresh disarmed stop snapshot, inhibit physical outputs
+    PX4-->>Dock: Landed/disarmed observation
+    Dock->>Dock: Verify independent docking and charge interlocks before charging
 ```
 
 ### 3.4 Gimbal and payload
@@ -340,8 +332,7 @@ brown out flight compute.
 - SPI is the normal choice for high-rate board-local IMUs.
 - I2C/I3C fits short, lower-rate local sensors; UART or CAN fits GNSS, LiDAR,
   air-data, and remote avionics.
-- CR8-1 drives **DShot** as the primary ESC protocol (with 400Hz PWM retained as a qualified backup) under a renewable CR8-0
-  output lease.
+- The production target selects CR8-1 **DShot** primary and PWM400 backup, both requiring qualification under a CR8-0 output lease. Current `pwm` source is an inhibited PWM candidate; the DShot backend and protocol-specific adaptation remain pending.
 - Each ESC needs a defined local command-timeout safe state; feedback may return
   RPM, voltage, current, temperature, and faults.
 
@@ -377,16 +368,16 @@ stateDiagram-v2
     note right of Degraded_GPS_Nav : Fallback to conventional GNSS waypoint & position hold
 
     Degraded_GPS_Nav --> Degraded_Non_GPS_Altitude : GNSS denial / jamming (Baro + IMU only)
-    note right of Degraded_Non_GPS_Altitude : Altitude hold & manual leveled flight fallback
+    note right of Degraded_Non_GPS_Altitude : Altitude/manual fallback only with eligible estimates and operator authority
 
-    Degraded_Non_GPS_Altitude --> Failsafe_RTL_Land : Critical battery / geofence breach / link loss
-    Degraded_GPS_Nav --> Failsafe_RTL_Land : Critical battery / geofence breach / link loss
-    Autonomous_Vision_Nav --> Failsafe_RTL_Land : Critical battery / geofence breach / link loss
-    note right of Failsafe_RTL_Land : Automated Return-to-Launch or controlled emergency landing
+    Degraded_Non_GPS_Altitude --> Failsafe_Response : Critical battery / geofence breach / link loss
+    Degraded_GPS_Nav --> Failsafe_Response : Critical battery / geofence breach / link loss
+    Autonomous_Vision_Nav --> Failsafe_Response : Critical battery / geofence breach / link loss
+    note right of Failsafe_Response : Configured feasible response - RTL needs valid position and home
 
-    Failsafe_RTL_Land --> Emergency_Stop : Critical structural fault / Manual E-Stop / Lease expiry (>50ms)
+    Failsafe_Response --> Emergency_Stop : Critical structural fault / Manual E-Stop / Lease expiry (>50ms)
     Manual_Stabilized --> Emergency_Stop : Emergency kill asserted
-    note right of Emergency_Stop : CR8-1 immediately halts all motor outputs
+    note right of Emergency_Stop : Inhibit outputs - physical timing and whole-core-halt containment require qualification
 ```
 
 The target progresses through boot/output inhibition, readiness, guarded
@@ -423,7 +414,7 @@ comparison of sparse TOPS against unrelated dense or GPU ratings.
 | Demonstration | Reuse now | Customer-facing evidence |
 |---|---|---|
 | **See:** camera to AI result | RDK Linux/ROS 2 and a locked DRP-AI detector example | Customer-scene accuracy, annotated recording, frame drops, latency and temperature |
-| **Control:** sensor to supervised output | PX4/NuttX CR8 bench profiles; implement the CR8-1 lease | Timestamped physical sensors, battery/RC health and scoped safe-output behavior without propellers |
+| **Control:** sensor to supervised output | Host-tested/build-clean dual-CR8 producer and lease/worker candidate; complete product services and physical qualification | Timestamped physical sensors, battery/RC health and scoped safe-output behavior without propellers |
 | **Integrate:** autonomy with fault handling | Customer VIO/planner and validated A55↔CR8 gateway | Joint-load timing, rejected stale intent, Linux restart and continued eligible PX4 operation |
 
 The [dual-CR8 architecture](./rzv2h-dualcr8-demo-architecture.md) and [engineering design](./rzv2h-dualcr8-demo-design.md) detail the Control evaluation for one ICM-45686, BMM150, BMP390, M10, TFmini Plus and four motors. Battery monitoring, persistent calibration, command/kill paths and diagnostics are part of full acceptance. A partial props-off check with battery disabled or volatile calibration remains a bring-up milestone. Configured disarmed PWM pulses are not electrically inactive outputs; startup/standby inhibition is verified at the connector. This two-core evaluation does not demonstrate camera autonomy or flight qualification. The approved [seven-module requirements registry](./rzv2h-demo-requirements.md) defines the props-off-first acceptance contracts; hardware selection remains gated.
@@ -513,8 +504,8 @@ claim.
 
 1. Freeze aircraft requirements, safety target, exact SoC ordering code, and
    external-device ICD.
-2. Prove CR8-0 physical sensors, timing, storage, reset, and motor output.
-3. Implement CR8-1 I/O, output lease, BMS/RC/CAN, and safe timeout behavior.
+2. Prove CR8-0 physical sensors, timing, storage and reset; keep local motor outputs disabled in canonical dualcr8.
+3. Qualify the CR8-1 sole-output-owner candidate; complete DShot, BMS/RC/CAN, command/kill and selected safe-timeout contracts.
 4. Validate inter-core reset, cache, corruption, overload, and latency behavior.
 5. Integrate A55 Linux, cameras, DRP-AI3, DDS, VIO, mission, gimbal, and network.
 6. Run power, thermal, EMI/EMC, security, HIL, tethered flight, envelope

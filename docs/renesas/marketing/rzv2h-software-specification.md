@@ -70,7 +70,7 @@ diagnostics. Disabled battery checks, TMPFS or manual calibration reload cannot 
 allocation in §5.6 performs mixing once on CR8-0; CR8-1 validates the output contract and owns final physical
 inhibition. The [demo requirements registry](./rzv2h-demo-requirements.md) allocates the seven module contracts.
 Props-off qualification is the selected initial campaign. Historical staging remains a dated reference; canonical
-dualcr8 uses the consolidated sensor-only profile.
+dualcr8 uses the consolidated sensor profile and inhibited remote-output producer.
 ## 2. Software decomposition
 **Figure 2-1: Layered software stack architecture across compute domains**
 
@@ -89,13 +89,13 @@ flowchart TD
 
     subgraph InterDomain["Inter-Domain Transport Layer"]
         SharedMemDDS["Shared Memory / Virtual UART<br/>(uXRCE-DDS Client-to-Agent protocol)"]
-        SharedMemIPC["Shared SRAM Mailbox (/dev/ipcc1)<br/>(64-byte packets, MHU interrupts, causal tokens)"]
+        SharedMemIPC["Shared DDR Rings (/dev/ipcc1)<br/>(64-byte packets, MHU interrupts, causal tokens)"]
 
         BridgeA55 <--> SharedMemDDS
     end
 
     subgraph CR8_0["Cortex-R8 Core 0: PX4 Flight Authority"]
-        NuttX0["NuttX RTOS Kernel (CR8-0)<br/>High-Resolution Timer (HRT GPT), SMP/AMP scheduler"]
+        NuttX0["NuttX RTOS Kernel (CR8-0)<br/>High-Resolution Timer (GTM7), per-core scheduler"]
         uORB["uORB Publish-Subscribe Middleware<br/>Fast inter-thread IPC message bus"]
         PX4Drivers["Sensor Drivers (SPI ICM-45686, I2C BMP390/BMM150, Serial GPS/LiDAR)"]
         EKF2["PX4 EKF2 State Estimator<br/>Attitude, Velocity, Position 24-state filter"]
@@ -118,7 +118,7 @@ flowchart TD
     end
 
     subgraph CR8_1["Cortex-R8 Core 1: Deterministic I/O & Safety"]
-        NuttX1["NuttX RTOS Kernel (CR8-1)<br/>Isolated memory partition & timer interrupts"]
+        NuttX1["NuttX RTOS Kernel (CR8-1)<br/>Private image partition & GTM6 timer interrupts"]
         IPCConsumer["IPC Ring Consumer & Codec<br/>Validates session epoch & causal freshness token"]
         OutputLease["50 ms logical lease<br/>Independent software output worker"]
         Containment["Reset / whole-core-halt containment<br/>Separate hardware qualification gate"]
@@ -246,7 +246,7 @@ These are work packages, not completed features or delivery-time promises.
 | Link | Transport target | Producer → consumer | Critical data | Current status |
 |---|---|---|---|---|
 | A55↔CR8-0 | Qualified RPMsg/OpenAMP or bounded shared-memory transport; selected uXRCE-DDS topics above it | Autonomy ↔ PX4 gateway | Odometry, trajectories, vehicle status and time/health | Target integration; disabled in default RDK PX4 image |
-| CR8-0↔CR8-1 | MHU notification and fixed shared-memory rings | PX4 ↔ I/O peer | Actuator lease/setpoints; RC, battery and I/O health | Scaffolding exists; integrated peer incomplete |
+| CR8-0↔CR8-1 | MHU notification and shared DDR rings | PX4 ↔ I/O peer | Actuator lease/status and battery codecs; RC acquisition remains pending | [Software candidate checked](../evidence/dualcr8-software-validation-261021.md); no admitted pair or physical qualification |
 | Linux internal | ROS 2/DDS and direct media APIs | Applications ↔ services | Mission, perception, VIO and payload | Selected profile plus customer integration |
 | PX4 internal | uORB | PX4 modules | Sensors, estimates, commands and actuators | Existing architecture |
 
@@ -444,7 +444,7 @@ safety design explicitly permits them. Reusing source does not authorize changin
 Implement and test: identify source → bounded acquisition → validate PEC/CRC, units and sign → retain sample age →
 publish normalized snapshot → CR8-0 battery-status adapter → PX4 warning/failsafe policy. Test NACK/stuck bus, bus-off,
 pack swap, stale data, negative current, capacity mode, unsupported fields and disagreement with any secondary monitor.
-The snapshot-to-PX4 adapter is required work, not an existing CR8-1 service.
+The measured-SOC snapshot-to-PX4 adapter exists; selected physical acquisition and voltage-based estimation remain pending.
 ### 5.3 Camera, vision AI, and precision landing software
 The camera service separates configuration, capture, processing and media:
 
@@ -519,24 +519,24 @@ inhibited state before peer re-negotiation.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ResetSafe
-    ResetSafe --> IOReady: drivers initialized, outputs inactive
-    IOReady --> PeerReady: valid epoch and heartbeat
-    PeerReady --> ArmedLease: arm state and lease accepted
-    ArmedLease --> OutputActive: fresh valid setpoint
-    OutputActive --> ArmedLease: setpoint applied
-    ArmedLease --> PeerReady: disarm
-    OutputActive --> PeerReady: disarm and outputs inactive
-    OutputActive --> SafeFault: lease, heartbeat, setpoint or integrity failure
-    ArmedLease --> SafeFault: lease or heartbeat failure
-    OutputActive --> SafeFault: peer epoch changes
-    ArmedLease --> SafeFault: peer epoch changes
-    PeerReady --> ResetSafe: peer epoch changes
-    SafeFault --> IOReady: outputs safe and fault acknowledged
+    [*] --> Unclaimed
+    Unclaimed --> ClaimingSafe: Current epoch and exact role/resource/profile hello match
+    ClaimingSafe --> DisarmedHandshake: Worker claims and initializes owned outputs inhibited
+    ClaimingSafe --> HardwareFault: Init or inhibit failure
+    DisarmedHandshake --> Ready: Fresh heartbeat, token-bound disarmed stop and worker inhibit acknowledgement
+    Ready --> Active: Ordinary arm, safety permission and fresh armed generation
+    Active --> Ready: Fresh disarm or stop, outputs inhibited
+    Ready --> DisarmedHandshake: Authority expiry, no armed output
+    Active --> LeaseFault: Lease/heartbeat expiry or session loss, inhibit
+    LeaseFault --> DisarmedHandshake: Current compatible session, safe backend and fresh disarmed stop
+    Active --> HardwareFault: Backend init/apply/inhibit failure
+    HardwareFault --> Unclaimed: Module reinitialization while output-safe
+    Ready --> Unclaimed: New epoch, revalidate ownership
+    Active --> Active: Invalid record rejected, existing deadline unchanged
 ```
-SafeFault latches the reason and uses the configured safe output; recovery requires a disarmed current-session
-handshake. Disarm or peer epoch change shall invalidate active output immediately through the safe-output path. No
-recovery may transition directly from SafeFault to OutputActive.
+Lease state and worker state are distinct; [the detailed design](./rzv2h-dualcr8-demo-design.md#6-link-lease-and-output-state-models)
+owns their full transition contract. A rejected frame never renews authority. Hardware faults stay latched until safe
+module reinitialization and a fresh disarmed handshake; no direct fault-to-active transition is permitted.
 
 **Figure 7-2: PX4 Master Commander arming and flight mode state machine**
 
@@ -560,15 +560,14 @@ stateDiagram-v2
     Armed_Manual --> Disarmed : Manual Disarm (Throttled down)
     Armed_Auto --> Disarmed : Mission Complete / Landed & Disarmed
 
-    Armed_Manual --> Failsafe_RTL : RC Link Loss / Geofence Breach
-    Armed_Auto --> Failsafe_RTL : Low Battery / DRP-AI Intent Timeout
-
-    Failsafe_RTL --> Failsafe_Land : Critical Battery / Descent Threshold
-    Failsafe_Land --> Disarmed : Touchdown Detected
+    Armed_Manual --> Flight_Failsafe : Link loss / geofence, configured PX4 policy
+    Armed_Auto --> Flight_Failsafe : Battery warning / stale intent, configured PX4 policy
+    note right of Flight_Failsafe : Warn / hold / RTL / land depends on configuration and estimator eligibility
+    Flight_Failsafe --> Disarmed : Normal landed disarm or explicit disarm policy
 
     Armed_Manual --> Emergency_Lockdown : Emergency E-Stop / Critical Failure
     Armed_Auto --> Emergency_Lockdown : Flight Termination Triggered
-    note right of Emergency_Lockdown : CR8-0 revokes lease; CR8-1 clamps outputs to zero
+    note right of Emergency_Lockdown : CR8-0 revokes lease - CR8-1 clamps outputs to zero
 ```
 ### 7.2 Linux service lifecycle
 Linux services use ordered readiness dependencies: time/storage/device drivers, camera/media, accelerator/model,

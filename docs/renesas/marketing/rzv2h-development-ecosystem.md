@@ -71,8 +71,9 @@ flowchart TD
             DRPAI_HW["DRP-AI3 Hardware Accelerator<br/>(YOLOv8n 14.4ms, YOLOv5s 19.3ms)"]
         end
 
-        subgraph Interconnect["On-Chip Interconnect & Shared SRAM"]
-            IPCLink["Shared SRAM Ring Buffers & MHU Mailbox<br/>(/dev/ipcc1, 64-byte packets, causal freshness token)"]
+        subgraph Interconnect["Separate Transport and Authority Boundaries"]
+            A55Link["A55 to CR8-0 transport and bounded gateway<br/>Target integration, not deployed in canonical dualcr8"]
+            IPCLink["CR8-0 to CR8-1 shared DDR rings and MHU<br/>/dev/ipcc1, 64-byte public entries, receiver tokens"]
         end
 
         subgraph CR8_Domain["Real-Time Avionics (Dual Cortex-R8)"]
@@ -89,8 +90,8 @@ flowchart TD
     GCS <--> A55_Domain
     GCS <--> CR8_0
 
-    A55_Domain <--> IPCLink
-    IPCLink <--> CR8_0
+    A55_Domain -.-> A55Link
+    A55Link -.-> CR8_0
     CR8_0 <--> IPCLink
     IPCLink <--> CR8_1
 ```
@@ -112,7 +113,7 @@ sample separately when it is useful for peripheral or transport study.
 
 ### 1.3 Dual-CR8 real-sensor evaluation
 
-The [demo architecture](./rzv2h-dualcr8-demo-architecture.md) and [engineering design](./rzv2h-dualcr8-demo-design.md) define a proposed CR8-only NuttX/PX4 evaluation with full battery, persistent-calibration and electrical-inhibit acceptance. The historical `dualcr8`/CR8-1 `default` pair is a dated staging reference; `dualcr8` is now a sensor bring-up target with outputs unavailable, while the proposed CR8-1 `pwm` target and accepted image pair remain pending. Freeze both image/config hashes, raw/application IPC revisions, parameter/calibration identity, battery/ESC ICDs and named evidence together. A55/camera/CM33 are absent from this demo runtime; retain the broader product's Linux/AI profiles below. This local design addition is dated 2026-10-21 and does not refresh the upstream version snapshot checked on 2026-10-11. The approved [seven-module requirements registry](./rzv2h-demo-requirements.md) defines the props-off-first acceptance contracts; hardware selection remains gated.
+The [demo architecture](./rzv2h-dualcr8-demo-architecture.md) and [engineering design](./rzv2h-dualcr8-demo-design.md) retain full battery, persistent-calibration and electrical-inhibit acceptance. Canonical `dualcr8` and CR8-1 `pwm` have a [host-tested/build-clean software candidate](../evidence/dualcr8-software-validation-261021.md), with unconfigured hardware identities and no admitted pair. Historical `dualcr8+default` admission is retired. A55/camera/CM33 are absent from this runtime; the broader Linux/AI profiles remain separate. The upstream version snapshot stays dated 2026-10-11; the local software receipt does not refresh it. The [module registry](./rzv2h-demo-requirements.md) owns props-off-first acceptance and hardware-input gates.
 
 ## 2. Verified software snapshot
 
@@ -433,7 +434,7 @@ are already integrated. Do not start flight testing from a successful AI demo.
 
 ### 5.3 Transfer to customer hardware
 
-1. Derive the custom discrete SoC board layout directly from the verified RDK-RZ/V2H drone demo reference architecture, pinout, and clock trees established in this workspace.
+1. Derive the selected custom discrete board from the RDK reference architecture and reviewed source; qualify the customer pinmux, clocks, power/reset, memory and physical interfaces. The local software receipt does not establish hardware inheritance.
 2. Choose direct CSI-2, SerDes, USB or Ethernet cameras using bandwidth,
    synchronization, harness and driver evidence.
 3. Port boot/DDR initialization, device tree, memory reservations, pinmux,

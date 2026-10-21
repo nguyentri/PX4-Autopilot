@@ -2,7 +2,7 @@
 title: "RZ/V2H demo: Diagnostics and release qualification"
 version: 1.0
 date: 2026-10-21
-status: Approved target contract; implementation and qualification pending
+status: Approved target contract; software subset delivered, full qualification pending
 registry: rzv2h-demo-requirements.md
 ---
 
@@ -101,7 +101,7 @@ stateDiagram-v2
     Draft --> Held : Static/source check failure
     SourceQualified --> Held : Build error or image hash mismatch
     BuildQualified --> Held : Lease timeout or bench test failure
-    note right of Held : Release blocked; diagnostic logs preserved for root-cause analysis
+    note right of Held : Release blocked - diagnostic logs preserved for root-cause analysis
 
     Held --> Draft : Issue resolved & changes committed
 ```
@@ -170,14 +170,14 @@ The methods below define required future proof. Existing source/reference covera
 
 | ID | Method | Level | Pass criterion | Existing test/gap | Code-review criterion |
 |---|---|---|---|---|---|
-| SDS-REL-001 | analysis + test | integration/system | Both image hashes, configuration, calibration and hardware contract identities are resolved together. | gap: new-pair tests and physical evidence pending | Single manifest authority |
-| SDS-REL-002 | analysis + test | integration/system | Current policy qualifies no actuator pair; historical staging images cannot pass as the merged dualcr8 contract. Future pair admission requires explicit selected identities. | gap: new-pair tests and physical evidence pending | Reciprocal pair policy |
-| SDS-REL-003 | analysis + test | integration/system | Backend/lease/battery/storage/command failures remain distinguishable in correlated records. | gap: new-pair tests and physical evidence pending | Bounded source-tagged reporting |
-| SDS-REL-004 | analysis + test | integration/system | Both linked artifacts prove the selector disabled outside explicitly labeled bench builds. | gap: new-pair tests and physical evidence pending | No default-on hooks |
-| SDS-REL-005 | analysis + test | integration/system | ACK/HAL/log success is never reported as connector waveform or motor-stop evidence. | gap: new-pair tests and physical evidence pending | Observation layer and capture provenance |
-| SDS-REL-006 | analysis + test | integration/system | Failure at each selected update boundary cannot activate an incompatible release or outputs. | gap: new-pair tests and physical evidence pending | Recoverable compatible set and physical inhibit |
-| SDS-REL-007 | analysis + test | integration/system | Acceptance report makes no hover/GPS-flight claim and retains all required battery/storage/kill gates. | gap: new-pair tests and physical evidence pending | Campaign scope without product scope reduction |
-| SDS-REL-008 | analysis + test | integration/system | Invalid signatures/identities fail where product authority requires authenticated update or commands. | gap: new-pair tests and physical evidence pending | Threat boundary and selected trust implementation |
+| SDS-REL-001 | analysis + test | integration/system | Both image hashes, configuration, calibration and hardware contract identities are resolved together. | gap: full integration and physical acceptance evidence pending | Single manifest authority |
+| SDS-REL-002 | analysis + test | integration/system | Current policy qualifies no actuator pair; historical staging images cannot pass as the merged dualcr8 contract. Future pair admission requires explicit selected identities. | gap: full integration and physical acceptance evidence pending | Reciprocal pair policy |
+| SDS-REL-003 | analysis + test | integration/system | Backend/lease/battery/storage/command failures remain distinguishable in correlated records. | gap: full integration and physical acceptance evidence pending | Bounded source-tagged reporting |
+| SDS-REL-004 | analysis + test | integration/system | Both linked artifacts prove the selector disabled outside explicitly labeled bench builds. | gap: full integration and physical acceptance evidence pending | No default-on hooks |
+| SDS-REL-005 | analysis + test | integration/system | ACK/HAL/log success is never reported as connector waveform or motor-stop evidence. | gap: full integration and physical acceptance evidence pending | Observation layer and capture provenance |
+| SDS-REL-006 | analysis + test | integration/system | Failure at each selected update boundary cannot activate an incompatible release or outputs. | gap: full integration and physical acceptance evidence pending | Recoverable compatible set and physical inhibit |
+| SDS-REL-007 | analysis + test | integration/system | Acceptance report makes no hover/GPS-flight claim and retains all required battery/storage/kill gates. | gap: full integration and physical acceptance evidence pending | Campaign scope without product scope reduction |
+| SDS-REL-008 | analysis + test | integration/system | Invalid signatures/identities fail where product authority requires authenticated update or commands. | gap: full integration and physical acceptance evidence pending | Threat boundary and selected trust implementation |
 
 ## Traceability
 
@@ -205,7 +205,7 @@ Review each verification-row boundary against the actual selected profile and so
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 
-Partial existing coverage: [rzv2h-px4-artifact-test.py](../../../test/rzv2h-px4-artifact-test.py). Existing artifact policy only; new pair and complete release-set proof remain pending. This test was not executed during specification authoring.
+Partial existing coverage: [rzv2h-px4-artifact-test.py](../../../test/rzv2h-px4-artifact-test.py). Individual candidate artifacts and no-pair policy are checked in the [software receipt](../evidence/dualcr8-software-validation-261021.md); pair admission and the full release set remain pending. This test was not executed during specification authoring.
 
 ## Open inputs and acceptance gaps
 

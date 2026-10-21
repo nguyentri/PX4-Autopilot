@@ -2,7 +2,7 @@
 title: "RZ/V2H demo: Inter-core communication"
 version: 1.0
 date: 2026-10-21
-status: Approved target contract; implementation and qualification pending
+status: Approved target contract; software subset delivered, full qualification pending
 registry: rzv2h-demo-requirements.md
 ---
 
@@ -18,8 +18,8 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 
 | Path | Classification | Owner | Notes |
 |---|---|---|---|
-| [protocol.hpp](../../../src/apps/protocol.hpp) / [protocol.cpp](../../../src/apps/protocol.cpp) | product-owned | Single writer per direction; CR8-0 recovery initiator | Canonical application codec implementation (`DemoHeader`, wire codec, CRC32, little-endian framing, static assertions) |
-| [raw-link.hpp](../../../src/apps/raw-link.hpp) | product-owned | Single writer per direction; CR8-0 recovery initiator | POSIX `/dev/ipcc1` raw link wrapper (`RawLink`), ioctl helpers, nonblocking I/O |
+| [protocol.hpp](../../../src/apps/protocol.hpp) / [protocol.cpp](../../../src/apps/protocol.cpp) | product-owned | Single writer per direction; CR8-0 recovery initiator | Canonical application codec implementation (`WireHeader`, wire codec, CRC32, little-endian framing, static assertions) |
+| [raw-link.hpp](../../../src/apps/raw-link.hpp) | product-owned | Single writer per direction; CR8-0 recovery initiator | POSIX `/dev/ipcc1` wrapper (`RawLink`); nonblocking reads, potentially blocking write/RECOVER in transport tasks |
 | [protocol.h](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h) | product-owned | Single writer per direction; CR8-0 recovery initiator | CR8-0 board protocol header including `src/apps/protocol.hpp` |
 | [protocol.h](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h) | peer/host | Single writer per direction; CR8-0 recovery initiator | CR8-1 board protocol header including `src/apps/protocol.hpp` |
 | [protocol.h](../../../boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/protocol.h) | legacy/reference | Single writer per direction; CR8-0 recovery initiator | Legacy mirror only; no demo runtime |
@@ -35,47 +35,38 @@ The following is the approved target contract with explicit hardware gaps. Exact
 
 ```mermaid
 flowchart LR
-    subgraph CR8_0["CR8-0 Core: Flight Authority"]
-        UORBBridge["uORB Bridge & Remote Producer<br/>(Subscribes to actuator setpoints)"]
-        Tx0["Tx Ring Manager (CR8-0 → CR8-1)<br/>(Encodes 64-byte command entries)"]
-        Rx0["Rx Ring Manager (CR8-1 → CR8-0)<br/>(Decodes status, battery, RC)"]
-        EpochOwner["Session Recovery Authority<br/>(CR8-0 sole recovery initiator)"]
-
-        UORBBridge --> Tx0
-        Rx0 --> UORBBridge
+    subgraph FC["CR8-0 local state"]
+        Producer["PWM_MAIN producer and sender task"]
+        Receiver0["Status and battery receiver"]
+        Recovery["Sole raw recovery initiator"]
     end
-
-    subgraph SRAM["Shared SRAM: 0x081A0000 - 0x081FFFFF"]
-        MHU["RZ/V2H MHU Doorbell Mailbox<br/>(Bidirectional software interrupts)"]
-        Ring01["CR8-0 → CR8-1 Ring Buffer<br/>(64B slots: Commands, Hello, Recover)"]
-        Ring10["CR8-1 → CR8-0 Ring Buffer<br/>(64B slots: Status, Power Base, Detail)"]
-        TokenStore["Causal Freshness Token Store<br/>(Issued by CR8-1, 50ms lifetime)"]
-
-        Tx0 --> Ring01
-        Ring10 --> Rx0
-        Tx0 -.->|Kick| MHU
-        MHU -.->|Interrupt| Rx0
+    subgraph DDR["Shared DDR carveout: 0x43800000, 64 KiB"]
+        Ring01["0 to 1: low 32 KiB<br/>16 slots, 128 bytes per physical slot<br/>64-byte metadata + 64-byte public payload"]
+        Ring10["1 to 0: high 32 KiB<br/>16 slots with the same layout"]
     end
-
-    subgraph CR8_1["CR8-1 Core: I/O Output Backend"]
-        Rx1["Rx Ring Manager<br/>(Ages authority before accepting)"]
-        TokenGen["Causal Token Generator<br/>(Generates fresh 20ms/50ms token)"]
-        Tx1["Tx Ring Manager<br/>(Publishes status & telemetry)"]
-        LeaseEngine["Output Lease Engine<br/>(Rejects stale tokens & enforces kill)"]
-
-        Ring01 --> Rx1
-        Rx1 --> LeaseEngine
-        TokenGen --> TokenStore
-        Tx1 --> Ring10
+    MHU["MHU MMIO doorbells<br/>CR8-0 TX ch4, CR8-1 TX ch9"]
+    subgraph IO["CR8-1 local state"]
+        Receiver1["Parser and actuator lease"]
+        Tokens["Local token history<br/>20 ms candidate cadence, 50 ms lifetime"]
+        Reporter["Status reporter and token publication"]
+        Receiver1 --- Tokens
+        Tokens --> Reporter
     end
+    Producer --> Ring01 --> Receiver1
+    Reporter --> Ring10 --> Receiver0
+    Producer -.-> MHU
+    Reporter -.-> MHU
+    MHU -.-> Receiver0
+    MHU -.-> Receiver1
+    Recovery -.-> DDR
 ```
 
 | Interface | Direction | Contract / limit |
 |---|---|---|
-| Raw transport | CR8-0 ↔ CR8-1 | /dev/ipcc1; raw ABI v2, 64-byte public entry; stop-and-wait writes may block 100 ms |
-| Application codec | Legacy v2 / demo v3 | Separate layouts; proposed header32, command/status64, heartbeat44, hello48, power base/detail64 bytes |
+| Raw transport | CR8-0 ↔ CR8-1 | /dev/ipcc1; raw ABI v2; [channel/layout authority](../../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_channels.h); stop-and-wait writes may block 100 ms |
+| Application codec | Legacy v2 / demo v3 | Separate layouts; implemented v3 sizes/assertions owned by [protocol.hpp](../../../src/apps/protocol.hpp) |
 | Commands and recovery | CR8-0 → CR8-1 | Compatible role/current epoch, coherent snapshot and receiver token |
-| Status/power/RC | CR8-1 → CR8-0 | Bounded independent streams; health traffic cannot renew actuator authority |
+| Status/power | CR8-1 → CR8-0 | Implemented codecs/receivers; physical battery acquisition remains pending; no v3 RC acquisition stream |
 
 ### State and fault transitions
 
@@ -88,13 +79,13 @@ stateDiagram-v2
     [*] --> No_Session : Power-On / Core Reset
 
     No_Session --> Negotiating : Raw shared memory epoch established
-    note right of Negotiating : Shared memory rings zeroed; no actuator output claimed
+    note right of Negotiating : Shared memory rings zeroed - no actuator output claimed
 
     Negotiating --> Compatible : Compatible current-epoch role & resource hello exchanged
-    note right of Compatible : Valid session active; enable safe bootstrap and command exchange
+    note right of Compatible : Valid session active - enable safe bootstrap and command exchange
 
     Compatible --> Recovering : Transport fault / Epoch mismatch / CR8-1 rotation request
-    note right of Recovering : Output authority revoked; CR8-0 sole recovery initiator
+    note right of Recovering : Output authority revoked - CR8-0 sole recovery initiator
 
     Recovering --> Negotiating : New epoch observed & buffers flushed
     note right of Negotiating : Fresh handshake required before re-enabling outputs
@@ -112,29 +103,25 @@ stateDiagram-v2
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant CR8_0 as CR8-0 Producer
-    participant SRAM as Shared SRAM Rings
-    participant MHU as MHU Doorbell
-    participant CR8_1 as CR8-1 Consumer
-
-    Note over CR8_0,CR8_1: Phase 1: Handshake & Causal Token Issuance
-    CR8_1->>SRAM: Publish Status Frame containing fresh Token (T_fresh = 0x4A12)
-    CR8_1->>MHU: Assert software interrupt to CR8-0
-    MHU-->>CR8_0: Handle Rx interrupt, extract Token T_fresh
-
-    Note over CR8_0,CR8_1: Phase 2: Signed Actuator Command Dispatch
-    CR8_0->>CR8_0: Commit output snapshot bound to Token T_fresh
-    CR8_0->>SRAM: Write 64-byte Command Frame (Seq 101, Token 0x4A12)
-    CR8_0->>MHU: Assert software interrupt to CR8-1
-    MHU-->>CR8_1: Handle Rx interrupt, dequeue Command Frame
-    CR8_1->>CR8_1: Verify Token matches current issued token (< 50 ms age)
-    CR8_1->>CR8_1: Apply motor pulses to ESCs
-
-    Note over CR8_0,CR8_1: Phase 3: Stale / Replayed Token Rejection
-    CR8_0->>SRAM: Delayed Command Frame arrives with old Token (0x3901)
-    CR8_1->>CR8_1: Token expired or mismatched!
-    CR8_1->>CR8_1: Invalidate command; retain safe disarmed output
+    participant FC as CR8-0 sender and receiver
+    participant DDR as Shared DDR rings
+    participant MHU as MHU notification
+    participant IO as CR8-1 control and reporter
+    Note over FC,IO: After compatible hello, backend initialization and fresh disarmed handshake
+    IO->>DDR: Publish status with receiver-issued token
+    IO->>MHU: Notify CR8-0
+    MHU-->>FC: Wake receiver to validate status and extract token
+    FC->>FC: Commit new coherent snapshot after token receipt
+    Note over FC,IO: CRC-checked, token-bound actuator command
+    FC->>DDR: Copy exactly 64 public bytes with current epoch and sequence
+    FC->>MHU: Notify CR8-1
+    MHU-->>IO: Wake receiver for bounded read and validation
+    IO->>IO: Age old authority, then validate token history and command
+    IO->>IO: Worker applies only while all output gates remain valid
+    Note over FC,IO: A rejected expired or replayed record does not renew authority
+    FC->>DDR: Delayed command with expired token
+    DDR-->>IO: Read delayed record
+    IO->>IO: Reject record, prior valid authority keeps only its existing deadline
 ```
 
 ### Configuration and persistence
@@ -166,14 +153,14 @@ The methods below define required future proof. Existing source/reference covera
 
 | ID | Method | Level | Pass criterion | Existing test/gap | Code-review criterion |
 |---|---|---|---|---|---|
-| SDS-IPC-001 | analysis + test | integration/system | Static sizes/offsets and every serialized record fit the public entry. | gap: new-pair tests and physical evidence pending | Separate v2/v3 headers and all consumer layouts |
-| SDS-IPC-002 | analysis + test | integration/system | Malformed magic/version/type/length/CRC/reserved/state fields do not dispatch or renew authority. | gap: new-pair tests and physical evidence pending | Boundary validation before state mutation |
-| SDS-IPC-003 | analysis + test | integration/system | Delayed-token replay and cached-control replay cannot extend an armed lease. | gap: new-pair tests and physical evidence pending | Causal token and control-generation provenance |
-| SDS-IPC-004 | analysis + test | integration/system | Queued armed command after expiry cannot bypass fresh disarmed recovery. | gap: new-pair tests and physical evidence pending | Pre-receipt expiry ordering |
-| SDS-IPC-005 | analysis + test | integration/system | CR8-1 requests rotation without issuing initiator-only recovery operations. | gap: new-pair tests and physical evidence pending | Epoch ownership and sticky request acknowledgement |
-| SDS-IPC-006 | analysis + test | integration/system | Bursty status cannot evict a live token early or refresh its lifetime. | gap: new-pair tests and physical evidence pending | Bounded token issuance/history |
-| SDS-IPC-007 | analysis + test | integration/system | Old snapshot/token/sequence cannot reactivate outputs in a new session. | gap: new-pair tests and physical evidence pending | Session reset and tracker initialization |
-| SDS-IPC-008 | analysis + test | integration/system | Battery, RC and diagnostic traffic cannot extend command lease or mask stale backend status. | gap: new-pair tests and physical evidence pending | Per-stream sequencing, expiry and bounded queues |
+| SDS-IPC-001 | analysis + test | integration/system | Static sizes/offsets and every serialized record fit the public entry. | gap: full integration and physical acceptance evidence pending | Separate v2/v3 headers and all consumer layouts |
+| SDS-IPC-002 | analysis + test | integration/system | Malformed magic/version/type/length/CRC/reserved/state fields do not dispatch or renew authority. | gap: full integration and physical acceptance evidence pending | Boundary validation before state mutation |
+| SDS-IPC-003 | analysis + test | integration/system | Delayed-token replay and cached-control replay cannot extend an armed lease. | gap: full integration and physical acceptance evidence pending | Causal token and control-generation provenance |
+| SDS-IPC-004 | analysis + test | integration/system | Queued armed command after expiry cannot bypass fresh disarmed recovery. | gap: full integration and physical acceptance evidence pending | Pre-receipt expiry ordering |
+| SDS-IPC-005 | analysis + test | integration/system | CR8-1 requests rotation without issuing initiator-only recovery operations. | gap: full integration and physical acceptance evidence pending | Epoch ownership and sticky request acknowledgement |
+| SDS-IPC-006 | analysis + test | integration/system | Bursty status cannot evict a live token early or refresh its lifetime. | gap: full integration and physical acceptance evidence pending | Bounded token issuance/history |
+| SDS-IPC-007 | analysis + test | integration/system | Old snapshot/token/sequence cannot reactivate outputs in a new session. | gap: full integration and physical acceptance evidence pending | Session reset and tracker initialization |
+| SDS-IPC-008 | analysis + test | integration/system | Battery, RC and diagnostic traffic cannot extend command lease or mask stale backend status. | gap: full integration and physical acceptance evidence pending | Per-stream sequencing, expiry and bounded queues |
 
 ## Traceability
 
@@ -201,10 +188,10 @@ Review each verification-row boundary against the actual selected profile and so
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 
-Partial existing coverage: [rzv2h-dual-cr8-output-lease-runtime-test.py](../../../test/rzv2h-dual-cr8-output-lease-runtime-test.py). Existing lease cases only; proposed v3 causal-token cases remain pending. This test was not executed during specification authoring.
+V3 codec, causal-token lease, epoch recovery and worker software coverage is recorded in the [software validation receipt](../evidence/dualcr8-software-validation-261021.md). The [legacy lease fixture](../../../test/rzv2h-dual-cr8-output-lease-runtime-test.py) remains a separate regression owner; current-image transport/load/cache and physical qualification remain open.
 
 ## Open inputs and acceptance gaps
 
-Proposed v3 codec, paired identities, causal token implementation and full-load timing are not implemented. Receiver-issued tokens establish causality, not cryptographic authentication. Authentication requirements remain in the product release owner.
+V3 codecs and causal-token software are implemented and host-tested. Hardware identities remain unconfigured, no actuator pair is admitted, and full-load/physical timing remains unqualified. Receiver-issued tokens establish causality, not cryptographic authentication. Authentication requirements remain in the product release owner.
 
 The [shared hardware-input ledger](./rzv2h-demo-requirements.md#hardware-input-gates) names closure evidence. Unknown hardware remains an input gate rather than a substituted part number or a waived requirement.

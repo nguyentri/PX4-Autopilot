@@ -2,7 +2,7 @@
 title: "RZ/V2H demo: Battery and power"
 version: 1.0
 date: 2026-10-21
-status: Approved target contract; implementation and qualification pending
+status: Approved target contract; software subset delivered, full qualification pending
 registry: rzv2h-demo-requirements.md
 ---
 
@@ -18,11 +18,11 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 
 | Path | Classification | Owner | Notes |
 |---|---|---|---|
-| [battery.hpp](../../../src/apps/battery.hpp) / [battery.cpp](../../../src/apps/battery.cpp) | product-owned | CR8-1 acquisition with CR8-0 energy policy | Canonical power snapshot parser/formatter (`BatteryFrameParser`, `BatterySnapshot`), generation tracking, validity masks, transit budget, and SOC calculation |
+| [battery.hpp](../../../src/apps/battery.hpp) / [battery.cpp](../../../src/apps/battery.cpp) | product-owned | CR8-1 acquisition with CR8-0 energy policy | Canonical power snapshot parser/formatter (`BatteryReceiver`, `BatteryObservation`), generation tracking, validity masks, transit budget, and measured-SOC translation |
 | [protocol.hpp](../../../src/apps/protocol.hpp) | product-owned | CR8-1 acquisition with CR8-0 energy policy | Wire definition and codecs for `DEMO_BATTERY_BASE` (0x12) and `DEMO_BATTERY_DETAIL` (0x14) |
 | [ina228](../../../src/drivers/power_monitor/ina228/) | legacy/reference | CR8-1 acquisition with CR8-0 energy policy | Candidate conversion/shunt implementation; does not select hardware |
 | [batt_smbus](../../../src/drivers/batt_smbus/) | legacy/reference | CR8-1 acquisition with CR8-0 energy policy | Candidate read logic; no implicit manufacturer/protection-write permission |
-| [battery](../../../src/lib/battery/) | product-owned | CR8-1 acquisition with CR8-0 energy policy | CR8-0 normalization/energy policy boundary |
+| [battery](../../../src/lib/battery/) | legacy/reference | CR8-0 energy policy | Candidate pack-estimator library; not invoked by the current remote measured-SOC adapter |
 | [batteryCheck.cpp](../../../src/modules/commander/HealthAndArmingChecks/checks/batteryCheck.cpp) | product-owned | CR8-1 acquisition with CR8-0 energy policy | Battery health readiness and source loss |
 
 Behavioral slices in a shared bridge file do not grant simultaneous write ownership. IPC owns codec/epoch handling, flight control owns producer/readiness consumption, battery owns sample semantics, and actuator safety owns lease/worker inhibition. Integrate those edits sequentially; mirrors have no independent schema authority.
@@ -35,46 +35,16 @@ The following is the approved target contract with explicit hardware gaps. Exact
 
 ```mermaid
 flowchart TD
-    subgraph HW["External Battery & Power Electronics"]
-        Pack["Aircraft Battery Pack<br/>(4S/6S LiPo/Li-Ion)"]
-        Sensor["Power Monitor / Smart BMS<br/>(INA228 shunt / SMBus / CAN)"]
-        Pack -->|Voltage & Current| Sensor
-    end
-
-    subgraph CR8_1["CR8-1: Acquisition Domain (Read-Only)"]
-        Driver["Physical Monitor Driver<br/>(Allowlisted read-only transactions)"]
-        Normalizer["Sample Normalizer<br/>(Scaling, polarity, sample generation)"]
-        PackRecord["Power Snapshot Formatter<br/>(v3 64-byte base/detail records)"]
-
-        Sensor -->|Digital Bus| Driver
-        Driver --> Normalizer
-        Normalizer --> PackRecord
-    end
-
-    subgraph IPC["Shared Memory IPC Transport"]
-        Buffer["Shared RAM Mailbox<br/>(/dev/ipcc1, generation tagged)"]
-        PackRecord --> Buffer
-    end
-
-    subgraph CR8_0["CR8-0: Energy Policy & Flight Management"]
-        Adapter["PX4 Battery Adapter<br/>(Age check & generation validation)"]
-        PX4Batt["PX4 Battery Library<br/>(Capacity, remaining %, discharge curve)"]
-        Commander["PX4 Commander<br/>(Health & arming check, failsafes)"]
-
-        Buffer --> Adapter
-        Adapter --> PX4Batt
-        PX4Batt --> Commander
-    end
-
-    subgraph Actions["Aircraft Safety Actions"]
-        Warn["GCS Low-Battery Warning"]
-        RTL["Autonomous Return-to-Launch"]
-        Land["Emergency Auto-Land"]
-
-        Commander -->|Warning Threshold| Warn
-        Commander -->|Failsafe Threshold| RTL
-        Commander -->|Critical Threshold| Land
-    end
+    Source["Selected physical pack and monitor/BMS<br/>Device, bus, pack and conversion policy still open"]
+    Acquisition["Target CR8-1 read-only acquisition<br/>Advance generation only for a new sample"]
+    Records["Implemented v3 base/detail codecs<br/>Validity, source, generation and sample age"]
+    DDR["CR8 shared DDR transport, /dev/ipcc1"]
+    Receiver["CR8-0 BatteryReceiver and battery_telemetry<br/>Require valid measured SOC and qualified age/policy"]
+    Status["battery_status publication<br/>Unknown fields remain unavailable"]
+    Commander["PX4 Commander<br/>Configured warnings and eligible flight response"]
+    Estimator["Future pack-specific voltage-to-SOC estimator<br/>Model and integration unselected"]
+    Source --> Acquisition --> Records --> DDR --> Receiver --> Status --> Commander
+    Estimator -.-> Receiver
 ```
 
 | Interface | Direction | Contract / limit |
@@ -95,13 +65,13 @@ stateDiagram-v2
     [*] --> Unidentified : Power-On / Reset
 
     Unidentified --> Acquiring : Approved device ICD & identity match
-    note right of Acquiring : Read-only acquisition started; validating conversion parameters
+    note right of Acquiring : Read-only acquisition started - validating conversion parameters
 
     Acquiring --> Valid : Valid physical conversion completed
-    note right of Valid : Advance sample generation counter; forward to CR8-0
+    note right of Valid : Advance sample generation counter - forward to CR8-0
 
     Valid --> Stale : Acquisition fails OR age exceeds budget
-    note right of Stale : Sample flagged invalid; health checker triggers warning
+    note right of Stale : Sample flagged invalid - health checker triggers warning
 
     Stale --> Acquiring : Fresh identified acquisition restored
     note right of Acquiring : Revalidate source integrity before declaring healthy
@@ -118,35 +88,22 @@ stateDiagram-v2
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant BMS as Physical BMS / INA228
-    participant CR8_1 as CR8-1 Battery Driver
-    participant IPC as Shared Memory IPC
-    participant CR8_0 as CR8-0 Battery Adapter
+    participant Source as Selected physical source, acquisition pending
+    participant IO as Target CR8-1 acquisition
+    participant FC as CR8-0 measured-SOC adapter
     participant Cmd as PX4 Commander
-    participant GCS as Ground Control Station
-
-    Note over BMS,CR8_0: Phase 1: Periodic Normal Acquisition (10-50 Hz)
-    BMS->>CR8_1: Raw voltage & current ADC register values
-    CR8_1->>CR8_1: Validate polarity, scale to Volts/Amps, increment Gen
-    CR8_1->>IPC: Publish 64-byte Power Base snapshot (Gen N)
-    IPC->>CR8_0: Fetch snapshot, check transit age < budget
-    CR8_0->>Cmd: Update battery_status (Healthy, 95% remaining)
-
-    Note over BMS,GCS: Phase 2: Low-Battery Warning & RTL Execution
-    BMS->>CR8_1: Declining pack voltage measurement
-    CR8_1->>IPC: Publish Power Base snapshot (Voltage < Low Threshold)
-    IPC->>CR8_0: Read snapshot & update state of charge (SOC 20%)
-    CR8_0->>Cmd: Battery warning triggered (Low Battery)
-    Cmd->>GCS: Send MAVLink warning announcement
-    Cmd->>Cmd: Execute configured failsafe action (Return-To-Launch)
-
-    Note over BMS,GCS: Phase 3: Critical Voltage Failsafe
-    BMS->>CR8_1: Voltage < Critical Threshold
-    CR8_1->>IPC: Publish Power Base snapshot (SOC < 10%)
-    IPC->>CR8_0: Read snapshot
-    CR8_0->>Cmd: Critical Battery Condition Asserted
-    Cmd->>Cmd: Force immediate Emergency Land
+    Source->>IO: New physical observation with supported fields
+    IO->>IO: Validate ICD, units, sign and source generation
+    IO->>FC: Base/detail records with validity and increasing sample age
+    FC->>FC: Validate generation, qualified transit/age policy and measured SOC
+    alt Eligible observation with measured SOC
+        FC->>Cmd: Publish required battery_status and configured severity
+        Cmd->>Cmd: Apply selected warning / feasible RTL / land policy
+    else Missing SOC, stale source or unconfigured policy
+        FC->>Cmd: Publish unavailable required source, never invent a percentage
+        Cmd->>Cmd: Apply ordinary health and source-loss policy
+    end
+    Note over Source,Cmd: Pack model, thresholds, actions and acquisition cadence require selected ICD and qualification
 ```
 
 ### Configuration and persistence
@@ -177,14 +134,14 @@ The methods below define required future proof. Existing source/reference covera
 
 | ID | Method | Level | Pass criterion | Existing test/gap | Code-review criterion |
 |---|---|---|---|---|---|
-| SDS-POWER-001 | analysis + test | integration/system | Calibrated physical stimulus matches measured values; synthetic or disabled-battery inputs cannot close acceptance. | gap: new-pair tests and physical evidence pending | Device ICD and sole acquisition owner |
-| SDS-POWER-002 | analysis + test | integration/system | No manufacturer/protection/configuration write is reachable in normal acquisition. | gap: new-pair tests and physical evidence pending | Allowlisted device transactions |
-| SDS-POWER-003 | analysis + test | integration/system | Frozen acquisition with live reporter never advances source generation. | gap: new-pair tests and physical evidence pending | Measurement versus publication sequence |
-| SDS-POWER-004 | analysis + test | integration/system | Source age plus bounded transit plus receiver elapsed exceeds limit and reports stale. | gap: new-pair tests and physical evidence pending | No subtraction of unrelated clocks |
-| SDS-POWER-005 | analysis + test | integration/system | Missing cell/temperature/capacity fields never become healthy zero-valued measurements. | gap: new-pair tests and physical evidence pending | Validity mask and field normalization |
-| SDS-POWER-006 | analysis + test | integration/system | Positive discharge, valid zero current and invalid reading are distinguishable with calibrated input. | gap: new-pair tests and physical evidence pending | Conversion, scaling and polarity |
-| SDS-POWER-007 | analysis + test | integration/system | Mixed epoch/source/sample-generation fragments cannot form a valid pack snapshot. | gap: new-pair tests and physical evidence pending | Cross-frame assembly identity |
-| SDS-POWER-008 | analysis + test | integration/system | Selected threshold and disconnect tests produce the required readiness/action reasons without bypass. | gap: new-pair tests and physical evidence pending | Feasible aircraft action and energy state |
+| SDS-POWER-001 | analysis + test | integration/system | Calibrated physical stimulus matches measured values; synthetic or disabled-battery inputs cannot close acceptance. | gap: full integration and physical acceptance evidence pending | Device ICD and sole acquisition owner |
+| SDS-POWER-002 | analysis + test | integration/system | No manufacturer/protection/configuration write is reachable in normal acquisition. | gap: full integration and physical acceptance evidence pending | Allowlisted device transactions |
+| SDS-POWER-003 | analysis + test | integration/system | Frozen acquisition with live reporter never advances source generation. | gap: full integration and physical acceptance evidence pending | Measurement versus publication sequence |
+| SDS-POWER-004 | analysis + test | integration/system | Source age plus bounded transit plus receiver elapsed exceeds limit and reports stale. | gap: full integration and physical acceptance evidence pending | No subtraction of unrelated clocks |
+| SDS-POWER-005 | analysis + test | integration/system | Missing cell/temperature/capacity fields never become healthy zero-valued measurements. | gap: full integration and physical acceptance evidence pending | Validity mask and field normalization |
+| SDS-POWER-006 | analysis + test | integration/system | Positive discharge, valid zero current and invalid reading are distinguishable with calibrated input. | gap: full integration and physical acceptance evidence pending | Conversion, scaling and polarity |
+| SDS-POWER-007 | analysis + test | integration/system | Mixed epoch/source/sample-generation fragments cannot form a valid pack snapshot. | gap: full integration and physical acceptance evidence pending | Cross-frame assembly identity |
+| SDS-POWER-008 | analysis + test | integration/system | Selected threshold and disconnect tests produce the required readiness/action reasons without bypass. | gap: full integration and physical acceptance evidence pending | Feasible aircraft action and energy state |
 
 ## Traceability
 
@@ -212,10 +169,10 @@ Review each verification-row boundary against the actual selected profile and so
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 
-Partial existing coverage: [rzv2h-drone-artifact-contract-test.py](../../../test/rzv2h-drone-artifact-contract-test.py). Legacy INA228 selection only; not battery normalization/freshness evidence. This test was not executed during specification authoring.
+Partial existing coverage: [rzv2h-drone-artifact-contract-test.py](../../../test/rzv2h-drone-artifact-contract-test.py). Legacy INA228 selection is separate from the current [battery component coverage](../evidence/dualcr8-software-validation-261021.md); selected physical acquisition remains pending. This test was not executed during specification authoring.
 
 ## Open inputs and acceptance gaps
 
-No BMS/monitor, pack chemistry/capacity, bus/pins, shunt, stale budget or low-energy action is selected. Required read-only acquisition service and PX4 adapter remain new work.
+No BMS/monitor, pack chemistry/capacity, bus/pins, shunt, stale budget or low-energy action is selected. Read-only physical acquisition remains new work; the measured-SOC receiver and required PX4 battery-status publisher exist, with an unconfigured device policy. Voltage-based SOC needs a separately selected pack model and integration.
 
 The [shared hardware-input ledger](./rzv2h-demo-requirements.md#hardware-input-gates) names closure evidence. Unknown hardware remains an input gate rather than a substituted part number or a waived requirement.

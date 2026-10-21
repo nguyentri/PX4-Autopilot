@@ -52,7 +52,7 @@ flowchart LR
 | Image pair | CR8-0 `dualcr8` inherited `drone`; CR8-1 `default` relayed optionally to CM33 | Canonical `dualcr8` sensor profile, with future CR8-1 `pwm` pair; no `/dev/ipcc3` runtime | Product has A55 + both R8s, CM33-free boot/runtime |
 | Sensors | Drone selects three ICM descriptors and INA228 alongside BMM150/BMP390 | One P93 ICM; no P94/P95 sensor role; one rangefinder; select the required power device through its own ICD, without assuming or excluding INA228 | Secondary IMU and independent recovery remain SYS-IF-002 work |
 | Physical outputs | CR8-0 `pwm_out`; CR8-1 lease is not the physical PWM owner | CR8-0 remote mixer producer; CR8-1 sole GPT/pin owner only after valid role/resource handshake | SYS-ARC-003/004 flight and physical-output authority |
-| Mapping/range | CR8-0 mixer selects configured values | CR8-0 `MixingOutput("PWM_MAIN", 4, ...)` maps function/range/reversal/DIS/FAIL once; CR8-1 checks bounds and generates pulses | Approved software specification §5.6 assigns mixing to CR8-0 and validation/final inhibition to CR8-1; implementation remains pending |
+| Mapping/range | CR8-0 mixer selects configured values | CR8-0 `MixingOutput("PWM_MAIN", 4, ...)` maps function/range/reversal/DIS/FAIL once; CR8-1 checks bounds and generates pulses | Approved software specification §5.6 assigns mixing to CR8-0 and validation/final inhibition to CR8-1; software candidate delivered; physical qualification remains pending |
 | RC | Native SCI6 RC remains a CR8-0 route | Retain local RC if fitted during staged integration, with explicit owner/detection evidence | Product CR8-1 RC allocation remains an open ownership gap; local RC alone does not close it |
 | Battery/power | No qualified CR8-1 battery service in the selected pair; native INA228 source exists | Required selected source, acquisition, calibration, validity/age, IPC adapter and ordinary PX4 warning/failsafe tests; absence blocks full acceptance | SYS-IF-003/004/008 and SW-DEV-002 remain required; digital monitoring is not cell protection |
 | Parameters/calibration | `/fs/params` is volatile TMPFS | Required atomic, integrity-checked storage and reboot/power-loss recovery for calibration and selected configuration | SW-CFG-002 applies to full acceptance; manual reload or a TMPFS warning is not completion |
@@ -92,7 +92,7 @@ Source abbreviations below are exact repository paths, not new abstraction layer
 | BMM150 ×1 | CR8-0 SCI7 I2C, P76/P77, `0x10` | `src/drivers/magnetometer/bosch/bmm150/`; external pull-ups, supply and calibration need fitted-board proof |
 | BMP390 ×1 | CR8-0 same SCI7, `0x77`, `bmp388` driver | `src/drivers/barometer/bmp388/bmp388.cpp` accepts BMP390; shared-bus fault/recovery and pressure data need proof |
 | Holybro M10 ×1 | CR8-0 SCI9, P82/P83, `/dev/ttyS9`, 115200 8N1 | Board serial mapping; CANFD1 selection conflicts with these pins; no unverified PPS assignment |
-| TFmini Plus ×1 | CR8-0 SCI4, P70/P71, `/dev/ttyS4`, 115200 8N1 | `SENS_TFMINI_CFG=401` selects EXT2; fix final termios ordering in `TFMINI.cpp`; orientation, Plus framing/range and supply remain physical inputs |
+| TFmini Plus ×1 | CR8-0 SCI4, P70/P71, `/dev/ttyS4`, 115200 8N1 | `SENS_TFMINI_CFG=401` selects EXT2; final termios ordering is repaired in `TFMINI.cpp`; orientation, Plus framing/range and supply remain physical inputs |
 | SunnySky X2216 ×4 + ESC ×4 | CR8-1 PWM proposal: PA4/GPT6A, PA7/GPT7B, P96/GPT9A, P53/GPT10B | Motor model does not identify ESC protocol/rate, calibration, timeout or direction; no powered acceptance until exact ESC ICD exists |
 | RC/telemetry, if fitted | Existing CR8-0 SCI6/P75 and SCI5/P72/P73 | RC inversion and radio baud need proof; this is a declared temporary ownership delta from product CR8-1 RC |
 | BMS/power monitor | Required source/device and transport not yet selected; product acquisition owner CR8-1, PX4 policy owner CR8-0 | Selection, ICD, driver/adapter and calibration are delivery work. `BAT1_SOURCE=-1` can mark an incomplete isolated bench milestone only; full acceptance requires real monitoring and normal checks. Stock RDK has no usable analog battery input |
@@ -156,13 +156,13 @@ sequenceDiagram
     participant App as CR8-1 application and worker
     Tx->>Raw: write exactly 64 bytes
     Raw->>Raw: Arm ACK before publication
-    Raw->>DDR: Fill metadata and payload; clean slot cache
-    Raw->>DDR: Publish bounded tail; barrier; clean header
+    Raw->>DDR: Fill metadata and payload - clean slot cache
+    Raw->>DDR: Publish bounded tail - barrier - clean header
     Raw-->>Peer: MHU ch4 doorbell
     Peer->>DDR: Invalidate header and slot
     Peer->>Peer: Validate raw epoch, exact next sequence and length
     Peer->>App: read copies one public entry
-    Peer->>DDR: Advance head; publish exact ACK epoch and sequence
+    Peer->>DDR: Advance head - publish exact ACK epoch and sequence
     Peer-->>Raw: MHU response ch4
     Raw->>DDR: Invalidate and check exact ACK
     Raw-->>Tx: write returns entry consumed
@@ -192,7 +192,7 @@ Introduce a **separate demo application major 3, minor 0**, sharing raw ABI v2, 
 
 The following layouts are **implemented in [`src/apps/protocol.hpp`](../../../src/apps/protocol.hpp)** and tested across the dual-core pipeline. Encode/decode little-endian fields with bounded helpers or `memcpy`, avoiding unaligned packed loads. No pointer, compiler `bool`, native enum, or `float` is on the new command/status wire.
 
-| Proposed common `DemoHeader` field | Offset | Bytes | Rule |
+| Proposed common `WireHeader` field | Offset | Bytes | Rule |
 |---|---:|---:|---|
 | `magic` | 0 | 4 | Existing `0x525A5632`; version separates meanings |
 | `major`, `minor`, `type`, `length` | 4,5,6,7 | 1 each | Exact supported major/minor and type-specific length |
@@ -221,13 +221,13 @@ The software candidate assigns capability bits 0–4 to implemented PWM backend 
 
 `backend_bits` assigns bit 0 resource claimed, bit 1 initialized safely, bit 2 arm ready, bit 3 output inhibited, bit 4 fault latched, bit 5 recovery eligible and bit 6 session rotation requested; bit 7 is reserved zero. Recovery eligibility is not arm readiness. `accepted_cmd_sequence` means semantic/lease acceptance. `applied_cmd_sequence` advances only after the worker's successful HAL submission/commit path; GPT buffered compare may latch on a later timer cycle. It is neither raw ACK nor independent waveform/ESC/thrust proof. `applied_generation` connects software submission to the coherent mixer snapshot. A PWM backend has no RPM/current/thrust observation; leave unsupported telemetry unavailable rather than fabricating ESC feedback. Zero sequence/generation means no accepted/submitted sample since session reset.
 
-Compile-time checks in [`src/apps/protocol.hpp`](../../../src/apps/protocol.hpp) explicitly assert `sizeof(DemoHeader)==32`, command/status `==64`, heartbeat `==44`, hello `==48`, every row's `offsetof`, and every public frame `<=RZV_IPC_RAW_PAYLOAD_SIZE` (`64`). Fixture tests compile all mirrors, verify identical bytes/CRC/zero padding, reject v2/v3 mixing and malformed reserved/boolean/state bits, and exercise exact-size versus padded validator inputs. Runtime raw writes remain exactly 64 bytes; accepting short fixture inputs never authorizes a short device write.
+[`src/apps/protocol.hpp`](../../../src/apps/protocol.hpp) owns the `WireHeader`, `WireCommand`, `WireStatus`, `WireHeartbeat`, `WireHello` and battery layout assertions; [`protocol.cpp`](../../../src/apps/protocol.cpp) owns byte-wise encoding and validation. The [software receipt](../evidence/dualcr8-software-validation-261021.md) records current codec and legacy-regression checks. Runtime raw writes remain exactly 64 bytes; short fixture inputs never authorize short device writes.
 
 **Figure 4-A — Proposed 64-byte IPC wire frame structure and field layout.**
 
 ```mermaid
 flowchart TD
-    subgraph CommonHeader["32-Byte DemoHeader (Fixed Little-Endian Layout)"]
+    subgraph CommonHeader["32-Byte WireHeader (Fixed Little-Endian Layout)"]
         H1["magic: u32 (0x525A5632) | major: u8 (3) | minor: u8 (0) | type: u8 | length: u8"]
         H2["source_core: u8 (0 or 1) | flags: u8 | reserved: u16 (0x0000)"]
         H3["sequence: u32 (Strictly advancing monotonic counter)"]
@@ -269,7 +269,7 @@ Token IDs and application generations/sequences use bounded unsigned progression
 
 ### 4.2 Battery acquisition progress and bounded age
 
-The two power frames keep the 32-byte v3 header and 64-byte public entry, implemented in [`src/apps/battery.hpp`](../../../src/apps/battery.hpp) and [`src/apps/battery.cpp`](../../../src/apps/battery.cpp) with codec support in [`src/apps/protocol.hpp`](../../../src/apps/protocol.hpp). Base units are mV, discharge-positive mA, permille, count and device-qualified warning/state enums; detail units are centi-degrees Celsius, mV and mAh. Exact valid-mask/state/fault mappings, source IDs, ranges and stale budgets are managed through `BatteryPolicy` and `BatteryFrameParser`. Reserved fields are zero; unsupported fields have validity cleared, never invented BMS/cell data. Detail is optional only when its measurements are unsupported; available safety-relevant selected-device data remains required. Match base/detail by source, epoch and acquisition generation; do not combine different samples as one coherent observation.
+The two power frames keep the 32-byte v3 header and 64-byte public entry, implemented in [`src/apps/battery.hpp`](../../../src/apps/battery.hpp) and [`src/apps/battery.cpp`](../../../src/apps/battery.cpp) with codec support in [`src/apps/protocol.hpp`](../../../src/apps/protocol.hpp). Base units are mV, discharge-positive mA, permille, count and device-qualified warning/state enums; detail units are centi-degrees Celsius, mV and mAh. Exact valid-mask/state/fault mappings, source IDs, ranges and stale budgets are managed through `BatteryPolicy` and `BatteryReceiver`. Reserved fields are zero; unsupported fields have validity cleared, never invented BMS/cell data. Detail is optional only when its measurements are unsupported; available safety-relevant selected-device data remains required. Match base/detail by source, epoch and acquisition generation; do not combine different samples as one coherent observation.
 
 Only a successful **new physical acquisition** advances `acquisition_generation`. Reporter activity, IPC sequence, heartbeat and encoding timestamps cannot advance it. Cached sample resends retain the generation and increasing source-local `sample_age_us`; invalid/disconnected updates can immediately clear validity without fabricating a new valid sample. CR8-0 tracks last actual acquisition progress with its local clock, separately from record receipt, and never restamps an old generation into fresh battery health. Account conservatively for encoded sample age, a qualified bounded queue/transit budget and local elapsed time; unrelated core timestamps cannot be subtracted. The transport-age budget is an explicit qualification gap until measured/analysed. Test acquisition stopped while reporting/heartbeat remain live, frozen generation with advancing packet sequence, delayed queued data, source reset/pack swap, detail/base mismatch and valid zero current versus unavailable current.
 
@@ -300,7 +300,7 @@ flowchart TD
     RX[CR8-1 parser<br/>epoch, sequence, token and semantic checks]
     LS[Age old lease before accept<br/>current-session disarmed handshake]
     WK[Independent worker<br/>deadline and fault-latch checks]
-    HW[PwmBackend and HAL<br/>four GPT channels and ESC pins]
+    HW[PwmHardware and HAL<br/>four GPT channels and ESC pins]
     ST[Reporter<br/>accepted versus applied sequence, rate, faults]
     HS[CR8-0 px4io_status<br/>mandatory first status and backend gate]
     BP[CR8-1 selected battery acquisition<br/>source, units, validity and age]
@@ -323,7 +323,7 @@ flowchart TD
     PS --> DG
 ```
 
-`RemoteOutputProducer` (implemented in [`src/apps/output-producer.hpp`](../../../src/apps/output-producer.hpp) and [`boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp`](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp)) follows the real `OutputModuleInterface`/`MixingOutput` ownership pattern, not an `actuator_outputs` subscriber pretending to replace the physical driver. Source authorities are `src/drivers/pwm_out/PWMOut.hpp`, `src/drivers/px4io/px4io.cpp`, and `src/lib/mixer_module/mixer_module.cpp:limitAndUpdateOutputs`. `updateOutputs()` copies four outputs, stop, effective arming/safety/termination/lockdown state, generation/state generation, token and source time in one bounded commit. Read `MixingOutput::armed()` inside this callback's mixer transaction (`src/lib/mixer_module/mixer_module.hpp`); update/cache safety state in the same producer Run generation. The sender never performs a later independent uORB state overlay. No IPC, ioctl, allocation, filesystem, or blocking logging is reachable from that callback.
+`OutputProducer` helper and board `RemoteOutputs` module (implemented in [`src/apps/output-producer.hpp`](../../../src/apps/output-producer.hpp) and [`boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp`](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp)) follow the real `OutputModuleInterface`/`MixingOutput` ownership pattern, not an `actuator_outputs` subscriber pretending to replace the physical driver. Source authorities are `src/drivers/pwm_out/PWMOut.hpp`, `src/drivers/px4io/px4io.cpp`, and `src/lib/mixer_module/mixer_module.cpp:limitAndUpdateOutputs`. `updateOutputs()` copies four outputs, stop, effective arming/safety/termination/lockdown state, generation/state generation, token and source time in one bounded commit. Read `MixingOutput::armed()` inside this callback's mixer transaction (`src/lib/mixer_module/mixer_module.hpp`); update/cache safety state in the same producer Run generation. The sender never performs a later independent uORB state overlay. No IPC, ioctl, allocation, filesystem, or blocking logging is reachable from that callback.
 
 The output pipeline uses the atomic seqlock implementation `AtomicRecord` in [`src/apps/output-snapshot.hpp`](../../../src/apps/output-snapshot.hpp) with a finite reader retry budget (3 attempts) and explicit memory ordering. Sender consistency failure means no new output command. An arming/safety/termination/configuration transition without a matching new mixer generation inhibits transmission of the previous output values; request a new callback. Do not overlay a newer arm/disarm bit onto older pulse values. Snapshot publication and callback-state access use single-core atomics (`px4::atomic<uint32_t>`); cross-core C++ atomics are not substituted for raw cache maintenance.
 
@@ -409,7 +409,7 @@ Configured disarmed values and electrically inactive outputs are separate accept
 
 With `stop_motors=true`, lockdown, Fault, expired authority or controlled stop, all motor outputs are electrically inactive; per-channel zero disables only that channel. The pad's safe electrical level or high-impedance choice belongs to the fitted hardware ICD; high impedance is not universally safe. External capture must prove the selected service policy's configured DIS behavior once defined, inactive product behavior, all transitions, and no stale armed pulses during disarm. The owning SYS/SW state/interface descriptions retain this distinction without weakening SYS-SAF-001 or deleting configured DIS semantics. Safety-input pins are not invented: P52 is not established as a safety input in the selected reference. Ordinary PX4 arm/health policy remains in force.
 
-Selected-profile commander readiness requires first valid current-session backend status, live link/heartbeat, compatible hardware/capabilities, backend initialized/ready, exact applied fixed rate and no INIT/PWM/SafeFault. Map the reported rate to `px4io_status.pwm_rate_hz[]`; map backend fault to `alarm_pwm_error` and the selected readiness failure. Current `px4ioCheck.cpp` returns before the first status and uses `status_fmu_ok` without backend fault gating, so this requires explicit new-profile changes; preserve legacy and unrelated boards.
+Selected-profile Commander implements mandatory first-status, receive-local status expiry and backend readiness/fault gating in [`px4ioCheck.cpp`](../../../src/modules/commander/HealthAndArmingChecks/checks/px4ioCheck.cpp). [`remote-outputs.cpp`](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp) publishes the v3 status mapping. Legacy boards retain their separate timeout/first-status behavior; current hardware remains unconfigured and inhibits arming.
 
 ## 7. Bootstrap, steady operation, and recovery sequences
 
@@ -422,14 +422,14 @@ sequenceDiagram
     participant BR as CR8-0 bridge
     participant IO as CR8-1 control and reporter
     participant PW as CR8-1 backend worker
-    PX->>PX: Declare exact sensors and required power source; validate stored calibration
+    PX->>PX: Declare exact sensors and required power source - validate stored calibration
     PW->>PW: BackendUnclaimed, no shared GPT or pin touches
     BR->>IO: Raw RECOVER publishes new epoch
-    IO->>IO: Adopt epoch; discard old tokens, commands and handshake
-    BR->>IO: Version 3 core-0 running heartbeat
+    IO->>IO: Adopt epoch - discard old tokens, commands and handshake
     IO->>BR: Unclaimed status, static identities and capabilities
     BR->>IO: Peer hello, remote producer role and exact resource/profile IDs
     IO->>IO: Validate current epoch and exclusive owner compatibility
+    BR->>IO: Version 3 core-0 running heartbeat
     IO->>PW: ClaimSafe only after valid peer role
     PW->>PW: Inhibit, allocate all channels and apply selected rate
     Note over IO,PW: Init failure keeps transport and reporter alive, ready false
@@ -440,15 +440,16 @@ sequenceDiagram
     BR->>IO: Valid disarmed command
     IO->>IO: Age old state, validate, enter Ready
     PW->>PW: Product standby inhibit, preserved DIS remains in snapshot
+    PW-->>IO: Acknowledge current-epoch disarmed generation and completed inhibition
     IO->>BR: Ready status and applied sequence
     PX->>PX: Normal arm request and all health checks
     PX->>BR: New coherent armed generation under current token
     BR->>IO: Armed command, never a cached armed replay
     IO->>IO: Ready to Armed only if all freshness gates pass
-    PW->>PW: Apply four outputs; publish applied sequence
+    PW->>PW: Apply four outputs - publish applied sequence
 ```
 
-The pair manifest and artifact checker accept `dualcr8+pwm`, reject `dualcr8+default` and `dualcr8+pwm`, and retain `dualcr8+default`. Runtime major/capability/hardware/rate checks and the **unclaimed-before-role-hello** guard complement that offline policy. CR8-0's selected artifacts must prove no local output initialization/reset path before the CR8-1 backend is ever activated. Offline acceptance alone cannot protect a mistakenly loaded pair from early boot pin clobbering.
+[Current profile policy](../../../Tools/rzv2h-px4-profiles.json) admits no actuator pair. `dualcr8+pwm` is a software candidate with unconfigured identities; historical `dualcr8+default` admission is retired. [Candidate artifact checks](../../../test/rzv2h-dualcr8-artifact-contract-test.py) inspect individual images and assert the absence of an admitted pair. Future admission requires selected identities and physical qualification. Runtime role/resource checks and the unclaimed-before-hello guard remain necessary to prevent wrong-pair boot interference.
 
 <!-- sys-view: demo-engineering-8 -->
 **Figure 8 — Steady sensor/control flow with independent liveness and feedback.**
@@ -471,12 +472,12 @@ sequenceDiagram
             IO-->>BR: Raw consumption ACK, not application result
             IO->>IO: Age old state, reject stale or accept command
             PW->>PW: Check receipt and token deadlines plus backend latch
-    PW->>PW: Submit or disable; atomically publish software result
+            PW->>PW: Submit or disable - atomically publish software result
         end
         IO-->>BR: Accepted sequence, applied sequence/generation, rate and fault
         BR->>PX: px4io_status and readiness changes
     end
-    Note over BR,IO: Independent 10 Hz heartbeat; 500 ms expiry does not renew output
+    Note over BR,IO: Independent 10 Hz heartbeat - 500 ms expiry does not renew output
 ```
 
 <!-- sys-view: demo-engineering-9 -->
@@ -491,16 +492,16 @@ sequenceDiagram
     participant RP as CR8-1 reporter
     Note over FC,CT: Delayed finite bench hook pauses producer or control loop
     WK->>WK: Observe token or receipt deadline using CR8-1 clock
-    WK->>WK: Disable all pins; latch inhibit and fault
+    WK->>WK: Disable all pins - latch inhibit and fault
     RP-->>FC: Healthy link can still report backend or lease failure
     FC->>RAW: A pending write may wait up to 100 ms
     RAW-->>FC: Timeout or ENOLINK, link quarantined
     CT->>CT: On resume age OLD state before queued-frame acceptance
-    CT->>CT: Reject queued armed generation; cannot clear worker latch
+    CT->>CT: Reject queued armed generation - cannot clear worker latch
     FC->>RAW: Bounded RECOVER, at most once per second
     RAW-->>CT: Fresh epoch adopted by read or poll
-    CT->>CT: Clear old tokens and handshake; outputs stay inhibited
-    RP-->>FC: Current epoch and fresh token; compatible backend state
+    CT->>CT: Clear old tokens and handshake - outputs stay inhibited
+    RP-->>FC: Current epoch and fresh token - compatible backend state
     FC->>CT: Revalidate remote producer role and static resource contract
     FC->>CT: Fresh running heartbeat and NEW disarmed generation
     CT->>CT: Recover Ready only after safe reinit if faulted
@@ -522,29 +523,29 @@ A complete CR8-1 halt stops the worker, HRT callback and cleanup; GPT hardware m
 
 ## 8. Implementation/test inventory and evidence contract
 
-The [phase files](../../../plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md#phases) own editing steps. The common ABI change must cover **all three mirrors**: `FC/protocol.h`, `IO/protocol.h`, and `boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/protocol.h`. Production consumers are `FC/uorb_bridge.{h,cpp}`, `IO/sharedmem_transport.{h,cpp}`, `IO/px4io_cr8.cpp`, `IO/output-lease.{h,cpp}`, and `boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/sharedmem_transport.cpp`; review its header and `px4io_m33.cpp` when version dispatch affects typed access. CM33 receives source compatibility work only, never demo runtime enablement. New producer/backend files are proposed in Phases 2/3.
+The current v3 owners are [`FC/remote-outputs.cpp`](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp), [`IO/io-supervisor.cpp`](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/io-supervisor.cpp) and [`src/apps/`](../../../src/apps/). The three board `protocol.h` mirrors include the shared C++ contract while preserving legacy v2 consumers. `FC/uorb_bridge`, `IO/px4io_cr8`, legacy transports/output-lease and CM33 remain regression/reference owners, not the canonical v3 runtime. The [software receipt](../evidence/dualcr8-software-validation-261021.md) owns the delivered source/host/build checkpoint; the [phase files](../../../plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md#phases) retain remaining execution work.
 
-Three existing ABI fixtures must change together: `test/rzv2h-dual-cr8-output-lease-runtime-test.py`, `test/rzv2h-expanded-remediation-runtime-test.py`, `test/rzv2h-audit-remediation-runtime-test.py`. Machine-owned profile/pair/archive owners are `Tools/rzv2h-px4-profiles.json`, `Tools/rzv2h-regression-catalog.json`, `Tools/rzv2h-px4-artifact-check.py`, and their existing tests. A new checker cannot override contradictory legacy policy.
+Legacy ABI regression fixtures remain: `test/rzv2h-dual-cr8-output-lease-runtime-test.py`, `test/rzv2h-expanded-remediation-runtime-test.py`, `test/rzv2h-audit-remediation-runtime-test.py`. Machine-owned profile/pair/archive owners are `Tools/rzv2h-px4-profiles.json`, `Tools/rzv2h-regression-catalog.json`, `Tools/rzv2h-px4-artifact-check.py`, and their existing tests. A new checker cannot override contradictory legacy policy.
 
-| Requirements / proof ID | Existing source/test baseline | Proposed added proof and evidence tier |
+| Requirements / proof ID | Existing source/test baseline | Software coverage and remaining acceptance proof |
 |---|---|---|
-| SYS-ARC-003/004, SW-ARC-005 / D-OWNER | Board init/timer table, `dualcr8.px4board`; `test/rzv2h_gpt_pwm_contract_test.py`, `test/rzv2h_core_irq_contract_test.py` | **New** `test/rzv2h-cr8-1-pwm-backend-contract-test.py` + pair artifact checker: sole physical owner, one mapping, no CR8-0 reset touch, and zero CR8-1 boot/cleanup touches before compatible role hello; linked-artifact then props-off scope proof |
-| SYS-IF-001/002; SW-DEV-001/005 / D-SENSOR | `test/rzv2h-bmp388-reset-contract-test.py`, `test/rzv2h-sci-i2c-runtime-test.py`, `test/rzv2h_bmm150_sample_contract_test.py`, `test/rzv2h_board_gpio_contract_test.py` | **New** `test/rzv2h-dualcr8-profile-contract-test.py`: exact BOM/expected health/one CS/final TFmini termios. Target identities/timestamps/disconnect proof; no secondary-IMU requirement closure |
+| SYS-ARC-003/004, SW-ARC-005 / D-OWNER | Board init/timer table, `dualcr8.px4board`; `test/rzv2h_gpt_pwm_contract_test.py`, `test/rzv2h_core_irq_contract_test.py` | [Candidate artifact checks](../../../test/rzv2h-dualcr8-artifact-contract-test.py) and runtime fixtures inspect ownership guards; source evidence is in the software receipt. Physical sole-owner/reset proof remains pending |
+| SYS-IF-001/002; SW-DEV-001/005 / D-SENSOR | `test/rzv2h-bmp388-reset-contract-test.py`, `test/rzv2h-sci-i2c-runtime-test.py`, `test/rzv2h_bmm150_sample_contract_test.py`, `test/rzv2h_board_gpio_contract_test.py` | [Exact-BOM profile fixture](../../../test/rzv2h-dualcr8-profile-contract-test.py) and candidate artifacts cover selection/startup; fitted identities, timestamps and disconnect evidence remain pending; no secondary-IMU closure |
 | SW-IPC-001/003; SYS-SAF-003 / D-WIRE | Three ABI fixtures above; `test/rzv2h_ipc_raw_contract_test.py`, `test/test_rzv2h_ipc_recovery_contract.py` | Extend fixtures: actual compile/offset/CRC/parity, all v2/v3 dispatchers, malformed flags, wrong length/version, duplicate/regression/gaps, wrap and full queues; source/host only until named exact-image load/cache tests |
 | SW-IPC-002/004; SW-FLT-002/003; SYS-SAF-002 / D-LEASE | Existing output-lease fixture; `IO/output-lease.cpp` age-before-receipt | Extend: Ready/Armed gap >50 ms, token issue/expiry/history, cached generation, new token on old snapshot, token-triggered callback without new control publication, epoch reset, heartbeat-only and source-stop cases; host then detached-probe target waveform |
-| SYS-SAF-001/002 / D-COHERENCE | `mixer_module.cpp:limitAndUpdateOutputs`; current bridge split-state behavior | **New** `test/rzv2h-dualcr8-output-producer-contract-test.py`: interleave arm/disarm/termination/safety/lockdown at every copy boundary; preserve nonzero DIS in snapshots, enforce product standby inhibit, scope service DIS/stop/per-channel zero transitions |
+| SYS-SAF-001/002 / D-COHERENCE | `mixer_module.cpp:limitAndUpdateOutputs`; current bridge split-state behavior | [Protocol/producer fixtures](../../../test/rzv2h-demo-protocol-test.py) and [runtime boundary fixture](../../../test/rzv2h-demo-runtime-boundary-test.py) cover coherent consumed progress and inhibit behavior; scoped physical/service proof remains pending |
 | SW-FLT-002/003, SW-OBS-001 / D-BACKEND | `test/rzv2h-io-core-health-runtime-test.py`, existing reporter/worker source | Extend persistent init/apply fault over many reports, healthy heartbeat plus failed backend, missing first status, successful safe reinit and mandatory disarmed handshake; host then named fault transcript |
-| SW-CFG-001 / D-PAIR | `test/rzv2h-px4-artifact-test.py`, `test/rzv2h-jlink-debug-tools-test.py` | **New** `test/rzv2h-dualcr8-pair-policy-test.py`, `test/rzv2h-dualcr8-artifact-contract-test.py`: intended pair, both mismatches, legacy pair, fixed rate/capabilities/hardware ID, exact ELF hashes |
+| SW-CFG-001 / D-PAIR | `test/rzv2h-px4-artifact-test.py`, `test/rzv2h-jlink-debug-tools-test.py` | [Candidate artifact checks](../../../test/rzv2h-dualcr8-artifact-contract-test.py) and current policy require no admitted pair; future selected identities, rate/capability binding and exact-image physical qualification remain pending |
 | SYS-PER-001; SW-IPC-004 / D-TIMING | Existing raw timeout and 2.5 ms worker source | Bounded drain/memory/stack/WCET review, token/status load and jitter measurement; externally measure `T_off`, not logger elapsed time; no invented benchmark target result |
 | SYS-IF-007; SYS-SAF-005 / D-LIMIT | Specification and HAL disable source | Real ESC timeout/reset/stuck-output and whole-core-halt containment remain physical/product gates; do not mark unsupported containment passed |
-| SYS-IF-003/004/008; SW-DEV-002 / D-POWER | `src/drivers/power_monitor/ina228`, `src/drivers/batt_smbus`, `src/drivers/uavcan/sensors/battery.cpp`; no integrated CR8-1 qualification claimed | **New required** selected-device acquisition/normalization and IPC-adapter tests: identity, signed units, scaling/calibration, sample/receive age, unavailable fields, stale/unplug/bus failure, thresholds and PX4 response; real powered source evidence required for full acceptance |
+| SYS-IF-003/004/008; SW-DEV-002 / D-POWER | `src/drivers/power_monitor/ina228`, `src/drivers/batt_smbus`, `src/drivers/uavcan/sensors/battery.cpp`; no integrated CR8-1 qualification claimed | [Battery fixture](../../../test/rzv2h-battery-contract-test.py) covers codec/receiver/measured-SOC components; selected physical acquisition, ICD, PX4 policy and powered source qualification remain required |
 | SW-CFG-001/002 / D-STORAGE | `test/rzv2h-parameter-save-contract-test.py`, `test/rzv2h-xspi-paramfs-contract-test.py`; current TMPFS is volatile | **New required** selected-medium persistence integration tests and named power-interruption campaign: save/reboot/cold boot, corruption, interrupted atomic replacement, calibration identity/schema mismatch, same-model/same-route replacement and safe recovery; manual reload cannot close this gate |
 | SYS-ARC-003; SW-DEV-001/005 / D-CONTROL | `src/modules/ekf2`, controllers/allocator, expected-sensor checks; individual sensor/profile tests | **New required** integrated estimator/controller/allocator scenarios and target timing evidence with calibration restored: bad/stale sensor, GPS/range loss, mode/arm/disarm/failsafe and correct airframe/function mapping; bench wiring alone is not control/navigation proof |
 | SW-OBS-001; SW-CFG-001; SW-UPD-001; SW-SEC-001 / D-RELEASE | Existing profile/artifact and debug-tool tests; no complete authenticated release claimed | **New required** correlated seven-area health logs, actual image/config/calibration hashes, incompatible-set rejection, recovery/interrupted-update and authentication-negative results as applicable to the product release; test-hook builds must be excluded from normal release |
 
-Existing `test/rzv2h-drone-profile-contract-test.py` and `test/rzv2h-simple-profile-contract-test.py` remain regression gates; legacy target behavior and named evidence are preserved. Future build commands are `./build.sh renesas_rdk-rzv2h_dualcr8` and `./build.sh renesas_rdk-rzv2h-io-cr8_1_pwm`, sequentially after their creation. Source assertions, host tests and clean builds establish their own tiers; none is an actuator scope capture, sensor target transcript, or flight result. No firmware test/build/hardware action was performed to author this document.
+Legacy `drone` and `simple` fixtures remain regression gates. Current build entry points are `./build.sh renesas_rdk-rzv2h_dualcr8` and `./build.sh renesas_rdk-rzv2h-io-cr8_1_pwm`, run sequentially through the owning build script. Existing source/host/build receipts establish software evidence only; connector captures, fitted-sensor transcripts and product/flight acceptance remain separate.
 
-Fault injection is proposed under default-off `CONFIG_RZV2H_DUALCR8_FAULT_INJECTION`; selected normal/flight artifacts must prove it off. Delayed finite one-shot hooks cover producer pause, heartbeat drop, corrupt next frame, CR8-1 control-loop pause with worker/reporter live, and backend failure. Each records invocation/completion counters, uses bounded cleanup, disables output after its campaign, and requires a fresh disarmed handshake. Add host fixture injection for token replay, stale generation and queued armed frames; target hooks must reproduce any corresponding claimed target result. Exact future CLI shapes, evidence artifacts and rollback are in [Phase 4](../../../plans/261021-0230-rzv2h-dualcr8-sensor-demo/phase-04-demo-validation.md). GDB halt is not a replacement for a worker-alive stall test. Hardware loads/resets/writes, powered ESCs and motor/fault commands still need the user's explicit authorization under the repository rules; no such action occurs during planning.
+Fault injection is implemented under default-off `CONFIG_RZV2H_DUALCR8_FAULT_INJECTION`; normal artifacts must prove it off. [`bench-fault.hpp`](../../../src/apps/bench-fault.hpp) and the [candidate validation guide](../validation/dualcr8-sensor-actuator-demo.md) own bounded hook semantics, CLI use, evidence and cleanup. Source/host hook coverage does not prove any target result. GDB halt cannot substitute for a worker-alive stall test. Hardware loads/resets/writes, powered ESCs and fault commands require explicit user authorization.
 
 ## 9. Integration into the five-document product set
 
@@ -563,6 +564,6 @@ The product's Linux security boundary is outside this demo runtime; trusted R8 p
 ## 10. Material unresolved inputs
 
 1. Product physical ownership is CR8-1 under SYS-ARC-004; qualify the new pair/resource/reset migration. Use the approved CR8-0 mixer allocation in software §5.6; legacy CR8-0 PWM ownership remains a separate staging baseline.
-2. User choice: exact ESC models, supported input protocol and fixed rate, pulse bounds/calibration, local timeout, harness/output order and motor direction. PWM is conditional on that contract.
+2. Select exact ESC revisions, DShot speed, PWM400 backup limits, local timeout, harness/output order and motor direction. DShot primary/PWM400 backup remains frozen; production DShot backend/wire adaptation and selected-device qualification remain open.
 3. Selected campaign: props-off qualification first. Controlled hover plus outdoor GPS mission remain a later separately scoped campaign. Full acceptance retains battery monitoring, persistent calibration and all seven subsystem contracts; this choice does not remove them or authorize force-arm/health bypass.
 4. Interface/physical inputs: selected BMS/power monitor and persistent medium/partition, fitted IMU/rangefinder orientations, RDK/extension revision and wiring/supply/pull-up confirmation, ESC ICD including safe pad level and scoped service DIS policy, capture correlation/testpoint, measured worker jitter/HAL budget and inactive/reset waveforms. These hold their owning interface/physical qualification; the module ownership/registry decision is closed and does not select these hardware interfaces.
