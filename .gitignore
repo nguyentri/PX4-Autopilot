@@ -226,3 +226,14 @@ ak-engineer
 !/Tools/rzv2h-px4-artifact-check.py
 !/test/rzv2h-px4-ci-test.py
 !/test/rzv2h-px4-artifact-test.py
+!/test/rzv2h-dualcr8-profile-contract-test.py
+!/test/tfmini-serial-config-test.py
+!/Tools/rzv2h-autonomy-evidence.py
+!/test/rzv2h-autonomy-evidence-test.py
+!/test/rzv2h-demo-protocol-test.py
+!/test/rzv2h-demo-runtime-boundary-test.py
+!/test/rzv2h-lab-pivot-allocation-test.py
+!/test/rzv2h-gateway-validator-contract-test.py
+!/test/rzv2h-battery-contract-test.py
+!/test/rzv2h-perception-adapter-test.py
+!/test/rzv2h-dualcr8-artifact-contract-test.py

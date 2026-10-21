@@ -50,6 +50,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* Application v3 is separate; legacy v2 layouts below retain their ABI. */
+#ifdef __cplusplus
+#include "../../../../src/apps/protocol.hpp"
+#endif
+
 /*===========================================================================
  * Protocol Constants
  *===========================================================================*/
@@ -348,6 +353,8 @@ typedef struct {
 #define CORE_ID_CR8_1                   1
 #define CORE_ID_M33                     2
 
+#ifdef __cplusplus
+/* Legacy C++ containers are separate from the C-compatible wire records. */
 /*===========================================================================
  * Ring Buffer Structure
  *===========================================================================*/
@@ -428,3 +435,7 @@ typedef struct {
 static_assert(sizeof(SharedMemCR8_t) <= 16384, "SharedMemCR8_t exceeds 16KB limit");
 static_assert(sizeof(SharedMemM33_t) <= 16384, "SharedMemM33_t exceeds 16KB limit");
 static_assert(sizeof(MessageHeader_t) == 16, "MessageHeader_t must be 16 bytes");
+
+#else
+_Static_assert(sizeof(MessageHeader_t) == 16, "MessageHeader_t must be 16 bytes");
+#endif

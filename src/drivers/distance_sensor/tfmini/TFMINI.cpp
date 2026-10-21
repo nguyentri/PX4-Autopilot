@@ -141,12 +141,6 @@ TFMINI::init()
 			break;
 		}
 
-		if ((termios_state = tcsetattr(_fd, TCSANOW, &uart_config)) < 0) {
-			PX4_ERR("baud %d ATTR", termios_state);
-			ret = -1;
-			break;
-		}
-
 		uart_config.c_cflag |= (CLOCAL | CREAD);	// ignore modem controls
 		uart_config.c_cflag &= ~CSIZE;
 		uart_config.c_cflag |= CS8;			// 8-bit characters
@@ -163,8 +157,8 @@ TFMINI::init()
 		uart_config.c_cc[VMIN] = 1;
 		uart_config.c_cc[VTIME] = 1;
 
-		if (_fd < 0) {
-			PX4_ERR("FAIL: laser fd");
+		if ((termios_state = tcsetattr(_fd, TCSANOW, &uart_config)) < 0) {
+			PX4_ERR("baud %d ATTR", termios_state);
 			ret = -1;
 			break;
 		}

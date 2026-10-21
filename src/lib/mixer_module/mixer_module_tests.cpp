@@ -180,6 +180,57 @@ private:
 	uORB::Publication<actuator_armed_s> _actuator_armed_pub{ORB_ID(actuator_armed)};
 };
 
+TEST_F(MixerModuleTest, publicationTimestampStaysWithConsumedMotorValues)
+{
+	class InterleavedOutput : public OutputModuleTest
+	{
+	public:
+		MixingOutput *mixing{nullptr};
+		bool inject{false}, have_publication{false};
+		hrt_abstime consumed{0};
+		uORB::Publication<actuator_motors_s> motors{ORB_ID(actuator_motors)};
+		bool updateOutputs(bool stop, uint16_t values[MAX_ACTUATORS], unsigned count, unsigned updates) override
+		{
+			if (inject) {
+				actuator_motors_s newer{};
+				newer.timestamp = 950;
+				newer.timestamp_sample = 200;
+				newer.control[0] = .8f;
+				motors.publish(newer);
+				have_publication = mixing->getOutputPublicationTimestamp(0, consumed);
+				inject = false;
+			}
+
+			return OutputModuleTest::updateOutputs(stop, values, count, updates);
+		}
+	} test_module;
+	test_module.configureFunctions({(int)OutputFunction::Motor1, (int)OutputFunction::Servo1});
+	MixingOutput mixing{PARAM_PREFIX, MAX_NUM_OUTPUTS, test_module, MixingOutput::SchedulingPolicy::Disabled, false, false};
+	test_module.mixing = &mixing;
+	mixing.updateSubscriptions(false);
+	actuator_motors_s older{};
+	older.timestamp = 800;
+	older.timestamp_sample = 100; // Physical sample time is a different contract.
+	older.control[0] = .1f;
+	test_module.motors.publish(older);
+	test_module.inject = true;
+	mixing.update();
+	EXPECT_TRUE(test_module.have_publication);
+	EXPECT_EQ(test_module.consumed, 800u);
+	uORB::Subscription latest{ORB_ID(actuator_motors)};
+	actuator_motors_s visible{};
+	ASSERT_TRUE(latest.copy(&visible));
+	EXPECT_EQ(visible.timestamp, 950u); // A second subscription sees B, while these values still came from A.
+	mixing.update();
+	hrt_abstime consumed = 0;
+	EXPECT_TRUE(mixing.getOutputPublicationTimestamp(0, consumed));
+	EXPECT_EQ(consumed, 950u);
+	EXPECT_FALSE(mixing.getOutputPublicationTimestamp(1, consumed)); // Unsupported provider.
+	EXPECT_FALSE(mixing.getOutputPublicationTimestamp(2, consumed)); // Disabled channel.
+	EXPECT_FALSE(mixing.getOutputPublicationTimestamp(-1, consumed));
+	EXPECT_FALSE(mixing.getOutputPublicationTimestamp(MAX_NUM_OUTPUTS, consumed));
+}
+
 TEST_F(MixerModuleTest, basic)
 {
 	OutputModuleTest test_module;

@@ -1,0 +1,23 @@
+#!/bin/sh
+# One polled ICM45686. Rotation 0 is the driver frame, not fitted-board proof;
+# SENS_BOARD_ROT and calibration must be qualified before arming.
+if icm45686 -s -b 0 -c 3 -R 0 start
+then
+	echo "ICM45686 started on SPI0 CS pin 3"
+else
+	echo "ERROR [init] ICM45686 failed on SPI0 CS pin 3"
+fi
+
+if bmm150 -I -b 7 -a 0x10 start
+then
+	echo "BMM150 started on SCI7"
+else
+	echo "ERROR [init] BMM150 failed on SCI7"
+fi
+
+if bmp388 -I -b 7 -a 0x77 start
+then
+	echo "BMP390 started on SCI7"
+else
+	echo "ERROR [init] BMP390 failed on SCI7"
+fi

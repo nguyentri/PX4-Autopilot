@@ -68,6 +68,9 @@ public:
 
 	virtual bool getLatestSampleTimestamp(hrt_abstime &t) const { return false; }
 
+	/** Publication that supplied the cached values, independent of later topic updates. */
+	virtual bool getLatestPublicationTimestamp(hrt_abstime &t) const { return false; }
+
 	/**
 	 * Check whether the output (motor) is configured to be reversible
 	 */

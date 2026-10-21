@@ -1,0 +1,2 @@
+# The I/O supervisor owns no parameter or log filesystem.
+true

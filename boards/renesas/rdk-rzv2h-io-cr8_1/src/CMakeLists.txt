@@ -48,4 +48,21 @@ target_link_libraries(drivers_board
 
 # Build the board-local px4io_cr8 module (I/O processor) so it is compiled into
 # the firmware. It was previously present but wired into no build.
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_1 px4io_cr8_1)
+if(PX4_BOARD_LABEL STREQUAL "pwm")
+	target_sources(drivers_board PRIVATE timer_config.cpp)
+	target_link_libraries(drivers_board PRIVATE arch_io_pins)
+	# This minimal image has no early uORB publisher or filesystem client to
+	# pull these archives in incidentally. Declare the platform-init and BSON
+	# fsync dependencies explicitly rather than relying on module link order.
+	cmake_policy(SET CMP0079 NEW)
+	target_link_libraries(px4_layer PRIVATE uORB)
+	target_link_libraries(tinybson PRIVATE nuttx_fs)
+	px4_add_module(
+		MODULE drivers__rzv2h_io
+		MAIN rzv2h_io
+		SRCS ${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_1/io-supervisor.cpp
+		DEPENDS rzv2h_demo arch_io_pins
+	)
+else()
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_1 px4io_cr8_1)
+endif()

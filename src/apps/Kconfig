@@ -1,0 +1,8 @@
+config RZV2H_DUALCR8_FAULT_INJECTION
+	bool "RZ/V2H dual-CR8 props-off fault hooks"
+	default n
+	depends on "$(VENDOR)/$(MODEL)" = "renesas/rdk-rzv2h" || "$(VENDOR)/$(MODEL)" = "renesas/rdk-rzv2h-io-cr8_1"
+	help
+		Include delayed, bounded one-shot fault commands in the v3 modules.
+		Use only for an explicitly authorized props-off campaign. Normal
+		artifacts must leave this disabled. One injection per module start.

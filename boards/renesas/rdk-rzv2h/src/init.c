@@ -79,7 +79,7 @@ extern int board_ipc_initialize(void);
 
 /* External function declarations */
 extern struct i2c_master_s *px4_i2cbus_initialize(int bus);
-#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
+#if defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) || defined(CONFIG_RZV2H_DUALCR8_DRONE)
 extern int rdk_rzv2h_configure_sensor_cs(void);
 #endif
 #ifdef CONFIG_RDK_RZV2H_XSPI_PARAMFS
@@ -210,10 +210,12 @@ __EXPORT void board_on_reset(int status)
 	 * rzv_unconfiggpio() enters high-impedance mode before clearing the pinmux,
 	 * so an active GPT/DShot peripheral cannot drive an ESC through reset.
 	 */
+#ifndef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
 	(void)px4_arch_unconfiggpio(BOARD_PWM_CH0_GPIO);
 	(void)px4_arch_unconfiggpio(BOARD_PWM_CH1_GPIO);
 	(void)px4_arch_unconfiggpio(BOARD_PWM_CH2_GPIO);
 	(void)px4_arch_unconfiggpio(BOARD_PWM_CH3_GPIO);
+#endif
 
 	if (status >= 0) {
 		up_mdelay(6);
@@ -245,11 +247,13 @@ static void rdk_rzv2h_gpio_initialize(void)
 #endif
 
 	/* Configure only the selected IMU's DRDY input. P94 has one owner. */
-#if !defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) && defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
+#if !defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) && !defined(CONFIG_RZV2H_DUALCR8_DRONE)
+#if defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
 	/* The shared board descriptor omits pulls; PX4 configures the pull-up. */
 	px4_arch_configgpio(BOARD_ICM20948_DRDY_GPIO | RZV_GPIO_PULLUP);
-#elif !defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) && defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
+#elif defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) && defined(BOARD_MPU9250_DRDY_GPIO)
 	px4_arch_configgpio(BOARD_MPU9250_DRDY_GPIO);
+#endif
 #endif
 
 	/* Serial pins are owned by the NuttX RZ/V2H board serial setup.
@@ -364,6 +368,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	 * already initialized by px4_platform_init() and is independent of these
 	 * output timers.
 	 */
+#ifndef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
 #if defined(CONFIG_DRIVERS_PWM_OUT) || defined(CONFIG_DRIVERS_DSHOT)
 	ret = rdk_rzv2h_timer_initialize();
 
@@ -373,13 +378,14 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	}
 
 #endif
+#endif
 
 	/* Initialize the board-owned SPI path for the IMU. This configures the
 	 * SPI0 pinmux and GPIO chip select before the PX4 sensor driver obtains
 	 * the idempotent lower-half through px4_spibus_initialize().
 	 */
 #ifdef CONFIG_RZV_SPI
-#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
+#if defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) || defined(CONFIG_RZV2H_DUALCR8_DRONE)
 	ret = rdk_rzv2h_configure_sensor_cs();
 
 	if (ret != OK) {

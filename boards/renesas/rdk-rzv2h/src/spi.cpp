@@ -52,7 +52,7 @@
 
 /* SPI bus configuration */
 
-#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
+#if defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) || defined(CONFIG_RZV2H_DUALCR8_DRONE)
 #if !defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686) || defined(CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250) || defined(CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948)
 #error "The drone extension requires ICM45686 without legacy IMU drivers"
 #endif
@@ -73,6 +73,8 @@ constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 		initSPIDevice(imu_device_type, SPI::CS{GPIO::Port9, GPIO::Pin3}),
 		initSPIDevice(imu_device_type, SPI::CS{GPIO::Port9, GPIO::Pin4}),
 		initSPIDevice(imu_device_type, SPI::CS{GPIO::Port9, GPIO::Pin5}),
+#elif defined(CONFIG_RZV2H_DUALCR8_DRONE)
+		initSPIDevice(imu_device_type, SPI::CS{GPIO::Port9, GPIO::Pin3}),
 #else
 		// CS = P93 (GPIO-driven, active-low). DRDY = P94 (IMU INT, TINT).
 		// Do not use PA7; that pin is GPT7B/ESC2 PWM (see timer_config.cpp:154).
@@ -84,16 +86,20 @@ constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
 static_assert(validateSPIConfig(px4_spi_buses), "SPI bus configuration mismatch");
 static_assert(px4_spi_buses[0].power_enable_gpio == 0, "The IMU bus has no switched power GPIO");
 
-#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
+#if defined(CONFIG_RZV2H_DRONE_SENSOR_EXTENSION) || defined(CONFIG_RZV2H_DUALCR8_DRONE)
 extern "C" int board_spi_configure_device_ids(const uint32_t *devids, unsigned int count);
 
 extern "C" __EXPORT int rdk_rzv2h_configure_sensor_cs(void)
 {
+#ifdef CONFIG_RZV2H_DRONE_SENSOR_EXTENSION
 	const uint32_t devids[] = {
 		px4_spi_buses[0].devices[0].devid,
 		px4_spi_buses[0].devices[1].devid,
 		px4_spi_buses[0].devices[2].devid
 	};
+#else
+	const uint32_t devids[] = {px4_spi_buses[0].devices[0].devid};
+#endif
 	return board_spi_configure_device_ids(devids, sizeof(devids) / sizeof(devids[0]));
 }
 #endif

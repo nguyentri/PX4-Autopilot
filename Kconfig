@@ -240,6 +240,7 @@ source "platforms/common/Kconfig"
 endmenu
 
 source "src/lib/*/Kconfig"
+source "src/apps/Kconfig"
 
 # RDK-RZ/V2H profile options. Only this board's Kconfig is PX4 Kconfig; other
 # board directories hold NuttX-style files that PX4 never parsed.

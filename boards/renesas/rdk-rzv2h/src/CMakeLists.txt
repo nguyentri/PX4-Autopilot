@@ -184,6 +184,15 @@ add_custom_target(rzv2h_drone_profile_contract_test
 # Source and host MMIO contracts are required by every board variant. Keeping one ALL
 # aggregate makes the normal build the CI gate while preserving focused target
 # names for local diagnosis.
+add_custom_target(rzv2h_dualcr8_profile_contract_test
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-dualcr8-profile-contract-test.py
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/tfmini-serial-config-test.py
+	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-io-core-health-runtime-test.py
+	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+	COMMENT "Running exact-BOM sensor and remote-output ownership contracts"
+	VERBATIM
+)
+
 add_custom_target(rzv2h_source_contract_tests ALL
 	DEPENDS
 		rzv2h_board_gpio_contract_test
@@ -196,6 +205,7 @@ add_custom_target(rzv2h_source_contract_tests ALL
 		rzv2h_dshot_runtime_test
 		rzv2h_simple_profile_contract_test
 		rzv2h_drone_profile_contract_test
+		rzv2h_dualcr8_profile_contract_test
 )
 
 if(PX4_BOARD_LABEL STREQUAL "simple" AND NOT NUTTX_CONFIG STREQUAL "simple")
@@ -261,7 +271,7 @@ endif()
 
 # The CR8-1 bridge is a final-milestone feature. Independent CR8-0 images must
 # not carry a dormant /dev/ipcc1 consumer.
-if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)
+if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE OR CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
 	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
 endif()
 
@@ -277,4 +287,8 @@ if(PX4_BOARD_LABEL STREQUAL "drone")
 		COMMENT "Auditing resolved RZ/V2H drone firmware artifacts"
 		VERBATIM
 	)
+endif()
+
+if(PX4_BOARD_LABEL STREQUAL "dualcr8" AND NOT NUTTX_CONFIG STREQUAL "dualcr8")
+	message(FATAL_ERROR "The exact-BOM dual-CR8 target requires NUTTX_CONFIG=dualcr8")
 endif()

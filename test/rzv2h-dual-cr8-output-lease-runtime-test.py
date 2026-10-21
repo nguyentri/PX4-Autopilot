@@ -369,7 +369,7 @@ int main() {
         self.assertRegex(spawn, r'px4_task_spawn_cmd\("px4io_bridge",\s*SCHED_DEFAULT,\s*'
                                 r'SCHED_PRIORITY_ACTUATOR_OUTPUTS,')
 
-    def test_only_the_dual_cr8_image_builds_the_px4io_bridge(self):
+    def test_dual_cr8_selects_the_supervised_producer_instead_of_the_legacy_bridge(self):
         board = BOARDS / 'rdk-rzv2h'
         kconfig = (board / 'Kconfig').read_text()
         entry = kconfig[kconfig.index('config BOARD_RDK_RZV2H_PX4IO_BRIDGE'):]
@@ -382,8 +382,9 @@ int main() {
             nuttx = (config if config.exists() else board / 'nuttx-config/nsh/defconfig').read_text()
             has_bridge = re.search(r'(?m)^CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=y', profile.read_text()) is not None
             has_link = re.search(r'(?m)^CONFIG_RZV_IPC_CR8_CR8=y', nuttx) is not None
-            # The drone hooks start the bridge whenever /dev/ipcc1 exists.
-            self.assertEqual(has_bridge, has_link, label)
+            remote = 'CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS=y' in profile.read_text()
+            self.assertEqual(remote, has_link, label)
+            self.assertFalse(has_bridge, label)
             if has_bridge:
                 bridged.append(label)
                 for line in ('CONFIG_RZV_IPC_RAW=y', 'CONFIG_RZV_IPC_ROLE_INITIATOR=y'):
@@ -391,7 +392,8 @@ int main() {
                 wait = re.search(r'(?m)^CONFIG_RZV_IPC_RECOVERY_WAIT_MS=(\d+)$', nuttx)
                 self.assertTrue(wait and int(wait.group(1)) <= 100, label)
                 self.assertNotRegex(nuttx, r'(?m)^CONFIG_RZV_(OPENAMP|IPC_CR8_CR8_LOOPBACK)=y', label)
-        self.assertEqual(bridged, ['dualcr8'])
+        self.assertEqual(bridged, [])
+        self.assertIn('CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS=y', (board / 'dualcr8.px4board').read_text())
 
     def test_profiles_only_set_board_options_kconfig_can_apply(self):
         # Options inside 'if BOARD_RDK_RZV2H' are forced off unless a profile
@@ -413,7 +415,7 @@ int main() {
                                  r'!defined\(CONFIG_RZV_IPC_ROLE_INITIATOR\)\n#\s*error')
         self.assertRegex(bridge, r'CONFIG_RZV_IPC_RECOVERY_WAIT_MS > 100\n#\s*error')
 
-    def test_px4_kconfig_resolves_the_bridge_only_for_dual_cr8(self):
+    def test_px4_kconfig_resolves_remote_ownership_without_the_legacy_bridge(self):
         # A board option that PX4 Kconfig never parses is silently dropped.
         probe = r"""
 import os, sys, kconfiglib
@@ -424,7 +426,7 @@ for model, label in [(m, l) for m, l in (a.split(':') for a in sys.argv[1:])]:
     if model == 'rdk-rzv2h':
         k.load_config(board + 'default.px4board')
         k.load_config(board + label + '.px4board', replace=False)
-    print(model, label, k.syms['BOARD_RDK_RZV2H_PX4IO_BRIDGE'].str_value)
+    print(model, label, k.syms['BOARD_RDK_RZV2H_PX4IO_BRIDGE'].str_value + k.syms['BOARD_RDK_RZV2H_REMOTE_OUTPUTS'].str_value)
 """
         labels = sorted(p.stem for p in (BOARDS / 'rdk-rzv2h').glob('*.px4board'))
         args = ['rdk-rzv2h:' + label for label in labels] + ['rdk-rzv2h-io-cr8_1:default']
@@ -433,11 +435,11 @@ for model, label in [(m, l) for m, l in (a.split(':') for a in sys.argv[1:])]:
             self.skipTest('kconfiglib is not installed')
         self.assertEqual(result.returncode, 0, result.stderr)
         resolved = dict((' '.join(line.split()[:2]), line.split()[2]) for line in result.stdout.splitlines())
-        expected = {f'rdk-rzv2h {label}': 'y' if label == 'dualcr8' else 'n' for label in labels}
-        expected['rdk-rzv2h-io-cr8_1 default'] = 'n'
+        expected = {f'rdk-rzv2h {label}': 'ny' if label == 'dualcr8' else 'nn' for label in labels}
+        expected['rdk-rzv2h-io-cr8_1 default'] = 'nn'
         self.assertEqual(resolved, expected)
 
-    def test_dual_cr8_image_registers_the_link_and_starts_the_bridge(self):
+    def test_dual_cr8_registers_link_and_legacy_startup_remains_guarded(self):
         board = BOARDS / 'rdk-rzv2h'
         cmake = (board / 'src/CMakeLists.txt').read_text()
         self.assertRegex(cmake, r'if\(CONFIG_RZV_IPC_RAW\)\n\tlist\(APPEND drivers_board_sources\n'
@@ -447,7 +449,7 @@ for model, label in [(m, l) for m, l in (a.split(':') for a in sys.argv[1:])]:
         app = extract(init, '__EXPORT int board_app_initialize(')
         raw = app[app.index('#if defined(CONFIG_RZV_IPC_RAW)'):]
         self.assertIn('ret = board_ipc_initialize();', raw[:raw.index('#endif')])
-        self.assertIn('CONFIG_BOARD_INIT_SUBDIR="drone"', (board / 'dualcr8.px4board').read_text())
+        self.assertIn('CONFIG_BOARD_INIT_SUBDIR="dualcr8"', (board / 'dualcr8.px4board').read_text())
 
         script = board / 'init/drone/rc.board_extras'
         for line in script.read_text().splitlines():

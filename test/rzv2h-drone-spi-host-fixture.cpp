@@ -34,6 +34,7 @@ extern "C" {
 #include "board-select-under-test.inc"
 }
 
+static constexpr unsigned sensor_count = BOARD_SPI0_DEVICE_COUNT;
 static spi_dev_s controller{0};
 static bool levels[] = {true, true, true};
 static bool configured[3];
@@ -42,6 +43,14 @@ static unsigned fail_config;
 static bool fail_start;
 static bool checking_early_gpio;
 static unsigned early_gpio_calls;
+static bool all_configured()
+{
+	for (unsigned i = 0; i < sensor_count; ++i) {
+		if (!configured[i]) { return false; }
+	}
+
+	return true;
+}
 #define px4_arch_configgpio rzv_gpioconfig
 #include "board-gpio-under-test.inc"
 
@@ -60,13 +69,13 @@ int rzv_gpioconfig(uint32_t pin)
 	const unsigned index = (pin & GPIO_PIN_MASK) >> GPIO_PIN_SHIFT;
 	assert((pin & GPIO_PORT_MASK) == uint32_t(PORT9));
 
-	if (index >= 3 && index <= 5) {
+	if (index >= 3 && index < 3 + sensor_count) {
 		assert((pin & GPIO_MODE_MASK) == RZV_GPIO_OUTPUT);
 		assert(pin & RZV_GPIO_INITIAL_HIGH);
 		configured[index - 3] = true;
 
 	} else {
-		assert(index < 3 && configured[0] && configured[1] && configured[2]);
+		assert(index < 3 && all_configured());
 		assert(levels[0] && levels[1] && levels[2]);
 	}
 
@@ -76,7 +85,7 @@ int rzv_gpioconfig(uint32_t pin)
 int rzv_gpiowrite(uint32_t pin, bool high)
 {
 	const unsigned index = (pin & GPIO_PIN_MASK) >> GPIO_PIN_SHIFT;
-	assert(index >= 3 && index <= 5 && configured[index - 3]);
+	assert(index >= 3 && index < 3 + sensor_count && configured[index - 3]);
 	levels[index - 3] = high;
 	++writes;
 	assert(unsigned(!levels[0]) + unsigned(!levels[1]) + unsigned(!levels[2]) <= 1);
@@ -85,7 +94,7 @@ int rzv_gpiowrite(uint32_t pin, bool high)
 
 spi_dev_s *rzv_spibus_initialize(int port)
 {
-	assert(port == 0 && configured[0] && configured[1] && configured[2]);
+	assert(port == 0 && all_configured());
 	assert(levels[0] && levels[1] && levels[2]);
 	++starts;
 	return fail_start ? nullptr : &controller;
@@ -117,7 +126,7 @@ static int iterate_chip_selects(int count, char **pins)
 
 	while (all.next()) { ++matches; }
 
-	assert(matches == 3);
+	assert(matches == int(sensor_count));
 	SPIBusIterator absent(SPIBusIterator::FilterType::InternalBus, DRV_IMU_DEVTYPE_ICM45686, 6, 0);
 	assert(!absent.next());
 	return 0;
@@ -135,9 +144,9 @@ int main(int argc, char **argv)
 	checking_early_gpio = false;
 	rzv_spi_select(nullptr, 0, true);
 	assert(writes == 0);
-	uint32_t ids[3];
+	uint32_t ids[3] {};
 
-	for (unsigned i = 0; i < 3; ++i) {
+	for (unsigned i = 0; i < sensor_count; ++i) {
 		const auto &device = px4_spi_buses[0].devices[i];
 		ids[i] = device.devid;
 		assert(device.drdy_gpio == 0);
@@ -147,14 +156,16 @@ int main(int argc, char **argv)
 		assert(ids[i] == PX4_SPIDEV_ID(PX4_SPI_DEVICE_ID, DRV_IMU_DEVTYPE_ICM45686 | (i << 8)));
 	}
 
-	assert(px4_spi_buses[0].devices[3].cs_gpio == 0);
+	assert(px4_spi_buses[0].devices[sensor_count].cs_gpio == 0);
 	assert(board_spi_initialize() == -EINVAL && starts == 0 && configs == 0);
-	assert(board_spi_configure_device_ids(nullptr, 3) == -EINVAL);
-	assert(board_spi_configure_device_ids(ids, 2) == -EINVAL);
+	assert(board_spi_configure_device_ids(nullptr, sensor_count) == -EINVAL);
+	assert(board_spi_configure_device_ids(ids, sensor_count - 1) == -EINVAL);
 	uint32_t duplicate[3] = {ids[0], ids[0], ids[2]};
-	assert(board_spi_configure_device_ids(duplicate, 3) == -EINVAL);
-	uint32_t zero[3] = {ids[0], 0, ids[2]};
-	assert(board_spi_configure_device_ids(zero, 3) == -EINVAL);
+
+	if (sensor_count > 1) { assert(board_spi_configure_device_ids(duplicate, sensor_count) == -EINVAL); }
+
+	uint32_t zero[3] = {};
+	assert(board_spi_configure_device_ids(zero, sensor_count) == -EINVAL);
 	assert(board_spi_initialize() == -EINVAL && configs == 0);
 	assert(rdk_rzv2h_configure_sensor_cs() == 0);
 
@@ -172,29 +183,34 @@ int main(int argc, char **argv)
 	}
 
 	assert(board_spi_initialize() == 0);
+
+	if (sensor_count == 1) { assert(!configured[1] && !configured[2]); }
+
 	const auto before = configs;
 	assert(board_spi_initialize() == 0 && configs == before);
 	assert(rdk_rzv2h_configure_sensor_cs() == 0);
-	uint32_t changed[3] = {ids[0], ids[1], ids[2] + 1};
-	assert(board_spi_configure_device_ids(changed, 3) == -EBUSY);
+	uint32_t changed[3];
+	std::memcpy(changed, ids, sizeof(ids));
+	++changed[sensor_count - 1];
+	assert(board_spi_configure_device_ids(changed, sensor_count) == -EBUSY);
 
 	for (unsigned repeat = 0; repeat < 3; ++repeat) {
-		for (unsigned i = 0; i < 3; ++i) {
+		for (unsigned i = 0; i < sensor_count; ++i) {
 			rzv_spi_select(&controller, ids[i], true);
 
-			for (unsigned j = 0; j < 3; ++j) { assert(levels[j] == (i != j)); }
+			for (unsigned j = 0; j < sensor_count; ++j) { assert(levels[j] == (i != j)); }
 
 			assert(rzv_spi_status(&controller, ids[i]) == SPI_STATUS_PRESENT);
 		}
 	}
 
-	for (uint32_t invalid : {0u, 0x12345678u, changed[2]}) {
+	for (uint32_t invalid : {0u, 0x12345678u, changed[sensor_count - 1]}) {
 		rzv_spi_select(&controller, invalid, true);
 		assert(levels[0] && levels[1] && levels[2]);
 		assert(rzv_spi_status(&controller, invalid) == 0);
 	}
-	rzv_spi_select(&controller, ids[1], true);
-	rzv_spi_select(&controller, ids[1], false);
+	rzv_spi_select(&controller, ids[sensor_count - 1], true);
+	rzv_spi_select(&controller, ids[sensor_count - 1], false);
 	assert(levels[0] && levels[1] && levels[2]);
 	spi_dev_s foreign{1};
 	const auto before_foreign = writes;

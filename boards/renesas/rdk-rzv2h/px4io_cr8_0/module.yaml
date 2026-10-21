@@ -1,0 +1,13 @@
+module_name: 'RZ/V2H remote PWM'
+actuator_output:
+  output_groups:
+    - generator: pwm
+      param_prefix: 'PWM_MAIN'
+      channel_labels: ['PWM Main', 'PWM Main']
+      standard_params:
+        disarmed: { min: 800, max: 2200, default: 1000 }
+        min: { min: 800, max: 1400, default: 1000 }
+        max: { min: 1600, max: 2200, default: 2000 }
+        failsafe: { min: 800, max: 2200 }
+      # Rate/protocol is fixed by the compiled, qualified CR8-1 contract.
+      # A timer parameter must not suggest a runtime override of that contract.

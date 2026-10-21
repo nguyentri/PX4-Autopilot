@@ -22,6 +22,18 @@ CHECK = BUILD.CHECK
 
 
 class ProfileContracts(unittest.TestCase):
+    def test_bench_fault_hooks_are_opt_in_and_board_scoped(self):
+        source = ROOT / 'Kconfig'
+        for model, available in (('rdk-rzv2h', True), ('rdk-rzv2h-io-cr8_1', True), ('rdk-rzv2h-io-cm33', False)):
+            with self.subTest(model=model), patch.dict(os.environ, {
+                'srctree': str(ROOT), 'VENDOR': 'renesas', 'MODEL': model, 'LABEL': 'default',
+            }):
+                config = kconfiglib.Kconfig(str(source), warn_to_stderr=False)
+                flag = config.syms['RZV2H_DUALCR8_FAULT_INJECTION']
+                self.assertEqual(flag.str_value, 'n')
+                flag.set_value('y')
+                self.assertEqual(flag.str_value, 'y' if available else 'n')
+
     def test_policy_matches_sources_and_root_listing(self):
         contract = CHECK.policy(ROOT)
         names = subprocess.check_output(['bash','build.sh','--list'],cwd=ROOT,text=True).splitlines()
@@ -41,12 +53,34 @@ class ProfileContracts(unittest.TestCase):
         self.assertFalse(CHECK.size_allowed(cap+1,cap))
 
     def test_selection_dependency_set_and_order(self):
-        c = CHECK.policy(); dual = next(p for p in c['profiles'] if p['peer'])
+        # Exercise generic qualified-pair dependency handling independently of
+        # the current sensor-only policy, which deliberately qualifies no pair.
+        c = {'profiles': [{'target': 'flight', 'peer': 'io'}, {'target': 'io', 'peer': None}]}
+        dual = c['profiles'][0]
         self.assertEqual(CHECK.select_profiles(c,[dual['target'],dual['peer']]),
                          CHECK.select_profiles(c,[dual['peer'],dual['target']]))
         self.assertEqual(len(CHECK.select_profiles(c,[dual['target']])),2)
         with self.assertRaisesRegex(ValueError,'duplicate'):
             CHECK.select_profiles(c,[dual['target']]*2)
+
+    def test_merged_sensor_profile_has_no_qualified_peer(self):
+        contract = CHECK.policy(ROOT)
+        target = 'renesas_rdk-rzv2h_dualcr8'
+        selected = CHECK.select_profiles(contract, [target])
+        self.assertEqual([p['target'] for p in selected], [target])
+        profile = selected[0]
+        self.assertIsNone(profile['peer'])
+        self.assertIn('pwm_out', profile['forbidden_builtins'])
+        self.assertIn('px4io_bridge', profile['forbidden_builtins'])
+        self.assertEqual(profile['required_config']['CONFIG_RZV2H_DUALCR8_DRONE'], 'y')
+        with self.assertRaisesRegex(ValueError, 'unknown target'):
+            CHECK.select_profiles(contract, ['renesas_rdk-rzv2h_dualcr8demo'])
+        with tempfile.TemporaryDirectory() as temp:
+            archive = Path(temp)
+            BUILD.pair_receipt(archive, contract, 'unused')
+            self.assertFalse((archive/'pair-receipt.json').exists())
+            with self.assertRaisesRegex(ValueError, 'no qualified image pair'):
+                CHECK.check_pair(archive, contract, 'unused')
 
     def test_bad_selection_and_temp_path_fail_before_output(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -64,6 +98,21 @@ class ProfileContracts(unittest.TestCase):
         entries = BUILD.REGRESSION.read_catalog(BUILD.REGRESSION.CATALOG)['scripts']
         self.assertTrue(set(CHECK.policy()['native_coverage'].values()) <=
                         {e['path'] for e in entries if 'port-host' in e['groups']})
+
+    def test_archive_host_selection_matches_registered_port_host_suite(self):
+        catalog = BUILD.REGRESSION.read_catalog(BUILD.REGRESSION.CATALOG)
+        selected = BUILD.REGRESSION.select(catalog, ['port-host'], [])
+        self.assertEqual(CHECK.policy()['host_tests'], [entry['id'] for entry in selected])
+
+    def test_registered_host_sources_and_contracts_survive_source_overlay(self):
+        entries = BUILD.REGRESSION.read_catalog(BUILD.REGRESSION.CATALOG)['scripts']
+        available = set(BUILD.repository_files(ROOT, Path('.')))
+        required = {entry['path'] for entry in entries if 'port-host' in entry['groups']}
+        required.update(path for path in CHECK.policy()['contract_owners']
+                        if not path.startswith(str(BUILD.NUTTX) + '/'))
+        required.update(path for path in CHECK.policy()['abi_sources']
+                        if not path.startswith(str(BUILD.NUTTX) + '/'))
+        self.assertEqual(sorted(required - available), [], 'required source omitted by Git/overlay policy')
 
     def test_raw_io_transport_is_independent_of_generic_ipcc(self):
         nuttx = ROOT/BUILD.NUTTX
@@ -169,6 +218,21 @@ class GitIsolation(unittest.TestCase):
         for obj in (target/'.git/objects').rglob('*'):
             source = self.source/'.git/objects'/obj.relative_to(target/'.git/objects')
             if obj.is_file() and source.exists(): self.assertNotEqual(source.stat().st_ino,obj.stat().st_ino)
+
+    def test_untracked_fixture_airframe_is_preserved_without_neighbor_private_files(self):
+        name = 'ROMFS/px4fmu_common/init.d/airframes/22001_rzv2h_lab_pivot'
+        path = self.source/name
+        path.parent.mkdir(parents=True)
+        path.write_text('fixture airframe source\n')
+        private = path.parent/'fixture-credentials.txt'
+        private.write_text('private fixture data\n')
+        original = BUILD.source_inputs(self.source, [Path('.')])
+        self.assertIn(name, original['files'])
+        self.assertNotIn(private.relative_to(self.source).as_posix(), original['files'])
+        target = self.base/'fixture-copy'
+        BUILD.snapshot(self.source, target, [Path('.')], original)
+        self.assertEqual((target/name).read_text(), path.read_text())
+        self.assertFalse((target/private.relative_to(self.source)).exists())
 
     def test_detects_content_mode_addition_and_deletion(self):
         before = BUILD.source_inputs(self.source,[Path('.')]); path = self.source/'source.c'

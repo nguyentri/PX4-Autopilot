@@ -1,0 +1,9 @@
+#!/bin/sh
+# The v3 path reports unavailable hardware until the ESC/resource/pair contract
+# is selected. It never falls back to the legacy relay or local motor outputs.
+if ! rzv2h_outputs start
+then
+	echo "ERROR [init] Remote output producer start failed"
+fi
+echo "WARN [init] Remote hardware remains unconfigured; outputs inhibited"
+echo "WARN [init] Battery acquisition and persistent calibration remain required"

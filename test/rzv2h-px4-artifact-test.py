@@ -21,6 +21,25 @@ ARCHIVE = None
 
 
 class ParserUnits(unittest.TestCase):
+    def test_normal_artifacts_reject_bench_fault_hooks(self):
+        CHECK.check_fault_hooks('/* #undef CONFIG_RZV2H_DUALCR8_FAULT_INJECTION */\n')
+        with self.assertRaisesRegex(ValueError, 'bench fault hooks'):
+            CHECK.check_fault_hooks('#define CONFIG_RZV2H_DUALCR8_FAULT_INJECTION 1\n')
+
+    def test_single_sensor_profile_rejects_staging_table(self):
+        descriptors = b''.join(struct.pack('<IIIHxx',0x93811000+i,0,
+                              0x10000034+(i<<8),0x34) for i in range(3))
+        single = descriptors[:16] + bytes(32)
+        CHECK.check_sensor_descriptors(single,1)
+        CHECK.check_sensor_descriptors(descriptors,3)
+        with self.assertRaisesRegex(ValueError,'extra sensor'):
+            CHECK.check_sensor_descriptors(descriptors,1)
+        with self.assertRaisesRegex(ValueError,'descriptor mismatch'):
+            CHECK.check_sensor_descriptors(single,3)
+        alias = descriptors[:16] + descriptors[:4] + descriptors[20:]
+        with self.assertRaisesRegex(ValueError,'chip-select alias'):
+            CHECK.check_sensor_descriptors(alias,3)
+
     def test_contradictory_execution_receipts_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             log = Path(temp)/'test.log';log.write_text('Ran 1 test in 0.1s\n\nOK\n')
@@ -112,7 +131,7 @@ class RealArchives(unittest.TestCase):
     def test_complete_positive_and_relocated_read_only_archive(self):
         before = CHECK.inventory(ARCHIVE)
         result = CHECK.verify(ARCHIVE)
-        self.assertTrue(result['full_matrix']); self.assertEqual(len(result['results']),8)
+        self.assertTrue(result['full_matrix']); self.assertEqual(len(result['results']),9)
         self.assertEqual(CHECK.inventory(ARCHIVE),before)
         with tempfile.TemporaryDirectory(prefix='rzv2h-px4-relocated-') as temp:
             copy = Path(temp)/'archive'; shutil.copytree(ARCHIVE,copy)
@@ -182,8 +201,9 @@ class RealArchives(unittest.TestCase):
             for d in (a/'builds').iterdir():
                 r=CHECK.load_json(d/'build-receipt.json');r.update(policy_sha256=policy_hash,source_state_sha256=state_hash)
                 write_json(d/'build-receipt.json',r)
-            pair=CHECK.load_json(a/'pair-receipt.json');pair.update(policy_sha256=policy_hash,source_state_sha256=state_hash)
-            write_json(a/'pair-receipt.json',pair)
+            if (a/'pair-receipt.json').exists():
+                pair=CHECK.load_json(a/'pair-receipt.json');pair.update(policy_sha256=policy_hash,source_state_sha256=state_hash)
+                write_json(a/'pair-receipt.json',pair)
         self.mutant(change,'trusted local policy')
 
     def test_rehashed_elf_entry_and_split_corruption_fail(self):
@@ -211,11 +231,10 @@ class RealArchives(unittest.TestCase):
                 self.mutant(lambda a:(a/'builds'/name/filename).unlink(),
                             'required artifact|ROMFS|startup')
 
-    def test_rehashed_failed_pair_type_evidence_fails(self):
+    def test_rehashed_unqualified_pair_receipt_fails(self):
         def change(a):
-            p = a/'pair-receipt.json'; pair = CHECK.load_json(p)
-            pair['type_check']['status']='FAIL'; write_json(p,pair)
-        self.mutant(change,'execution failed')
+            write_json(a/'pair-receipt.json', {'members': {}})
+        self.mutant(change,'no qualified image pair')
 
     def test_rehashed_contradictory_focused_evidence_fails(self):
         name = 'renesas_rdk-rzv2h_default'

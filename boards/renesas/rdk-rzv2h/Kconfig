@@ -43,6 +43,16 @@ config BOARD_RDK_RZV2H_PX4IO_BRIDGE
 	default n
 	---help---
 		Build the CR8-0 uORB bridge for a separately loaded CR8-1 PX4IO
-		image. Only the dual-CR8 profile enables it, together with the raw
-		CR8-0 initiator link /dev/ipcc1; independent CR8-0 images keep it
-		disabled.
+		image over the raw CR8-0 initiator link /dev/ipcc1. The current
+		dualcr8 sensor profile keeps this disabled until its remote producer
+		and compatible actuator image are qualified.
+
+config BOARD_RDK_RZV2H_REMOTE_OUTPUTS
+	bool "CR8-1 owns the physical motor outputs"
+	default n
+	depends on !DRIVERS_PWM_OUT && !DRIVERS_DSHOT
+	---help---
+		Leave motor GPT/pad initialization and reset to CR8-1. Require
+		I/O processor status from first boot instead of allowing an absent
+		publisher. Build the v3 PWM_MAIN producer; its unconfigured hardware
+		contract denies readiness. This does not qualify an image pair.

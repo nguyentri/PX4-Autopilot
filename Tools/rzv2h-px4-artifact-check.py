@@ -114,9 +114,9 @@ def policy(source=None):
     result = load_json(POLICY)
     profiles = result['profiles']
     names = [p['target'] for p in profiles]
-    require(result['schema_version'] == 1 and result['policy_version'] == 1,
+    require(result['schema_version'] == 1 and result['policy_version'] == 3,
             'unsupported policy version')
-    require(len(names) == 8 and len(set(names)) == 8, 'policy must classify eight unique targets')
+    require(len(names) == 9 and len(set(names)) == 9, 'policy must classify nine unique targets')
     if source:
         available = sorted('renesas_' + p.parent.name + '_' + p.stem
                            for p in (source/'boards/renesas').glob('rdk-rzv2h*/*.px4board')
@@ -393,6 +393,18 @@ def check_binary(directory, profile, core, view, symbols):
     require(words[18] == expected_wait, 'native header core wait area')
 
 
+def check_sensor_descriptors(descriptors, count):
+    require(len(descriptors) == 48 and count in (1, 3), 'sensor descriptor table size/count')
+    pins = []
+    for i in range(count):
+        cs,drdy,devid,dtype = struct.unpack_from('<IIIH',descriptors,i*16)
+        require(cs and drdy==0 and devid==0x10000034+(i<<8) and dtype==0x34,
+                'sensor descriptor mismatch')
+        pins.append(cs)
+    require(len(set(pins))==count,'sensor chip-select alias')
+    require(not any(descriptors[count*16:]), 'unexpected extra sensor descriptor')
+
+
 def check_profile(directory, profile, contract, state_hash):
     name = profile['target']
     core = contract['cores'][profile['core']]
@@ -422,8 +434,9 @@ def check_profile(directory, profile, contract, state_hash):
     cache = (directory/'CMakeCache.txt').read_text()
     for value in ('PX4_BOARD_LABEL:STRING='+profile['label'], 'NUTTX_CONFIG:INTERNAL='+profile['nuttx_config']):
         require(value+'\n' in cache, 'configuration identity: '+value)
-    require('CONFIG_BOARD_ARCHITECTURE "'+core['architecture']+'"' in
-            (directory/'px4_boardconfig.h').read_text(), 'board architecture mismatch')
+    board_config = (directory/'px4_boardconfig.h').read_text()
+    require('CONFIG_BOARD_ARCHITECTURE "'+core['architecture']+'"' in board_config, 'board architecture mismatch')
+    check_fault_hooks(board_config)
     original = Path(receipt['original_build_directory'])
     require(original.is_absolute() and original.name==name and original.parent.name=='build',
             'original build path identity')
@@ -483,13 +496,7 @@ def check_profile(directory, profile, contract, state_hash):
     check_archived_sources(directory, profile)
     if profile['label'] in ('drone','dualcr8'):
         descriptors = virtual_bytes(view,symbols['px4_spi_buses'],48)
-        pins = []
-        for i in range(3):
-            cs,drdy,devid,dtype = struct.unpack_from('<IIIH',descriptors,i*16)
-            require(cs and drdy==0 and devid==0x10000034+(i<<8) and dtype==0x34,
-                    'extension sensor descriptor mismatch')
-            pins.append(cs)
-        require(len(set(pins))==3,'extension sensor chip-select alias')
+        check_sensor_descriptors(descriptors, 1 if profile['label']=='dualcr8' else 3)
     focused = load_json(directory/'focused-results.json')
     require(len(focused) == len(profile['focused_tests']), 'focused checks incomplete')
     python = load_json(directory.parents[1]/'source-state.json')['python']['path']
@@ -497,6 +504,11 @@ def check_profile(directory, profile, contract, state_hash):
         check_execution(row,Path(script).stem,script,[python,script],directory/('focused-'+str(index)+'.log'))
     return {'target':name, 'status':'BUILD-CHECKED', 'elf_sha256':digest(elf),
             'rtt_address': symbols.get('_SEGGER_RTT'), 'on_target':'NOT-RUN', 'target_actions':[]}
+
+
+def check_fault_hooks(board_config):
+    require(not re.search(r'^#define CONFIG_RZV2H_DUALCR8_FAULT_INJECTION\s+1\b', board_config, re.M),
+            'bench fault hooks present in normal artifact')
 
 
 def check_romfs(directory, data):
@@ -547,7 +559,8 @@ def check_romfs(directory, data):
 
 
 def check_pair(archive, contract, state_hash):
-    dual = next(p for p in contract['profiles'] if p['peer'])
+    dual = next((p for p in contract['profiles'] if p['peer']), None)
+    require(dual is not None, 'no qualified image pair in policy')
     names = [dual['target'], dual['peer']]
     pair = load_json(archive/'pair-receipt.json')
     require(pair.get('schema_version') == 1 and pair.get('source_state_sha256') == state_hash and
@@ -608,6 +621,8 @@ def verify(archive, targets=()):
             require(observed['origin']==expected_repo['origin'] and
                     (not expected_repo['branch'] or observed['branch'] in (expected_repo['branch'],'HEAD')),
                     'source repository origin/branch mismatch')
+    if not any(p['peer'] for p in contract['profiles']):
+        require(not (archive/'pair-receipt.json').exists(), 'no qualified image pair in policy')
     selected = select_profiles(contract, targets)
     expected = [p['target'] for p in selected]
     require(state['selected_targets'] == expected, 'archive target selection mismatch')
@@ -617,7 +632,7 @@ def verify(archive, targets=()):
     results = [check_profile(archive/'builds'/p['target'], p, contract, state_hash) for p in selected]
     if any(p['peer'] for p in selected):
         check_pair(archive, contract, state_hash)
-    return {'schema_version':1, 'status':'BUILD-CHECKED', 'full_matrix':len(selected)==8,
+    return {'schema_version':1, 'status':'BUILD-CHECKED', 'full_matrix':len(selected)==len(contract['profiles']),
             'archive_sha256':identity(sealed), 'results':results, 'on_target':'NOT-RUN', 'target_actions':[]}
 
 

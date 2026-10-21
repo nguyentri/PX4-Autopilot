@@ -114,6 +114,7 @@ static hrt_abstime now_us;
 static hrt_abstime hrt_elapsed_time(const hrt_abstime *then) { return now_us - *then; }
 namespace time_literals {
 constexpr hrt_abstime operator""_s(unsigned long long seconds) { return seconds * 1000000ULL; }
+constexpr hrt_abstime operator""_ms(unsigned long long milliseconds) { return milliseconds * 1000ULL; }
 }
 ''' + px4io_status_struct() + r'''
 #define ORB_ID(name) 0
@@ -143,14 +144,28 @@ static Report check(Px4ioChecks &checks) { Report r; checks.checkAndReport(Conte
 int main() {
   Px4ioChecks checks;
 
-  // Boards without an I/O processor are never checked.
-  now_us = 100000000; assert(check(checks).failures.empty() && mavlink_logs == 0);
-  now_us += 10000000; assert(check(checks).failures.empty() && mavlink_logs == 0);
+  // Only the remote-output profile requires status before first publication.
+  now_us = 100000000;
+#ifdef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
+  assert(check(checks).failures.size() == 1 && mavlink_logs == 1);
+  now_us += 10000000;
+  assert(check(checks).failures.size() == 1 && mavlink_logs == 2);
+  mavlink_logs = 0;
+#else
+  assert(check(checks).failures.empty() && mavlink_logs == 0);
+  now_us += 10000000;
+  assert(check(checks).failures.empty() && mavlink_logs == 0);
+#endif
 
   // A healthy, current I/O processor passes.
-  have_status = true; current.timestamp = now_us; current.status_fmu_ok = true;
+  have_status = true; current.timestamp = now_us; current.status_fmu_ok = true; current.arming_io_arm_ok = true;
   assert(check(checks).failures.empty());
-  now_us += 2000000; assert(check(checks).failures.empty());
+#ifdef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
+  const uint64_t allowed_age = 50000;
+#else
+  const uint64_t allowed_age = 2000000;
+#endif
+  now_us += allowed_age; assert(check(checks).failures.empty());
 
   // Silent for longer than two publish periods.
   now_us += 1;
@@ -175,9 +190,20 @@ int main() {
   have_status = false; assert(check(checks).failures.empty());
   now_us += 2000001; r = check(checks);
   assert(r.failures.size() == 1 && r.failures[0] == "I/O processor not responding");
+
+#ifdef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
+  // Healthy transport/FMUs cannot hide a failed physical backend.
+  have_status = true; current.timestamp = now_us; current.alarm_pwm_error = true;
+  assert(check(checks).failures.size() == 1);
+  current.alarm_pwm_error = false; current.arming_io_arm_ok = false;
+  assert(check(checks).failures.size() == 1);
+  current.arming_io_arm_ok = true;
+  assert(check(checks).failures.empty());
+#endif
 }
 '''
         REPAIR.run(code, cpp=True)
+        REPAIR.run("#define CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS 1\n" + code, cpp=True)
 
     def test_commander_runs_the_io_processor_check(self):
         registry = (CHECKS / 'HealthAndArmingChecks.hpp').read_text()

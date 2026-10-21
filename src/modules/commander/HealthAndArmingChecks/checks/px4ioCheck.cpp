@@ -45,15 +45,24 @@ void Px4ioChecks::checkAndReport(const Context &context, Report &reporter)
 		_status_seen = true;
 
 	} else if (!_status_seen) {
+#ifndef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
 		return;
+#endif
 	}
 
 	const px4io_status_s &status = _status;
 
-	/* Publishers send px4io_status at least once per second. */
+	/* The remote producer can block on a raw write. Commander must age its
+	 * last status independently instead of retaining READY during that wait.
+	 */
+#ifdef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
+	static constexpr hrt_abstime status_timeout = 50_ms;
+#else
+	/* Legacy publishers send px4io_status at least once per second. */
 	static constexpr hrt_abstime status_timeout = 2_s;
+#endif
 
-	if (hrt_elapsed_time(&status.timestamp) > status_timeout) {
+	if (!_status_seen || hrt_elapsed_time(&status.timestamp) > status_timeout) {
 		/* EVENT
 		 * @description
 		 * The output I/O processor stopped reporting its status.
@@ -78,7 +87,11 @@ void Px4ioChecks::checkAndReport(const Context &context, Report &reporter)
 			mavlink_log_critical(reporter.mavlink_log_pub(), "Preflight Fail: I/O processor in failsafe");
 		}
 
-	} else if (!status.status_fmu_ok) {
+	} else if (!status.status_fmu_ok
+#ifdef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
+		   || !status.arming_io_arm_ok || status.alarm_pwm_error
+#endif
+		  ) {
 		/* EVENT
 		 * @description
 		 * The output I/O processor does not receive fresh FMU outputs, so it keeps its outputs off.

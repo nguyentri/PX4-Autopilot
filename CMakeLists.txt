@@ -501,6 +501,7 @@ add_library(kernel_events_interface INTERFACE)
 
 include(px4_add_library)
 add_subdirectory(src/lib EXCLUDE_FROM_ALL)
+add_subdirectory(src/apps EXCLUDE_FROM_ALL)
 
 add_subdirectory(platforms/${PX4_PLATFORM}/src/px4)
 add_subdirectory(platforms EXCLUDE_FROM_ALL)

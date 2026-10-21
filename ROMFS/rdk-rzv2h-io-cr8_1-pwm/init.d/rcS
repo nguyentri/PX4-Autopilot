@@ -1,0 +1,7 @@
+#!/bin/sh
+# Candidate supervisor boots without claiming any unconfigured output resource.
+set +e
+if ! rzv2h_io start
+then
+	echo "ERROR [init] v3 I/O supervisor start failed"
+fi

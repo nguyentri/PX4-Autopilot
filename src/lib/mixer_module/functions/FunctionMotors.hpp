@@ -73,6 +73,7 @@ public:
 	uORB::SubscriptionCallbackWorkItem *subscriptionCallback() override { return &_topic; }
 
 	bool getLatestSampleTimestamp(hrt_abstime &t) const override { t = _data.timestamp_sample; return t != 0; }
+	bool getLatestPublicationTimestamp(hrt_abstime &t) const override { t = _data.timestamp; return t != 0; }
 
 	static inline void updateValues(uint32_t reversible, float thrust_factor, float *values, int num_values)
 	{

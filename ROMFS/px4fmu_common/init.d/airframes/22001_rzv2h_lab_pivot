@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# @name RZ/V2H laboratory pivot (allocation only)
+# @type Other
+# @class Copter
+#
+# Normalized geometry for software allocation and inhibited routing checks.
+# This is not a measured rig or an accepted flight/dynamics configuration.
+# Physical selection requires the qualified store, geometry, ESC and kill gates.
+
+. ${R}etc/init.d/rc.mc_defaults
+
+param set-default CA_AIRFRAME 0
+param set-default CA_ROTOR_COUNT 2
+# FRD: channel 1 left, channel 2 right; thrust acts along body -Z.
+param set-default CA_ROTOR0_PX 0
+param set-default CA_ROTOR0_PY -1
+param set-default CA_ROTOR0_PZ 0
+param set-default CA_ROTOR0_AX 0
+param set-default CA_ROTOR0_AY 0
+param set-default CA_ROTOR0_AZ -1
+param set-default CA_ROTOR0_CT 1
+param set-default CA_ROTOR0_KM 0
+param set-default CA_ROTOR1_PX 0
+param set-default CA_ROTOR1_PY 1
+param set-default CA_ROTOR1_PZ 0
+param set-default CA_ROTOR1_AX 0
+param set-default CA_ROTOR1_AY 0
+param set-default CA_ROTOR1_AZ -1
+param set-default CA_ROTOR1_CT 1
+param set-default CA_ROTOR1_KM 0
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 0
+param set-default PWM_MAIN_FUNC4 0
+# PWM limits retain PX4's software defaults. No ESC range/rate is qualified by
+# this airframe; the compiled hardware contract remains zero and denies READY.
+param set-default MC_AIRMODE 0

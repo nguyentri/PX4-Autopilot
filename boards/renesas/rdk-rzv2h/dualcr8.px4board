@@ -1,8 +1,6 @@
-# Dual-CR8 staging profile: the drone extension plus the CR8-1 PX4IO bridge on
-# the raw /dev/ipcc1 link. Physical outputs stay on CR8-0 pwm_out; CR8-1 holds
-# an output lease and reports IO health so commander blocks arming without it.
-# Reuse the common PX4 startup with profile-local board hooks.
-CONFIG_BOARD_INIT_SUBDIR="drone"
+# Exact-BOM sensor bring-up for the dual-CR8 product. Outputs remain unavailable
+# until the ESC contract, compatible pair and remote producer/backend are ready.
+CONFIG_BOARD_INIT_SUBDIR="dualcr8"
 CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"
 CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=n
 CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948=n
@@ -10,7 +8,9 @@ CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686=y
 CONFIG_DRIVERS_BAROMETER_BMP280=n
 CONFIG_DRIVERS_BAROMETER_BMP388=y
 CONFIG_DRIVERS_MAGNETOMETER_BOSCH_BMM150=y
-CONFIG_DRIVERS_POWER_MONITOR_INA228=y
+CONFIG_DRIVERS_POWER_MONITOR_INA228=n
+CONFIG_DRIVERS_PWM_OUT=n
 CONFIG_DRIVERS_DSHOT=n
-CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=y
+CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS=y
+CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=n
 CONFIG_BOARD_PARAM_FILE_ATOMIC=y

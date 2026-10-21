@@ -44,6 +44,8 @@ if(NOT CONFIG)
 endif()
 
 if(NOT PX4_CONFIG_FILE)
+	# Preserve the historical platform prefix without accepting label prefixes.
+	string(REGEX REPLACE "^nuttx_" "" requested_config "${CONFIG}")
 
 	file(GLOB_RECURSE board_configs
 		RELATIVE "${PX4_SOURCE_DIR}/boards"
@@ -66,8 +68,8 @@ if(NOT PX4_CONFIG_FILE)
 
 			# <VENDOR>_<MODEL>_<LABEL> (eg px4_fmu-v2_default)
 			# <VENDOR>_<MODEL>_default (eg px4_fmu-v2) # allow skipping label if "default"
-			if ((${CONFIG} MATCHES "${vendor}_${model}_${label}") OR # match full vendor, model, label
-			    ((${label} STREQUAL "default") AND (${CONFIG} STREQUAL "${vendor}_${model}")) # default label can be omitted
+			if (("${requested_config}" STREQUAL "${vendor}_${model}_${label}") OR # match full vendor, model, label
+			    ((${label} STREQUAL "default") AND ("${requested_config}" STREQUAL "${vendor}_${model}")) # default label can be omitted
 			)
 				set(PX4_CONFIG_FILE "${PX4_SOURCE_DIR}/boards/${filename}" CACHE FILEPATH "path to PX4 CONFIG file" FORCE)
 				set(PX4_BOARD_DIR "${PX4_SOURCE_DIR}/boards/${vendor}/${model}" CACHE STRING "PX4 board directory" FORCE)
@@ -79,8 +81,8 @@ if(NOT PX4_CONFIG_FILE)
 
 			# <BOARD>_<LABEL> (eg px4_fmu-v2_default)
 			# <BOARD>_default (eg px4_fmu-v2) # allow skipping label if "default"
-			if ((${CONFIG} MATCHES "${board}_${label}") OR # match full board, label
-			    ((${label} STREQUAL "default") AND (${CONFIG} STREQUAL "${board}")) # default label can be omitted
+			if (("${requested_config}" STREQUAL "${board}_${label}") OR # match full board, label
+			    ((${label} STREQUAL "default") AND ("${requested_config}" STREQUAL "${board}")) # default label can be omitted
 			)
 				set(PX4_CONFIG_FILE "${PX4_SOURCE_DIR}/boards/${filename}" CACHE FILEPATH "path to PX4 CONFIG file" FORCE)
 				set(PX4_BOARD_DIR "${PX4_SOURCE_DIR}/boards/${vendor}/${model}" CACHE STRING "PX4 board directory" FORCE)

@@ -1,5 +1,5 @@
 #
-# RDK-RZV2H dual-CR8 staging configuration for PX4 (drone extension + CR8-1 IO link)
+# RDK-RZV2H dual-CR8 exact-BOM sensor bring-up (remote output qualification pending)
 # Cortex-R8 Core 0 configuration
 #
 # CONFIG_DISABLE_ENVIRON is not set
@@ -69,13 +69,7 @@ CONFIG_NSH_NESTDEPTH=8
 # Core Specific Configuration (CR8 Core 0)
 CONFIG_RZV2H_BUILD_CR8_0=y
 
-# PWM Configuration (GPT Timers)
-CONFIG_PWM=y
-CONFIG_RZV_GPT=y
-CONFIG_RZV_GPT6=y
-CONFIG_RZV_GPT7=y
-CONFIG_RZV_GPT9=y
-CONFIG_RZV_GPT10=y
+# Motor output GPTs belong to CR8-1, not this sensor image.
 CONFIG_RDK_RZV2H_VOLATILE_PARAMFS=y
 
 # Serial Configuration
@@ -156,11 +150,11 @@ CONFIG_SEGGER_RTT_BUFFER_SIZE_DOWN=1024
 # masked until a host drains it; with no probe attached, that spin never ends.
 CONFIG_SEGGER_RTT_UP_MODE_TRIM=y
 
-# SPI Configuration (three polled extension IMUs)
+# SPI Configuration (one polled P93 IMU)
 CONFIG_SPI=y
 CONFIG_RZV_SPI=y
 CONFIG_RZV_SPI0=y
-CONFIG_RZV2H_DRONE_SENSOR_EXTENSION=y
+CONFIG_RZV2H_DUALCR8_DRONE=y
 CONFIG_SPI_EXCHANGE=y
 
 # I2C Configuration

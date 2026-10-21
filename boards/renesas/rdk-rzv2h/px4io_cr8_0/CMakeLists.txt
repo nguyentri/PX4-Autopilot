@@ -31,6 +31,7 @@
 #
 ############################################################################
 
+if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)
 px4_add_module(
 	MODULE drivers__px4io_bridge
 	MAIN px4io_bridge
@@ -41,3 +42,14 @@ px4_add_module(
 	DEPENDS
 		px4_work_queue
 	)
+endif()
+
+if(CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
+px4_add_module(
+	MODULE drivers__rzv2h_outputs
+	MAIN rzv2h_outputs
+	SRCS remote-outputs.cpp
+	MODULE_CONFIG module.yaml
+	DEPENDS mixer_module rzv2h_demo px4_work_queue
+)
+endif()

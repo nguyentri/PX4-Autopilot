@@ -53,6 +53,9 @@ if(CONFIG_MODULES_SIMULATION_PWM_OUT_SIM)
 endif()
 
 if(CONFIG_MODULES_MC_RATE_CONTROL)
+	if(CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
+		px4_add_romfs_files(22001_rzv2h_lab_pivot)
+	endif()
 	px4_add_romfs_files(
 		# [4000, 4999] Quadrotor x
 		4001_quad_x

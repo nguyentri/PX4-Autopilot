@@ -1973,6 +1973,305 @@
         "tools": []
       },
       "note": "Hardware-free PX4 build/archive contracts; no target operations."
+    },
+    {
+      "id": "rzv2h-dualcr8-profile-contract-test",
+      "path": "test/rzv2h-dualcr8-profile-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-dualcr8-profile-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "bash",
+          "c++",
+          "cc",
+          "cmake"
+        ]
+      },
+      "note": "Verify the canonical dualcr8 exact-BOM profile, retired duplicate and output isolation."
+    },
+    {
+      "id": "tfmini-serial-config-test",
+      "path": "test/tfmini-serial-config-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/tfmini-serial-config-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++"
+        ],
+        "paths": [
+          "src/drivers/distance_sensor/tfmini/TFMINI.cpp"
+        ]
+      },
+      "note": "Execute TFmini initialization against the serial attribute syscall boundary."
+    },
+    {
+      "id": "rzv2h-demo-runtime-boundary-test",
+      "path": "test/rzv2h-demo-runtime-boundary-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-demo-runtime-boundary-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "g++"
+        ]
+      },
+      "note": "Execute production callbacks/loops at host boundaries: consumed motor publication coherence, cached progress, disarm, quarantined responder adoption and effective-epoch dispatch."
+    },
+    {
+      "id": "rzv2h-demo-protocol-test",
+      "path": "test/rzv2h-demo-protocol-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-demo-protocol-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "g++",
+          "cc"
+        ]
+      },
+      "note": "Production v3 wire codec, causal lease and coherent snapshot tests; no hardware acceptance."
+    },
+    {
+      "id": "rzv2h-lab-pivot-allocation-test",
+      "path": "test/rzv2h-lab-pivot-allocation-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-lab-pivot-allocation-test.py"
+      ],
+      "requires": {},
+      "note": "Normalized software fixture rank, FRD sign, clipping and exactly two assigned motor functions; no dynamics claim."
+    },
+    {
+      "id": "rzv2h-autonomy-evidence-test",
+      "path": "test/rzv2h-autonomy-evidence-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-autonomy-evidence-test.py"
+      ],
+      "requires": {},
+      "note": "Clock uncertainty/distributions, calibration compatibility and rejection of software-only physical-card claims."
+    },
+    {
+      "id": "rzv2h-gateway-validator-contract-test",
+      "path": "test/rzv2h-gateway-validator-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-gateway-validator-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "g++"
+        ]
+      },
+      "note": "Production private-envelope bounds, clock mapping, planner progress, reconnect, negative float cases and 100000 seeded frames; transport/Commander integration remains separate."
+    },
+    {
+      "id": "rzv2h-battery-contract-test",
+      "path": "test/rzv2h-battery-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-battery-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "g++"
+        ]
+      },
+      "note": "Production v3 battery codec, matching acquisition generations, conservative age, independent progress, invalidation and measured-SOC telemetry; no physical monitor or pack selected."
+    },
+    {
+      "id": "rzv2h-perception-adapter-test",
+      "path": "test/rzv2h-perception-adapter-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-perception-adapter-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "g++"
+        ]
+      },
+      "note": "Qualified horizontal single-ray adapter through the real private validator; unknown/near/clear semantics, conservative FoV and 100 source generations. Landing/tracking remain separate."
+    },
+    {
+      "id": "rzv2h-dualcr8-artifact-contract-test",
+      "path": "test/rzv2h-dualcr8-artifact-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-dualcr8-artifact-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_dualcr8",
+          "build/renesas_rdk-rzv2h-io-cr8_1_pwm"
+        ]
+      },
+      "note": "Inspect actual v3 candidate ELF/ROMFS/package and negative pair admission; no hardware qualification."
+    },
+    {
+      "id": "rzv2h-demo-bench-fault-host-fixture",
+      "path": "test/rzv2h-demo-bench-fault-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production delayed one-shot scheduler, parser and concurrent admission fixture compiled by protocol tests."
+    },
+    {
+      "id": "rzv2h-battery-host-fixture",
+      "path": "test/rzv2h-battery-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-demo-output-configuration-host-fixture",
+      "path": "test/rzv2h-demo-output-configuration-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-demo-output-lease-host-fixture",
+      "path": "test/rzv2h-demo-output-lease-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-demo-output-snapshot-host-fixture",
+      "path": "test/rzv2h-demo-output-snapshot-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-demo-output-worker-host-fixture",
+      "path": "test/rzv2h-demo-output-worker-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-demo-protocol-host-fixture",
+      "path": "test/rzv2h-demo-protocol-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-gateway-validator-host-fixture",
+      "path": "test/rzv2h-gateway-validator-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-perception-adapter-host-fixture",
+      "path": "test/rzv2h-perception-adapter-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Production-code host fixture compiled and run by its registered Python suite."
     }
   ]
 }

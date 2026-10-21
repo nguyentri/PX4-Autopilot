@@ -64,7 +64,10 @@ UNTRACKED_ROOTS = {
 SOURCE_SUFFIXES = {'.c', '.cc', '.cpp', '.cxx', '.h', '.hh', '.hpp', '.hxx', '.S',
                    '.s', '.asm', '.ld', '.cmake', '.mk', '.sh', '.py', '.msg',
                    '.srv', '.px4board', '.prototype', '.patch', '.in'}
-UNTRACKED_FILES = {'.': {'Tools/rzv2h-px4-profiles.json'}}
+UNTRACKED_FILES = {'.': {
+    'Tools/rzv2h-px4-profiles.json',
+    'ROMFS/px4fmu_common/init.d/airframes/22001_rzv2h_lab_pivot',
+}}
 REQUIRED_TOOLS = ('git', 'make', 'ninja', 'cmake', 'rsync', 'unzip', 'curl',
                   'arm-none-eabi-gcc', 'arm-none-eabi-objcopy', 'arm-none-eabi-nm',
                   'arm-none-eabi-readelf', 'gdb-multiarch')
@@ -356,7 +359,7 @@ def archive_profile(work,directory,profile,contract,state_hash,timeout,repos,fro
 def reports(output,results,error=None):
     atomic_json(output/'build-results.json',{'schema_version':1,'results':results,
         'status':'BUILD-CHECKED' if all(r['status']=='BUILD-CHECKED' for r in results) and not error else 'FAIL',
-        'reason':error,'full_matrix':len(results)==8,'on_target':'NOT-RUN','target_actions':[]})
+        'reason':error,'full_matrix':len(results)==9,'on_target':'NOT-RUN','target_actions':[]})
     suite = ET.Element('testsuite',name='rzv2h-px4-build',tests=str(len(results)))
     for row in results:
         case = ET.SubElement(suite,'testcase',name=row['target'],time=str(row.get('seconds',0)))
@@ -372,7 +375,9 @@ def reports(output,results,error=None):
 
 
 def pair_receipt(archive,contract,state_hash):
-    dual = next(p for p in contract['profiles'] if p['peer'])
+    dual = next((p for p in contract['profiles'] if p['peer']), None)
+    if dual is None:
+        return
     if not (archive/'builds'/dual['target']).exists():
         return
     entry = {'id':'jlink-elf-snippets','path':'test/rzv2h-jlink-debug-tools-test.py'}

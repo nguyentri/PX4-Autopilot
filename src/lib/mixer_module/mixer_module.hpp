@@ -143,6 +143,14 @@ public:
 
 	OutputFunction outputFunction(int index) const { return _function_assignment[index]; }
 
+	/** Query from updateOutputs(): the publication consumed for this output, not the latest topic value. */
+	bool getOutputPublicationTimestamp(int index, hrt_abstime &timestamp) const
+	{
+		timestamp = 0;
+		return index >= 0 && index < _max_num_outputs && _functions[index]
+		       && _functions[index]->getLatestPublicationTimestamp(timestamp);
+	}
+
 	/**
 	 * Call this regularly from Run(). It will call interface.updateOutputs().
 	 * @return true if outputs were updated
@@ -202,6 +210,7 @@ public:
 	 * This might change at any time (while disarmed), so output drivers requiring this should query this regularly.
 	 */
 	uint32_t reversibleOutputs() const { return _reversible_mask; }
+	uint32_t rangeReverseOutputs() const { return _reverse_output_mask; }
 
 protected:
 	void updateParams() override;

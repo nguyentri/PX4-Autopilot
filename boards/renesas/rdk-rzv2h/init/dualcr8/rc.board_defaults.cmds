@@ -1,0 +1,23 @@
+#!/bin/sh
+# Unqualified hardware bring-up. Required battery/storage and remote outputs are not
+# substituted with disabled health checks or a legacy image pair.
+param set-default SYS_AUTOSTART 4014
+# The product uses four mapped functions; the fixture airframe supplies two.
+# These are mixer assignments, not permission to claim or drive physical pads.
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
+param set-default SYS_DM_BACKEND 1
+param set-default BAT1_SOURCE 0
+set TONE_ALARM_START no
+set DSHOT_START no
+set PWM_OUT_START no
+param set-default SER_GPS1_BAUD 115200
+param set-default SER_EXT2_BAUD 115200
+param set-default SENS_TFMINI_CFG 401
+param set-default SENS_EXT_I2C_PRB 0
+param set-default SYS_HAS_BARO 1
+param set-default SYS_HAS_GPS 1
+param set-default SYS_HAS_MAG 1
+param set-default SYS_HAS_NUM_DIST 1
