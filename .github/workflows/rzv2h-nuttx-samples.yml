@@ -1,0 +1,85 @@
+name: RZV2H native samples
+
+on:
+  pull_request:
+    paths:
+      - 'platforms/nuttx/**'
+      - 'Tools/rzv2h-*'
+      - 'Tools/requirements-rzv2h-samples.txt'
+      - 'test/*rzv2h*'
+      - '.github/workflows/rzv2h-nuttx-samples.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '35 19 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rzv2h-samples-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y gcc g++ rsync
+      - run: python3 -m pip install -r Tools/requirements-rzv2h-samples.txt
+      - run: python3 Tools/rzv2h-regression.py check --json
+      - run: python3 Tools/rzv2h-regression.py run --group sample-host --output build/rzv2h-host
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rzv2h-sample-host
+          path: build/rzv2h-host/
+          if-no-files-found: error
+
+  firmware:
+    # Ordinary pull requests have no path to this protected host build.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: host
+    environment: rzv2h-host-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      NUTTX_BUILD_JOBS: '4'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned cross compiler and host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ gcc-arm-none-eabi=15:13.2.rel1-2 libnewlib-arm-none-eabi rsync make bison flex gperf automake libncurses-dev gettext unzip zip curl
+          python3 -m pip install -r Tools/requirements-rzv2h-samples.txt
+      - name: Fetch and verify dependency archives
+        run: |
+          mkdir -p build/rzv2h-downloads
+          curl --fail --location --retry 2 https://github.com/SEGGERMicro/RTT/archive/ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b.zip -o build/rzv2h-downloads/RTT.zip
+          curl --fail --location --retry 2 https://github.com/ARMmbed/littlefs/archive/v2.4.0.tar.gz -o build/rzv2h-downloads/v2.4.0.tar.gz
+          echo '7b18aae08c05a271c994333b14a65f388fe94fd0585a51d5b88ce642f99a1d4c  build/rzv2h-downloads/RTT.zip' | sha256sum --check
+          echo 'a9ba35ee807d49c34f32061744d65ef9bf79b057fb661a5cfccc68058a5d15a9  build/rzv2h-downloads/v2.4.0.tar.gz' | sha256sum --check
+      - name: Build and admit every native config
+        run: python3 platforms/nuttx/Debug/rzv2h-sample-build.py --all-configs --cache-dir build/rzv2h-downloads --output build/rzv2h-native-samples
+      - name: Verify actual archives and semantic negative controls
+        run: python3 Tools/rzv2h-regression.py run --group native-sample-artifacts --sample-builds build/rzv2h-native-samples/builds --sample-source-state build/rzv2h-native-samples/source-state.json --output build/rzv2h-native-artifact-tests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rzv2h-native-samples
+          path: |
+            build/rzv2h-native-samples/
+            build/rzv2h-native-artifact-tests/
+          if-no-files-found: error

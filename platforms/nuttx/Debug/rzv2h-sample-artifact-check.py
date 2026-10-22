@@ -7,6 +7,12 @@ import re
 import subprocess
 import struct
 from pathlib import Path
+import importlib.util
+
+_SPEC = importlib.util.spec_from_file_location(
+    'sample_inventory', Path(__file__).with_name('rzv2h-sample-inventory.py'))
+INVENTORY = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(INVENTORY)
 
 
 def elf32_bytes(data, address, count, executable=False):
@@ -33,7 +39,7 @@ def elf32_bytes(data, address, count, executable=False):
     raise ValueError('builtin address has no file-backed segment')
 
 
-def builtin_entry(elf, expected_main):
+def builtin_entry(elf, expected_main, program='hwtest'):
     """Verify the actual builtin_s table (four 32-bit fields in this port)."""
     sizes = subprocess.check_output(['arm-none-eabi-nm', '-S', str(elf)], text=True)
     match = re.search(r'(?m)^(\w+)\s+(\w+)\s+\w\s+g_builtins$', sizes)
@@ -54,10 +60,10 @@ def builtin_entry(elf, expected_main):
                 if byte == 0:
                     break
                 text.append(byte)
-            if text == b'hwtest':
+            if text == program.encode():
                 matches.append((priority, stack, entry))
     if len(matches) != 1 or (matches[0][2] & ~1) != (expected_main & ~1):
-        raise ValueError('hwtest builtin does not point to its compiled entry')
+        raise ValueError(program + ' builtin does not point to its compiled entry')
     elf32_bytes(data, matches[0][2] & ~1, 1, executable=True)
     return {'priority': matches[0][0], 'stack_size': matches[0][1],
             'entry': hex(matches[0][2])}
@@ -202,6 +208,107 @@ def verify(profile, directory, source_state_path):
             'on_target': 'NOT-RUN'}
 
 
+def verify_native(profile, directory, source_state_path, manifest):
+    """Admit a native image, preserving the stricter existing 14-profile gate."""
+    receipt = json.loads((directory/'build-receipt.json').read_text())
+    source_bytes = source_state_path.read_bytes()
+    source = json.loads(source_bytes)
+    source_hash = hashlib.sha256(source_bytes).hexdigest()
+    if receipt.get('profile') != profile['profile'] or receipt.get('build_exit') != 0:
+        raise ValueError('native build receipt mismatch')
+    if receipt.get('source_state_sha256') != source_hash:
+        raise ValueError('source-state digest mismatch')
+    archived_policy = source_state_path.parent/'sample-profiles.json'
+    if not archived_policy.is_file() or json.loads(archived_policy.read_text()) != manifest or \
+            receipt.get('manifest_sha256') != INVENTORY.digest(archived_policy) or \
+            source.get('manifest_sha256') != INVENTORY.digest(archived_policy):
+        raise ValueError('native manifest provenance mismatch')
+    commits = source.get('commits', {})
+    if set(commits) != {'px4', 'nuttx', 'apps'} or any(
+            not re.fullmatch(r'[0-9a-f]{40}', str(v)) for v in commits.values()):
+        raise ValueError('invalid source revisions')
+    if receipt.get('submodule_commits') != commits or not source.get('compiler') or \
+            receipt.get('compiler') != source['compiler']:
+        raise ValueError('build provenance mismatch')
+    required = {'nuttx.elf', 'resolved.config', 'nuttx.map', 'System.map', 'linker-script.ld'}
+    hashes = receipt.get('file_sha256', {})
+    if not required <= hashes.keys():
+        raise ValueError('missing native archive digest')
+    for name, expected in hashes.items():
+        if Path(name).name != name or INVENTORY.digest(directory/name) != expected:
+            raise ValueError('native archive digest mismatch: ' + name)
+    if receipt.get('defconfig_sha256') != profile['defconfig_sha256']:
+        raise ValueError('requested configuration digest mismatch')
+    defconfig = str(INVENTORY.BOARD/'configs'/profile['profile']/'defconfig')
+    inputs = {x['path']: x.get('sha256') for x in source.get('source_files', [])}
+    if inputs.get(defconfig) != profile['defconfig_sha256']:
+        raise ValueError('configuration absent from source snapshot')
+    linker_path = str(INVENTORY.BOARD/'scripts'/('rdk-rzv2h_' + profile['core'] + '.ld'))
+    if inputs.get(linker_path) != hashes['linker-script.ld']:
+        raise ValueError('wrong linker input provenance')
+    config = INVENTORY.read_config(directory/'resolved.config')
+    actual = INVENTORY.identity(config, manifest['core_default'])
+    for key in ('core', 'console', 'entrypoint'):
+        if actual[key] != profile[key]:
+            raise ValueError('resolved native identity mismatch: ' + key)
+    elf = directory/'nuttx.elf'
+    data = elf.read_bytes()
+    if len(data) < 52:
+        raise ValueError('truncated ELF')
+    entry = struct.unpack_from('<I', data, 24)[0]
+    elf32_bytes(data, entry & ~1, 1, executable=True)
+    symbols_text = subprocess.check_output(['arm-none-eabi-nm', str(elf)], text=True)
+    symbols = {name: int(address, 16) for address, _, name in
+               re.findall(r'(?m)^([0-9a-fA-F]+)\s+(\w)\s+(\S+)$', symbols_text)}
+    if symbols.get('__start', -1) & ~1 != entry & ~1:
+        raise ValueError('ELF entry does not match startup')
+    core = profile['core']
+    if core == 'cm33':
+        if config.get('CONFIG_ARCH_CORTEXM33') != 'y' or not entry & 1 or not 0x08002800 <= (entry & ~1) < 0x080f8000:
+            raise ValueError('CM33 architecture/Thumb/entry range mismatch')
+    else:
+        expected_start = 0x40800000 if core == 'cr8_0' else 0x41800000
+        if config.get('CONFIG_ARCH_CORTEXR8') != 'y' or entry != expected_start or symbols.get(core.upper()) != 1:
+            raise ValueError('CR8 architecture/private linker identity mismatch')
+    if profile['entrypoint'] not in symbols:
+        raise ValueError('configured entrypoint is not linked')
+    registered = None
+    if profile.get('builtin'):
+        builtin = profile['builtin']
+        if builtin['symbol'] not in symbols:
+            raise ValueError('native builtin entry not linked: ' + builtin['symbol'])
+        registered = builtin_entry(elf, symbols[builtin['symbol']], builtin['name'])
+    rtt = symbols.get('_SEGGER_RTT')
+    if profile['console'].startswith('rtt') and rtt is None:
+        raise ValueError('RTT console without compiled control block')
+    if rtt is not None and core.startswith('cr8'):
+        low = 0x081a0000 if core == 'cr8_0' else 0x081e0000
+        uncached = low <= rtt < low + 0x20000
+        private_cached = low - 0x20000 <= rtt < low or \
+            ((0x40800000 if core == 'cr8_0' else 0x41800000) <= rtt <
+             (0x41800000 if core == 'cr8_0' else 0x42800000))
+        if not uncached and (profile['console'].startswith('rtt') or not private_cached):
+            raise ValueError('primary RTT console outside core-private noncache SRAM')
+    if profile.get('legacy_profile'):
+        legacy = json.loads(Path(__file__).with_name('rzv2h-sample-profiles.json').read_text())
+        matches = [x for x in legacy['profiles'] if x['profile'] == profile['legacy_profile']]
+        if len(matches) != 1:
+            raise ValueError('legacy profile missing')
+        verify(matches[0], directory, source_state_path)
+    return {'status': 'BUILD-CHECKED', 'profile': profile['profile'],
+            'core': core, 'console': actual['console'], 'entrypoint': actual['entrypoint'],
+            'elf': str(elf), 'elf_sha256': hashes['nuttx.elf'],
+            'config_sha256': hashes['resolved.config'], 'source_state_sha256': source_hash,
+            'submodule_commits': commits, 'rtt_address': hex(rtt) if rtt is not None else None,
+            'builtin': registered, 'waitpid': all(config.get(x) == 'y' for x in
+                ('CONFIG_SCHED_WAITPID','CONFIG_SCHED_HAVE_PARENT','CONFIG_SCHED_CHILD_STATUS')),
+            'application_entry': hex(symbols[profile['builtin']['symbol']
+                                           if profile.get('builtin') else profile['entrypoint']]),
+            'requirements': profile['requirements'], 'hazards': profile['hazards'],
+            'runtime_blocker': profile.get('reason'), 'on_target': 'NOT-RUN',
+            'artifact_authorized': False, 'target_prerequisites_verified': False}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest', type=Path, required=True)
@@ -209,11 +316,16 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--source-state', type=Path, required=True)
     args = parser.parse_args()
-    profiles = json.loads(args.manifest.read_text())['profiles']
+    manifest = json.loads(args.manifest.read_text())
+    native = manifest.get('schema_version') == 2 and manifest.get('kind') == 'rzv2h-native-samples'
+    if native:
+        INVENTORY.validate(manifest)
+    profiles = manifest['profiles']
     results = []
     for profile in profiles:
         try:
-            results.append(verify(profile, args.builds/profile['profile'], args.source_state))
+            results.append(verify_native(profile, args.builds/profile['profile'], args.source_state, manifest)
+                           if native else verify(profile, args.builds/profile['profile'], args.source_state))
         except (OSError, ValueError, KeyError, TypeError, struct.error, subprocess.CalledProcessError) as error:
             results.append({'status': 'NOT-READY', 'profile': profile['profile'],
                             'reason': str(error), 'on_target': 'NOT-RUN',

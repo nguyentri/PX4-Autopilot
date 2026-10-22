@@ -47,7 +47,7 @@ class ArchiveAdmission(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         target = Path(temporary.name)
         for name in ('resolved.config', 'nuttx.elf', 'nuttx.map', 'System.map', 'build-receipt.json',
-                     'libarch.a', 'rzv_scif.o'):
+                     'libarch.a', 'rzv_scif.o', 'linker-script.ld'):
             if not (directory/name).exists():
                 continue
             shutil.copy2(directory/name, target/name)

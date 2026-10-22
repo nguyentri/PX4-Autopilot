@@ -858,7 +858,13 @@
     "rzv2h-autonomy-evidence-test",
     "rzv2h-gateway-validator-contract-test",
     "rzv2h-battery-contract-test",
-    "rzv2h-perception-adapter-test"
+    "rzv2h-perception-adapter-test",
+    "rzv2h-canfd-tx-lifecycle-runtime-test",
+    "rzv2h-canfd-sample-contract-test",
+    "rzv2h-all-sample-inventory-test",
+    "rzv2h-all-sample-build-test",
+    "rzv2h-sample-lab-test",
+    "rzv2h-all-sample-closure-test"
   ],
   "repositories": {
     "src/modules/mavlink/mavlink": {

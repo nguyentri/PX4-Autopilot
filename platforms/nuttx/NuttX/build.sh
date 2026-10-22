@@ -13,6 +13,11 @@
 # nuttx.hex, System.map. Exit status: 0 ok, 1 build failed, 2 bad usage.
 set -e
 
+BUILD_JOBS="${NUTTX_BUILD_JOBS:-$(nproc)}"
+case "$BUILD_JOBS" in
+''|*[!0-9]*|0) echo "NUTTX_BUILD_JOBS must be a positive integer" >&2; exit 2 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/nuttx"
 
@@ -111,7 +116,7 @@ else
 	rm -rf ../apps/platform/board 2>/dev/null || true
 
 	# Use a more forgiving clean approach
-	make distclean -j"$(nproc)" || true
+	make distclean -j"${BUILD_JOBS}" || true
 
 	# Remove any leftover arch symlinks that might cause issues
 	rm -f arch/arm/src/chip 2>/dev/null || true
@@ -122,7 +127,7 @@ else
 	echo "${BOARD}:${config}" > "$STAMP"
 fi
 
-if ! make -j"$(nproc)"; then
+if ! make -j"${BUILD_JOBS}"; then
 	echo "Error: build of '${BOARD}:${config}' failed." >&2
 	exit 1
 fi

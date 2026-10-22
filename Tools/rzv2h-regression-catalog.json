@@ -2272,6 +2272,187 @@
       "target_access": "none",
       "command": [],
       "note": "Production-code host fixture compiled and run by its registered Python suite."
+    },
+    {
+      "id": "rzv2h-canfd-tx-lifecycle-runtime-test",
+      "path": "test/rzv2h-canfd-tx-lifecycle-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-canfd-tx-lifecycle-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the committed CAN-FD driver/sample host regression."
+    },
+    {
+      "id": "rzv2h-canfd-sample-contract-test",
+      "path": "test/rzv2h-canfd-sample-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-canfd-sample-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the committed CAN-FD driver/sample host regression."
+    },
+    {
+      "id": "rzv2h-canfd-host-harness",
+      "path": "test/rzv2h-canfd-host-harness.c",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Native C input used by the CAN-FD host suites."
+    },
+    {
+      "id": "rzv2h-canfd-sample-host-harness",
+      "path": "test/rzv2h-canfd-sample-host-harness.c",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Native C input used by the CAN-FD host suites."
+    },
+    {
+      "id": "rzv2h-all-sample-inventory-test",
+      "path": "test/rzv2h-all-sample-inventory-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-all-sample-inventory-test.py"
+      ]
+    },
+    {
+      "id": "rzv2h-all-sample-build-test",
+      "path": "test/rzv2h-all-sample-build-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-all-sample-build-test.py"
+      ]
+    },
+    {
+      "id": "rzv2h-sample-inventory",
+      "path": "platforms/nuttx/Debug/rzv2h-sample-inventory.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-sample-inventory.py",
+        "--json"
+      ]
+    },
+    {
+      "id": "rzv2h-sample-lab-test",
+      "path": "test/rzv2h-sample-lab-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sample-lab-test.py"
+      ]
+    },
+    {
+      "id": "rzv2h-sample-lab",
+      "path": "platforms/nuttx/Debug/rzv2h-sample-lab.py",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "approved-only",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-sample-lab.py",
+        "--help"
+      ]
+    },
+    {
+      "id": "rzv2h-all-sample-artifact-test",
+      "path": "test/rzv2h-all-sample-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "native-sample-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-all-sample-artifact-test.py",
+        "--builds",
+        "{sample_builds}",
+        "--source-state",
+        "{sample_source_state}"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm"
+        ]
+      },
+      "note": "All 55 real images plus coherently rehashed semantic negative controls."
+    },
+    {
+      "id": "rzv2h-all-sample-closure-test",
+      "path": "test/rzv2h-all-sample-closure-test.py",
+      "kind": "test",
+      "groups": [
+        "sample-host",
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-all-sample-closure-test.py"
+      ]
+    },
+    {
+      "id": "rzv2h-sample-coverage",
+      "path": "platforms/nuttx/Debug/rzv2h-sample-coverage.py",
+      "kind": "tool",
+      "groups": [
+        "offline-tools"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-sample-coverage.py",
+        "--help"
+      ]
     }
   ]
 }

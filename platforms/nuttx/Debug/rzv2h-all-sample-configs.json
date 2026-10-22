@@ -1,0 +1,1539 @@
+{
+  "schema_version": 2,
+  "kind": "rzv2h-native-samples",
+  "board": "rdk-rzv2h",
+  "core_default": "RZV2H_BUILD_CR8_0",
+  "scope": "All native shipped configurations; runtime prerequisites remain separate from build admission",
+  "profiles": [
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "adc",
+      "defconfig_sha256": "b6dc13a651b0252ccd3990d77b39d639eeb7bd9b4e18b1d3bf7d584604c3160a",
+      "mode": "native",
+      "oracle": "adc",
+      "commands": [
+        "adc -n 1"
+      ],
+      "requirements": [
+        "adc-routing",
+        "adc-source"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "scan-function",
+      "builtin": {
+        "name": "adc",
+        "symbol": "adc_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "adc-rtt",
+      "defconfig_sha256": "ab5fff6dc6d60926bc7f2f22ba895a33c87d7c1983c814788a691054a5d36071",
+      "mode": "native",
+      "oracle": "adc",
+      "commands": [
+        "adc -n 1"
+      ],
+      "requirements": [
+        "adc-routing",
+        "adc-source"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "scan-function",
+      "builtin": {
+        "name": "adc",
+        "symbol": "adc_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "bmm150",
+      "defconfig_sha256": "d72062df18ce8115e7c0c25522427bc3417b14fde70c69a436ea9c0e65bf4f29",
+      "mode": "native",
+      "oracle": "bmm150",
+      "commands": [
+        "bmm150 -s",
+        "bmm150 -n 20"
+      ],
+      "requirements": [
+        "bmm150"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "connected-function",
+      "builtin": {
+        "name": "bmm150",
+        "symbol": "bmm150_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "canfd",
+      "defconfig_sha256": "a53bd1ee86da8df2612450f884450549d4637c2ec15a9255b27f83e7858c9fc0",
+      "mode": "native",
+      "oracle": "can",
+      "commands": [
+        "can -n 4"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "can",
+        "symbol": "can_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "canfd-dual",
+      "defconfig_sha256": "67435a3ce364063b2c0d2cec37c8121a0a95b338d1fd66ce913b28c7b80e9df7",
+      "mode": "native",
+      "oracle": "can",
+      "commands": [
+        "can -n 4"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "can",
+        "symbol": "can_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "canfd-ext",
+      "defconfig_sha256": "6d8345b21e0574541d46189575c7f8e62b29197b2fb7d0a3dcbda690fabc6f37",
+      "mode": "native",
+      "oracle": "canfd",
+      "commands": [
+        "rzv_canfd -n 1 -t 100"
+      ],
+      "requirements": [
+        "can-disconnected"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "missing-ack",
+      "builtin": {
+        "name": "rzv_canfd",
+        "symbol": "rzv_canfd_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "canfd-rtt",
+      "defconfig_sha256": "f0fadc2f28178875466fb99c2926fec3157cfc5a86cb088b97217c26c84c33d2",
+      "mode": "native",
+      "oracle": "can",
+      "commands": [
+        "can -n 4"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "can",
+        "symbol": "can_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "dmac-board-rtt",
+      "defconfig_sha256": "613860bbe600f22b36c10b9d40c0c751cfc0392b35d5500a159ae1784ac71087",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "dmac-board-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "dmac-memcpy",
+      "defconfig_sha256": "83c29edc8997941914cd1f83c2476968256a1ee1f03c3d14dfa01313c21171b3",
+      "mode": "native",
+      "oracle": "dmac",
+      "commands": [
+        "rzv_dmac 0 16 32 48 64"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 20,
+      "evidence_class": "memory-function",
+      "builtin": {
+        "name": "rzv_dmac",
+        "symbol": "rzv_dmac_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "dmac-memcpy-rtt",
+      "defconfig_sha256": "460adcbcd364720833898dd94773f880c7b5362b966fc64c1dc9292579b68ff2",
+      "mode": "native",
+      "oracle": "dmac",
+      "commands": [
+        "rzv_dmac 0 16 32 48 64"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 20,
+      "evidence_class": "memory-function",
+      "builtin": {
+        "name": "rzv_dmac",
+        "symbol": "rzv_dmac_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "ether",
+      "defconfig_sha256": "6c963d768d3033d4a38da7922e41a1fb91ff879f2281aff04d6b67e9873698ca",
+      "mode": "blocked",
+      "oracle": "ether",
+      "commands": [],
+      "requirements": [
+        "ether-routing",
+        "ether-peer"
+      ],
+      "hazards": [
+        "network-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": "RDK PHY/RGMII/reset route and autostart admission required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "ether-mac-loopback-rtt",
+      "defconfig_sha256": "bb4f9bdbf8889fa663929ed0a7e4d3a489c2d11da23452e25844e3f27d4ffc32",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "ether-mac-clock-pads"
+      ],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "ether-mac-loopback-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "ether-register-rtt",
+      "defconfig_sha256": "96c44319da06d21fdb138bcc0139d46e53691386f5491b5dbed8617aba90224a",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "ether-register-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpio-board-rtt",
+      "defconfig_sha256": "ff4073d38b47d2ec6fd84f7188137bfc66d94c7b32d8fb4cc0841787b2395f82",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [
+        "fitted-led-output"
+      ],
+      "timeout": 35,
+      "evidence_class": "function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "gpio-board-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gtm",
+      "defconfig_sha256": "8c2a1016735b20e5d909565d7f07dbab04840d1dd54934e909f62830e5e85ead",
+      "mode": "native",
+      "oracle": "timer",
+      "commands": [
+        "timer -d /dev/timer0"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 40,
+      "evidence_class": "timer-function",
+      "builtin": {
+        "name": "timer",
+        "symbol": "timer_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gtm-rtt",
+      "defconfig_sha256": "e4a291732ce58d1ca63121f64f96a89bec490d9dbe731fc836f1b80710523c55",
+      "mode": "native",
+      "oracle": "timer",
+      "commands": [
+        "timer -d /dev/timer0"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 40,
+      "evidence_class": "timer-function",
+      "builtin": {
+        "name": "timer",
+        "symbol": "timer_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gy912",
+      "defconfig_sha256": "a9a30d6ef07793f8728a0543828f2f8240d6e0c0403e5020a942dca4e15a069f",
+      "mode": "native",
+      "oracle": "gy912",
+      "commands": [
+        "gy912_test 1",
+        "gy912_test 20",
+        "gy912_test 20"
+      ],
+      "requirements": [
+        "icm20948"
+      ],
+      "hazards": [],
+      "timeout": 45,
+      "evidence_class": "sensor-function",
+      "builtin": {
+        "name": "gy912_test",
+        "symbol": "gy912_test_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gy912-dma-ssl-rtt",
+      "defconfig_sha256": "7b6ebca25fe9ad41f9dd328f78cec178d276d5db297f7c58e80b3a02f6da404a",
+      "mode": "native",
+      "oracle": "gy912",
+      "commands": [
+        "gy912_test 1",
+        "gy912_test 20",
+        "gy912_test 20"
+      ],
+      "requirements": [
+        "icm20948"
+      ],
+      "hazards": [],
+      "timeout": 45,
+      "evidence_class": "sensor-function",
+      "builtin": {
+        "name": "gy912_test",
+        "symbol": "gy912_test_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gy912-polled-gpio-cs",
+      "defconfig_sha256": "6ebc0fc878f31df96262ec969706f4fac5860d626d8095b0e1835f84578831ac",
+      "mode": "native",
+      "oracle": "gy912",
+      "commands": [
+        "gy912_test 1",
+        "gy912_test 20",
+        "gy912_test 20"
+      ],
+      "requirements": [
+        "icm20948"
+      ],
+      "hazards": [],
+      "timeout": 45,
+      "evidence_class": "sensor-function",
+      "builtin": {
+        "name": "gy912_test",
+        "symbol": "gy912_test_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt-output",
+      "entrypoint": "hwtest_main",
+      "profile": "hil-full",
+      "defconfig_sha256": "b8ae6c34a86c9c93192eaace065b4aa0c279cd4c8cb262c161032b1a9ee0744d",
+      "mode": "boot",
+      "oracle": "hwtest",
+      "commands": [],
+      "requirements": [
+        "mpu9250",
+        "bmp280",
+        "gps-m10",
+        "tfmini"
+      ],
+      "hazards": [],
+      "timeout": 60,
+      "evidence_class": "connected-function",
+      "builtin": null,
+      "reason": null,
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt-output",
+      "entrypoint": "hwtest_main",
+      "profile": "hil-spi-loopback",
+      "defconfig_sha256": "23bfb8dccf06f9cd3b58f853ed04293ac89a6993ea19206687d5e2f666bf6a4a",
+      "mode": "boot",
+      "oracle": "hwtest",
+      "commands": [],
+      "requirements": [
+        "spi-pads"
+      ],
+      "hazards": [],
+      "timeout": 60,
+      "evidence_class": "internal-function",
+      "builtin": null,
+      "reason": null,
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "hil-spi-loopback-rtt",
+      "defconfig_sha256": "e827e8d03d6529b543e8ce040af013b9c5a92626235fb670f24f573dd1415058",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "spi-pads"
+      ],
+      "hazards": [],
+      "timeout": 60,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt-output",
+      "entrypoint": "hwtest_main",
+      "profile": "hil-uart-loopback",
+      "defconfig_sha256": "12935ee524a7908555c2009bd70e9a4794f620c9175b36cf5ac2f90d22bd6184",
+      "mode": "boot",
+      "oracle": "hwtest",
+      "commands": [],
+      "requirements": [
+        "uart-jumpers"
+      ],
+      "hazards": [],
+      "timeout": 60,
+      "evidence_class": "connected-function",
+      "builtin": null,
+      "reason": null,
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "ipc-local-loopback-rtt",
+      "defconfig_sha256": "123d349770541864a62e18940fb005bc6f3817f953289c20b15d18318a658996",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "ipc-local-loopback-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "ipcc",
+      "defconfig_sha256": "377da5144c5dda07cd41e2abbe8d915b5ce0494a73f791ce0c51dcea5ba3d10d",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "ipcc-multi",
+      "defconfig_sha256": "bed98b6d7f9b61f984d484fb6c3fef5e98b2559b0ffb93720998e919c9523bba",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cm33",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CM33",
+      "console": "rtt",
+      "entrypoint": "rzv_ipc_boot_main",
+      "profile": "ipcc-raw-cm33",
+      "defconfig_sha256": "1e83e078998401b797fdd92dff1b74588a0b22cfb5a04b9cebe1e29713add77b",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [
+        "peer-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "CM33 J-Link attach prohibited; alternate boot/observation required",
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "rzv_ipc_boot_main",
+      "profile": "ipcc-raw-cr8_0",
+      "defconfig_sha256": "0b802b2178209ef5e791ee51da41c9c963fb92a87a088d145f8c65e458358aa3",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [
+        "peer-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "rzv_ipc_boot_main",
+      "profile": "ipcc-raw-cr8_0-sci4",
+      "defconfig_sha256": "1e8df8932528d2bd1c655a7bd0334270a0f631df71f4e149875240b4ae6ad4b7",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [
+        "peer-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_1",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_1",
+      "console": "rtt",
+      "entrypoint": "rzv_ipc_boot_main",
+      "profile": "ipcc-raw-cr8_1",
+      "defconfig_sha256": "4fc61045c7814b82e9fa534469e59643c7756750912aa0a75ffd2d2f118f5a92",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [
+        "peer-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "nsh",
+      "defconfig_sha256": "ec562cdfa496b83e2c49d6fdbb21a51101686fe08a7944343a36dc56991d0883",
+      "mode": "shell",
+      "oracle": "shell",
+      "commands": [
+        "free",
+        "ps"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cm33",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CM33",
+      "console": "sci9",
+      "entrypoint": "nsh_main",
+      "profile": "nsh-cm33",
+      "defconfig_sha256": "7e0883d185e76e6023616ad4be6109ce39a0dd582a072bea548c2fa3fc355b72",
+      "mode": "blocked",
+      "oracle": "shell",
+      "commands": [],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": "CM33 J-Link attach prohibited; alternate boot/observation required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_1",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_1",
+      "console": "sci5",
+      "entrypoint": "nsh_main",
+      "profile": "nsh-cr8_1",
+      "defconfig_sha256": "32e9b4d8ff044d3cc4c3bd2974cca9b8485cbf72e303df589fac1a79664f2f8b",
+      "mode": "shell",
+      "oracle": "shell",
+      "commands": [
+        "free",
+        "ps"
+      ],
+      "requirements": [
+        "sci5-console"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "nsh-leds",
+      "defconfig_sha256": "511e742c351c45fef68a8a5d74b98ba539be179a992da89b2364feb63c28bb0b",
+      "mode": "shell",
+      "oracle": "shell",
+      "commands": [
+        "free",
+        "ps"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "nsh-rtt",
+      "defconfig_sha256": "7b1313d65724683523e7d11e049c959ab762465523c7bd3e97609484db29314d",
+      "mode": "shell",
+      "oracle": "shell",
+      "commands": [
+        "free",
+        "ps"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "nsh-rtt-interactive",
+      "defconfig_sha256": "8a5ab335d7467150c2083c9eb546790231c5b640f43d383bf1a217440349a00d",
+      "mode": "shell",
+      "oracle": "shell",
+      "commands": [
+        "free",
+        "ps"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "scif0",
+      "entrypoint": "nsh_main",
+      "profile": "nsh-scif",
+      "defconfig_sha256": "67d684ccaa6e2ee492619be758aff07fe3ce01a1358421c85fb613b93d573a30",
+      "mode": "shell",
+      "oracle": "shell",
+      "commands": [
+        "free",
+        "ps"
+      ],
+      "requirements": [
+        "scif-console"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "pwm",
+      "defconfig_sha256": "91301dda83b84614d9ac78a7b97f427360ae759b62a7e0c8d629e3ca1f4ae5af",
+      "mode": "blocked",
+      "oracle": "pwm",
+      "commands": [],
+      "requirements": [
+        "outputs-disconnected",
+        "scope"
+      ],
+      "hazards": [
+        "pwm-output"
+      ],
+      "timeout": 15,
+      "evidence_class": "waveform",
+      "builtin": null,
+      "reason": "Scope and disconnected output fixture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "pwm-oneshot",
+      "defconfig_sha256": "f6990a72b9233b49dcf39c9e3b9d57bb0400c19c04c58d96af4f75d0df642e67",
+      "mode": "blocked",
+      "oracle": "pwm",
+      "commands": [],
+      "requirements": [
+        "outputs-disconnected",
+        "scope"
+      ],
+      "hazards": [
+        "pwm-output"
+      ],
+      "timeout": 15,
+      "evidence_class": "waveform",
+      "builtin": null,
+      "reason": "Scope and disconnected output fixture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "pwm-oneshot-rtt",
+      "defconfig_sha256": "c5e810874ead049878af68f179f090d3d966c8111c8e42db3e1b39a2df48e6df",
+      "mode": "blocked",
+      "oracle": "pwm",
+      "commands": [],
+      "requirements": [
+        "outputs-disconnected",
+        "scope"
+      ],
+      "hazards": [
+        "pwm-output"
+      ],
+      "timeout": 15,
+      "evidence_class": "waveform",
+      "builtin": null,
+      "reason": "Scope and disconnected output fixture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "pwm-rtt",
+      "defconfig_sha256": "1289f47bbe0d6457fe44bcf027598a2e970294eab6f8a9f2124f01d351710ca8",
+      "mode": "blocked",
+      "oracle": "pwm",
+      "commands": [],
+      "requirements": [
+        "outputs-disconnected",
+        "scope"
+      ],
+      "hazards": [
+        "pwm-output"
+      ],
+      "timeout": 15,
+      "evidence_class": "waveform",
+      "builtin": null,
+      "reason": "Scope and disconnected output fixture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic-board-rtt",
+      "defconfig_sha256": "c62f8fa54a7b12fb1352edb5a72bbb6eb1d91707afd36c2088f90936b62fccd1",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "riic-board-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c-board-rtt",
+      "defconfig_sha256": "0dbeb330bab57684a8f937e13b28efe50c4aeb51d3266e160274f8dba0461d13",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "sci-i2c-board-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi-board-rtt",
+      "defconfig_sha256": "587a226b32a9cbc08a74c78f7c2eb0d77ee41664d20913121029f8a27074bca3",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "sci-spi-board-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi-loopback",
+      "defconfig_sha256": "93da9b558d0729a86ffe0be84684252d334b0c6181cd37c7a21ca77f636b7701",
+      "mode": "blocked",
+      "oracle": "sci-spi",
+      "commands": [],
+      "requirements": [
+        "sci-spi-jumper"
+      ],
+      "hazards": [],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": "Reviewed external byte oracle/connector required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "scif-internal-loopback-rtt",
+      "defconfig_sha256": "840515b8cd977fe729023920de50c5d4de0e0ac941351f9e315cc6d1d6c2e5e8",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "scif-loop-pads"
+      ],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "scif-internal-loopback-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "sdhi",
+      "defconfig_sha256": "408224a92ababfaa7857c24f8ba3115115d678453a6093fc939ae75b5da02286",
+      "mode": "blocked",
+      "oracle": "sdhi",
+      "commands": [],
+      "requirements": [
+        "sdhi-handoff",
+        "sd-card"
+      ],
+      "hazards": [
+        "media-mount"
+      ],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": "SDHI clock/reset handoff and read-only card fixture required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sdhi-lower-only-rtt",
+      "defconfig_sha256": "38f9af82f0529523273d018c5febb67e45844ba2aa5493a7bd51d296d787f6ee",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "sdhi-handoff"
+      ],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "sdhi-lower-only-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "serial-board-rtt",
+      "defconfig_sha256": "821b66886ba512cccfc7c1b9ef710516d7fab2b4c92828fd9790d6b9a1f628cc",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "serial-board-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "spi-loopback",
+      "defconfig_sha256": "0ca50ab495c980f538c35f2916e2296aec8008f30ee5db4722f9bbdbaaf6f457",
+      "mode": "boot",
+      "oracle": "spi-board",
+      "commands": [],
+      "requirements": [
+        "spi-pads"
+      ],
+      "hazards": [],
+      "timeout": 20,
+      "evidence_class": "internal-function",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "spi-loopback-rtt",
+      "defconfig_sha256": "c58350d0211d3ecebee854d8acd9fdfa1cfa5c7018dd285498eb334578b159b3",
+      "mode": "boot",
+      "oracle": "spi-board",
+      "commands": [],
+      "requirements": [
+        "spi-pads"
+      ],
+      "hazards": [],
+      "timeout": 20,
+      "evidence_class": "internal-function",
+      "builtin": null,
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "volatile-paramfs-rtt",
+      "defconfig_sha256": "60bf8ffa7134f9e710f62339ca455e452b4ceecf8fdf25ed0aff8d28006eaa17",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "volatile-paramfs-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
+      "entrypoint": "nsh_main",
+      "profile": "wdt",
+      "defconfig_sha256": "d46e089a884f02486df95fb03fdaa90d935d1ef3312c8142edcd11774ea09a4b",
+      "mode": "blocked",
+      "oracle": "wdt",
+      "commands": [],
+      "requirements": [
+        "wdt-recovery"
+      ],
+      "hazards": [
+        "watchdog-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "boot",
+      "builtin": null,
+      "reason": "Unbounded refreshing boot; approved expiry entry and recovery required",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "wdt-nonstart-rtt",
+      "defconfig_sha256": "54c42dcff3b93d76a1789f7bc07d47415b70a8371f545adae87c09f77fb6ee53",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "wdt-stopped"
+      ],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "wdt-nonstart-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "xspi-authority-guard-rtt",
+      "defconfig_sha256": "b2063e60c7aa66296f1ed09d1d7cb239e7f23f9699cbd6df97156361c4e39751",
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [],
+      "hazards": [],
+      "timeout": 35,
+      "evidence_class": "guard",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "legacy_profile": "xspi-authority-guard-rtt",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    }
+  ],
+  "board_sources": [
+    "boards/arm/rzv/rdk-rzv2h/src/CMakeLists.txt",
+    "boards/arm/rzv/rdk-rzv2h/src/Makefile",
+    "boards/arm/rzv/rdk-rzv2h/src/rdk-rzv2h.h",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.h",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-test.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_adc.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_app_examples.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_appinit.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_auto_leds.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_boot.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_bringup.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_buttons.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_canfd.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_dmac.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_ether.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_i2c.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc_local.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_pwm.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_pwm_oneshot.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_sci_i2c.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_sci_i2c.h",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_sci_spi.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_sdhi.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_serial.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_spi.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_spi_loopback.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_timer.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_volatile_paramfs.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_wdt.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_wdt_test.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_xspi_paramfs.c"
+  ]
+}

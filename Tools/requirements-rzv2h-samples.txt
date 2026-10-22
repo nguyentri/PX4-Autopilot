@@ -1,0 +1,6 @@
+# Versions exercised by the native sample host gate.
+empy==3.3.4
+pyros-genmsg==0.5.8
+kconfiglib==14.1.0
+pyserial==3.5
+PyYAML==6.0.2

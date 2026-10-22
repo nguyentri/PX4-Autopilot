@@ -239,3 +239,13 @@ ak-engineer
 !/test/rzv2h-battery-contract-test.py
 !/test/rzv2h-perception-adapter-test.py
 !/test/rzv2h-dualcr8-artifact-contract-test.py
+!/platforms/nuttx/Debug/rzv2h-sample-inventory.py
+!/test/rzv2h-all-sample-inventory-test.py
+!/test/rzv2h-all-sample-build-test.py
+!/platforms/nuttx/Debug/rzv2h-sample-lab.py
+!/test/rzv2h-sample-lab-test.py
+
+!/test/rzv2h-all-sample-artifact-test.py
+
+!/platforms/nuttx/Debug/rzv2h-sample-coverage.py
+!/test/rzv2h-all-sample-closure-test.py
