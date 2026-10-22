@@ -245,6 +245,53 @@ int main(void)
 
 
 class Rzv2hIpcRecoveryContractTest(unittest.TestCase):
+    def test_boot_peer_recovers_degraded_link_and_keeps_deadline(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('boundary', ROOT / 'test/rzv2h-driver-boundary-runtime-test.py')
+        boundary = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(boundary)
+        code = boundary.PRELUDE + r"""
+#define FAR
+#define CONFIG_RZV_IPC_RAW 1
+#define CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_READY_WAIT_MS 100
+#define IPCTEST_DEFAULT_DEV "/dev/ipcc1"
+#define IPCTEST_CORE_NAME "TEST"
+#define O_RDWR 0
+#define O_NONBLOCK 1
+#define RZV_IPC_RAWIOC_GET_STATS 1
+#define RZV_IPC_RAWIOC_RECOVER 2
+struct rzv_ipc_raw_stats_s { bool ready, degraded; };
+static uint64_t time_ms;
+static int recoveries, closes, permanently_bad;
+static uint64_t now_ms(void) { return time_ms; }
+static void usleep(unsigned us) { time_ms+=us/1000; }
+static int open(const char *p,int f) { (void)p; (void)f; return 3; }
+static int close(int fd) { (void)fd; closes++; return 0; }
+static int ioctl(int fd,int request,unsigned long arg)
+{
+ (void)fd;
+ if (request==RZV_IPC_RAWIOC_RECOVER) { recoveries++; time_ms+=10; return permanently_bad?-1:0; }
+ struct rzv_ipc_raw_stats_s *s=(void *)(uintptr_t)arg;
+ s->ready=recoveries>0 && !permanently_bad; s->degraded=!s->ready; return 0;
+}
+#define printf(...) ((void)0)
+""" + boundary.EXTRACT.definition(SOURCE.read_text(), 'static int ipctest_wait_for_boot_ready(') + r"""
+int main(void)
+{
+#ifdef CONFIG_RZV2H_BUILD_CR8_1
+ assert(ipctest_wait_for_boot_ready()==0 && recoveries>=1 && closes>=1);
+ time_ms=0;recoveries=0;closes=0;permanently_bad=1;
+ assert(ipctest_wait_for_boot_ready()==1 && time_ms>=100 && time_ms<=120);
+ assert(recoveries>0 && closes>0);
+#else
+ assert(ipctest_wait_for_boot_ready()==1 && recoveries==0 && closes>0);
+#endif
+ return 0;
+}
+"""
+        boundary.compile_run('#define CONFIG_RZV2H_BUILD_CR8_1 1\n' + code)
+        boundary.compile_run(code)
+
     def test_recovery_paths_execute_in_host_harness(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             temporary = Path(temporary_directory)
@@ -347,14 +394,15 @@ class Rzv2hIpcRecoveryContractTest(unittest.TestCase):
                       source[poll_error:read_call])
         self.assertIn("return 1;", source[poll_error:read_call])
 
-    def test_explicit_recover_is_the_only_recovery_path(self) -> None:
+    def test_runtime_echo_never_recovers_implicitly(self) -> None:
         source = SOURCE.read_text(encoding="utf-8")
         echo_start = source.index("static int run_echo")
         echo_end = source.index("int main(int argc", echo_start)
         echo = source[echo_start:echo_end]
 
         self.assertNotIn("RZV_IPC_RAWIOC_RECOVER", echo)
-        self.assertEqual(source.count("RZV_IPC_RAWIOC_RECOVER"), 1)
+        runtime = source.split("#ifdef CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_PEER", 1)[0]
+        self.assertEqual(runtime.count("RZV_IPC_RAWIOC_RECOVER"), 1)
         recover_start = source.index("static int run_recover")
         recover_end = source.index("#endif", recover_start)
         self.assertIn("RZV_IPC_RAWIOC_RECOVER",

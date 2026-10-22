@@ -116,10 +116,52 @@ int main(void)
  mount_result=-EBUSY; type=0xdead;
  assert(rzv2h_volatile_paramfs_initialize()==-EBUSY);
  type=TMPFS_MAGIC; assert(rzv2h_volatile_paramfs_initialize()==0);
+ mount_result=-ENOTDIR; assert(rzv2h_volatile_paramfs_initialize()==0);
  mount_result=-EACCES; assert(rzv2h_volatile_paramfs_initialize()==-EACCES);
  return 0;
 }
 '''
+        B.compile_run(code)
+
+    def test_paramfs_directory_wrapper_pins_actual_mount_inode(self):
+        source = (BOARD / 'src/rzv2h_volatile_paramfs.c').read_text()
+        code = B.PRELUDE + r"""
+#define RZV2H_PARAM_MOUNTPOINT "/fs"
+#define TMPFS_MAGIC 0x01021994u
+#define O_RDONLY 0
+#define O_DIRECTORY 1
+#define INODE_IS_MOUNTPT(n) ((n)->mount)
+struct statfs { unsigned f_type, f_files; };
+struct inode;
+struct ops { int (*statfs)(struct inode *, struct statfs *); };
+struct inode { bool mount; union { struct ops *i_mops; } u; void *i_private; };
+struct fs_dirent_s { struct inode *fd_root; };
+struct file { struct inode *f_inode; void *f_priv; };
+struct rzv2h_paramfs_sample_state_s { uintptr_t identity; unsigned filesystem_type, files; };
+static int stat_result, closes, open_result;
+static int fsstat(struct inode *inode, struct statfs *out)
+{ (void)inode; out->f_type=TMPFS_MAGIC; out->f_files=0; return stat_result; }
+static struct ops ops={fsstat};
+static struct inode actual={.mount=true,.u.i_mops=&ops,.i_private=(void *)0x1234};
+static struct inode wrapper;
+static struct fs_dirent_s dir={.fd_root=&actual};
+static int file_open(struct file *out,const char *path,int flags)
+{ (void)path; (void)flags; out->f_inode=&wrapper; out->f_priv=&dir; return open_result; }
+static int file_close(struct file *f) { (void)f; closes++; return 0; }
+""" + B.EXTRACT.definition(source, 'int rzv2h_paramfs_sample_state(') + r"""
+int main(void)
+{
+ struct rzv2h_paramfs_sample_state_s out;
+ assert(rzv2h_paramfs_sample_state(NULL)==-EINVAL && closes==0);
+ assert(rzv2h_paramfs_sample_state(&out)==0 && closes==1);
+ assert(out.identity==0x1234 && out.filesystem_type==TMPFS_MAGIC && out.files==0);
+ stat_result=-EIO; assert(rzv2h_paramfs_sample_state(&out)==-EIO && closes==2);
+ stat_result=0; actual.mount=false;
+ assert(rzv2h_paramfs_sample_state(&out)==-ENOSYS && closes==3);
+ open_result=-ENOENT; assert(rzv2h_paramfs_sample_state(&out)==-ENOENT && closes==3);
+ return 0;
+}
+"""
         B.compile_run(code)
 
     def test_local_ipc_requires_interrupt_before_read(self):

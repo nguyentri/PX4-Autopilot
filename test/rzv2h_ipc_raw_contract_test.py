@@ -299,7 +299,7 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         self.assertLess(lock, call)
         self.assertLess(call, unlock)
 
-    def test_boot_peer_waits_for_ready_without_implicit_recovery(self) -> None:
+    def test_boot_peer_responder_adoption_preserves_ready_gate(self) -> None:
         source = read(APP / "rzv_ipc_demo_main.c")
         start = source.index("static int ipctest_wait_for_boot_ready")
         end = source.index("static int ipctest_boot_peer", start)
@@ -308,7 +308,10 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         self.assertIn("RZV_IPC_RAWIOC_GET_STATS", wait)
         self.assertIn("stats.ready && !stats.degraded", wait)
         self.assertIn("CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_READY_WAIT_MS", wait)
-        self.assertNotIn("RZV_IPC_RAWIOC_RECOVER", wait)
+        guard = wait.index("#ifdef CONFIG_RZV2H_BUILD_CR8_1")
+        recover = wait.index("RZV_IPC_RAWIOC_RECOVER")
+        self.assertLess(guard, recover)
+        self.assertLess(recover, wait.index("#endif", guard))
 
     def test_recovery_arms_ack_before_publishing_both_rings(self) -> None:
         source = read(NUTTX / "arch/arm/src/rzv/rzv_ipc_raw.c")
