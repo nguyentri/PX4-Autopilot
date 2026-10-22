@@ -10,7 +10,7 @@ imported helpers and legacy HIL fragments; listing a tool does not run it.
 Initialize both NuttX/apps submodules. Host checks use Python 3, GCC/G++, Bash
 and ordinary Linux process/socket tools. The CI-tool snapshot fixtures also
 require `rsync`. Install the Python requirements from
-[Tools/setup/requirements.txt](../../../Tools/setup/requirements.txt); the sample
+[pinned sample requirements](../../../Tools/requirements-rzv2h-samples.txt); the sample
 host group specifically needs `empy>=3.3,<4` and `pyros-genmsg`. Kconfig coverage
 in the broader host group also needs `kconfiglib`.
 
@@ -36,6 +36,7 @@ python3 Tools/rzv2h-regression.py list --json
 | `policy-host` | Formatter adapter/source-preservation fixtures; does not qualify all legacy source |
 | `reference-host` | Local ignored CMSIS authority for all three cores; missing directories fail admission |
 | `vendor-host` | Native RTT buffer tests; requires the downloaded SEGGER source in the checkout |
+| `native-sample-artifacts` | All 55 real native ELF/config/linker receipts and rehashed semantic negative controls |
 | `sample-artifacts` | Actual sample ELF/config/map/archive/receipt checks after building the full sample matrix |
 | `px4-artifacts` | Existing PX4 artifact/ROMFS/package or offline GDB type checks; requires the named complete builds |
 | `px4-archive-artifacts` | Full sealed PX4 matrix admission and rehashed negative controls; requires `--px4-archive` |
@@ -75,7 +76,59 @@ cancellation, the active check fails, pending checks remain
 `NOT-RUN` (JUnit skipped), and the runner exits 130. Publish all three output
 forms even when the job fails.
 
-## Build the RTT sample matrix
+## Build all native samples
+
+The [native inventory](../../../platforms/nuttx/Debug/rzv2h-all-sample-configs.json)
+contains all 55 shipped configs, including boot-only, serial and peer images.
+It records explicit versus Kconfig-default core identity, console/entry route,
+bounded commands, fixture requirements, hazards and evidence class. CM33 and
+unclassified peer/output/recovery routes can be built but remain blocked for
+the local executor.
+
+```sh
+python3 platforms/nuttx/Debug/rzv2h-sample-inventory.py --json
+NUTTX_BUILD_JOBS=8 python3 platforms/nuttx/Debug/rzv2h-sample-build.py \
+  --all-configs --cache-dir <verified-download-cache> --output <new-native-archive>
+python3 Tools/rzv2h-regression.py run --group native-sample-artifacts \
+  --sample-builds <new-native-archive>/builds \
+  --sample-source-state <new-native-archive>/source-state.json \
+  --output <new-native-check-results>
+```
+
+Every native config gets an independent work copy of the frozen source snapshot.
+A failed image remains in JSON/JUnit while later configs are attempted.
+`--profile <name>` selects a subset; `--timeout` bounds each build.
+`--resume` requires identical source, manifest, toolchain, tool and cache inputs
+and rechecks successful receipts before reuse. Replaced failed directories are
+retained with a timestamp. No build configures the shared source tree.
+
+Native receipts additionally bind the original defconfig and exact linker script,
+declared/resolved core entry, real builtin pointer and primary console.
+Primary CR8 RTT must occupy its private noncache SRAM; optional RTT diagnostics
+on serial-primary profiles are recorded separately. Boot-only HIL images keep
+their native entrypoint and use noncache SRAM, 8 KiB RTT capture and trim mode.
+
+The [GitHub workflow](../../../.github/workflows/rzv2h-nuttx-samples.yml) runs
+`sample-host` on relevant pull requests. Manual/default-branch and scheduled
+builds use the `rzv2h-host-build` environment, GNU Arm 13.2.Rel1 and hash-checked
+RTT/LittleFS archives. Configure environment protection in repository settings
+before enabling its protected job. Submodule checkout must be accessible to
+the runner; missing access fails the job. No job installs probe software or
+executes target commands. Local validation does not establish that GitHub ran
+the workflow. The workflow pins Ubuntu Noble's
+[compiler package](https://packages.ubuntu.com/noble/gcc-arm-none-eabi).
+
+The [current machine snapshot](../../../plans/261022-1849-rzv2h-jlink-retry/all-sample-results.json)
+and [remaining actions](../../../plans/261022-1849-rzv2h-jlink-retry/remaining-samples.md)
+are the coverage and follow-up owners for the approved local campaign. Its
+[retry report](../../../plans/reports/hardware-261022-1849-rzv2h-jlink-retry.md)
+records the current host gate and bounded warm-load results; hosted GitHub CI is
+NOT-RUN for this campaign. The retry report records the host-check result and
+the skipped legacy PX4 symbol check. The earlier
+[all-sample build/host baseline](../../../plans/reports/execution-261022-rzv2h-all-samples.md)
+is historical.
+
+## Build the compatible 14-profile RTT matrix
 
 ```sh
 python3 platforms/nuttx/Debug/rzv2h-sample-build.py --list
@@ -250,13 +303,13 @@ five candidate artifact cases. See [dual-CR8 software validation](../evidence/du
 for the durable hashes and the boundary that keeps the CR8-1 identity and
 actuator pair unconfigured.
 
-## Use a board runner later
+## Execute an approved board batch
 
 Board execution needs a dedicated Linux runner with the approved probe,
 exclusive access to that probe, the exact ELF/hash and the fixture's physical
 connections. Use a protected/manual CI job or equivalent local approval route
-for loads and declared driver operations. This toolkit does not launch a board
-job or treat a machine receipt as user approval.
+for loads and declared driver operations. Remote hardware runner enrollment is
+separate. A machine receipt never grants approval.
 
 The catalog links the existing ELF-aware preflight, guarded single-core loader,
 RTT bridge, NSH client and one-shot register reader. Follow the
@@ -277,3 +330,40 @@ Keep `legacy-hardware` entries out of unattended jobs. They include direct
 configure/make routes, static RTT/frame addresses, interactive sessions and a
 GDB-server RTT hold fragment that is unsupported on CR8. These remain indexed
 for traceability; the current guarded wrappers own the supported workflow.
+
+## Execute an approved local board batch
+
+The [local executor](../../../platforms/nuttx/Debug/rzv2h-sample-lab.py)
+defaults to dry-run. It accepts only the reviewed installed policy and matching
+admitted native archive. Supply a fixture JSON with `reset_class: "warm-load"`,
+a source-backed `initial_state`, and `verified` mapping each required fixture
+name to its observation/reference. Unknown prerequisites are refused.
+
+```sh
+python3 platforms/nuttx/Debug/rzv2h-sample-lab.py \
+  --archive <native-archive> --profile <profile> --fixture <fixture.json> \
+  --output <new-run-directory> --dry-run
+```
+
+After explicit approval, the same command uses `--execute --approval-ref
+<independent-approval-reference>`. It prints exact ELF/core/hash, takes an
+exclusive local lock, requires free probe/ports, forces `LOAD_ATTEMPTS=1`, and
+uses only fixed bounded commands. Reset/DBGEN failures stop execution and
+require renewed approval; a timeout leaves target state unresolved. It never
+attaches CM33 or automates reset, watchdog expiry, storage writes or task kills.
+It checks actual WAITPID/parent/child status support. Asynchronous and boot-only
+apps require a separate read-only task census after stopping RTT. Host process
+and port cleanup are independently observed. Logs mask the probe serial.
+
+Saved native evidence can be rechecked using `rzv2h-sample-runner.py` with the
+archived manifest and `--archive <native-archive>` in addition to transcript,
+health and receipt arguments. Execution policy/executor digests must match
+the reviewed installation. The original 14-profile offline interface remains
+available. Changed executor inputs require a separately reviewed capture;
+never rewrite old receipts.
+
+`rzv2h-sample-coverage.py --archive <native-archive> --run <exact-run-directory>
+--output <coverage.json> --markdown <summary.md>` re-admits all 55 images and
+replays named receipts. Repeat `--run` chronologically. It exits nonzero for an
+incomplete campaign and retains blocked/failed/not-run rows. Warm-load evidence
+does not establish independent cold-state, electrical or production qualification.

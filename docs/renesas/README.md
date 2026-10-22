@@ -38,7 +38,7 @@ defines what can support source and build work.
 [NuttX driver status](port-status-nuttx.md) and
 [PX4 HAL status](port-status-px4-hal.md) own qualification claims. A source
 comparison, build or host test does not establish physical behavior. Retain
-scope and provenance when citing these historical records:
+scope and provenance when citing these records:
 
 | Record | Evidence boundary |
 |---|---|
@@ -49,6 +49,12 @@ scope and provenance when citing these historical records:
 | [PX4 software checkpoints](evidence/px4-hal-software-checkpoints.md) | Historical builds, reset-symbol checks and SIH/DShot provenance |
 | [PX4 CR8-0 hardware tests](evidence/px4-hardware-tests-cr8-0-261021.md) | 21/32 native entries passed; 11 blocked, with bounded DShot/HRT observations and physical qualification limits |
 | [Dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md) | Current host/build receipt: 61 suites/583 cases, three firmware builds and five candidate artifact cases; no hardware tier or actuator-pair admission |
+| [All-sample machine coverage](../../plans/261022-1849-rzv2h-jlink-retry/all-sample-results.json) | Current shipped-profile snapshot; [retry report](../../plans/reports/hardware-261022-1849-rzv2h-jlink-retry.md) records bounded warm-load evidence and [remaining actions](../../plans/261022-1849-rzv2h-jlink-retry/remaining-samples.md) |
+
+The all-sample snapshot is incomplete: load verification, warm-load results and
+confirmed fixture or engineering blockers remain separate evidence classes. The
+retry report records the approved validation route and its limits; it does not
+promote cold-state, electrical or production qualification.
 
 ## Validation procedures
 
@@ -64,7 +70,7 @@ what was actually observed.
 | Standalone GPT PWM | [PWM pin validation](validation/pwm-pin-validation.md) |
 | Integrated simple PWM/ICM20948 bench | [Simple profile validation](validation/simple-pwm-icm20948-validation.md) |
 | Canonical dual-CR8 v3 candidates | [Sensor/actuator candidate validation](validation/dualcr8-sensor-actuator-demo.md) and [software receipt](evidence/dualcr8-software-validation-261021.md) |
-| Regression/build/offline checks for future CI | [Regression tooling](validation/rzv2h-regression-ci.md) |
+| Regression/build/offline checks | [Regression tooling](validation/rzv2h-regression-ci.md) |
 | Isolated CR8-0 driver samples over RTT | [Board sample procedure](validation/rzv2h-rtt-board-samples.md) |
 | CR8-0 ↔ CR8-1 raw IPC | [IPC HIL guide](validation/rzv2h-ipc-hil-test-guide.md) |
 

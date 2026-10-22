@@ -13,14 +13,26 @@ probe/reset rules in
 - CR8-0 is the **initiator** (owns the recovery epoch), CR8-1 the **responder**
   (adopts the initiator epoch). The responder converges automatically on the
   doorbell/poll path — no manual `--recover` on CR8-1.
-- Boot auto-echo waits for a ready, non-degraded link before echoing, so it
-  does not spin on a half-open link.
+- Boot auto-echo waits for a ready, non-degraded link before echoing. CR8-1
+  performs bounded responder recovery while quarantined so it can adopt the
+  initiator's epoch; reading statistics alone cannot complete that handshake.
+  CR8-0 does not create recovery epochs in its boot wait. A running echo test
+  still terminates on transport errors instead of silently recovering.
 
 This guide qualifies the native raw IPC ABI-v2 owned by
 `rzv_ipc_channels.h`. It is separate from the reference CA55 RPMsg/RPC/uXRCE
 path and from the optional CA55 profile. A missing target transcript leaves a
 physical qualification gate open; it does not block source-backed standalone
 CR8 software work.
+
+The [2026-10-22 hardware retry](../../../plans/reports/hardware-261022-1849-rzv2h-jlink-retry.md)
+records two consecutive complete warm loads of the repaired RTT pair. Each
+passes 100 byte-exact 64-byte echoes with zero timeouts, an independent CR8-1
+completion report, responder-task exit and responsive consoles on both cores.
+CR8-0 reports zero invalid headers; CR8-1 increments `invalid_headers` once per
+warm recovery/traffic run. The increment site was not instrumented. The
+byte-exact result does not establish zero diagnostic counters on both cores.
+Cold boot, long-run soak and the SCI4 variant remain separate gates.
 
 ## Prerequisites
 
@@ -31,6 +43,8 @@ CR8 software work.
   bundled Python is broken in this environment.
 - SEGGER J-Link tools: `JLinkGDBServerCLExe` (for the volatile load) and
   `JLinkExe` (for RTT bridging). Know your probe serial number and use SWD.
+- GNU `stdbuf` on the host. The loader disables native server output buffering
+  so redirected logs expose connection failure and readiness messages promptly.
 - Core device selectors: CR8-0 = `R9A09G057H44_R8_0`, CR8-1 =
   `R9A09G057H44_R8_1`.
 - Discover `_SEGGER_RTT` from each exact loaded ELF. Historical raw-image
@@ -57,23 +71,29 @@ subsequent load. Reset, RAM load and target writes require explicit approval.
 
 ### 2. Load CR8-0 first (initiator)
 
-The initiator must publish the recovery headers before the responder boots so
-the responder adopts them at bring-up. Start one J-Link GDB server for the
-CR8-0 device selector, then:
+The initiator publishes the recovery headers before the responder boots. With
+explicit RAM-load approval, use the guarded pair loader:
 
 ```sh
-gdb-multiarch -q -batch <cr8_0-elf> -x platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb
+JLINK_SERIAL=<probe-sn> platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>
 ```
 
-This writes the PT_LOAD segments to core-local RAM, sets PC to `__start`,
-resumes, and detaches — **no `monitor reset`** (a reset here has unmeasured
-SoC-wide scope while a peer image may already be resident).
+### 3. Verify both cores
 
-### 3. Load CR8-1 last (responder)
+The pair loader starts CR8-0, then CR8-1, and performs a brief halt/PC/resume
+check of each. It uses one connection attempt per operation, always with
+`-noreset -noir`. Any failed-connect/reset/DBGEN marker stops the batch; another
+attempt requires renewed approval. `LOAD_ATTEMPTS`, if provided, must be `1`.
+The compatibility `load-both.sh` entry delegates to this same loader.
 
-Restart the GDB server for the CR8-1 device selector and repeat the loadstart
-with `<cr8_1-elf>`. On boot the responder finds the initiator's RECOVERING
-headers and adopts the epoch, coming up ready with a live auto-echo.
+The loader waits for both its server's listening socket and the target-ready
+message before starting GDB. A listening socket alone does not prove target
+connection; buffered server output can otherwise cause a false startup timeout.
+
+The loader supplies the endpoint from `GDB_PORT` (default 50000) to its
+`loadstart.gdb` and `verify-resume.gdb` command files. These files require an
+already connected session; invoke the shell wrapper instead of starting an
+unguarded GDB server. Running PC evidence alone does not qualify IPC traffic.
 
 ### 4. Drive `ipctest` over RTT
 
@@ -89,6 +109,10 @@ ipctest --recover -d /dev/ipcc1
 ipctest --ping    -d /dev/ipcc1 -n 100 -s 64
 ```
 
+The raw sample driver allows 30 seconds for a recovery ioctl; the autotest
+allows 35 seconds including console overhead. A timeout leaves completion
+unresolved and stops the sequence before ping.
+
 `--recover` performs the bounded two-sided rendezvous (initiator publishes a
 fresh epoch and doorbells; the responder adopts). Running `--recover` again on
 an already-healthy link returns immediately — it does not re-arm the wait.
@@ -102,7 +126,7 @@ ipctest ping: 100/100 pass, 0 timeout
 IPCTEST_RESULT core=CR8-0 mode=ping dev=/dev/ipcc1 status=pass pass=100 expected=100 timeouts=0
 ```
 
-Final stats: `epoch=2 ready=1 degraded=0 tx=100 rx=100 invalid_headers=0
+CR8-0 final stats: `epoch=2 ready=1 degraded=0 tx=100 rx=100 invalid_headers=0
 invalid_entries=0`, and no data abort / stack-pointer fault.
 
 ## Manual interactive demo
@@ -210,7 +234,7 @@ opens **both** NSH consoles side by side in a single `tmux` window:
    `tmux` window with the CR8-0 SCI4 console (left, `picocom` on `/dev/ttyUSB0`)
    and the CR8-1 RTT console (right, `nc`/`telnet` on `:19021`). Add `--build`
    to rebuild both images first; it reloads both cores every launch (a board
-   reset wipes the volatile DDR image, so "reset" == rerun this):
+   reset invalidates the running images and requires a fresh load):
 
    ```sh
    JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-run.sh            # uses the built ELFs
@@ -252,7 +276,7 @@ JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-build-and-load.sh --build-only
 JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh <cr8_0-sci4-elf> <cr8_1-elf>
 # guided steps: load | verify | reset <0|1> | rtt | sci  (see `guide`)
 JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-manual.sh guide
-./rzv2h-ipc-demo-load-both-manual.sh rtt          # CR8-1 RTT bridge -> :19021
+JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-manual.sh rtt <exact-cr8_1-elf>  # CR8-1 RTT bridge -> :19021
 ./rzv2h-ipc-demo-load-both-manual.sh sci /dev/ttyUSB0
 ```
 
@@ -300,3 +324,16 @@ attach read-only first, and never issue `monitor reset` after an image is
 resident until the reset scope is measured. Follow the measured, approved detach/run
 contract for that session; the J-Link metadata alone does not prove detach state. Do not copy ELF contents, memory dumps, RTT buffers, or probe
 serial numbers outside the workspace.
+
+## Debug helper limits
+
+`run.sh` and manual `rtt` use `nuttx-rtt-bridge.sh` with the exact loaded ELF.
+The old fixed-address `cr8_1-rtt.jlink` and GDB `rtt-hold.gdb` entry points exit
+without connecting: JLinkGDBServer cannot bridge CR8 RTT and the installed
+Commander does not support `rtt start`. Use the managed bridge.
+
+The crash/frame/readonly GDB files are manual diagnostic recipes for an
+already controlled debug session. The frame recipe contains a historical
+address that must be replaced with the fault frame from the exact image;
+never treat it as a current frame. PX4 health snippets require their matching
+PX4 ELFs and cannot qualify these NuttX raw-demo images.

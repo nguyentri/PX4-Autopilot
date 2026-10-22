@@ -6,6 +6,21 @@ owns profile names, exact case IDs, evidence classes, typed state and allowed
 register reads. Board configurations live under
 [`rdk-rzv2h/configs`](../../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs).
 
+The separate [all-native inventory](../../../platforms/nuttx/Debug/rzv2h-all-sample-configs.json)
+covers all 55 configurations. Use `rzv2h-sample-build.py --all-configs` for
+that matrix and the guarded local executor described in the
+[CI/lab procedure](rzv2h-regression-ci.md#execute-an-approved-local-board-batch).
+It preserves the 14-profile interface below. The all-native inventory includes
+external fixtures, serial and boot-only entrypoints; it does not imply those
+images can all run on the same wiring or through an interactive RTT shell.
+
+The [current machine snapshot](../../../plans/261022-1849-rzv2h-jlink-retry/all-sample-results.json)
+records load and runtime state for the shipped configurations. Use its
+[remaining actions](../../../plans/261022-1849-rzv2h-jlink-retry/remaining-samples.md)
+for the next step; the [retry report](../../../plans/reports/hardware-261022-1849-rzv2h-jlink-retry.md)
+owns the repaired TMPFS and raw RTT pair observations. Fixture admission,
+engineering handoff checks and prohibited-core routes remain distinct blockers.
+
 These profiles use controller-internal modes or board-fitted resources. They
 require no new peripheral cable/card/jumper. SCI UART/SPI and I2C samples check
 routing/registration/ownership without exchanging data with an unattached
@@ -81,7 +96,14 @@ TMPFS mount have profile lifetime. Per-case descriptors, queues, work and loop
 state must be cleaned. `/dev/ipcc4` in `ipc-local-loopback-rtt` is a separate
 non-SMP, CPU-local SGI device; it has no MHU peer or shared DDR ring. It does not
 qualify the existing multi-core IPC links. Parameter samples write no file data;
-xSPI persistence remains denied.
+xSPI persistence remains denied. The TMPFS guard pins the mount through the
+opened directory's `fd_root`, since NuttX uses a wrapper inode for directory
+file descriptors. An existing `/fs` mount may return `ENOTDIR` from
+`nx_mount`; initialization accepts it only after verifying TMPFS identity.
+
+The [2026-10-22 hardware retry](../../../plans/reports/hardware-261022-1849-rzv2h-jlink-retry.md)
+passes all three TMPFS guards on the exact rebuilt image: stable identity,
+idempotent mount, zero data writes and zero retained case descriptors.
 
 A source review/build/guard result does not promote peripheral function.
 Qualification remains owned by the
