@@ -23,8 +23,18 @@ class DriverUnwind(unittest.TestCase):
 #define RZV_CPG_CLK_CANFD 1
 #define RZV_ELC_CANFD_GLERR 2
 #define RZV_ELC_CANFD_RXFINT 3
+#define CONFIG_RZV_CANFD_IRQ_PRIORITY 5
 #define canerr(...) ((void)0)
-static int g_glerr_irq=-1,g_rxf_irq=-1,rzv_canfd_glerr_isr,rzv_canfd_rx_isr;
+typedef int (*xcpt_t)(int, void *, void *);
+static int g_glerr_irq=-1,g_rxf_irq=-1;
+static int rzv_canfd_glerr_isr(int irq,void *context,void *arg) {(void)irq;(void)context;(void)arg;return 0;}
+static int rzv_canfd_rx_isr(int irq,void *context,void *arg) {(void)irq;(void)context;(void)arg;return 0;}
+struct rzv_canfd_config_s { unsigned channel, rxfifo; };
+struct test_port_s { const struct rzv_canfd_config_s *config; };
+static const struct rzv_canfd_config_s configs[] = {{0, 0}, {3, 1}};
+static const struct test_port_s ports[] = {{&configs[0]}, {&configs[1]}};
+static const struct test_port_s *const g_ports[] = {&ports[0], &ports[1]};
+#define RZV_CANFD_NPORTS 2
 static int failure,clocks,attached,waits;
 static int rzv_clock_enable(int id) {(void)id;++clocks;return 0;}
 static __attribute__((unused)) int rzv_clock_disable(int id) {(void)id;--clocks;return 0;}
@@ -33,10 +43,13 @@ static __attribute__((unused)) int rzv_module_reset(int id) {(void)id;return 0;}
 static unsigned rzv_rd32(unsigned addr) {(void)addr;return 0;}
 static void rzv_wr32(unsigned val,unsigned addr) {(void)val;(void)addr;}
 static int rzv_canfd_wait_mode(unsigned addr,unsigned mask,unsigned val) {(void)addr;(void)mask;(void)val;return ++waits==failure ? -ETIMEDOUT:0;}
-static int rzv_icu_attach(int event,int handler,void *arg,bool enabled) {(void)event;(void)handler;(void)arg;(void)enabled;++attached;return attached;}
+static int rzv_icu_attach(int event,xcpt_t handler,void *arg,bool enabled) {(void)event;(void)handler;(void)arg;assert(!enabled);++attached;return attached;}
 static void rzv_icu_detach(int irq) {(void)irq;--attached;}
+static int rzv_icu_set_priority(int irq,int priority) {(void)irq;assert(priority==5);return 0;}
+static void up_enable_irq(int irq) {(void)irq;}
 '''
         source = (ARCH / "rzv_canfd.c").read_text()
+        code += EXTRACT.definition(source, "static int rzv_canfd_attach(")
         if "static int rzv_canfd_global_setup(void)" in source:
             code += EXTRACT.definition(source, "static int rzv_canfd_global_setup(")
         code += EXTRACT.definition(source, "static int rzv_canfd_global_init(")

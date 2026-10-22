@@ -62,6 +62,52 @@ class RegisterBases(unittest.TestCase):
                                                 capture_output=True, text=True)
                         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_canfd_sparse_channel_access_matches_cmsis(self):
+        ref = references("cr") / "canfd_iodefine.h"
+        if not ref.is_file():
+            self.skipTest(f"local CMSIS authority unavailable: {ref}")
+        reference_root = ROOT / 'refs/rzv2h_evk/can_fd/can_fd_rzv2h_evk_cr8_0_ep/e2studio'
+        sense = (reference_root / 'rzv/fsp/src/bsp/mcu/rzv2h/bsp_irq_sense.h').read_text()
+        irq = (ROOT / 'platforms/nuttx/NuttX/nuttx/arch/arm/include/rzv/rzv2h_irq.h').read_text()
+        for event, alias in (('TX', 'TRX'), ('CHERR', 'ERR')):
+            sources = dict((int(ch), int(selector)) for selector, ch in
+                           re.findall(rf'SEL(\d+): CANFD_CAN_{event}_INT_(\d+)_IRQSELn', sense))
+            self.assertEqual(set(sources), set(range(6)))
+            for ch, selector in sources.items():
+                match = re.search(rf'^#define RZV_ELC_CANFD_CH{ch}_{alias}\s+\((\d+)\)', irq, re.M)
+                self.assertIsNotNone(match)
+                self.assertEqual(int(match[1]), selector)
+        with tempfile.TemporaryDirectory(prefix="rzv2h-canfd-layout-") as d:
+            tmp = Path(d)
+            (tmp / "nuttx").mkdir()
+            (tmp / "nuttx/config.h").write_text("")
+            code = ('#include <stdint.h>\n#include <stddef.h>\n'
+                    '#define __IM volatile const\n#define __OM volatile\n'
+                    '#define __IOM volatile\n'
+                    f'#include "{ref}"\n'
+                    f'#include "{HW / "rzv_canfd.h"}"\n')
+            for channel in range(6):
+                mb = channel * 64
+                for member, macro in (
+                    (f"CFDC[{channel}].NCFG", f"RZV_CANFD_CFDC_NCFG({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDC[{channel}].CTR", f"RZV_CANFD_CFDC_CTR({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDC[{channel}].STS", f"RZV_CANFD_CFDC_STS({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDC[{channel}].ERFL", f"RZV_CANFD_CFDC_ERFL({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDC2[{channel}].DCFG", f"RZV_CANFD_CFDC2_DCFG({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDC2[{channel}].FDCFG", f"RZV_CANFD_CFDC2_FDCFG({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDC2[{channel}].FDCTR", f"RZV_CANFD_CFDC2_FDCTR({channel}) - RZV_CANFD_BASE"),
+                    (f"CFDTMC[{mb}]", f"RZV_CANFD_CFDTMC_OFFSET(RZV_CANFD_TXMB_CH({channel}))"),
+                    (f"CFDTMSTS[{mb}]", f"RZV_CANFD_CFDTMSTS_OFFSET(RZV_CANFD_TXMB_CH({channel}))"),
+                    (f"CFDTM[{mb}].ID", f"RZV_CANFD_CFDTMID_OFFSET(RZV_CANFD_TXMB_CH({channel}))"),
+                    (f"CFDTMIEC[{channel*2}]", f"RZV_CANFD_CFDTMIEC({channel*2}) - RZV_CANFD_BASE"),
+                    (f"CFDGAFLCFG[{channel//2}]", f"RZV_CANFD_CFDGAFLCFG({channel//2}) - RZV_CANFD_BASE")):
+                    code += f'_Static_assert({macro} == offsetof(R_CANFD_Type, {member}), "{member}");\n'
+            (tmp / "check.c").write_text(code)
+            result = subprocess.run(["cc", "-std=c11", "-Werror", "-fsyntax-only",
+                                     "-I", str(tmp), str(tmp / "check.c")],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

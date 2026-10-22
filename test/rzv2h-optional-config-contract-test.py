@@ -16,6 +16,58 @@ GATED = ('RZV_GTM', 'RZV_GPT', 'RZV_ADC', 'RZV_CANFD', 'RZV_WDT',
 
 
 class OptionalConfiguration(unittest.TestCase):
+    def test_canfd_selects_supported_architecture_irq_priorities(self):
+        source = (NUTTX / 'arch/arm/src/rzv/Kconfig').read_text()
+        blocks = []
+        for name in ('ARCH_CORTEXR8_SELECTED', 'RZV_CANFD'):
+            blocks.append(re.search(
+                rf'^(?:menuconfig|config) {name}\n.*?(?=^(?:menuconfig|config|if|endif|choice|endchoice|menu|endmenu) |\Z)',
+                source, re.M | re.S).group())
+        dependencies = set(re.findall(r'\b[A-Z][A-Z_0-9]*\b', '\n'.join(
+            line for block in blocks for line in block.splitlines()
+            if line.strip().startswith(('depends on ', 'select ')))))
+        dependencies -= {'ARCH_IRQPRIO', 'ARCH_HAVE_IRQPRIO', 'RZV2H_BUILD_CM33'}
+        contract = ''.join(f'config {name}\n bool\n default y\n' for name in sorted(dependencies))
+        contract += '''config RZV2H_BUILD_CM33
+ bool
+config ARCH_HAVE_IRQPRIO
+ bool
+config ARCH_IRQPRIO
+ bool "Interrupt priority control"
+ depends on ARCH_HAVE_IRQPRIO
+'''
+        contract += '\n'.join(blocks)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'Kconfig'
+            path.write_text(contract)
+            conf = kconfiglib.Kconfig(str(path), warn=False)
+            self.assertEqual(conf.syms['ARCH_HAVE_IRQPRIO'].str_value, 'y')
+            self.assertEqual(conf.syms['ARCH_IRQPRIO'].str_value, 'n')
+            conf.syms['RZV_CANFD'].set_value('y')
+            self.assertEqual(conf.syms['ARCH_IRQPRIO'].str_value, 'y')
+
+    def test_all_six_can_channels_coexist_and_sci9_excludes_only_hw1(self):
+        source = (NUTTX / 'arch/arm/src/rzv/Kconfig').read_text()
+        start = source.index('config RZV_CANFD0\n')
+        end = source.index('config RZV_CANFD_BOOT_LOOPBACK\n', start)
+        contract = ''.join(f'config RZV_HAVE_CAN{channel}\n bool\n default y\n'
+                           for channel in range(6))
+        contract += 'config RZV_SCI9\n bool "SCI9"\n'
+        contract += source[start:end]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'Kconfig'
+            path.write_text(contract)
+            for sci9, hw1 in ((False, False), (False, True), (True, False), (True, True)):
+                conf = kconfiglib.Kconfig(str(path), warn=False)
+                conf.syms['RZV_SCI9'].set_value('y' if sci9 else 'n')
+                conf.syms['RZV_CANFD1'].set_value('y' if hw1 else 'n')
+                for channel in (0, 2, 3, 4, 5):
+                    conf.syms[f'RZV_CANFD{channel}'].set_value('y')
+                self.assertEqual(conf.syms['RZV_CANFD1'].str_value,
+                                 'y' if hw1 and not sci9 else 'n')
+                for channel in (0, 2, 3, 4, 5):
+                    self.assertEqual(conf.syms[f'RZV_CANFD{channel}'].str_value, 'y')
+
     def test_unsupported_cm33_lower_halves_cannot_be_selected(self):
         source = (NUTTX / 'arch/arm/src/rzv/Kconfig').read_text()
         blocks = []

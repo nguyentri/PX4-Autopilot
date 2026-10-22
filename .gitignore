@@ -128,6 +128,8 @@ git config advice.addIgnoredFile false
 .vscode/targets.log
 
 *.py
+!test/rzv2h-canfd-tx-lifecycle-runtime-test.py
+!test/rzv2h-canfd-sample-contract-test.py
 !test/rzv2h-irq-routing-runtime-test.py
 !Tools/renesas-coding-standards.py
 !test/renesas-coding-standards-test.py

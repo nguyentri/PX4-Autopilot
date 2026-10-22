@@ -65,6 +65,14 @@ NUTTX_PERIPHERAL_MACROS = (
     "BOARD_CANFD0_RX_GPIO",
     "BOARD_CANFD1_TX_GPIO",
     "BOARD_CANFD1_RX_GPIO",
+    "BOARD_CANFD2_TX_GPIO",
+    "BOARD_CANFD2_RX_GPIO",
+    "BOARD_CANFD4_TX_GPIO",
+    "BOARD_CANFD4_RX_GPIO",
+    "BOARD_CANFD5_TX_GPIO",
+    "BOARD_CANFD5_RX_GPIO",
+    "BOARD_CANFD3_TX_GPIO",
+    "BOARD_CANFD3_RX_GPIO",
 )
 
 PX4_PERIPHERAL_MACROS = tuple(
@@ -245,6 +253,21 @@ class BoardPeripheralGPIOContracts(unittest.TestCase):
             extra_definitions=checks,
             expected_mode="RZV_GPIO_OUTPUT",
         )
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_can_transceivers_start_in_standby_on_pa2_pa3(self):
+        arch = ROOT / "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv"
+        expected = {"BOARD_CANFD0_STB_GPIO": "0xa2811000U",
+                    "BOARD_CANFD3_STB_GPIO": "0xa3811000U"}
+        checks = "\n".join(
+            f'#if {macro} != {value}\n#error "wrong standby pin/level"\n#endif'
+            for macro, value in expected.items())
+        result = preprocess_mode_contract(
+            '#include "board.h"',
+            (NUTTX_BOARD_DIR / "include", arch, arch / "hardware",
+             ROOT / "platforms/nuttx/NuttX/nuttx/include"),
+            tuple(expected), extra_definitions=checks,
+            expected_mode="RZV_GPIO_OUTPUT")
         self.assertEqual(0, result.returncode, result.stderr)
 
     def test_nuttx_peripheral_macros_own_the_mode_flag(self):
