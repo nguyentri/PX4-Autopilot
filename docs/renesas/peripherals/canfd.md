@@ -1,170 +1,218 @@
 # CAN-FD Peripheral Notes
 
-**Date:** 2026-10-01
-**Hardware:** Renesas RZ/V2H (R9A09G057H), RDK-RZ/V2H
-**Status:** bounded on-target (CAN0 internal loopback). Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #2.
+**Updated:** 2026-10-22
 
-Source-verified notes for `rzv_canfd.c`. Facts below are taken from the
-NuttX source; anything not in source is marked open.
+**Hardware:** RDK-RZ/V2H, R9A09G057H, CR8-0
 
----
+**Status:** bounded on-target for HW0/HW3 Classic internal loopback and
+HW0 missing-ACK cancellation/close/reopen. The
+[2026-10-22 target record](../evidence/canfd-disconnected-target-validation-261022.md)
+covers the disconnected-board campaign. Successful connected CAN-FD/BRS traffic
+and TX/RX success IRQ delivery remain open. See
+[the status inventory](../port-status-nuttx.md).
 
-## Files
+## Source owners and profiles
 
-| What | Path (under `platforms/nuttx/NuttX/nuttx/`) |
-|------|------|
-| Arch driver | `arch/arm/src/rzv/rzv_canfd.c`, `rzv_canfd.h` |
-| Register defs | `arch/arm/src/rzv/hardware/rzv_canfd.h` |
-| Board glue | `boards/arm/rzv/rdk-rzv2h/src/rzv2h_canfd.c` (`board_canfd_initialize()`, called from `rzv2h_bringup.c`) |
-| Pins | `boards/arm/rzv/rdk-rzv2h/include/board.h` (`BOARD_CANFD{0,1}_{TX,RX}_GPIO`) |
-| Configs | `canfd` (CH0, `/dev/can0`), `canfd-dual` (CH0 + CH1), `canfd-ext` (CH0 + CH1, loopback off, external-bus test) — SCI4 console |
+NuttX paths below are relative to `platforms/nuttx/NuttX/nuttx/`:
 
-Build: `platforms/nuttx/NuttX/build.sh canfd`. The configs enable
-`CONFIG_CAN`, `CONFIG_CAN_FD`, `CONFIG_RZV_CANFD`, `CONFIG_RZV_CANFD0`
-(`CONFIG_RZV_CANFD1` in `canfd-dual`) and `apps/examples/can`.
+| Owner | Path |
+|-------|------|
+| Lower half / register definitions | `arch/arm/src/rzv/rzv_canfd.{c,h}`, `hardware/rzv_canfd.h` |
+| Public status/cancel ABI | `include/nuttx/can/rzv_canfd.h` |
+| Board pins and registration | `boards/arm/rzv/rdk-rzv2h/{include/board.h,src/rzv2h_canfd.c}` |
+| Dedicated command (apps submodule) | `../apps/examples/rzv_canfd/` |
 
-## Device / Channel / Pin Map
+| Build config | Channels | Mode / command | Console |
+|--------------|----------|----------------|---------|
+| `canfd` | HW0 | Internal loopback, generic `can` | SCI4 |
+| `canfd-rtt` | HW0 | Internal loopback, generic `can` | RTT |
+| `canfd-dual` | HW0+HW3 | Internal loopback, generic local `can` | SCI4 |
+| `canfd-ext` | HW0+HW3 | Normal bus, dedicated `rzv_canfd` | RTT |
 
-| Device | Kconfig | Driver channel | RDK label | Pins (PSEL=5) |
-|--------|---------|----------------|-----------|---------------|
-| `/dev/can0` | `CONFIG_RZV_CANFD0` | 0 | CAN1 | P80 TX (CTX0), P81 RX (CRX0) |
-| `/dev/can1` | `CONFIG_RZV_CANFD1` | 1 | CAN2 | P82 TX (CTX1), P83 RX (CRX1) |
+Build with `platforms/nuttx/NuttX/build.sh <config>` from the repository root.
+The connected command is enabled only in `canfd-ext`; it uses extended IDs,
+CAN-FD and `CONFIG_CAN_FIFOSIZE=2` (one usable upper-half TX ring entry).
+The generic CAN sample and upper half are unchanged.
 
-P82/P83 are shared with SCI9 (GPS M10). `rzv2h_canfd.c` stops the build with
-`#error` if `CONFIG_RZV_CANFD1` and `CONFIG_RZV_SCI9` are both set. CAN2 →
-P82/P83 is confirmed from the RDK schematic (2026-10-01); before that the board
-used P86/P87, which carry CTX3/CRX3 (channel 3), not channel 1.
+## Device, pins and wiring
 
-## Register Block
+| Device | Kconfig | HW channel | RDK port | TX / RX | RX FIFO | Standby |
+|--------|---------|------------|----------|---------|---------|---------|
+| `/dev/can0` | `RZV_CANFD0` | 0 | CAN1, J2 | P80 / P81 | 0 | PA2 |
+| `/dev/can1` | `RZV_CANFD3` | 3 | CAN2, J3 | P86 / P87 | 1 | PA3 |
+| `/dev/can1` or `/dev/can3` | `RZV_CANFD1` | 1 | Expansion pads | P82 / P83 | 1 or 3 | External owner |
+| `/dev/can2` | `RZV_CANFD2` | 2 | Expansion pads | P84 / P85 | 2 | External owner |
+| `/dev/can4` | `RZV_CANFD4` | 4 | Expansion pads | P42 / P43 | 4 | External owner |
+| `/dev/can5` | `RZV_CANFD5` | 5 | Expansion pads | P46 / P47 | 5 | External owner |
 
-- Base `RZV_CANFD_BASE` = `0x12440000` (one controller, per-channel CFDC
-  blocks at stride `0x10`, global registers from `0x80`).
-- TX buffer access window is `BASE + 0x10000` (corrected 2026-08-09).
-- Decode with `platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd`.
+All six hardware channels (0..5) can be enabled together. All CAN signals
+use PSEL 5. HW1 remains exclusive with SCI9 (GPS M10). When HW3 is selected,
+HW1 uses `/dev/can3` and FIFO3 so onboard HW3 retains `/dev/can1` and FIFO1.
+Without HW3, HW1 retains its legacy `/dev/can1` and FIFO1. HW2/4/5 have fixed
+node/FIFO indices. This preserves the existing CAN1/CAN2 sample paths.
+Onboard CAN2 uses HW3; it does not conflict with SCI9.
 
-## Clock and Bit Timing
+Select optional channels with `CONFIG_RZV_CANFD1/2/4/5`. They default off and
+require external transceivers plus exclusive pad ownership. The pad muxes
+come from native RZ/V2H pin definitions; they do not establish RDK connector
+routing or fitted external circuitry. Only HW0/HW3 have onboard standby
+callbacks and the bounded cancellation capability. Other channels return
+`ENOTSUP` for cancellation until their board integration supplies isolation.
+The [supplied schematic](../rzv2h-rdk-canfd.png) and
+[official communication guide](https://renesas-rdk.github.io/rzv2h_rdk_documentation/latest/chapter-2/common_interfaces/communication_interface.html)
+identify the onboard ports. The schematic shows a dual TCAN1046VDMTRQ1 and
+two 60.4 Ω split-termination resistors per port. Verify the fitted board
+revision and termination; do not add terminators without checking it.
 
-- `rzv_clock_enable(RZV_CPG_CLK_CANFD)` + `rzv_module_unreset()` in the driver.
-- Constants assume CANFDCLK = 80 MHz (not read back from CPG):
+Connect **J2.1↔J3.1 CANH, J2.2↔J3.2 CANL, J2.3↔J3.3 GND**. Connect through
+the transceivers, using these bus connectors. Keep Linux/other cores from
+owning CANFD or these GPIOs and exclude other CAN writers or bus traffic.
 
-| Phase | Bitrate | BRP | TSEG1 | TSEG2 | SJW | Tq per bit |
-|-------|---------|-----|-------|-------|-----|------------|
-| Nominal | 400 kbit/s | 2 | 74 | 25 | 25 | 100 (1 + 74 + 25) |
-| Data | 3.2 Mbit/s | 1 | 16 | 8 | 8 | 25 (1 + 16 + 8) |
+PA2/STB1 and PA3/STB2 are high for standby, low for normal mode. Board
+initialization holds standby high before pin setup. First open lowers only
+a successfully configured normal-mode channel; loopback remains isolated.
+Mode changes allow 20 µs per the [TI datasheet](https://www.ti.com/lit/ds/symlink/tcan1046v-q1.pdf).
+Setup failure, cancellation and last close assert standby. Physical polarity,
+levels and transitions still need measurement on the fitted RDK.
 
-Bitrate = CANFDCLK / (BRP × (1 + TSEG1 + TSEG2)). Registers hold field − 1.
-Bitrates are compile-time constants; there is no runtime bitrate ioctl.
+## Register and interrupt contracts
 
-## Interrupts
+- Controller base: `0x12440000`. A channel's mailbox 0 index is `channel*64`;
+  HW3 uses mailbox 192, ID window `0x12456000`, control `0x12440390`, status
+  `0x12440890`, TX enable `CFDTMIEC[6]` bit 0 at `0x12440f68`.
+- Sparse acceptance rules use HW0's count in `CFDGAFLCFG[0]` high half and
+  HW3's in `CFDGAFLCFG[1]` low half. Every enabled channel has one rule;
+  its count uses register `channel/2`, high half for even channels and low
+  half for odd channels. Consecutive rules follow ascending hardware channel
+  order and route to the descriptor's dedicated FIFO. All six enabled gives
+  count registers `[0..2] = 0x00010001`. Sparse high-channel sets preserve
+  their hardware count fields while packing their rule entries from zero.
+- DLC checking and replacement are disabled for these accept-all rules.
+  Their minimum DLC is zero; replacement would discard nonempty payloads.
+  Classic and FD frames retain their received DLC and valid payload bytes.
+- `rzv_icu_attach()` allocates CPU IRQ routes. The legacy `RZV_ELC_CANFD_*`
+  aliases supplied to it are IRQSEL source IDs: global error 366, global RX
+  367, channel n TX `368+n` and error `354+n`, for n=0..5.
+- Shared RX/global-error routes persist across sibling close. Per-channel
+  TX/error and owned FIFO interrupts are masked during cancellation. Old
+  mailbox results and the actual per-route GIC pending request are cleared
+  before a new request/reopen.
+- `CONFIG_RZV_CANFD_IRQ_PRIORITY` applies to every attached CAN route before
+  it is enabled. Its range is 0..15, default 12; lower values have higher
+  priority. CAN-FD selects the CR8 architecture's IRQ-priority facility.
+- Internal loopback services completion synchronously and provides no
+  normal-mode TX IRQ proof. External success requires the real TX ISR.
+- No DMA path exists.
 
-All CAN-FD events are **selectable ICU routes** attached with
-`rzv_icu_attach()`; there are no fixed IRQ numbers.
+## Clock and frame timing
 
-| Event | ELC source |
-|-------|------------|
-| Global error (shared) | `RZV_ELC_CANFD_GLERR` |
-| RX FIFO (shared) | `RZV_ELC_CANFD_RXFINT` |
-| Per-channel TX / error | `RZV_ELC_CANFD_CHn_TRX`, `RZV_ELC_CANFD_CHn_ERR` |
+Constants assume an 80 MHz CANFDCLK:
 
-Loopback completion is serviced synchronously in the driver because late
-selectable-ICU route writes did not latch on target. Interrupt-driven
-completion is an open gate.
+| Phase | Bitrate | BRP | TSEG1 | TSEG2 | SJW |
+|-------|---------|-----|-------|-------|-----|
+| Nominal | 400 kbit/s | 2 | 74 | 25 | 25 |
+| FD data with BRS | 3.2 Mbit/s | 1 | 16 | 8 | 8 |
 
-No DMA path exists.
+Bitrate is `CANFDCLK / (BRP * (1 + TSEG1 + TSEG2))`; register fields hold
+value minus one. There is no runtime bitrate ioctl. A passing pair on one
+controller clock cannot independently qualify absolute bitrate: use an
+independent analyzer or scope for that measurement.
 
-## Modes
+## Connected command and completion contract
 
-- Boot default: internal loopback (CTME=1, INT_LOOP), set by
-  `CONFIG_RZV_CANFD_BOOT_LOOPBACK` (default `y`). With `n` the channels
-  start on the bus; `canfd-ext` does this.
-- Toggle at run time with the private ioctl `CANIOC_RZV_LOOPBACK`
-  (`_CANIOC(CAN_FIRST + CAN_NCMDS + 0)`; arg 0 = bus, 1 = loopback).
-  `apps/examples/can` never issues it.
-- Classic frames with DLC > 8 are rejected (`-EINVAL`); FD frames need
-  `ch_edl` (and `ch_brs` for the 3.2 Mbit/s data phase).
+After an approved load of the retained `canfd-ext` ELF on CR8-0, use its
+SEGGER RTT NSH console:
 
-## External-Bus Test (`/dev/can1`)
-
-Not run yet. Proves CH1 pins, transceiver path, nominal bit timing, and the
-interrupt-driven TX/RX completion that loopback bypasses.
-
-**Hardware**
-
-- CAN transceiver on CAN2 (P82 TX, P83 RX) and a 120 Ω terminator at each
-  bus end. Whether the RDK fits transceivers/terminators on board is open;
-  check the schematic before wiring.
-- Analyzer (PCAN, Kvaser, ...) set to classic CAN, **400 kbit/s, sample point
-  75 %**, in normal (ACKing) mode. A listen-only analyzer gives no ACK and
-  the first frame retransmits forever, unless another node on the bus ACKs.
-- Optional second node: wire CAN1 (`/dev/can0`, P80/P81) on the same bus.
-  It also starts on the bus in `canfd-ext` and ACKs in hardware even if no
-  task reads it.
-
-**TX: board → analyzer**
-
-1. Build: `platforms/nuttx/NuttX/build.sh canfd-ext`. The example writes 8
-   standard-ID classic frames on `/dev/can1` and exits.
-2. RAM-load `platforms/nuttx/NuttX/nuttx/nuttx` on CR8-0 (needs user
-   approval for J-Link reset/load; see
-   [deployment-guide.md](../../deployment-guide.md)). Console is SCI4.
-3. `nsh> can`. Expected console: `Bit timing not available: 25` (the ioctl
-   is not implemented), `nmsgs: 8`, then `ID:    1 DLC: 1` …
-   `ID:    8 DLC: 8`, then `Terminating!`.
-4. Expected on the analyzer: frame *k* (1–8) has ID `0x00k`, DLC *k*, data
-   counting up from `sum(1..k-1)`. ID 1 = `00`; ID 2 = `01 02`; ID 3 =
-   `03 04 05`; … ID 8 = `1C 1D … 23`.
-
-**RX: analyzer → board**
-
-```bash
-cd platforms/nuttx/NuttX/nuttx
-kconfig-tweak --file .config --disable EXAMPLES_CAN_WRITE --enable EXAMPLES_CAN_READ
-make olddefconfig
-cd .. && ./build.sh --no-clean canfd-ext
+```text
+nsh> rzv_canfd -n 32 -t 1000
 ```
 
-Load, run `nsh> can`, then send 8 standard frames at 400 kbit/s from the
-analyzer. The console prints one `ID: … DLC: …` line per frame, followed by
-`Data received:` and the bytes.
+Defaults are 32 rounds and 1000 ms per frame. `-n` accepts 1..256 and `-t`
+accepts 1..5000; signs, trailing characters, zero and overflow are rejected.
+Both separated (`-n 32`) and attached (`-n32`) arguments work. Both devices
+open `O_RDWR|O_NONBLOCK` before the first transfer, with exactly one client
+and no competing writer.
 
-**Pass:** all 8 frames are seen on the analyzer with exact ID/DLC/data, and
-all 8 analyzer frames are printed by the board. There must be no error
-frames, and the board must not go bus-off. Record the transcript in the
-Evidence table below and in [port-status-nuttx.md](../port-status-nuttx.md).
+Each round sends 41 cases in each direction: Classic lengths 0..8 plus
+FD lengths 0..8, 12, 16, 20, 24, 32, 48, 64 with BRS off and on. The default
+is **2624 frames**. Distinct extended IDs encode round, direction and case;
+a deterministic payload also depends on the predicted TX sequence. Zero
+length checks the header and byte count. Raw DLC and mapped byte length are
+checked separately; payload comparison covers only valid bytes.
 
-**Triage**
+One frame is outstanding at a time. Every passing line records its TX
+sequence, matching IRQ-completed sequence and semantically equal peer RX.
+Peer RX with a missing TX IRQ times out and fails. Absolute monotonic
+per-frame deadlines survive interrupted waits. Repeated transfers wrap the
+one-entry software ring and exceed eight RX slots in aggregate; this is
+not a burst, saturation or throughput qualification.
 
-| Symptom | Likely cause | Check |
-|---------|--------------|-------|
-| Console stops after `ID:    7`, `can` hangs on write 8; analyzer shows 7 frames | TX-complete interrupt never fires. Each `write()` still kicks the mailbox, but `can_txdone()` never frees the upper-half FIFO (`CAN_FIFOSIZE` 8 = 7 usable slots) | `CFDTMSTS16` (byte, `0x124407E0`): `TMTRF=TX_OK` with no ISR = ICU route not latched |
-| Frame repeats on analyzer, `ACK error` | No node ACKs | Analyzer in normal mode, or add CAN1 node |
-| Analyzer shows error frames / wrong bitrate | CANFDCLK ≠ 80 MHz, or a transceiver/termination fault | Scope bit time (2.5 µs); `R_CANFD.CFDC1.ERFL` (`0x1244001C`) |
-| `can` blocks forever in RX | RX FIFO interrupt route not latched | `CFDRFSTS` message count > 0 with no ISR |
-| Bus-off | Wiring, TX/RX swapped, missing termination | `R_CANFD.CFDC1.STS` (`0x12440018`) |
+The public v1 ABI contains `CANIOC_RZV_LOOPBACK` (existing scalar command),
+`CANIOC_RZV_GET_TX_STATUS` and `CANIOC_RZV_CANCEL_TX`. Status is an atomic
+snapshot without servicing completion. Sequence IDs are monotonic across
+close/open, zero is invalid and exhaustion requires a fresh boot.
 
-Decode with `platforms/nuttx/Debug/svd_register_tool.py cmd gdb
-R_CANFD.CFDC1.STS R_CANFD.CFDC1.ERFL R_CANFD.CFDTMSTS16`. Reading registers
-in a GDB session needs the RTT bridge stopped (one probe, one owner).
+On failure the app cancels an active sequence with at most `min(t,1000)` ms
+of cleanup before close. The lower half asserts standby, masks its owned
+routes and requests abort/reset. It retires the upper-half entry exactly
+once as failed. Reset timeout also drains software while keeping the port
+physically quarantined; it never reports TX success. This prevents generic
+CAN close from waiting forever on the queued entry. Cancellation requires
+the single usable TX slot and an owned standby callback; larger legacy
+queues return `ENOTSUP` without mutation. The port stays isolated until
+close/reopen. A successful reopen can run again in the same boot; a still
+faulted controller instead fails open within its reset bound.
 
-## Evidence
+If an internal-loopback timeout cannot recover the channel, the driver
+masks its owned IRQs/FIFO, keeps onboard standby asserted and records a
+terminal isolated fault. It retires queued frames as failures without
+submitting them to the stalled hardware, so generic close can finish even
+with a larger legacy queue or a callback-free expansion channel. Internal
+test mode supplies isolation for unmanaged expansion channels; this does
+not add normal-bus cancellation support. Further mode changes are rejected
+until close and a successful fresh open recover the channel.
 
-| Item | State |
-|------|-------|
-| CAN0 internal loopback, 4 frames, IDs/DLCs/payloads match via `/dev/can0` | PASS, J-Link/GDB + RTT, 2026-08-09 |
-| External bus (transceiver, termination, analyzer) | open; procedure above |
-| CAN1 (`/dev/can1`) on P82/P83, external bus | open (pins fixed, `canfd-ext` build-clean 2026-10-01) |
-| Interrupt-driven TX/RX completion | open |
-| PX4 `src/drivers/can/` / UAVCAN integration | planned ([port-status-px4-hal.md](../port-status-px4-hal.md)) |
+## Validation and evidence
 
-## FSP Reference
+Host contracts and clean builds establish software readiness; see the
+[connected-test software receipt](../evidence/canfd-connected-software-validation-261022.md)
+and [six-channel extension receipt](../evidence/canfd-six-channel-software-validation-261022.md).
+Those checkpoints precede the subsequent semantic audit fixes; use the
+[current audit-repair receipt](../evidence/canfd-audit-fixes-software-validation-261022.md)
+for payload filtering, failed-loopback recovery, IRQ priority and current ELFs.
+The [2026-10-22 target campaign](../evidence/canfd-disconnected-target-validation-261022.md)
+adds 28 verified Classic frames across HW0 and HW3, mode/timing/FIFO/IRQ-priority
+register checks and repeated disconnected-bus cancellation/close/reopen. HW3
+payload tests use a separately archived dual profile whose only config change
+is `CONFIG_EXAMPLES_CAN_DEVPATH="/dev/can1"`; the generic command has no runtime
+device selector. The original SCI4 dual image disables NSH memory commands,
+so its register checks use GDB. Its generic sample prints received bytes;
+the retained verifier compares them with the source-defined expected payload.
 
-Core-matched EVK sample: `refs/rzv2h_evk/can_fd/can_fd_rzv2h_evk_<core>_ep/`
-(`<core>` = `cm33`, `cr8_0`, `cr8_1`). EVK board: use for IP behavior only,
-not pins. Driver `rzv/fsp/src/r_canfd/`; config
-in `configuration.xml`, `rzv_cfg/fsp_cfg/r_canfd_cfg.h`, `rzv_gen/`. See
-[reference-source-map.md](../reference-source-map.md).
+The missing-ACK command returns exit 1 after its first Classic length-zero
+case, and HW0 error IRQ delivery is observed. Successful normal-mode TX/RX
+IRQs, FD/BRS payloads and connected traffic remain pending. FDCFG reads zero
+on both channels, so TDC is disabled; FSP TDC settings parity remains open.
+The older 2026-08-09 HW0 four-frame run remains historical evidence.
 
-## Related
+A separately authorized physical run must retain the exact ELF/config/hash,
+board revision, measured standby levels and wiring, and full RTT transcript:
 
-- [validation-checklist.md](../validation/validation-checklist.md)
-- [pinmap.md](../pinmap.md)
+1. Run the default full matrix on the healthy interconnect; require both
+   directions, all lengths/BRS modes and zero mismatches/timeouts.
+2. Remove the CANH/CANL interconnect before invoking a missing-ACK test.
+   Require bounded nonzero failure, cancellation, terminal isolated status
+   and completed close. Changing wiring and loading/resetting need approval.
+3. Restore the interconnect and run the full matrix again without reboot.
+   Require successful reopen and all cases passing. Missing-TX-IRQ injection
+   is host-tested; target injection needs a separately approved mechanism.
+
+Follow the [deployment guide](../../deployment-guide.md) and repository
+J-Link/RTT workflow. Stop after a probe reset/connect failure, without retry.
+A complete named transcript may extend the bounded-on-target evidence;
+it does not establish production readiness or independently measured timing.
+
+Use the core-matched EVK FSP `refs/rzv2h_evk/can_fd/can_fd_rzv2h_evk_<core>_ep/`
+for IP registers/clocks/interrupts, not board pins. See
+[reference sources](../reference-source-map.md), [pinmap](../pinmap.md) and
+[validation checklist](../validation/validation-checklist.md).

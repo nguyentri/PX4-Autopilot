@@ -76,6 +76,10 @@ Subset of pins actively used by PX4 + NuttX drivers:
 
 | Pin | Port.Bit | Alt-Func | Peripheral | Mode | Pull | Drive | Owner File | FSP Ref |
 |-----|----------|----------|-----------|------|------|-------|------------|---------|
+| **P42** | 4.2 | AF=5 | CANFD CTX4 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW4, `/dev/can4`, external transceiver required |
+| **P43** | 4.3 | AF=5 | CANFD CRX4 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW4 |
+| **P46** | 4.6 | AF=5 | CANFD CTX5 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW5, `/dev/can5`, external transceiver required |
+| **P47** | 4.7 | AF=5 | CANFD CRX5 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW5 |
 | **P50** | 5.0 | Profile-dependent | No native sensor DRDY owner | — | — | — | board.h | Reference SPI table retires INT1; comments reserve pad for debug UART |
 | **P52** | 5.2 | Profile-dependent | Safety candidate not established | — | — | — | board safety (planned) | Selected reference XML uses RSCI1 TX; do not infer safety input from old labels |
 | **P53** | 5.3 | AF=11 | GPT10B (PWM4) | Output | None | B01 | rzv_gpt.c | PWM |
@@ -86,8 +90,14 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P75** | 7.5 | AF=1 | RSCI6 RXD | Input | Noise-filter | B01 | rzv_serial.c | RC RX |
 | **P76** | 7.6 | AF=1 | RSCI7 SDA (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 3; sensors selected by profile above |
 | **P77** | 7.7 | AF=1 | RSCI7 SCL (I2C) | Bidirectional | External pull-up; noise filter on | B01 | rzv_sci_i2c.c | Header Pin 5; sensors selected by profile above |
-| **P82** | 8.2 | AF=6 | RSCI9 TXD | Output | None | B01 | rzv_serial.c | GPS TX; CAN2 CTX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
-| **P83** | 8.3 | AF=6 | RSCI9 RXD | Input | None | B01 | rzv_serial.c | GPS RX; CAN2 CRX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
+| **P80** | 8.0 | AF=5 | CAN1 CTX0 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Onboard CAN1, HW0, `/dev/can0` |
+| **P81** | 8.1 | AF=5 | CAN1 CRX0 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Onboard CAN1, HW0 |
+| **P82** | 8.2 | AF=6 | RSCI9 TXD | Output | None | B01 | rzv_serial.c | GPS TX; optional HW1 CTX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
+| **P83** | 8.3 | AF=6 | RSCI9 RXD | Input | None | B01 | rzv_serial.c | GPS RX; optional HW1 CRX1 (AF=5) when `CONFIG_RZV_CANFD1` (exclusive with SCI9) |
+| **P84** | 8.4 | AF=5 | CANFD CTX2 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW2, `/dev/can2`, external transceiver required |
+| **P85** | 8.5 | AF=5 | CANFD CRX2 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW2 |
+| **P86** | 8.6 | AF=5 | CAN2 CTX3 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Onboard CAN2, HW3, `/dev/can1` |
+| **P87** | 8.7 | AF=5 | CAN2 CRX3 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Onboard CAN2, HW3 |
 | **P90** | 9.0 | AF=1 | RSPI0 MOSI | Output | None | B11 | rzv_spi.c | Shared sensor bus |
 | **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | Shared sensor bus |
 | **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | Shared sensor bus |
@@ -96,6 +106,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P95** | 9.5 | Profile-dependent | Extension CS2 | Output in extension profile | None | B11 | opt-in board SPI table | Selected reference XML uses SSLA2; inactive IMDT P36 does not apply |
 | **P96** | 9.6 | AF=9 | GPT9A (PWM3) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P97** | 9.7 | GPIO | GPS buzzer | Output low | None | B01 | board GPIO (planned) | GPS buzzer |
+| **PA2** | A.2 | GPIO | CAN1 STB1 | Output, initially high | None | B01 | board.h / rzv2h_canfd.c | High isolates, low normal |
+| **PA3** | A.3 | GPIO | CAN2 STB2 | Output, initially high | None | B01 | board.h / rzv2h_canfd.c | High isolates, low normal |
 | **PA4 / P10_04** | A.4 | AF=11 | GPT6A (PWM1) | Output | None | B01 | rzv_gpt.c | PWM |
 | **PA6 / P10_06** | A.6 | GPIO | Safety LED | Output low | None | B01 | board GPIO (planned) | GPS safety LED |
 | **PA7 / P10_07** | A.7 | AF=11 | GPT7B (PWM2) | Output | None | B01 | rzv_gpt.c | PWM |
@@ -163,8 +175,14 @@ Do not infer availability from absence in the sensor table. Check bonded-pad
 definitions, selected native board configuration, reference XML and any CA55
 device tree before adding an owner. Reference SPI comments retire the former
 P50/PA0/P74 DRDY pads and identify debug-UART/SDHI uses; they are not spare
-interrupt inputs. P80/P81 are CANFD CH0 in standalone CAN configs; P82/P83 are
-exclusive SCI9 GPS or CANFD CH1 selections.
+interrupt inputs. P80/P81 are onboard CAN1/HW0 and P86/P87 are onboard CAN2/HW3, with
+PA2/PA3 standby control. P82/P83 are exclusive SCI9 GPS or optional CANFD
+HW1 expansion selections. HW3 retains `/dev/can1`/FIFO1; HW1 uses `/dev/can3`/FIFO3 when HW3 is
+selected, otherwise its legacy `/dev/can1`/FIFO1. HW2/P84-P85, HW4/P42-P43
+and HW5/P46-P47 are opt-in expansion pad selections with external
+transceiver ownership. All six may coexist when their pads are available;
+these mux definitions do not prove physical connector access. See
+[CAN-FD notes](peripherals/canfd.md).
 
 ---
 
@@ -178,7 +196,7 @@ python3 test/rzv2h_board_gpio_contract_test.py
 rg -n 'pincfg|active="true"|selected="true"' \
   refs/rzv2h_drone_px4-dev/configuration.xml
 
-rg -n "P50|P52|P53|P70|P71|P72|P73|P75|P76|P77|P82|P83|P90|P91|P92|P93|P94|P96|P97|PA4|PA6|PA7" \
+rg -n "P42|P43|P46|P47|P50|P52|P53|P70|P71|P72|P73|P75|P76|P77|P80|P81|P82|P83|P84|P85|P86|P87|P90|P91|P92|P93|P94|P96|P97|PA2|PA3|PA4|PA6|PA7" \
   boards/renesas/rdk-rzv2h \
   platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h
 ```

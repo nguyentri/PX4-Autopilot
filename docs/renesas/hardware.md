@@ -183,6 +183,39 @@ Each pin has alternate function options for peripherals such as UART, SPI, I2C, 
 - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c`
 - `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pinmap.h`
 
+### 6.4 Onboard CAN1 and CAN2
+
+| RDK port | Controller channel | TX / RX (PSEL 5) | Standby GPIO | Connector |
+|----------|--------------------|-----------------|--------------|-----------|
+| CAN1 | HW0 | P80 / P81 | PA2 / STB1 | J2 |
+| CAN2 | HW3 | P86 / P87 | PA3 / STB2 | J3 |
+
+The supplied [RDK CAN schematic](rzv2h-rdk-canfd.png) shows a dual
+TCAN1046VDMTRQ1 transceiver and split termination (two 60.4 Ω resistors per
+port). Each connector uses pin 1 CANH, pin 2 CANL and pin 3 GND. For the
+connected test, join J2.1↔J3.1, J2.2↔J3.2 and J2.3↔J3.3. Verify the fitted
+board revision and termination before adding any external terminators.
+See the [official RDK communication guide](https://renesas-rdk.github.io/rzv2h_rdk_documentation/latest/chapter-2/common_interfaces/communication_interface.html).
+
+PA2/PA3 high selects standby; low selects normal mode. Board initialization
+sets both owned standby pins high before configuring CAN pins. The driver
+lowers a pin only after successful external-mode first-open setup, then
+allows the 20 µs mode transition interval from the [TI datasheet](https://www.ti.com/lit/ds/symlink/tcan1046v-q1.pdf).
+Loopback, failed setup, cancellation and last-close keep standby high.
+Physical levels and connected-bus behavior remain target qualification gates.
+P82/P83 are optional HW1 expansion pads shared with SCI9, separate from CAN2.
+The driver supports all six hardware channels. Optional HW2 uses P84/P85,
+HW4 P42/P43 and HW5 P46/P47 (TX/RX, PSEL5), from native SoC pin definitions.
+These require external transceivers and board routing/pad ownership checks;
+they are not additional onboard CAN connectors.
+
+The dedicated connected command remains scoped to the onboard HW0/HW3 pair;
+all-six support adds opt-in lower-half and board registrations without adding
+a shipping all-six command profile.
+
+Build modes and the bounded two-port command are documented in
+[CAN-FD peripheral notes](peripherals/canfd.md).
+
 ### PX4/NuttX Development Notes
 
 - Treat `pinmap.md` as the software assignment matrix. Confirm external wiring
