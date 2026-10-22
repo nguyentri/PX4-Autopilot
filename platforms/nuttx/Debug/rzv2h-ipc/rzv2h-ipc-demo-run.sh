@@ -39,13 +39,14 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 NUTTX=$(cd "${HERE}/../../NuttX/nuttx" && pwd)
 AUTO="${HERE}/rzv2h-ipc-demo-load-both-auto.sh"
 BUILD="${HERE}/rzv2h-ipc-demo-build-and-load.sh"
-# Which core is bridged over RTT. Defaults to CR8-1 (the responder) for the
-# dual-console split demo; override RTT_DEVICE/RTT_JLINK/RTT_LABEL to instead
-# drive CR8-0 (the initiator) over RTT; for scripted CR8-0 NSH use
-# ../nuttx-rtt-bridge.sh start cr8_0 (or rzv2h-ipc-demo-autotest.sh).
-RTT_JLINK="${RTT_JLINK:-${HERE}/rzv2h-ipc-demo-cr8_1-rtt.jlink}"
+# The managed bridge derives RTT from the exact loaded image.
 RTT_DEVICE="${RTT_DEVICE:-R9A09G057H44_R8_1}"
-RTT_LABEL="${RTT_LABEL:-CR8-1}"
+case "${RTT_DEVICE}" in
+ R9A09G057H44_R8_0|cr8_0) RTT_CORE=cr8_0; RTT_LABEL=CR8-0 ;;
+ R9A09G057H44_R8_1|cr8_1) RTT_CORE=cr8_1; RTT_LABEL=CR8-1 ;;
+ *) echo "RTT_DEVICE must select CR8-0 or CR8-1" >&2; exit 2 ;;
+esac
+BRIDGE="${HERE}/../nuttx-rtt-bridge.sh"
 
 GDB_PORT="${GDB_PORT:-50000}"
 RTT_PORT="${RTT_PORT:-19021}"
@@ -56,7 +57,8 @@ TMUX_SESSION="${TMUX_SESSION:-rzv2h-ipc-demo}"
 DO_BUILD=0
 DO_CONNECT=1
 USE_TMUX=1               # auto-open both consoles in one tmux window
-POS=""
+ARG_ELF0=
+ARG_ELF1=
 
 for arg in "$@"; do
 	case "${arg}" in
@@ -64,17 +66,21 @@ for arg in "$@"; do
 		--no-connect) DO_CONNECT=0 ;;
 		--no-tmux)    USE_TMUX=0 ;;
 		-*)           echo "unknown option: ${arg}" >&2; exit 2 ;;
-		*)            POS="${POS} ${arg}" ;;
+		*)
+            if [ -z "${ARG_ELF0}" ]; then ARG_ELF0="${arg}"
+            elif [ -z "${ARG_ELF1}" ]; then ARG_ELF1="${arg}"
+            else echo "expected two ELF paths" >&2; exit 2; fi ;;
 	esac
 done
-# shellcheck disable=SC2086
-set -- ${POS}
 
-CR8_0_ELF="${1:-${NUTTX}/nuttx-ipcc-raw-cr8_0-sci4.elf}"
-CR8_1_ELF="${2:-${NUTTX}/nuttx-ipcc-raw-cr8_1.elf}"
+CR8_0_ELF="${ARG_ELF0:-${NUTTX}/nuttx-ipcc-raw-cr8_0-sci4.elf}"
+CR8_1_ELF="${ARG_ELF1:-${NUTTX}/nuttx-ipcc-raw-cr8_1.elf}"
 
 [ -n "${JLINK_SERIAL:-}" ] || { echo "JLINK_SERIAL must identify the authorized probe" >&2; exit 2; }
-[ -f "${RTT_JLINK}" ] || { echo "not found: ${RTT_JLINK}" >&2; exit 2; }
+# Never replace an interactive session owned by someone else.
+if command -v tmux >/dev/null 2>&1 && tmux has-session -t "=${TMUX_SESSION}" 2>/dev/null; then
+ echo "tmux session ${TMUX_SESSION} already exists; release its owner first" >&2; exit 2
+fi
 
 # --- (optional) build both images -------------------------------------------
 if [ "${DO_BUILD}" -eq 1 ]; then
@@ -87,54 +93,34 @@ for f in "${CR8_0_ELF}" "${CR8_1_ELF}"; do
 	[ -f "${f}" ] || { echo "ELF not found: ${f} (pass paths or run with --build)" >&2; exit 2; }
 done
 
+# Pre-existing owners are refused before taking cleanup responsibility.
+if "${BRIDGE}" status 2>/dev/null | grep -q '^running'; then
+ echo "RTT bridge already owned; release it first" >&2; exit 1
+fi
+
 # --- load + verify both cores (silent; auto loader frees the probe after) ----
 echo "== load + verify both cores =="
 "${AUTO}" "${CR8_0_ELF}" "${CR8_1_ELF}"
-
-# --- resolve JLinkExe for the RTT bridge ------------------------------------
-if command -v JLinkExe >/dev/null 2>&1; then JLINKEXE=$(command -v JLinkExe)
-elif [ -x /opt/SEGGER/JLink/JLinkExe ]; then JLINKEXE=/opt/SEGGER/JLink/JLinkExe
-else echo "JLinkExe not found (needed for the RTT bridge)" >&2; exit 2; fi
 
 # RTT client: telnet if present, else nc.
 if command -v telnet >/dev/null 2>&1; then RTT_CLIENT="telnet 127.0.0.1 ${RTT_PORT}"
 elif command -v nc >/dev/null 2>&1; then RTT_CLIENT="nc 127.0.0.1 ${RTT_PORT}"
 else RTT_CLIENT=""; fi
 
-# --- start the RTT bridge in the background, kept alive for the session ------
-# JLinkExe drops to an interactive prompt after the command file; feeding it a
-# never-closing stdin (a fifo we hold open on fd 9) keeps port ${RTT_PORT}
-# served without sending it any further commands.
-LOG_DIR="${LOG_DIR:-${HERE}/logs}"; mkdir -p "${LOG_DIR}"
-RTT_LOG="${LOG_DIR}/rtt-bridge.log"
-FIFO=$(mktemp -u "${TMPDIR:-/tmp}/rzv2h-rtt.XXXXXX")
-mkfifo "${FIFO}"
-
-echo "== opening ${RTT_LABEL} RTT bridge on 127.0.0.1:${RTT_PORT} (log: ${RTT_LOG}) =="
-preflight_probe_free || { rm -f "${FIFO}"; exit 1; }
-
-"${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${RTT_DEVICE}" \
-	-if SWD -speed auto -AutoConnect 1 -CommandFile "${RTT_JLINK}" \
-	<"${FIFO}" >"${RTT_LOG}" 2>&1 &
-BRIDGE_PID=$!
-exec 9>"${FIFO}"          # hold stdin open so JLinkExe stays alive
-
+# --- managed bridge; cleanup only the bridge this invocation starts --------
+BRIDGE_OWNED=0
+TMUX_OWNED=0
 cleanup() {
-	exec 9>&- 2>/dev/null || true
-	kill "${BRIDGE_PID}" 2>/dev/null || true
-	rm -f "${FIFO}" 2>/dev/null || true
-	echo "-- RTT bridge stopped, probe released --"
+ if [ "${BRIDGE_OWNED}" -eq 1 ]; then "${BRIDGE}" stop; fi
+ if [ "${TMUX_OWNED}" -eq 1 ]; then tmux kill-session -t "=${TMUX_SESSION}" 2>/dev/null || true; fi
 }
-trap cleanup EXIT INT TERM
-
-# Wait for the RTT server to come up (or the bridge to die).
-tries=0
-while ! port_listening "${RTT_PORT}"; do
-	kill -0 "${BRIDGE_PID}" 2>/dev/null || { echo "RTT bridge exited early (see ${RTT_LOG})" >&2; exit 1; }
-	tries=$((tries + 1))
-	[ "${tries}" -gt 150 ] && { echo "RTT server not up on ${RTT_PORT} (see ${RTT_LOG})" >&2; exit 1; }
-	sleep 0.1
-done
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' HUP TERM
+if [ "${RTT_CORE}" = cr8_0 ]; then RTT_ELF="${CR8_0_ELF}"; else RTT_ELF="${CR8_1_ELF}"; fi
+BRIDGE_OWNED=1
+export RTT_PORT
+"${BRIDGE}" start "${RTT_CORE}" "${RTT_ELF}"
 
 cat <<EOF
 
@@ -150,15 +136,15 @@ if [ "${DO_CONNECT}" -eq 0 ]; then
 	echo "Bridge is up. Connect ${RTT_LABEL} with: ${RTT_CLIENT:-nc 127.0.0.1 ${RTT_PORT}}"
 	echo "CR8-0 SCI4: ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh ${SCI_PORT}"
 	echo "Press Ctrl-C here to stop the bridge and release the probe."
-	while kill -0 "${BRIDGE_PID}" 2>/dev/null; do sleep 1; done
+	while "${BRIDGE}" status 2>/dev/null | grep -q '^running'; do sleep 1; done
 
 elif [ "${USE_TMUX}" -eq 1 ] && command -v tmux >/dev/null 2>&1 && [ -e "${SCI_PORT}" ] && [ -n "${RTT_CLIENT}" ]; then
 	echo "== opening both NSH consoles in tmux ('${TMUX_SESSION}'):"
 	echo "   left = CR8-0 SCI4 (${SCI_PORT}), right = CR8-1 RTT (:${RTT_PORT}) =="
-	tmux kill-session -t "${TMUX_SESSION}" 2>/dev/null || true
 	# Left pane: CR8-0 NSH on the SCI4 UART.
 	tmux new-session -d -s "${TMUX_SESSION}" -n ipc-demo \
 		"picocom -b ${SCI_BAUD} ${SCI_PORT}"
+	TMUX_OWNED=1
 	# Right pane: CR8-1 NSH over the RTT bridge.
 	# shellcheck disable=SC2086
 	tmux split-window -h -t "${TMUX_SESSION}" ${RTT_CLIENT}
@@ -168,7 +154,6 @@ elif [ "${USE_TMUX}" -eq 1 ] && command -v tmux >/dev/null 2>&1 && [ -e "${SCI_P
 	tmux set-option -t "${TMUX_SESSION}" mouse on 2>/dev/null || true
 	tmux select-pane -t "${TMUX_SESSION}.0"
 	tmux attach-session -t "${TMUX_SESSION}" || true
-	tmux kill-session -t "${TMUX_SESSION}" 2>/dev/null || true
 
 elif [ -n "${RTT_CLIENT}" ]; then
 	# Fallback: no tmux (or SCI port absent). Single RTT console here.
@@ -184,5 +169,5 @@ elif [ -n "${RTT_CLIENT}" ]; then
 
 else
 	echo "(no telnet/nc found; connect a client to 127.0.0.1:${RTT_PORT})" >&2
-	while kill -0 "${BRIDGE_PID}" 2>/dev/null; do sleep 1; done
+	while "${BRIDGE}" status 2>/dev/null | grep -q '^running'; do sleep 1; done
 fi

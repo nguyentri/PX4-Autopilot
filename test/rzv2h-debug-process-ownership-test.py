@@ -2,6 +2,7 @@
 """Exercise debug script ownership using isolated host processes and tools."""
 
 import os
+import importlib.util
 import re
 from pathlib import Path
 import socket
@@ -26,6 +27,164 @@ def free_port():
 
 
 class ProcessOwnership(unittest.TestCase):
+    def test_pair_loader_never_connects_again_after_first_verify_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp=Path(directory)
+            loader=tmp/'rzv2h-ipc-demo-load-both-auto.sh'
+            loader.write_text((DEBUG/'rzv2h-ipc'/loader.name).read_text())
+            (tmp/LIB.name).write_text('''resolve_tools() { return 0; }
+_stop_server() { return 0; }
+load_core() { echo "load $3" >>"$CORE_LOG"; }
+verify_core() {
+ echo "verify $3" >>"$CORE_LOG"
+ if [ "$3" = CR8-0 ] && [ "$FAIL_FIRST_VERIFY" = 1 ]; then return 1; fi
+ return 0
+}
+''')
+            for name in ('rzv2h-ipc-hil-loadstart.gdb','rzv2h-ipc-hil-verify-resume.gdb','core0.elf','core1.elf'):
+                (tmp/name).touch()
+            for fail,expected in (('1',1),('0',0)):
+                log=tmp/('events-'+fail)
+                env=dict(os.environ,JLINK_SERIAL='fixture',LOG_DIR=str(tmp),CORE_LOG=str(log),FAIL_FIRST_VERIFY=fail)
+                result=subprocess.run(['sh',str(loader),str(tmp/'core0.elf'),str(tmp/'core1.elf')],
+                                      env=env,capture_output=True,text=True,timeout=10)
+                self.assertEqual(result.returncode,expected,result.stdout+result.stderr)
+                events=['load CR8-0','load CR8-1','verify CR8-0']
+                if fail=='0':events.append('verify CR8-1')
+                self.assertEqual(log.read_text().splitlines(),events)
+
+    def test_manual_verify_stops_before_peer_after_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            loader = tmp / 'rzv2h-ipc-demo-load-both-manual.sh'
+            loader.write_text((DEBUG / 'rzv2h-ipc' / loader.name).read_text())
+            (tmp / LIB.name).write_text("""resolve_tools() { return 0; }
+_stop_server() { return 0; }
+verify_core() { echo "$3" >>"$CORE_LOG"; return 1; }
+""")
+            for name in ('rzv2h-ipc-hil-verify-resume.gdb', 'core0.elf', 'core1.elf'):
+                (tmp / name).touch()
+            log = tmp / 'events'
+            result = subprocess.run(['sh', str(loader), 'verify', str(tmp / 'core0.elf'), str(tmp / 'core1.elf')],
+                                    env=dict(os.environ, JLINK_SERIAL='fixture', LOG_DIR=directory, CORE_LOG=str(log)),
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(log.read_text().splitlines(), ['CR8-0 (SCI4 console)'])
+
+    def test_legacy_loader_delegates_exact_paths_to_guarded_loader(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            loader = tmp / 'rzv2h-ipc-demo-load-both.sh'
+            loader.write_text((DEBUG / 'rzv2h-ipc' / loader.name).read_text())
+            executable(tmp / 'rzv2h-ipc-demo-load-both-auto.sh',
+                       '#!/bin/sh\nprintf "%s\\n" "$@" >"$ARG_LOG"\nexit 7\n')
+            log = tmp / 'args'
+            result = subprocess.run(['sh', str(loader), 'core 0.elf', 'core 1.elf'],
+                                    env=dict(os.environ, ARG_LOG=str(log)), capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 7)
+            self.assertEqual(log.read_text().splitlines(), ['core 0.elf', 'core 1.elf'])
+
+    def test_loader_waits_for_target_connection_after_listener_opens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            executable(tmp / 'server', """#!/usr/bin/env python3
+import os,socket,sys,time
+s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen()
+time.sleep(.4)
+open(os.environ['READY_FILE'],'w').close()
+print('Waiting for GDB connection...',flush=True)
+time.sleep(60)
+""")
+            executable(tmp / 'gdb', '#!/bin/sh\n[ -f "$READY_FILE" ] || exit 7\necho SET_PC=0x40800000\n')
+            env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'),
+                       JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory,
+                       LOADSTART='fixture', READY_FILE=str(tmp / 'ready'))
+            result = subprocess.run(['sh', '-c', '. "$1"; trap _stop_server EXIT; resolve_tools; load_core dev elf core',
+                                     'fixture', str(LIB)], env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_loader_observes_buffered_c_server_readiness(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            (tmp / 'server.c').write_text(r"""
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+int main(int argc,char **argv)
+{
+ int port=0;
+ for(int i=1;i+1<argc;i++) if(strcmp(argv[i],"-port")==0) port=atoi(argv[i+1]);
+ int fd=socket(AF_INET,SOCK_STREAM,0);
+ struct sockaddr_in addr={.sin_family=AF_INET,.sin_addr.s_addr=htonl(INADDR_LOOPBACK),.sin_port=htons(port)};
+ if(bind(fd,(void *)&addr,sizeof(addr))<0 || listen(fd,1)<0) return 2;
+ /* Native stdio is fully buffered when redirected, including the failure
+  * markers and the final readiness message without a trailing newline. */
+ printf("Connected to target\nWaiting for GDB connection...");
+ for(;;) pause();
+}
+""")
+            subprocess.run(['cc', '-Wall', '-Wextra', '-Werror', str(tmp / 'server.c'), '-o', str(tmp / 'server')], check=True)
+            executable(tmp / 'gdb', '#!/bin/sh\necho "ENTRY=0x40800000 SET_PC=0x40800000 CPSR=0x1d3"\n')
+            env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'),
+                       JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory, LOADSTART='fixture')
+            result = subprocess.run(['sh', '-c', '. "$1"; trap _stop_server EXIT; resolve_tools; load_core dev elf core',
+                                     'fixture', str(LIB)], env=env, capture_output=True, text=True, timeout=45)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_manual_rtt_requires_exact_elf_and_uses_managed_bridge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            ipc = tmp / 'ipc'; ipc.mkdir()
+            wrapper = ipc / 'rzv2h-ipc-demo-load-both-manual.sh'
+            wrapper.write_text((DEBUG / 'rzv2h-ipc' / wrapper.name).read_text())
+            (ipc / LIB.name).write_text('_stop_server() { return 0; }\n')
+            executable(tmp / 'nuttx-rtt-bridge.sh', '#!/bin/sh\nprintf "%s\\n" "$@" >"$ARG_LOG"\n')
+            elf = tmp / 'exact peer.elf'; elf.touch()
+            env = dict(os.environ, JLINK_SERIAL='fixture', ARG_LOG=str(tmp / 'args'))
+            missing = subprocess.run(['sh', str(wrapper), 'rtt'], env=env, capture_output=True)
+            self.assertEqual(missing.returncode, 2)
+            result = subprocess.run(['sh', str(wrapper), 'rtt', str(elf)], env=env, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((tmp / 'args').read_text().splitlines(), ['start', 'cr8_1', str(elf)])
+
+    def test_interactive_wrapper_preserves_paths_and_cleans_owned_bridge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory); ipc = tmp / 'Debug/rzv2h-ipc'; ipc.mkdir(parents=True)
+            (tmp / 'NuttX/nuttx').mkdir(parents=True)
+            wrapper = ipc / 'rzv2h-ipc-demo-run.sh'
+            wrapper.write_text((DEBUG / 'rzv2h-ipc' / wrapper.name).read_text())
+            (ipc / LIB.name).write_text(LIB.read_text())
+            executable(ipc / 'rzv2h-ipc-demo-load-both-auto.sh',
+                       '#!/bin/sh\nprintf "%s\\n" "$@" >"$LOAD_ARGS"\n')
+            executable(tmp / 'Debug/nuttx-rtt-bridge.sh', """#!/bin/sh
+case "$1" in status) exit 1 ;; esac
+printf '%s\\n' "$@" >>"$BRIDGE_ARGS"
+""")
+            bins = tmp / 'bin'; bins.mkdir()
+            executable(bins / 'tmux', '#!/bin/sh\nexit 1\n')
+            executable(bins / 'telnet', '#!/bin/sh\nexit 0\n')
+            elf0 = tmp / 'exact core 0.elf'; elf0.touch()
+            elf1 = tmp / 'exact core 1.elf'; elf1.touch()
+            env = dict(os.environ, JLINK_SERIAL='fixture', PATH=str(bins)+':'+os.environ['PATH'],
+                       LOAD_ARGS=str(tmp / 'loads'), BRIDGE_ARGS=str(tmp / 'bridge'))
+            result = subprocess.run(['sh', str(wrapper), '--no-tmux', str(elf0), str(elf1)],
+                                    env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+            self.assertEqual((tmp / 'loads').read_text().splitlines(), [str(elf0), str(elf1)])
+            self.assertEqual((tmp / 'bridge').read_text().splitlines(), ['start', 'cr8_1', str(elf1), 'stop'])
+
+    def test_preflight_distinguishes_compiler_from_truncated_gdb_name(self):
+        spec=importlib.util.spec_from_file_location('preflight',DEBUG/'jlink-debug-preflight.py')
+        preflight=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(preflight)
+        for executable in ('arm-none-eabi-gcc','arm-none-eabi-g++','python3','sleep'):
+            self.assertFalse(preflight.probe_command(('/opt/bin/'+executable+'\0args').encode()))
+        for executable in ('arm-none-eabi-gdb','gdb-multiarch','JLinkExe','JLinkGDBServerCLExe'):
+            self.assertTrue(preflight.probe_command(('/opt/bin/'+executable+'\0args').encode()))
+
     def test_stale_bridge_pid_does_not_signal_foreign_group(self):
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory)
@@ -90,7 +249,7 @@ except OSError: sys.exit(1)
             executable(tmp / 'server', '''#!/usr/bin/env python3
 import os,socket,sys,time
 with open(os.environ['PID_LOG'],'a') as f:f.write(str(os.getpid())+'\\n')
-s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();time.sleep(60)
+s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();print('Waiting for GDB connection...',flush=True);time.sleep(60)
 ''')
             executable(tmp / 'gdb', '#!/bin/sh\necho SET_PC=0x1000\necho RUN_PC=0x1000\nexit "$GDB_RESULT"\n')
             env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'), JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory, LOADSTART='fixture', VERIFY='fixture', PID_LOG=str(tmp / 'pids'))
@@ -110,7 +269,7 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
             tmp = Path(directory)
             executable(tmp / 'server', '''#!/usr/bin/env python3
 import socket,sys,time
-s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();time.sleep(60)
+s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();print('Waiting for GDB connection...',flush=True);time.sleep(60)
 ''')
             executable(tmp / 'gdb', '#!/bin/sh\necho "RUN_PC=$RUN_PC CPSR=0x1d3"\n')
             env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'), JLINK_SERIAL='fixture',
@@ -135,12 +294,12 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
 import json,os,socket,sys,time
 with open(os.environ['ARG_LOG'],'a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
 print(os.environ['CONNECT_MARKER'],flush=True)
-s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();time.sleep(60)
+s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();print('Waiting for GDB connection...',flush=True);time.sleep(60)
 ''')
-                executable(tmp / 'gdb', '#!/bin/sh\necho SET_PC=0x40800000\nexit "$GDB_RESULT"\n')
+                executable(tmp / 'gdb', '#!/bin/sh\nprintf \"%s\\n\" \"$@\" >\"$GDB_ARGS\"\necho SET_PC=0x40800000\nexit \"$GDB_RESULT\"\n')
                 env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'),
                            JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory,
-                           LOADSTART='fixture', LOAD_ATTEMPTS='1', GDB_RESULT=gdb_result,
+                           LOADSTART='fixture', GDB_RESULT=gdb_result, GDB_ARGS=str(tmp / 'gdb-args'),
                            CONNECT_MARKER=marker, ARG_LOG=str(tmp / 'arguments'))
                 shell = '. "$1"; trap _stop_server EXIT; resolve_tools; load_core fixture fixture.elf test'
                 result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
@@ -150,6 +309,10 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                 self.assertEqual(len(attempts), 1, result.stdout + result.stderr)
                 self.assertIn('-noreset', attempts[0])
                 self.assertIn('-noir', attempts[0])
+                if not marker:
+                    self.assertIn(f'target remote 127.0.0.1:{env["GDB_PORT"]}', (tmp / 'gdb-args').read_text())
+                else:
+                    self.assertFalse((tmp / 'gdb-args').exists(), 'GDB must not run after failed connect')
 
     def test_invalid_loader_attempt_limit_is_rejected_before_probe_access(self):
         with tempfile.TemporaryDirectory() as directory:

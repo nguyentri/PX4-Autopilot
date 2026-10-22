@@ -1,3 +1,4 @@
+# Connection is supplied by the guarded shell loader using GDB_PORT.
 # Volatile RAM load + core-local start for one RZ/V2H CR8 core.
 #
 # Mutating: writes ELF PT_LOAD segments to core-local RAM, sets PC to the
@@ -11,9 +12,8 @@
 # first __start instruction, before the new image owns a vector or a handler.
 #
 # Usage:
-#   arm-none-eabi-gdb -q -batch <elf> -x rzv2h-ipc-hil-loadstart.gdb
+#   JLINK_SERIAL=<probe-sn> ./rzv2h-load-one-core.sh <cr8_0|cr8_1> <elf>
 set pagination off
-target remote :50000
 monitor halt
 printf "PRE_LOAD_PC=%#x CPSR=%#x\n", $pc, $cpsr
 load

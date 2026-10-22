@@ -64,7 +64,7 @@ record() {
 
 # rtt <step> <timeout-s> <nsh command...>; output -> ${RUN_DIR}/<step>.out/.raw
 rtt() { step=$1 to=$2; shift 2
-	python3 "${EXEC}" --rtt "${RTT_PORT}" --timeout "${to}" \
+	python3 "${EXEC}" --rtt "${RTT_PORT}" --marker --timeout "${to}" \
 		--log "${RUN_DIR}/${step}.raw" "$@" >"${RUN_DIR}/${step}.out" 2>&1; }
 
 has() { grep -Eq "$1" "$2" 2>/dev/null; }
@@ -135,20 +135,23 @@ rtt cr8_0-live 5 'uname -a' || { sleep 2; rtt cr8_0-live 5 'uname -a'; } \
 echo "-- [3] CR8-0 ipctest --recover"
 # ipctest runs as a background builtin here (no CONFIG_SCHED_WAITPID): NSH
 # returns the prompt at once, so wait for the RESULT line before going on.
-rtt cr8_0-recover 20 --until 'IPCTEST_RESULT .*mode=recover' \
-	"ipctest --recover -d ${IPC_DEV}" || true
+# Raw sample configs allow 30 s in the recovery ioctl; include shell margin.
+rtt cr8_0-recover 35 --until 'IPCTEST_RESULT .*mode=recover' \
+	"ipctest --recover -d ${IPC_DEV}" || die 4 "recover did not complete; target task state unresolved"
 R=1; has 'mode=recover.*status=pass' "${RUN_DIR}/cr8_0-recover.out" \
 	&& has 'IPCTEST_STATS .* ready=1 ' "${RUN_DIR}/cr8_0-recover.out" && R=0
 record "CR8-0 recover status=pass ready=1" "${R}"
+[ "${R}" -eq 0 ] || die 1 "recover failed; no ping or further target connection"
 
 # --- 4. ping 100 ---------------------------------------------------------------
 echo "-- [4] CR8-0 ipctest --ping -n ${PING_COUNT} -s ${PING_SIZE}"
 rtt cr8_0-ping 60 --until 'IPCTEST_RESULT .*mode=ping' \
-	"ipctest --ping -d ${IPC_DEV} -n ${PING_COUNT} -s ${PING_SIZE}" || true
+	"ipctest --ping -d ${IPC_DEV} -n ${PING_COUNT} -s ${PING_SIZE}" || die 4 "ping did not complete; target task state unresolved"
 R=1; has "mode=ping.*status=pass.*pass=${PING_COUNT} expected=${PING_COUNT} timeouts=0" \
 	"${RUN_DIR}/cr8_0-ping.out" \
 	&& has "IPCTEST_STATS .* rx=${PING_COUNT} timeouts=" "${RUN_DIR}/cr8_0-ping.out" && R=0
 record "CR8-0 ping ${PING_COUNT}/${PING_COUNT} timeouts=0 rx=${PING_COUNT}" "${R}"
+[ "${R}" -eq 0 ] || die 1 "ping failed; no further target connection"
 
 R=0; rtt cr8_0-post 5 free || R=1
 record "CR8-0 RTT NSH alive after test" "${R}"

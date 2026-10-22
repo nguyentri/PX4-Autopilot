@@ -36,8 +36,8 @@ TOOLS = {
     "gdb-multiarch": [],
     "arm-none-eabi-nm": [Path("/opt/arm-gnu-toolchain-13.2.Rel1/bin/arm-none-eabi-nm")],
 }
-PROBE_PROCS = ("JLinkExe", "JLinkGDBServer", "JLinkGDBServerCL", "JLinkRTTClient",
-               "JLinkRTTLogger", "gdb-multiarch", "arm-none-eabi-g")
+PROBE_PROCS = {"JLinkExe", "JLinkGDBServer", "JLinkGDBServerCLExe", "JLinkRTTClient",
+               "JLinkRTTLogger", "gdb-multiarch", "arm-none-eabi-gdb"}
 PORTS = {19021: "RTT telnet (JLinkExe bridge or GDB server)", 50000: "GDB (rzv2h loaders, one-shot)",
          2331: "GDB (J-Link default, upload_jlink_gdb.sh)", 2341: "GDB (ad-hoc)"}
 # Link-time entry ranges of the RZ/V2H images in this tree.
@@ -70,12 +70,20 @@ def jlink_serials():
             for name, _, prod, serial, _ in usb_devices("1366")]
 
 
+def probe_command(cmdline):
+    # Linux comm truncates both arm-none-eabi-gcc and arm-none-eabi-gdb to
+    # arm-none-eabi-g. Inspect the actual executable token, never that prefix.
+    executable = cmdline.split(b"\0", 1)[0].decode(errors="replace")
+    return Path(executable).name in PROBE_PROCS
+
+
 def owners():
     for proc in Path("/proc").glob("[0-9]*"):
         try:
             comm = (proc / "comm").read_text().strip()
-            if comm.startswith(PROBE_PROCS):
-                cmd = (proc / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+            cmdline = (proc / "cmdline").read_bytes()
+            if probe_command(cmdline):
+                cmd = cmdline.replace(b"\0", b" ").decode(errors="replace")
                 yield int(proc.name), comm, cmd.strip()
         except OSError:
             continue

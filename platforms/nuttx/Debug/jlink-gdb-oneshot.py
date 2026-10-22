@@ -166,10 +166,14 @@ def main():
     ap.add_argument("--port", type=int, default=int(os.environ.get("GDB_PORT", 50000)))
     ap.add_argument("--speed", default=os.environ.get("JLINK_SPEED", "auto"))
     ap.add_argument("--timeout", type=float, default=60, help="gdb run limit, seconds")
+    ap.add_argument("--attempts", type=int, default=3,
+                    help="connection attempts; use 1 for fail-stop lab batches")
     ap.add_argument("--log", help="J-Link server log (default: a temp file, kept on failure)")
     ap.add_argument("--allow-mutation", action="store_true",
                     help="skip the read-only check (needs the user's explicit approval)")
     a = ap.parse_args()
+    if not 1 <= a.attempts <= 3:
+        ap.error("--attempts must be 1..3")
 
     a.serial = os.environ.get("JLINK_SERIAL")
     if not a.serial:
@@ -212,7 +216,7 @@ def main():
     rc, out, errors = 3, "", []
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     with open(log_path, "ab") as log:
-        for attempt in range(1, 4):
+        for attempt in range(1, a.attempts + 1):
             srv = start_server(a, device, log)
             if srv is None:
                 print(f"-- attempt {attempt}: GDB server did not start listening", file=sys.stderr)
@@ -253,7 +257,7 @@ def main():
     if rc == 4:
         print(f"!! gdb did not detach cleanly; server log: {log_path}", file=sys.stderr)
     elif rc == 3:
-        print(f"!! could not attach after 3 attempts; server log: {log_path}", file=sys.stderr)
+        print(f"!! could not attach after {a.attempts} attempts; server log: {log_path}", file=sys.stderr)
     elif rc == 6:
         print("!! detached, but gdb reported errors; the read is incomplete:\n  "
               + "\n  ".join(errors), file=sys.stderr)

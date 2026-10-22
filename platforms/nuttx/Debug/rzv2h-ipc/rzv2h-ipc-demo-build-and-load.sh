@@ -2,13 +2,13 @@
 #
 # Build both RZ/V2H IPC-demo images, then load them with one J-Link probe.
 #
-# Convenience wrapper around the NuttX build (configure.sh + make) and the
+# Convenience wrapper around the project NuttX build helper and the
 # existing rzv2h-ipc-demo-load-both.sh loader, for the single-probe transport
 # split demo:
 #   CR8-0 -> rdk-rzv2h:ipcc-raw-cr8_0-sci4  (NSH on SCI4 / FT232 USB-serial)
 #   CR8-1 -> rdk-rzv2h:ipcc-raw-cr8_1       (NSH on RTT block 0x081E0000)
 #
-# Each config is built with `configure.sh -E` (enforce distclean) so switching
+# Each config uses the project clean build helper so switching
 # between the two is clean; the resulting `nuttx` ELF is copied out under a
 # per-config name before the next build overwrites it.
 #
@@ -46,7 +46,7 @@ for arg in "$@"; do
 	esac
 done
 
-[ -x "${NUTTX}/tools/configure.sh" ] || { echo "configure.sh not found under ${NUTTX}" >&2; exit 2; }
+[ -x "${HERE}/../../NuttX/build.sh" ] || { echo "project build helper not found" >&2; exit 2; }
 [ -f "${LOAD_BOTH}" ] || { echo "loader not found: ${LOAD_BOTH}" >&2; exit 2; }
 mkdir -p "${OUT_DIR}"
 
@@ -59,9 +59,11 @@ build_one() {
 	elf="${OUT_DIR}/nuttx-${name}.elf"
 
 	echo "== building ${config} (-j${JOBS}) ==" >&2
-	( cd "${NUTTX}" \
-		&& ./tools/configure.sh -E "${config}" \
-		&& make -j"${JOBS}" ) >&2
+	case "${config}" in
+		rdk-rzv2h:*) name=${config#*:} ;;
+		*) echo "expected rdk-rzv2h:<config>: ${config}" >&2; return 2 ;;
+	esac
+	NUTTX_BUILD_JOBS="${JOBS}" "${HERE}/../../NuttX/build.sh" "${name}" >&2
 	[ -f "${NUTTX}/nuttx" ] || { echo "build produced no nuttx ELF for ${config}" >&2; exit 1; }
 	cp -f "${NUTTX}/nuttx" "${elf}"
 	echo "== ${config} -> ${elf} ==" >&2

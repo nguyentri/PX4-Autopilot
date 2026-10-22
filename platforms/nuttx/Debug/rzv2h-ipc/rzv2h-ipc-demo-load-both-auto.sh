@@ -7,7 +7,7 @@
 # the NuttX IPC demo (SCI4 or RTT CR8-0 console) or PX4 dualcr8 + io-cr8_1:
 #   * preflight refuses an occupied GDB port; release its existing owner
 #     before loading and keep one probe owner at a time;
-#   * each connect is retried (3x) with a longer timeout and without -strict;
+#   * one guarded connect per operation; failure ends the batch;
 #   * server + gdb chatter is captured to per-core logs, so the console shows
 #     only step and PASS/FAIL lines (pass --verbose to tee the logs);
 #   * after both loads, each core is re-attached, halted, PC-checked and
@@ -24,7 +24,7 @@
 #   JLINK_SERIAL   Authorized probe serial (required).
 #   JLINK_GDB      JLinkGDBServerCLExe path (default: PATH then /opt/SEGGER).
 #   GDB            gdb-multiarch path (default: PATH).
-#   GDB_PORT       GDB server port (default 50000; matches loadstart.gdb).
+#   GDB_PORT       GDB server port (default 50000).
 #   LOG_DIR        Where per-core logs go (default: <script dir>/logs).
 
 set -eu
@@ -41,6 +41,7 @@ VERIFY="${HERE}/rzv2h-ipc-hil-verify-resume.gdb"
 GDB_PORT="${GDB_PORT:-50000}"
 LOG_DIR="${LOG_DIR:-${HERE}/logs}"
 VERBOSE=0
+export VERBOSE
 
 DEV_CR8_0="R9A09G057H44_R8_0"
 DEV_CR8_1="R9A09G057H44_R8_1"
@@ -72,14 +73,8 @@ load_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
 load_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
 
 # --- verify both are actually running ---------------------------------------
-rc=0
-verify_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || rc=1
-verify_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || rc=1
-
-if [ "${rc}" -ne 0 ]; then
-	echo "!! one or more cores failed verification (logs in ${LOG_DIR})" >&2
-	exit 1
-fi
+verify_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
+verify_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
 
 # Suggest an RTT bridge only for an image that has an RTT control block.
 has_rtt() {

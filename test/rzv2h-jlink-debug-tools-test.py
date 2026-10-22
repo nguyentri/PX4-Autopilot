@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the J-Link debug tools against fake probes, servers and shells:
 the read-only one-shot GDB runner, the NSH marker mode, the RTT bridge
-connect-reset guard, the loader retry and verify guards and the host
+connect-reset guard, the loader fail-stop and verify guards and the host
 preflight. The PX4 health snippets are also resolved against the built ELFs
 when they exist."""
 
@@ -50,7 +50,7 @@ import os,socket,sys,time
 open(os.environ['ARGV_LOG'],'a').write(' '.join(sys.argv[1:])+'\\n')
 print(os.environ.get('SERVER_SAYS',''),flush=True)
 s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();time.sleep(60)
+s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();print('Waiting for GDB connection...',flush=True);time.sleep(60)
 '''
 # Fake gdb: records its argv; prints $GDB_STDERR; attaches unless GDB_ATTACH=0.
 FAKE_GDB = '''#!/usr/bin/env python3
@@ -211,6 +211,8 @@ class FakeNsh(threading.Thread):
                         conn.sendall(b'out:' + line + b'\r\nnsh> ')
                         time.sleep(0.05)
                         conn.sendall(b'[log] SCI6 clocks enabled\r\n')
+                        if line == b'ipctest-test':
+                            conn.sendall(b'IPCTEST_RESULT mode=ping status=pass\r\n')
                     else:
                         conn.sendall(b'nsh> ')
             conn.close()
@@ -232,6 +234,24 @@ class NshMarkerMode(unittest.TestCase):
             self.assertIn('out:free', marker.stdout)
             self.assertNotIn('NSHX_', marker.stdout)
             self.assertNotIn('echo ', marker.stdout)
+        finally:
+            nsh.srv.close()
+
+    def test_autotest_background_result_does_not_require_a_trailing_prompt(self):
+        source = (DEBUG / 'rzv2h-ipc/rzv2h-ipc-demo-autotest.sh').read_text()
+        function = re.search(r'rtt\(\) \{ step=.*?2>&1; \}', source, re.S).group(0)
+        nsh = FakeNsh(); nsh.start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                env = dict(os.environ, RTT_PORT=str(nsh.port), RUN_DIR=directory,
+                           EXEC=str(DEBUG / 'nsh_console_exec.py'))
+                for marker, expected in ((False, 1), (True, 0)):
+                    actual = function if marker else function.replace('--marker ', '')
+                    result = subprocess.run(['sh', '-c', actual + "\nrtt background 1 --until IPCTEST_RESULT ipctest-test"],
+                                            env=env, capture_output=True, timeout=10)
+                    transcript = (Path(directory) / 'background.out').read_text()
+                    self.assertEqual(result.returncode, expected, transcript)
+                    self.assertIn('IPCTEST_RESULT mode=ping status=pass', transcript)
         finally:
             nsh.srv.close()
 
@@ -372,7 +392,16 @@ class LoaderVerifyGuard(unittest.TestCase):
             for argv in (tmp / 'server.argv').read_text().splitlines():
                 self.assertIn('-noreset -noir', argv)
 
-    def test_load_retry_judges_only_its_own_attempt(self):
+    def test_ipc_recover_console_deadline_covers_driver_rendezvous(self):
+        source = (DEBUG / 'rzv2h-ipc/rzv2h-ipc-demo-autotest.sh').read_text()
+        deadline = int(re.search(r'rtt cr8_0-recover (\d+) --until', source).group(1))
+        board = ROOT / 'platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs'
+        for profile in ('ipcc-raw-cr8_0', 'ipcc-raw-cr8_0-sci4'):
+            config = (board / profile / 'defconfig').read_text()
+            wait = int(re.search(r'CONFIG_RZV_IPC_RECOVERY_WAIT_MS=(\d+)', config).group(1))
+            self.assertGreaterEqual(deadline * 1000, wait + 5000)
+
+    def test_load_failure_stops_before_gdb_and_never_retries(self):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)
             # First server start: the core is held in reset (dead image).
@@ -389,15 +418,17 @@ class LoaderVerifyGuard(unittest.TestCase):
             shell = '. "$1"; trap _stop_server EXIT; resolve_tools; load_core fixture fixture.elf test'
             result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
                                     capture_output=True, text=True, timeout=60)
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual(result.stderr.count('DBGEN not asserted'), 1, result.stderr)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('no automatic retry', result.stderr)
+            self.assertEqual(len((tmp / 'server.argv').read_text().splitlines()), 1)
+            self.assertFalse((tmp / 'gdb.ran').exists())
             self.assertNotIn('cold reset', result.stderr)
 
     def test_one_core_loader_loads_then_verifies(self):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)
             executable(tmp / 'server', FAKE_SERVER)
-            executable(tmp / 'gdb', '#!/bin/sh\necho "SET_PC=0x40800000"\necho "RUN_PC=0x4080be14"\n')
+            executable(tmp / 'gdb', '#!/bin/sh\necho "ENTRY=0x40800000 SET_PC=0x40800000 CPSR=0x1d3"\necho "RUN_PC=0x4080be14"\n')
             elf = tmp / 'image.elf'
             elf.write_bytes(b'\x7fELF')
             env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'), JLINK_SERIAL='fixture',
@@ -411,7 +442,7 @@ class LoaderVerifyGuard(unittest.TestCase):
             argvs = (tmp / 'server.argv').read_text().splitlines()
             self.assertEqual(len(argvs), 2)
             self.assertIn('R9A09G057H44_R8_0', argvs[0])
-            self.assertNotIn('-noreset', argvs[0])
+            self.assertIn('-noreset -noir', argvs[0])
             self.assertIn('-noreset -noir', argvs[1])
 
 

@@ -1,3 +1,4 @@
+# Connection is supplied by the guarded shell loader using GDB_PORT.
 # Halt a running RZ/V2H CR8 core briefly, capture PC + GIC SPI targeting,
 # then resume it with J-Link "go" and detach.  Used to confirm a peer image
 # is actually running after load and that MHU SPIs were retargeted locally.
@@ -9,7 +10,6 @@
 #   0x12C11967 INTID359 RSP4_NS  CR8-0 initiator  TX
 #   0x12C11968 INTID360 RSP9_NS  CR8-1 responder TX
 set pagination off
-target remote :50000
 monitor halt
 printf "RUN_PC=%#x CPSR=%#x\n", $pc, $cpsr
 bt
