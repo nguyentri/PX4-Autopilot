@@ -50,11 +50,17 @@ scope and provenance when citing these records:
 | [PX4 CR8-0 hardware tests](evidence/px4-hardware-tests-cr8-0-261021.md) | 21/32 native entries passed; 11 blocked, with bounded DShot/HRT observations and physical qualification limits |
 | [Dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md) | Current host/build receipt: 61 suites/583 cases, three firmware builds and five candidate artifact cases; no hardware tier or actuator-pair admission |
 | [All-sample machine coverage](../../plans/261022-1849-rzv2h-jlink-retry/all-sample-results.json) | Current shipped-profile snapshot; [retry report](../../plans/reports/hardware-261022-1849-rzv2h-jlink-retry.md) records bounded warm-load evidence and [remaining actions](../../plans/261022-1849-rzv2h-jlink-retry/remaining-samples.md) |
+| [Sensor-free RTT validation](evidence/sensor-free-rtt-validation-261024.md) and [machine matrix](evidence/sensor-free-rtt-matrix-261024.json) | 128 native entries: 92 PASS, 2 NOT-PASS, 6 BLOCKED and 28 OUT-OF-SCOPE; register/ISR/internal-function scope only, with no sensors or PWM waveforms |
 
 The all-sample snapshot is incomplete: load verification, warm-load results and
 confirmed fixture or engineering blockers remain separate evidence classes. The
 retry report records the approved validation route and its limits; it does not
 promote cold-state, electrical or production qualification.
+
+The sensor-free RTT campaign is a separate native NuttX evidence record. Its
+register, ISR-delivery and internal-function checks do not promote PX4 physical
+or production qualification. Both GBETH units remain supported, and matching-core
+I/O headers take precedence where present.
 
 ## Validation procedures
 

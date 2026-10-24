@@ -10,6 +10,18 @@ its reason; never omit an applicable failure, cleanup, timing or safety gate.
 The [deployment guide](../../deployment-guide.md) owns build and debug commands.
 Reset, image loading and target-memory writes require explicit authorization.
 
+## Completed sensor-free RTT campaign boundary
+
+The committed [validation record](../evidence/sensor-free-rtt-validation-261024.md)
+and [machine matrix](../evidence/sensor-free-rtt-matrix-261024.json) record 128
+native entries: 92 PASS, 2 NOT-PASS, 6 BLOCKED and 28 OUT-OF-SCOPE. This
+campaign admits register, ISR-delivery and internal-function checks only. It
+does not cover sensors, external peripheral traffic, PWM waveforms or
+production qualification, and it must not be used to promote a PX4 HAL or
+flight-path claim. Both GBETH units remain supported; matching-core I/O headers
+take precedence where present. The matrix is the result authority; this
+checklist does not reproduce its profile inventory.
+
 ## Source and build evidence
 
 - [ ] Name the board, core, profile, root/NuttX/apps revisions and comparison

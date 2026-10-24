@@ -1,8 +1,13 @@
 # SDHI Peripheral Notes
 
-**Date:** 2026-10-01
+**Date:** 2026-10-24
 **Hardware:** Renesas RZ/V2H (R9A09G057H), RDK-RZ/V2H
-**Status:** build-clean, no target evidence. Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #35.
+**Status:** bounded controller-only checks on all three channels; media transfers untested. Authoritative row: [port-status-nuttx.md](../port-status-nuttx.md) #35.
+
+The current lower half is CR8-only; CM33 selection is disabled because its
+address and NVIC routing path is not implemented. No SDHI I/O header exists
+in the supplied per-core corpus, so the SD register layout uses the HWM as
+the documented fallback authority.
 
 Source-verified notes for `rzv_sdhi.c`. SDHI/ULog is post-G9 and does not
 gate the first PX4 run. Audit:
@@ -36,6 +41,10 @@ nsh> mount -t vfat /dev/mmcsd0 /mnt/sd
 | SD1 | `0x15C10000` | not wired by the board code |
 | SD2 | `0x15C20000` | not wired by the board code |
 
+The controller-only `sdhi0-board-rtt` through `sdhi2-board-rtt` profiles inspect
+each selected instance without binding/probing media. They require a declared
+clock/pad handoff and do not change the ordinary board's SD0-only binding.
+
 ## Pins
 
 SD0 uses **dedicated I/O pins** (FSP encoding `0xFFFF09xx`/`0xFFFF0Axx`), not
@@ -57,7 +66,8 @@ Card detect is in the controller (`SD_INFO1.SDCDIN`, bit 3), read by
 
 - `rzv_clock_enable_sdhi(slot)` gates IMCLK (SDHI0: CPG_CLKON_10 bit 3);
   `rzv_reset_release_sdhi(slot)` releases IXRST (RST domain 10 bit 7).
-- IMCLK2/CLK_HS/ACLK are left to boot firmware by design.
+- The helper controls IMCLK/IMCLK2/CLK_HS/ACLK together. Parent-clock and
+  pad-routing ownership remain with boot firmware.
 - Driver assumes IMCLK = 200 MHz. SDCLK = (IMCLK / 4) / N:
 
 | Request | DIV | SDCLK |
@@ -85,9 +95,15 @@ PIO buffer read/write, errors, card insert/remove.
 | Item | State |
 |------|-------|
 | Builds, registers `/dev/mmcsd0` | build-clean |
-| Register readback, CMD0/CMD8/ACMD41 on target | open |
+| Controller identities SDHI0/1/2 and idle cancellation | bounded on-target; [transcript matrix](../evidence/sensor-free-rtt-matrix-261024.json) |
+| CMD0/CMD8/ACMD41 on target | open |
 | PIO block read/write, FAT mount | open |
 | PX4 ULog on SD | post-G9, not started ([port-status-px4-hal.md](../port-status-px4-hal.md)) |
+
+The sample snapshot checks implemented interrupt-mask bits. Reserved bits do
+not read back as all ones: CPU reads after idle cancellation were
+`SD_INFO1_MASK=0x0001031d`, `SD_INFO2_MASK=0x00008b7f`. This evidence does not
+qualify command, transfer or media behavior.
 
 ## Reference Sources
 

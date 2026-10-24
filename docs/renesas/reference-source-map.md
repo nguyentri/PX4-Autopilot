@@ -1,6 +1,6 @@
 # RZ/V2H Reference Source Map
 
-**Date:** 2026-10-11
+**Date:** 2026-10-24
 **Status:** Canonical input map for driver porting and `firmware:audit`
 **Scope:** RDK drone integration and core-matched RZ/V2H EVK IP examples
 
@@ -9,6 +9,12 @@ prevents a project for one core or peripheral IP from being treated as proof
 for another.
 
 ## Reference precedence
+
+For register coordinates, use the matching-core CMSIS I/O headers when they
+are present: bases, channel domains, offsets, widths and fields. Use the HWM
+where those headers are absent. Record disagreements instead of combining
+layouts from different authorities. This precedence is the maintainer's
+explicit choice; a matching layout does not prove physical operation.
 
 For peripheral IP behavior on a target core, use evidence in this order:
 
@@ -107,7 +113,7 @@ core selection, vectors, memory, or startup.
 | `riic_master` | yes | yes | yes | Native RIIC master | `r_riic_master.c`, cfg, generated vector/pin data, `src/i2c_sensor.c` |
 | `riic_slave` | yes | yes | yes | RIIC slave/future coverage | `r_riic_slave.c`, `r_riic_master.c`, both cfgs, `src/i2c_slave.c` |
 | `sci_b_uart` | yes | yes | yes | SCI-B serial and lowputc | `r_sci_b_uart.c`, UART cfg, generated vector/pin data, `src/uart_ep.c` |
-| `spi_b` | yes | yes | yes | Future SPI-B and DMAC-B parity | `r_spi_b.c`, `r_dmac_b.c`, cfgs, generated vector/pin data, `src/spi_ep.c` |
+| `spi_b` | yes | yes | yes | Native SPI-B and DMAC-B parity | `r_spi_b.c`, `r_dmac_b.c`, cfgs, generated vector/pin data, `src/spi_ep.c` |
 | `wdt` | yes | yes | yes | WDT and reset routing | `r_wdt.c`, GTM/INTC dependencies, cfgs, vectors, timer/IRQ setup |
 
 Project metadata records FSP 3.0.0; preserve the project or content revision
@@ -157,7 +163,49 @@ refs/rzv2h_gb_ether/include/rzv2h_irq.h
 That project targets Cortex-A55/AArch64, not CM33 or CR8. It can inform the
 GBETH register sequence, PHY-specific programming, clocks, pads, and event
 numbers, but every core-local address view, cache/MPU rule, IRQ route, reset,
-and DMA contract still needs CR8/CM33 authority and target evidence.
+and DMA contract still needs CR8/CM33 authority and target evidence. The
+[Ethernet production-C regressions](../../test/rzv2h-ether-runtime-test.py)
+check register and lifecycle contracts; CR8 IRQ selectors remain422/437.
+Both GBETH units have independent source support and selectable registration
+profiles. The [two-port regression](../../test/rzv2h-ether-two-port-runtime-test.py)
+supersedes the earlier blanket MAC1 denial. Board pad/parent-clock handoff,
+fitted PHYs and connected traffic still require physical qualification.
+
+The hardware manual Rev.1.40 p595 defines `PHY_INTF_TYPE` as MII=0/RGMII=1;
+`MAC_SPEED` is read-only. The supplied ADC-E CR8-0, CR8-1 and CM33 CMSIS
+`R_CPG_Type` places `CPG_CSDIV0/1` at `0x4f0/0x4f4`. NuttX follows those
+I/O-header offsets under the precedence above; the strict reference regression
+compares all three layouts, full CSDIV addresses and per-MAC SYSC coordinates.
+The manual pp669–670, the supplied `r_ether.c` sequence and Renesas's
+[Linux CPG definitions](https://raw.githubusercontent.com/torvalds/linux/master/drivers/clk/renesas/rzv2h-cpg.h)
+use `0x500/0x504` from the block origin `0x10420000`. The I/O headers use
+base `0x10420010`; both descriptions therefore identify CR8 addresses
+`0x10420500/0x10420504` (CM33 secure `0x40420500/0x40420504`). There is no
+absolute-address disagreement. The earlier conflict report compared offsets
+without their origins; adding HWM offsets directly to the I/O-header base was
+incorrect. Current NuttX addresses follow the I/O headers and agree with the
+manual/reference. Physical clock/link qualification remains separate. See the
+[current status and validation](port-status-nuttx.md).
+
+## SCI-B mode authority
+
+The supplied FSP corpus has no SCI-B SPI or simple-I2C implementation. Use the
+official [RZ/V2H hardware manual](https://www.renesas.com/en/document/mah/rzv2h-group-users-manual-hardware?r=25471761),
+R01UH1032EJ0140 Rev.1.40, July31,2026, for these modes. Section7.3 covers all
+ten channels, including mode eligibility, baud and pulse widths, initialization,
+FIFO/interrupt behavior and stop/error ordering. The exact PDF digest and
+section/page map were recorded during the2026-10-24 source audit. The pinned
+PDF SHA256 is `2ef1f64ef87f033b4cd2de12c485f34b9d766a53d2aa0bb2ad152a7d1647cf8f`.
+Mode eligibility is covered by Tables7.3-1/2/4 (pp2589–2594); baud/modulation
+by Tables7.3-8/9/15/19/21 (pp2611–2615) and §7.3.10 (p2759); initialization
+and transition by §§7.3.7.4/7.3.9.5/7.3.18.13–15 (pp2729–2730/2757/2783);
+interrupt/error ordering by §§7.3.17.2/4/7.3.18.4/7/8 (pp2769–2772/2779/2781).
+The [SPI](../../test/rzv2h-sci-spi-mode-runtime-test.py) and
+[I2C](../../test/rzv2h-sci-i2c-mode-runtime-test.py) regressions check the
+implemented behavior without claiming external timing qualification.
+CMSIS/BSP remains the local register/clock/IRQ coordinate cross-check; UART
+FSP does not establish SPI/I2C behavior. RDK routes and electrical timing require
+their own physical qualification.
 
 ## Known reference gaps
 
@@ -166,8 +214,8 @@ and DMA contract still needs CR8/CM33 authority and target evidence.
 | SCIF/SCIFA | No application/FSP driver example; CMSIS/BSP and CA55 polling code only |
 | Ethernet MAC/DMA | No per-core EVK FSP example; legacy CA55 project only |
 | Ethernet PHY/RGMII | No per-core EVK FSP example; exact fitted PHY/strap/schematic authority required |
-| RSPI (`rzv_spi.c`) | `spi_b` is different IP; continue using the dedicated RSPI source in `refs/rzv2h_gb_ether/drivers/rspi.c` as secondary evidence |
-| SCI-B I2C/SPI modes | `sci_b_uart` proves UART mode only; use integrated FSP SCI-B mode sources and mode-specific target evidence |
+| Native SPI (`rzv_spi.c`) | CR8 `spi_b` FSP uses the same bases/register bank and `FSP_IP_RSPI` lifecycle. Use `r_spi_b.c` and its core-matched BSP as primary behavior authority; the legacy `drivers/rspi.c` is secondary. RDK pins remain independent. |
+| SCI-B I2C/SPI modes | All ten CMSIS instances share the SCI-B layout (`0x3ff` channel mask). Mode-specific FSP is absent; the official hardware manual above supplies behavioral authority. Its source audit and regression evidence are distinct from RDK route, waveform and physical qualification. |
 | SDHI | No dedicated example in the current EVK corpus |
 
 For a future `firmware:audit`, list these gaps in “What was not checked.” Do

@@ -12,7 +12,8 @@ and ordinary Linux process/socket tools. The CI-tool snapshot fixtures also
 require `rsync`. Install the Python requirements from
 [pinned sample requirements](../../../Tools/requirements-rzv2h-samples.txt); the sample
 host group specifically needs `empy>=3.3,<4` and `pyros-genmsg`. Kconfig coverage
-in the broader host group also needs `kconfiglib`.
+in the broader host group also needs `kconfiglib`. SCI layout/FSP authority is
+a separate `reference-host` check; portable host snapshots do not copy `refs/`.
 
 Firmware builds additionally require `rsync`, GNU Make, `unzip`, `curl`, the
 NuttX build dependencies and the ARM cross-toolchain on `PATH`. The pipeline
@@ -34,9 +35,11 @@ python3 Tools/rzv2h-regression.py list --json
 | `port-host` | Broader portable PX4/NuttX source and native C/C++ checks; includes sample checks |
 | `debug-host` | Fake local J-Link/GDB process and socket fixtures; no probe connection |
 | `policy-host` | Formatter adapter/source-preservation fixtures; does not qualify all legacy source |
-| `reference-host` | Local ignored CMSIS authority for all three cores; missing directories fail admission |
+| `reference-host` | Local ignored CMSIS authority for all three cores and ten SCI layouts, including CSDIV/SYSC layout parity; missing files fail admission |
+| `sci-mode-host` | Focused manual-derived SCI SPI/I2C timing, transfer, interrupt and cleanup regressions; no board access |
 | `vendor-host` | Native RTT buffer tests; requires the downloaded SEGGER source in the checkout |
-| `native-sample-artifacts` | All 55 real native ELF/config/linker receipts and rehashed semantic negative controls |
+| `native-sample-artifacts` | All discovered native ELF/config/linker receipts and rehashed semantic negative controls |
+| `driver-instance-artifacts` | ARM instance case/provider and selector controls; the selected archive must include a RIIC image and all seven SDHI/WDT instance images |
 | `sample-artifacts` | Actual sample ELF/config/map/archive/receipt checks after building the full sample matrix |
 | `px4-artifacts` | Existing PX4 artifact/ROMFS/package or offline GDB type checks; requires the named complete builds |
 | `px4-archive-artifacts` | Full sealed PX4 matrix admission and rehashed negative controls; requires `--px4-archive` |
@@ -79,14 +82,15 @@ forms even when the job fails.
 ## Build all native samples
 
 The [native inventory](../../../platforms/nuttx/Debug/rzv2h-all-sample-configs.json)
-contains all 55 shipped configs, including boot-only, serial and peer images.
+contains 128 configs: the original 55 and 73 fixed controller-instance profiles,
+including boot-only, serial and peer images.
 It records explicit versus Kconfig-default core identity, console/entry route,
 bounded commands, fixture requirements, hazards and evidence class. CM33 and
 unclassified peer/output/recovery routes can be built but remain blocked for
 the local executor.
 
 ```sh
-python3 platforms/nuttx/Debug/rzv2h-sample-inventory.py --json
+python3 platforms/nuttx/Debug/rzv2h-sample-inventory.py --json > <candidate-inventory.json>
 NUTTX_BUILD_JOBS=8 python3 platforms/nuttx/Debug/rzv2h-sample-build.py \
   --all-configs --cache-dir <verified-download-cache> --output <new-native-archive>
 python3 Tools/rzv2h-regression.py run --group native-sample-artifacts \
@@ -94,6 +98,21 @@ python3 Tools/rzv2h-regression.py run --group native-sample-artifacts \
   --sample-source-state <new-native-archive>/source-state.json \
   --output <new-native-check-results>
 ```
+
+`--json` emits the full deterministic inventory; compare the candidate before
+replacing policy. Coverage dimensions and explicit blockers live in
+[`rzv2h-driver-coverage.json`](../../../platforms/nuttx/Debug/rzv2h-driver-coverage.json).
+Archives bind the selected inventory, legacy case contract and driver catalogue
+by digest for build, resume, artifact admission and results.
+The GBETH additions are `ether0-board-rtt` and `ether1-board-rtt`. Admission
+requires the selected port enabled, its sibling disabled, late network-device
+initialization, and automatic netinit/DHCP off. These are registration checks;
+the existing Ethernet function profiles retain their separate operation gates.
+SDHI0–2 profiles require the lower-only selector and exclude MMCSD/FAT;
+CM33 is rejected. WDT0–3 profiles select exactly one counter, disable
+automonitor/test threads and interrupt mode, and require a pre-existing
+stopped-counter handoff. Artifact checks enforce these requirements separately
+from archived catalogue declarations.
 
 Every native config gets an independent work copy of the frozen source snapshot.
 A failed image remains in JSON/JUnit while later configs are attempted.
@@ -354,6 +373,11 @@ attaches CM33 or automates reset, watchdog expiry, storage writes or task kills.
 It checks actual WAITPID/parent/child status support. Asynchronous and boot-only
 apps require a separate read-only task census after stopping RTT. Host process
 and port cleanup are independently observed. Logs mask the probe serial.
+Bridge state lives in `<new-run-directory>/bridge-state`; helper temporary
+files use `<new-run-directory>/tmp`, keeping target data with its run evidence.
+Automatic post-load verification uses bounded PC and GIC reads before resume.
+Capture a fault backtrace separately from the identified image: ARM assembly
+prologue unwinding can stall and must not block ordinary load verification.
 
 Saved native evidence can be rechecked using `rzv2h-sample-runner.py` with the
 archived manifest and `--archive <native-archive>` in addition to transcript,
@@ -363,7 +387,7 @@ available. Changed executor inputs require a separately reviewed capture;
 never rewrite old receipts.
 
 `rzv2h-sample-coverage.py --archive <native-archive> --run <exact-run-directory>
---output <coverage.json> --markdown <summary.md>` re-admits all 55 images and
+--output <coverage.json> --markdown <summary.md>` re-admits every inventoried native image and
 replays named receipts. Repeat `--run` chronologically. It exits nonzero for an
 incomplete campaign and retains blocked/failed/not-run rows. Warm-load evidence
 does not establish independent cold-state, electrical or production qualification.
