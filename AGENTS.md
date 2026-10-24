@@ -36,6 +36,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 |------|--------------------------|--------|
 | Full PX4 firmware | `./build.sh renesas_rdk-rzv2h_default` (`--list` for all targets, `--no-clean` to iterate) | `build/<target>/<target>.elf` |
 | NuttX only (driver bring-up, NSH samples) | `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `.bin`, `.hex` |
+| NuttX only, RA8P1 `evk-ra8p1` (EK-RA8P1) | `platforms/nuttx/NuttX/build_ra8p1.sh <config>` (same flags/exit codes; `NUTTX_DOWNLOAD_CACHE=<dir>` reseeds `RTT.zip` offline) | same as above |
 - PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot,drone,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_{default,pwm}`, `renesas_rdk-rzv2h-io-cm33_default`.
 - `dualcr8` is the canonical exact-BOM sensor bring-up profile: one polled ICM-45686/P93, BMM150, BMP390, M10 and TFmini. CR8-0 motor outputs and the legacy bridge are disabled; commander requires first I/O status. No CR8-1 actuator pair is qualified yet. The former separate demo target was merged here; old staging evidence remains historical.
 - `pwm` on CR8-1 is the build-clean v3 supervisor candidate for `dualcr8`; zero hardware identities prevent physical resource claim. Current software evidence and open service/qualification gates: `docs/renesas/evidence/dualcr8-software-validation-261021.md`. Shared demo helpers live directly in `src/apps/` (CMake target `rzv2h_demo`).
@@ -62,7 +63,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
   Loads: `rzv2h-ipc/rzv2h-load-one-core.sh <core> <elf>` (one core) or `rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>`.
 - Discover `_SEGGER_RTT` from the exact loaded ELF (PX4 CR8-0 images use `0x081a2400`); the NuttX demo defaults are CR8-0 `0x081A0000`, CR8-1 `0x081E0000`. J-Link devices: `R9A09G057H44_R8_0`, `_R8_1`.
 - Register decode: `platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd ...`.
-- Skills: `gdb-jlink-debug` (J-Link/GDB/RTT/SVD workflows), `audit-rzv2h-px4-nuttx-port` (cross-layer audit), `fw-audit`.
+- Skills: `gdb-jlink-debug` (J-Link/GDB/RTT/SVD workflows), `audit-rzv2h-px4-nuttx-port` (cross-layer audit), `audit-ra8p1-px4-nuttx-port` (RA8P1 audit), `fw-audit`.
 - Standing board authorization (local RDK board): agents need no approval for any board debugging action the task
   needs: probe attach, reads, RAM ELF loads, resets, run control, target memory/register writes and recovery reloads
   (including after a bridge exit 3). Report the effects; narrower request instructions win; sandbox/device-access
