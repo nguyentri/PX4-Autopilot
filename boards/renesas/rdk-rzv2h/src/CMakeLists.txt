@@ -135,6 +135,7 @@ add_custom_target(rzv2h_sci_spi_contract_test
 	COMMAND
 		${PYTHON_EXECUTABLE}
 		${PX4_SOURCE_DIR}/test/rzv2h_sci_spi_contract_test.py
+		--portable
 	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 	COMMENT "Running RZ/V2H SCI/SPI source contracts"
 	VERBATIM

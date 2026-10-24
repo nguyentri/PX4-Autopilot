@@ -1312,7 +1312,109 @@
       "owner": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ether configuration plus NuttX Kconfig defaults",
       "regenerate": "cd platforms/nuttx/NuttX/nuttx && tools/refresh.sh --silent rdk-rzv2h:ether"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ether0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ether1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpio-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt0-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt0-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt1-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt1-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt10-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt10-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt11-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt11-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt12-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt12-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt13-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt13-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt14-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt14-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt15-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt15-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt2-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt2-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt3-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt3-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt4-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt4-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt5-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt5-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt6-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt6-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt7-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt7-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt8-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt8-b-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt9-a-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gpt9-b-board-rtt/defconfig": {
       "classification": "configuration"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/gtm-rtt/defconfig": {
@@ -1462,7 +1564,64 @@
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic-board-rtt/defconfig": {
       "classification": "configuration"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic2-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic3-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic4-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic5-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic6-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic7-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/riic8-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c2-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c3-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c4-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c5-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c6-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c7-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c8-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-i2c9-board-rtt/defconfig": {
       "classification": "configuration"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi-board-rtt/defconfig": {
@@ -1473,6 +1632,36 @@
       "evidence": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi-loopback/defconfig:2 (\u201cThis file is autogenerated: PLEASE DO NOT EDIT IT.\u201d)",
       "owner": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi-loopback configuration plus NuttX Kconfig defaults",
       "regenerate": "cd platforms/nuttx/NuttX/nuttx && tools/refresh.sh --silent rdk-rzv2h:sci-spi-loopback"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi2-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi3-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi4-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi5-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi6-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi7-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi8-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sci-spi9-board-rtt/defconfig": {
+      "classification": "configuration"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/scif-internal-loopback-rtt/defconfig": {
       "classification": "configuration"
@@ -1486,6 +1675,15 @@
       "owner": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sdhi configuration plus NuttX Kconfig defaults",
       "regenerate": "cd platforms/nuttx/NuttX/nuttx && tools/refresh.sh --silent rdk-rzv2h:sdhi"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sdhi0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sdhi1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/sdhi2-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/serial-board-rtt/defconfig": {
       "classification": "configuration"
     },
@@ -1498,6 +1696,15 @@
       "owner": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/spi-loopback configuration plus NuttX Kconfig defaults",
       "regenerate": "cd platforms/nuttx/NuttX/nuttx && tools/refresh.sh --silent rdk-rzv2h:spi-loopback"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/spi0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/spi1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/spi2-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/volatile-paramfs-rtt/defconfig": {
       "classification": "configuration"
     },
@@ -1509,6 +1716,18 @@
       "evidence": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/wdt/defconfig:2 (\u201cThis file is autogenerated: PLEASE DO NOT EDIT IT.\u201d)",
       "owner": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/wdt configuration plus NuttX Kconfig defaults",
       "regenerate": "cd platforms/nuttx/NuttX/nuttx && tools/refresh.sh --silent rdk-rzv2h:wdt"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/wdt0-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/wdt1-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/wdt2-board-rtt/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/wdt3-board-rtt/defconfig": {
+      "classification": "configuration"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/xspi-authority-guard-rtt/defconfig": {
       "classification": "configuration"
@@ -1659,6 +1878,9 @@
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_instance_test.c": {
+      "classification": "handwritten"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc.c": {
       "classification": "handwritten",

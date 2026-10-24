@@ -62,6 +62,8 @@ struct rzv_spi_priv_s {
 static struct rzv_spi_config_s config = {0, 1, 1000000, 48};
 static struct rzv_spi_priv_s g_spi0_priv = {.config = &config, .nbits = 8};
 static int failure, clock_count, sem_count, lock_count, writes, chunks;
+static int reset_requests, reset_rollbacks;
+static bool reset_released;
 static int nxmutex_lock(int *lock) { (void)lock; ++lock_count; return 0; }
 static int nxmutex_unlock(int *lock) { (void)lock; --lock_count; return 0; }
 static int nxsem_init(int *sem, int shared, int count) {
@@ -71,8 +73,21 @@ static int nxsem_init(int *sem, int shared, int count) {
 }
 static int nxsem_destroy(int *sem) { (void)sem; --sem_count; return 0; }
 static int rzv_clock_enable(unsigned id) { (void)id; ++clock_count; return 0; }
-static int rzv_clock_disable(unsigned id) { (void)id; --clock_count; return 0; }
-static int rzv_module_unreset(unsigned id) { (void)id; return failure == 1 ? -ETIMEDOUT : 0; }
+static int rzv_clock_disable(unsigned id) {
+  assert(id == config.clk_id && clock_count == 1 && !reset_released);
+  --clock_count; return 0;
+}
+static int rzv_module_unreset(unsigned id) {
+  assert(id == config.clk_id && clock_count == 1 && sem_count == 1 && lock_count == 1);
+  assert(!reset_released);
+  ++reset_requests; reset_released = true;
+  return failure == 1 ? -ETIMEDOUT : 0;
+}
+static int rzv_module_reset(unsigned id) {
+  assert(id == config.clk_id && clock_count == 1 && reset_released);
+  assert(sem_count == 1 && lock_count == 1 && failure == 1);
+  ++reset_rollbacks; reset_released = false; return 0;
+}
 static void rzv_spi_putreg32(struct rzv_spi_priv_s *priv, unsigned offset, unsigned value) {
   (void)priv; (void)offset; (void)value;
   assert(failure == 0); ++writes;
@@ -98,14 +113,18 @@ int main(void) {
   failure = 1;
   assert(rzv_spibus_initialize(0) == NULL);
   assert(!g_spi0_priv.initialized && !writes && !clock_count && !sem_count && !lock_count);
+  assert(reset_requests == 1 && reset_rollbacks == 1 && !reset_released);
   failure = 2;
   assert(rzv_spibus_initialize(0) == NULL);
   assert(!writes && !clock_count && !sem_count && !lock_count);
+  assert(reset_requests == 1 && reset_rollbacks == 1 && !reset_released);
   failure = 0;
   assert(rzv_spibus_initialize(0) == &g_spi0_priv.spidev);
   assert(g_spi0_priv.initialized && writes && clock_count == 1 && sem_count == 1 && !lock_count);
+  assert(reset_requests == 2 && reset_rollbacks == 1 && reset_released);
   int previous_writes = writes;
   assert(rzv_spibus_initialize(0) == &g_spi0_priv.spidev && writes == previous_writes);
+  assert(reset_requests == 2 && reset_rollbacks == 1 && reset_released);
   unsigned char rx[768];
   for (failure = 1; failure <= 2; ++failure) {
     memset(rx, 0xcc, sizeof(rx)); chunks = 0;

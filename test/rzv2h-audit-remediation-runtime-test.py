@@ -253,6 +253,8 @@ static int nxsem_post(int *sem) {
   return 0;
 }
 static int nxsem_wait_uninterruptible(int *sem) { return 0; }
+static int rzv_i2c_acquire(struct rzv_i2c_priv_s *p)
+{ return nxsem_wait_uninterruptible(&p->sem_excl); }
 static int nxsem_reset(int *sem, int value) { return 0; }
 static int nxsem_timedwait_uninterruptible(int *sem, struct timespec *ts);
 static uint8_t rzv_i2c_getreg(struct rzv_i2c_priv_s *p, unsigned off) {
@@ -389,6 +391,8 @@ int main(void) {
 typedef int (*xcpt_t)(int, void *, void *);
 static bool installed[512], enabled[512], typed[512], edge[512];
 static int failure_at, attempts, port;
+static int rzv_i2c_module_start(unsigned p) { assert(p == (unsigned)port); return 0; }
+static int rzv_i2c_module_stop(unsigned p) { assert(p == (unsigned)port); return 0; }
 static void up_udelay(int delay) {}
 static void rzv_i2c_set_frequency(struct rzv_i2c_priv_s *p, uint32_t f) {}
 static void rzv_i2c_putreg(struct rzv_i2c_priv_s *p, unsigned off, uint8_t val) {}
@@ -428,10 +432,10 @@ static void irq_detach(int irq) {
 '''
         if 'static void rzv_i2c_detach_irqs(' in source:
             code += extract(source, 'static void rzv_i2c_detach_irqs(')
-        code += extract(source, 'static int rzv_i2c_init(') + extract(source, 'static void rzv_i2c_deinit(')
+        code += extract(source, 'static int rzv_i2c_init(') + extract(source, 'static int rzv_i2c_deinit(')
         code += r'''
 int main(void) {
-  for (port = 0; port < 4; ++port) for (failure_at = 0; failure_at <= 7; ++failure_at) {
+  for (port = 0; port < 9; ++port) for (failure_at = 0; failure_at <= 7; ++failure_at) {
     attempts = 0; memset(typed, 0, sizeof(typed));
     struct rzv_i2c_priv_s p = {.port = port,
 ''' + ', '.join(f'.{field} = -1' for field in fields) + r'''};

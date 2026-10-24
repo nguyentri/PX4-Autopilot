@@ -1,0 +1,3932 @@
+{
+  "schema_version": 1,
+  "kind": "rzv2h-driver-coverage",
+  "scope": "Hardware domains and source/ownership evidence; no tested or qualified state is stored here.",
+  "cores": [
+    "cr8_0"
+  ],
+  "baseline_native_count": 55,
+  "baseline_native_profiles": [
+    {
+      "profile": "adc",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "adc-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "bmm150",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "canfd",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "canfd-dual",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "canfd-ext",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "canfd-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "dmac-board-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "dmac-memcpy",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "dmac-memcpy-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "ether",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "ether-mac-loopback-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "ether-register-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "gpio-board-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "gtm",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "gtm-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "gy912",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "gy912-dma-ssl-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "gy912-polled-gpio-cs",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "hil-full",
+      "core": "cr8_0",
+      "entrypoint": "hwtest_main"
+    },
+    {
+      "profile": "hil-spi-loopback",
+      "core": "cr8_0",
+      "entrypoint": "hwtest_main"
+    },
+    {
+      "profile": "hil-spi-loopback-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "hil-uart-loopback",
+      "core": "cr8_0",
+      "entrypoint": "hwtest_main"
+    },
+    {
+      "profile": "ipc-local-loopback-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "ipcc",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "ipcc-multi",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "ipcc-raw-cm33",
+      "core": "cm33",
+      "entrypoint": "rzv_ipc_boot_main"
+    },
+    {
+      "profile": "ipcc-raw-cr8_0",
+      "core": "cr8_0",
+      "entrypoint": "rzv_ipc_boot_main"
+    },
+    {
+      "profile": "ipcc-raw-cr8_0-sci4",
+      "core": "cr8_0",
+      "entrypoint": "rzv_ipc_boot_main"
+    },
+    {
+      "profile": "ipcc-raw-cr8_1",
+      "core": "cr8_1",
+      "entrypoint": "rzv_ipc_boot_main"
+    },
+    {
+      "profile": "nsh",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "nsh-cm33",
+      "core": "cm33",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "nsh-cr8_1",
+      "core": "cr8_1",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "nsh-leds",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "nsh-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "nsh-rtt-interactive",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "nsh-scif",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "pwm",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "pwm-oneshot",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "pwm-oneshot-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "pwm-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "riic-board-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "sci-i2c-board-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "sci-spi-board-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "sci-spi-loopback",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "scif-internal-loopback-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "sdhi",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "sdhi-lower-only-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "serial-board-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "spi-loopback",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "spi-loopback-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "volatile-paramfs-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "wdt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "wdt-nonstart-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    },
+    {
+      "profile": "xspi-authority-guard-rtt",
+      "core": "cr8_0",
+      "entrypoint": "nsh_main"
+    }
+  ],
+  "domains": [
+    {
+      "family": "adc",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "modes": {
+        "adc": "scan"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_adc.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Exact RDK routing, resource ownership and independent fixture admission remain required."
+    },
+    {
+      "family": "canfd",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      ],
+      "modes": {
+        "canfd": "canfd"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_canfd.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Exact RDK routing, resource ownership and independent fixture admission remain required."
+    },
+    {
+      "family": "dmac",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      ],
+      "modes": {
+        "dmac": "memcpy"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_dmac.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Memory-copy evidence does not qualify peripheral pacing or peripheral access restrictions."
+    },
+    {
+      "family": "gpio",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      ],
+      "modes": {
+        "gpio": "gpio"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_gpio.h",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpio.c",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Only explicitly fitted safe pins may be driven; alternate pad owners remain protected."
+    },
+    {
+      "family": "gpt",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      ],
+      "modes": {
+        "gpt": "pwm"
+      },
+      "outputs": [
+        "A",
+        "B"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_gpt.h",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Timer registration does not qualify an output waveform; A/B share one timer.",
+      "physical_channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17
+        ]
+      ]
+    },
+    {
+      "family": "gtm",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "modes": {
+        "gtm": "timer"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_gtm.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Do not claim a channel owned by HRT or a system timer.",
+      "reservations": [
+        {
+          "unit": 0,
+          "channel": 5,
+          "reason": "GTM5 is reserved for cm33 HRT when CONFIG_RZV_HRT_GTM5 is selected.",
+          "kind": "conditional",
+          "core": "cm33",
+          "contract": "cm33-hrt-gtm5",
+          "selector": "CONFIG_RZV_HRT_GTM5"
+        },
+        {
+          "unit": 0,
+          "channel": 6,
+          "reason": "GTM6 is reserved for cr8_1 HRT when CONFIG_RZV_HRT_GTM6 is selected.",
+          "kind": "conditional",
+          "core": "cr8_1",
+          "contract": "cr8_1-hrt-gtm6",
+          "selector": "CONFIG_RZV_HRT_GTM6"
+        },
+        {
+          "unit": 0,
+          "channel": 7,
+          "reason": "GTM7 is reserved for cr8_0 HRT when CONFIG_RZV_HRT_GTM7 is selected.",
+          "kind": "conditional",
+          "core": "cr8_0",
+          "contract": "cr8_0-hrt-gtm7",
+          "selector": "CONFIG_RZV_HRT_GTM7"
+        }
+      ]
+    },
+    {
+      "family": "riic",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      ],
+      "modes": {
+        "riic": "master"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_i2c.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Pinless controller diagnostics require clock/controller ownership; external transfers additionally require owned pads and fixture."
+    },
+    {
+      "family": "sci",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      ],
+      "modes": {
+        "sci": "uart",
+        "sci-i2c": "master",
+        "sci-spi": "spi"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_sci.h",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_serial.c",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Exact RDK routing, resource ownership and independent fixture admission remain required.",
+      "mode_gates": {
+        "sci-i2c": "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "sci-spi": "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open."
+      }
+    },
+    {
+      "family": "spi",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2
+        ]
+      ],
+      "modes": {
+        "spi": "spi"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_spi.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Exact RDK routing, resource ownership and independent fixture admission remain required."
+    },
+    {
+      "family": "scifa",
+      "channels_by_unit": [
+        [
+          0
+        ]
+      ],
+      "modes": {
+        "scifa": "uart"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_scifa.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Exact RDK routing, resource ownership and independent fixture admission remain required."
+    },
+    {
+      "family": "poeg",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3
+        ],
+        [
+          0,
+          1,
+          2,
+          3
+        ]
+      ],
+      "modes": {
+        "poeg": "guard"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_poeg.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Two unit/four-group aliases are eight resources; forcing output-disable requires a separate approved procedure."
+    },
+    {
+      "family": "wdt",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2,
+          3
+        ]
+      ],
+      "modes": {
+        "wdt": "nonstart"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_wdt.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Four addressable blocks do not establish CR8-0 ownership; no start/expiry/reset action is admitted."
+    },
+    {
+      "family": "ether",
+      "channels_by_unit": [
+        [
+          0,
+          1
+        ]
+      ],
+      "modes": {
+        "ether": "register"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_ether.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "MAC/PHY reference exists; CR8 DMA/cache visibility and per-MAC RDK clock/pad/PHY ownership remain qualification gates."
+    },
+    {
+      "family": "sdhi",
+      "channels_by_unit": [
+        [
+          0,
+          1,
+          2
+        ]
+      ],
+      "modes": {
+        "sdhi": "lower"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_sdhi.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Matching behavioral reference, card routing and power ownership remain open."
+    },
+    {
+      "family": "mhu",
+      "channels_by_unit": [
+        [
+          3,
+          4,
+          9,
+          10,
+          15,
+          16,
+          21,
+          22,
+          28,
+          34,
+          40,
+          41
+        ]
+      ],
+      "modes": {
+        "mhu": "ipc"
+      },
+      "outputs": [
+        null
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_mhu.h",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_channels.h",
+        "rzv2h.svd"
+      ],
+      "ownership_gate": "Only named existing links have owners; new peer traffic and CM33 routes require separate admission.",
+      "reservations": [
+        {
+          "unit": 0,
+          "channel": 3,
+          "reason": "Reserved CA55/OpenAMP link; unavailable to raw IPC expansion."
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "instance_id": "riic0-board-rtt",
+      "profile": "riic0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 0,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C0": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic1-board-rtt",
+      "profile": "riic1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 1,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C1": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic2-board-rtt",
+      "profile": "riic2-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 2,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C2": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic3-board-rtt",
+      "profile": "riic3-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 3,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C3": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic4-board-rtt",
+      "profile": "riic4-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 4,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C4": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic5-board-rtt",
+      "profile": "riic5-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 5,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C5": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic6-board-rtt",
+      "profile": "riic6-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 6,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C6": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic7-board-rtt",
+      "profile": "riic7-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 7,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C7": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "riic8-board-rtt",
+      "profile": "riic8-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 8,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_I2C8": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_i2c.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "spi0-board-rtt",
+      "profile": "spi0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "spi",
+        "unit": 0,
+        "channel": 0,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SPI0": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_spibus_initialize",
+        "rzv2h_spi_sample_loopback_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_spi.c"
+      ],
+      "gates": [
+        "Controller, clock and pad ownership must be admitted for internal loopback.",
+        "Internal loopback does not qualify external transfers, connected devices or electrical timing."
+      ]
+    },
+    {
+      "instance_id": "spi1-board-rtt",
+      "profile": "spi1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "spi",
+        "unit": 0,
+        "channel": 1,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SPI1": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_spibus_initialize",
+        "rzv2h_spi_sample_loopback_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_spi.c"
+      ],
+      "gates": [
+        "Controller, clock and pad ownership must be admitted for internal loopback.",
+        "Internal loopback does not qualify external transfers, connected devices or electrical timing."
+      ]
+    },
+    {
+      "instance_id": "spi2-board-rtt",
+      "profile": "spi2-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "spi",
+        "unit": 0,
+        "channel": 2,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SPI2": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_spibus_initialize",
+        "rzv2h_spi_sample_loopback_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_spi.c",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_spi.c"
+      ],
+      "gates": [
+        "Controller, clock and pad ownership must be admitted for internal loopback.",
+        "Internal loopback does not qualify external transfers, connected devices or electrical timing."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c0-board-rtt",
+      "profile": "sci-i2c0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 0,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI0": "n",
+        "CONFIG_RZV_SCI0_I2C": "y",
+        "CONFIG_RZV_SCI0_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c1-board-rtt",
+      "profile": "sci-i2c1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 1,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI1": "n",
+        "CONFIG_RZV_SCI1_I2C": "y",
+        "CONFIG_RZV_SCI1_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c2-board-rtt",
+      "profile": "sci-i2c2-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 2,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI2": "n",
+        "CONFIG_RZV_SCI2_I2C": "y",
+        "CONFIG_RZV_SCI2_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c3-board-rtt",
+      "profile": "sci-i2c3-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 3,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI3": "n",
+        "CONFIG_RZV_SCI3_I2C": "y",
+        "CONFIG_RZV_SCI3_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c4-board-rtt",
+      "profile": "sci-i2c4-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 4,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI4": "n",
+        "CONFIG_RZV_SCI4_I2C": "y",
+        "CONFIG_RZV_SCI4_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c5-board-rtt",
+      "profile": "sci-i2c5-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 5,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI5": "n",
+        "CONFIG_RZV_SCI5_I2C": "y",
+        "CONFIG_RZV_SCI5_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c6-board-rtt",
+      "profile": "sci-i2c6-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 6,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI6": "n",
+        "CONFIG_RZV_SCI6_I2C": "y",
+        "CONFIG_RZV_SCI6_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c7-board-rtt",
+      "profile": "sci-i2c7-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 7,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI7": "n",
+        "CONFIG_RZV_SCI7_I2C": "y",
+        "CONFIG_RZV_SCI7_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c8-board-rtt",
+      "profile": "sci-i2c8-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 8,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI8": "n",
+        "CONFIG_RZV_SCI8_I2C": "y",
+        "CONFIG_RZV_SCI8_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-i2c9-board-rtt",
+      "profile": "sci-i2c9-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 9,
+        "mode": "master",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "9",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI9": "n",
+        "CONFIG_RZV_SCI9_I2C": "y",
+        "CONFIG_RZV_SCI9_SPI": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_i2c_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_i2c.c"
+      ],
+      "gates": [
+        "Matching SCI-B simple-I2C behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi0-board-rtt",
+      "profile": "sci-spi0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 0,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI0": "n",
+        "CONFIG_RZV_SCI0_SPI": "y",
+        "CONFIG_RZV_SCI0_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi1-board-rtt",
+      "profile": "sci-spi1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 1,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI1": "n",
+        "CONFIG_RZV_SCI1_SPI": "y",
+        "CONFIG_RZV_SCI1_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi2-board-rtt",
+      "profile": "sci-spi2-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 2,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI2": "n",
+        "CONFIG_RZV_SCI2_SPI": "y",
+        "CONFIG_RZV_SCI2_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi3-board-rtt",
+      "profile": "sci-spi3-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 3,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI3": "n",
+        "CONFIG_RZV_SCI3_SPI": "y",
+        "CONFIG_RZV_SCI3_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi4-board-rtt",
+      "profile": "sci-spi4-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 4,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI4": "n",
+        "CONFIG_RZV_SCI4_SPI": "y",
+        "CONFIG_RZV_SCI4_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi5-board-rtt",
+      "profile": "sci-spi5-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 5,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI5": "n",
+        "CONFIG_RZV_SCI5_SPI": "y",
+        "CONFIG_RZV_SCI5_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi6-board-rtt",
+      "profile": "sci-spi6-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 6,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI6": "n",
+        "CONFIG_RZV_SCI6_SPI": "y",
+        "CONFIG_RZV_SCI6_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi7-board-rtt",
+      "profile": "sci-spi7-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 7,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI7": "n",
+        "CONFIG_RZV_SCI7_SPI": "y",
+        "CONFIG_RZV_SCI7_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi8-board-rtt",
+      "profile": "sci-spi8-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 8,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI8": "n",
+        "CONFIG_RZV_SCI8_SPI": "y",
+        "CONFIG_RZV_SCI8_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "sci-spi9-board-rtt",
+      "profile": "sci-spi9-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 9,
+        "mode": "spi",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "9",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SCI9": "n",
+        "CONFIG_RZV_SCI9_SPI": "y",
+        "CONFIG_RZV_SCI9_I2C": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sci_spi_initialize"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sci_spi.c"
+      ],
+      "gates": [
+        "Matching SCI-B SPI behavioral authority and per-channel RDK route qualification remain open.",
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt0-a-board-rtt",
+      "profile": "gpt0-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 0,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT0": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt0-b-board-rtt",
+      "profile": "gpt0-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 0,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT0": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt1-a-board-rtt",
+      "profile": "gpt1-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 1,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT1": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt1-b-board-rtt",
+      "profile": "gpt1-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 1,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT1": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt2-a-board-rtt",
+      "profile": "gpt2-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 2,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT2": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt2-b-board-rtt",
+      "profile": "gpt2-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 2,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT2": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt3-a-board-rtt",
+      "profile": "gpt3-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 3,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT3": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt3-b-board-rtt",
+      "profile": "gpt3-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 3,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT3": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt4-a-board-rtt",
+      "profile": "gpt4-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 4,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT4": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt4-b-board-rtt",
+      "profile": "gpt4-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 4,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "4",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT4": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt5-a-board-rtt",
+      "profile": "gpt5-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 5,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT5": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt5-b-board-rtt",
+      "profile": "gpt5-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 5,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT5": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt6-a-board-rtt",
+      "profile": "gpt6-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 6,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT6": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt6-b-board-rtt",
+      "profile": "gpt6-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 6,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT6": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt7-a-board-rtt",
+      "profile": "gpt7-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 7,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT7": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt7-b-board-rtt",
+      "profile": "gpt7-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 7,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT7": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt8-a-board-rtt",
+      "profile": "gpt8-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 8,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT8": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt8-b-board-rtt",
+      "profile": "gpt8-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 8,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT8": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt9-a-board-rtt",
+      "profile": "gpt9-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 9,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "9",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT9": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt9-b-board-rtt",
+      "profile": "gpt9-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 9,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "9",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT9": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt10-a-board-rtt",
+      "profile": "gpt10-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 10,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "10",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT10": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt10-b-board-rtt",
+      "profile": "gpt10-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 10,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "10",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT10": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt11-a-board-rtt",
+      "profile": "gpt11-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 11,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "11",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT11": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt11-b-board-rtt",
+      "profile": "gpt11-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 11,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "11",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT11": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt12-a-board-rtt",
+      "profile": "gpt12-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 12,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "12",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT12": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt12-b-board-rtt",
+      "profile": "gpt12-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 12,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "12",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT12": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt13-a-board-rtt",
+      "profile": "gpt13-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 13,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "13",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT13": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt13-b-board-rtt",
+      "profile": "gpt13-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 13,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "13",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT13": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt14-a-board-rtt",
+      "profile": "gpt14-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 14,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "14",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT14": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt14-b-board-rtt",
+      "profile": "gpt14-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 14,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "14",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT14": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt15-a-board-rtt",
+      "profile": "gpt15-a-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 15,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "15",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT15": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "gpt15-b-board-rtt",
+      "profile": "gpt15-b-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 15,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "5",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "15",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "1",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_GPT15": "y",
+        "CONFIG_RZV_PWM": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_gpt_initialize_output"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c"
+      ],
+      "gates": [
+        "Exact RDK routing, resource ownership and independent fixture admission remain required."
+      ]
+    },
+    {
+      "instance_id": "ether0-board-rtt",
+      "profile": "ether0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "ether",
+        "unit": 0,
+        "channel": 0,
+        "mode": "register",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_ETHERNET": "y",
+        "CONFIG_RZV_ETHER0": "y",
+        "CONFIG_RZV_ETHER1": "n",
+        "CONFIG_NETDEV_LATEINIT": "y",
+        "CONFIG_NSH_NETINIT": "n",
+        "CONFIG_NETINIT_THREAD": "n",
+        "CONFIG_NETUTILS_DHCPC": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_ether_initialize",
+        "rzv2h_ether_initialize",
+        "rzv2h_ether_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ether.c",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_ether.c"
+      ],
+      "gates": [
+        "Board parent-clock/resource handoff is required before resetting this MAC.",
+        "Registration does not qualify pins, PHY traffic, DMA/cache visibility or electrical timing."
+      ]
+    },
+    {
+      "instance_id": "ether1-board-rtt",
+      "profile": "ether1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "ether",
+        "unit": 0,
+        "channel": 1,
+        "mode": "register",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "6",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_ETHERNET": "y",
+        "CONFIG_RZV_ETHER1": "y",
+        "CONFIG_RZV_ETHER0": "n",
+        "CONFIG_NETDEV_LATEINIT": "y",
+        "CONFIG_NSH_NETINIT": "n",
+        "CONFIG_NETINIT_THREAD": "n",
+        "CONFIG_NETUTILS_DHCPC": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_ether_initialize",
+        "rzv2h_ether_initialize",
+        "rzv2h_ether_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ether.c",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_ether.c"
+      ],
+      "gates": [
+        "Board parent-clock/resource handoff is required before resetting this MAC.",
+        "Registration does not qualify pins, PHY traffic, DMA/cache visibility or electrical timing."
+      ]
+    },
+    {
+      "instance_id": "sdhi0-board-rtt",
+      "profile": "sdhi0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sdhi",
+        "unit": 0,
+        "channel": 0,
+        "mode": "lower",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SDHI": "y",
+        "CONFIG_RZV2H_SDHI_LOWER_ONLY": "y",
+        "CONFIG_MMCSD": "n",
+        "CONFIG_MMCSD_SDIO": "n",
+        "CONFIG_FS_FAT": "n",
+        "CONFIG_RZV2H_BUILD_CM33": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sdhi_initialize",
+        "rzv2h_sdhi_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sdhi.c"
+      ],
+      "gates": [
+        "Matching behavioral reference, card routing and power ownership remain open."
+      ]
+    },
+    {
+      "instance_id": "sdhi1-board-rtt",
+      "profile": "sdhi1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sdhi",
+        "unit": 0,
+        "channel": 1,
+        "mode": "lower",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SDHI": "y",
+        "CONFIG_RZV2H_SDHI_LOWER_ONLY": "y",
+        "CONFIG_MMCSD": "n",
+        "CONFIG_MMCSD_SDIO": "n",
+        "CONFIG_FS_FAT": "n",
+        "CONFIG_RZV2H_BUILD_CM33": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sdhi_initialize",
+        "rzv2h_sdhi_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sdhi.c"
+      ],
+      "gates": [
+        "Matching behavioral reference, card routing and power ownership remain open."
+      ]
+    },
+    {
+      "instance_id": "sdhi2-board-rtt",
+      "profile": "sdhi2-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "sdhi",
+        "unit": 0,
+        "channel": 2,
+        "mode": "lower",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "7",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_SDHI": "y",
+        "CONFIG_RZV2H_SDHI_LOWER_ONLY": "y",
+        "CONFIG_MMCSD": "n",
+        "CONFIG_MMCSD_SDIO": "n",
+        "CONFIG_FS_FAT": "n",
+        "CONFIG_RZV2H_BUILD_CM33": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_sdhi_initialize",
+        "rzv2h_sdhi_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_sdhi.c"
+      ],
+      "gates": [
+        "Matching behavioral reference, card routing and power ownership remain open."
+      ]
+    },
+    {
+      "instance_id": "wdt0-board-rtt",
+      "profile": "wdt0-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 0,
+        "mode": "nonstart",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "0",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_WDT": "y",
+        "CONFIG_WATCHDOG_AUTOMONITOR": "n",
+        "CONFIG_RZV2H_WDT_TEST": "n",
+        "CONFIG_RZV_WDT_INTERRUPT_MODE": "n",
+        "CONFIG_RZV_WDT0": "y",
+        "CONFIG_RZV_WDT1": "n",
+        "CONFIG_RZV_WDT2": "n",
+        "CONFIG_RZV_WDT3": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_wdt_initialize",
+        "rzv2h_wdt_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_wdt.c"
+      ],
+      "gates": [
+        "Four addressable blocks do not establish CR8-0 ownership; no start/expiry/reset action is admitted."
+      ]
+    },
+    {
+      "instance_id": "wdt1-board-rtt",
+      "profile": "wdt1-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 1,
+        "mode": "nonstart",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "1",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_WDT": "y",
+        "CONFIG_WATCHDOG_AUTOMONITOR": "n",
+        "CONFIG_RZV2H_WDT_TEST": "n",
+        "CONFIG_RZV_WDT_INTERRUPT_MODE": "n",
+        "CONFIG_RZV_WDT0": "n",
+        "CONFIG_RZV_WDT1": "y",
+        "CONFIG_RZV_WDT2": "n",
+        "CONFIG_RZV_WDT3": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_wdt_initialize",
+        "rzv2h_wdt_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_wdt.c"
+      ],
+      "gates": [
+        "Four addressable blocks do not establish CR8-0 ownership; no start/expiry/reset action is admitted."
+      ]
+    },
+    {
+      "instance_id": "wdt2-board-rtt",
+      "profile": "wdt2-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 2,
+        "mode": "nonstart",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "2",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_WDT": "y",
+        "CONFIG_WATCHDOG_AUTOMONITOR": "n",
+        "CONFIG_RZV2H_WDT_TEST": "n",
+        "CONFIG_RZV_WDT_INTERRUPT_MODE": "n",
+        "CONFIG_RZV_WDT0": "n",
+        "CONFIG_RZV_WDT1": "n",
+        "CONFIG_RZV_WDT2": "y",
+        "CONFIG_RZV_WDT3": "n"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_wdt_initialize",
+        "rzv2h_wdt_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_wdt.c"
+      ],
+      "gates": [
+        "Four addressable blocks do not establish CR8-0 ownership; no start/expiry/reset action is admitted."
+      ]
+    },
+    {
+      "instance_id": "wdt3-board-rtt",
+      "profile": "wdt3-board-rtt",
+      "core": "cr8_0",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 3,
+        "mode": "nonstart",
+        "output": null
+      },
+      "required_config": {
+        "CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE": "y",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY": "8",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL": "3",
+        "CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT": "0",
+        "CONFIG_RZV2H_SAMPLE_TEST_API": "y",
+        "CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT": "y",
+        "CONFIG_RZV_WDT": "y",
+        "CONFIG_WATCHDOG_AUTOMONITOR": "n",
+        "CONFIG_RZV2H_WDT_TEST": "n",
+        "CONFIG_RZV_WDT_INTERRUPT_MODE": "n",
+        "CONFIG_RZV_WDT0": "n",
+        "CONFIG_RZV_WDT1": "n",
+        "CONFIG_RZV_WDT2": "n",
+        "CONFIG_RZV_WDT3": "y"
+      },
+      "required_symbols": [
+        "hwtest_main",
+        "rzv_wdt_initialize",
+        "rzv2h_wdt_sample_state_at"
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_wdt.c"
+      ],
+      "gates": [
+        "Four addressable blocks do not establish CR8-0 ownership; no start/expiry/reset action is admitted."
+      ]
+    }
+  ],
+  "native_hwtest_contracts": {
+    "hil-spi-loopback": {
+      "mode": "spi-loopback",
+      "required_case_ids": [
+        "spi.ch0.byte_loop_1mhz",
+        "spi.ch0.byte_loop_4mhz",
+        "spi.ch0.burst_64_pattern",
+        "spi.ch0.mode3"
+      ],
+      "expected_summary": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      "target_state_required": {},
+      "target_state_types": {},
+      "source_evidence": [
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/spi/spi_loopback_test.c"
+      ]
+    },
+    "hil-spi-loopback-rtt": {
+      "mode": "spi-loopback",
+      "required_case_ids": [
+        "spi.ch0.byte_loop_1mhz",
+        "spi.ch0.byte_loop_4mhz",
+        "spi.ch0.burst_64_pattern",
+        "spi.ch0.mode3"
+      ],
+      "expected_summary": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      "target_state_required": {},
+      "target_state_types": {},
+      "source_evidence": [
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/spi/spi_loopback_test.c"
+      ]
+    },
+    "hil-uart-loopback": {
+      "mode": "uart-loopback",
+      "required_case_ids": [
+        "uart.uart4.byte_115200",
+        "uart.uart4.byte_9600",
+        "uart.uart4.pattern_115200",
+        "uart.uart5.byte_115200",
+        "uart.uart5.byte_9600",
+        "uart.uart5.pattern_115200",
+        "uart.uart9.byte_115200",
+        "uart.uart9.byte_9600",
+        "uart.uart9.pattern_115200"
+      ],
+      "expected_summary": {
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0
+      },
+      "target_state_required": {},
+      "target_state_types": {},
+      "source_evidence": [
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/uart/uart_loopback_test.c"
+      ]
+    },
+    "hil-full": {
+      "mode": "hil-full",
+      "required_case_ids": [
+        "spi.mpu9250.whoami",
+        "i2c.bmp280.chipid",
+        "i2c.bmp280.read_continuation",
+        "i2c.bmp280.invalid_messages",
+        "i2c.bmp280.frequency_mismatch",
+        "i2c.bmp280.reset_api",
+        "uart.gps.nmea_frame",
+        "uart.tfmini.frame"
+      ],
+      "expected_summary": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      "target_state_required": {},
+      "target_state_types": {},
+      "source_evidence": [
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/hil/mpu9250_test.c",
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/hil/bmp280_test.c",
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/hil/gps_nmea_test.c",
+        "platforms/nuttx/NuttX/apps/testing/rzv_hwtest/hil/tfmini_test.c"
+      ]
+    }
+  },
+  "native_profile_coverage": [
+    {
+      "profile": "dmac-memcpy",
+      "core": "cr8_0",
+      "family": "dmac",
+      "mode": "memcpy",
+      "channel_batches": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        [
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        [
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        [
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        [
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        [
+          30,
+          31,
+          32,
+          33,
+          34
+        ],
+        [
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        [
+          40,
+          41,
+          42,
+          43,
+          44
+        ],
+        [
+          45,
+          46,
+          47,
+          48,
+          49
+        ],
+        [
+          50,
+          51,
+          52,
+          53,
+          54
+        ],
+        [
+          55,
+          56,
+          57,
+          58,
+          59
+        ],
+        [
+          60,
+          61,
+          62,
+          63,
+          64
+        ],
+        [
+          65,
+          66,
+          67,
+          68,
+          69
+        ],
+        [
+          70,
+          71,
+          72,
+          73,
+          74
+        ],
+        [
+          75,
+          76,
+          77,
+          78,
+          79
+        ]
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/apps/examples/rzv_dmac/rzv_dmac_main.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.c"
+      ],
+      "gates": [
+        "Software memory copies only; peripheral pacing, cross-core memory ownership and electrical qualification remain separate."
+      ]
+    },
+    {
+      "profile": "dmac-memcpy-rtt",
+      "core": "cr8_0",
+      "family": "dmac",
+      "mode": "memcpy",
+      "channel_batches": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        [
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        [
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        [
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        [
+          25,
+          26,
+          27,
+          28,
+          29
+        ],
+        [
+          30,
+          31,
+          32,
+          33,
+          34
+        ],
+        [
+          35,
+          36,
+          37,
+          38,
+          39
+        ],
+        [
+          40,
+          41,
+          42,
+          43,
+          44
+        ],
+        [
+          45,
+          46,
+          47,
+          48,
+          49
+        ],
+        [
+          50,
+          51,
+          52,
+          53,
+          54
+        ],
+        [
+          55,
+          56,
+          57,
+          58,
+          59
+        ],
+        [
+          60,
+          61,
+          62,
+          63,
+          64
+        ],
+        [
+          65,
+          66,
+          67,
+          68,
+          69
+        ],
+        [
+          70,
+          71,
+          72,
+          73,
+          74
+        ],
+        [
+          75,
+          76,
+          77,
+          78,
+          79
+        ]
+      ],
+      "source_evidence": [
+        "platforms/nuttx/NuttX/apps/examples/rzv_dmac/rzv_dmac_main.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_dmac.c"
+      ],
+      "gates": [
+        "Software memory copies only; peripheral pacing, cross-core memory ownership and electrical qualification remain separate."
+      ]
+    }
+  ],
+  "core_private_timers": [
+    {
+      "name": "cr8-private-timer",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_private_timer.h",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_timerisr.c"
+      ],
+      "blockers": [
+        "The per-core system tick is a service contract, not an independently exercised peripheral profile."
+      ],
+      "cores": [
+        "cr8_0",
+        "cr8_1"
+      ],
+      "shared": false
+    },
+    {
+      "name": "cm33-systick",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_timerisr_cm33.c"
+      ],
+      "blockers": [
+        "The CM33 system tick is core private; no additional target or instance qualification is asserted."
+      ],
+      "cores": [
+        "cm33"
+      ],
+      "shared": false
+    }
+  ],
+  "shared_timer_services": [
+    {
+      "name": "cr8-global-timer",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_global_timer.h"
+      ],
+      "blockers": [
+        "A shared register reference does not establish a standalone lower-half implementation or executable test."
+      ],
+      "cores": [
+        "cr8_0",
+        "cr8_1"
+      ],
+      "shared": true
+    },
+    {
+      "name": "cm33-hrt-gtm5",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_hrt.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Kconfig"
+      ],
+      "blockers": [
+        "HRT reservation reuses the existing GTM domain and must not be counted as another timer or free channel."
+      ],
+      "core": "cm33",
+      "resource_domain": "gtm",
+      "channel": 5,
+      "selector": "CONFIG_RZV_HRT_GTM5"
+    },
+    {
+      "name": "cr8_1-hrt-gtm6",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_hrt.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Kconfig"
+      ],
+      "blockers": [
+        "HRT reservation reuses the existing GTM domain and must not be counted as another timer or free channel."
+      ],
+      "core": "cr8_1",
+      "resource_domain": "gtm",
+      "channel": 6,
+      "selector": "CONFIG_RZV_HRT_GTM6"
+    },
+    {
+      "name": "cr8_0-hrt-gtm7",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_hrt.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/Kconfig"
+      ],
+      "blockers": [
+        "HRT reservation reuses the existing GTM domain and must not be counted as another timer or free channel."
+      ],
+      "core": "cr8_0",
+      "resource_domain": "gtm",
+      "channel": 7,
+      "selector": "CONFIG_RZV_HRT_GTM7"
+    }
+  ],
+  "non_channel_services": [
+    {
+      "name": "clock",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_clock.h"
+      ],
+      "blockers": [
+        "Clock/reset infrastructure is not a channel coverage denominator."
+      ]
+    },
+    {
+      "name": "irq",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_irq.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_irq_cm33.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_icu.c"
+      ],
+      "blockers": [
+        "Interrupt routing is infrastructure; per-driver IRQ behavior remains in the owning driver tests."
+      ]
+    },
+    {
+      "name": "memory-mpu",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_mpu_regions.c"
+      ],
+      "blockers": [
+        "Core memory/MPU allocation is a service and does not establish peripheral DMA or physical memory qualification."
+      ]
+    },
+    {
+      "name": "startup-reset",
+      "state": "reference-only",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_start.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_start_cm33.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_systemreset.c"
+      ],
+      "blockers": [
+        "Startup/reset source references do not admit reset actions or establish a new executable test profile."
+      ]
+    }
+  ],
+  "header_only_ip": [
+    {
+      "name": "CRC",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_crc.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    },
+    {
+      "name": "I3C",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_i3c.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    },
+    {
+      "name": "PDM",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_pdm.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    },
+    {
+      "name": "SSI",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_ssi.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    },
+    {
+      "name": "XSPI",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_xspi.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    },
+    {
+      "name": "RTC",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_rtc.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    },
+    {
+      "name": "CMTW",
+      "state": "unimplemented",
+      "executable": false,
+      "source_evidence": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/hardware/rzv_cmtw.h"
+      ],
+      "blockers": [
+        "Header/register reference only; a source-backed lower half, core/board ownership and an admitted executable contract are not established."
+      ]
+    }
+  ]
+}

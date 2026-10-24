@@ -39,6 +39,16 @@ class LabBoundary(unittest.TestCase):
             LAB.invoke([sys.executable,'-c','print("DBGEN is not asserted")'],
                        os.environ.copy(),self.root,'failure',5)
 
+    def test_bridge_and_temporary_target_logs_stay_in_the_run_directory(self):
+        with patch.dict(os.environ, {'STATE_DIR': '/outside/bridge', 'TMPDIR': '/outside/tmp'}):
+            env = LAB.environment(self.root, 'unit-probe')
+        self.assertEqual(Path(env['STATE_DIR']).parent, self.root)
+        temporary = Path(env['TMPDIR'])
+        self.assertEqual(temporary.parent, self.root)
+        self.assertTrue(temporary.is_dir())
+        with tempfile.TemporaryDirectory(dir=env['TMPDIR']) as child:
+            self.assertTrue(Path(child).is_relative_to(self.root))
+
     def test_load_failure_never_starts_a_bridge_or_another_connection(self):
         args = argparse.Namespace(output=self.root,run_id='test',approval_ref='test-user-approval')
         row = {'core':'cr8_0','profile':'canfd-rtt','commands':['can -n 4'],'console':'rtt','entrypoint':'nsh_main','mode':'native','oracle':'can','timeout':15}
@@ -202,6 +212,118 @@ class NativeEvidence(unittest.TestCase):
         self.assertIsNotNone(LAB.re.search(LAB.TERMINAL['bmm150'],'bmm150: scan PASS'))
         self.transcript=self.transcript.replace('rhall=100','rhall=0',1)
         with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'sample data'):self.verify()
+
+    def test_dmac_requires_all_80_comparisons_and_every_indexed_batch_exit(self):
+        body='\n'.join(f'PASS: DMAC memcpy ch={channel}' for channel in range(80))
+        self.choose('dmac-memcpy-rtt',body)
+        result=self.verify()
+        self.assertEqual(result['state']['dmac_channels'],list(range(80)))
+        original=self.transcript
+        for old,new in [('PASS: DMAC memcpy ch=79',''),
+                        ('PASS: DMAC memcpy ch=7\n','PASS: DMAC memcpy ch=6\n'),
+                        ('APP_EXIT_15=0','APP_EXIT_15=1'),
+                        ('APP_EXIT_15=0','APP_EXIT_14=0')]:
+            self.transcript=original.replace(old,new)
+            with self.subTest(new=new),self.assertRaises(LAB.RUNNER.EvidenceError):self.verify()
+
+    def test_each_dmac_batch_has_its_own_terminal_and_legacy_terminal_remains_decodable(self):
+        profile=next(x for x in LAB.ARTIFACT.INVENTORY.load()['profiles'] if x['profile']=='dmac-memcpy')
+        self.assertEqual(len(profile['commands']),16)
+        for index,command in enumerate(profile['commands']):
+            terminal=LAB.command_terminal(profile,command)
+            last=index*5+4
+            self.assertIsNotNone(LAB.re.search(terminal,f'PASS: DMAC memcpy ch={last}\n'))
+            self.assertIsNone(LAB.re.search(terminal,f'PASS: DMAC memcpy ch={last+10}\n'))
+            self.assertIsNone(LAB.re.search(terminal,f'PASS: DMAC memcpy ch={last}0\n'))
+        with self.assertRaises(LAB.LabError):LAB.command_terminal(profile,'rzv_dmac 79')
+        legacy=dict(profile,commands=['rzv_dmac 0 16 32 48 64'])
+        self.assertIsNotNone(LAB.re.search(LAB.command_terminal(legacy,legacy['commands'][0]),'PASS: DMAC memcpy ch=64'))
+
+
+class InstanceEvidence(unittest.TestCase):
+    def setUp(self):
+        self.profile=copy.deepcopy(next(x for x in LAB.ARTIFACT.INVENTORY.load()['profiles']
+                                       if x['profile']=='gpt12-b-board-rtt'))
+        contracts=LAB.ARTIFACT.INVENTORY.contract_inputs(LAB.ARTIFACT.INVENTORY.POLICY)
+        self.admission=dict(status='BUILD-CHECKED',core='cr8_0',elf_sha256='a'*64,
+            config_sha256='b'*64,source_state_sha256='c'*64,waitpid=True,
+            application_entry='0x40801000',contract_inputs=contracts,
+            hwtest_contract=self.profile['hwtest_contract'],
+            **{k:self.profile[k] for k in ('instance_id','instance')})
+        self.receipt=dict(profile=self.profile['profile'],core='cr8_0',commands=['hwtest'],run_id='instance-test',
+            elf_sha256='a'*64,config_sha256='b'*64,source_state_sha256='c'*64,
+            contract_inputs=copy.deepcopy(contracts),policy_sha256=LAB.sha(LAB.ARTIFACT.INVENTORY.POLICY),
+            executor_sha256=LAB.sha(Path(LAB.__file__)),timed_out=False,
+            approval_reference='parser-fixture-only',reset_class='warm-load',initial_state='parser fixture',
+            cleanup=dict(bridge_stopped=True,owned_pid_dead=True,port_free=True),
+            **{k:copy.deepcopy(self.profile[k]) for k in ('instance_id','instance')})
+        self.health='PID PRI NAME\n0 0 idle\n1 100 nsh_main\nnsh> '
+        self.transcript='RUN_BEGIN: instance-test\nTEST_ENV: mode=driver-instance expects=diagnostic\n'
+        for case in self.profile['hwtest_contract']['required_case_ids']:
+            self.transcript+='TEST: '+case+' START\nTEST: '+case+' PASS\n'
+        self.transcript+=('TEST_STATE: instance_family=gpt instance_unit=1 instance_channel=12 '
+            'instance_output=B instance_identity=4096\nTEST_SUMMARY: passed=3 failed=0 skipped=0\n'
+            'TEST_DONE: exit=0\nAPP_EXIT_0=0\nRUN_END: instance-test\nnsh> ')
+
+    def verify(self):
+        return NativeEvidence.verify(self)
+
+    def test_fixed_instance_contract_passes_only_its_exact_receipt_tuple(self):
+        result=self.verify()
+        self.assertEqual(result['instance_id'],'gpt12-b-board-rtt')
+        self.assertEqual(result['instance']['output'],'B')
+        for key,value in [('instance_id','unknown-instance'),('core','cr8_1')]:
+            saved=self.receipt[key];self.receipt[key]=value
+            with self.subTest(key=key),self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'instance'):
+                self.verify()
+            self.receipt[key]=saved
+        self.receipt['instance']['output']='A'
+        with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'instance mismatch'):self.verify()
+
+    def test_secondary_contract_bindings_are_required_for_instance_receipts(self):
+        self.receipt['contract_inputs'].pop()
+        with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'contract binding'):self.verify()
+
+    def test_rehashed_secondary_contract_cannot_weaken_installed_policy_inputs(self):
+        self.receipt['contract_inputs'][1]['sha256']='0'*64
+        self.admission['contract_inputs']=copy.deepcopy(self.receipt['contract_inputs'])
+        with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'reviewed installed policy inputs'):self.verify()
+
+    def test_wrong_actual_identity_or_required_skip_cannot_pass(self):
+        original=self.transcript
+        for old,new in [('instance_channel=12','instance_channel=11'),
+                        ('instance_identity=4096','instance_identity=0'),
+                        ('TEST: instance.stable PASS','TEST: instance.stable SKIP')]:
+            self.transcript=original.replace(old,new)
+            with self.subTest(new=new),self.assertRaises(LAB.RUNNER.EvidenceError):self.verify()
+
+    def test_terminal_before_summary_or_duplicated_actual_state_cannot_pass(self):
+        original=self.transcript
+        self.transcript=original.replace('TEST_DONE: exit=0\n','').replace('TEST_SUMMARY:','TEST_DONE: exit=0\nTEST_SUMMARY:')
+        with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'sequence'):self.verify()
+        self.transcript=original.replace('instance_unit=1','instance_unit=1 instance_unit=1')
+        with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'duplicate state'):self.verify()
+
+    def test_native_spi_requires_the_fourth_actual_loopback_case(self):
+        self.profile=copy.deepcopy(next(x for x in LAB.ARTIFACT.INVENTORY.load()['profiles']
+                                       if x['profile']=='spi2-board-rtt'))
+        for target in (self.admission,self.receipt):
+            target.update(profile=self.profile['profile'],instance_id=self.profile['instance_id'],
+                          instance=copy.deepcopy(self.profile['instance']))
+        self.admission['hwtest_contract']=self.profile['hwtest_contract']
+        self.transcript='RUN_BEGIN: instance-test\nTEST_ENV: mode=driver-instance expects=internal-loopback\n'
+        for case in self.profile['hwtest_contract']['required_case_ids']:
+            self.transcript+='TEST: '+case+' START\nTEST: '+case+' PASS\n'
+        self.transcript+=('TEST_STATE: instance_family=spi instance_unit=0 instance_channel=2 '
+            'instance_output=none instance_identity=4096\nTEST_SUMMARY: passed=4 failed=0 skipped=0\n'
+            'TEST_DONE: exit=0\nAPP_EXIT_0=0\nRUN_END: instance-test\nnsh> ')
+        self.assertEqual(self.verify()['status'],'PASS')
+        original=self.transcript
+        for old,new in [('TEST: instance.loopback START\nTEST: instance.loopback PASS\n',''),
+                        ('TEST: instance.loopback PASS','TEST: instance.loopback SKIP'),
+                        ('passed=4 failed=0 skipped=0','passed=3 failed=0 skipped=0')]:
+            self.transcript=original.replace(old,new)
+            with self.subTest(new=new),self.assertRaises(LAB.RUNNER.EvidenceError):self.verify()
 
 
 if __name__ == '__main__':

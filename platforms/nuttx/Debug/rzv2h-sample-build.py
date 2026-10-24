@@ -130,10 +130,18 @@ def source_state(work, overrides, manifest=MANIFEST):
             'compiler': command(['arm-none-eabi-gcc', '--version']).splitlines()[0],
             'source_files': records, 'snapshot_overrides': overrides,
             'manifest_sha256': digest(manifest),
+            'contract_inputs': ARTIFACTS.INVENTORY.contract_inputs(manifest),
             'tool_sha256': {p.name: digest(p) for p in (
                 Path(__file__), Path(__file__).with_name('rzv2h-sample-artifact-check.py'),
                 Path(__file__).with_name('rzv2h-sample-inventory.py'))},
             'target_actions': []}
+
+
+def archive_contracts(output, manifest):
+    inventory = ARTIFACTS.INVENTORY
+    for role, path in dict(selected_manifest=manifest, legacy_contract=inventory.LEGACY,
+                           driver_coverage=inventory.COVERAGE).items():
+        shutil.copy2(path, output/inventory.CONTRACT_PATHS[role])
 
 
 def archive_profile(work, output, profile, state, state_hash, manifest=None, timeout=600):
@@ -155,7 +163,9 @@ def archive_profile(work, output, profile, state, state_hash, manifest=None, tim
         result = {'profile': profile['profile'], 'status': 'BUILD-FAILED',
                   'build_exit': process.returncode, 'log': str(directory/'build.log')}
         (directory/'build-receipt.json').write_text(json.dumps(dict(result,
-            source_state_sha256=state_hash, file_sha256={}), indent=2)+'\n')
+            source_state_sha256=state_hash, file_sha256={},
+            contract_inputs=state.get('contract_inputs', []),
+            **{k:profile[k] for k in ('instance_id', 'instance') if k in profile}), indent=2)+'\n')
         return result
     for original, name in (('nuttx', 'nuttx.elf'), ('.config', 'resolved.config'),
                            ('nuttx.map', 'nuttx.map'), ('System.map', 'System.map')):
@@ -177,6 +187,11 @@ def archive_profile(work, output, profile, state, state_hash, manifest=None, tim
                'compiler': state['compiler'], 'submodule_commits': state['commits'],
                'source_state_sha256': state_hash,
                'file_sha256': {name: digest(directory/name) for name in names}}
+    if 'contract_inputs' in state:
+        receipt['contract_inputs'] = state['contract_inputs']
+    receipt.update({k:profile[k] for k in ('instance_id', 'instance') if k in profile})
+    if 'instance_id' in profile:
+        receipt['core'] = profile['core']
     if manifest is not None:
         receipt.update(defconfig_sha256=profile['defconfig_sha256'],
                        manifest_sha256=state['manifest_sha256'])
@@ -224,13 +239,16 @@ def build_native(args, manifest_path, manifest):
         state['snapshot_overrides'] = configure_cache(base, args.cache_dir)
         if args.resume:
             original = json.loads((output/'source-state.json').read_text())
-            for key in ('commits', 'compiler', 'source_files', 'manifest_sha256', 'snapshot_overrides', 'tool_sha256'):
+            for key in ('commits', 'compiler', 'source_files', 'manifest_sha256', 'snapshot_overrides', 'tool_sha256', 'contract_inputs'):
                 if original.get(key) != state.get(key):
                     raise ValueError('resume source/input drift: ' + key)
+            ARTIFACTS.INVENTORY.archived_contracts(output/'source-state.json', required=True)
             state = original
         else:
+            archive_contracts(output, manifest_path)
             (output/'source-state.json').write_text(json.dumps(state, indent=2)+'\n')
-            shutil.copy2(manifest_path, output/'sample-profiles.json')
+            if state.get('contract_inputs'):
+                ARTIFACTS.INVENTORY.archived_contracts(output/'source-state.json', required=True)
         prior = json.loads((output/'build-results.json').read_text()) if args.resume else []
         results = [{'profile': n, 'status': 'NOT-RUN', 'on_target': 'NOT-RUN',
                     'artifact_authorized': False, 'target_prerequisites_verified': False} for n in names]
@@ -314,8 +332,9 @@ def main():
             # Record the pristine source snapshot before applying cache-only URLs.
             state = source_state(work, [], manifest_path)
             state['snapshot_overrides'] = configure_cache(work, args.cache_dir)
+            archive_contracts(output, manifest_path)
             (output/'source-state.json').write_text(json.dumps(state, indent=2)+'\n')
-            shutil.copy2(manifest_path, output/'sample-profiles.json')
+            ARTIFACTS.INVENTORY.archived_contracts(output/'source-state.json', required=True)
             results = []
             for name in selected:
                 profile = next(p for p in profiles if p['profile'] == name)

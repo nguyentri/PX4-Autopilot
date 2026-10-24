@@ -197,5 +197,19 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(self.check(text, p=p)["cases"], ids)
 
 
+class NativeSuiteContracts(unittest.TestCase):
+    def test_unknown_and_prefix_aliases_do_not_select_a_hil_suite(self):
+        for name in ('unknown-instance','hil-new','hil-spi-unreviewed'):
+            with self.subTest(name=name), self.assertRaisesRegex(CHECKER.EvidenceError, 'unknown native hwtest suite'):
+                CHECKER.native_cases({'profile':name})
+
+    def test_known_hil_full_keeps_all_concatenated_sensor_cases(self):
+        contract=CHECKER.native_cases({'profile':'hil-full'})
+        self.assertEqual(contract['mode'],'hil-full')
+        self.assertEqual(contract['expected_summary']['passed'],len(contract['required_case_ids']))
+        self.assertEqual(len(contract['required_case_ids']),len(set(contract['required_case_ids'])))
+        self.assertGreater(len(contract['required_case_ids']),0)
+
+
 if __name__ == "__main__":
     unittest.main()

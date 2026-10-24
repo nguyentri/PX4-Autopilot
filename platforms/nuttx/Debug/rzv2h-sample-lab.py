@@ -43,7 +43,7 @@ ALLOWED_COMMANDS = {
 REDACTED_SUFFIXES = ('.log', '.txt', '.jlink', '.gdb', '.json')
 RESET = re.compile(r'Resetting via Reset pin|cold reset sequence|DBGEN(?: is)? not asserted|DBGEN is not asserted', re.I)
 TERMINAL = {'hwtest': r'TEST_DONE: exit=', 'can': r'Terminating!',
-            'canfd': r'(?:FAIL|PASS) frames=', 'dmac': r'PASS: DMAC memcpy ch=64',
+            'canfd': r'(?:FAIL|PASS) frames=',
             'timer': r'Finished', 'gy912': r'ICM20948 result=',
             'bmm150': r'bmm150: (?:scan )?PASS', 'adc': r'channel:\s*3 value:\s*-?\d+\b'}
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
@@ -78,6 +78,16 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def command_terminal(row, command):
+    if row['oracle'] == 'dmac':
+        batches = ARTIFACT.INVENTORY.dmac_batches(row)
+        if row['commands'].count(command) != 1:
+            raise LabError('unreviewed or duplicate DMAC batch command')
+        last = batches[row['commands'].index(command)][-1]
+        return r'PASS: DMAC memcpy ch=' + str(last) + r'\b'
+    return TERMINAL[row['oracle']]
+
+
 def prepare(archive, name, fixture):
     manifest = ARTIFACT.INVENTORY.load()
     rows = [x for x in manifest['profiles'] if x['profile'] == name]
@@ -97,8 +107,12 @@ def prepare(archive, name, fixture):
         raise LabError('unverified fixture prerequisites: ' + ', '.join(x for x in row['requirements'] if not verified.get(x)))
     if sha(archive/'sample-profiles.json') != sha(ARTIFACT.INVENTORY.POLICY):
         raise LabError('archive execution policy differs from reviewed installed policy')
+    archived = json.loads((archive/'sample-profiles.json').read_text())
+    contracts = ARTIFACT.INVENTORY.archived_contracts(archive/'source-state.json',
+                                                    required='instance_id' in row)
+    ARTIFACT.INVENTORY.validate(archived, catalog=contracts.get('driver_coverage'), live=False)
     directory = archive/'builds'/name
-    admission = ARTIFACT.verify_native(row, directory, archive/'source-state.json', manifest)
+    admission = ARTIFACT.verify_native(row, directory, archive/'source-state.json', archived)
     if row['commands'] and row['mode'] not in ('shell','hwtest','native'):
         raise LabError('invalid action registry mode')
     # Every command comes from the installed policy, never fixture/receipt text.
@@ -112,8 +126,11 @@ def prepare(archive, name, fixture):
 
 def environment(output, serial):
     result = {key: os.environ[key] for key in PASSTHROUGH_ENVIRONMENT if key in os.environ}
+    temporary = output/'tmp'
+    temporary.mkdir(parents=True, exist_ok=True)
     result.update(LOAD_ATTEMPTS='1', JLINK_SERIAL=serial, JLINK_SPEED='auto',
-                  GDB_PORT='50000', RTT_PORT='19021', LOG_DIR=str(output/'loader'))
+                  GDB_PORT='50000', RTT_PORT='19021', LOG_DIR=str(output/'loader'),
+                  STATE_DIR=str(output/'bridge-state'), TMPDIR=str(temporary))
     return result
 
 
@@ -201,6 +218,9 @@ def execute(args, row, admission, directory, fixture):
                    timed_out=False,cleanup=cleanup,loader_environment={'LOAD_ATTEMPTS':'1'},
                    policy_sha256=sha(ARTIFACT.INVENTORY.POLICY),
                    executor_sha256=sha(Path(__file__)),target_actions=[])
+    if admission.get('contract_inputs'):
+        receipt['contract_inputs'] = admission['contract_inputs']
+    receipt.update({key:row[key] for key in ('instance_id', 'instance') if key in row})
     def checkpoint():
         (output/'run-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
     checkpoint()
@@ -237,7 +257,7 @@ def execute(args, row, admission, directory, fixture):
                 if admission['waitpid']:
                     commands.append('echo APP_EXIT_'+str(index)+'=$?')
                 elif row['mode'] != 'shell':
-                    extra = ['--marker','--until',TERMINAL[row['oracle']]]
+                    extra = ['--marker','--until',command_terminal(row, command)]
                 invoke([*client,'--timeout',str(row['timeout']),'--log',str(raw),*extra,*commands],
                        env,output,'command-'+str(index),row['timeout']*(len(commands)+1)+5,serial)
             invoke([*client,'--timeout','8','--log',str(raw),'echo RUN_END: '+run_id],env,output,'end',12,serial)

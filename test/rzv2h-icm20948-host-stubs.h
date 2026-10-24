@@ -34,6 +34,7 @@ struct spi_dev_s { int port; };
 int rzv_gpioconfig(uint32_t pin);
 void rzv_gpiowrite(uint32_t pin, bool level);
 struct spi_dev_s *rzv_spibus_initialize(int port);
+int rzv_spibus_uninitialize(struct spi_dev_s *dev);
 int spi_register(struct spi_dev_s *dev, int port);
 int host_lock(struct spi_dev_s *dev, bool lock);
 void host_mode(struct spi_dev_s *dev, int mode);

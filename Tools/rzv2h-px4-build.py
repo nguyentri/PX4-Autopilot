@@ -66,6 +66,7 @@ SOURCE_SUFFIXES = {'.c', '.cc', '.cpp', '.cxx', '.h', '.hh', '.hpp', '.hxx', '.S
                    '.srv', '.px4board', '.prototype', '.patch', '.in'}
 UNTRACKED_FILES = {'.': {
     'Tools/rzv2h-px4-profiles.json',
+    'platforms/nuttx/Debug/rzv2h-driver-coverage.json',
     'ROMFS/px4fmu_common/init.d/airframes/22001_rzv2h_lab_pivot',
 }}
 REQUIRED_TOOLS = ('git', 'make', 'ninja', 'cmake', 'rsync', 'unzip', 'curl',

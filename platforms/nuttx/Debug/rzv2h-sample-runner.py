@@ -3,10 +3,16 @@
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import re
 import shlex
 from pathlib import Path
+
+_SPEC = importlib.util.spec_from_file_location(
+    'runner_inventory', Path(__file__).with_name('rzv2h-sample-inventory.py'))
+INVENTORY = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(INVENTORY)
 
 
 class EvidenceError(ValueError):
@@ -85,6 +91,13 @@ def check_diagnostics(text, profile):
         require(re.search(pattern, text) is None, "forbidden diagnostic: " + pattern)
 
 
+def check_dmac(profile, body):
+    expected = [channel for batch in INVENTORY.dmac_batches(profile) for channel in batch]
+    actual = [int(x) for x in re.findall(r'PASS: DMAC memcpy ch=(\d+)\b', body)]
+    require(actual == expected, 'DMAC copy comparison/channel coverage mismatch')
+    return actual
+
+
 def check_profile(profile, transcript, health, receipt):
     require(receipt.get("profile") == profile["profile"], "wrong receipt profile")
     require(receipt.get("command") == profile["invocation"]["command"],
@@ -153,25 +166,20 @@ def check_profile(profile, transcript, health, receipt):
             "evidence_class": profile["evidence_class"]}
 
 
-def native_cases(profile):
+def native_cases(profile, legacy=None, catalog=None):
     """Existing suite IDs, read from the source-backed installed contract."""
     here = Path(__file__).parent
+    if profile.get('hwtest_contract') is not None:
+        return profile['hwtest_contract']
     if profile.get('legacy_profile'):
-        legacy = json.loads((here/'rzv2h-sample-profiles.json').read_text())
-        return next(x for x in legacy['profiles'] if x['profile'] == profile['legacy_profile'])
+        legacy = legacy if legacy is not None else json.loads((here/'rzv2h-sample-profiles.json').read_text())
+        matches = [x for x in legacy['profiles'] if x['profile'] == profile['legacy_profile']]
+        require(len(matches) == 1, 'unknown or duplicate legacy suite')
+        return matches[0]
+    catalog = catalog if catalog is not None else json.loads((here/'rzv2h-driver-coverage.json').read_text())
     name = profile['profile']
-    if name.startswith('hil-spi'):
-        suite, mode = 'spi/spi_loopback_test.c', 'spi-loopback'
-    elif name == 'hil-uart-loopback':
-        suite, mode = 'uart/uart_loopback_test.c', 'uart-loopback'
-    else:
-        suite, mode = 'hil/hil_full_test.c', 'hil-full'
-    source = here.parents[2]/'platforms/nuttx/NuttX/apps/testing/rzv_hwtest'/suite
-    ids = ['.'.join(x) for x in re.findall(r'\{\s*"([^"\n]+)"\s*,\s*"([^"\n]+)"', source.read_text())]
-    require(ids and len(ids) == len(set(ids)), 'missing source-backed native cases')
-    return {'mode':mode, 'required_case_ids':ids,
-            'expected_summary':{'passed':len(ids),'failed':0,'skipped':0},
-            'target_state_required':{}, 'target_state_types':{}}
+    require(name in catalog.get('native_hwtest_contracts', {}), 'unknown native hwtest suite: ' + name)
+    return catalog['native_hwtest_contracts'][name]
 
 
 def native_body(text, run_id, shell):
@@ -191,9 +199,27 @@ def check_native(profile, transcript, health, receipt, admission):
             'native artifact/profile mismatch')
     for key in ('elf_sha256', 'config_sha256', 'source_state_sha256'):
         require(receipt.get(key) == admission[key], 'native artifact hash mismatch: ' + key)
+    contracts = admission.get('contract_inputs', [])
+    if contracts:
+        require(receipt.get('contract_inputs') == contracts, 'run archived contract binding mismatch')
+    else:
+        require(not receipt.get('contract_inputs'), 'historical evidence cannot acquire contract completeness')
+    if 'instance_id' in profile:
+        require(bool(contracts), 'instance evidence requires archived contracts')
+        for key in ('instance_id', 'instance'):
+            require(receipt.get(key) == profile[key] == admission.get(key), 'run instance mismatch: ' + key)
+        require(receipt.get('core') == profile['core'] == admission.get('core'), 'run instance core mismatch')
     here = Path(__file__).resolve().parent
     installed = json.loads((here/'rzv2h-all-sample-configs.json').read_text())
     require(profile in installed['profiles'], 'native contract differs from reviewed installed policy')
+    if contracts:
+        reviewed = [dict(role=role, path=archived,
+                         sha256=hashlib.sha256((here/source).read_bytes()).hexdigest())
+                    for role, archived, source in (
+                        ('selected_manifest','sample-profiles.json','rzv2h-all-sample-configs.json'),
+                        ('legacy_contract','legacy-sample-profiles.json','rzv2h-sample-profiles.json'),
+                        ('driver_coverage','driver-coverage.json','rzv2h-driver-coverage.json'))]
+        require(contracts == reviewed, 'archived contract differs from reviewed installed policy inputs')
     for key, path in (('policy_sha256',here/'rzv2h-all-sample-configs.json'),
                       ('executor_sha256',here/'rzv2h-sample-lab.py')):
         require(receipt.get(key) == hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -226,15 +252,18 @@ def check_native(profile, transcript, health, receipt, admission):
                 'boot task census missing or incomplete')
         entries = [int(x,16) & ~1 for x in re.findall(r'TASK_ENTRY: (0x[0-9a-f]+)', health)]
         require(int(admission['application_entry'],16) & ~1 not in entries, 'boot application is still alive')
-    exits = [int(x) for x in re.findall(r'(?m)^APP_EXIT_\d+=(-?\d+)\s*$', body)]
+    exits = [(int(index),int(status)) for index,status in
+             re.findall(r'(?m)^APP_EXIT_(\d+)=(-?\d+)\s*$', body)]
     if profile['commands'] and admission['waitpid']:
-        require(exits == ([1] if expected_negative else [0]*len(profile['commands'])), 'real command exit status mismatch')
+        require(exits == [(index,1 if expected_negative else 0) for index in range(len(profile['commands']))],
+                'real command exit status mismatch')
     elif profile['commands'] and profile['mode'] != 'shell':
         require(receipt.get('completion_source') == 'task-resource-oracle', 'asynchronous completion unproved')
     oracle = profile['oracle']
     state = {}
     if oracle == 'hwtest':
-        spec = native_cases(profile)
+        spec = admission.get('hwtest_contract') or native_cases(profile)
+        require(spec == profile.get('hwtest_contract', spec), 'archived hwtest contract mismatch')
         check_diagnostics(body, spec)
         check_diagnostics(health, spec)
         env = re.findall(r'TEST_ENV:\s+mode=(\S+)', body)
@@ -243,8 +272,10 @@ def check_native(profile, transcript, health, receipt, admission):
         expected = [(case, event) for case in spec['required_case_ids'] for event in ('START','PASS')]
         require(events == expected, 'native hwtest exact cases/order mismatch')
         require(re.findall(r'TEST_SUMMARY:\s+passed=(\d+)\s+failed=(\d+)\s+skipped=(\d+)', body) ==
-                [(str(len(spec['required_case_ids'])),'0','0')], 'native hwtest counts mismatch')
+                [tuple(str(spec['expected_summary'][k]) for k in ('passed','failed','skipped'))], 'native hwtest counts mismatch')
         require(re.findall(r'TEST_DONE:\s+exit=(-?\d+)', body) == ['0'], 'native hwtest terminal mismatch')
+        require(body.rfind('TEST_DONE:') > body.rfind('TEST_SUMMARY:') > body.rfind('TEST: '),
+                'native hwtest terminal sequence is out of order')
         if spec['target_state_required']:
             state = decode_state(body, spec)
     elif oracle == 'can':
@@ -268,7 +299,7 @@ def check_native(profile, transcript, health, receipt, admission):
                 'missing-ACK outcome differs')
         require(re.search(r'cleanup seq=\d+ failed=\d+ result=-140 isolated=1',body), 'CAN cancellation/isolation missing')
     elif oracle == 'dmac':
-        require([int(x) for x in re.findall(r'PASS: DMAC memcpy ch=(\d+)',body)] == [0,16,32,48,64], 'DMAC copy comparison missing')
+        state['dmac_channels'] = check_dmac(profile, body)
     elif oracle == 'timer':
         require(all(x in body for x in ('Start the timer','Stop the timer','Finished')), 'timer lifecycle incomplete')
         signals = [int(x) for x in re.findall(r'nsignals:\s*(\d+)',body)]
@@ -300,7 +331,9 @@ def check_native(profile, transcript, health, receipt, admission):
         raise EvidenceError('native oracle not implemented: ' + oracle)
     return {'profile':profile['profile'], 'status':'PASS', 'run_id':receipt['run_id'],
             'elf_sha256':admission['elf_sha256'], 'evidence_class':profile['evidence_class'],
-            'reset_class':receipt['reset_class'], 'state':state}
+            'reset_class':receipt['reset_class'], 'state':state,
+            'contract_inputs': contracts,
+            **{key:profile[key] for key in ('instance_id', 'instance') if key in profile}}
 
 
 def main():
@@ -324,7 +357,8 @@ def main():
             artifacts = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(artifacts)
             require(args.archive is not None, 'native archived inputs required')
-            artifacts.INVENTORY.validate(manifest)
+            contracts = artifacts.INVENTORY.archived_contracts(args.archive/'source-state.json')
+            artifacts.INVENTORY.validate(manifest, catalog=contracts.get('driver_coverage'), live=False)
             admission = artifacts.verify_native(profiles[0], args.archive/'builds'/args.profile,
                                                 args.archive/'source-state.json', manifest)
             result = check_native(profiles[0],args.transcript.read_text(),args.health.read_text(),

@@ -748,7 +748,10 @@
     "src/apps/output-configuration.hpp": "320ef24edb56e3c3fc32ecd85e0b79d207a5ba092ff16d46d3ce7c0d295d4a27",
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/module.yaml": "b46ea1aa91d9e3a657026e1dacf78caabeacde40c077e9783822f94a77f1efc1",
     "src/apps/Kconfig": "241a0650de88da9779c27f5a1080dfbd732018e34d33ec37974579e74f207eb2",
-    "src/apps/CMakeLists.txt": "4d7387feb8b8fcd5a035f56c3d4a946253d02301941665e0007c8d534d36bdba"
+    "src/apps/CMakeLists.txt": "4d7387feb8b8fcd5a035f56c3d4a946253d02301941665e0007c8d534d36bdba",
+    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "2620389029e575c4ef27b38a950ec1d7f2ee6a8f005148f253609f7bb9ba2320",
+    "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
+    "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "bd94b5bd8b605588e163be852c690fc7ca823bd1c8fa564c834dc47feafa3c30"
   },
   "abi_sources": [
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h",
@@ -864,7 +867,19 @@
     "rzv2h-all-sample-inventory-test",
     "rzv2h-all-sample-build-test",
     "rzv2h-sample-lab-test",
-    "rzv2h-all-sample-closure-test"
+    "rzv2h-all-sample-closure-test",
+    "rzv2h-driver-channel-coverage-test",
+    "rzv2h-gpt-channel-runtime-test",
+    "rzv2h-gpt-clock-runtime-test",
+    "rzv2h-riic-clock-runtime-test",
+    "rzv2h-riic-instance-runtime-test",
+    "rzv2h-spi-instance-runtime-test",
+    "rzv2h-uart-sample-deadline-test",
+    "rzv2h-driver-instance-sample-test",
+    "rzv2h-i2c-hal-runtime-test",
+    "rzv2h-sci-i2c-mode-runtime-test",
+    "rzv2h-ether-two-port-runtime-test",
+    "rzv2h-indexed-sdhi-wdt-runtime-test"
   ],
   "repositories": {
     "src/modules/mavlink/mavlink": {

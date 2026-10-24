@@ -154,6 +154,7 @@ int main(void) {
             r'^\s*#\s*include[^\n]*$', '', irq_header.read_text(), flags=re.M)
         code += r'''
 #include <stdlib.h>
+#define CONFIG_RZV_ETHER0 1
 #define RZV_ETHER_DMA_ALIGN 32
 #define CONFIG_RZV_ETHER_TXDESC 2
 #define CONFIG_RZV_ETHER_RXDESC 2
@@ -178,6 +179,7 @@ static int netdev_register(struct net_driver_s *dev,int type) { (void)dev;(void)
         code += EXTRACT.definition(source, "int rzv_ether_initialize(")
         code += r'''
 int main(void) {
+  assert(rzv_ether_initialize(1)==-ENODEV && allocations==0 && live==0);
   for(failure=1;failure<=4;++failure) {
     allocations=0;
     assert(rzv_ether_initialize(0)<0);

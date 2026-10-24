@@ -244,7 +244,22 @@
       "mode": "native",
       "oracle": "dmac",
       "commands": [
-        "rzv_dmac 0 16 32 48 64"
+        "rzv_dmac 0 1 2 3 4",
+        "rzv_dmac 5 6 7 8 9",
+        "rzv_dmac 10 11 12 13 14",
+        "rzv_dmac 15 16 17 18 19",
+        "rzv_dmac 20 21 22 23 24",
+        "rzv_dmac 25 26 27 28 29",
+        "rzv_dmac 30 31 32 33 34",
+        "rzv_dmac 35 36 37 38 39",
+        "rzv_dmac 40 41 42 43 44",
+        "rzv_dmac 45 46 47 48 49",
+        "rzv_dmac 50 51 52 53 54",
+        "rzv_dmac 55 56 57 58 59",
+        "rzv_dmac 60 61 62 63 64",
+        "rzv_dmac 65 66 67 68 69",
+        "rzv_dmac 70 71 72 73 74",
+        "rzv_dmac 75 76 77 78 79"
       ],
       "requirements": [],
       "hazards": [],
@@ -271,7 +286,22 @@
       "mode": "native",
       "oracle": "dmac",
       "commands": [
-        "rzv_dmac 0 16 32 48 64"
+        "rzv_dmac 0 1 2 3 4",
+        "rzv_dmac 5 6 7 8 9",
+        "rzv_dmac 10 11 12 13 14",
+        "rzv_dmac 15 16 17 18 19",
+        "rzv_dmac 20 21 22 23 24",
+        "rzv_dmac 25 26 27 28 29",
+        "rzv_dmac 30 31 32 33 34",
+        "rzv_dmac 35 36 37 38 39",
+        "rzv_dmac 40 41 42 43 44",
+        "rzv_dmac 45 46 47 48 49",
+        "rzv_dmac 50 51 52 53 54",
+        "rzv_dmac 55 56 57 58 59",
+        "rzv_dmac 60 61 62 63 64",
+        "rzv_dmac 65 66 67 68 69",
+        "rzv_dmac 70 71 72 73 74",
+        "rzv_dmac 75 76 77 78 79"
       ],
       "requirements": [],
       "hazards": [],
@@ -373,6 +403,142 @@
       ]
     },
     {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "ether-parent-clock-handoff"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "ether0-board-rtt",
+      "instance": {
+        "family": "ether",
+        "unit": 0,
+        "channel": 0,
+        "mode": "register",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "ether",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "ether0-board-rtt",
+      "defconfig_sha256": "5e8a76e4f9b90b4e0d81190ba2eda9b976af9eb2ef7fd7b6cdf727b38a52cb89"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "ether-parent-clock-handoff"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "ether1-board-rtt",
+      "instance": {
+        "family": "ether",
+        "unit": 0,
+        "channel": 1,
+        "mode": "register",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "ether",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "ether1-board-rtt",
+      "defconfig_sha256": "39589750f4e6c60d258df29931acbc8a580890787e689916f7dbc34bd55bf909"
+    },
+    {
       "core": "cr8_0",
       "core_source": "kconfig-default",
       "core_selector": "RZV2H_BUILD_CR8_0",
@@ -401,6 +567,2150 @@
       "reset_classes": [
         "warm-load"
       ]
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt0-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 0,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt0-a-board-rtt",
+      "defconfig_sha256": "b737bdec80444ed2b2915d9ba260d21986c096afe893cb3a89674e66a6ec7fda"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt0-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 0,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt0-b-board-rtt",
+      "defconfig_sha256": "22dbbbea93865234f43032914505fadd459ef12d6856c66a9262c081b67ace46"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt1-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 1,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt1-a-board-rtt",
+      "defconfig_sha256": "9a426f09b6a0e8cdbcdf738f41305f5c4c70ef350c1c28eb2073ecc47cb81c88"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt1-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 1,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt1-b-board-rtt",
+      "defconfig_sha256": "6e0175ba9d147062e79e4765c7c9013488c7ab0d1e302bead948f9c4ee804354"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt10-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 10,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 10,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt10-a-board-rtt",
+      "defconfig_sha256": "9ba31b9b4afa9d4502bf8cb2c3520959d81761ca04677d7ed984240be3312732"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt10-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 10,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 10,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt10-b-board-rtt",
+      "defconfig_sha256": "00cbc1ba87b42a2f346ded73ce47c88a6a660765df749cdfe2bb4fc965429b25"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt11-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 11,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 11,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt11-a-board-rtt",
+      "defconfig_sha256": "fb2a8f69b877141c6c4e9f35e44e222cc49db1126175a0dc97d210457262487d"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt11-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 11,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 11,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt11-b-board-rtt",
+      "defconfig_sha256": "5f36089d5a07cdff4aa59f31a7656c67a980720a4c512299fbd5009e3a517ba7"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt12-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 12,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 12,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt12-a-board-rtt",
+      "defconfig_sha256": "402303b36ee77adfa11cdce073d4593efdcf2d9d970ccd838cbe8397d6b546d8"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt12-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 12,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 12,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt12-b-board-rtt",
+      "defconfig_sha256": "6bd655b66c8831c51787665c8b07fdd67000d228fc7ce5f8389dcb52c591808f"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt13-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 13,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 13,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt13-a-board-rtt",
+      "defconfig_sha256": "f91e4d8772deca738e26185739d25af6cacf8de767e4a9ad96028f2ff1249101"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt13-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 13,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 13,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt13-b-board-rtt",
+      "defconfig_sha256": "c6ffcd29de4f907c500fb9cb32a60d456ac291bc34db6bd2a97ce18199fb1b15"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt14-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 14,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 14,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt14-a-board-rtt",
+      "defconfig_sha256": "63be1bfcb5e78ebcf41ccc165ff5d753c080e0f3d3a2c89a9d3de7f958a7d345"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt14-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 14,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 14,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt14-b-board-rtt",
+      "defconfig_sha256": "9106ce92b762fe18c2c21e2cc0782d75e1e12fff6e60ff3ef08605d7e6dcb9c0"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt15-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 15,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 15,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt15-a-board-rtt",
+      "defconfig_sha256": "ad7db67adc2b12d225e55a59400b7b573dc393a8df5dd06fde1ec83be556d3e3"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt15-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 15,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 15,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt15-b-board-rtt",
+      "defconfig_sha256": "0a709217b66db0da292af504c5b6a5e081c40bb44a3828960c6311196d6bd312"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt2-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 2,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt2-a-board-rtt",
+      "defconfig_sha256": "f583d4f4fd5512a3091652edcc75bd263c038e6d8109a20ef75c74b3824883d2"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt2-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 2,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt2-b-board-rtt",
+      "defconfig_sha256": "2f2af278b44f35d100b20ab811c1ebf49e02094f4cc887adc9897031e794f7a4"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt3-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 3,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 3,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt3-a-board-rtt",
+      "defconfig_sha256": "89dce0c6f0191e21d4d923fb0239d7121e67b7c294e138f9ac774cd7e2215cf7"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt3-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 3,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 3,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt3-b-board-rtt",
+      "defconfig_sha256": "619439a47c1af5abe43c974bff80e9a5b809562f24a1c4a474c933b68943f9d4"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt4-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 4,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 4,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt4-a-board-rtt",
+      "defconfig_sha256": "569239d5f77a3cf9feb57618c4ffaf298243f510894bdbae72d265b34b0c3b8d"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt4-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 4,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 4,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt4-b-board-rtt",
+      "defconfig_sha256": "192c95e8be89cfbf040d29c79d166173303fafcaeb380c27124eceff98dc928b"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt5-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 5,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 5,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt5-a-board-rtt",
+      "defconfig_sha256": "56c3d15217421a4687bf0455153984cf647b68cabf80a90e8a7b630b4db45184"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt5-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 5,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 5,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt5-b-board-rtt",
+      "defconfig_sha256": "bc31f39057a303f2bdefbf7e96a093671796e1f633467f835f0d440305c91016"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt6-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 6,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 6,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt6-a-board-rtt",
+      "defconfig_sha256": "22608d64c0979e61b97ce9e5ceb4c9d729531fb2e039934d01a56d97cdbe131d"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt6-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 6,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 6,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt6-b-board-rtt",
+      "defconfig_sha256": "d1c27a6f393c501d97afbfe4b9cd4ceaf4b3c6b99d4ef8bd58f9c1068c9d87f0"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt7-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 7,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 7,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt7-a-board-rtt",
+      "defconfig_sha256": "a7830c2cd1ded491c90b64ab6aabc1efb1da8fa5aaf32fef07935af410f69c1f"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt7-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 0,
+        "channel": 7,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 0,
+          "instance_channel": 7,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt7-b-board-rtt",
+      "defconfig_sha256": "bfa4cd1baaaa5490d241a06334ecbbc73d44c54b9e64d042db81f79478795511"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt8-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 8,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 8,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt8-a-board-rtt",
+      "defconfig_sha256": "85cd5b81adad9a32d1454ed0c8b1ef27009399f36154f4a64a458d5eb81a7419"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt8-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 8,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 8,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt8-b-board-rtt",
+      "defconfig_sha256": "4105a48d59d68821fc22da42149fc20c716cbfae5a15516daf440ff9cf17617c"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt9-a-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 9,
+        "mode": "pwm",
+        "output": "A"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 9,
+          "instance_output": "A",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt9-a-board-rtt",
+      "defconfig_sha256": "eca6286a21aa56967f6b5457390d418fdb6df4bd89004456bcd2171bdd2604ae"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "gpt9-b-board-rtt",
+      "instance": {
+        "family": "gpt",
+        "unit": 1,
+        "channel": 9,
+        "mode": "pwm",
+        "output": "B"
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "gpt",
+          "instance_unit": 1,
+          "instance_channel": 9,
+          "instance_output": "B",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "gpt9-b-board-rtt",
+      "defconfig_sha256": "52eb221c7a48afa16fa25557a3aba96f91e77a1701fada6163ba7128634016b6"
     },
     {
       "core": "cr8_0",
@@ -1146,6 +3456,609 @@
       ]
     },
     {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic0-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 0,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic0-board-rtt",
+      "defconfig_sha256": "c3d7bcbd5b401bdfa7732e032f81bd91b07888d655052519f69c09302ece9fdd"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic1-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 1,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic1-board-rtt",
+      "defconfig_sha256": "8fe6d8f0118cd0fa2b9dc5b0768de11848e721cf5c5eecaf92d45129d7c049d1"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic2-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 2,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic2-board-rtt",
+      "defconfig_sha256": "d4a8c2a6cb8b4a92316438d1cad495b63b86df4bc43d3f99bcee0d2ed81672c1"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic3-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 3,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 3,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic3-board-rtt",
+      "defconfig_sha256": "d88a482aba01055804aaade56e627c2ea49051313719b7bf4721dc38934007e4"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic4-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 4,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 4,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic4-board-rtt",
+      "defconfig_sha256": "7bb73c3b4b54666744f08a8cb0af6fe24d1d250b6f850175504c14a37cb95dd5"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic5-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 5,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 5,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic5-board-rtt",
+      "defconfig_sha256": "18dba77e87c6448da71b6468e3f10f55e5b6a76a5e8cbc15e261f7b5edf64fd4"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic6-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 6,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 6,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic6-board-rtt",
+      "defconfig_sha256": "a9d48268dd12c94bbe6637033f7515adfcfa6a4dc057a301c16e595ddf624fe6"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic7-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 7,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 7,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic7-board-rtt",
+      "defconfig_sha256": "4265c3cfec31e389e65a2e35235b58957184b6e8ff763060c97f54169673c4c8"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "riic8-board-rtt",
+      "instance": {
+        "family": "riic",
+        "unit": 0,
+        "channel": 8,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "riic",
+          "instance_unit": 0,
+          "instance_channel": 8,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "riic8-board-rtt",
+      "defconfig_sha256": "ca2684cb84e88200ffa13d01920a20d3a358de1f1a80c170edcce9dbf6f7c389"
+    },
+    {
       "core": "cr8_0",
       "core_source": "kconfig-default",
       "core_selector": "RZV2H_BUILD_CR8_0",
@@ -1172,6 +4085,686 @@
       "reset_classes": [
         "warm-load"
       ]
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c0-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 0,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c0-board-rtt",
+      "defconfig_sha256": "86653d0189ac5150c75e00be9944a1bc3614f9cb05d2dd3551bb5d08e146220e"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c1-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 1,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c1-board-rtt",
+      "defconfig_sha256": "a2d29afd9f00e8ec6fae86d37b783c0446b23d4aa0c44e656eeca9502bb71b09"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c2-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 2,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c2-board-rtt",
+      "defconfig_sha256": "2abd384578ab4fddf9a1df5de66a9fce7a7ec95b2cbeeb48deb21ff9bdb7d77f"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c3-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 3,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 3,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c3-board-rtt",
+      "defconfig_sha256": "910b77fdef691b0b00a1ad7141e2d6f5f1b603e58f526525e3fc4f2592756b4a"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c4-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 4,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 4,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c4-board-rtt",
+      "defconfig_sha256": "e77d4dee01eb7473a23971470cba97f958dbf51e7b1e59f09d17c83d8a185233"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c5-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 5,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 5,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c5-board-rtt",
+      "defconfig_sha256": "d17b63bcbf298a8da7761f2b043e465a10deb12574fc2cecc32fee4ef67d966e"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c6-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 6,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 6,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c6-board-rtt",
+      "defconfig_sha256": "8423528a67b55c89eb32ae1cdaca71fdc295cdd27b8909fff112f7b7126cc370"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c7-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 7,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 7,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c7-board-rtt",
+      "defconfig_sha256": "9d96219e23e055a0171c7af68131378e865050963309c54be425b068dbef27ef"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c8-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 8,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 8,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c8-board-rtt",
+      "defconfig_sha256": "52f3a024fa7d529a6dd7572cec6ab3f40337e33c7b22966f24ab4561f452bfeb"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-i2c9-board-rtt",
+      "instance": {
+        "family": "sci-i2c",
+        "unit": 0,
+        "channel": 9,
+        "mode": "master",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-i2c",
+          "instance_unit": 0,
+          "instance_channel": 9,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-i2c9-board-rtt",
+      "defconfig_sha256": "1dcdd0d5e29836362b3699d48e604f5c06258f57af86b1e23f0898e88614b38d"
     },
     {
       "core": "cr8_0",
@@ -1224,6 +4817,686 @@
       "reset_classes": [
         "warm-load"
       ]
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi0-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 0,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi0-board-rtt",
+      "defconfig_sha256": "0e1c91d1035d015798c764baa5ed6bfede03ea9ed690342c614fa076426d605e"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi1-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 1,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi1-board-rtt",
+      "defconfig_sha256": "f4263ba13f53e00e7783bb8151e76486e9a5c1bd794892eeeaec9985ab7611fa"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi2-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 2,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi2-board-rtt",
+      "defconfig_sha256": "31b3beb2299089fe8e8b6016e1c815795959f40be016d7c886d9b28fcc7523ea"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi3-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 3,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 3,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi3-board-rtt",
+      "defconfig_sha256": "e3651520e8d54362072f79a51d9e981ef202bffc736b76401f245942a1ab8b40"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi4-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 4,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 4,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi4-board-rtt",
+      "defconfig_sha256": "7b6dabad69e767158cabb31f7385c1e6cf94bd55dec05dd3a8c27a2a12337b0c"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi5-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 5,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 5,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi5-board-rtt",
+      "defconfig_sha256": "b31a8b6c5ee91caa3a0788cc18261899ae6a5f1eb90ae2e79052a11d88824238"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi6-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 6,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 6,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi6-board-rtt",
+      "defconfig_sha256": "6e0500d6bfb07bcea0fbce25c6179b9e9a2505661afc5e346a0cb9b2c97347d7"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi7-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 7,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 7,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi7-board-rtt",
+      "defconfig_sha256": "1362204bc16dd3059ab88f0e1ae3a6e984757f470aa1cc8c2bdcbe64f3025e24"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi8-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 8,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 8,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi8-board-rtt",
+      "defconfig_sha256": "4cd2ae0b69236716df981adda6089ccd5f63b6ed1fa9255097137d022ab84494"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "SCI-mode-authority",
+        "controller-clock-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": "SCI behavioral authority and RDK route qualification remain open.",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sci-spi9-board-rtt",
+      "instance": {
+        "family": "sci-spi",
+        "unit": 0,
+        "channel": 9,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sci-spi",
+          "instance_unit": 0,
+          "instance_channel": 9,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sci-spi9-board-rtt",
+      "defconfig_sha256": "9c713d4c408d2cb24283a4406d3a9f6d1dce61b1877a3d650739fd00cfdb80f5"
     },
     {
       "core": "cr8_0",
@@ -1313,6 +5586,210 @@
       ]
     },
     {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "sdhi-handoff"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sdhi0-board-rtt",
+      "instance": {
+        "family": "sdhi",
+        "unit": 0,
+        "channel": 0,
+        "mode": "lower",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sdhi",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sdhi0-board-rtt",
+      "defconfig_sha256": "0eea5966a88ba7c48b432b38007e4b6b9498259c4c7d68b6c460fb8f6c898dd9"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "sdhi-handoff"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sdhi1-board-rtt",
+      "instance": {
+        "family": "sdhi",
+        "unit": 0,
+        "channel": 1,
+        "mode": "lower",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sdhi",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sdhi1-board-rtt",
+      "defconfig_sha256": "9a40de188221fdf10d5ff8dec655ed4bea779dd806ef696cc5a0698b2849581f"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "sdhi-handoff"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "sdhi2-board-rtt",
+      "instance": {
+        "family": "sdhi",
+        "unit": 0,
+        "channel": 2,
+        "mode": "lower",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "sdhi",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "sdhi2-board-rtt",
+      "defconfig_sha256": "448cca090252ad5121874ffb22d403dabad4ca4a73a14aacbfa0f8e48a3b8ac5"
+    },
+    {
       "core": "cr8_0",
       "core_source": "kconfig-default",
       "core_selector": "RZV2H_BUILD_CR8_0",
@@ -1387,6 +5864,213 @@
       "reset_classes": [
         "warm-load"
       ]
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "pad-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "spi0-board-rtt",
+      "instance": {
+        "family": "spi",
+        "unit": 0,
+        "channel": 0,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable",
+          "instance.loopback"
+        ],
+        "expected_summary": {
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "spi",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "spi0-board-rtt",
+      "defconfig_sha256": "b8030c15738f42e894f5dd1c57db163d4740faee6c461a61d46f1e5c86ba3ce1"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "pad-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "spi1-board-rtt",
+      "instance": {
+        "family": "spi",
+        "unit": 0,
+        "channel": 1,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable",
+          "instance.loopback"
+        ],
+        "expected_summary": {
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "spi",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "spi1-board-rtt",
+      "defconfig_sha256": "17edf3692ea841947215bea33c1ccb09d40dececb083ad614388b5792d3b09a6"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "pad-ownership"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "internal-function",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "spi2-board-rtt",
+      "instance": {
+        "family": "spi",
+        "unit": 0,
+        "channel": 2,
+        "mode": "spi",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable",
+          "instance.loopback"
+        ],
+        "expected_summary": {
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "spi",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "kconfig-default",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "spi2-board-rtt",
+      "defconfig_sha256": "966bd501e066c87b36f57fb96220fa82369a95e24f27153b7318bbb00a92bee3"
     },
     {
       "core": "cr8_0",
@@ -1473,6 +6157,278 @@
       ]
     },
     {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "wdt-stopped"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "wdt0-board-rtt",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 0,
+        "mode": "nonstart",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "wdt",
+          "instance_unit": 0,
+          "instance_channel": 0,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "wdt0-board-rtt",
+      "defconfig_sha256": "d0d4e6dc93876dd94d7fcb57196475818a55bd9ea86ba948e05cb34933fa6f98"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "wdt-stopped"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "wdt1-board-rtt",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 1,
+        "mode": "nonstart",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "wdt",
+          "instance_unit": 0,
+          "instance_channel": 1,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "wdt1-board-rtt",
+      "defconfig_sha256": "be038b814de9ad43f90612deabae6f6d67053fc932f489e3d6567cf6d883d569"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "wdt-stopped"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "wdt2-board-rtt",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 2,
+        "mode": "nonstart",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "wdt",
+          "instance_unit": 0,
+          "instance_channel": 2,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "wdt2-board-rtt",
+      "defconfig_sha256": "505925e95fb6a703025a4a9c968bca8e8659fadc36161fe63f760bbd5712424d"
+    },
+    {
+      "mode": "hwtest",
+      "oracle": "hwtest",
+      "commands": [
+        "hwtest"
+      ],
+      "requirements": [
+        "controller-clock-ownership",
+        "wdt-stopped"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "diagnostic",
+      "builtin": {
+        "name": "hwtest",
+        "symbol": "hwtest_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ],
+      "instance_id": "wdt3-board-rtt",
+      "instance": {
+        "family": "wdt",
+        "unit": 0,
+        "channel": 3,
+        "mode": "nonstart",
+        "output": null
+      },
+      "hwtest_contract": {
+        "mode": "driver-instance",
+        "required_case_ids": [
+          "instance.guard",
+          "instance.identity",
+          "instance.stable"
+        ],
+        "expected_summary": {
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0
+        },
+        "target_state_required": {
+          "instance_family": "wdt",
+          "instance_unit": 0,
+          "instance_channel": 3,
+          "instance_output": "none",
+          "instance_identity": {
+            "op": "gt",
+            "value": 0
+          }
+        },
+        "target_state_types": {
+          "instance_family": "string",
+          "instance_unit": "integer",
+          "instance_channel": "integer",
+          "instance_output": "string",
+          "instance_identity": "integer-predicate"
+        }
+      },
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "wdt3-board-rtt",
+      "defconfig_sha256": "2815879c16da07bc7f7e4150ab4495e028be43a39154e6067a352f1bb359b841"
+    },
+    {
       "core": "cr8_0",
       "core_source": "kconfig-default",
       "core_selector": "RZV2H_BUILD_CR8_0",
@@ -1519,6 +6475,7 @@
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_dmac.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_ether.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_i2c.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h_instance_test.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_ipc_local.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_pwm.c",

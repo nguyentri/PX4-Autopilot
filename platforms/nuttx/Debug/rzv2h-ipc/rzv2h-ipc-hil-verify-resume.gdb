@@ -12,7 +12,9 @@
 set pagination off
 monitor halt
 printf "RUN_PC=%#x CPSR=%#x\n", $pc, $cpsr
-bt
+# Assembly cache-maintenance frames can stall ARM's prologue unwinder.
+# Keep automatic verification to bounded PC/GIC reads; capture a backtrace
+# separately when diagnosing a fault in an identified running image.
 printf "SELF_MASK:\n"
 x/1bx 0x12C11800
 printf "ICDIPTR 347/348/359/360:\n"

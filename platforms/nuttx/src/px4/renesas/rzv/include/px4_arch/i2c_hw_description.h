@@ -51,6 +51,10 @@ extern "C" {
 /* Validate I2C configuration against available NuttX buses */
 constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX_BUS_ITEMS])
 {
+#if defined(CONFIG_RZV_I2C7) && defined(CONFIG_RZV_SCI7_I2C)
+	constexpr_assert(false, "RIIC7 and SCI7 claim the same PX4 I2C bus");
+#endif
+
 	const bool nuttx_enabled_i2c_buses[] = {
 #ifdef CONFIG_RZV_I2C0
 		true,
@@ -87,12 +91,22 @@ constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_SCI7_I2C
+#if defined(CONFIG_RZV_I2C7) || defined(CONFIG_RZV_SCI7_I2C)
+		true,
+#else
+		false,
+#endif
+#ifdef CONFIG_RZV_I2C8
 		true,
 #else
 		false,
 #endif
 	};
+
+	for (int j = 0; j < I2C_BUS_MAX_BUS_ITEMS; ++j) {
+		constexpr_assert(i2c_busses_conf[j].bus < (int)(sizeof(nuttx_enabled_i2c_buses) /
+				 sizeof(nuttx_enabled_i2c_buses[0])), "I2C bus outside native/SCI7 domain");
+	}
 
 	for (unsigned i = 0; i < sizeof(nuttx_enabled_i2c_buses) / sizeof(nuttx_enabled_i2c_buses[0]); ++i) {
 		bool found_bus = false;

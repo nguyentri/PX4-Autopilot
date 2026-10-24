@@ -249,3 +249,22 @@ ak-engineer
 
 !/platforms/nuttx/Debug/rzv2h-sample-coverage.py
 !/test/rzv2h-all-sample-closure-test.py
+
+!/test/rzv2h-riic-instance-runtime-test.py
+!/test/rzv2h-spi-instance-runtime-test.py
+!/test/rzv2h-gpt-channel-runtime-test.py
+!/test/rzv2h-driver-channel-coverage-test.py
+!/test/rzv2h-uart-sample-deadline-test.py
+!/test/rzv2h-riic-clock-runtime-test.py
+!test/rzv2h-gpt-clock-runtime-test.py
+!test/rzv2h-driver-instance-artifact-test.py
+!test/rzv2h-driver-instance-sample-test.py
+!test/rzv2h-i2c-hal-runtime-test.py
+
+!/test/rzv2h-sci-spi-mode-runtime-test.py
+!/test/rzv2h-sci-i2c-mode-runtime-test.py
+
+!/test/rzv2h-ether-two-port-runtime-test.py
+!/test/rzv2h-indexed-sdhi-wdt-runtime-test.py
+!/test/rzv2h-sdhi-wdt-instance-artifact-test.py
+docs/renesas/r01uh1015ej0045_rzv2h.pdf

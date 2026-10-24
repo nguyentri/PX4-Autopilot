@@ -148,6 +148,12 @@ def verify(profile, directory, source_state_path):
         raise ValueError('build receipt mismatch')
     source_state_bytes = source_state_path.read_bytes()
     source_state = json.loads(source_state_bytes)
+    contracts = INVENTORY.archived_contracts(source_state_path, receipt)
+    if contracts:
+        legacy = [x for x in contracts['legacy_contract']['profiles']
+                  if x['profile'] == profile['profile']]
+        if legacy != [profile]:
+            raise ValueError('archived legacy profile contract mismatch')
     source_digest = hashlib.sha256(source_state_bytes).hexdigest()
     if receipt.get('source_state_sha256') != source_digest:
         raise ValueError('source-state digest missing or mismatched')
@@ -204,8 +210,229 @@ def verify(profile, directory, source_state_path):
             'builtin': registered, 'source_state_sha256': source_digest,
             'submodule_commits': commits,
             'required_case_ids': profile['required_case_ids'],
+            'contract_inputs': source_state.get('contract_inputs', []),
             'target_prerequisites_verified': False, 'artifact_authorized': False,
             'on_target': 'NOT-RUN'}
+
+
+def elf32_symbols(data):
+    """Keep symbol types, sizes and duplicate definitions for compiled checks."""
+    if len(data) < 52:
+        raise ValueError('truncated instance ELF')
+    offset = struct.unpack_from('<I', data, 32)[0]
+    stride, count = struct.unpack_from('<HH', data, 46)
+    if stride < 40 or not count or offset + stride * count > len(data):
+        raise ValueError('invalid instance ELF section table')
+    sections = [struct.unpack_from('<10I', data, offset + stride * i)
+                for i in range(count)]
+    result = {}
+    for section in sections:
+        if section[1] != 2:  # SHT_SYMTAB
+            continue
+        start, size, link, entry_size = section[4], section[5], section[6], section[9]
+        if entry_size != 16 or size % entry_size or start + size > len(data) or link >= count:
+            raise ValueError('invalid instance ELF symbol table')
+        strings = sections[link]
+        if strings[1] != 3 or strings[4] + strings[5] > len(data):
+            raise ValueError('invalid instance ELF symbol names')
+        names = data[strings[4]:strings[4] + strings[5]]
+        for position in range(start, start + size, entry_size):
+            name, value, length, info, _, index = struct.unpack_from('<IIIBBH', data, position)
+            if name >= len(names):
+                raise ValueError('invalid instance ELF symbol name')
+            end = names.find(b'\0', name)
+            if end < 0:
+                raise ValueError('unterminated instance ELF symbol name')
+            text = names[name:end].decode('ascii')
+            if text:
+                result.setdefault(text, []).append((value, length, info & 15, index, info >> 4))
+    return result
+
+
+def compiled_instance_cases(elf, required_case_ids, required_symbols):
+    """Validate the ARM32 getter/table against the archived ordered contract.
+
+    Strings may be suffix-pooled, so only their compiled pointers identify a
+    case. The simple count/table getter is decoded conservatively; unsupported
+    instruction shapes fail admission instead of falling back to string scans.
+    """
+    if not isinstance(required_case_ids, list) or not required_case_ids or \
+            any(not isinstance(case, str) for case in required_case_ids) or \
+            len(set(required_case_ids)) != len(required_case_ids):
+        raise ValueError('invalid instance case contract')
+    expected_count = len(required_case_ids)
+    table_size = expected_count * 12  # ARM32 hwtest_case_s: three pointers
+    data = elf.read_bytes()
+    definitions = elf32_symbols(data)
+
+    def function(name):
+        candidates = [x for x in definitions.get(name, []) if x[3] != 0]
+        if len(candidates) != 1 or candidates[0][2] != 2 or \
+                candidates[0][4] not in (0, 1) or not candidates[0][1]:
+            raise ValueError('instance callable provider missing/ambiguous: ' + name)
+        address, size = candidates[0][:2]
+        elf32_bytes(data, address & ~1, size, executable=True)
+        return address, size
+
+    for name in set(required_symbols) | {'hwtest_main', 'driver_instance_cases'}:
+        function(name)
+    getter, size = function('driver_instance_cases')
+    if getter & 3 or size % 4:
+        raise ValueError('unsupported ARM instance case provider')
+    code = elf32_bytes(data, getter, size, executable=True)
+    # The pointer argument starts in r0. Only the count store, immediate MOV,
+    # PC-relative table load and return are admitted for this getter ABI.
+    registers = [None] * 16
+    registers[0] = 'count-pointer'
+    count = table_address = None
+    for index in range(min(size // 4, 8)):
+        word = struct.unpack_from('<I', code, index * 4)[0]
+        if word & 0xffff0000 == 0xe3a00000:  # MOV immediate
+            destination = (word >> 12) & 15
+            if destination not in (1, 2, 3, 12):
+                raise ValueError('unsupported ARM instance case provider register')
+            immediate, rotate = word & 255, ((word >> 8) & 15) * 2
+            registers[destination] = ((immediate >> rotate) |
+                (immediate << ((32 - rotate) % 32))) & 0xffffffff
+        elif word & 0xffff0fff == 0xe5800000:  # STR rN,[r0]
+            if registers[0] != 'count-pointer' or count is not None:
+                raise ValueError('instance case provider count store mismatch')
+            count = registers[(word >> 12) & 15]
+        elif word & 0xff7ff000 == 0xe51f0000:  # LDR r0,[pc,+/-imm]
+            literal = getter + index * 4 + 8
+            literal += (word & 4095) * (1 if word & (1 << 23) else -1)
+            registers[0] = struct.unpack('<I', elf32_bytes(data, literal, 4))[0]
+        elif word == 0xe12fff1e:  # BX lr
+            table_address = registers[0]
+            break
+        else:
+            raise ValueError('unsupported ARM instance case provider')
+    if count != expected_count or type(table_address) is not int or not table_address:
+        raise ValueError('instance case provider count/table mismatch')
+    tables = [x for x in definitions.get('g_cases', [])
+              if x[0] == table_address and x[3] != 0]
+    if len(tables) != 1 or tables[0][1:3] != (table_size, 1):
+        raise ValueError('instance compiled case table size/type mismatch')
+    table = elf32_bytes(data, table_address, table_size)
+
+    def cstring(address):
+        if not address:
+            raise ValueError('instance case string pointer is null')
+        value = bytearray()
+        for index in range(128):
+            byte = elf32_bytes(data, address + index, 1)[0]
+            if byte == 0:
+                return value.decode('ascii')
+            value.append(byte)
+        raise ValueError('unterminated instance case string')
+
+    actual = []
+    pointers = []
+    for index in range(expected_count):
+        suite, name, pointer = struct.unpack_from('<3I', table, index * 12)
+        suite, name = cstring(suite), cstring(name)
+        case = suite + '.' + name
+        if index >= len(required_case_ids) or case != required_case_ids[index]:
+            raise ValueError('instance compiled case identity/order mismatch')
+        address, _ = function(name)
+        if not pointer or pointer != address or pointer in pointers:
+            raise ValueError('instance case function pointer mismatch: ' + case)
+        elf32_bytes(data, pointer & ~1, 1, executable=True)
+        actual.append(case)
+        pointers.append(pointer)
+    if actual != required_case_ids:
+        raise ValueError('instance compiled case count mismatch')
+    main, main_size = function('hwtest_main')
+    main_code = elf32_bytes(data, main & ~1, main_size, executable=True)
+    calls = 0
+    for index in range(0, len(main_code) - 3, 4):
+        word = struct.unpack_from('<I', main_code, index)[0]
+        if word & 0xff000000 == 0xeb000000:  # ARM BL, unconditional
+            displacement = word & 0xffffff
+            if displacement & 0x800000:
+                displacement -= 0x1000000
+            calls += main + index + 8 + displacement * 4 == getter
+    if calls != 1:
+        raise ValueError('hwtest does not call the instance case provider')
+    return actual
+
+
+def verify_instance(profile, config, symbols, strings, catalog, receipt):
+    """Check the selected tuple against resolved selectors and linked drivers."""
+    cell = next((x for x in catalog['instances'] if x['instance_id'] == profile['instance_id']), None)
+    if cell is None or cell['profile'] != profile['profile'] or \
+            INVENTORY.instance_key(cell['core'], cell['instance']) != \
+            INVENTORY.instance_key(profile['core'], profile['instance']):
+        raise ValueError('instance catalogue/profile mismatch')
+    for key in ('instance_id', 'instance'):
+        if receipt.get(key) != profile[key]:
+            raise ValueError('build receipt instance mismatch: ' + key)
+    if receipt.get('core') != profile['core']:
+        raise ValueError('build receipt instance core mismatch')
+    instance = profile['instance']
+    number = {'riic':1, 'spi':2, 'sci-i2c':3, 'sci-spi':4, 'gpt':5,
+              'ether':6, 'sdhi':7, 'wdt':8}.get(instance['family'])
+    if number is None:
+        raise ValueError('unknown compiled instance family')
+    # These selectors implement fixed dispatch; their meaning cannot be weakened
+    # by coherently editing and rehashing the archived catalogue.
+    required = dict(cell['required_config'])
+    required.update(CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE='y',
+                    CONFIG_TESTING_RZV_HWTEST_INSTANCE_FAMILY=str(number),
+                    CONFIG_TESTING_RZV_HWTEST_INSTANCE_CHANNEL=str(instance['channel']),
+                    CONFIG_TESTING_RZV_HWTEST_INSTANCE_OUTPUT=str(int(instance['output'] == 'B')),
+                    CONFIG_RZV2H_SAMPLE_TEST_API='y', CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT='y')
+    prefix = {'riic':'I2C', 'spi':'SPI', 'sci-i2c':'SCI', 'sci-spi':'SCI',
+              'gpt':'GPT', 'ether':'ETHER', 'wdt':'WDT'}.get(instance['family'])
+    if prefix:
+        required['CONFIG_RZV_'+prefix+str(instance['channel'])] = \
+            'n' if instance['family'] in ('sci-i2c', 'sci-spi') else 'y'
+    if instance['family'] == 'gpt':
+        required['CONFIG_RZV_PWM'] = 'y'
+    if instance['family'] == 'ether':
+        required.update(CONFIG_RZV_ETHERNET='y', CONFIG_NETDEV_LATEINIT='y',
+                        CONFIG_NSH_NETINIT='n', CONFIG_NETINIT_THREAD='n',
+                        CONFIG_NETUTILS_DHCPC='n')
+        required['CONFIG_RZV_ETHER'+str(1-instance['channel'])] = 'n'
+    if instance['family'] == 'sdhi':
+        required.update(CONFIG_RZV_SDHI='y', CONFIG_RZV2H_SDHI_LOWER_ONLY='y',
+                        CONFIG_RZV2H_BUILD_CM33='n', CONFIG_MMCSD='n',
+                        CONFIG_MMCSD_SDIO='n', CONFIG_FS_FAT='n')
+    if instance['family'] == 'wdt':
+        required.update(CONFIG_RZV_WDT='y', CONFIG_WATCHDOG_AUTOMONITOR='n',
+                        CONFIG_RZV2H_WDT_TEST='n', CONFIG_RZV_WDT_INTERRUPT_MODE='n')
+        for channel in range(4):
+            required['CONFIG_RZV_WDT'+str(channel)] = 'y' if channel == instance['channel'] else 'n'
+    if instance['family'] in ('sci-i2c', 'sci-spi'):
+        required['CONFIG_RZV_SCI'+str(instance['channel'])+'_'+instance['family'][4:].upper()] = 'y'
+        required['CONFIG_RZV_SCI'+str(instance['channel'])+('_SPI' if instance['family'] == 'sci-i2c' else '_I2C')] = 'n'
+    for key, value in required.items():
+        if config.get(key, 'n') != value:
+            raise ValueError('resolved instance selector mismatch: ' + key)
+    modes = [key for key, value in config.items()
+             if key.startswith('CONFIG_TESTING_RZV_HWTEST_MODE_') and value == 'y']
+    if modes != ['CONFIG_TESTING_RZV_HWTEST_MODE_DRIVER_INSTANCE']:
+        raise ValueError('conflicting instance test modes')
+    for channel in range(10):
+        selected = [key for key in ('CONFIG_RZV_SCI'+str(channel)+'_SPI',
+                                   'CONFIG_RZV_SCI'+str(channel)+'_I2C',
+                                   'CONFIG_RZV_SCI'+str(channel)) if config.get(key) == 'y']
+        if len(selected) > 1:
+            raise ValueError('conflicting SCI instance modes')
+    provider = {1:'rzv_i2c_initialize', 2:'rzv_spibus_initialize',
+                3:'rzv_sci_i2c_initialize', 4:'rzv_sci_spi_initialize',
+                5:'rzv_gpt_initialize_output', 6:'rzv_ether_initialize',
+                7:'rzv_sdhi_initialize', 8:'rzv_wdt_initialize'}[number]
+    providers = set(cell['required_symbols']) | {'hwtest_main', provider}
+    if number in (7, 8):
+        providers.add('rzv2h_' + instance['family'] + '_sample_state_at')
+    for name in providers:
+        if name not in symbols:
+            raise ValueError('instance implementation not linked: ' + name)
+    contract = INVENTORY.validate_hwtest(profile['hwtest_contract'])
+    if contract['mode'] not in strings:
+        raise ValueError('instance mode absent from artifact')
+    return providers - {'hwtest_main'}
 
 
 def verify_native(profile, directory, source_state_path, manifest):
@@ -218,6 +445,13 @@ def verify_native(profile, directory, source_state_path, manifest):
         raise ValueError('native build receipt mismatch')
     if receipt.get('source_state_sha256') != source_hash:
         raise ValueError('source-state digest mismatch')
+    contracts = INVENTORY.archived_contracts(source_state_path, receipt,
+                                            required='instance_id' in profile)
+    matches = [x for x in manifest['profiles'] if x['profile'] == profile['profile']]
+    if matches != [profile]:
+        raise ValueError('native profile differs from archived manifest')
+    if contracts:
+        INVENTORY.validate(manifest, catalog=contracts['driver_coverage'], live=False)
     archived_policy = source_state_path.parent/'sample-profiles.json'
     if not archived_policy.is_file() or json.loads(archived_policy.read_text()) != manifest or \
             receipt.get('manifest_sha256') != INVENTORY.digest(archived_policy) or \
@@ -289,12 +523,25 @@ def verify_native(profile, directory, source_state_path, manifest):
              (0x41800000 if core == 'cr8_0' else 0x42800000))
         if not uncached and (profile['console'].startswith('rtt') or not private_cached):
             raise ValueError('primary RTT console outside core-private noncache SRAM')
+    hwtest_contract = profile.get('hwtest_contract')
+    if 'instance_id' in profile:
+        strings = subprocess.check_output(['arm-none-eabi-strings', '-n', '1', str(elf)], text=True).splitlines()
+        providers = verify_instance(profile, config, symbols, strings,
+                                    contracts['driver_coverage'], receipt)
+        compiled_instance_cases(elf, hwtest_contract['required_case_ids'], providers)
     if profile.get('legacy_profile'):
-        legacy = json.loads(Path(__file__).with_name('rzv2h-sample-profiles.json').read_text())
+        # Historical unbound archives retain their old admission path. They
+        # cannot acquire instance completeness without the three-input bundle.
+        legacy = contracts['legacy_contract'] if contracts else json.loads(INVENTORY.LEGACY.read_text())
         matches = [x for x in legacy['profiles'] if x['profile'] == profile['legacy_profile']]
         if len(matches) != 1:
             raise ValueError('legacy profile missing')
         verify(matches[0], directory, source_state_path)
+        hwtest_contract = matches[0]
+    if contracts and profile.get('oracle') == 'hwtest' and hwtest_contract is None:
+        hwtest_contract = contracts['driver_coverage'].get('native_hwtest_contracts', {}).get(profile['profile'])
+        if hwtest_contract is None:
+            raise ValueError('unknown native hwtest suite contract')
     return {'status': 'BUILD-CHECKED', 'profile': profile['profile'],
             'core': core, 'console': actual['console'], 'entrypoint': actual['entrypoint'],
             'elf': str(elf), 'elf_sha256': hashes['nuttx.elf'],
@@ -305,6 +552,10 @@ def verify_native(profile, directory, source_state_path, manifest):
             'application_entry': hex(symbols[profile['builtin']['symbol']
                                            if profile.get('builtin') else profile['entrypoint']]),
             'requirements': profile['requirements'], 'hazards': profile['hazards'],
+            'contract_inputs': source.get('contract_inputs', []),
+            'contract_binding': 'archived' if contracts else 'historical-unbound',
+            'hwtest_contract': hwtest_contract,
+            **{key:profile[key] for key in ('instance_id', 'instance') if key in profile},
             'runtime_blocker': profile.get('reason'), 'on_target': 'NOT-RUN',
             'artifact_authorized': False, 'target_prerequisites_verified': False}
 
@@ -319,7 +570,8 @@ def main():
     manifest = json.loads(args.manifest.read_text())
     native = manifest.get('schema_version') == 2 and manifest.get('kind') == 'rzv2h-native-samples'
     if native:
-        INVENTORY.validate(manifest)
+        contracts = INVENTORY.archived_contracts(args.source_state)
+        INVENTORY.validate(manifest, catalog=contracts.get('driver_coverage'), live=False)
     profiles = manifest['profiles']
     results = []
     for profile in profiles:

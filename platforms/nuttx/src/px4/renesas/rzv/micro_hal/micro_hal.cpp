@@ -20,12 +20,14 @@
 
 /* External NuttX RZV driver functions.
  *
- * RDK-RZ/V2H I2C buses are SCI-mode simple-I2C (rzv_sci_i2c.c), not the RIIC
- * native controller. The SCI-I2C initializer is only linked when
- * CONFIG_RZV_SCI_I2C is enabled; guard every reference accordingly.
+ * Default RDK bus7 is SCI7 simple-I2C. Native RIIC0..8 are opt-in and do not
+ * add board routes. Guard each provider by its actual compilation gate.
  */
 extern "C" {
 	struct spi_dev_s *rzv_spibus_initialize(int bus);
+#ifdef CONFIG_RZV_I2C
+	struct i2c_master_s *board_i2c_initialize(int channel);
+#endif
 #ifdef CONFIG_RZV_SCI_I2C
 	struct i2c_master_s *rzv_sci_i2c_initialize(int channel);
 #endif
@@ -48,22 +50,138 @@ struct spi_dev_s *px4_spibus_initialize(int bus)
  */
 struct i2c_master_s *px4_i2cbus_initialize(int bus)
 {
+#if defined(CONFIG_RZV_I2C7) && defined(CONFIG_RZV_SCI7_I2C)
+
+	if (bus == 7) {
+		return nullptr;
+	}
+
+#endif
+
+#ifdef CONFIG_RZV_I2C
+
+	switch (bus) {
+#ifdef CONFIG_RZV_I2C0
+
+	case 0:
+		return board_i2c_initialize(0);
+#endif
+#ifdef CONFIG_RZV_I2C1
+
+	case 1:
+		return board_i2c_initialize(1);
+#endif
+#ifdef CONFIG_RZV_I2C2
+
+	case 2:
+		return board_i2c_initialize(2);
+#endif
+#ifdef CONFIG_RZV_I2C3
+
+	case 3:
+		return board_i2c_initialize(3);
+#endif
+#ifdef CONFIG_RZV_I2C4
+
+	case 4:
+		return board_i2c_initialize(4);
+#endif
+#ifdef CONFIG_RZV_I2C5
+
+	case 5:
+		return board_i2c_initialize(5);
+#endif
+#ifdef CONFIG_RZV_I2C6
+
+	case 6:
+		return board_i2c_initialize(6);
+#endif
+#ifdef CONFIG_RZV_I2C7
+
+	case 7:
+		return board_i2c_initialize(7);
+#endif
+#ifdef CONFIG_RZV_I2C8
+
+	case 8:
+		return board_i2c_initialize(8);
+#endif
+
+	default:
+		break;
+	}
+
+#endif
+
 #ifdef CONFIG_RZV_SCI_I2C
-	/* The PX4 logical bus number maps directly to the SCI channel:
-	 * bus 7 == SCI7 == BMP280 barometer on RDK-RZ/V2H.
-	 */
-	return rzv_sci_i2c_initialize(bus);
-#else
+
+	switch (bus) {
+#ifdef CONFIG_RZV_SCI0_I2C
+
+	case 0:
+		return rzv_sci_i2c_initialize(0);
+#endif
+#ifdef CONFIG_RZV_SCI1_I2C
+
+	case 1:
+		return rzv_sci_i2c_initialize(1);
+#endif
+#ifdef CONFIG_RZV_SCI2_I2C
+
+	case 2:
+		return rzv_sci_i2c_initialize(2);
+#endif
+#ifdef CONFIG_RZV_SCI3_I2C
+
+	case 3:
+		return rzv_sci_i2c_initialize(3);
+#endif
+#ifdef CONFIG_RZV_SCI4_I2C
+
+	case 4:
+		return rzv_sci_i2c_initialize(4);
+#endif
+#ifdef CONFIG_RZV_SCI5_I2C
+
+	case 5:
+		return rzv_sci_i2c_initialize(5);
+#endif
+#ifdef CONFIG_RZV_SCI6_I2C
+
+	case 6:
+		return rzv_sci_i2c_initialize(6);
+#endif
+#ifdef CONFIG_RZV_SCI7_I2C
+
+	case 7:
+		return rzv_sci_i2c_initialize(7);
+#endif
+#ifdef CONFIG_RZV_SCI8_I2C
+
+	case 8:
+		return rzv_sci_i2c_initialize(8);
+#endif
+#ifdef CONFIG_RZV_SCI9_I2C
+
+	case 9:
+		return rzv_sci_i2c_initialize(9);
+#endif
+
+	default:
+		break;
+	}
+
+#endif
+
 	(void)bus;
 	return nullptr;
-#endif
 }
 
 /**
  * Uninitialize I2C bus
  *
- * SCI-I2C masters use static per-channel state and are never torn down, so
- * there is no lower-half uninitialize to call.
+ * Board RIIC and SCI masters retain one static board-lifetime owner.
+ * PX4 borrows those pointers and must not release the board's cached owner.
  */
 int px4_i2cbus_uninitialize(struct i2c_master_s *dev)
 {

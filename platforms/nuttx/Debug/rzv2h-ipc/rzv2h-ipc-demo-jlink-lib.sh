@@ -124,6 +124,12 @@ _start_server() {
 			_stop_server; return 1
 		fi
 		if _server_owns_port && grep -q 'Waiting for GDB connection' "${log}"; then
+			# The log can grow during the ownership/readiness checks. Reject
+			# failures appended after the first scan before handing off to GDB.
+			if _connect_failed "${log}"; then
+				echo "!! J-Link target connection failed; no automatic retry (see ${log})" >&2
+				_stop_server; return 1
+			fi
 			return 0
 		fi
 		_server_identity || { _stop_server; return 1; }

@@ -458,7 +458,7 @@
         "RttBridgeConnectGuard.test_connect_timeout_kills_a_stuck_jlinkexe_and_cleans_up",
         "RttBridgeConnectGuard.test_failed_connect_fails_fast_without_claiming_a_reset",
         "LoaderVerifyGuard.test_verify_attaches_without_reset_and_fails_on_a_logged_reset",
-        "LoaderVerifyGuard.test_load_retry_judges_only_its_own_attempt",
+        "LoaderVerifyGuard.test_load_failure_stops_before_gdb_and_never_retries",
         "LoaderVerifyGuard.test_one_core_loader_loads_then_verifies",
         "Preflight.test_elf_entry_maps_to_the_linked_core",
         "Preflight.test_report_runs_without_touching_a_probe"
@@ -1084,9 +1084,10 @@
       "target_access": "none",
       "command": [
         "{python}",
-        "test/rzv2h_sci_spi_contract_test.py"
+        "test/rzv2h_sci_spi_contract_test.py",
+        "--portable"
       ],
-      "note": "Source/config regressions for the isolated RZ/V2H SCI-SPI sample."
+      "note": "Portable SCI0..9 setup, CPG, board, integer clock and production transfer/ISR contracts; imports the mode runtime cases. CMSIS authority is a separate required-reference stage."
     },
     {
       "id": "rzv2h_sih_artifact_contract_test",
@@ -2453,6 +2454,379 @@
         "platforms/nuttx/Debug/rzv2h-sample-coverage.py",
         "--help"
       ]
+    },
+    {
+      "id": "rzv2h-driver-channel-coverage-test",
+      "path": "test/rzv2h-driver-channel-coverage-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-driver-channel-coverage-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Check per-instance inventory, archived policy authority and fail-closed coverage accounting."
+    },
+    {
+      "id": "rzv2h-driver-instance-artifact-test",
+      "path": "test/rzv2h-driver-instance-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "driver-instance-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-driver-instance-artifact-test.py",
+        "--builds",
+        "{sample_builds}",
+        "--source-state",
+        "{sample_source_state}"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm",
+          "arm-none-eabi-objdump",
+          "arm-none-eabi-strings"
+        ]
+      },
+      "note": "Admit compiled instance cases and reject coherently rehashed selector/provider/case corruptions."
+    },
+    {
+      "id": "rzv2h-gpt-channel-runtime-harness",
+      "path": "test/rzv2h-gpt-channel-runtime-harness.c",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Native C fixture compiled by the real GPT channel runtime test."
+    },
+    {
+      "id": "rzv2h-gpt-channel-runtime-test",
+      "path": "test/rzv2h-gpt-channel-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-gpt-channel-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Compile and execute all sixteen GPT channels and isolated A/B claims."
+    },
+    {
+      "id": "rzv2h-gpt-clock-runtime-test",
+      "path": "test/rzv2h-gpt-clock-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-gpt-clock-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute shared GPT unit cold initialization, concurrent acquisition and sticky release."
+    },
+    {
+      "id": "rzv2h-riic-clock-runtime-test",
+      "path": "test/rzv2h-riic-clock-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-riic-clock-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute all RIIC reset/MSTOP coordinates and SPI2 split-reset failure cleanup."
+    },
+    {
+      "id": "rzv2h-riic-instance-runtime-test",
+      "path": "test/rzv2h-riic-instance-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-riic-instance-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute nine RIIC instances, disabled-index guards, references and failed acquisition cleanup."
+    },
+    {
+      "id": "rzv2h-spi-instance-runtime-test",
+      "path": "test/rzv2h-spi-instance-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-spi-instance-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute native SPI instance dispatch, identity, retry and board admission."
+    },
+    {
+      "id": "rzv2h-uart-sample-deadline-test",
+      "path": "test/rzv2h-uart-sample-deadline-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-uart-sample-deadline-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute UART partial, interrupted and zero-progress reads against one absolute deadline."
+    },
+    {
+      "id": "rzv2h-driver-instance-sample-test",
+      "path": "test/rzv2h-driver-instance-sample-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-driver-instance-sample-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the instance suite prerequisite guard and actual board invalid/unavailable selection paths."
+    },
+    {
+      "id": "rzv2h-i2c-hal-runtime-test",
+      "path": "test/rzv2h-i2c-hal-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-i2c-hal-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "c++"
+        ]
+      },
+      "note": "Execute PX4 RIIC0..8 and SCI mode routing, close ownership and constexpr bus configuration guards."
+    },
+    {
+      "id": "rzv2h-sci-channel-reference-test",
+      "path": "test/rzv2h_sci_spi_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_sci_spi_contract_test.py",
+        "SciChannelReference.test_cmsis_declares_one_register_type_for_all_ten_channels"
+      ],
+      "requires": {
+        "paths": [
+          "refs/rzv2h_evk/sci_b_uart/sci_b_uart_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines/sci_b_iodefine.h",
+          "refs/rzv2h_evk/sci_b_uart/sci_b_uart_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp/mcu/rzv2h/cr/bsp_feature.h"
+        ]
+      },
+      "note": "Require local CMSIS/FSP authority for all ten SCI layouts; missing references fail admission."
+    },
+    {
+      "id": "rzv2h-sci-spi-mode-runtime-test",
+      "path": "test/rzv2h-sci-spi-mode-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "sci-mode-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sci-spi-mode-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Focused manual-derived production SCI-SPI transfer/ISR regressions; also imported by the portable SCI source suite."
+    },
+    {
+      "id": "rzv2h-sci-i2c-mode-runtime-test",
+      "path": "test/rzv2h-sci-i2c-mode-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host",
+        "sci-mode-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sci-i2c-mode-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Manual-derived production SCI-I2C control, transition, pulse timing and STOP/error regressions."
+    },
+    {
+      "id": "rzv2h-ether-two-port-runtime-test",
+      "path": "test/rzv2h-ether-two-port-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ether-two-port-runtime-test.py",
+        "--portable"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute both GBETH board instances, independent link clock transitions and all hardware address aliases."
+    },
+    {
+      "id": "rzv2h-gbeth-reference-test",
+      "path": "test/rzv2h-ether-two-port-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ether-two-port-runtime-test.py",
+        "GbEthReference.test_vendor_csdiv_and_sysc_layout"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ],
+        "paths": [
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines/cpg_iodefine.h",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines/sysc_iodefine.h",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_1_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines/cpg_iodefine.h",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cr8_1_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cr/iodefines/sysc_iodefine.h",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cm33_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cm/iodefines/cpg_iodefine.h",
+          "refs/rzv2h_evk/adc_e/adc_e_rzv2h_evk_cm33_ep/e2studio/rzv/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cm/iodefines/sysc_iodefine.h"
+        ]
+      },
+      "note": "Require CSDIV and per-MAC SYSC layout parity with matching CR8_0, CR8_1 and CM33 I/O headers."
+    },
+    {
+      "id": "rzv2h-indexed-sdhi-wdt-runtime-test",
+      "path": "test/rzv2h-indexed-sdhi-wdt-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "sample-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-indexed-sdhi-wdt-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ],
+        "modules": [
+          "kconfiglib"
+        ]
+      },
+      "note": "Execute indexed SDHI/WDT snapshot and instance providers, nonstart guards, RIIC IDs and core eligibility."
+    },
+    {
+      "id": "rzv2h-sdhi-wdt-instance-artifact-test",
+      "path": "test/rzv2h-sdhi-wdt-instance-artifact-test.py",
+      "kind": "test",
+      "groups": [
+        "driver-instance-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sdhi-wdt-instance-artifact-test.py",
+        "--builds",
+        "{sample_builds}",
+        "--source-state",
+        "{sample_source_state}"
+      ],
+      "requires": {
+        "tools": [
+          "arm-none-eabi-nm",
+          "arm-none-eabi-objdump",
+          "arm-none-eabi-strings"
+        ]
+      },
+      "note": "Admit all seven SDHI/WDT ELFs; reject rehashed selector, ownership, automatic-operation, provider and case-table mutants."
     }
   ]
 }

@@ -30,6 +30,7 @@ extern "C" {
 	int rzv_gpioconfig(uint32_t pin);
 	int rzv_gpiowrite(uint32_t pin, bool high);
 	spi_dev_s * rzv_spibus_initialize(int port);
+	int rzv_spibus_uninitialize(spi_dev_s *dev);
 	int spi_register(spi_dev_s * dev, int port);
 #include "board-select-under-test.inc"
 }
@@ -98,6 +99,12 @@ spi_dev_s *rzv_spibus_initialize(int port)
 	assert(levels[0] && levels[1] && levels[2]);
 	++starts;
 	return fail_start ? nullptr : &controller;
+}
+
+int rzv_spibus_uninitialize(spi_dev_s *dev)
+{
+	assert(dev == &controller);
+	return 0;
 }
 
 int spi_register(spi_dev_s *dev, int port)

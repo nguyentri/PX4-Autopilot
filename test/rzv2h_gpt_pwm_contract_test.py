@@ -296,6 +296,52 @@ class ExecutedPWMRequestContracts(unittest.TestCase):
                         self.assertGreater(writes, 0)
 
 
+class LogicalChannelContracts(unittest.TestCase):
+    def test_sixteen_logical_channels_map_to_real_physical_channels(self) -> None:
+        program = r"""
+#include <assert.h>
+#include <limits.h>
+#include <stdint.h>
+#include "hardware/rzv_gpt.h"
+#if defined(RZV_GPT8_BASE) || defined(RZV_GPT9_BASE)
+#error Physical GPT8 and GPT9 do not exist
+#endif
+_Static_assert(RZV_GPT_LOGICAL_CHANNELS == 16u, "logical GPT domain");
+_Static_assert(RZV_GPT_MAX_CHANNELS == RZV_GPT_LOGICAL_CHANNELS,
+               "maximum is a logical count, not a physical suffix");
+int main(void) {
+  const uintptr_t physical[] = {
+    RZV_GPT0_BASE, RZV_GPT1_BASE, RZV_GPT2_BASE, RZV_GPT3_BASE,
+    RZV_GPT4_BASE, RZV_GPT5_BASE, RZV_GPT6_BASE, RZV_GPT7_BASE,
+    RZV_GPT10_BASE, RZV_GPT11_BASE, RZV_GPT12_BASE, RZV_GPT13_BASE,
+    RZV_GPT14_BASE, RZV_GPT15_BASE, RZV_GPT16_BASE, RZV_GPT17_BASE
+  };
+  for (unsigned int channel = 0; channel < 16; ++channel) {
+    assert(RZV_GPT_LOGICAL_CHANNEL_VALID(channel));
+    assert(RZV_GPT_LOGICAL_BASE(channel) == physical[channel]);
+    assert(RZV_GPT_LOGICAL_UNIT_CHANNEL(channel) == channel % 8u);
+    assert(RZV_GPT_LOGICAL_UNIT_BIT(channel) == (1u << (channel % 8u)));
+  }
+  assert(!RZV_GPT_LOGICAL_CHANNEL_VALID(-1));
+  assert(!RZV_GPT_LOGICAL_CHANNEL_VALID(16));
+  assert(!RZV_GPT_LOGICAL_CHANNEL_VALID(INT_MAX));
+}
+"""
+        compiler = shutil.which("cc")
+        self.assertIsNotNone(compiler)
+        with tempfile.TemporaryDirectory(prefix="rzv2h-gpt-domain-") as tmp:
+            directory = Path(tmp)
+            (directory / "nuttx").mkdir()
+            (directory / "nuttx/config.h").write_text("")
+            source = directory / "domain.c"
+            source.write_text(program)
+            binary = directory / "domain"
+            subprocess.run([compiler, "-std=c11", "-Wall", "-Wextra", "-Werror",
+                            "-I", tmp, "-I", str(NUTTX / "arch/arm/src/rzv"),
+                            str(source), "-o", str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
+
 class NuttXLowerHalfContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -360,17 +406,19 @@ static void gpt_putreg(struct rzv_gpt_lowerhalf_s *priv, unsigned int offset,
 """
         exercise = r"""
 int main(void) {
-  struct rzv_gpt_lowerhalf_s priv = {.channel = 6, .hw_ch = 6};
-  registers[RZV_GPT_GTCNT_OFFSET / 4] = 123;
-  assert(rzv_gpt_setup(&priv.dev) == 0 && priv.initialized);
-  assert(registers[RZV_GPT_GTCNT_OFFSET / 4] == 0);
-  gpt_putreg(&priv, RZV_GPT_GTSTR_OFFSET, 1u << 6);
-  assert(registers[RZV_GPT_GTCR_OFFSET / 4] & GPT_GTCR_CST);
-  gpt_putreg(&priv, RZV_GPT_GTSTP_OFFSET, 1u << 6);
-  assert(!(registers[RZV_GPT_GTCR_OFFSET / 4] & GPT_GTCR_CST));
-  registers[RZV_GPT_GTCNT_OFFSET / 4] = 456;
-  gpt_putreg(&priv, RZV_GPT_GTCLR_OFFSET, 1u << 6);
-  assert(registers[RZV_GPT_GTCNT_OFFSET / 4] == 0);
+  for (unsigned int channel = 0; channel < 16; ++channel) {
+    struct rzv_gpt_lowerhalf_s priv = {.channel = channel, .hw_ch = channel % 8u};
+    registers[RZV_GPT_GTCNT_OFFSET / 4] = 123;
+    assert(rzv_gpt_setup(&priv.dev) == 0 && priv.initialized);
+    assert(registers[RZV_GPT_GTCNT_OFFSET / 4] == 0);
+    gpt_putreg(&priv, RZV_GPT_GTSTR_OFFSET, 1u << (channel % 8u));
+    assert(registers[RZV_GPT_GTCR_OFFSET / 4] & GPT_GTCR_CST);
+    gpt_putreg(&priv, RZV_GPT_GTSTP_OFFSET, 1u << (channel % 8u));
+    assert(!(registers[RZV_GPT_GTCR_OFFSET / 4] & GPT_GTCR_CST));
+    registers[RZV_GPT_GTCNT_OFFSET / 4] = 456;
+    gpt_putreg(&priv, RZV_GPT_GTCLR_OFFSET, 1u << (channel % 8u));
+    assert(registers[RZV_GPT_GTCNT_OFFSET / 4] == 0);
+  }
 }
 """
         with tempfile.TemporaryDirectory(prefix="rzv2h-gpt-setup-") as tmp:
@@ -395,6 +443,11 @@ int main(void) {
             r'"/dev/pwm3".*RZV_GPT_OUTPUT_B',
         )
         self.assertIn("rzv_gpt_initialize_output", self.board)
+        mapped = re.findall(
+            r'\{\s*"/dev/pwm[0-3]",\s*(\d+),\s*RZV_GPT_OUTPUT_([AB]),',
+            self.board,
+        )
+        self.assertEqual(mapped, [("6", "A"), ("7", "B"), ("9", "A"), ("10", "B")])
 
     def test_running_update_uses_only_buffered_registers(self) -> None:
         body = function_body(self.gpt, "rzv_gpt_update")
@@ -444,13 +497,13 @@ int main(void) {
 struct rzv_gpt_lowerhalf_s { unsigned int channel, hw_ch, output; };
 """ + "static uint16_t rzv_gpt_compare_event(const struct rzv_gpt_lowerhalf_s *priv)" + body + r"""
 int main(void) {
-  const unsigned int channels[] = {6, 7, 9, 10};
-  const unsigned int outputs[] = {0, 1, 0, 1};
   /* FSP CR8 IRQSEL identifiers, not ELC event numbers. */
-  const unsigned int expected[] = {121, 130, 220, 229};
-  for (unsigned int i = 0; i < 4; ++i) {
-    struct rzv_gpt_lowerhalf_s priv = {channels[i], channels[i] % 8, outputs[i]};
-    assert(rzv_gpt_compare_event(&priv) == expected[i]);
+  for (unsigned int channel = 0; channel < 16; ++channel) {
+    for (unsigned int output = 0; output < 2; ++output) {
+      struct rzv_gpt_lowerhalf_s priv = {channel, channel % 8, output};
+      unsigned int base = channel < 8 ? 115u : 219u;
+      assert(rzv_gpt_compare_event(&priv) == base + output * 8u + channel % 8u);
+    }
   }
 }
 """

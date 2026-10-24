@@ -11,6 +11,300 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCH = ROOT / "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv"
+BOARD = ROOT / "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h"
+
+
+def boundary_module():
+    spec = importlib.util.spec_from_file_location(
+        "ether_boundary", ROOT / "test/rzv2h-driver-boundary-runtime-test.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def without_includes(path):
+    return re.sub(r'^\s*#\s*include[^\n]*$', '', path.read_text(), flags=re.M)
+
+
+class EthernetSampleSelection(unittest.TestCase):
+    def test_disabled_interface_selection_does_not_alias_or_publish(self):
+        b = boundary_module()
+        source = (ARCH / "rzv_ether.c").read_text()
+        code = b.PRELUDE + r'''
+#define RZV_ETHER_NINTERFACES 2
+#define CONFIG_RZV_ETHER0 1
+struct rzv_eth_s { int unused; };
+static struct rzv_eth_s g_rzv_eth[2];
+''' + b.EXTRACT.definition(source, "static int rzv_ether_sample_select(") + r'''
+int main(void) {
+  struct rzv_eth_s *priv = NULL;
+  assert(rzv_ether_sample_select(-1, &priv) == -EINVAL && priv == NULL);
+  assert(rzv_ether_sample_select(2, &priv) == -EINVAL && priv == NULL);
+  assert(rzv_ether_sample_select(1, &priv) == -ENODEV && priv == NULL);
+  assert(rzv_ether_sample_select(0, &priv) == 0 && priv == &g_rzv_eth[0]);
+  return 0;
+}
+'''
+        b.compile_run(code)
+
+    def test_indexed_sample_api_is_present_and_wrappers_select_mac0(self):
+        b = boundary_module()
+        source = (ARCH / "rzv_ether.c").read_text()
+        self.assertTrue("int rzv2h_ether_sample_state_at(" in source,
+                        "missing indexed Ethernet state provider")
+        self.assertTrue("int rzv2h_ether_sample_loopback_at(" in source,
+                        "missing indexed Ethernet loopback provider")
+        self.assertIn("rzv2h_ether_sample_state_at(0, out)", b.EXTRACT.definition(
+            source, "int rzv2h_ether_sample_state("))
+        self.assertIn("rzv2h_ether_sample_loopback_at(0, data, size)", b.EXTRACT.definition(
+            source, "int rzv2h_ether_sample_loopback("))
+
+    def test_optional_board_notification_never_writes_read_only_speed(self):
+        b = boundary_module()
+        source = (ARCH / "rzv_ether.c").read_text()
+        self.assertNotIn("void rzv_ether_board_set_speed(",
+                         (BOARD / "src/rzv2h_ether.c").read_text())
+        code = b.PRELUDE + "\n#define weak_function\n#define UNUSED(x) ((void)(x))\n"
+        code += b.EXTRACT.definition(source, "void weak_function rzv_ether_board_set_speed(")
+        code += "int main(void) { for(int p=-1;p<=2;++p) { rzv_ether_board_set_speed(p,100); rzv_ether_board_set_speed(p,0); } return 0; }"
+        b.compile_run(code)
+
+    def test_real_initializers_snapshots_and_loopback_use_selected_mac_only(self):
+        b = boundary_module()
+        source = (ARCH / "rzv_ether.c").read_text()
+        code = b.PRELUDE + r'''
+#include <stdlib.h>
+#define FAR
+#define static_assert _Static_assert
+#define CONFIG_RZV2H_SAMPLE_TEST_API 1
+#define CONFIG_RZV_ETHER0 1
+#define CONFIG_RZV_ETHER1 1
+#define CONFIG_RZV_ETHER_TXDESC 2
+#define CONFIG_RZV_ETHER_RXDESC 2
+#define CONFIG_RZV_ETHER_BUFSIZE 256
+#define RZV_ETHER_PKTSIZE 256
+#define RZV_ETHER_NINTERFACES 2
+#define RZV_ETHER_DMA_BARRIER() ((void)0)
+#define NET_LL_ETHERNET 1
+#define HPWORK 0
+#define LPWORK 1
+#define RZV_ETHER_PHY_POLL_PERIOD 100
+#define RZV_IRQSEL_GBETH0_MACIRQ 422
+#define RZV_IRQSEL_GBETH1_MACIRQ 437
+#define nerr(...) ((void)0)
+typedef unsigned int spinlock_t;
+struct work_s { int busy; };
+struct wdog_s { int active; };
+struct net_driver_s {
+  uint8_t *d_buf; void *d_private; unsigned int d_len;
+  int (*d_ifup)(struct net_driver_s *);
+  int (*d_ifdown)(struct net_driver_s *);
+  int (*d_txavail)(struct net_driver_s *);
+};
+''' + without_includes(ARCH / "rzv_ether.h")
+        code += without_includes(ARCH / "hardware/rzv_ether.h")
+        code += without_includes(BOARD / "include/rzv2h-sample-test.h") + r'''
+static struct rzv_eth_s g_rzv_eth[2];
+static struct rzv_eth_desc_s g_rzv_txdesc[2][2], g_rzv_rxdesc[2][2];
+static uint32_t regs[2][2048];
+static unsigned int reads[2], writes[2], dma_calls[2], down_calls[2];
+static unsigned int registrations, live, locks, mode, delays;
+static int admission[2] = {-EAGAIN, -ENOTSUP};
+static void *kmm_memalign(int alignment, size_t size) {
+  (void)alignment; ++live; return malloc(size);
+}
+static void kmm_free(void *pointer) { if (pointer) { --live; free(pointer); } }
+static int netdev_register(struct net_driver_s *dev, int type) {
+  assert(dev && type == NET_LL_ETHERNET); ++registrations; return 0;
+}
+int rzv2h_ether_sample_access(int intf) {
+  assert(intf >= 0 && intf < 2); return admission[intf];
+}
+uint32_t rzv2h_ether_sample_phy_writes_at(int intf) {
+  assert(intf >= 0 && intf < 2); return 11u * (intf + 1);
+}
+static unsigned int port_at(uintptr_t address) {
+  unsigned int port = address >= 0x15c40000u ? 1 : 0;
+  uintptr_t base = port ? 0x15c40000u : 0x15c30000u;
+  assert(address >= base && address < base + sizeof(regs[port]));
+  assert(admission[port] == 0);
+  return port;
+}
+static uint32_t getreg32(uintptr_t address) {
+  unsigned int port = port_at(address); ++reads[port];
+  return regs[port][(address - g_rzv_eth[port].base) / 4];
+}
+static void putreg32(uint32_t value, uintptr_t address) {
+  unsigned int port = port_at(address); ++writes[port];
+  regs[port][(address - g_rzv_eth[port].base) / 4] = value;
+}
+static void net_lock(void) { assert(locks++ == 0); }
+static void net_unlock(void) { assert(locks-- == 1); }
+static bool work_available(struct work_s *work) { return !work->busy; }
+static void work_cancel(int queue, struct work_s *work) { (void)queue; work->busy = 0; }
+static void wd_cancel(struct wdog_s *wdog) { wdog->active = 0; }
+static void rzv_icu_detach(int irq) { (void)irq; }
+void rzv_ether_board_set_speed(int intf, int speed) {
+  assert(speed == 0); ++down_calls[intf];
+}
+static void rzv_phy_poll_work(void *arg) { (void)arg; }
+static int rzv_icu_attach(int event, int (*handler)(int,void *,void *),
+                          void *arg, bool enabled) {
+  (void)event; (void)handler; (void)arg; (void)enabled; return 40;
+}
+static int rzv_interrupt(int irq, void *context, void *arg) {
+  (void)irq; (void)context; (void)arg; return 0;
+}
+static void work_queue(int queue, struct work_s *work, void (*fn)(void *),
+                       void *arg, int delay) {
+  (void)queue; (void)fn; (void)arg; (void)delay; work->busy = 1;
+}
+static int rzv_configure_link(struct rzv_eth_s *priv) { (void)priv; return 0; }
+static int rzv_txavail(struct net_driver_s *dev) { (void)dev; return 0; }
+static int rzv_ifup(struct net_driver_s *dev);
+static int rzv_ifdown(struct net_driver_s *dev);
+static int rzv_dma_setup(struct rzv_eth_s *priv) {
+  assert(admission[priv->intf] == 0); ++dma_calls[priv->intf];
+  priv->rxdesc[0].des3 = RDES3_OWN;
+  return mode == 1 ? -EIO : 0;
+}
+static int rzv_transmit(struct rzv_eth_s *priv) {
+  if (mode == 2) return -EIO;
+  if (mode == 3) return 0;
+  memcpy(priv->rxbuffer, priv->dev.d_buf, priv->dev.d_len);
+  if (mode == 4) priv->rxbuffer[0] ^= 1;
+  priv->rxdesc[0].des3 = RDES3_FD | RDES3_LD |
+                        (priv->dev.d_len << RDES3_FL_SHIFT);
+  return 0;
+}
+static void up_udelay(unsigned int usecs) { assert(usecs == 1000); ++delays; }
+static void rzv_invalidate_dcache_region(void *pointer, unsigned int size) {
+  assert(pointer && size == RZV_ETHER_BUFSIZE);
+}
+'''
+        for signature in (
+                "static void rzv_free_buffers(", "static int rzv_alloc_buffers(",
+                "int rzv_ether_initialize(", "static int rzv_ifdown(",
+                "static int rzv_ifup(", "static int rzv_ether_sample_select(",
+                "int rzv2h_ether_sample_state_at(", "int rzv2h_ether_sample_state(",
+                "static bool rzv_sample_frame_matches(",
+                "int rzv2h_ether_sample_loopback_at(", "int rzv2h_ether_sample_loopback("):
+            code += b.EXTRACT.definition(source, signature)
+        code += r'''
+int main(void) {
+  struct rzv2h_ether_sample_state_s state0, state1;
+  uint8_t frame[128]; memset(frame, 0xa5, sizeof(frame));
+  assert(rzv_ether_initialize(-1) == -EINVAL && rzv_ether_initialize(2) == -EINVAL);
+  assert(!live && !registrations);
+  assert(rzv_ether_initialize(0) == 0 && rzv_ether_initialize(1) == 0);
+  assert(registrations == 2 && live == 6);
+  assert(rzv_ether_initialize(0) == 0 && rzv_ether_initialize(1) == 0);
+  assert(registrations == 2 && live == 6);
+  assert(g_rzv_eth[0].base == 0x15c30000u && g_rzv_eth[1].base == 0x15c40000u);
+  assert(g_rzv_eth[0].event == 422 && g_rzv_eth[1].event == 437);
+  assert(g_rzv_eth[0].txdesc != g_rzv_eth[1].txdesc);
+  assert(g_rzv_eth[0].rxbuffer != g_rzv_eth[1].rxbuffer);
+  assert(rzv2h_ether_sample_state_at(-1, &state0) == -EINVAL);
+  assert(rzv2h_ether_sample_state_at(2, &state0) == -EINVAL);
+  assert(rzv2h_ether_sample_state_at(0, NULL) == -EINVAL);
+  assert(rzv2h_ether_sample_loopback_at(-1, frame, sizeof(frame)) == -EINVAL);
+  assert(rzv2h_ether_sample_loopback_at(2, frame, sizeof(frame)) == -EINVAL);
+  assert(rzv2h_ether_sample_loopback_at(0, NULL, sizeof(frame)) == -EINVAL);
+  assert(rzv2h_ether_sample_loopback_at(0, frame, 63) == -EINVAL);
+  assert(rzv2h_ether_sample_loopback_at(0, frame, 253) == -EINVAL);
+  assert(rzv2h_ether_sample_state_at(0, &state0) == -EAGAIN);
+  assert(rzv2h_ether_sample_state_at(1, &state1) == -ENOTSUP);
+  assert(state0.identity == (uintptr_t)&g_rzv_eth[0].dev);
+  assert(state1.identity == (uintptr_t)&g_rzv_eth[1].dev);
+  assert(state0.identity != state1.identity && state0.netdevs == 1 && state1.netdevs == 1);
+  assert(state0.phy_writes == 11 && state1.phy_writes == 22);
+  assert(rzv2h_ether_sample_loopback_at(0, frame, 128) == -EAGAIN);
+  assert(rzv2h_ether_sample_loopback_at(1, frame, 128) == -ENOTSUP);
+  assert(rzv_ifup(&g_rzv_eth[1].dev) == -ENOTSUP);
+  assert(rzv_ifdown(&g_rzv_eth[1].dev) == -ENOTSUP);
+  assert(!reads[0] && !reads[1] && !writes[0] && !writes[1]);
+  assert(!dma_calls[0] && !dma_calls[1] && !locks);
+  admission[0] = 0;
+  assert(rzv2h_ether_sample_state(&state0) == 0 && state0.netdevs == 1);
+  for (mode = 0; mode <= 4; ++mode) {
+    int expected = mode == 0 ? 0 : mode == 3 ? -ETIMEDOUT : -EIO;
+    assert(rzv2h_ether_sample_loopback(frame, sizeof(frame)) == expected);
+    assert(rzv2h_ether_sample_state(&state0) == 0);
+    assert(!state0.loop && !state0.dma_running && !state0.queued_work && !state0.attached_irqs);
+    assert(!g_rzv_eth[0].dev.d_len && !locks);
+    assert(!reads[1] && !writes[1] && !dma_calls[1] && !down_calls[1]);
+  }
+  assert(delays == 1000 && dma_calls[0] == 5 && down_calls[0] == 5);
+  mode = 0;
+  g_rzv_eth[0].bifup = true;
+  assert(rzv2h_ether_sample_loopback(frame, sizeof(frame)) == -EBUSY);
+  g_rzv_eth[0].bifup = false;
+  /* The host boundary can admit MAC1 to test selection; the real board never does. */
+  admission[1] = 0;
+  unsigned int before0 = reads[0] + writes[0];
+  assert(rzv2h_ether_sample_loopback_at(1, frame, sizeof(frame)) == 0);
+  assert(dma_calls[1] == 1 && down_calls[1] == 1);
+  assert(reads[0] + writes[0] == before0);
+  assert(rzv2h_ether_sample_state_at(1, &state1) == 0 && !state1.loop && !state1.dma_running);
+  for (int intf = 0; intf < 2; ++intf) rzv_free_buffers(&g_rzv_eth[intf]);
+  assert(!live && !locks);
+  return 0;
+}
+'''
+        b.compile_run(code)
+
+    def test_real_phy_code_has_indexed_counters_and_rejects_unowned_mdio(self):
+        b = boundary_module()
+        code = b.PRELUDE + r'''
+#define CONFIG_RZV_ETHERNET 1
+#define CONFIG_RZV2H_SAMPLE_TEST_API 1
+#define nerr(...) ((void)0)
+#define ninfo(...) ((void)0)
+#define nwarn(...) ((void)0)
+''' + without_includes(ARCH / "hardware/rzv_ether.h")
+        code += without_includes(ARCH / "rzv_ether_phy.h") + r'''
+static int admitted[2] = {-EAGAIN, -ENOTSUP};
+static unsigned int reads[2], writes[2], busy;
+int rzv2h_ether_sample_access(int intf) { assert(intf >= 0 && intf < 2); return admitted[intf]; }
+static unsigned int port_at(uintptr_t address) {
+  unsigned int port = address >= RZV_ETHER1_BASE ? 1 : 0;
+  uintptr_t base = port ? RZV_ETHER1_BASE : RZV_ETHER0_BASE;
+  assert(admitted[port] == 0 && (address == base + RZV_ETH_MAC_MII_ADDR ||
+                              address == base + RZV_ETH_MAC_MII_DATA));
+  return port;
+}
+static uint32_t getreg32(uintptr_t address) {
+  unsigned int port = port_at(address); ++reads[port];
+  return busy ? MAC_MII_ADDR_GB : 0;
+}
+static void putreg32(uint32_t value, uintptr_t address) { (void)value; ++writes[port_at(address)]; }
+static void up_mdelay(unsigned int delay) { (void)delay; }
+''' + without_includes(ARCH / "rzv_ether_phy.c") + r'''
+int main(void) {
+  uint16_t data;
+  assert(rzv_phy_write(0, 1, 0, 0) == -EINVAL);
+  assert(rzv_phy_read(0, 1, 0, &data) == -EINVAL);
+  assert(rzv_phy_write(RZV_ETHER0_BASE, 1, 0, 0) == -EAGAIN);
+  assert(rzv_phy_write(RZV_ETHER1_BASE, 1, 0, 0) == -ENOTSUP);
+  assert(rzv_phy_read(RZV_ETHER1_BASE, 1, 0, &data) == -ENOTSUP);
+  assert(!reads[0] && !reads[1] && !writes[0] && !writes[1]);
+  assert(!rzv2h_ether_sample_phy_writes_at(0) && !rzv2h_ether_sample_phy_writes_at(1));
+  admitted[0] = 0;
+  assert(rzv_phy_read(RZV_ETHER0_BASE, 1, 0, NULL) == -EINVAL && !reads[0]);
+  assert(rzv_phy_write(RZV_ETHER0_BASE, 1, 0, 0x1234) == 0);
+  assert(rzv2h_ether_sample_phy_writes() == 1 && !writes[1]);
+  busy = 1;
+  assert(rzv_phy_write(RZV_ETHER0_BASE, 1, 0, 0x1234) == -ETIMEDOUT);
+  assert(rzv2h_ether_sample_phy_writes() == 2);
+  busy = 0; admitted[1] = 0;
+  assert(rzv_phy_write(RZV_ETHER1_BASE, 1, 0, 0x5678) == 0);
+  assert(rzv2h_ether_sample_phy_writes_at(1) == 1);
+  assert(rzv2h_ether_sample_phy_writes() == 2);
+  assert(!rzv2h_ether_sample_phy_writes_at(-1) && !rzv2h_ether_sample_phy_writes_at(2));
+  return 0;
+}
+'''
+        b.compile_run(code)
 
 
 def function(source, name):
@@ -185,42 +479,46 @@ int main(void)
 
 
 class EthernetBoardUnwind(unittest.TestCase):
-    def test_clock_reset_and_registration_failures_allow_retry(self):
-        spec = importlib.util.spec_from_file_location("boundary", ROOT / "test/rzv2h-driver-boundary-runtime-test.py")
-        b = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(b)
-        source = (ROOT/'platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_ether.c').read_text()
-        code = b.PRELUDE + r'''
-#define CONFIG_RZV_ETHER0 1
-#define CONFIG_RZV2H_SAMPLE_CONTROLLED_INIT 1
-#define RZV_CPG_CLK_ETH0 184u
-#define nwarn(...) ((void)0)
-#define nerr(...) ((void)0)
-#define syslog(...) ((void)0)
-static bool g_ether0_registered;
-static bool gate,reset_released;static int failed,registrations;
-static int rzv_clock_enable(unsigned int id) {assert(id==184);gate=true;return failed==1?-ETIMEDOUT:0;}
-static int rzv_clock_disable(unsigned int id) {assert(id==184);gate=false;return 0;}
-static int rzv_module_unreset(unsigned int id) {assert(id==184);reset_released=true;return failed==2?-EIO:0;}
-static int rzv_module_reset(unsigned int id) {assert(id==184);reset_released=false;return 0;}
-static void rzv2h_ether_pinconfig(int port) {assert(port==0);}
-static int rzv_ether_initialize(int port) {assert(port==0);registrations++;return failed==3?-ENOMEM:0;}
-''' + b.EXTRACT.definition(source, 'static int rzv2h_ether_clockconfig(')
-        code += b.EXTRACT.definition(source, 'int rzv2h_ether_initialize(') + r'''
-int main(void)
-{
- assert(rzv2h_ether_clockconfig(1)==-ENODEV&&!gate&&!reset_released);
- for(failed=1;failed<=3;failed++)
- {
-  assert(rzv2h_ether_initialize()==(failed==1?-ETIMEDOUT:failed==2?-EIO:-ENOMEM));
-  assert(!gate&&!reset_released&&!g_ether0_registered);
- }
- failed=0;assert(rzv2h_ether_initialize()==0&&gate&&reset_released&&g_ether0_registered);
- int previous=registrations;assert(rzv2h_ether_initialize()==0&&registrations==previous);
- return 0;
+    @staticmethod
+    def support():
+        spec = importlib.util.spec_from_file_location(
+            "two_ports", ROOT / "test/rzv2h-ether-two-port-runtime-test.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_mac1_only_does_not_touch_disabled_mac0(self):
+        m = self.support()
+        m.run(m.board_harness(2) + r'''
+int main(void) {
+  assert(rzv2h_ether_sample_access(0) == -ENODEV);
+  assert(rzv2h_ether_sample_access(1) == -EAGAIN);
+  assert(rzv2h_ether_initialize() == 0);
+  assert(calls[0] == 0 && clocks[0] == 0 && resets[0] == 0);
+  assert(calls[1] == 1 && clocks[1] == 1 && resets[1] == 1);
+  assert(rzv2h_ether_sample_access(1) == 0);
+  return 0;
 }
-'''
-        b.compile_run(code)
+''')
+
+    def test_clock_reset_and_registration_failures_allow_retry(self):
+        m = self.support()
+        for stage,error in ((1,"ETIMEDOUT"),(2,"EIO"),(3,"ENOMEM")):
+            with self.subTest(stage=stage):
+                m.run(m.board_harness(3) + r'''
+int main(void) {
+  failure_port=0; failure_stage=STAGE;
+  assert(rzv2h_ether_initialize()==-ERROR);
+  assert(clocks[0]==0 && resets[0]==0);
+  assert(clocks[1]==1 && resets[1]==1 && calls[1]==1);
+  assert(rzv2h_ether_sample_access(0)==-EAGAIN);
+  assert(rzv2h_ether_sample_access(1)==0);
+  failure_port=-1; assert(rzv2h_ether_initialize()==0);
+  assert(clocks[0]==1 && resets[0]==1 && calls[1]==1);
+  assert(rzv2h_ether_sample_access(0)==0);
+  return 0;
+}
+'''.replace("STAGE",str(stage)).replace("ERROR",error))
 
 
 if __name__ == "__main__":

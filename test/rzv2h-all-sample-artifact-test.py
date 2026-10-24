@@ -27,6 +27,9 @@ class NativeArchive(unittest.TestCase):
         root = Path(temp.name)
         shutil.copy2(SOURCE,root/'source-state.json')
         shutil.copy2(SOURCE.parent/'sample-profiles.json',root/'sample-profiles.json')
+        for contract_name in ('legacy-sample-profiles.json','driver-coverage.json'):
+            if (SOURCE.parent/contract_name).is_file():
+                shutil.copy2(SOURCE.parent/contract_name,root/contract_name)
         target = root/name
         shutil.copytree(BUILDS/name,target)
         profile = copy.deepcopy(next(x for x in POLICY['profiles'] if x['profile']==name))
@@ -43,6 +46,11 @@ class NativeArchive(unittest.TestCase):
             state['manifest_sha256']=ART.INVENTORY.digest(source.parent/'sample-profiles.json')
             source.write_text(json.dumps(state))
             receipt['manifest_sha256']=state['manifest_sha256']
+            if 'contract_inputs' in state:
+                for record in state['contract_inputs']:
+                    record['sha256']=ART.INVENTORY.digest(source.parent/record['path'])
+                receipt['contract_inputs']=state['contract_inputs']
+                source.write_text(json.dumps(state))
         receipt['source_state_sha256']=ART.INVENTORY.digest(source)
         path.write_text(json.dumps(receipt))
 
@@ -50,8 +58,9 @@ class NativeArchive(unittest.TestCase):
         return ART.verify_native(*inputs,POLICY if policy is None else policy)
 
     def test_every_native_image_and_legacy_extension_is_admitted(self):
-        ART.INVENTORY.validate(POLICY)
-        self.assertEqual(len(POLICY['profiles']),55)
+        contracts=ART.INVENTORY.archived_contracts(SOURCE)
+        ART.INVENTORY.validate(POLICY,catalog=contracts.get('driver_coverage'),live=False)
+        self.assertTrue({x['profile'] for x in POLICY['profiles']})
         for row in POLICY['profiles']:
             with self.subTest(profile=row['profile']):
                 result=ART.verify_native(row,BUILDS/row['profile'],SOURCE,POLICY)
@@ -138,6 +147,49 @@ class NativeArchive(unittest.TestCase):
             with (inputs[1]/name).open('ab') as stream:stream.write(b'changed')
             with self.subTest(name=name),self.assertRaisesRegex(ValueError,'digest mismatch'):
                 self.verify(inputs)
+
+    def test_instance_selector_mutants_fail_even_with_updated_artifact_hashes(self):
+        instances=[x for x in POLICY['profiles'] if 'instance_id' in x]
+        for row in instances:
+            for suffix,value in (('CHANNEL','99'),('FAMILY','99'),('OUTPUT','2')):
+                inputs=self.copied(row['profile'])
+                path=inputs[1]/'resolved.config'
+                key='CONFIG_TESTING_RZV_HWTEST_INSTANCE_'+suffix
+                text=ART.re.sub(r'(?m)^'+key+r'=.*$',key+'='+value,path.read_text())
+                path.write_text(text)
+                self.refresh(inputs[1],inputs[2])
+                with self.subTest(profile=row['profile'],suffix=suffix),self.assertRaisesRegex(ValueError,'selector mismatch'):
+                    self.verify(inputs)
+
+    def test_archived_contract_omission_and_rehashed_semantic_mutation_fail(self):
+        if not json.loads(SOURCE.read_text()).get('contract_inputs'):
+            with self.assertRaisesRegex(ValueError,'inputs required'):
+                ART.INVENTORY.archived_contracts(SOURCE,required=True)
+            return
+        for name in ('legacy-sample-profiles.json','driver-coverage.json'):
+            inputs=self.copied()
+            source=inputs[2]
+            path=source.parent/name
+            path.unlink()
+            with self.subTest(name=name),self.assertRaises((OSError,ValueError)):
+                self.verify(inputs)
+        inputs=self.copied()
+        source=inputs[2]
+        path=source.parent/'driver-coverage.json'
+        catalog=json.loads(path.read_text())
+        catalog['instances'][0]['required_config']={}
+        path.write_text(json.dumps(catalog))
+        state=json.loads(source.read_text())
+        for record in state['contract_inputs']:
+            record['sha256']=ART.INVENTORY.digest(source.parent/record['path'])
+        source.write_text(json.dumps(state))
+        receipt_path=inputs[1]/'build-receipt.json'
+        receipt=json.loads(receipt_path.read_text())
+        receipt['contract_inputs']=state['contract_inputs']
+        receipt_path.write_text(json.dumps(receipt))
+        self.refresh(inputs[1],source)
+        with self.assertRaisesRegex(ValueError,'selector/link/source'):
+            self.verify(inputs)
 
 
 if __name__=='__main__':

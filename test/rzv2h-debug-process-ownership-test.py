@@ -314,6 +314,37 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                 else:
                     self.assertFalse((tmp / 'gdb-args').exists(), 'GDB must not run after failed connect')
 
+    def test_loader_rechecks_failures_after_readiness_observation(self):
+        for marker in ('', 'DBGEN is not asserted', 'Resetting via Reset pin',
+                       'Connect failed'):
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory() as directory:
+                tmp = Path(directory)
+                executable(tmp / 'server', '#!/usr/bin/env python3\nimport time\ntime.sleep(60)\n')
+                executable(tmp / 'gdb', '#!/bin/sh\necho ran >"$GDB_ARGS"\necho SET_PC=0x40800000\n')
+                env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'),
+                           JLINK_SERIAL='fixture', GDB_PORT='50000', LOG_DIR=directory,
+                           LOADSTART='fixture', GDB_ARGS=str(tmp / 'gdb-args'),
+                           CONNECT_MARKER=marker)
+                # Append failure and readiness between the initial failure
+                # scan and the readiness check. No listening socket or probe.
+                shell = r'''
+. "$1"
+trap _stop_server EXIT
+resolve_tools
+preflight_probe_free() { return 0; }
+_server_owns_port() {
+    printf '%s\n' "$CONNECT_MARKER" 'Waiting for GDB connection...' >>"$log"
+    return 0
+}
+load_core fixture fixture.elf test
+'''
+                result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
+                                        capture_output=True, text=True, timeout=15)
+                self.assertEqual(result.returncode, int(bool(marker)),
+                                 result.stdout + result.stderr)
+                self.assertEqual((tmp / 'gdb-args').exists(), not bool(marker),
+                                 'GDB must not run after a failure before readiness')
+
     def test_invalid_loader_attempt_limit_is_rejected_before_probe_access(self):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)

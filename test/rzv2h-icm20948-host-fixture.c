@@ -34,6 +34,12 @@ struct spi_dev_s *rzv_spibus_initialize(int port)
 	return fail_init ? NULL : &controller;
 }
 
+int rzv_spibus_uninitialize(struct spi_dev_s *dev)
+{
+	assert(dev == &controller);
+	return 0;
+}
+
 int spi_register(struct spi_dev_s *dev, int port)
 {
 	assert(dev == &controller && port == 0);

@@ -4,6 +4,8 @@
 import os
 from pathlib import Path
 import re
+import subprocess
+import tempfile
 import unittest
 
 
@@ -36,6 +38,47 @@ def function_body(source: str, name: str) -> str:
                 return source[start : index + 1]
 
     raise AssertionError(f"function {name} has no closing brace")
+
+
+class EarlyConsoleRouting(unittest.TestCase):
+    def test_rtt_console_does_not_depend_on_a_serial_transmitter(self) -> None:
+        source = read("arch/arm/src/rzv/rzv_lowputc.c")
+        start = re.search(r"#if(?:def)?[^\n]*CONFIG_RZV_DIAGNOSTICS_RTT", source)
+        self.assertIsNotNone(start)
+        end = source.index('#include "arm_internal.h"', start.start())
+        setup = re.sub(r"(?m)^\s*#\s*include[^\n]*", "", source[start.start():end])
+        output = "void arm_lowputc(char ch)\n" + function_body(source, "arm_lowputc")
+        cases = [
+            ([], 0),
+            (["SYSLOG_RTT"], 1),
+            (["SYSLOG_RTT", "SERIAL_CONSOLE"], 0),
+            (["SYSLOG_RTT", "RZV_DIAGNOSTICS_RTT"], 1),
+            (["SYSLOG_RTT", "RZV_DIAGNOSTICS_RTT", "SERIAL_CONSOLE"], 1),
+            (["SYSLOG_RTT", "CONSOLE_SYSLOG"], 1),
+            (["SYSLOG_RTT", "CONSOLE_SYSLOG", "NO_SERIAL_CONSOLE"], 1),
+            (["SYSLOG_RTT", "SERIAL_CONSOLE", "SCI4_SERIAL_CONSOLE"], 0),
+        ]
+        for options, expected_rtt in cases:
+            with self.subTest(options=options), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory)
+                code = "#include <stddef.h>\n#include <stdio.h>\n"
+                code += "".join(f"#define CONFIG_{option} 1\n" for option in options)
+                code += setup + "\n" + r'''
+static int rtt, uart, last;
+void syslog_rtt_putc(void *channel, char ch) { (void)channel; rtt++; last = ch; }
+void rzv_lowputc(char ch) { uart++; last = ch; }
+''' + output + f'''
+int main(void) {{
+  arm_lowputc('T');
+  printf("rtt=%d uart=%d\\n", rtt, uart);
+  return rtt != {expected_rtt} || uart != {1 - expected_rtt} || last != 'T';
+}}
+'''
+                (path / "routing.c").write_text(code)
+                subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                                str(path / "routing.c"), "-o", str(path / "routing")], check=True)
+                result = subprocess.run([str(path / "routing")], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 class AdcContracts(unittest.TestCase):

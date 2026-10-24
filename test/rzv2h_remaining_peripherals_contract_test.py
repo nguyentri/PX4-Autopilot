@@ -64,7 +64,10 @@ class RemainingPeripheralContractTest(unittest.TestCase):
         self.assertIn(signature, implementation)
         self.assertNotIn("int rzv2h_i2c_initialize(void)", implementation)
         self.assertIn("board_i2c_initialize(0)", bringup)
-        self.assertIn("g_i2c[4]", implementation)
+        self.assertIn("g_i2c[9]", implementation)
+        for channel in range(9):
+            self.assertIn(f"case {channel}:", implementation)
+            self.assertIn(f"CONFIG_RZV_I2C{channel}", implementation)
         self.assertIn("case 3:", implementation)
         self.assertIn("CONFIG_RZV_I2C3", implementation)
         self.assertRegex(implementation, r"if \(g_i2c\[bus\] != NULL\)")

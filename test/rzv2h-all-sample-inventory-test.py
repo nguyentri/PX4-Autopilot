@@ -20,9 +20,13 @@ class InventoryContracts(unittest.TestCase):
 
     def test_complete_live_inventory(self):
         rows = INVENTORY.validate(self.manifest)
-        self.assertEqual(len(rows), 55)
-        self.assertEqual(len(self.manifest['board_sources']), 33)
-        self.assertEqual([sum(x['core'] == c for x in rows) for c in ('cr8_0','cr8_1','cm33')], [51,2,2])
+        discovered = list((ROOT/INVENTORY.BOARD/'configs').glob('*/defconfig'))
+        self.assertEqual(len(rows), len(discovered))
+        catalog = json.loads(INVENTORY.COVERAGE.read_text())
+        baseline = catalog['baseline_native_profiles']
+        self.assertEqual(len(baseline), 55)
+        self.assertTrue({x['profile'] for x in baseline} <= {x['profile'] for x in rows})
+        self.assertEqual([sum(x['core'] == c for x in baseline) for c in ('cr8_0','cr8_1','cm33')], [51,2,2])
 
     def test_missing_duplicate_and_stale_declarations_fail(self):
         for mutate in (lambda d: d['profiles'].pop(),
