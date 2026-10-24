@@ -1,0 +1,1202 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dual-CR8 demo design companion &mdash; RZ/V2H Autonomous Drone Solution and Design Guide</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/md-to-sphinx-brand.css?v=08b08d4a" />
+      <link rel="stylesheet" type="text/css" href="_static/md-to-sphinx.css?v=6d52c6f5" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=7f41d439"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/md-to-sphinx.js?v=22a33ba5"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo Module Contracts" href="_sections/demo-module-contracts.html" />
+    <link rel="prev" title="RZ/V2H dual-CR8 demo system architecture" href="rzv2h-dualcr8-demo-architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            RZ/V2H Autonomous Drone Solution and Design Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="_sections/solution-and-development.html">Solution and Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html">RZ/V2H Single-SoC Autonomous Drone Solution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#executive-summary">Executive summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#what-single-soc-means">1. What single-SoC means</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#included-on-the-central-compute">1.1 Included on the central compute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#still-external-to-the-soc">1.2 Still external to the SoC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#hardware-delivery-options">1.3 Hardware delivery options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#reference-solution">2. Reference solution</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#rdk-pre-development-sample">2.1 RDK pre-development sample</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#external-device-story">3. External-device story</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#battery-and-bms">3.1 Battery and BMS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#cameras-vio-and-drp-ai3-perception">3.2 Cameras, VIO, and DRP-AI3 perception</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#precision-landing-and-docking">3.3 Precision landing and docking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#gimbal-and-payload">3.4 Gimbal and payload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#flight-sensors-and-actuators">3.5 Flight sensors and actuators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#predictable-degraded-operation">3.6 Predictable degraded operation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#customer-value">4. Customer value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#why-choose-this-architecture">4.1 Why choose this architecture?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#customer-evaluation-three-demonstrations">4.2 Customer evaluation: three demonstrations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#honest-trade-offs">4.3 Honest trade-offs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#target-use-cases">5. Target use cases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#message-and-claim-guide">6. Message and claim guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#recommended-messages">6.1 Recommended messages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#claims-requiring-qualifiers">6.2 Claims requiring qualifiers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#optional-feature-caution">6.3 Optional-feature caution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#safety-and-market-qualification">6.4 Safety and market qualification</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#evidence-and-productization">7. Evidence and productization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#evidence-boundary">7.1 Evidence boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#productization-sequence">7.2 Productization sequence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#sources">Sources</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-development-ecosystem.html">RZ/V2H Development Ecosystem and RDK Pre-Development Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#choose-a-starting-profile">1. Choose a starting profile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#why-this-ecosystem-is-a-useful-starting-point">1.1 Why this ecosystem is a useful starting point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#choose-one-coherent-profile-per-workstream">1.2 Choose one coherent profile per workstream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#dual-cr8-real-sensor-evaluation">1.3 Dual-CR8 real-sensor evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#verified-software-snapshot">2. Verified software snapshot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#rdk-ubuntu-profile">2.1 RDK Ubuntu profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#rz-v2h-ai-sdk-yocto-profile">2.2 RZ/V2H AI SDK/Yocto profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#other-official-profiles-and-hardware-platforms">2.3 Other official profiles and hardware platforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#supplier-and-version-compatibility-boundaries">2.4 Supplier and version compatibility boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#official-repository-map">3. Official repository map</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#board-bsp-and-reproducible-workspaces">3.1 Board, BSP, and reproducible workspaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#ai-and-ros-2-packages">3.2 AI and ROS 2 packages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#drone-px4-and-autonomy-middleware">3.3 Drone, PX4, and autonomy middleware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#generic-rz-v2h-software-sources">3.4 Generic RZ/V2H software sources</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#ai-and-yolo-guidance">4. AI and YOLO guidance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#a-useful-benchmark-with-its-boundary">4.1 A useful benchmark, with its boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#from-rdk-to-a-customer-board">5. From RDK to a customer board</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#reproduce-one-linux-ai-demonstration">5.1 Reproduce one Linux/AI demonstration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#parallel-engineering-workstreams">5.2 Parallel engineering workstreams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#transfer-to-customer-hardware">5.3 Transfer to customer hardware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#release-and-support-checklist">5.4 Release and support checklist</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#sources">6. Sources</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_sections/specifications.html">Specifications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-system-specification.html">RZ/V2H Single-SoC Autonomous Drone System Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#purpose-and-scope">1. Purpose and scope</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#product-intent">1.1 Product intent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#platform-applicability">1.2 Platform applicability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#included-aircraft-capabilities">1.3 Included aircraft capabilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#exclusions">1.4 Exclusions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#requirement-language">1.5 Requirement language</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#dual-cr8-evaluation-applicability">1.6 Dual-CR8 evaluation applicability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#system-context-and-boundaries">2. System context and boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#rz-v2h-allocation">3. RZ/V2H allocation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#soc-resources-used-by-the-target">3.1 SoC resources used by the target</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#common-cause-boundary">3.2 Common-cause boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#peripheral-and-shared-resource-ownership-ledger">3.3 Peripheral and shared-resource ownership ledger</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#external-device-architecture">4. External-device architecture</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#interface-selection-principles">4.1 Interface-selection principles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#external-device-inventory">4.2 External-device inventory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#battery-management-interface">4.3 Battery-management interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#camera-architecture">4.4 Camera architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#gimbal-architecture">4.5 Gimbal architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#actuator-architecture">4.6 Actuator architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#command-telemetry-and-payload-links">4.7 Command, telemetry, and payload links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#device-interface-control-record">4.8 Device interface-control record</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#power-and-electrical-design">5. Power and electrical design</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#power-tree">5.1 Power tree</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#external-memory-and-storage">5.2 External memory and storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#harness-and-transceivers">5.3 Harness and transceivers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#power-thermal-and-mechanical-budgets">5.4 Power, thermal and mechanical budgets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#board-design-start-package">5.5 Board-design start package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#operational-behavior">6. Operational behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#boot-and-readiness">6.1 Boot and readiness</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#navigation-ownership">6.2 Navigation ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#operating-states">6.3 Operating states</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#safety-reliability-and-security">7. Safety, reliability, and security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#safety-invariants">7.1 Safety invariants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#redundancy-and-common-cause">7.2 Redundancy and common cause</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#security">7.3 Security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#product-assurance-and-market-access">7.4 Product assurance and market access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#preliminary-hazard-and-containment-analysis">7.5 Preliminary hazard and containment analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#system-requirements">8. System requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#architecture-and-authority">8.1 Architecture and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#external-interfaces">8.2 External interfaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#safety-and-lifecycle">8.3 Safety and lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#performance-and-capacity">8.4 Performance and capacity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#advanced-autonomy-vision-and-precision-landing">8.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#evidence-boundary">9. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#verification-strategy">10. Verification strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#references-and-open-decisions">11. References and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#normative-and-primary-references">11.1 Normative and primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#open-decisions-and-closure-criteria">11.2 Open decisions and closure criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-software-specification.html">RZ/V2H Single-SoC Autonomous Drone Software Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#scope-and-design-rules">1. Scope and design rules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#included-software">1.1 Included software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#governing-design-rules">1.2 Governing design rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#dual-cr8-evaluation-design">1.3 Dual-CR8 evaluation design</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-decomposition">2. Software decomposition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#component-ownership">2.1 Component ownership</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#deployment-by-compute-domain">3. Deployment by compute domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#a55-linux-domain">3.1 A55 Linux domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-0-flight-domain">3.2 CR8-0 flight domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-1-i-o-domain">3.3 CR8-1 I/O domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#developer-start-path">3.4 Developer start path</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#inter-domain-communication">4. Inter-domain communication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#logical-links">4.1 Logical links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#common-envelope">4.2 Common envelope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#ownership-and-direction">4.3 Ownership and direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#backpressure-and-overload">4.4 Backpressure and overload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#time-synchronization">4.5 Time synchronization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#memory-and-transport-contract">4.6 Memory and transport contract</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#external-device-software-interfaces">5. External-device software interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#flight-sensors">5.1 Flight sensors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#bms-and-power-software">5.2 BMS and power software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#camera-vision-ai-and-precision-landing-software">5.3 Camera, vision AI, and precision landing software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#gimbal-software">5.4 Gimbal software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#rc-telemetry-and-modem-software">5.5 RC, telemetry, and modem software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#esc-and-actuator-software">5.6 ESC and actuator software</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#runtime-and-concurrency">6. Runtime and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#priority-classes">6.1 Priority classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#interrupt-and-dma-rules">6.2 Interrupt and DMA rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#watchdogs-and-liveness">6.3 Watchdogs and liveness</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#lifecycle-and-state">7. Lifecycle and state</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-1-output-state-machine">7.1 CR8-1 output state machine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#linux-service-lifecycle">7.2 Linux service lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#shutdown-and-update">7.3 Shutdown and update</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#data-and-control-flows">8. Data and control flows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#fault-handling">9. Fault handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#configuration-persistence-update-and-logging">10. Configuration, persistence, update, and logging</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#configuration-ownership">10.1 Configuration ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#persistent-storage">10.2 Persistent storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#update-compatibility">10.3 Update compatibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#minimum-release-manifest">10.4 Minimum release manifest</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#logging-and-observability">10.5 Logging and observability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-security">11. Software security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#trust-zones">11.1 Trust zones</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#required-controls">11.2 Required controls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#software-assurance-work-products">11.3 Software assurance work products</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-requirements">12. Software requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#partitioning-and-authority">12.1 Partitioning and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#communication-and-time">12.2 Communication and time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#devices-and-fault-behavior">12.3 Devices and fault behavior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#configuration-update-and-security">12.4 Configuration, update, and security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#advanced-autonomy-vision-and-precision-landing">12.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#evidence-boundary">13. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#verification-and-open-decisions">14. Verification and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#software-verification-gates">14.1 Software verification gates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#primary-references">14.2 Primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#open-decisions">14.3 Open decisions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="_sections/dual-cr8-architecture-and-design.html">Dual-CR8 Architecture and Design</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html">RZ/V2H dual-CR8 demo system architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#boundary-and-allocation">1. Boundary and allocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#deployment-and-responsibilities">2. Deployment and responsibilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#exact-demo-bom-and-open-hardware-contracts">3. Exact demo BOM and open hardware contracts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#sensors-and-navigation">4. Sensors and navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#flight-control-and-command-authority">5. Flight control and command authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#battery-and-power">6. Battery and power</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#calibration-and-persistent-configuration">7. Calibration and persistent configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#ipc-and-freshness">8. IPC and freshness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#actuator-safety-and-output-semantics">9. Actuator safety and output semantics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#diagnostics-and-release">10. Diagnostics and release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#view-coverage-and-ownership-reconciliation">11. View coverage and ownership reconciliation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#open-decisions">12. Open decisions</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Dual-CR8 demo design companion</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#outcome-product-context-and-allocation-deltas">1. Outcome, product context, and allocation deltas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#source-authority-bom-and-shared-resource-ownership">2. Source authority, BOM, and shared-resource ownership</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#seven-required-subsystem-interface-areas">2.1 Seven required subsystem/interface areas</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#existing-raw-transport-and-application-abi">3. Existing raw transport and application ABI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#proposed-demo-wire-contract-and-freshness-proof">4. Proposed demo wire contract and freshness proof</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#producer-age-and-stale-queue-rejection-without-a-common-clock">4.1 Producer age and stale queue rejection without a common clock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#battery-acquisition-progress-and-bounded-age">4.2 Battery acquisition progress and bounded age</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#status-expiry-bootstrap-and-epoch-rotation">4.3 Status expiry, bootstrap and epoch rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#px4-to-output-dataflow-and-concurrency">5. PX4-to-output dataflow and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#reset-containment-before-negotiation">5.1 Reset containment before negotiation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#link-lease-and-output-state-models">6. Link, lease and output state models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bootstrap-steady-operation-and-recovery-sequences">7. Bootstrap, steady operation, and recovery sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implementation-test-inventory-and-evidence-contract">8. Implementation/test inventory and evidence contract</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integration-into-the-five-document-product-set">9. Integration into the five-document product set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#material-unresolved-inputs">10. Material unresolved inputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_sections/demo-module-contracts.html">Demo Module Contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-requirements.html">Dual-CR8 demo requirements registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#authority-and-decisions">Authority and decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#hardware-input-gates">Hardware input gates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#acceptance-and-revision-control">Acceptance and revision control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#open-gaps">Open gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html">Sensors and navigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html">Flight control and command authority</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html">Battery and power</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html">Calibration and persistent storage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-ipc-spec.html">Inter-core communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html">Actuator safety and physical outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html">Diagnostics and release qualification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">RZ/V2H Autonomous Drone Solution and Design Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="_sections/dual-cr8-architecture-and-design.html">Dual-CR8 Architecture and Design</a></li>
+      <li class="breadcrumb-item active">Dual-CR8 demo design companion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dual-cr8-demo-design-companion">
+<h1>Dual-CR8 demo design companion<a class="headerlink" href="#dual-cr8-demo-design-companion" title="Link to this heading"></a></h1>
+<p>This engineering design accompanies the <a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html"><span class="std std-doc">demo architecture</span></a> and implementation plan, using the five <a class="reference internal" href="index.html"><span class="std std-doc">marketing/design documents</span></a> as target requirements and checked-in sources as implementation evidence. Mixer/module/campaign allocations are approved target decisions. Canonical <code class="docutils literal notranslate"><span class="pre">dualcr8</span></code> contains the one-IMU sensor profile and <code class="docutils literal notranslate"><span class="pre">rzv2h_outputs</span></code> v3 producer; CR8-1 <code class="docutils literal notranslate"><span class="pre">pwm</span></code> contains <code class="docutils literal notranslate"><span class="pre">rzv2h_io</span></code>. Local CR8-0 outputs and the legacy bridge remain disabled. The candidate validation procedure records the delivered codec, coherent producer, lease, independent worker/reporter, default-off fault hooks and artifact checks. Hardware identities remain unconfigured and policy qualifies no actuator peer. Real power acquisition, durable storage, command/local-kill hardware and physical qualification remain incomplete. The historical staging pair is migration evidence only. This companion does not grant hardware authorization.</p>
+<p>Implementation checkpoint, 2026-10-21: the diagrams and selected-hardware contracts below remain target requirements. Actual source owners are <code class="docutils literal notranslate"><span class="pre">remote-outputs.cpp</span></code>, <code class="docutils literal notranslate"><span class="pre">io-supervisor.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">src/apps/</span></code>; the legacy bridge/relay is unchanged. Hardware faults require safe module reinitialization and a fresh disarmed handshake; in-place hardware-fault reset is not implemented. The normal artifact checker rejects enabled bench hooks. No measured deadline, persistence or physical output result is implied.</p>
+<section id="outcome-product-context-and-allocation-deltas">
+<h2>1. Outcome, product context, and allocation deltas<a class="headerlink" href="#outcome-product-context-and-allocation-deltas" title="Link to this heading"></a></h2>
+<p>The proposed demonstration connects exactly one ICM-45686, one BMM150, one BMP390, one Holybro M10, one TFmini Plus, and four SunnySky X2216 motors through four as-yet-unidentified ESCs. Required battery/power-monitoring and persistent-storage hardware remain to be selected; their absence from that sensor/propulsion BOM is an open delivery gap, not an exclusion. CR8-0 runs physical sensors and PX4 estimation/control/allocation. Consistent with product <code class="docutils literal notranslate"><span class="pre">SYS-ARC-004</span></code>, the proposed CR8-1 backend alone generates the four physical PWM channels under a bounded CR8-0 command lease.</p>
+<p><strong>Full acceptance covers all seven subsystem areas:</strong> sensors/navigation, flight control, battery/power, calibration/storage, IPC, actuator safety, and diagnostics/release. A props-off bench milestone may establish partial source/host/target evidence before every subsystem is ready; it cannot complete the requested outcome with battery checks disabled, volatile-only calibration, or unverified disarmed-output semantics. Hover/GPS mission progression remains a separate physical-test choice; battery monitoring, durable calibrated configuration and safe output behavior are mandatory regardless of whether flight is exercised in this delivery. The broader product’s A55/autonomy/camera requirements remain visible and are not claimed by this two-CR8 runtime.</p>
+<!-- sys-view: demo-engineering-1 -->
+<p><strong>Figure 1 — Demo boundary inside the broader product architecture.</strong> Dashed links below describe future product integration, not active demo paths.</p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-dualcr8-demo-design-1.svg" />
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Contract</p></th>
+<th class="head"><p>Historical staging/source</p></th>
+<th class="head"><p>Proposed demo</p></th>
+<th class="head"><p>Broader product requirement retained</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Image pair</p></td>
+<td><p>CR8-0 <code class="docutils literal notranslate"><span class="pre">dualcr8</span></code> inherited <code class="docutils literal notranslate"><span class="pre">drone</span></code>; CR8-1 <code class="docutils literal notranslate"><span class="pre">default</span></code> relayed optionally to CM33</p></td>
+<td><p>Canonical <code class="docutils literal notranslate"><span class="pre">dualcr8</span></code> sensor profile, with future CR8-1 <code class="docutils literal notranslate"><span class="pre">pwm</span></code> pair; no <code class="docutils literal notranslate"><span class="pre">/dev/ipcc3</span></code> runtime</p></td>
+<td><p>Product has A55 + both R8s, CM33-free boot/runtime</p></td>
+</tr>
+<tr class="row-odd"><td><p>Sensors</p></td>
+<td><p>Drone selects three ICM descriptors and INA228 alongside BMM150/BMP390</p></td>
+<td><p>One P93 ICM; no P94/P95 sensor role; one rangefinder; select the required power device through its own ICD, without assuming or excluding INA228</p></td>
+<td><p>Secondary IMU and independent recovery remain SYS-IF-002 work</p></td>
+</tr>
+<tr class="row-even"><td><p>Physical outputs</p></td>
+<td><p>CR8-0 <code class="docutils literal notranslate"><span class="pre">pwm_out</span></code>; CR8-1 lease is not the physical PWM owner</p></td>
+<td><p>CR8-0 remote mixer producer; CR8-1 sole GPT/pin owner only after valid role/resource handshake</p></td>
+<td><p>SYS-ARC-003/004 flight and physical-output authority</p></td>
+</tr>
+<tr class="row-odd"><td><p>Mapping/range</p></td>
+<td><p>CR8-0 mixer selects configured values</p></td>
+<td><p>CR8-0 <code class="docutils literal notranslate"><span class="pre">MixingOutput(&quot;PWM_MAIN&quot;,</span> <span class="pre">4,</span> <span class="pre">...)</span></code> maps function/range/reversal/DIS/FAIL once; CR8-1 checks bounds and generates pulses</p></td>
+<td><p>Approved software specification §5.6 assigns mixing to CR8-0 and validation/final inhibition to CR8-1; software candidate delivered; physical qualification remains pending</p></td>
+</tr>
+<tr class="row-even"><td><p>RC</p></td>
+<td><p>Native SCI6 RC remains a CR8-0 route</p></td>
+<td><p>Retain local RC if fitted during staged integration, with explicit owner/detection evidence</p></td>
+<td><p>Product CR8-1 RC allocation remains an open ownership gap; local RC alone does not close it</p></td>
+</tr>
+<tr class="row-odd"><td><p>Battery/power</p></td>
+<td><p>No qualified CR8-1 battery service in the selected pair; native INA228 source exists</p></td>
+<td><p>Required selected source, acquisition, calibration, validity/age, IPC adapter and ordinary PX4 warning/failsafe tests; absence blocks full acceptance</p></td>
+<td><p>SYS-IF-003/004/008 and SW-DEV-002 remain required; digital monitoring is not cell protection</p></td>
+</tr>
+<tr class="row-even"><td><p>Parameters/calibration</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/fs/params</span></code> is volatile TMPFS</p></td>
+<td><p>Required atomic, integrity-checked storage and reboot/power-loss recovery for calibration and selected configuration</p></td>
+<td><p>SW-CFG-002 applies to full acceptance; manual reload or a TMPFS warning is not completion</p></td>
+</tr>
+<tr class="row-odd"><td><p>Safe output</p></td>
+<td><p>Current lease forwards configured disarmed values, including nonzero pulses</p></td>
+<td><p>Preserve DIS values in mixer/transport; final CR8-1 inhibit masks them during product boot/negotiation/standby/stop/Fault; nonzero DIS emission requires a scoped service/diagnostic policy</p></td>
+<td><p>SYS-SAF-001 remains strict: product standby has no active pulse train; stored nonzero DIS is never rewritten to zero merely to pass it</p></td>
+</tr>
+</tbody>
+</table>
+<!-- sys-view: demo-engineering-2 -->
+<p><strong>Figure 2 — Actual versus proposed responsibilities and physical ownership.</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-dualcr8-demo-design-2.svg" />
+</figure>
+</section>
+<section id="source-authority-bom-and-shared-resource-ownership">
+<h2>2. Source authority, BOM, and shared-resource ownership<a class="headerlink" href="#source-authority-bom-and-shared-resource-ownership" title="Link to this heading"></a></h2>
+<p>Source abbreviations below are exact repository paths, not new abstraction layers: <strong>APPS</strong> = <code class="docutils literal notranslate"><span class="pre">src/apps/</span></code> (shared dual-CR8 library <code class="docutils literal notranslate"><span class="pre">rzv2h_demo</span></code>, wire codecs, actuator lease, output producer/worker, battery and intent gateway); <strong>FC</strong> = <code class="docutils literal notranslate"><span class="pre">boards/renesas/rdk-rzv2h/px4io_cr8_0/</span></code>; <strong>IO</strong> = <code class="docutils literal notranslate"><span class="pre">boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/</span></code>; <strong>RAW</strong> = <code class="docutils literal notranslate"><span class="pre">platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/</span></code>; <strong>HAL</strong> = <code class="docutils literal notranslate"><span class="pre">platforms/nuttx/src/px4/renesas/rzv/</span></code>. Pin ownership, memory map, and <code class="docutils literal notranslate"><span class="pre">RAW/rzv_ipc_channels.h</span></code> remain canonical. Firmware artifacts must resolve these contracts; a source table does not establish board routing or electrical qualification.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Fitted device/count</p></th>
+<th class="head"><p>Proposed owner and route</p></th>
+<th class="head"><p>Source/design contract and remaining physical input</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ICM-45686 ×1</p></td>
+<td><p>CR8-0 SPI0, P90/P91/P92, P93 CS; polled</p></td>
+<td><p>New mutually exclusive one-CS selector spans PX4 <code class="docutils literal notranslate"><span class="pre">src/spi.cpp</span></code> and NuttX board Kconfig/<code class="docutils literal notranslate"><span class="pre">board.h</span></code>/<code class="docutils literal notranslate"><span class="pre">rzv2h_spi.c</span></code>; one <code class="docutils literal notranslate"><span class="pre">icm45686</span> <span class="pre">-s</span> <span class="pre">-b</span> <span class="pre">0</span> <span class="pre">-c</span> <span class="pre">3</span> <span class="pre">-R</span> <span class="pre">&lt;fitted&gt;</span></code> start; orientation and CS waveform remain unproven</p></td>
+</tr>
+<tr class="row-odd"><td><p>BMM150 ×1</p></td>
+<td><p>CR8-0 SCI7 I2C, P76/P77, <code class="docutils literal notranslate"><span class="pre">0x10</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">src/drivers/magnetometer/bosch/bmm150/</span></code>; external pull-ups, supply and calibration need fitted-board proof</p></td>
+</tr>
+<tr class="row-even"><td><p>BMP390 ×1</p></td>
+<td><p>CR8-0 same SCI7, <code class="docutils literal notranslate"><span class="pre">0x77</span></code>, <code class="docutils literal notranslate"><span class="pre">bmp388</span></code> driver</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">src/drivers/barometer/bmp388/bmp388.cpp</span></code> accepts BMP390; shared-bus fault/recovery and pressure data need proof</p></td>
+</tr>
+<tr class="row-odd"><td><p>Holybro M10 ×1</p></td>
+<td><p>CR8-0 SCI9, P82/P83, <code class="docutils literal notranslate"><span class="pre">/dev/ttyS9</span></code>, 115200 8N1</p></td>
+<td><p>Board serial mapping; CANFD1 selection conflicts with these pins; no unverified PPS assignment</p></td>
+</tr>
+<tr class="row-even"><td><p>TFmini Plus ×1</p></td>
+<td><p>CR8-0 SCI4, P70/P71, <code class="docutils literal notranslate"><span class="pre">/dev/ttyS4</span></code>, 115200 8N1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SENS_TFMINI_CFG=401</span></code> selects EXT2; final termios ordering is repaired in <code class="docutils literal notranslate"><span class="pre">TFMINI.cpp</span></code>; orientation, Plus framing/range and supply remain physical inputs</p></td>
+</tr>
+<tr class="row-odd"><td><p>SunnySky X2216 ×4 + ESC ×4</p></td>
+<td><p>CR8-1 PWM proposal: PA4/GPT6A, PA7/GPT7B, P96/GPT9A, P53/GPT10B</p></td>
+<td><p>Motor model does not identify ESC protocol/rate, calibration, timeout or direction; no powered acceptance until exact ESC ICD exists</p></td>
+</tr>
+<tr class="row-even"><td><p>RC/telemetry, if fitted</p></td>
+<td><p>Existing CR8-0 SCI6/P75 and SCI5/P72/P73</p></td>
+<td><p>RC inversion and radio baud need proof; this is a declared temporary ownership delta from product CR8-1 RC</p></td>
+</tr>
+<tr class="row-odd"><td><p>BMS/power monitor</p></td>
+<td><p>Required source/device and transport not yet selected; product acquisition owner CR8-1, PX4 policy owner CR8-0</p></td>
+<td><p>Selection, ICD, driver/adapter and calibration are delivery work. <code class="docutils literal notranslate"><span class="pre">BAT1_SOURCE=-1</span></code> can mark an incomplete isolated bench milestone only; full acceptance requires real monitoring and normal checks. Stock RDK has no usable analog battery input</p></td>
+</tr>
+<tr class="row-even"><td><p>Persistent calibration/configuration store</p></td>
+<td><p>Required medium, partition and driver route not yet selected; CR8-0 owns PX4 records</p></td>
+<td><p>Qualify atomic replacement, integrity, schema compatibility and recovery through reboot/power interruption; current TMPFS remains a gap, not the final route</p></td>
+</tr>
+</tbody>
+</table>
+<p>The new profile declares <code class="docutils literal notranslate"><span class="pre">SYS_HAS_BARO=1</span></code>, <code class="docutils literal notranslate"><span class="pre">SYS_HAS_GPS=1</span></code>, <code class="docutils literal notranslate"><span class="pre">SYS_HAS_MAG=1</span></code>, <code class="docutils literal notranslate"><span class="pre">SYS_HAS_NUM_DIST=1</span></code> at first boot. Missing publications fail ordinary health checks. Physical-evidence gates never disable expected-hardware declarations. P94 must be absent from this new profile’s CS/DRDY/button ownership, while legacy GY912/simple P94 DRDY and drone P94 CS1 stay intact.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Resource</p></th>
+<th class="head"><p>Owner and authority</p></th>
+<th class="head"><p>Review/artifact condition before physical use</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SPI0/SCI4/SCI7/SCI9 pins, clocks and reset</p></td>
+<td><p>CR8-0 board + corresponding <code class="docutils literal notranslate"><span class="pre">RAW/rzv_spi.c</span></code>, <code class="docutils literal notranslate"><span class="pre">rzv_sci_i2c.c</span></code>, <code class="docutils literal notranslate"><span class="pre">rzv_serial.c</span></code></p></td>
+<td><p>Selected config, clock/reset path, fixed IRQ definitions and bounded bus recovery; no guessed IRQ/ELC/DMAC source</p></td>
+</tr>
+<tr class="row-odd"><td><p>GPT6/7/9/10, pinmux and peripheral reset</p></td>
+<td><p>CR8-1 only in new pair after compatible remote-owner handshake; existing CR8-0 <code class="docutils literal notranslate"><span class="pre">src/board_config.h</span></code>, <code class="docutils literal notranslate"><span class="pre">src/timer_config.cpp</span></code> supply mapping evidence</p></td>
+<td><p>New CR8-1 timer table/config; prove CR8-0 init/reset and linked output paths cannot touch those pins/GPTs; unclaimed CR8-1 performs no reset/mux/cleanup writes</p></td>
+</tr>
+<tr class="row-even"><td><p>PWM clock/rate</p></td>
+<td><p>CR8-1 HAL <code class="docutils literal notranslate"><span class="pre">io_pins/io_timer.c</span></code>, NuttX clock/CPG API</p></td>
+<td><p>P4CLK is queried; 400 Hz is a source default, not the selected ESC contract; HAL range is 50–500 Hz; report actual configured rate and compare against CR8-0 parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p>HRT/worker scheduling</p></td>
+<td><p>Each core’s local HRT; CR8-0 owns flight time</p></td>
+<td><p>Keep HRT GTM resources distinct from output GPTs; resolve actual CR8-1 clock/IRQ route before backend activation</p></td>
+</tr>
+<tr class="row-even"><td><p>ICU/GIC and CPG shared banks</p></td>
+<td><p>Existing architecture APIs; each core only its owned routes/resources</p></td>
+<td><p>INTR8SEL partition CR8-0 0–84, CR8-1 85–126; shared GIC distributor is not independently reset by a backend</p></td>
+</tr>
+<tr class="row-odd"><td><p>PWM DMA</p></td>
+<td><p>No demo DShot DMA owner</p></td>
+<td><p>Fixed PWM proposal uses existing HAL; no borrowed DMA channel or new DShot behavior</p></td>
+</tr>
+<tr class="row-even"><td><p>Raw DDR + MHU</p></td>
+<td><p>Initiator CR8-0 recovery epoch; per-direction producer/consumer ownership</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RAW/rzv_ipc_channels.h</span></code>, <code class="docutils literal notranslate"><span class="pre">rzv_ipc_raw.c</span></code>, <code class="docutils literal notranslate"><span class="pre">rzv_mhu_core.c</span></code>; cache/barrier path below remains mandatory</p></td>
+</tr>
+<tr class="row-odd"><td><p>Battery bus, power calibration and source health</p></td>
+<td><p>Product CR8-1 acquisition; CR8-0 energy/warning policy</p></td>
+<td><p>Select actual controller/pins/transceiver/address and source ID through the power ICD; a proposed temporary CR8-0 monitor route must be recorded as an allocation gap rather than silently satisfying CR8-1 ownership</p></td>
+</tr>
+<tr class="row-even"><td><p>Persistent medium/controller/partition</p></td>
+<td><p>One selected storage owner; CR8-0 is sole writer of canonical PX4 parameter/calibration state</p></td>
+<td><p>Define boot/runtime access, flash/FS geometry, serialization, integrity and recovery; do not enable an unqualified xSPI/SD route just because its driver exists</p></td>
+</tr>
+<tr class="row-odd"><td><p>Private images/RTT</p></td>
+<td><p>Per-core linker map and exact ELF</p></td>
+<td><p>CR8-0 cache DDR <code class="docutils literal notranslate"><span class="pre">0x40800000</span></code>, CR8-1 <code class="docutils literal notranslate"><span class="pre">0x41800000</span></code>; local TCM address equality is intentional; derive RTT from exact ELF</p></td>
+</tr>
+<tr class="row-even"><td><p>Board electrical/clock/reset release</p></td>
+<td><p>Selected RDK schematic/XML/generated sources plus core-matched reference-map entries</p></td>
+<td><p>EVK peripheral references prove IP behavior, not RDK pins; missing physical artifacts hold physical qualification only</p></td>
+</tr>
+</tbody>
+</table>
+<section id="seven-required-subsystem-interface-areas">
+<h3>2.1 Seven required subsystem/interface areas<a class="headerlink" href="#seven-required-subsystem-interface-areas" title="Link to this heading"></a></h3>
+<p>The user approved these seven module owners and the <a class="reference internal" href="rzv2h-demo-requirements.html"><span class="std std-doc">shared requirements registry</span></a>. Existing SYS/SW IDs remain unchanged; the registry allocates new module requirements and links each specification. These are target contracts, not implementation evidence. Full acceptance requires a closed interface contract and evidence for every applicable row, not only the IPC implementation.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Area / target owner</p></th>
+<th class="head"><p>Required interfaces and state</p></th>
+<th class="head"><p>Current gap and acceptance proof</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Sensors/navigation / CR8-0</p></td>
+<td><p>Exact fitted sensor identities, sample/receive time, units, rotations, calibration identity, bus recovery and invalid/stale state → uORB/sensor processing/EKF2; GNSS/range validity and estimator eligibility remain explicit</p></td>
+<td><p>Existing individual drivers and profile tests do not prove integrated EKF/navigation. Close startup, timestamp/rotation/calibration, disconnect/stuck-bus/recovery and estimator-health evidence. Trace SYS-IF-001/002, SW-DEV-001/005 and SW-TIM-001</p></td>
+</tr>
+<tr class="row-odd"><td><p>Flight control / CR8-0</p></td>
+<td><p>Valid estimator state + manual/mission setpoints + commander arm/mode/failsafe → controllers → allocator → one <code class="docutils literal notranslate"><span class="pre">PWM_MAIN</span></code> transaction; CR8-1 status constrains readiness</p></td>
+<td><p>Prove correct airframe/functions, controller scheduling, coherent state/value transitions, RC/link-loss distinctions, ordinary arming and feasible failsafes. Existing lease tests do not establish control-loop stability or navigation readiness. Trace SYS-ARC-003, SYS-IF-008, SW-ARC-005</p></td>
+</tr>
+<tr class="row-even"><td><p>Battery/power / CR8-1 acquisition, CR8-0 policy</p></td>
+<td><p>Selected BMS/monitor ICD → bounded read-only acquisition and calibrated source snapshot → versioned IPC adapter → <code class="docutils literal notranslate"><span class="pre">battery_status</span></code>, warnings/energy/failsafe; distinguish pack protection, measured monitor values and unavailable cell fields</p></td>
+<td><p>Select real device/route and implement missing acquisition/adapter; test scaling/current sign, source/age/validity, unplug/stale/bus-off/pack-swap, low/critical thresholds and compute-rail disturbance. INA228 source or a declared <code class="docutils literal notranslate"><span class="pre">BatteryStatus_t</span></code> is not integrated proof. Trace SYS-IF-003/004/008, SYS-SAF-004, SW-DEV-002</p></td>
+</tr>
+<tr class="row-odd"><td><p>Calibration/storage / CR8-0 canonical records, one selected medium owner</p></td>
+<td><p>Calibration/device binding, parameters, airframe/output/failsafe configuration and schema identity → atomic integrity-checked persistent record → validated startup restore; release manifest binds the active set</p></td>
+<td><p>Select medium/partition/controller ownership and qualify recovery. Test save/reboot/cold boot, corrupt/truncated records, interrupted replacement, schema/identity mismatch and known-safe recovery; unqualified or lost calibration blocks readiness rather than silently accepting defaults. Trace SW-CFG-001/002 and system §5.2</p></td>
+</tr>
+<tr class="row-even"><td><p>IPC / CR8-0 initiator and CR8-1 peer</p></td>
+<td><p>Raw ABI/cache/IRQ/epoch plus bounded application schema, actuator freshness tokens and required power snapshots; one writer, per-stream expiry/backpressure and rejection counters</p></td>
+<td><p>Detailed §§3–7 below cover the proposed actuator path; implement and qualify the proposed bounded battery layouts in §4.2, exact offsets/size/CRC and receiver adapters before full acceptance. Host/compile/load/cache/reset and stale-queue proof remain distinct. Trace SW-IPC-001–004, SYS-SAF-002/003</p></td>
+</tr>
+<tr class="row-odd"><td><p>Actuator safety / CR8-0 authority, CR8-1 physical owner</p></td>
+<td><p>Coherent mapped commands plus product/service policy → final inhibit gate → selected GPT/rate/pins; Ready/Armed/Fault and backend state remain separate; stored DIS values are preserved</p></td>
+<td><p>Externally prove no pulse at boot/reset/negotiation/product standby/stop/Fault, configured DIS emission only under explicit service policy, per-channel zero, ESC timeout, motor order/direction, lease timing and wrong-pair behavior. Resolve whole-CR8-1-halt containment for product release. Trace SYS-ARC-004, SYS-IF-007, SYS-SAF-001–003/005, SW-FLT-002/003</p></td>
+</tr>
+<tr class="row-even"><td><p>Diagnostics/release / per-domain reporters, one release manifest owner</p></td>
+<td><p>Reset/session IDs, sensor/calibration/power health, arming/inhibit reasons, accepted/submitted sequence, queue/errors/deadlines and build/config hashes → bounded logs/status/evidence bundle</p></td>
+<td><p>Prove reporter survival through init/apply failure, log age/unknown semantics and bounded logging under load; reject incompatible images/config/calibration and interrupted updates; retain actual hashes and fault captures. Debug output is not an analyzer or a signature test. Trace SW-OBS-001, SW-CFG-001, SW-UPD-001, SYS-SEC-001 and SW-SEC-001</p></td>
+</tr>
+</tbody>
+</table>
+<p>Battery protocol reuse follows software specification §5.2: <code class="docutils literal notranslate"><span class="pre">src/drivers/power_monitor/ina228</span></code> supplies monitor/calibration logic, <code class="docutils literal notranslate"><span class="pre">src/drivers/batt_smbus</span></code> has device-specific SBS behavior and manufacturer writes requiring exclusion from a read-only adapter, and <code class="docutils literal notranslate"><span class="pre">src/drivers/uavcan/sensors/battery.cpp</span></code> supplies message-to-PX4 semantics. None supplies the entire missing CR8-1 service automatically. Freeze the selected protocol, source identity, units/sign/validity, sample/receive timestamps, acquisition/stale budgets and fault behavior before adding its bounded IPC frames. Unknown battery data must not become valid zero voltage/current or a fictitious BMS protection state.</p>
+<p>Storage ownership similarly requires one real route, not an assumption that xSPI or SD works because code exists. Use software specification §§10.1–10.4 to bind calibration, schema, hardware revision, output configuration and both CR8 images. A controlled reload is useful during incomplete bring-up; it is not persistent calibration, power-loss recovery, or a substitute acceptance route. Do not mark the overall requested demo complete until the selected persistent route and its fault tests pass.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Milestone</p></th>
+<th class="head"><p>What may be recorded</p></th>
+<th class="head"><p>Completion limit</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Source/host/build</p></td>
+<td><p>Reviewed proposed contracts, bounded fixtures and exact paired artifacts</p></td>
+<td><p>No physical sensor, power, persistence or output qualification is inferred</p></td>
+</tr>
+<tr class="row-odd"><td><p>Partial props-off bring-up</p></td>
+<td><p>Authorized isolated device/output evidence; an explicitly incomplete setup may temporarily use <code class="docutils literal notranslate"><span class="pre">BAT1_SOURCE=-1</span></code> or TMPFS</p></td>
+<td><p>Cannot be called full acceptance, calibrated persistence, battery coverage or flight readiness</p></td>
+</tr>
+<tr class="row-even"><td><p>Full requested acceptance</p></td>
+<td><p>All seven area interfaces and applicable source/host/build/physical gates closed, real battery monitoring, durable calibration/configuration and strict output-state proof</p></td>
+<td><p>Flight campaign selection changes the exercised envelope, not these required subsystem deliverables</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="existing-raw-transport-and-application-abi">
+<h2>3. Existing raw transport and application ABI<a class="headerlink" href="#existing-raw-transport-and-application-abi" title="Link to this heading"></a></h2>
+<p>The operational raw rings are <strong>not</strong> the legacy <code class="docutils literal notranslate"><span class="pre">SharedMemCR8_t</span></code>/<code class="docutils literal notranslate"><span class="pre">SharedMemM33_t</span></code> templates and stale <code class="docutils literal notranslate"><span class="pre">0x70000000</span></code> comments in <code class="docutils literal notranslate"><span class="pre">protocol.h</span></code>. <code class="docutils literal notranslate"><span class="pre">RAW/rzv_ipc_channels.h</span></code> owns <code class="docutils literal notranslate"><span class="pre">/dev/ipcc1</span></code>: CR8-view <code class="docutils literal notranslate"><span class="pre">0x43800000</span></code>, 64 KiB split into directional halves; 16 entries per ring; public entry 64 bytes. The reserved overall raw window is 256 KiB. CR8-0 transmits on MHU NS ch4 and receives ch9; its response/message IRQ macros resolve to 327/316. CR8-1 transmits ch9 and receives ch4, response/message IRQs 328/315. Do not confuse these identities with selectable ELC events.</p>
+<p>Transport ABI v2 has a 64-byte ring header: magic <code class="docutils literal notranslate"><span class="pre">0x525a4950</span></code>, version 2, state, epoch, bounded head/tail, mask, <code class="docutils literal notranslate"><span class="pre">ack_epoch</span></code>, <code class="docutils literal notranslate"><span class="pre">ack_sequence</span></code>, <code class="docutils literal notranslate"><span class="pre">last_sequence</span></code>, then reserved bytes. Each physical slot is 128 bytes: 64-byte metadata line (<code class="docutils literal notranslate"><span class="pre">epoch</span></code>, 32-bit nonzero sequence, length, padding), then the 64-byte public payload line. The initiator owns nonzero recovery generations; <code class="docutils literal notranslate"><span class="pre">RECOVER</span></code> reconciles both directional headers. Raw sequences are distinct from application sequences.</p>
+<!-- sys-view: demo-engineering-3 -->
+<p><strong>Figure 3 — Current raw publication, cache visibility, and ACK contract.</strong> Reverse traffic uses the same mirrored path.</p>
+<figure class="md2s-diagram align-center">
+<img alt="Sequence diagram" src="_images/rzv2h-dualcr8-demo-design-3.svg" />
+</figure>
+<p><code class="docutils literal notranslate"><span class="pre">RAW/rzv_ipc_raw.c:rzv_ipc_raw_read/write</span></code> are the source authority for operation order; IRQ notification is not application validation. A write waits up to 100 ms for peer consumption, even with the descriptor opened <code class="docutils literal notranslate"><span class="pre">O_NONBLOCK</span></code>; the application cannot treat it as a nonblocking callback. Timeout/protocol failure quarantines the link, subsequent I/O reports <code class="docutils literal notranslate"><span class="pre">ENOLINK</span></code>, and only the initiator publishes a new epoch with <code class="docutils literal notranslate"><span class="pre">RECOVER</span></code>. The responder adopts it through <code class="docutils literal notranslate"><span class="pre">read()</span></code>/<code class="docutils literal notranslate"><span class="pre">poll()</span></code>. Recovery stays in a sender/support thread, with bounded rendezvous and at most one retry per second. No output worker waits for raw ACK.</p>
+<p>The existing <strong>application</strong> ABI is separately version <code class="docutils literal notranslate"><span class="pre">0x02</span></code>, magic <code class="docutils literal notranslate"><span class="pre">0x525A5632</span></code>, packed little-endian header 16 bytes: magic 0–3, version 4, type 5, <code class="docutils literal notranslate"><span class="pre">uint16_t</span> <span class="pre">sequence</span></code> 6–7, source <code class="docutils literal notranslate"><span class="pre">uint32_t</span> <span class="pre">timestamp_us</span></code> 8–11, CRC32 12–15. CRC starts <code class="docutils literal notranslate"><span class="pre">0xffffffff</span></code>, uses reflected polynomial <code class="docutils literal notranslate"><span class="pre">0xedb88320</span></code>, final complement, with CRC field zeroed; it covers the type’s encoded frame length, not 64-byte entry padding. Source timestamp wraps and is not used as a cross-core lease clock. Senders zero-pad to 64; current CR8-1 transport accepts either exact frame size or full entry in its validator.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Existing application type/value</p></th>
+<th class="head text-right"><p>Packed size from <code class="docutils literal notranslate"><span class="pre">FC/protocol.h</span></code></p></th>
+<th class="head"><p>Current use / demo disposition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>HEARTBEAT <code class="docutils literal notranslate"><span class="pre">0x00</span></code></p></td>
+<td class="text-right"><p>28</p></td>
+<td><p>Both R8s at 10 Hz; source identity checked; demo gets separate v3 layout</p></td>
+</tr>
+<tr class="row-odd"><td><p>ACTUATOR_CMD <code class="docutils literal notranslate"><span class="pre">0x01</span></code></p></td>
+<td class="text-right"><p>36</p></td>
+<td><p>Eight outputs plus mixer/armed/safety/DShot bytes; no stop flag or producer generation; replace only for new pair</p></td>
+</tr>
+<tr class="row-even"><td><p>PWM_FEEDBACK <code class="docutils literal notranslate"><span class="pre">0x02</span></code></p></td>
+<td class="text-right"><p>52</p></td>
+<td><p>Optional CM33 feedback; excluded from demo runtime</p></td>
+</tr>
+<tr class="row-odd"><td><p>FAULT_STATUS <code class="docutils literal notranslate"><span class="pre">0x03</span></code></p></td>
+<td class="text-right"><p>28</p></td>
+<td><p>Lease/fault/armed reporting; no backend rate/readiness; retain for legacy</p></td>
+</tr>
+<tr class="row-even"><td><p>INPUT_RC <code class="docutils literal notranslate"><span class="pre">0x10</span></code>; ESC_STATUS <code class="docutils literal notranslate"><span class="pre">0x11</span></code></p></td>
+<td class="text-right"><p>56; 58</p></td>
+<td><p>Declared/parsed types do not prove CR8-1 acquisition or real ESC telemetry</p></td>
+</tr>
+<tr class="row-odd"><td><p>BATTERY_STATUS <code class="docutils literal notranslate"><span class="pre">0x12</span></code>; SAFETY_STATUS <code class="docutils literal notranslate"><span class="pre">0x13</span></code></p></td>
+<td class="text-right"><p>36; 24</p></td>
+<td><p>Declared schema is not an integrated BMS/local safety service</p></td>
+</tr>
+<tr class="row-even"><td><p>VEHICLE_CMD <code class="docutils literal notranslate"><span class="pre">0x20</span></code>; VEHICLE_STATUS <code class="docutils literal notranslate"><span class="pre">0x21</span></code>; FAILSAFE_CMD <code class="docutils literal notranslate"><span class="pre">0x30</span></code></p></td>
+<td class="text-right"><p>48; 28; 24</p></td>
+<td><p>Selected bridge broadcasts exist; demo does not use these as alternate arm/output authorities</p></td>
+</tr>
+</tbody>
+</table>
+<p>Current <code class="docutils literal notranslate"><span class="pre">OutputLease::accept()</span></code> ages the old state before writing receipt time; preserve that invariant. Current application sequence handling is incomplete as a reject contract: some receive streams count gaps, while the raw transport enforces exact next transport sequence. A declaration of <code class="docutils literal notranslate"><span class="pre">sequence</span></code> in the header does not prove duplicate/regression rejection for actuator commands. The new profile must explicitly test it.</p>
+</section>
+<section id="proposed-demo-wire-contract-and-freshness-proof">
+<h2>4. Proposed demo wire contract and freshness proof<a class="headerlink" href="#proposed-demo-wire-contract-and-freshness-proof" title="Link to this heading"></a></h2>
+<p>Introduce a <strong>separate demo application major 3, minor 0</strong>, sharing raw ABI v2, implemented in <code class="docutils literal notranslate"><span class="pre">src/apps/protocol.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">src/apps/protocol.cpp</span></code> as part of the shared <code class="docutils literal notranslate"><span class="pre">rzv2h_demo</span></code> library (<code class="docutils literal notranslate"><span class="pre">src/apps/CMakeLists.txt</span></code>). Keep legacy application v2 definitions/serialization for legacy consumers and historical evidence; the canonical dualcr8 profile does not start that bridge. All three checked-in protocol mirrors carry matching explicit v2/v3 definitions. A profile selects exactly one application major; a wrong major is rejected before type dispatch. A blanket 16-byte header expansion would push existing RC/ESC frames above 64 bytes, so dormant v2 types must not be silently reinterpreted as v3.</p>
+<p>The following layouts are <strong>implemented in <code class="docutils literal notranslate"><span class="pre">src/apps/protocol.hpp</span></code></strong> and tested across the dual-core pipeline. Encode/decode little-endian fields with bounded helpers or <code class="docutils literal notranslate"><span class="pre">memcpy</span></code>, avoiding unaligned packed loads. No pointer, compiler <code class="docutils literal notranslate"><span class="pre">bool</span></code>, native enum, or <code class="docutils literal notranslate"><span class="pre">float</span></code> is on the new command/status wire.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Proposed common <code class="docutils literal notranslate"><span class="pre">WireHeader</span></code> field</p></th>
+<th class="head text-right"><p>Offset</p></th>
+<th class="head text-right"><p>Bytes</p></th>
+<th class="head"><p>Rule</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">magic</span></code></p></td>
+<td class="text-right"><p>0</p></td>
+<td class="text-right"><p>4</p></td>
+<td><p>Existing <code class="docutils literal notranslate"><span class="pre">0x525A5632</span></code>; version separates meanings</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">major</span></code>, <code class="docutils literal notranslate"><span class="pre">minor</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">length</span></code></p></td>
+<td class="text-right"><p>4,5,6,7</p></td>
+<td class="text-right"><p>1 each</p></td>
+<td><p>Exact supported major/minor and type-specific length</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">source_core</span></code>, <code class="docutils literal notranslate"><span class="pre">flags</span></code>, <code class="docutils literal notranslate"><span class="pre">reserved</span></code></p></td>
+<td class="text-right"><p>8,9,10</p></td>
+<td class="text-right"><p>1,1,2</p></td>
+<td><p>Core 0/1 only; flags/reserved zero in version 3.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sequence</span></code></p></td>
+<td class="text-right"><p>12</p></td>
+<td class="text-right"><p>4</p></td>
+<td><p>Per-direction/per-type; strictly advancing, gaps observable</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">link_epoch</span></code></p></td>
+<td class="text-right"><p>16</p></td>
+<td class="text-right"><p>4</p></td>
+<td><p>Nonzero; equals current raw <code class="docutils literal notranslate"><span class="pre">GET_STATS</span></code> epoch</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">publication_us</span></code></p></td>
+<td class="text-right"><p>20</p></td>
+<td class="text-right"><p>8</p></td>
+<td><p>Source-local monotonic encode time; diagnostics, not cross-core subtraction</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">crc32</span></code></p></td>
+<td class="text-right"><p>28</p></td>
+<td class="text-right"><p>4</p></td>
+<td><p>Existing algorithm over exact <code class="docutils literal notranslate"><span class="pre">length</span></code>, CRC field zeroed</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Proposed type and payload</p></th>
+<th class="head"><p>Offsets after 32-byte header</p></th>
+<th class="head text-right"><p>Encoded total</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEMO_ACTUATOR_CMD</span></code> <code class="docutils literal notranslate"><span class="pre">0x01</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">generation:u32</span></code> &#64;32; <code class="docutils literal notranslate"><span class="pre">state_generation:u32</span></code> &#64;36; <code class="docutils literal notranslate"><span class="pre">produced_us:u64</span></code> &#64;40; <code class="docutils literal notranslate"><span class="pre">outputs_us:u16[4]</span></code> &#64;48; <code class="docutils literal notranslate"><span class="pre">state_bits:u16</span></code> &#64;56; <code class="docutils literal notranslate"><span class="pre">rate_hz:u16</span></code> &#64;58; <code class="docutils literal notranslate"><span class="pre">freshness_token:u32</span></code> &#64;60</p></td>
+<td class="text-right"><p>64</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DEMO_BACKEND_STATUS</span></code> new <code class="docutils literal notranslate"><span class="pre">0x04</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">accepted_cmd_sequence:u32</span></code> &#64;32; <code class="docutils literal notranslate"><span class="pre">applied_cmd_sequence:u32</span></code> &#64;36; <code class="docutils literal notranslate"><span class="pre">applied_generation:u32</span></code> &#64;40; <code class="docutils literal notranslate"><span class="pre">freshness_token:u32</span></code> &#64;44; <code class="docutils literal notranslate"><span class="pre">fault_flags:u32</span></code> &#64;48; <code class="docutils literal notranslate"><span class="pre">capabilities:u16</span></code> &#64;52; <code class="docutils literal notranslate"><span class="pre">rate_hz:u16</span></code> &#64;54; <code class="docutils literal notranslate"><span class="pre">hardware_contract_id:u16</span></code> &#64;56; <code class="docutils literal notranslate"><span class="pre">lease_state:u8</span></code> &#64;58; <code class="docutils literal notranslate"><span class="pre">backend_bits:u8</span></code> &#64;59; <code class="docutils literal notranslate"><span class="pre">loop_count:u32</span></code> &#64;60</p></td>
+<td class="text-right"><p>64</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEMO_HEARTBEAT</span></code> <code class="docutils literal notranslate"><span class="pre">0x00</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">state:u8</span></code>, <code class="docutils literal notranslate"><span class="pre">cpu_load:u8</span></code>, <code class="docutils literal notranslate"><span class="pre">memory_load:u8</span></code>, <code class="docutils literal notranslate"><span class="pre">reserved:u8</span></code> &#64;32–35; <code class="docutils literal notranslate"><span class="pre">uptime_ms:u32</span></code> &#64;36; <code class="docutils literal notranslate"><span class="pre">loop_count:u32</span></code> &#64;40</p></td>
+<td class="text-right"><p>44, padded to 64</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DEMO_BATTERY_BASE</span></code> <code class="docutils literal notranslate"><span class="pre">0x12</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">source_id:u16</span></code> &#64;32; <code class="docutils literal notranslate"><span class="pre">valid_mask:u16</span></code> &#64;34; <code class="docutils literal notranslate"><span class="pre">acquisition_generation:u32</span></code> &#64;36; <code class="docutils literal notranslate"><span class="pre">sample_age_us:u32</span></code> &#64;40; <code class="docutils literal notranslate"><span class="pre">voltage_mV:u32</span></code> &#64;44; <code class="docutils literal notranslate"><span class="pre">current_mA:i32</span></code> &#64;48; <code class="docutils literal notranslate"><span class="pre">remaining_permille:u16</span></code> &#64;52; <code class="docutils literal notranslate"><span class="pre">warning:u8</span></code> &#64;54; <code class="docutils literal notranslate"><span class="pre">cell_count:u8</span></code> &#64;55; <code class="docutils literal notranslate"><span class="pre">source_state:u16</span></code> &#64;56; <code class="docutils literal notranslate"><span class="pre">reserved:u16</span></code> &#64;58; <code class="docutils literal notranslate"><span class="pre">source_errors:u32</span></code> &#64;60</p></td>
+<td class="text-right"><p>64</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEMO_BATTERY_DETAIL</span></code> new <code class="docutils literal notranslate"><span class="pre">0x14</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">source_id:u16</span></code> &#64;32; <code class="docutils literal notranslate"><span class="pre">valid_mask:u16</span></code> &#64;34; <code class="docutils literal notranslate"><span class="pre">acquisition_generation:u32</span></code> &#64;36; <code class="docutils literal notranslate"><span class="pre">sample_age_us:u32</span></code> &#64;40; <code class="docutils literal notranslate"><span class="pre">temperature_centiC:i16</span></code> &#64;44; <code class="docutils literal notranslate"><span class="pre">min_cell_mV:u16</span></code> &#64;46; <code class="docutils literal notranslate"><span class="pre">max_cell_mV:u16</span></code> &#64;48; <code class="docutils literal notranslate"><span class="pre">reserved:u16</span></code> &#64;50; <code class="docutils literal notranslate"><span class="pre">remaining_mAh:u32</span></code> &#64;52; <code class="docutils literal notranslate"><span class="pre">full_capacity_mAh:u32</span></code> &#64;56; <code class="docutils literal notranslate"><span class="pre">bms_fault_bits:u32</span></code> &#64;60</p></td>
+<td class="text-right"><p>64</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DEMO_PEER_HELLO</span></code> new <code class="docutils literal notranslate"><span class="pre">0x05</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">role_bits:u16</span></code> &#64;32; <code class="docutils literal notranslate"><span class="pre">board_contract_id:u16</span></code> &#64;34; <code class="docutils literal notranslate"><span class="pre">resource_layout_id:u32</span></code> &#64;36; <code class="docutils literal notranslate"><span class="pre">profile_contract_id:u32</span></code> &#64;40; <code class="docutils literal notranslate"><span class="pre">output_config_id:u32</span></code> &#64;44</p></td>
+<td class="text-right"><p>48, padded to 64</p></td>
+</tr>
+</tbody>
+</table>
+<p>Heartbeat load percentages are 0–100 when measured and <code class="docutils literal notranslate"><span class="pre">255</span></code> when unavailable; other values are rejected. Uptime/loop counters are actual local observations, with a saturated 32-bit uptime reported as such. No measurement is inferred from an alive heartbeat. The software candidate uses the initializing state and unavailable load fields while its hardware contract remains unconfigured.</p>
+<p>The software candidate assigns capability bits 0–4 to implemented PWM backend support, coherent values, stop-inhibit semantics, causal-token lease, and HAL-submission feedback. Other bits are reserved. Capability support is distinct from current resource ownership and qualification: <code class="docutils literal notranslate"><span class="pre">Claimed</span></code>/<code class="docutils literal notranslate"><span class="pre">Initialized</span></code>, the selected nonzero hardware/profile contract and fresh worker evidence still gate readiness. No capability bit proves a connector waveform.</p>
+<p><code class="docutils literal notranslate"><span class="pre">state_bits</span></code> defines effective armed, safety off, force failsafe/termination, lockdown, manual lockdown, and stop motors as explicit bits; all other bits must be zero. Illegal combinations fail semantic validation; lockdown/stop takes output-inhibit precedence. There are exactly four channels, each either <code class="docutils literal notranslate"><span class="pre">0</span></code> or a legal pulse in 90–2500 µs; selected MIN/MAX/DIS/FAIL constraints are applied by CR8-0. No second function mapping/reversal/range transform occurs on CR8-1. Wire rate must equal the backend’s fixed selected rate, and all configured/commanded pulses must be representable below its timer period. Validate this before readiness, including DIS/FAIL values. Capabilities identify local four-PWM ownership, coherent snapshot, stop semantics, freshness-token support, and feedback meaning; <code class="docutils literal notranslate"><span class="pre">hardware_contract_id</span></code> binds the four-pin map and selected fixed-rate/safety profile to a manifest registry. Do not pick an arbitrary accepted ID before creating that registry.</p>
+<p><code class="docutils literal notranslate"><span class="pre">DEMO_PEER_HELLO</span></code> is a CR8-0 declaration of the selected remote producer role and absence of local physical ownership, matched against CR8-1’s compiled pair/resource contract before any shared output hardware access. These IDs are static board/profile/resource/configuration identities from the compatibility manifest, never invented per-unit UUIDs or fleet provisioning. CRC and role bits do not authenticate a malicious privileged peer; both R8 peers are trusted in this demo.</p>
+<p><code class="docutils literal notranslate"><span class="pre">backend_bits</span></code> assigns bit 0 resource claimed, bit 1 initialized safely, bit 2 arm ready, bit 3 output inhibited, bit 4 fault latched, bit 5 recovery eligible and bit 6 session rotation requested; bit 7 is reserved zero. Recovery eligibility is not arm readiness. <code class="docutils literal notranslate"><span class="pre">accepted_cmd_sequence</span></code> means semantic/lease acceptance. <code class="docutils literal notranslate"><span class="pre">applied_cmd_sequence</span></code> advances only after the worker’s successful HAL submission/commit path; GPT buffered compare may latch on a later timer cycle. It is neither raw ACK nor independent waveform/ESC/thrust proof. <code class="docutils literal notranslate"><span class="pre">applied_generation</span></code> connects software submission to the coherent mixer snapshot. A PWM backend has no RPM/current/thrust observation; leave unsupported telemetry unavailable rather than fabricating ESC feedback. Zero sequence/generation means no accepted/submitted sample since session reset.</p>
+<p><code class="docutils literal notranslate"><span class="pre">src/apps/protocol.hpp</span></code> owns the <code class="docutils literal notranslate"><span class="pre">WireHeader</span></code>, <code class="docutils literal notranslate"><span class="pre">WireCommand</span></code>, <code class="docutils literal notranslate"><span class="pre">WireStatus</span></code>, <code class="docutils literal notranslate"><span class="pre">WireHeartbeat</span></code>, <code class="docutils literal notranslate"><span class="pre">WireHello</span></code> and battery layout assertions; <code class="docutils literal notranslate"><span class="pre">protocol.cpp</span></code> owns byte-wise encoding and validation. The software receipt records current codec and legacy-regression checks. Runtime raw writes remain exactly 64 bytes; short fixture inputs never authorize short device writes.</p>
+<p><strong>Figure 4-A — Proposed 64-byte IPC wire frame structure and field layout.</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-dualcr8-demo-design-4.svg" />
+</figure>
+<section id="producer-age-and-stale-queue-rejection-without-a-common-clock">
+<h3>4.1 Producer age and stale queue rejection without a common clock<a class="headerlink" href="#producer-age-and-stale-queue-rejection-without-a-common-clock" title="Link to this heading"></a></h3>
+<p>Local receive-time leasing alone proves time since receipt, <strong>not time since production</strong>. A sender <code class="docutils literal notranslate"><span class="pre">age_us</span></code> field computed before <code class="docutils literal notranslate"><span class="pre">write()</span></code> also omits a subsequent stop-and-wait queue delay of up to 100 ms. Cross-core subtraction of <code class="docutils literal notranslate"><span class="pre">produced_us</span></code> or <code class="docutils literal notranslate"><span class="pre">publication_us</span></code> is invalid without a qualified clock correlation. This demo proposes a bounded causal freshness-token exchange instead of adding a generic synchronization framework.</p>
+<p>CR8-1 issues a nonzero token in backend status, with a <strong>CR8-1-local issue time</strong>, at a candidate 20 ms cadence derived from the existing disarmed-refresh period. Keep at most three token records for the current epoch; prune expired tokens before lookup. Token creation is rate-limited to no more than one per 20 ms. Fault/readiness event reports reuse the current token and its original issue time; they cannot mint extra tokens or evict a still-live token. If issuance cadence changes, rederive capacity from maximum issuance burst and lifetime. Intentional session invalidation clears authority and history together. A token expires at issue + 50 ms, using the existing lease window. CR8-0 accepts a current-epoch status token and requests a <strong>new coherent mixer snapshot generated after that token was received</strong>. It must never stamp a new token onto an old generation or merely refresh the timestamp. The committed snapshot binds token, values, all state and produced time. Causal ordering then bounds source-to-receipt age by receiver-local token age; no shared clock is assumed.</p>
+<p>Before command acceptance, CR8-1 checks current epoch, token history/age, strictly advancing command sequence and snapshot generation, and coherent state-generation transitions. Its worker deadline is <code class="docutils literal notranslate"><span class="pre">min(valid_receipt_us</span> <span class="pre">+</span> <span class="pre">50000,</span> <span class="pre">token_issue_us</span> <span class="pre">+</span> <span class="pre">50000)</span></code>, additionally constrained by heartbeat expiry. Thus a command arriving near token expiry cannot acquire a new full 50 ms of output life. Token-only traffic, heartbeat-only traffic, or a cached armed generation cannot extend output. Armed frames never repeat: merely scheduling a callback on a new token cannot turn cached controller values into fresh control. An eligible armed generation requires a new valid allocator/control publication (<code class="docutils literal notranslate"><span class="pre">has_updates</span></code> plus source-publication advancement/freshness checked on CR8-0’s clock); token-only callback runs produce no renewable armed command. Disarmed refresh requires a new coherent safe/disarmed callback generation; an idle mixer is explicitly scheduled for that refresh. If a fresh generation cannot be obtained, hold no pulse and let the lease expire.</p>
+<p>Token IDs and application generations/sequences use bounded unsigned progression; duplicate/regression rejects do not renew. Before identifier reuse/wrap becomes ambiguous, inhibit and rotate the raw epoch through the initiator-only exchange below; reset all application trackers/token history only after the new epoch is observed. Raw transport sequence wrap retains its existing nonzero next-sequence contract. Epoch/session changes clear tokens on both sides. The 20 ms token cadence, combined traffic load and scheduling headroom are candidates requiring source/host/load/target evidence, not accepted latency claims.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Stream / one writer</p></th>
+<th class="head"><p>Direction and proposed cadence</p></th>
+<th class="head"><p>Expiry, rejection and backpressure</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Coherent actuator snapshot / CR8-0 producer</p></td>
+<td><p>0→1 on each new armed generation; candidate 400 Hz producer budget, measured later</p></td>
+<td><p>No armed replay; bounded latest-snapshot storage, one in-flight raw write; never overwrite unread raw slots; drop superseded unsent snapshots with counters</p></td>
+</tr>
+<tr class="row-odd"><td><p>Disarmed coherent refresh / same producer</p></td>
+<td><p>0→1 at most 20 ms gap while readiness maintained</p></td>
+<td><p>New safe snapshot after token; no stale values/new state splice; full queue or blocked sender can expire lease</p></td>
+</tr>
+<tr class="row-even"><td><p>Heartbeat / each domain reporter</p></td>
+<td><p>Both directions 10 Hz, core/state validated</p></td>
+<td><p>500 ms receive-local expiry; running heartbeat does not prove producer/backend health</p></td>
+</tr>
+<tr class="row-odd"><td><p>Peer role/resource hello / CR8-0 bridge</p></td>
+<td><p>0→1 during epoch negotiation; bounded retries before readiness</p></td>
+<td><p>Exact static compatibility match required before claim; no output lease renewal; reject all undeclared roles and never fall back to legacy local ownership</p></td>
+</tr>
+<tr class="row-even"><td><p>Backend status + freshness token / CR8-1 reporter</p></td>
+<td><p>1→0 candidate 20 ms plus fault/readiness events</p></td>
+<td><p>Bound pending reports to latest snapshot; token lifetime 50 ms, history ≤3; blocking report write cannot block worker/control loop</p></td>
+</tr>
+<tr class="row-odd"><td><p>Battery/power observations / selected acquisition service</p></td>
+<td><p>Required CR8-1→CR8-0 bounded snapshots, cadence fixed by the selected device ICD</p></td>
+<td><p>Must add versioned validity/source/units/sample-and-receive-age records and adapter before full acceptance; existing v2 battery declaration is not sufficient. Never renew actuator lease through battery traffic</p></td>
+</tr>
+<tr class="row-even"><td><p>RC/CAN/ESC measurements beyond selected power route</p></td>
+<td><p>No implemented new acquisition stream claimed</p></td>
+<td><p>Preserve v2 declarations for legacy; required product interfaces retain their own integration and test gaps</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="battery-acquisition-progress-and-bounded-age">
+<h3>4.2 Battery acquisition progress and bounded age<a class="headerlink" href="#battery-acquisition-progress-and-bounded-age" title="Link to this heading"></a></h3>
+<p>The two power frames keep the 32-byte v3 header and 64-byte public entry, implemented in <code class="docutils literal notranslate"><span class="pre">src/apps/battery.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">src/apps/battery.cpp</span></code> with codec support in <code class="docutils literal notranslate"><span class="pre">src/apps/protocol.hpp</span></code>. Base units are mV, discharge-positive mA, permille, count and device-qualified warning/state enums; detail units are centi-degrees Celsius, mV and mAh. Exact valid-mask/state/fault mappings, source IDs, ranges and stale budgets are managed through <code class="docutils literal notranslate"><span class="pre">BatteryPolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">BatteryReceiver</span></code>. Reserved fields are zero; unsupported fields have validity cleared, never invented BMS/cell data. Detail is optional only when its measurements are unsupported; available safety-relevant selected-device data remains required. Match base/detail by source, epoch and acquisition generation; do not combine different samples as one coherent observation.</p>
+<p>Only a successful <strong>new physical acquisition</strong> advances <code class="docutils literal notranslate"><span class="pre">acquisition_generation</span></code>. Reporter activity, IPC sequence, heartbeat and encoding timestamps cannot advance it. Cached sample resends retain the generation and increasing source-local <code class="docutils literal notranslate"><span class="pre">sample_age_us</span></code>; invalid/disconnected updates can immediately clear validity without fabricating a new valid sample. CR8-0 tracks last actual acquisition progress with its local clock, separately from record receipt, and never restamps an old generation into fresh battery health. Account conservatively for encoded sample age, a qualified bounded queue/transit budget and local elapsed time; unrelated core timestamps cannot be subtracted. The transport-age budget is an explicit qualification gap until measured/analysed. Test acquisition stopped while reporting/heartbeat remain live, frozen generation with advancing packet sequence, delayed queued data, source reset/pack swap, detail/base mismatch and valid zero current versus unavailable current.</p>
+</section>
+<section id="status-expiry-bootstrap-and-epoch-rotation">
+<h3>4.3 Status expiry, bootstrap and epoch rotation<a class="headerlink" href="#status-expiry-bootstrap-and-epoch-rotation" title="Link to this heading"></a></h3>
+<p>CR8-0 independently expires validated backend status on its receive-local clock, using the proposed 50 ms freshness window. A continuing 500 ms heartbeat cannot preserve cached ready/rate/fault. Only a semantically valid current-epoch advancing status sequence renews that status deadline; duplicates or other stream traffic do not. Status expiry blocks selected-profile arming and invalidates cached readiness. Command authority remains independently bounded on CR8-1.</p>
+<p><code class="docutils literal notranslate"><span class="pre">initialized_safe/recovery_eligible</span></code> and <code class="docutils literal notranslate"><span class="pre">arm_ready</span></code> are separate. In cold bootstrap or safe reinitialization, CR8-1 can publish a token with arm-ready false/fault latched. CR8-0 may then send <strong>only</strong> a current-epoch token-bound fresh disarmed stop/no-pulse snapshot without waiting for commander arm readiness. CR8-1 accepts this recovery acknowledgement only when hardware is safely initialized; it clears the eligible fault latch and later reports arm-ready. Armed/service commands stay blocked. Test cold bootstrap and persistent backend-fault → safe reinit → stop handshake → ready without circular gating.</p>
+<p>Only CR8-0 can call raw <code class="docutils literal notranslate"><span class="pre">RECOVER</span></code>. Before CR8-1 token/status counters approach ambiguous wrap, it latches <code class="docutils literal notranslate"><span class="pre">session_rotation_requested</span></code>, inhibits claimed outputs, stops minting tokens and freezes advancing counters before reuse; the reporter repeats the bounded request without renewing authority. CR8-0 consumes the request (or detects its own counter high-water condition), invalidates its producer snapshot and follows the disarmed/safe recovery path through initiator <code class="docutils literal notranslate"><span class="pre">RECOVER</span></code>. CR8-1 observing the new nonzero raw epoch is the rotation acknowledgement; a fresh role hello, tokens and disarmed handshake establish the new application session. Until that epoch arrives, CR8-1 stays inhibited and the request stays latched. Force near-wrap states in host tests, including dropped request, delayed ACK and absent initiator; no responder-issued epoch, silent counter wrap or armed replay is accepted. The high-water/flight-response policy needs the released safety contract before operational use.</p>
+</section>
+</section>
+<section id="px4-to-output-dataflow-and-concurrency">
+<h2>5. PX4-to-output dataflow and concurrency<a class="headerlink" href="#px4-to-output-dataflow-and-concurrency" title="Link to this heading"></a></h2>
+<!-- sys-view: demo-engineering-4 -->
+<p><strong>Figure 4 — Full physical-sensor-to-PWM path and distinct feedback meanings.</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-dualcr8-demo-design-5.svg" />
+</figure>
+<p><code class="docutils literal notranslate"><span class="pre">OutputProducer</span></code> helper and board <code class="docutils literal notranslate"><span class="pre">RemoteOutputs</span></code> module (implemented in <code class="docutils literal notranslate"><span class="pre">src/apps/output-producer.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp</span></code>) follow the real <code class="docutils literal notranslate"><span class="pre">OutputModuleInterface</span></code>/<code class="docutils literal notranslate"><span class="pre">MixingOutput</span></code> ownership pattern, not an <code class="docutils literal notranslate"><span class="pre">actuator_outputs</span></code> subscriber pretending to replace the physical driver. Source authorities are <code class="docutils literal notranslate"><span class="pre">src/drivers/pwm_out/PWMOut.hpp</span></code>, <code class="docutils literal notranslate"><span class="pre">src/drivers/px4io/px4io.cpp</span></code>, and <code class="docutils literal notranslate"><span class="pre">src/lib/mixer_module/mixer_module.cpp:limitAndUpdateOutputs</span></code>. <code class="docutils literal notranslate"><span class="pre">updateOutputs()</span></code> copies four outputs, stop, effective arming/safety/termination/lockdown state, generation/state generation, token and source time in one bounded commit. Read <code class="docutils literal notranslate"><span class="pre">MixingOutput::armed()</span></code> inside this callback’s mixer transaction (<code class="docutils literal notranslate"><span class="pre">src/lib/mixer_module/mixer_module.hpp</span></code>); update/cache safety state in the same producer Run generation. The sender never performs a later independent uORB state overlay. No IPC, ioctl, allocation, filesystem, or blocking logging is reachable from that callback.</p>
+<p>The output pipeline uses the atomic seqlock implementation <code class="docutils literal notranslate"><span class="pre">AtomicRecord</span></code> in <code class="docutils literal notranslate"><span class="pre">src/apps/output-snapshot.hpp</span></code> with a finite reader retry budget (3 attempts) and explicit memory ordering. Sender consistency failure means no new output command. An arming/safety/termination/configuration transition without a matching new mixer generation inhibits transmission of the previous output values; request a new callback. Do not overlay a newer arm/disarm bit onto older pulse values. Snapshot publication and callback-state access use single-core atomics (<code class="docutils literal notranslate"><span class="pre">px4::atomic&lt;uint32_t&gt;</span></code>); cross-core C++ atomics are not substituted for raw cache maintenance.</p>
+<p>CR8-1 control (<code class="docutils literal notranslate"><span class="pre">io-supervisor.cpp</span></code>) coordinates with <code class="docutils literal notranslate"><span class="pre">src/apps/actuator-lease.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">src/apps/output-worker.hpp</span></code>: it validates/drains a bounded number of records, observes raw epoch after each read, <strong>ages the existing lease before accepting a new heartbeat or command</strong>, and publishes a coherent lease-approved worker snapshot including receipt/token deadlines. The worker checks it every candidate 2.5 ms and owns physical apply/disable. If the worker observes expiry while the control loop is paused, it atomically latches the inhibit/session fault; the resumed control loop merges that latch before accepting queued frames. A queued armed frame can never clear it. The reporter uses <code class="docutils literal notranslate"><span class="pre">src/apps/output-status.hpp</span></code> (<code class="docutils literal notranslate"><span class="pre">OutputStatusStore</span></code> / <code class="docutils literal notranslate"><span class="pre">supervised_status</span></code>) to merge atomic/coherent snapshots, running even after backend initialization failure.</p>
+<p>Before initialization, the backend remains <strong>BackendUnclaimed</strong> and advertises identity/capability plus <code class="docutils literal notranslate"><span class="pre">ready=false</span></code> through the live reporter. It must not configure, reset, mux, allocate or disable shared GPT/pins until a valid current-epoch v3 hello declares the expected CR8-0 remote producer role and exact board/resource/profile/output compatibility. This prevents an accidentally mixed CR8-1 <code class="docutils literal notranslate"><span class="pre">pwm</span></code> image from clobbering legacy CR8-0 PWM during boot, before offline pair policy can reject it. The worker alone transitions to ClaimingSafe, safely acquires/initializes resources, then reports Ready. No unknown-peer fallback claims hardware. Board startup and static/platform initialization do not initialize or reset output GPT/pins; only the post-hello worker claims them. Cleanup/reset handlers may disable only resources this application has actually claimed.</p>
+<p>Backend init/apply failure sets worker-owned atomic <code class="docutils literal notranslate"><span class="pre">ready=false</span></code> and latched fault, calls idempotent <code class="docutils literal notranslate"><span class="pre">disable_all()</span></code> for resources this image actually claimed, and remains visible across control/report cycles. The control loop cannot overwrite or clear the backend fault with lease-only health. Recovery first establishes safe successful reinitialization with pins disabled while retaining the latch. A fresh current-session disarmed <strong>stop/no-pulse</strong> handshake may then acknowledge recovery without requiring <code class="docutils literal notranslate"><span class="pre">ready=true</span></code> first; only after both conditions does the worker clear the latch and report ready. That exception grants no armed output and prevents a circular ready/handshake dependency. The handshake alone never repairs hardware. Stop/cleanup disables/releases only owned resources and leaves no detached worker/reporter. A peer/session loss after claim inhibits those owned outputs; it does not transfer pin ownership to another core or erase the required new role handshake.</p>
+<section id="reset-containment-before-negotiation">
+<h3>5.1 Reset containment before negotiation<a class="headerlink" href="#reset-containment-before-negotiation" title="Link to this heading"></a></h3>
+<p>Unclaimed non-interference does not itself prove reset-time inactivity. If a warm CR8-1 reset leaves GPT/pad state active, waiting for a role hello would leave pulses running; unconditional startup cleanup could instead clobber a mismatched legacy CR8-0 owner. Before any powered activation, prove the selected reset classes make outputs inactive in hardware, or provide pair-qualified pre-application/external containment that keeps them inactive through reset and negotiation. No such hardware guarantee or gate is currently established. Test warm reset from active output separately from wrong-pair startup and orderly cleanup; a cleanup transcript cannot substitute for reset-retention proof. This remains a product release/physical input gate, not a reason to violate the unclaimed ownership guard.</p>
+</section>
+</section>
+<section id="link-lease-and-output-state-models">
+<h2>6. Link, lease and output state models<a class="headerlink" href="#link-lease-and-output-state-models" title="Link to this heading"></a></h2>
+<!-- sys-view: demo-engineering-5 -->
+<p><strong>Figure 5 — Proposed CR8-0 link/application readiness.</strong> Physical readiness remains a separate condition from raw-link success.</p>
+<figure class="md2s-diagram align-center">
+<img alt="State diagram" src="_images/rzv2h-dualcr8-demo-design-6.svg" />
+</figure>
+<!-- sys-view: demo-engineering-6 -->
+<p><strong>Figure 6 — CR8-1 lease states and orthogonal backend readiness.</strong> <code class="docutils literal notranslate"><span class="pre">Ready</span></code> is a disarmed handshake state, not permission to arm without PX4’s checks. The backend independently progresses <code class="docutils literal notranslate"><span class="pre">BackendUnclaimed</span> <span class="pre">→</span> <span class="pre">ClaimingSafe</span> <span class="pre">→</span> <span class="pre">BackendReady</span></code>, or <code class="docutils literal notranslate"><span class="pre">ClaimingSafe/BackendReady</span> <span class="pre">→</span> <span class="pre">BackendFault</span></code>; only the worker writes these states. Peer hello precedes ClaimingSafe, and safe reinitialization plus handshake is required after BackendFault.</p>
+<figure class="md2s-diagram align-center">
+<img alt="State diagram" src="_images/rzv2h-dualcr8-demo-design-7.svg" />
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Condition</p></th>
+<th class="head"><p>Lease/state action</p></th>
+<th class="head"><p>Physical action</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Boot/reset/negotiation; no first status</p></td>
+<td><p>Safe, backend unclaimed, no handshake</p></td>
+<td><p>No shared pin/GPT touches before compatible role hello; board reset-safe behavior still requires scope proof</p></td>
+</tr>
+<tr class="row-odd"><td><p>Valid current-session disarmed frame</p></td>
+<td><p>Safe/Fault→Ready with compatible safely initialized backend and fresh heartbeat/token; backend-fault recovery also requires the stop/no-pulse acknowledgement above</p></td>
+<td><p>Product standby final gate inhibits pulses despite preserved DIS values; only an explicitly scoped service/diagnostic policy may emit configured DIS; recovery handshake emits no pulse</p></td>
+</tr>
+<tr class="row-even"><td><p>Valid current-session armed frame</p></td>
+<td><p>Ready/Armed→Armed; increasing generation</p></td>
+<td><p>Apply exactly selected four values if every gate passes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Normal disarm</p></td>
+<td><p>Armed→Ready with fresh coherent disarmed generation</p></td>
+<td><p>Preserve configured DIS values in the snapshot; product standby inhibits the physical pulse train</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stop_motors</span></code>, lockdown/manual lockdown</p></td>
+<td><p>No automatic Fault or arm permission; snapshot carries effective state</p></td>
+<td><p>All motor pins no pulse even if pulse array is nonzero</p></td>
+</tr>
+<tr class="row-odd"><td><p>Force failsafe/termination</p></td>
+<td><p>PX4 selects FAIL values in same coherent transaction; no second mixer</p></td>
+<td><p>Stop/lockdown wins; motor-only demo termination uses no pulse; any future servo termination needs its own contract</p></td>
+</tr>
+<tr class="row-even"><td><p>One malformed/CRC/duplicate/regressing/stale-token frame</p></td>
+<td><p>Reject/count; no receipt/deadline renewal</p></td>
+<td><p>Prior valid command may persist only to its existing deadline</p></td>
+</tr>
+<tr class="row-odd"><td><p>Expired old Ready state before queued armed arrival</p></td>
+<td><p>Ready→Safe, armed frame rejected</p></td>
+<td><p>No pulse until new disarmed handshake</p></td>
+</tr>
+<tr class="row-even"><td><p>Expired old Armed state before queued armed arrival</p></td>
+<td><p>Armed→Fault, armed frame rejected</p></td>
+<td><p>No pulse; latched reason visible</p></td>
+</tr>
+<tr class="row-odd"><td><p>New raw epoch or unavailable epoch</p></td>
+<td><p>Clear tokens, sequences, stored outputs and heartbeat</p></td>
+<td><p>No old command replay; Fault if previously armed</p></td>
+</tr>
+<tr class="row-even"><td><p>Backend failure with healthy heartbeat</p></td>
+<td><p>Latch fault/ready false independently</p></td>
+<td><p>Disable all; report persists; commander blocks arming</p></td>
+</tr>
+</tbody>
+</table>
+<p>Configured disarmed values and electrically inactive outputs are separate acceptance contracts. Preserve configured DIS values exactly through <code class="docutils literal notranslate"><span class="pre">MixingOutput</span></code>, coherent snapshots and transport; do not rewrite all DIS parameters to zero. <strong>SYS-SAF-001 remains strict:</strong> product boot, negotiation and standby have no active pulse train, enforced by CR8-1’s final physical inhibit even if a current Ready command carries nonzero DIS and <code class="docutils literal notranslate"><span class="pre">stop_motors=false</span></code>. Nonzero DIS pulse emission requires a separately scoped service/diagnostic state and selected-device policy; Ready alone grants no such exception. That service policy is pending and not enabled or encoded as permission by the current proposed v3 frames. Its future contract must retain normal safety gates and leave product standby inactive; tests cannot assume <code class="docutils literal notranslate"><span class="pre">armed=0</span></code> or a nonzero DIS value grants service access.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">stop_motors=true</span></code>, lockdown, Fault, expired authority or controlled stop, all motor outputs are electrically inactive; per-channel zero disables only that channel. The pad’s safe electrical level or high-impedance choice belongs to the fitted hardware ICD; high impedance is not universally safe. External capture must prove the selected service policy’s configured DIS behavior once defined, inactive product behavior, all transitions, and no stale armed pulses during disarm. The owning SYS/SW state/interface descriptions retain this distinction without weakening SYS-SAF-001 or deleting configured DIS semantics. Safety-input pins are not invented: P52 is not established as a safety input in the selected reference. Ordinary PX4 arm/health policy remains in force.</p>
+<p>Selected-profile Commander implements mandatory first-status, receive-local status expiry and backend readiness/fault gating in <code class="docutils literal notranslate"><span class="pre">px4ioCheck.cpp</span></code>. <code class="docutils literal notranslate"><span class="pre">remote-outputs.cpp</span></code> publishes the v3 status mapping. Legacy boards retain their separate timeout/first-status behavior; current hardware remains unconfigured and inhibits arming.</p>
+</section>
+<section id="bootstrap-steady-operation-and-recovery-sequences">
+<h2>7. Bootstrap, steady operation, and recovery sequences<a class="headerlink" href="#bootstrap-steady-operation-and-recovery-sequences" title="Link to this heading"></a></h2>
+<!-- sys-view: demo-engineering-7 -->
+<p><strong>Figure 7 — Bootstrap, compatibility, disarmed handshake, and normal arm.</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Sequence diagram" src="_images/rzv2h-dualcr8-demo-design-8.svg" />
+</figure>
+<p>Current profile policy admits no actuator pair. <code class="docutils literal notranslate"><span class="pre">dualcr8+pwm</span></code> is a software candidate with unconfigured identities; historical <code class="docutils literal notranslate"><span class="pre">dualcr8+default</span></code> admission is retired. Candidate artifact checks inspect individual images and assert the absence of an admitted pair. Future admission requires selected identities and physical qualification. Runtime role/resource checks and the unclaimed-before-hello guard remain necessary to prevent wrong-pair boot interference.</p>
+<!-- sys-view: demo-engineering-8 -->
+<p><strong>Figure 8 — Steady sensor/control flow with independent liveness and feedback.</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Sequence diagram" src="_images/rzv2h-dualcr8-demo-design-9.svg" />
+</figure>
+<!-- sys-view: demo-engineering-9 -->
+<p><strong>Figure 9 — Producer/control-loop stall, quarantine, new epoch, and recovery.</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Sequence diagram" src="_images/rzv2h-dualcr8-demo-design-10.svg" />
+</figure>
+<p><code class="docutils literal notranslate"><span class="pre">T_off</span></code> is bounded from the last valid command’s applicable deadline reference by the 50 ms logical freshness window plus one worker period (candidate 2.5 ms) plus a <strong>declared, measured</strong> scheduler/HAL budget. Use <code class="docutils literal notranslate"><span class="pre">deadline=min(receipt+50</span> <span class="pre">ms,</span> <span class="pre">token_issue+50</span> <span class="pre">ms)</span></code>; report both reference times in target instrumentation. Do not claim exactly 50.000 ms or equate an application status timestamp with an analyzer-visible pin transition. Establish a board-verified correlation/testpoint method without assigning an unverified GPIO. Stop-and-wait latency can reduce availability; it must never extend authority.</p>
+<p>Fault injection for props-off bench verification is implemented in <code class="docutils literal notranslate"><span class="pre">src/apps/bench-fault.hpp</span></code> (<code class="docutils literal notranslate"><span class="pre">BenchFaultSchedule</span></code>), guarded by <code class="docutils literal notranslate"><span class="pre">CONFIG_RZV2H_DUALCR8_FAULT_INJECTION</span></code>. It enables bounded one-shot injection (<code class="docutils literal notranslate"><span class="pre">ProducerPause</span></code>, <code class="docutils literal notranslate"><span class="pre">HeartbeatDrop</span></code>, <code class="docutils literal notranslate"><span class="pre">CorruptFrame</span></code>, <code class="docutils literal notranslate"><span class="pre">ControlPause</span></code>, <code class="docutils literal notranslate"><span class="pre">BackendFail</span></code>, <code class="docutils literal notranslate"><span class="pre">StatusDrop</span></code>) with atomic publication and single-shot consumption, strictly disabled in normal production artifacts.</p>
+<p>A complete CR8-1 halt stops the worker, HRT callback and cleanup; GPT hardware may continue pulses. This design does not guarantee shutdown for that fault. Controlled reset/module stop proves cleanup paths only. ESC local timeout and any independent hardware inhibit remain SYS-IF-007/product safety work; an ESC seeing continuing valid PWM may not time out. No external watchdog project or automatic parachute is silently added.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Sequence view</p></th>
+<th class="head"><p>Trigger and ordered action</p></th>
+<th class="head"><p>Failure / recovery contract</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Figure 7 bootstrap</p></td>
+<td><p>New raw epoch → compatible role hello → safe ownership claim → backend status/token → fresh disarmed handshake → ordinary arm</p></td>
+<td><p>Wrong role/manifest leaves hardware unclaimed; init fault keeps reporting alive; no startup pulse permission</p></td>
+</tr>
+<tr class="row-odd"><td><p>Figure 8 steady flow</p></td>
+<td><p>New token → genuinely new control publication/coherent snapshot → semantic acceptance → bounded worker submission</p></td>
+<td><p>No controller advancement or expired token cannot renew output; raw ACK proves consumption only</p></td>
+</tr>
+<tr class="row-even"><td><p>Figure 9 recovery</p></td>
+<td><p>Worker expiry/inhibit → old state aged before queued receipt → new epoch/role → safe reinit/disarmed handshake</p></td>
+<td><p>Armed replay cannot clear fault; no direct Fault-to-active transition; physical containment separately qualified</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="implementation-test-inventory-and-evidence-contract">
+<h2>8. Implementation/test inventory and evidence contract<a class="headerlink" href="#implementation-test-inventory-and-evidence-contract" title="Link to this heading"></a></h2>
+<p>The current v3 owners are <code class="docutils literal notranslate"><span class="pre">FC/remote-outputs.cpp</span></code>, <code class="docutils literal notranslate"><span class="pre">IO/io-supervisor.cpp</span></code> and <code class="docutils literal notranslate"><span class="pre">src/apps/</span></code>. The three board <code class="docutils literal notranslate"><span class="pre">protocol.h</span></code> mirrors include the shared C++ contract while preserving legacy v2 consumers. <code class="docutils literal notranslate"><span class="pre">FC/uorb_bridge</span></code>, <code class="docutils literal notranslate"><span class="pre">IO/px4io_cr8</span></code>, legacy transports/output-lease and CM33 remain regression/reference owners, not the canonical v3 runtime. The software receipt owns the delivered source/host/build checkpoint; the phase files retain remaining execution work.</p>
+<p>Legacy ABI regression fixtures remain: <code class="docutils literal notranslate"><span class="pre">test/rzv2h-dual-cr8-output-lease-runtime-test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h-expanded-remediation-runtime-test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h-audit-remediation-runtime-test.py</span></code>. Machine-owned profile/pair/archive owners are <code class="docutils literal notranslate"><span class="pre">Tools/rzv2h-px4-profiles.json</span></code>, <code class="docutils literal notranslate"><span class="pre">Tools/rzv2h-regression-catalog.json</span></code>, <code class="docutils literal notranslate"><span class="pre">Tools/rzv2h-px4-artifact-check.py</span></code>, and their existing tests. A new checker cannot override contradictory legacy policy.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Requirements / proof ID</p></th>
+<th class="head"><p>Existing source/test baseline</p></th>
+<th class="head"><p>Software coverage and remaining acceptance proof</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SYS-ARC-003/004, SW-ARC-005 / D-OWNER</p></td>
+<td><p>Board init/timer table, <code class="docutils literal notranslate"><span class="pre">dualcr8.px4board</span></code>; <code class="docutils literal notranslate"><span class="pre">test/rzv2h_gpt_pwm_contract_test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h_core_irq_contract_test.py</span></code></p></td>
+<td><p>Candidate artifact checks and runtime fixtures inspect ownership guards; source evidence is in the software receipt. Physical sole-owner/reset proof remains pending</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-IF-001/002; SW-DEV-001/005 / D-SENSOR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">test/rzv2h-bmp388-reset-contract-test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h-sci-i2c-runtime-test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h_bmm150_sample_contract_test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h_board_gpio_contract_test.py</span></code></p></td>
+<td><p>Exact-BOM profile fixture and candidate artifacts cover selection/startup; fitted identities, timestamps and disconnect evidence remain pending; no secondary-IMU closure</p></td>
+</tr>
+<tr class="row-even"><td><p>SW-IPC-001/003; SYS-SAF-003 / D-WIRE</p></td>
+<td><p>Three ABI fixtures above; <code class="docutils literal notranslate"><span class="pre">test/rzv2h_ipc_raw_contract_test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/test_rzv2h_ipc_recovery_contract.py</span></code></p></td>
+<td><p>Extend fixtures: actual compile/offset/CRC/parity, all v2/v3 dispatchers, malformed flags, wrong length/version, duplicate/regression/gaps, wrap and full queues; source/host only until named exact-image load/cache tests</p></td>
+</tr>
+<tr class="row-odd"><td><p>SW-IPC-002/004; SW-FLT-002/003; SYS-SAF-002 / D-LEASE</p></td>
+<td><p>Existing output-lease fixture; <code class="docutils literal notranslate"><span class="pre">IO/output-lease.cpp</span></code> age-before-receipt</p></td>
+<td><p>Extend: Ready/Armed gap &gt;50 ms, token issue/expiry/history, cached generation, new token on old snapshot, token-triggered callback without new control publication, epoch reset, heartbeat-only and source-stop cases; host then detached-probe target waveform</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-SAF-001/002 / D-COHERENCE</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mixer_module.cpp:limitAndUpdateOutputs</span></code>; current bridge split-state behavior</p></td>
+<td><p>Protocol/producer fixtures and runtime boundary fixture cover coherent consumed progress and inhibit behavior; scoped physical/service proof remains pending</p></td>
+</tr>
+<tr class="row-odd"><td><p>SW-FLT-002/003, SW-OBS-001 / D-BACKEND</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">test/rzv2h-io-core-health-runtime-test.py</span></code>, existing reporter/worker source</p></td>
+<td><p>Extend persistent init/apply fault over many reports, healthy heartbeat plus failed backend, missing first status, successful safe reinit and mandatory disarmed handshake; host then named fault transcript</p></td>
+</tr>
+<tr class="row-even"><td><p>SW-CFG-001 / D-PAIR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">test/rzv2h-px4-artifact-test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h-jlink-debug-tools-test.py</span></code></p></td>
+<td><p>Candidate artifact checks and current policy require no admitted pair; future selected identities, rate/capability binding and exact-image physical qualification remain pending</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-PER-001; SW-IPC-004 / D-TIMING</p></td>
+<td><p>Existing raw timeout and 2.5 ms worker source</p></td>
+<td><p>Bounded drain/memory/stack/WCET review, token/status load and jitter measurement; externally measure <code class="docutils literal notranslate"><span class="pre">T_off</span></code>, not logger elapsed time; no invented benchmark target result</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-IF-007; SYS-SAF-005 / D-LIMIT</p></td>
+<td><p>Specification and HAL disable source</p></td>
+<td><p>Real ESC timeout/reset/stuck-output and whole-core-halt containment remain physical/product gates; do not mark unsupported containment passed</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-IF-003/004/008; SW-DEV-002 / D-POWER</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">src/drivers/power_monitor/ina228</span></code>, <code class="docutils literal notranslate"><span class="pre">src/drivers/batt_smbus</span></code>, <code class="docutils literal notranslate"><span class="pre">src/drivers/uavcan/sensors/battery.cpp</span></code>; no integrated CR8-1 qualification claimed</p></td>
+<td><p>Battery fixture covers codec/receiver/measured-SOC components; selected physical acquisition, ICD, PX4 policy and powered source qualification remain required</p></td>
+</tr>
+<tr class="row-even"><td><p>SW-CFG-001/002 / D-STORAGE</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">test/rzv2h-parameter-save-contract-test.py</span></code>, <code class="docutils literal notranslate"><span class="pre">test/rzv2h-xspi-paramfs-contract-test.py</span></code>; current TMPFS is volatile</p></td>
+<td><p><strong>New required</strong> selected-medium persistence integration tests and named power-interruption campaign: save/reboot/cold boot, corruption, interrupted atomic replacement, calibration identity/schema mismatch, same-model/same-route replacement and safe recovery; manual reload cannot close this gate</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-ARC-003; SW-DEV-001/005 / D-CONTROL</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">src/modules/ekf2</span></code>, controllers/allocator, expected-sensor checks; individual sensor/profile tests</p></td>
+<td><p><strong>New required</strong> integrated estimator/controller/allocator scenarios and target timing evidence with calibration restored: bad/stale sensor, GPS/range loss, mode/arm/disarm/failsafe and correct airframe/function mapping; bench wiring alone is not control/navigation proof</p></td>
+</tr>
+<tr class="row-even"><td><p>SW-OBS-001; SW-CFG-001; SW-UPD-001; SW-SEC-001 / D-RELEASE</p></td>
+<td><p>Existing profile/artifact and debug-tool tests; no complete authenticated release claimed</p></td>
+<td><p><strong>New required</strong> correlated seven-area health logs, actual image/config/calibration hashes, incompatible-set rejection, recovery/interrupted-update and authentication-negative results as applicable to the product release; test-hook builds must be excluded from normal release</p></td>
+</tr>
+</tbody>
+</table>
+<p>Legacy <code class="docutils literal notranslate"><span class="pre">drone</span></code> and <code class="docutils literal notranslate"><span class="pre">simple</span></code> fixtures remain regression gates. Current build entry points are <code class="docutils literal notranslate"><span class="pre">./build.sh</span> <span class="pre">renesas_rdk-rzv2h_dualcr8</span></code> and <code class="docutils literal notranslate"><span class="pre">./build.sh</span> <span class="pre">renesas_rdk-rzv2h-io-cr8_1_pwm</span></code>, run sequentially through the owning build script. Existing source/host/build receipts establish software evidence only; connector captures, fitted-sensor transcripts and product/flight acceptance remain separate.</p>
+<p>Fault injection is implemented under default-off <code class="docutils literal notranslate"><span class="pre">CONFIG_RZV2H_DUALCR8_FAULT_INJECTION</span></code>; normal artifacts must prove it off. <code class="docutils literal notranslate"><span class="pre">bench-fault.hpp</span></code> and the candidate validation guide own bounded hook semantics, CLI use, evidence and cleanup. Source/host hook coverage does not prove any target result. GDB halt cannot substitute for a worker-alive stall test. Hardware loads/resets/writes, powered ESCs and fault commands require explicit user authorization.</p>
+</section>
+<section id="integration-into-the-five-document-product-set">
+<h2>9. Integration into the five-document product set<a class="headerlink" href="#integration-into-the-five-document-product-set" title="Link to this heading"></a></h2>
+<p>This companion is the detailed target design record, linked from all five documents. The table below assigns later implementation/evidence updates to their smallest owning sections; it does not claim those implementation gates passed. Do not edit a broad product requirement merely to make the demo appear compliant.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Existing document and owning sections</p></th>
+<th class="head"><p>Intended future integration</p></th>
+<th class="head"><p>Broad scope retained / required proof</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="index.html"><span class="std std-doc">Marketing README</span></a>, document map, engineering entry points, evidence boundary</p></td>
+<td><p>Link the delivered demo validation guide from software-development navigation; identify proposed/current evidence tier</p></td>
+<td><p>Remains product-set navigation; no duplicated wire tables; D-PAIR and named status-record link</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="rzv2h-autonomous-drone-solution.html"><span class="std std-doc">Solution brief</span></a>, §§2, 3.5, 4.2, 7</p></td>
+<td><p>Describe only achieved evidence for the complete “Control” demonstration, including battery, retained calibration and output behavior, using Figures 1/4 and seven-area proof links</p></td>
+<td><p>Partial bench milestone is explicitly incomplete; “See”/“Integrate,” complete autonomy, aircraft containment and production claims still require their own evidence</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="rzv2h-development-ecosystem.html"><span class="std std-doc">Ecosystem</span></a>, §§1.2, 5.2–5.4</p></td>
+<td><p>Add a pinned two-CR8 demo tuple and reproducibility/evidence route once artifacts exist</p></td>
+<td><p>Keep Ubuntu/Jazzy, AI SDK/Yocto, SOM BSP and FreeRTOS profiles distinct; no Linux/AI benchmark or camera throughput inferred from CR8 success</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="rzv2h-system-specification.html"><span class="std std-doc">System specification</span></a>, §§3.3, 4.2–4.3, 4.6, 4.8, 5.2, 6–10</p></td>
+<td><p>Link exact RDK sensor/power/storage ICDs, seven-area allocation, sole PWM owner proof and Figures 1/6/7/9; retain strict product standby inhibit alongside scoped service DIS behavior</p></td>
+<td><p>Battery monitoring and persistent calibration are required acceptance work. Customer-board/secondary-IMU/camera/rail/common-cause requirements remain broad; no partial result deletes them</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="rzv2h-software-specification.html"><span class="std std-doc">Software specification</span></a>, §§3.4, 4, 5.1–5.2, 5.6, 7, 9, 10, 12, 14</p></td>
+<td><p>Link seven-area source/host/target gaps, bounded actuator/power IPC contracts, persistent-record lifecycle, Figures 3–9, compatibility manifest and proof matrix</p></td>
+<td><p>Record approved CR8-0 mapping and the temporary RC allocation gap; full acceptance closes every applicable proof row in §8, including D-OWNER/D-PAIR/D-TIMING/D-LIMIT as well as the seven subsystem service/data proofs, while A55 gateway and joint Linux workload remain product integration gates</p></td>
+</tr>
+</tbody>
+</table>
+<p>The product’s Linux security boundary is outside this demo runtime; trusted R8 peers plus CRC are not authentication or proof of privileged-domain containment. Authenticated boot/update, unique identity and production debug controls remain SYS-SEC/SW-SEC work. The two R8s still share one SoC/power/clock failure domain. PX4 route/type identity is not necessarily a physical unit serial: same-model replacement on the same bus/CS can reuse it. Require a qualified device serial or maintenance-controlled replacement epoch and recalibration; current route matching alone cannot detect that replacement. Keep current status/evidence in <code class="docutils literal notranslate"><span class="pre">docs/renesas/port-status-{nuttx,px4-hal}.md</span></code> and named <code class="docutils literal notranslate"><span class="pre">docs/renesas/evidence/</span></code> records only after actual qualification.</p>
+</section>
+<section id="material-unresolved-inputs">
+<h2>10. Material unresolved inputs<a class="headerlink" href="#material-unresolved-inputs" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Product physical ownership is CR8-1 under SYS-ARC-004; qualify the new pair/resource/reset migration. Use the approved CR8-0 mixer allocation in software §5.6; legacy CR8-0 PWM ownership remains a separate staging baseline.</p></li>
+<li><p>Select exact ESC revisions, DShot speed, PWM400 backup limits, local timeout, harness/output order and motor direction. DShot primary/PWM400 backup remains frozen; production DShot backend/wire adaptation and selected-device qualification remain open.</p></li>
+<li><p>Selected campaign: props-off qualification first. Controlled hover plus outdoor GPS mission remain a later separately scoped campaign. Full acceptance retains battery monitoring, persistent calibration and all seven subsystem contracts; this choice does not remove them or authorize force-arm/health bypass.</p></li>
+<li><p>Interface/physical inputs: selected BMS/power monitor and persistent medium/partition, fitted IMU/rangefinder orientations, RDK/extension revision and wiring/supply/pull-up confirmation, ESC ICD including safe pad level and scoped service DIS policy, capture correlation/testpoint, measured worker jitter/HAL budget and inactive/reset waveforms. These hold their owning interface/physical qualification; the module ownership/registry decision is closed and does not select these hardware interfaces.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="rzv2h-dualcr8-demo-architecture.html" class="btn btn-neutral float-left" title="RZ/V2H dual-CR8 demo system architecture" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="_sections/demo-module-contracts.html" class="btn btn-neutral float-right" title="Demo Module Contracts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

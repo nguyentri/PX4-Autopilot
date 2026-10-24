@@ -1,0 +1,1883 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RZ/V2H Single-SoC Autonomous Drone System Specification &mdash; RZ/V2H Autonomous Drone Solution and Design Guide</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/md-to-sphinx-brand.css?v=08b08d4a" />
+      <link rel="stylesheet" type="text/css" href="_static/md-to-sphinx.css?v=6d52c6f5" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=7f41d439"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/md-to-sphinx.js?v=22a33ba5"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="RZ/V2H Single-SoC Autonomous Drone Software Specification" href="rzv2h-software-specification.html" />
+    <link rel="prev" title="Specifications" href="_sections/specifications.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            RZ/V2H Autonomous Drone Solution and Design Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="_sections/solution-and-development.html">Solution and Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html">RZ/V2H Single-SoC Autonomous Drone Solution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#executive-summary">Executive summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#what-single-soc-means">1. What single-SoC means</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#included-on-the-central-compute">1.1 Included on the central compute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#still-external-to-the-soc">1.2 Still external to the SoC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#hardware-delivery-options">1.3 Hardware delivery options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#reference-solution">2. Reference solution</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#rdk-pre-development-sample">2.1 RDK pre-development sample</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#external-device-story">3. External-device story</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#battery-and-bms">3.1 Battery and BMS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#cameras-vio-and-drp-ai3-perception">3.2 Cameras, VIO, and DRP-AI3 perception</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#precision-landing-and-docking">3.3 Precision landing and docking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#gimbal-and-payload">3.4 Gimbal and payload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#flight-sensors-and-actuators">3.5 Flight sensors and actuators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#predictable-degraded-operation">3.6 Predictable degraded operation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#customer-value">4. Customer value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#why-choose-this-architecture">4.1 Why choose this architecture?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#customer-evaluation-three-demonstrations">4.2 Customer evaluation: three demonstrations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#honest-trade-offs">4.3 Honest trade-offs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#target-use-cases">5. Target use cases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#message-and-claim-guide">6. Message and claim guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#recommended-messages">6.1 Recommended messages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#claims-requiring-qualifiers">6.2 Claims requiring qualifiers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#optional-feature-caution">6.3 Optional-feature caution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#safety-and-market-qualification">6.4 Safety and market qualification</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#evidence-and-productization">7. Evidence and productization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#evidence-boundary">7.1 Evidence boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#productization-sequence">7.2 Productization sequence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#sources">Sources</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-development-ecosystem.html">RZ/V2H Development Ecosystem and RDK Pre-Development Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#choose-a-starting-profile">1. Choose a starting profile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#why-this-ecosystem-is-a-useful-starting-point">1.1 Why this ecosystem is a useful starting point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#choose-one-coherent-profile-per-workstream">1.2 Choose one coherent profile per workstream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#dual-cr8-real-sensor-evaluation">1.3 Dual-CR8 real-sensor evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#verified-software-snapshot">2. Verified software snapshot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#rdk-ubuntu-profile">2.1 RDK Ubuntu profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#rz-v2h-ai-sdk-yocto-profile">2.2 RZ/V2H AI SDK/Yocto profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#other-official-profiles-and-hardware-platforms">2.3 Other official profiles and hardware platforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#supplier-and-version-compatibility-boundaries">2.4 Supplier and version compatibility boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#official-repository-map">3. Official repository map</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#board-bsp-and-reproducible-workspaces">3.1 Board, BSP, and reproducible workspaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#ai-and-ros-2-packages">3.2 AI and ROS 2 packages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#drone-px4-and-autonomy-middleware">3.3 Drone, PX4, and autonomy middleware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#generic-rz-v2h-software-sources">3.4 Generic RZ/V2H software sources</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#ai-and-yolo-guidance">4. AI and YOLO guidance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#a-useful-benchmark-with-its-boundary">4.1 A useful benchmark, with its boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#from-rdk-to-a-customer-board">5. From RDK to a customer board</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#reproduce-one-linux-ai-demonstration">5.1 Reproduce one Linux/AI demonstration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#parallel-engineering-workstreams">5.2 Parallel engineering workstreams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#transfer-to-customer-hardware">5.3 Transfer to customer hardware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#release-and-support-checklist">5.4 Release and support checklist</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#sources">6. Sources</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="_sections/specifications.html">Specifications</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">RZ/V2H Single-SoC Autonomous Drone System Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#purpose-and-scope">1. Purpose and scope</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#product-intent">1.1 Product intent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#platform-applicability">1.2 Platform applicability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#included-aircraft-capabilities">1.3 Included aircraft capabilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exclusions">1.4 Exclusions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#requirement-language">1.5 Requirement language</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dual-cr8-evaluation-applicability">1.6 Dual-CR8 evaluation applicability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#system-context-and-boundaries">2. System context and boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rz-v2h-allocation">3. RZ/V2H allocation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#soc-resources-used-by-the-target">3.1 SoC resources used by the target</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#common-cause-boundary">3.2 Common-cause boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#peripheral-and-shared-resource-ownership-ledger">3.3 Peripheral and shared-resource ownership ledger</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#external-device-architecture">4. External-device architecture</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#interface-selection-principles">4.1 Interface-selection principles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#external-device-inventory">4.2 External-device inventory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#battery-management-interface">4.3 Battery-management interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#camera-architecture">4.4 Camera architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gimbal-architecture">4.5 Gimbal architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#actuator-architecture">4.6 Actuator architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#command-telemetry-and-payload-links">4.7 Command, telemetry, and payload links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#device-interface-control-record">4.8 Device interface-control record</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#power-and-electrical-design">5. Power and electrical design</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#power-tree">5.1 Power tree</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#external-memory-and-storage">5.2 External memory and storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#harness-and-transceivers">5.3 Harness and transceivers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#power-thermal-and-mechanical-budgets">5.4 Power, thermal and mechanical budgets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#board-design-start-package">5.5 Board-design start package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#operational-behavior">6. Operational behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#boot-and-readiness">6.1 Boot and readiness</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#navigation-ownership">6.2 Navigation ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#operating-states">6.3 Operating states</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#safety-reliability-and-security">7. Safety, reliability, and security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#safety-invariants">7.1 Safety invariants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#redundancy-and-common-cause">7.2 Redundancy and common cause</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#security">7.3 Security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#product-assurance-and-market-access">7.4 Product assurance and market access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#preliminary-hazard-and-containment-analysis">7.5 Preliminary hazard and containment analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#system-requirements">8. System requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#architecture-and-authority">8.1 Architecture and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#external-interfaces">8.2 External interfaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#safety-and-lifecycle">8.3 Safety and lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#performance-and-capacity">8.4 Performance and capacity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced-autonomy-vision-and-precision-landing">8.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#evidence-boundary">9. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verification-strategy">10. Verification strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#references-and-open-decisions">11. References and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#normative-and-primary-references">11.1 Normative and primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#open-decisions-and-closure-criteria">11.2 Open decisions and closure criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-software-specification.html">RZ/V2H Single-SoC Autonomous Drone Software Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#scope-and-design-rules">1. Scope and design rules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#included-software">1.1 Included software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#governing-design-rules">1.2 Governing design rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#dual-cr8-evaluation-design">1.3 Dual-CR8 evaluation design</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-decomposition">2. Software decomposition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#component-ownership">2.1 Component ownership</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#deployment-by-compute-domain">3. Deployment by compute domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#a55-linux-domain">3.1 A55 Linux domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-0-flight-domain">3.2 CR8-0 flight domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-1-i-o-domain">3.3 CR8-1 I/O domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#developer-start-path">3.4 Developer start path</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#inter-domain-communication">4. Inter-domain communication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#logical-links">4.1 Logical links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#common-envelope">4.2 Common envelope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#ownership-and-direction">4.3 Ownership and direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#backpressure-and-overload">4.4 Backpressure and overload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#time-synchronization">4.5 Time synchronization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#memory-and-transport-contract">4.6 Memory and transport contract</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#external-device-software-interfaces">5. External-device software interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#flight-sensors">5.1 Flight sensors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#bms-and-power-software">5.2 BMS and power software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#camera-vision-ai-and-precision-landing-software">5.3 Camera, vision AI, and precision landing software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#gimbal-software">5.4 Gimbal software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#rc-telemetry-and-modem-software">5.5 RC, telemetry, and modem software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#esc-and-actuator-software">5.6 ESC and actuator software</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#runtime-and-concurrency">6. Runtime and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#priority-classes">6.1 Priority classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#interrupt-and-dma-rules">6.2 Interrupt and DMA rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#watchdogs-and-liveness">6.3 Watchdogs and liveness</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#lifecycle-and-state">7. Lifecycle and state</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-1-output-state-machine">7.1 CR8-1 output state machine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#linux-service-lifecycle">7.2 Linux service lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#shutdown-and-update">7.3 Shutdown and update</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#data-and-control-flows">8. Data and control flows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#fault-handling">9. Fault handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#configuration-persistence-update-and-logging">10. Configuration, persistence, update, and logging</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#configuration-ownership">10.1 Configuration ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#persistent-storage">10.2 Persistent storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#update-compatibility">10.3 Update compatibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#minimum-release-manifest">10.4 Minimum release manifest</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#logging-and-observability">10.5 Logging and observability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-security">11. Software security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#trust-zones">11.1 Trust zones</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#required-controls">11.2 Required controls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#software-assurance-work-products">11.3 Software assurance work products</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-requirements">12. Software requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#partitioning-and-authority">12.1 Partitioning and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#communication-and-time">12.2 Communication and time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#devices-and-fault-behavior">12.3 Devices and fault behavior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#configuration-update-and-security">12.4 Configuration, update, and security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#advanced-autonomy-vision-and-precision-landing">12.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#evidence-boundary">13. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#verification-and-open-decisions">14. Verification and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#software-verification-gates">14.1 Software verification gates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#primary-references">14.2 Primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#open-decisions">14.3 Open decisions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_sections/dual-cr8-architecture-and-design.html">Dual-CR8 Architecture and Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html">RZ/V2H dual-CR8 demo system architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#boundary-and-allocation">1. Boundary and allocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#deployment-and-responsibilities">2. Deployment and responsibilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#exact-demo-bom-and-open-hardware-contracts">3. Exact demo BOM and open hardware contracts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#sensors-and-navigation">4. Sensors and navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#flight-control-and-command-authority">5. Flight control and command authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#battery-and-power">6. Battery and power</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#calibration-and-persistent-configuration">7. Calibration and persistent configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#ipc-and-freshness">8. IPC and freshness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#actuator-safety-and-output-semantics">9. Actuator safety and output semantics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#diagnostics-and-release">10. Diagnostics and release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#view-coverage-and-ownership-reconciliation">11. View coverage and ownership reconciliation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#open-decisions">12. Open decisions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html">Dual-CR8 demo design companion</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#outcome-product-context-and-allocation-deltas">1. Outcome, product context, and allocation deltas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership">2. Source authority, BOM, and shared-resource ownership</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas">2.1 Seven required subsystem/interface areas</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#existing-raw-transport-and-application-abi">3. Existing raw transport and application ABI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof">4. Proposed demo wire contract and freshness proof</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#producer-age-and-stale-queue-rejection-without-a-common-clock">4.1 Producer age and stale queue rejection without a common clock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age">4.2 Battery acquisition progress and bounded age</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#status-expiry-bootstrap-and-epoch-rotation">4.3 Status expiry, bootstrap and epoch rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency">5. PX4-to-output dataflow and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#reset-containment-before-negotiation">5.1 Reset containment before negotiation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models">6. Link, lease and output state models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#bootstrap-steady-operation-and-recovery-sequences">7. Bootstrap, steady operation, and recovery sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract">8. Implementation/test inventory and evidence contract</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#integration-into-the-five-document-product-set">9. Integration into the five-document product set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#material-unresolved-inputs">10. Material unresolved inputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_sections/demo-module-contracts.html">Demo Module Contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-requirements.html">Dual-CR8 demo requirements registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#authority-and-decisions">Authority and decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#hardware-input-gates">Hardware input gates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#acceptance-and-revision-control">Acceptance and revision control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-requirements.html#open-gaps">Open gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html">Sensors and navigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html">Flight control and command authority</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html">Battery and power</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html">Calibration and persistent storage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-ipc-spec.html">Inter-core communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html">Actuator safety and physical outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html">Diagnostics and release qualification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">RZ/V2H Autonomous Drone Solution and Design Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="_sections/specifications.html">Specifications</a></li>
+      <li class="breadcrumb-item active">RZ/V2H Single-SoC Autonomous Drone System Specification</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="rz-v2h-single-soc-autonomous-drone-system-specification">
+<h1>RZ/V2H Single-SoC Autonomous Drone System Specification<a class="headerlink" href="#rz-v2h-single-soc-autonomous-drone-system-specification" title="Link to this heading"></a></h1>
+<blockquote>
+<div><p><strong>Authority and status.</strong> This document defines a board-independent RZ/V2H target aircraft architecture and its
+external interfaces. The RZ/V2H RDK is only a pre-development example and does not define the production pinout or
+board. Current repository evidence is owned by the NuttX and PX4
+HAL status matrices.</p>
+</div></blockquote>
+<section id="document-control">
+<h2>Document control<a class="headerlink" href="#document-control" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Revision</p></th>
+<th class="head"><p>Date</p></th>
+<th class="head"><p>Change</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1.0</p></td>
+<td><p>2026-10-11</p></td>
+<td><p>Replaced the prototype architecture with a complete single-central-SoC target, removed all CM33 responsibilities, and specified external devices and communication paths.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1.1</p></td>
+<td><p>2026-10-11</p></td>
+<td><p>Made the specification RZ/V2H-platform-wide and isolated RDK details as pre-development evidence.</p></td>
+</tr>
+<tr class="row-even"><td><p>1.2</p></td>
+<td><p>2026-10-11</p></td>
+<td><p>Added board-design inputs, ICD/resource ledger, concrete battery transactions and source-qualified camera/SOM guidance; separated candidate budgets from evidence.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1.3</p></td>
+<td><p>2026-10-21</p></td>
+<td><p>Added full dual-CR8 evaluation applicability, required battery/persistence gates and explicit electrical-inactivity semantics; retained requirement IDs.</p></td>
+</tr>
+</tbody>
+</table>
+<p>| 1.4 | 2026-10-21 | Linked the approved seven-module registry and props-off campaign without selecting unverified hardware or changing existing requirement IDs. |</p>
+<p>| 1.5 | 2026-10-21 | Consolidated the exact-BOM sensor configuration under dualcr8; retired the separate target and historical default-peer admission. |</p>
+<p><strong>Start board work at <a class="reference internal" href="#board-design-start-package">§5.5</a>.</strong> This is an architecture and design-input specification,
+not a fabrication-ready schematic. A released customer BOM, pinout, layout and verified BSP are required before
+manufacturing.</p>
+</section>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="#purpose-and-scope">1. Purpose and scope</a></p></li>
+<li><p><a class="reference internal" href="#system-context-and-boundaries">2. System context and boundaries</a></p></li>
+<li><p><a class="reference internal" href="#rz-v2h-allocation">3. RZ/V2H allocation</a></p></li>
+<li><p><a class="reference internal" href="#external-device-architecture">4. External-device architecture</a></p></li>
+<li><p><a class="reference internal" href="#power-and-electrical-design">5. Power and electrical design</a></p></li>
+<li><p><a class="reference internal" href="#operational-behavior">6. Operational behavior</a></p></li>
+<li><p><a class="reference internal" href="#safety-reliability-and-security">7. Safety, reliability, and security</a></p></li>
+<li><p><a class="reference internal" href="#system-requirements">8. System requirements</a></p></li>
+<li><p><a class="reference internal" href="#evidence-boundary">9. Evidence boundary</a></p></li>
+<li><p><a class="reference internal" href="#verification-strategy">10. Verification strategy</a></p></li>
+<li><p><a class="reference internal" href="#references-and-open-decisions">11. References and open decisions</a></p></li>
+</ul>
+</section>
+<section id="purpose-and-scope">
+<h2>1. Purpose and scope<a class="headerlink" href="#purpose-and-scope" title="Link to this heading"></a></h2>
+<section id="product-intent">
+<h3>1.1 Product intent<a class="headerlink" href="#product-intent" title="Link to this heading"></a></h3>
+<p>One RZ/V2H is the aircraft’s central mission/flight compute SoC, consolidating Linux/networking, DRP-AI3 perception, PX4
+flight control and deterministic I/O. Memory, storage, power, transceivers, sensors, cameras, radios, BMS, ESCs, motors
+and payload controllers remain external.</p>
+</section>
+<section id="platform-applicability">
+<h3>1.2 Platform applicability<a class="headerlink" href="#platform-applicability" title="Link to this heading"></a></h3>
+<p>These requirements apply to an RZ/V2H-based customer flight computer. The customer schematic, pinmux, device tree, board
+support, power design, and interface control document define the actual implementation. RZ/V2H evaluation boards and
+their software may shorten pre-development, but no evaluation-board connector or pin assignment is a product
+requirement.</p>
+<p>The RZ/V2H RDK is one such reference. Its Ubuntu, ROS 2, AI, PX4/FreeRTOS, and this repository’s PX4/NuttX examples are
+mapped in the <a class="reference internal" href="rzv2h-development-ecosystem.html"><span class="std std-doc">development ecosystem guide</span></a>. RDK-specific limitations remain evidence
+about that sample only.</p>
+</section>
+<section id="included-aircraft-capabilities">
+<h3>1.3 Included aircraft capabilities<a class="headerlink" href="#included-aircraft-capabilities" title="Link to this heading"></a></h3>
+<p>The target includes multicopter control, GNSS/local navigation, perception/VIO/ planning, smart-battery monitoring with
+optional secondary measurement, gimbal/camera payloads, RC/telemetry/networking, logging/service and supervised actuator
+output. Other PX4 airframes require their own allocation and tests.</p>
+</section>
+<section id="exclusions">
+<h3>1.4 Exclusions<a class="headerlink" href="#exclusions" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>The Cortex-M33 core has no boot, runtime, I/O, safety, or actuator role in this design.</p></li>
+<li><p>Final component part numbers, connector pinout, airframe, battery chemistry, RF band, and regulatory approval are
+not selected here.</p></li>
+<li><p>This document does not claim certification, production readiness, measured range/endurance, or a safety integrity
+level.</p></li>
+</ul>
+</section>
+<section id="requirement-language">
+<h3>1.5 Requirement language<a class="headerlink" href="#requirement-language" title="Link to this heading"></a></h3>
+<p>“Shall” is a target-system requirement. “Should” is a recommended design choice. “May” is optional. A target requirement
+is not implementation evidence.</p>
+</section>
+<section id="dual-cr8-evaluation-applicability">
+<h3>1.6 Dual-CR8 evaluation applicability<a class="headerlink" href="#dual-cr8-evaluation-applicability" title="Link to this heading"></a></h3>
+<p>The <a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html"><span class="std std-doc">demo architecture</span></a> and <a class="reference internal" href="rzv2h-dualcr8-demo-design.html"><span class="std std-doc">engineering design</span></a>
+cover the requested single ICM-45686, BMM150, BMP390, M10, TFmini Plus and four-motor configuration. Battery monitoring,
+retained calibration and electrical output inhibition remain required for full acceptance; their missing hardware or
+implementation is a gap. Props-off bring-up with battery disabled or volatile parameters is an incomplete milestone. The
+demo excludes A55/cameras/CM33 at runtime; the broader product requirements remain applicable to their product variants.
+A single IMU supplies no redundant inertial path. The <a class="reference internal" href="rzv2h-demo-requirements.html"><span class="std std-doc">demo requirements registry</span></a> owns
+the approved seven-module allocation. Initial qualification is props-off; hover/GPS flight remains a later campaign.
+Unselected ESC, battery, storage and command/kill interfaces remain explicit input gates.</p>
+<p><strong>Figure 1-1: Complete autonomous drone avionics system architecture and hardware boundaries</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-system-specification-1.svg" />
+</figure>
+</section>
+</section>
+<section id="system-context-and-boundaries">
+<h2>2. System context and boundaries<a class="headerlink" href="#system-context-and-boundaries" title="Link to this heading"></a></h2>
+<!-- sys-view: context -->
+<p><strong>Figure 2-1: Target domain and external-device connections</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-system-specification-2.svg" />
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Boundary</p></th>
+<th class="head"><p>Inside</p></th>
+<th class="head"><p>Outside but required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Central compute</p></td>
+<td><p>RZ/V2H, its memories, boot storage, clocks, and local power rails</p></td>
+<td><p>Sensors, payloads, radios, BMS, ESCs, motors, airframe</p></td>
+</tr>
+<tr class="row-odd"><td><p>Flight authority</p></td>
+<td><p>CR8-0/PX4</p></td>
+<td><p>Linux autonomy proposes intent; operator and safety inputs constrain it</p></td>
+</tr>
+<tr class="row-even"><td><p>Physical output authority</p></td>
+<td><p>CR8-1 while a valid CR8-0 lease exists</p></td>
+<td><p>ESC firmware must also enforce its own command timeout</p></td>
+</tr>
+<tr class="row-odd"><td><p>Battery protection</p></td>
+<td><p>Flight policy consumes battery state</p></td>
+<td><p>BMS owns cell protection, balancing, and pack protection</p></td>
+</tr>
+<tr class="row-even"><td><p>Payload control</p></td>
+<td><p>A55 payload services and CR8-0 arbitration</p></td>
+<td><p>Gimbal/camera controller owns its internal stabilization and motor loops</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="rz-v2h-allocation">
+<h2>3. RZ/V2H allocation<a class="headerlink" href="#rz-v2h-allocation" title="Link to this heading"></a></h2>
+<p>The selected RZ/V2H part shall provide the required optional multimedia and security blocks. The exact ordering code
+must be frozen in the hardware BOM; family-level feature lists are not sufficient proof.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Domain</p></th>
+<th class="head"><p>Target software</p></th>
+<th class="head"><p>Responsibilities</p></th>
+<th class="head"><p>Isolation rule</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Cortex-A55 cluster</p></td>
+<td><p>Linux distribution, ROS 2, media and device services</p></td>
+<td><p>Camera ingest, ISP/media path, DRP-AI3 inference, VIO/SLAM, obstacle map, mission planning, gimbal/camera manager, IP networking, fleet/payload applications</p></td>
+<td><p>Cannot bypass PX4 arming, drive motors, or write CR8-owned actuator state</p></td>
+</tr>
+<tr class="row-odd"><td><p>DRP-AI3/DRP</p></td>
+<td><p>Linux-controlled accelerator workloads</p></td>
+<td><p>Neural inference and selected image pre/post-processing</p></td>
+<td><p>Output is advisory until checked by Linux and bounded by CR8-0</p></td>
+</tr>
+<tr class="row-even"><td><p>CR8-0</p></td>
+<td><p>NuttX and PX4</p></td>
+<td><p>Primary sensors, timebase, estimation, commander, navigation mode, control loops, actuator allocation, flight health, failsafes, logging subset</p></td>
+<td><p>Sole owner of flight mode, arming decision, and desired actuator setpoints</p></td>
+</tr>
+<tr class="row-odd"><td><p>CR8-1</p></td>
+<td><p>NuttX I/O image</p></td>
+<td><p>RC input, CAN avionics, BMS/power acquisition, safety switch, LEDs/buzzer, output lease, PWM/DShot/CAN actuator output, I/O health</p></td>
+<td><p>Accepts actuator commands only from CR8-0; defaults to output disabled</p></td>
+</tr>
+</tbody>
+</table>
+<section id="soc-resources-used-by-the-target">
+<h3>3.1 SoC resources used by the target<a class="headerlink" href="#soc-resources-used-by-the-target" title="Link to this heading"></a></h3>
+<p>Renesas documents dual Cortex-R8, quad Cortex-A55, DRP-AI, 6 MB ECC SRAM, LPDDR4/4X, MIPI CSI-2, USB, PCIe, GbEthernet,
+CAN-FD, SPI, I2C, I3C, SCI, timers, ADC, SD/eMMC, and xSPI resources. System allocation is conditional on pin
+multiplexing, package, selected part, board routing, and measured bandwidth.</p>
+</section>
+<section id="common-cause-boundary">
+<h3>3.2 Common-cause boundary<a class="headerlink" href="#common-cause-boundary" title="Link to this heading"></a></h3>
+<p>The compute domains share silicon, package, power, clocks, interconnect, memory controllers, and thermal conditions.
+Core allocation reduces scheduling and software interference but is not physical redundancy. The safety assessment shall
+treat total SoC failure as a common-cause event.</p>
+</section>
+<section id="peripheral-and-shared-resource-ownership-ledger">
+<h3>3.3 Peripheral and shared-resource ownership ledger<a class="headerlink" href="#peripheral-and-shared-resource-ownership-ledger" title="Link to this heading"></a></h3>
+<p>Before selecting connector pins, create one ledger shared by hardware, Linux and NuttX teams. The following is a
+proposed logical allocation, not RDK wiring or a claim that all alternate functions can be routed together.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Resource group</p></th>
+<th class="head"><p>Target owner</p></th>
+<th class="head"><p>Reserve/check before schematic release</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Primary and secondary inertial buses</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Prefer independently recoverable SPI instances, separate CS/DRDY, sensor rail/reset control</p></td>
+</tr>
+<tr class="row-odd"><td><p>Barometer/compass management</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Device addresses, bus capacitance, pull-ups, clock stretching and recovery</p></td>
+</tr>
+<tr class="row-even"><td><p>GNSS and timing</p></td>
+<td><p>CR8-0</p></td>
+<td><p>UART RX/TX, PPS capture, optional correction input and independent antenna power</p></td>
+</tr>
+<tr class="row-odd"><td><p>RC and local safety inputs</p></td>
+<td><p>CR8-1</p></td>
+<td><p>UART inversion/half-duplex needs, input capture and reset-safe GPIO levels</p></td>
+</tr>
+<tr class="row-even"><td><p>ESC/servo channels</p></td>
+<td><p>CR8-1</p></td>
+<td><p>GPT channels, DMA requests, output gates and timer-rate groups; no HRT/debug conflict</p></td>
+</tr>
+<tr class="row-odd"><td><p>Smart BMS and avionics CAN</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Controller/transceiver, selected Classic CAN or FD protocol, termination and fault isolation</p></td>
+</tr>
+<tr class="row-even"><td><p>Local power-monitor bus</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Dedicated I2C/SMBus or SPI pins; device-specific driver and optional ALERT</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSI/USB/media, model buffers, payload/network</p></td>
+<td><p>A55</p></td>
+<td><p>Camera control bus, trigger owner, PHY/bridge, bandwidth and DMA isolation</p></td>
+</tr>
+<tr class="row-even"><td><p>PMIC, clocks and shared reset</p></td>
+<td><p>Boot/lifecycle owner</p></td>
+<td><p>A55 cold-boot sequence; controlled requests from other domains, never two independent owners</p></td>
+</tr>
+<tr class="row-odd"><td><p>DDR/SRAM, MHU and storage</p></td>
+<td><p>Explicit partitions</p></td>
+<td><p>Linux reserved memory, both CR8 linker maps, cache policy, DMA reachability and one writer per region</p></td>
+</tr>
+</tbody>
+</table>
+<p>Each ledger row shall record the exact SoC instance, ball/pin, voltage bank, alternate function, reset state, IRQ/ELC
+route, DMA channel, clock/reset owner, schematic net, Linux node or NuttX configuration, and corresponding test. Do not
+let Linux probe a CR8-owned peripheral or reset a shared clock domain.</p>
+</section>
+</section>
+<section id="external-device-architecture">
+<h2>4. External-device architecture<a class="headerlink" href="#external-device-architecture" title="Link to this heading"></a></h2>
+<section id="interface-selection-principles">
+<h3>4.1 Interface-selection principles<a class="headerlink" href="#interface-selection-principles" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Interface</p></th>
+<th class="head"><p>Preferred use</p></th>
+<th class="head"><p>Design notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SPI</p></td>
+<td><p>High-rate board-local IMUs and deterministic sensors</p></td>
+<td><p>One chip-select per device; data-ready GPIO preferred; bound DMA and recovery</p></td>
+</tr>
+<tr class="row-odd"><td><p>I2C/I3C</p></td>
+<td><p>Low-rate board-local sensors and management devices</p></td>
+<td><p>Short harness; isolate or recover a stuck bus; do not mix incompatible voltage domains</p></td>
+</tr>
+<tr class="row-even"><td><p>SMBus</p></td>
+<td><p>Standards-based smart battery data</p></td>
+<td><p>Electrically related to I2C but uses the SBS command/timing contract; not arbitrary I2C registers</p></td>
+</tr>
+<tr class="row-odd"><td><p>UART/SCI</p></td>
+<td><p>GNSS, RC receiver, rangefinder, telemetry, gimbal, debug</p></td>
+<td><p>Define voltage, inversion, flow control, baud, framing, and timeout per device</p></td>
+</tr>
+<tr class="row-even"><td><p>CAN/CAN-FD</p></td>
+<td><p>ESCs, smart BMS, GNSS, range sensors, robust remote avionics</p></td>
+<td><p>Terminated differential bus; use DroneCAN in its supported Classic CAN mode or a frozen vendor protocol that explicitly defines Classic CAN versus CAN FD</p></td>
+</tr>
+<tr class="row-odd"><td><p>MIPI CSI-2</p></td>
+<td><p>Board-local raw camera pixels</p></td>
+<td><p>Separate I2C/I3C control and reset/trigger GPIO normally required</p></td>
+</tr>
+<tr class="row-even"><td><p>USB 3.2</p></td>
+<td><p>Smart camera, modem, removable high-bandwidth payload</p></td>
+<td><p>Account for enumeration, inrush, cable retention, and host reset</p></td>
+</tr>
+<tr class="row-odd"><td><p>GbEthernet</p></td>
+<td><p>IP camera, payload, service, high-rate telemetry</p></td>
+<td><p>Define addressing, QoS, time sync, authentication, and bandwidth ceilings</p></td>
+</tr>
+<tr class="row-even"><td><p>PCIe Gen3</p></td>
+<td><p>Integrated modem/accelerator/storage module</p></td>
+<td><p>Highest board complexity; use only when USB/Ethernet is insufficient</p></td>
+</tr>
+<tr class="row-odd"><td><p>ADC/GPIO</p></td>
+<td><p>Board-local power sensing, safety input, discrete status</p></td>
+<td><p>The customer hardware shall route, protect, calibrate, debounce, and define safe state</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="external-device-inventory">
+<h3>4.2 External-device inventory<a class="headerlink" href="#external-device-inventory" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Device class</p></th>
+<th class="head"><p>Minimum role</p></th>
+<th class="head"><p>Primary link</p></th>
+<th class="head"><p>Alternate link</p></th>
+<th class="head"><p>SoC owner</p></th>
+<th class="head"><p>Loss behavior</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Primary IMU</p></td>
+<td><p>Angular rate and acceleration</p></td>
+<td><p>SPI + data-ready GPIO</p></td>
+<td><p>—</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Reject stale data; estimator/failsafe policy</p></td>
+</tr>
+<tr class="row-odd"><td><p>Secondary IMU</p></td>
+<td><p>Redundant inertial measurement</p></td>
+<td><p>Separate SPI + GPIO</p></td>
+<td><p>CAN remote IMU</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Continue only if estimator health permits</p></td>
+</tr>
+<tr class="row-even"><td><p>Barometer</p></td>
+<td><p>Air pressure/altitude aid</p></td>
+<td><p>I2C or SPI</p></td>
+<td><p>CAN</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Degrade altitude source; report fault</p></td>
+</tr>
+<tr class="row-odd"><td><p>Magnetometer</p></td>
+<td><p>Heading aid</p></td>
+<td><p>I2C/SPI</p></td>
+<td><p>CAN remote compass</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Reject disturbed/unhealthy source</p></td>
+</tr>
+<tr class="row-even"><td><p>GNSS/RTK</p></td>
+<td><p>Global position, velocity, time</p></td>
+<td><p>UART + PPS GPIO</p></td>
+<td><p>CAN or USB</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Health-gated local navigation or configured failsafe</p></td>
+</tr>
+<tr class="row-odd"><td><p>Rangefinder/LiDAR</p></td>
+<td><p>Height/obstacle range</p></td>
+<td><p>UART or CAN</p></td>
+<td><p>I2C for board-local unit</p></td>
+<td><p>CR8-0 or A55 by use</p></td>
+<td><p>Mark invalid; never reuse stale range</p></td>
+</tr>
+<tr class="row-even"><td><p>Optical-flow sensor</p></td>
+<td><p>Local velocity aid</p></td>
+<td><p>SPI/UART/CAN</p></td>
+<td><p>A55 camera pipeline</p></td>
+<td><p>CR8-0</p></td>
+<td><p>Estimator switches/degrades by health</p></td>
+</tr>
+<tr class="row-odd"><td><p>Navigation camera(s)</p></td>
+<td><p>VIO and obstacle imagery</p></td>
+<td><p>MIPI CSI-2 + I2C control + trigger</p></td>
+<td><p>USB/GbE</p></td>
+<td><p>A55</p></td>
+<td><p>VIO/avoidance marked unhealthy; CR8-0 selects response</p></td>
+</tr>
+<tr class="row-even"><td><p>Payload EO/IR camera</p></td>
+<td><p>Inspection/video/evidence</p></td>
+<td><p>MIPI CSI-2, USB, or GbE</p></td>
+<td><p>Vendor-specific</p></td>
+<td><p>A55</p></td>
+<td><p>Payload function degrades; flight remains stable</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gimbal controller</p></td>
+<td><p>Payload stabilization and pointing</p></td>
+<td><p>MAVLink Gimbal v2 over UART or UDP</p></td>
+<td><p>CAN/vendor protocol after ICD</p></td>
+<td><p>A55 service with CR8-0 arbitration</p></td>
+<td><p>Hold/park per device; no flight-control dependency</p></td>
+</tr>
+<tr class="row-even"><td><p>Smart BMS</p></td>
+<td><p>Pack/cell state and alarms</p></td>
+<td><p>DroneCAN or documented vendor CAN protocol</p></td>
+<td><p>SMBus SBS</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Mark data unavailable or use a validated customer-board secondary monitor; configured energy failsafe</p></td>
+</tr>
+<tr class="row-odd"><td><p>Optional secondary power monitor</p></td>
+<td><p>Independent pack voltage/current on a customer board</p></td>
+<td><p>Protected ADC front end or digital monitor over I2C/SPI</p></td>
+<td><p>Separate documented digital link</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Mark estimate degraded; conservative policy</p></td>
+</tr>
+<tr class="row-even"><td><p>RC receiver</p></td>
+<td><p>Manual control and link health</p></td>
+<td><p>CRSF or SBUS UART</p></td>
+<td><p>Redundant receiver/CAN</p></td>
+<td><p>CR8-1</p></td>
+<td><p>PX4 RC-loss action</p></td>
+</tr>
+<tr class="row-odd"><td><p>Telemetry radio</p></td>
+<td><p>GCS command/status</p></td>
+<td><p>MAVLink 2 over UART/USB/Ethernet</p></td>
+<td><p>Second independent link</p></td>
+<td><p>A55 or CR8-1 by trust boundary</p></td>
+<td><p>Continue autonomous policy; report link loss</p></td>
+</tr>
+<tr class="row-even"><td><p>Cellular/Wi-Fi modem</p></td>
+<td><p>IP backhaul/video/fleet link</p></td>
+<td><p>USB/PCIe/Ethernet</p></td>
+<td><p>—</p></td>
+<td><p>A55</p></td>
+<td><p>No effect on basic flight stability</p></td>
+</tr>
+<tr class="row-odd"><td><p>Remote ID module</p></td>
+<td><p>Regulatory broadcast</p></td>
+<td><p>UART/USB/CAN per module</p></td>
+<td><p>Linux network service where permitted</p></td>
+<td><p>A55 or CR8-1</p></td>
+<td><p>Report failure; behavior depends on jurisdiction</p></td>
+</tr>
+<tr class="row-even"><td><p>ESCs</p></td>
+<td><p>Motor commutation</p></td>
+<td><p>DShot/PWM or DroneCAN/vendor CAN</p></td>
+<td><p>Selected per airframe</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Local command timeout drives defined safe state</p></td>
+</tr>
+<tr class="row-odd"><td><p>Servos/auxiliary actuators</p></td>
+<td><p>Control surfaces, gear, gripper, parachute</p></td>
+<td><p>PWM or CAN</p></td>
+<td><p>UART/vendor link</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Per-function safe position/action</p></td>
+</tr>
+<tr class="row-even"><td><p>Safety switch/kill input</p></td>
+<td><p>Local inhibit or emergency input</p></td>
+<td><p>Protected GPIO</p></td>
+<td><p>CAN safety panel</p></td>
+<td><p>CR8-1</p></td>
+<td><p>Asserted/unknown state inhibits outputs by policy</p></td>
+</tr>
+<tr class="row-odd"><td><p>eMMC/SD/xSPI</p></td>
+<td><p>OS, models, parameters, logs, recovery</p></td>
+<td><p>Native storage interface</p></td>
+<td><p>USB service media</p></td>
+<td><p>A55/CR8 ownership partitioned</p></td>
+<td><p>Read-only/degraded operation or no-arm based on asset</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="battery-management-interface">
+<h3>4.3 Battery-management interface<a class="headerlink" href="#battery-management-interface" title="Link to this heading"></a></h3>
+<p>The production aircraft shall select one primary smart-battery route and freeze it in the aircraft ICD. A secondary
+pack-level measurement route is optional and shall be added when required by the aircraft safety assessment. CAN, SMBus,
+protected ADC sensing, and external digital monitoring are implementation options whose connectors, transceivers,
+wiring, protection, calibration, and software support shall be defined by the customer board. SoC peripheral capability
+alone is not evidence of a ready aircraft interface.</p>
+<section id="preferred-can-smart-bms">
+<h4>4.3.1 Preferred CAN smart BMS<a class="headerlink" href="#preferred-can-smart-bms" title="Link to this heading"></a></h4>
+<p>For a remote/noisy pack harness, prefer differential CAN with supported DroneCAN Classic CAN messages or a documented
+vendor protocol explicitly selecting Classic CAN or CAN FD. Freeze addressing, bitrate, termination, bus load,
+heartbeat, timeout and recovery. Report available voltage/current, capacity, cell/temperature extrema, warnings,
+contactor state, identity and age. Frame CRC does not replace plausibility and freshness checks.</p>
+</section>
+<section id="smbus-smart-battery">
+<h4>4.3.2 SMBus smart battery<a class="headerlink" href="#smbus-smart-battery" title="Link to this heading"></a></h4>
+<p>For a short board-local SBS connection, CR8-1 hosts bounded, low-priority transactions. Check signed units, status,
+block lengths and optional PEC; recover/isolate stuck buses and represent unsupported values as unavailable. Do not
+write charger/protection controls without a separately approved contract. A candidate 5–10 Hz status cadence must be
+checked against device timing and aircraft energy/fault-response requirements.</p>
+</section>
+<section id="how-rz-v2h-actually-receives-battery-data">
+<h4>4.3.3 How RZ/V2H actually receives battery data<a class="headerlink" href="#how-rz-v2h-actually-receives-battery-data" title="Link to this heading"></a></h4>
+<p>The BMS or monitor performs the analog measurement. RZ/V2H receives digital messages through the selected controller and
+driver. No SoC ADC is needed for these routes.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>External board type</p></th>
+<th class="head"><p>Wiring to customer compute board</p></th>
+<th class="head"><p>Transaction/data contract</p></th>
+<th class="head"><p>Software result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DroneCAN smart BMS</p></td>
+<td><p>CAN_H/CAN_L through a compatible transceiver, reference/isolated ground as designed</p></td>
+<td><p>Subscribe to <code class="docutils literal notranslate"><span class="pre">uavcan.equipment.power.BatteryInfo</span></code>; optional auxiliary cell/status messages only when supported</p></td>
+<td><p>Source-tagged pack state through CR8-1 IPC to CR8-0 battery ingestion</p></td>
+</tr>
+<tr class="row-odd"><td><p>Vendor CAN BMS</p></td>
+<td><p>Same physical bus class, explicitly selected CAN/FD mode</p></td>
+<td><p>Vendor frame IDs, byte order, scaling, heartbeat and fault bits; not automatically DroneCAN</p></td>
+<td><p>Dedicated parser and normalized battery snapshot</p></td>
+</tr>
+<tr class="row-even"><td><p>SBS smart battery</p></td>
+<td><p>SDA/SCL, compatible pull-up voltage, reference ground, optional alert/presence</p></td>
+<td><p>SMBus Read Word/Block operations supported by that pack</p></td>
+<td><p>Units/sign/PEC validation, age and per-field validity</p></td>
+</tr>
+<tr class="row-odd"><td><p>I2C power module</p></td>
+<td><p>SDA/SCL, reference ground and specified supply/ALERT</p></td>
+<td><p>Device registers and shunt calibration, e.g. <a class="reference external" href="https://www.ti.com/product/INA228">INA228</a></p></td>
+<td><p>Pack voltage/current/energy; no invented cell or protection information</p></td>
+</tr>
+<tr class="row-even"><td><p>SPI monitor or BMS board</p></td>
+<td><p>SCLK/MOSI/MISO/CS, ground, supply and optional IRQ</p></td>
+<td><p>Device-specific framing, e.g. <a class="reference external" href="https://www.ti.com/product/INA229">INA229</a>; a BMS board needs its own published SPI protocol</p></td>
+<td><p>Separate SPI adapter; I2C driver is not interchangeable</p></td>
+</tr>
+</tbody>
+</table>
+<p>For an SBS-compliant device, a concrete starting read set is voltage command <code class="docutils literal notranslate"><span class="pre">0x09</span></code> (mV), signed current <code class="docutils literal notranslate"><span class="pre">0x0A</span></code> (mA),
+temperature <code class="docutils literal notranslate"><span class="pre">0x08</span></code> (0.1 K), relative state of charge <code class="docutils literal notranslate"><span class="pre">0x0D</span></code> (%), and battery status <code class="docutils literal notranslate"><span class="pre">0x16</span></code>. The common 7-bit address is
+<code class="docutils literal notranslate"><span class="pre">0x0B</span></code>, but verify the selected device. A Read Word uses a command write, repeated START and word read; validate byte
+order and PEC when applicable. Convert to volts, amperes and Celsius, and reconcile SBS charge-positive current with
+PX4’s discharge-positive convention. Capacity units depend on the battery mode. Cell registers and protection-control
+commands are vendor-specific. See the <a class="reference external" href="https://www.sbs-forum.org/specs/sbdat110.pdf">SBS specification</a> and the local
+SMBus reference.</p>
+<p>The stock RDK has no usable analog battery input. Its public PX4 sample uses a digital INA228/PM03D power monitor. This
+demonstrates the digital approach, not an already-integrated smart BMS in this NuttX port.</p>
+</section>
+<section id="optional-secondary-measurement">
+<h4>Optional secondary measurement<a class="headerlink" href="#optional-secondary-measurement" title="Link to this heading"></a></h4>
+<p>Where the safety assessment requires independent pack measurement, provide a separately assessed monitor or protected
+divider/current front end into routed customer-board ADC pins. Define calibration, range, saturation, fault detection,
+source identity and recovery. An independent measurement is not necessarily an independent power source, and cannot
+prevent a BMS disconnecting propulsion.</p>
+</section>
+<section id="battery-data-flow">
+<h4>4.3.4 Battery data flow<a class="headerlink" href="#battery-data-flow" title="Link to this heading"></a></h4>
+<!-- sys-view: sequence-battery -->
+<p><strong>Figure 4-1: Target battery-status flow and failure handling</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Sequence diagram" src="_images/rzv2h-system-specification-3.svg" />
+</figure>
+</section>
+</section>
+<section id="camera-architecture">
+<h3>4.4 Camera architecture<a class="headerlink" href="#camera-architecture" title="Link to this heading"></a></h3>
+<p>The <a class="reference external" href="https://www.renesas.com/en/document/dst/rzv2h-group-datasheet">RZ/V2H datasheet</a> lists four CSI-2 receivers, each
+supporting up to four lanes. The following allocation is a customer-design example; the RDK exposes only its routed
+connectors and is not a four-camera aircraft reference.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Logical input</p></th>
+<th class="head"><p>Candidate sensor role</p></th>
+<th class="head"><p>Processing and synchronization</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CAM-A / CAM-B</p></td>
+<td><p>Matched global-shutter forward stereo pair</p></td>
+<td><p>Calibrated rectification/depth; shared exposure trigger if supported</p></td>
+</tr>
+<tr class="row-odd"><td><p>CAM-C</p></td>
+<td><p>Downward VIO/landing camera</p></td>
+<td><p>Calibrated camera-to-IMU transform and exposure timestamps; CPU or validated accelerated processing</p></td>
+</tr>
+<tr class="row-even"><td><p>CAM-D</p></td>
+<td><p>EO/IR payload or alternate surround view</p></td>
+<td><p>Media/inference pipeline; time-correlated capture events</p></td>
+</tr>
+</tbody>
+</table>
+<p>Stereo plus downward plus payload is not full-sphere obstacle coverage. A surround configuration needs a separate
+FOV/occlusion study and may consume ports otherwise used for stereo. Raw thermal sensors may require a bridge; “thermal
+camera” does not imply CSI compatibility.</p>
+<p>Use supported DRP/OpenCV functions with their format/size constraints; unsupported processing remains a CPU or
+custom-acceleration task. AprilTag detection is initially a CPU candidate, not an assumed DRP-AI model. Camera Protocol
+v2 is the command/status path; pixels use CSI, USB or IP.</p>
+<section id="camera-interface-options-and-verified-entry-points">
+<h4>4.4.1 Camera interface options and verified entry points<a class="headerlink" href="#camera-interface-options-and-verified-entry-points" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Reusable reference</p></th>
+<th class="head"><p>Customer checks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Direct CSI-2 + control bus</p></td>
+<td><p><a class="reference external" href="https://www.e-consystems.com/renesas/sony-starvis-imx462-ultra-low-light-camera-for-renesas-rz-v2h.asp">e-CAM22_CURZH / IMX462</a>, listed in AI SDK</p></td>
+<td><p>Exact board adapter, sensor driver, Bayer/YUV format, rails, clocks and exposure timing; not automatically a global-shutter VIO choice</p></td>
+</tr>
+<tr class="row-odd"><td><p>USB UVC</p></td>
+<td><p>V4L2 USB camera path in the <a class="reference external" href="https://renesas-rz.github.io/rzv_ai_sdk/8.10/ai-sdk.html">AI SDK</a></p></td>
+<td><p>Supported formats, timestamp quality, bandwidth, inrush and disconnect recovery</p></td>
+</tr>
+<tr class="row-even"><td><p>FPD-Link III</p></td>
+<td><p><a class="reference external" href="https://www.ti.com/product/DS90UB960-Q1">DS90UB960-Q1</a>, quad deserializer; paired camera/serializer design</p></td>
+<td><p>Driver, remote I2C, CSI virtual-channel mapping, synchronization and aggregate lane budget</p></td>
+</tr>
+<tr class="row-odd"><td><p>FPD-Link IV</p></td>
+<td><p><a class="reference external" href="https://www.ti.com/product/DS90UB9702-Q1">DS90UB9702-Q1</a>, <strong>quad</strong> deserializer with compatible serializers such as DS90UB971-Q1</p></td>
+<td><p>Set CSI output within the RZ/V2H receiver limit; a faster bridge output is not automatically usable</p></td>
+</tr>
+<tr class="row-even"><td><p>GMSL2/3 or MIPI A-PHY</p></td>
+<td><p>Alternative supplier camera/SerDes integration</p></td>
+<td><p>Obtain matched serializer/deserializer, Linux support and test evidence; not established by the RDK examples</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ethernet camera</p></td>
+<td><p>V4L2/vendor/GStreamer adapter as applicable</p></td>
+<td><p>PHY, power, buffering, transport latency, time synchronization and security</p></td>
+</tr>
+</tbody>
+</table>
+<p>FFC/FPC length is governed by the selected PHY, board stackup, connectors and signal-integrity result, not a universal
+200 mm rule. Coax/STP SerDes requires matched impedance, qualified connectors, link budget and EMC testing; PoC is
+optional and requires its own supply/filter/protection design. Neither option has zero power cost or guaranteed immunity
+to motor noise.</p>
+</section>
+<section id="bandwidth-buffering-and-time-budget">
+<h4>4.4.2 Bandwidth, buffering and time budget<a class="headerlink" href="#bandwidth-buffering-and-time-budget" title="Link to this heading"></a></h4>
+<p>For each stream record width × height × frame rate × transmitted bits/pixel, then add CSI packet/blanking overhead and
+link margin. As a calculation example, 1920 × 1080 × 60 × RAW12 is <strong>1.493 Gbit/s payload per camera</strong>; four such
+streams total 5.972 Gbit/s before overhead. Memory traffic also includes DMA, copies, rectification, inference and
+recording, often with unpacked pixels.</p>
+<p>An unpacked 16-bit 1920 × 1080 frame is 4,147,200 bytes; four triple-buffered streams alone use 49,766,400 bytes. Add
+model/runtime pools and operating-system headroom, then measure simultaneous workloads. These are sizing calculations,
+not demonstrated stream support.</p>
+<p>Reserve a supported trigger/capture path without stealing the flight HRT. A trigger edge does not equal an exposure
+timestamp or an IMU sample instant: include sensor latency, rolling/global shutter behavior, timestamp origin, clock
+offset/drift and calibration in the error budget. Acceptance targets are listed separately in §8.5.</p>
+</section>
+</section>
+<section id="gimbal-architecture">
+<h3>4.5 Gimbal architecture<a class="headerlink" href="#gimbal-architecture" title="Link to this heading"></a></h3>
+<p>The preferred gimbal is a self-stabilizing unit with its own controller and MAVLink Gimbal Protocol v2 support.</p>
+<ul class="simple">
+<li><p>A55 hosts the payload/gimbal manager when the gimbal does not provide one.</p></li>
+<li><p>CR8-0 supplies trusted vehicle attitude/time and arbitrates mission, operator, and AI tracking intent.</p></li>
+<li><p>A55 perception may request a target vector or region of interest; it may not command aircraft attitude through the
+gimbal path.</p></li>
+<li><p>Gimbal power shall use a separately protected payload rail sized for startup and stall current.</p></li>
+<li><p>On command timeout, the gimbal shall hold, neutralize, or park according to the selected payload safety case.</p></li>
+<li><p>Loss or reboot of the gimbal shall not disturb attitude control or motor power.</p></li>
+</ul>
+</section>
+<section id="actuator-architecture">
+<h3>4.6 Actuator architecture<a class="headerlink" href="#actuator-architecture" title="Link to this heading"></a></h3>
+<p>CR8-0 calculates normalized actuator setpoints. CR8-1 validates freshness, arming lease, output mapping, and range
+before generating the physical protocol.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Output</p></th>
+<th class="head"><p>Use</p></th>
+<th class="head"><p>Feedback</p></th>
+<th class="head"><p>Selection rule</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DShot</p></td>
+<td><p>Short direct ESC harness, low latency</p></td>
+<td><p>Optional UART/BDShot telemetry when supported and validated</p></td>
+<td><p>Primary ESC protocol for production aircraft; 400Hz PWM retained as backup</p></td>
+</tr>
+<tr class="row-odd"><td><p>PWM</p></td>
+<td><p>Backup ESCs, servos, auxiliary functions</p></td>
+<td><p>Usually none</p></td>
+<td><p>Qualified backup ESC protocol (400Hz) and auxiliary actuators</p></td>
+</tr>
+<tr class="row-even"><td><p>CAN ESC</p></td>
+<td><p>Longer/noisy harness, status-rich ESC</p></td>
+<td><p>RPM, voltage, current, temperature, faults</p></td>
+<td><p>Freeze DroneCAN/vendor contract, CAN mode, and bus budget</p></td>
+</tr>
+</tbody>
+</table>
+<p>No motor output may become active solely because CR8-1 booted. Activation requires hardware initialization, safe input
+state, a valid peer epoch, a fresh CR8-0 heartbeat, a fresh actuator frame, and an active arming/output lease.</p>
+</section>
+<section id="command-telemetry-and-payload-links">
+<h3>4.7 Command, telemetry, and payload links<a class="headerlink" href="#command-telemetry-and-payload-links" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>RC is an independent low-latency input to CR8-1 and CR8-0/PX4.</p></li>
+<li><p>MAVLink 2 is the standard command/telemetry envelope for GCS, camera, and gimbal services. Message signing shall be
+enabled on untrusted command links.</p></li>
+<li><p>ROS 2/DDS is internal application middleware, not the external flight-safety authority.</p></li>
+<li><p>Video shall use a media transport separate from command/control bandwidth.</p></li>
+<li><p>Link loss shall be handled by PX4 mode/failsafe policy, not by Linux killing motors directly.</p></li>
+</ul>
+</section>
+<section id="device-interface-control-record">
+<h3>4.8 Device interface-control record<a class="headerlink" href="#device-interface-control-record" title="Link to this heading"></a></h3>
+<p>Create one controlled record per connector/device. The following is a starting template, not a fabricated pinout:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Required content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Identity</p></td>
+<td><p>Function, supplier part/revision, serial identity, datasheet/firmware and driver revision</p></td>
+</tr>
+<tr class="row-odd"><td><p>Physical</p></td>
+<td><p>Connector and mating part, numbered pins, net names, shield/ground, retention and harness limits</p></td>
+</tr>
+<tr class="row-even"><td><p>Electrical</p></td>
+<td><p>Supply range, continuous/peak/inrush current, logic levels, pull-ups, isolation, termination, ESD and reverse-power protection</p></td>
+</tr>
+<tr class="row-odd"><td><p>Protocol</p></td>
+<td><p>Controller instance, address/CS/node ID, bitrate/mode, framing/units, CRC/PEC and supported messages</p></td>
+</tr>
+<tr class="row-even"><td><p>Timing</p></td>
+<td><p>Sample/source/receive timestamps, update rate, jitter/latency budget and stale threshold</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ownership</p></td>
+<td><p>Boot/runtime owner, IRQ/DMA/clock/reset owner, Linux/NuttX configuration and consumer</p></td>
+</tr>
+<tr class="row-even"><td><p>Safety</p></td>
+<td><p>Power-up/reset/hot-plug state, loss/degraded policy, recovery and maintenance-only writes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Evidence</p></td>
+<td><p>Bench test procedure, expected waveform/data, calibration record and result tied to board/image revisions</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example, an I2C power-monitor ICD shall name the actual chip and shunt, its address, pull-up rail, board-local
+harness, conversion/averaging setting, current sign and calibration. “Battery on I2C” is not sufficient for either
+schematic or driver release.</p>
+</section>
+</section>
+<section id="power-and-electrical-design">
+<h2>5. Power and electrical design<a class="headerlink" href="#power-and-electrical-design" title="Link to this heading"></a></h2>
+<section id="power-tree">
+<h3>5.1 Power tree<a class="headerlink" href="#power-tree" title="Link to this heading"></a></h3>
+<p><strong>Figure 5-1: Aircraft multi-rail power distribution and electrical isolation architecture</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-system-specification-4.svg" />
+</figure>
+<p>The aircraft shall contain, at minimum:</p>
+<ol class="arabic simple">
+<li><p>propulsion path from battery/PDB to ESCs;</p></li>
+<li><p>protected always-on or flight-compute rail for RZ/V2H and critical sensors;</p></li>
+<li><p>separately switched payload rail for gimbal/cameras;</p></li>
+<li><p>separately protected RF/modem rail where load transients warrant it;</p></li>
+<li><p>monitored reset, power-good, and watchdog behavior.</p></li>
+</ol>
+<p>The board design shall analyze peak and transient load, regulator efficiency, inrush, reverse current, brownout, rail
+sequencing, ground return, EMI/EMC, thermal dissipation, and connector current rating. Motor/gimbal noise shall not
+corrupt IMU, GNSS, camera timing, or smart-battery communication.</p>
+</section>
+<section id="external-memory-and-storage">
+<h3>5.2 External memory and storage<a class="headerlink" href="#external-memory-and-storage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>LPDDR4/4X capacity and any enabled inline-ECC regions shall be sized for Linux, camera/model buffers, CR8
+reservations and worst-case DMA traffic; use the selected silicon stepping and DDR configuration guidance.</p></li>
+<li><p>eMMC should hold the Linux system and recovery slots.</p></li>
+<li><p>xSPI may hold first-stage boot assets or immutable recovery data.</p></li>
+<li><p>SD may hold flight logs and removable mission/payload data.</p></li>
+<li><p>PX4 parameters require a persistent, power-loss-tolerant owner before flight.</p></li>
+</ul>
+</section>
+<section id="harness-and-transceivers">
+<h3>5.3 Harness and transceivers<a class="headerlink" href="#harness-and-transceivers" title="Link to this heading"></a></h3>
+<p>The SoC pins are not aircraft connectors. The design shall add the required CAN transceivers, ESD protection, level
+shifting, inversion, termination, common-mode filtering, galvanic isolation where justified, and keyed/locking
+connectors. Every external connector shall define power, signal voltage, grounding, shield, hot-plug policy, and fault
+containment.</p>
+</section>
+<section id="power-thermal-and-mechanical-budgets">
+<h3>5.4 Power, thermal and mechanical budgets<a class="headerlink" href="#power-thermal-and-mechanical-budgets" title="Link to this heading"></a></h3>
+<p>Record rail voltage tolerance, continuous/peak current, inrush, efficiency, transient response, reset threshold and
+thermal loss for each branch.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Branch</p></th>
+<th class="head"><p>Include in budget</p></th>
+<th class="head"><p>Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Propulsion/PDB</p></td>
+<td><p>ESC startup, motor transients, conductor/connector losses</p></td>
+<td><p>Voltage droop, protection coordination and current limits</p></td>
+</tr>
+<tr class="row-odd"><td><p>Flight compute</p></td>
+<td><p>SoC, LPDDR, storage, PMIC losses, sensor and transceiver loads</p></td>
+<td><p>Cold/warm boot, simultaneous workload and rail/reset captures</p></td>
+</tr>
+<tr class="row-even"><td><p>Payload/camera</p></td>
+<td><p>Camera/SerDes/PoC, gimbal startup/stall and lighting</p></td>
+<td><p>Fault isolation and flight-rail disturbance</p></td>
+</tr>
+<tr class="row-odd"><td><p>RF/modem</p></td>
+<td><p>Transmit bursts, USB/PCIe enumeration and regulator peaks</p></td>
+<td><p>Link stress while logging control deadlines</p></td>
+</tr>
+<tr class="row-even"><td><p>Independent recovery, if selected</p></td>
+<td><p>Separate energy, trigger, monitoring and retention</p></td>
+<td><p>Total-SoC-power-loss response within its approved envelope</p></td>
+</tr>
+</tbody>
+</table>
+<p>Use the <a class="reference external" href="https://www.renesas.com/en/document/gde/rzv2h-group-handbook">RZ/V2H hardware handbook</a> to obtain current
+power-use-case, thermal, DDR, PCB checklist and design models. Some resources require My Renesas or NDA access. Do not
+derive whole-SoC power from accelerator TOPS/W. No 4–8 W, fixed weight saving or ambient-temperature qualification is
+established by this specification.</p>
+<p>Passive conduction is a preferred design study, subject to measured dissipation, junction limits, ambient, enclosure,
+mounting orientation and airflow. Include the thermal plate, fasteners, cables and carrier in the mass budget. Vibration
+isolation for the IMU and a conductive cooling path need a joint mechanical design. SOM dimensions and connector
+keep-outs determine the minimum carrier, not a generic 50 mm square envelope.</p>
+</section>
+<section id="board-design-start-package">
+<h3>5.5 Board-design start package<a class="headerlink" href="#board-design-start-package" title="Link to this heading"></a></h3>
+<section id="choose-the-implementation-path">
+<h4>5.5.1 Choose the implementation path<a class="headerlink" href="#choose-the-implementation-path" title="Link to this heading"></a></h4>
+<p><strong>Selected production path:</strong> The aircraft uses a <strong>fully custom discrete RZ/V2H board</strong> derived from the RDK reference
+architecture and reviewed port sources. The software receipt records
+bounded source/host/build evidence, not qualified sensors, actuators or a working physical pair. Customer pinmux, clocks,
+power/reset sequencing and electrical interfaces require independent qualification.</p>
+<p>A SOM/carrier route remains an evaluation alternative. For a OneKiwi option, obtain its <a class="reference external" href="https://onekiwi.com.vn/products/som-renesas-ai-rz-v2h/">published module and carrier
+resources</a> and the exact revision’s released connector pinout.
+The supplier brief describes four Hirose connectors; alternate DF40, Samtec/Panasonic, SO-DIMM, SMARC/MXM or solder-down
+designs require a separately agreed module design. Form-factor similarity does not establish electrical compatibility or
+vibration rating.</p>
+</section>
+<section id="inputs-to-collect-before-drawing-the-schematic">
+<h4>5.5.2 Inputs to collect before drawing the schematic<a class="headerlink" href="#inputs-to-collect-before-drawing-the-schematic" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Input / accountable owner</p></th>
+<th class="head"><p>Required artifact</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Systems</p></td>
+<td><p>Airframe/motor count, pack min/max voltage, payload, use cases, environment and allocated power/mass budgets</p></td>
+</tr>
+<tr class="row-odd"><td><p>Hardware</p></td>
+<td><p>Exact RZ/V2H ordering code/stepping or SOM SKU; option/errata review; vendor schematic/layout and lifecycle information</p></td>
+</tr>
+<tr class="row-even"><td><p>Power/boot</p></td>
+<td><p>Selected A55 cold-boot mode, PMIC ordering code/EEPROM profile, reset and recovery sequence</p></td>
+</tr>
+<tr class="row-odd"><td><p>Memory/BSP</p></td>
+<td><p>Approved DDR parts/topology/configuration, boot media, Linux/CR8/IPC/AI memory map and persistent-store owner</p></td>
+</tr>
+<tr class="row-even"><td><p>Avionics</p></td>
+<td><p>Selected IMU/barometer/compass/GNSS/BMS/ESC/camera/gimbal datasheets and interface-control records</p></td>
+</tr>
+<tr class="row-odd"><td><p>Software</p></td>
+<td><p>Driver availability per core, required BSP/RTOS changes, topic/protocol mapping and release baseline</p></td>
+</tr>
+<tr class="row-even"><td><p>Mechanical/test</p></td>
+<td><p>SOM/carrier CAD, connector access, retention, cooling/IMU isolation, test points and programming/provisioning fixture</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <a class="reference external" href="https://www.renesas.com/en/document/apn/rzv2h-group-and-rzv2n-group-power-supply-design-guide">Renesas power-supply design
+guide</a> has a dedicated
+<strong>RZ/V2H A55 cold-boot</strong> reference. Use that path for this CM33-free target. PMIC suffixes/EEPROM profiles are not
+interchangeable; copy neither CM33 startup dependencies nor an EVK power sequence without review.</p>
+</section>
+<section id="schematic-and-layout-release-checklist">
+<h4>5.5.3 Schematic and layout release checklist<a class="headerlink" href="#schematic-and-layout-release-checklist" title="Link to this heading"></a></h4>
+<ol class="arabic simple">
+<li><p>Complete the §3.3 resource ledger and §4.8 ICDs; reconcile them with Linux device tree and both NuttX board
+configurations.</p></li>
+<li><p>Review power sequencing, reset, boot straps, oscillators, decoupling, input protection and actuator inhibit
+independently of running software.</p></li>
+<li><p>Validate DDR topology/configuration and reserve Linux/CR8/DMA memory before selecting capacity. Allocate one owner
+for each storage controller/partition.</p></li>
+<li><p>Route each high-speed interface to its own vendor impedance, length/skew, return-path and model requirements. Do
+not use one 100-ohm rule for CSI, USB, PCIe and Ethernet indiscriminately.</p></li>
+<li><p>Review SPI CS/DRDY, I2C pull-ups/clock stretching, UART inversion, CAN transceivers/termination, camera
+resets/triggers and debug-pin conflicts.</p></li>
+<li><p>Include rail/test access, debug recovery, hardware revision identification, calibration/provisioning access and
+factory safe-output tests.</p></li>
+<li><p>Release BOM/alternates, schematic, PCB stackup/layout, fabrication/assembly files, pinmux/ownership ledger, ICDs,
+SI/PI/thermal review and bring-up plan together. No unresolved voltage, pinmux, sequencing or output-safe conflict
+may pass the fabrication gate.</p></li>
+</ol>
+</section>
+<section id="first-board-bring-up-order">
+<h4>5.5.4 First-board bring-up order<a class="headerlink" href="#first-board-bring-up-order" title="Link to this heading"></a></h4>
+<p>With propulsion inhibited and propellers removed: verify unpowered shorts; apply current-limited power; capture
+rails/reset; prove recovery/boot and DDR; enumerate storage and communications; read one real sensor/BMS source at a
+time; verify timestamps/calibration; scope inactive/output-timeout behavior; then add cameras/AI and simultaneous-load
+tests. Save board revision, images, instrument setup and transcripts at each gate. Software stages are in the <a class="reference internal" href="rzv2h-software-specification.html#developer-start-path"><span class="std std-ref">developer
+start path</span></a>.</p>
+</section>
+</section>
+</section>
+<section id="operational-behavior">
+<h2>6. Operational behavior<a class="headerlink" href="#operational-behavior" title="Link to this heading"></a></h2>
+<section id="boot-and-readiness">
+<h3>6.1 Boot and readiness<a class="headerlink" href="#boot-and-readiness" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Hardware keeps actuator command paths inhibited during power/reset.</p></li>
+<li><p>The selected A55 boot path verifies and releases both CR8 images.</p></li>
+<li><p>CR8-1 initializes output-safe; CR8-0 initializes time, sensors and parameters.</p></li>
+<li><p>Peers negotiate current epochs, time and health before declaring readiness.</p></li>
+<li><p>A separate approved arm action plus fresh setpoints/lease enables outputs.</p></li>
+</ol>
+<p>Initialization, communication, estimator readiness, preflight readiness, arming and active output are distinct states.
+Linux readiness alone cannot arm.</p>
+</section>
+<section id="navigation-ownership">
+<h3>6.2 Navigation ownership<a class="headerlink" href="#navigation-ownership" title="Link to this heading"></a></h3>
+<p>A55 may provide VIO odometry, obstacle constraints, landing-target estimates, and route intent. CR8-0 validates
+coordinate frames, timestamps, covariance, quality, freshness, continuity, and mode eligibility before fusion or
+control. Loss of A55 shall not corrupt CR8 sensor fusion; PX4 transitions according to available estimates and
+configured failsafes.</p>
+</section>
+<section id="operating-states">
+<h3>6.3 Operating states<a class="headerlink" href="#operating-states" title="Link to this heading"></a></h3>
+<p><strong>Figure 6-1: Master aircraft operational states and flight mode execution hierarchy</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="State diagram" src="_images/rzv2h-system-specification-5.svg" />
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>State</p></th>
+<th class="head"><p>Outputs</p></th>
+<th class="head"><p>Linux autonomy</p></th>
+<th class="head"><p>Exit condition</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Off</p></td>
+<td><p>De-energized</p></td>
+<td><p>Off</p></td>
+<td><p>Valid power-on</p></td>
+</tr>
+<tr class="row-odd"><td><p>Booting</p></td>
+<td><p>Inhibited</p></td>
+<td><p>Starting</p></td>
+<td><p>Required health/readiness reached or boot fault</p></td>
+</tr>
+<tr class="row-even"><td><p>Standby</p></td>
+<td><p>Inhibited</p></td>
+<td><p>Available but advisory</p></td>
+<td><p>Preflight checks pass and arm accepted</p></td>
+</tr>
+<tr class="row-odd"><td><p>Armed</p></td>
+<td><p>Enabled under fresh lease</p></td>
+<td><p>May provide bounded intent</p></td>
+<td><p>Disarm, lease loss, or failsafe</p></td>
+</tr>
+<tr class="row-even"><td><p>Degraded</p></td>
+<td><p>Depends on PX4 policy</p></td>
+<td><p>Failed service isolated</p></td>
+<td><p>Recovery or configured RTL/land/disarm</p></td>
+</tr>
+<tr class="row-odd"><td><p>Maintenance</p></td>
+<td><p>Propulsion inhibited</p></td>
+<td><p>Service access allowed</p></td>
+<td><p>Verified reboot to operational image</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Electrical inactivity and disarmed values are distinct.</strong> For <code class="docutils literal notranslate"><span class="pre">SYS-SAF-001</span></code>, inactive means no active actuator command
+pulse train at the connector, with the pad level, bias, reset behavior and external gate defined by the selected
+hardware ICD. High impedance alone is not proof of a safe electrical state. A configured nonzero disarmed PWM value
+remains a configuration value; it does not authorize pulses during boot, negotiation or standby. An independent output
+inhibit masks such values in those states. Any service pulse test needs a separately scoped device/state policy and
+propeller-free authorization; it cannot be reported as inactive standby. Absence of pulses does not prove the ESC is
+unpowered or the motor has stopped.</p>
+<p>Navigation fallback is conditional on actual estimator health. GNSS loss does not guarantee valid VIO; vision and
+optical flow can fail together. Position hold/RTL require usable position/home information, and a multicopter does not
+inherit a generic autorotation/glide recovery. Freeze PX4 failsafe parameters and the feasible responses per airframe
+rather than hard-coding a universal GNSS → VIO → flow → land sequence.</p>
+</section>
+</section>
+<section id="safety-reliability-and-security">
+<h2>7. Safety, reliability, and security<a class="headerlink" href="#safety-reliability-and-security" title="Link to this heading"></a></h2>
+<section id="safety-invariants">
+<h3>7.1 Safety invariants<a class="headerlink" href="#safety-invariants" title="Link to this heading"></a></h3>
+<p>Reset, stale/invalid IPC, missing heartbeat or invalid configuration shall not activate output. A55 shall not write
+actuator peripherals/state. CR8-1 lease expiry and ESC local command timeout shall follow the assessed safe-output
+policy. Every datum has time/validity; unknown is distinct from zero. Payload/media/storage faults and watchdog recovery
+shall neither block critical flight work nor bypass arming checks. Verify these invariants under shared-load and reset
+conditions, not just in isolated tasks.</p>
+</section>
+<section id="redundancy-and-common-cause">
+<h3>7.2 Redundancy and common cause<a class="headerlink" href="#redundancy-and-common-cause" title="Link to this heading"></a></h3>
+<p>Sensor redundancy should use independent devices, chip selects/buses where practical, power filtering, and placement.
+Two processes on one core are not hardware redundancy. Both R8 cores remain vulnerable to SoC-wide failure; the aircraft
+safety assessment shall decide whether external independent monitoring or termination hardware is required.</p>
+</section>
+<section id="security">
+<h3>7.3 Security<a class="headerlink" href="#security" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Lock the exact SoC part number before relying on optional secure boot, cryptography, device identity, OTP, or
+debug-disable features.</p></li>
+<li><p>Verify all boot artifacts before release to operational cores.</p></li>
+<li><p>Use signed update manifests with anti-rollback policy and an A/B or recovery path for Linux and both CR8 images.</p></li>
+<li><p>Separate maintenance, payload, fleet, and flight-control network privileges.</p></li>
+<li><p>Enable MAVLink 2 signing for untrusted command links; use encrypted network transport when confidentiality is
+required.</p></li>
+<li><p>Disable or physically control production debug access.</p></li>
+<li><p>Treat AI models, camera feeds, logs, and location history as protected assets.</p></li>
+</ul>
+</section>
+<section id="product-assurance-and-market-access">
+<h3>7.4 Product assurance and market access<a class="headerlink" href="#product-assurance-and-market-access" title="Link to this heading"></a></h3>
+<p>The customer shall establish an operation-specific assurance plan with the relevant authority. <a class="reference external" href="https://www.faa.gov/uas/commercial_operators/part_107_waivers">FAA Part 107 waiver
+guidance</a> and <a class="reference external" href="https://www.easa.europa.eu/en/domains/drones-air-mobility/operating-drone/specific-category-civil-drones">EASA specific-category
+guidance</a> are
+entry points. This architecture confers no SAIL, DAL, airworthiness approval or generic compliance with a parachute
+standard.</p>
+<p>Requirements traceability, timing evidence, software review, fault testing, perception dataset coverage and
+configuration control are useful inputs to an assurance case. Their required rigor and applicable standards must be
+agreed for the aircraft/operation, not inferred from the use of PX4 or two R8 cores.</p>
+</section>
+<section id="preliminary-hazard-and-containment-analysis">
+<h3>7.5 Preliminary hazard and containment analysis<a class="headerlink" href="#preliminary-hazard-and-containment-analysis" title="Link to this heading"></a></h3>
+<p>This table starts the hazard analysis; it is <strong>not a completed probabilistic fault tree</strong>. No failure rates or
+residual-risk classifications are established.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Fault branch</p></th>
+<th class="head"><p>Proposed containment</p></th>
+<th class="head"><p>Residual hazard and proof required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Total SoC/PMIC/clock loss</p></td>
+<td><p>External output gating, ESC timeout and independently powered recovery if selected</p></td>
+<td><p>CR8-1 also stops during total SoC loss; demonstrate response without either R8 or Linux</p></td>
+</tr>
+<tr class="row-odd"><td><p>Linux/VIO/planner loss or bad data</p></td>
+<td><p>CR8-0 bounds/age checks and eligible PX4 fallback</p></td>
+<td><p>Shared-memory/DDR contention, incorrect but plausible estimates, and loss of position remain hazards</p></td>
+</tr>
+<tr class="row-even"><td><p>CR8-0 control failure</p></td>
+<td><p>CR8-1 lease timeout plus external supervision as required</p></td>
+<td><p>Stopped thrust can cause impact; quantify detection/output delay and aircraft consequences</p></td>
+</tr>
+<tr class="row-odd"><td><p>CR8-1/output failure</p></td>
+<td><p>Watchdog/reset route, external gating and ESC local timeout</p></td>
+<td><p>A stuck peripheral may keep generating pulses; stopping software alone is insufficient proof</p></td>
+</tr>
+<tr class="row-even"><td><p>Battery/BMS/propulsion failure</p></td>
+<td><p>Energy warning, protected rails and selected propulsion/recovery strategy</p></td>
+<td><p>A monitor cannot undo pack disconnection or guarantee motor-out control</p></td>
+</tr>
+<tr class="row-odd"><td><p>Camera/gimbal/RF fault</p></td>
+<td><p>Bounded services and separately protected loads</p></td>
+<td><p>Prove no brownout, blocked real-time task or corrupted flight state</p></td>
+</tr>
+</tbody>
+</table>
+<p>An independent parachute/flight-termination device is an optional external system selected by the safety assessment.
+Obtain the exact aircraft-compatible unit’s approved envelope, independent power/trigger design, deployment limits,
+status/test interface and evidence. Motor inhibit and parachute deployment are different actions: do not connect every
+lease expiry directly to deployment. Recovery cannot depend solely on a GPIO emitted by an unpowered SoC.</p>
+</section>
+</section>
+<section id="system-requirements">
+<h2>8. System requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
+<section id="architecture-and-authority">
+<h3>8.1 Architecture and authority<a class="headerlink" href="#architecture-and-authority" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Requirement</p></th>
+<th class="head"><p>Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SYS-ARC-001</p></td>
+<td><p>The aircraft shall use one RZ/V2H as its only central mission and flight compute SoC.</p></td>
+<td><p>Design/BOM inspection</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-ARC-002</p></td>
+<td><p>A55/DRP-AI3, CR8-0, and CR8-1 shall have the responsibilities in §3; no operational function shall depend on CM33.</p></td>
+<td><p>Architecture and image inspection</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-ARC-003</p></td>
+<td><p>CR8-0 shall be the sole authority for arming, flight mode, flight-level failsafe, and desired actuator setpoints.</p></td>
+<td><p>Interface test and fault injection</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-ARC-004</p></td>
+<td><p>CR8-1 shall be the sole owner of configured physical actuator buses in the target multicore design.</p></td>
+<td><p>Peripheral access and integration test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-ARC-005</p></td>
+<td><p>A55 loss or restart shall not directly activate or corrupt actuator output.</p></td>
+<td><p>Reset/fault injection</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="external-interfaces">
+<h3>8.2 External interfaces<a class="headerlink" href="#external-interfaces" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Requirement</p></th>
+<th class="head"><p>Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SYS-IF-001</p></td>
+<td><p>Every external device shall have an ICD entry defining connector, voltage, protocol, owner, rate, timeout, safe state, and verification method.</p></td>
+<td><p>ICD review</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-IF-002</p></td>
+<td><p>Primary and secondary IMUs shall use independently recoverable paths where the hardware permits.</p></td>
+<td><p>Schematic and bus-fault test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-IF-003</p></td>
+<td><p>The battery system shall provide a smart-data path. If the safety assessment requires an independent pack voltage/current path, the customer board and software shall implement and validate it.</p></td>
+<td><p>Design review, schematic inspection, and injection test</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-IF-004</p></td>
+<td><p>Smart-battery data shall preserve validity, source timestamp, age, units, and unavailable fields.</p></td>
+<td><p>Driver/interface test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-IF-005</p></td>
+<td><p>Camera media and control paths shall be distinct and shall have explicit time synchronization.</p></td>
+<td><p>Pipeline and timestamp test</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-IF-006</p></td>
+<td><p>Gimbal or camera failure shall not block flight-control scheduling.</p></td>
+<td><p>Load/fault injection</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-IF-007</p></td>
+<td><p>ESCs shall enter their defined safe state after command timeout.</p></td>
+<td><p>Powered bench test without propellers</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-IF-008</p></td>
+<td><p>RC loss, command-link loss, and smart-battery loss shall be separately detectable.</p></td>
+<td><p>Fault injection</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="safety-and-lifecycle">
+<h3>8.3 Safety and lifecycle<a class="headerlink" href="#safety-and-lifecycle" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Requirement</p></th>
+<th class="head"><p>Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SYS-SAF-001</p></td>
+<td><p>Actuator outputs shall remain electrically inactive as defined in §6.3 through power-up, reset, image load, IPC negotiation, and standby.</p></td>
+<td><p>Connector waveform and reset/bias/gate test, including nonzero configured disarmed values</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-SAF-002</p></td>
+<td><p>Output activation shall require a current peer epoch, valid arming state, fresh heartbeat, fresh setpoint, and active lease.</p></td>
+<td><p>State and timeout test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-SAF-003</p></td>
+<td><p>CRC/integrity failure, sequence regression, stale timestamp, or peer reset shall invalidate the affected command or snapshot.</p></td>
+<td><p>Protocol fault injection</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-SAF-004</p></td>
+<td><p>Payload and RF rail transients shall not violate flight-compute voltage or reset margins.</p></td>
+<td><p>Power-transient test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-SAF-005</p></td>
+<td><p>The product safety case shall analyze the RZ/V2H as a common-cause failure domain.</p></td>
+<td><p>Safety review</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-SEC-001</p></td>
+<td><p>Operational images and updates shall be authenticated before execution.</p></td>
+<td><p>Secure-boot/update test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-SEC-002</p></td>
+<td><p>Untrusted MAVLink command links shall use signing and authorization policy.</p></td>
+<td><p>Security test</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="performance-and-capacity">
+<h3>8.4 Performance and capacity<a class="headerlink" href="#performance-and-capacity" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Requirement</p></th>
+<th class="head"><p>Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SYS-PER-001</p></td>
+<td><p>The final aircraft ICD shall allocate worst-case bandwidth and latency budgets for every shared bus and inter-core link.</p></td>
+<td><p>Timing/bus-load analysis</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-PER-002</p></td>
+<td><p>Linux camera, AI, video, storage, and network saturation shall not violate measured CR8 control and I/O deadlines.</p></td>
+<td><p>Stress and timing test</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-PER-003</p></td>
+<td><p>Thermal design shall cover simultaneous worst-case A55, DRP-AI3, media, memory, and I/O workload at the specified ambient condition.</p></td>
+<td><p>Thermal analysis and chamber test</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-PER-004</p></td>
+<td><p>Power sizing shall cover startup/inrush and steady-state peaks of compute, sensors, RF, camera, and gimbal loads.</p></td>
+<td><p>Power budget and transient test</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="advanced-autonomy-vision-and-precision-landing">
+<h3>8.5 Advanced autonomy, vision, and precision landing<a class="headerlink" href="#advanced-autonomy-vision-and-precision-landing" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Requirement</p></th>
+<th class="head"><p>Verification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SYS-AUT-001</p></td>
+<td><p>The camera/IMU subsystem shall measure exposure-to-sample timing error and meet the released synchronization budget.</p></td>
+<td><p>Scope/timestamp calibration under load</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-AUT-002</p></td>
+<td><p>The autonomy pipeline shall meet a released end-to-end reaction-time budget including capture, processing, transport, acceptance and control.</p></td>
+<td><p>Instrumented HIL latency distribution and maximum</p></td>
+</tr>
+<tr class="row-even"><td><p>SYS-AUT-003</p></td>
+<td><p>Precision landing shall meet the customer docking accuracy/availability requirement with defined target-loss behavior.</p></td>
+<td><p>Ground-truth landing campaign across declared conditions</p></td>
+</tr>
+<tr class="row-odd"><td><p>SYS-AUT-004</p></td>
+<td><p>The thermal solution shall meet the selected part’s junction limits and CR8 deadlines at worst-case qualified workload/ambient.</p></td>
+<td><p>Thermal chamber and deadline measurements</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Candidate budgets carried forward for feasibility testing, not accepted product performance:</strong> stereo skew &lt; 1 µs;
+camera/IMU correlation &lt; 10 µs; on-chip transport &lt; 100 µs; autonomy reaction ≤ 50 ms; landing target updates ≥ 30 Hz;
+touchdown error &lt; 10 cm; actuator lease ≤ 50 ms; passive cooling if feasible. Systems engineering shall approve or
+revise each with workload, percentile/ maximum, fault response and measurement definition before freezing the ICD. An
+80-TOPS capability is not a thermal test workload.</p>
+</section>
+</section>
+<section id="evidence-boundary">
+<h2>9. Evidence boundary<a class="headerlink" href="#evidence-boundary" title="Link to this heading"></a></h2>
+<p>This specification owns the target hardware requirements and their verification strategy. Current repository
+implementation status and named hardware evidence are maintained in the NuttX port status and
+PX4 HAL status; the <a class="reference internal" href="rzv2h-software-specification.html"><span class="std std-doc">software specification</span></a> owns the
+corresponding software gap and verification contracts. RDK and repository results remain pre-development evidence and do
+not narrow these platform-level requirements.</p>
+</section>
+<section id="verification-strategy">
+<h2>10. Verification strategy<a class="headerlink" href="#verification-strategy" title="Link to this heading"></a></h2>
+<p>Progress through design/source review, build/artifact inspection, host protocol tests, processor-in-loop/HIL, powered
+propeller-free bench tests, controlled flight expansion, environmental qualification and operation-specific approval. Do
+not promote evidence between these levels without the named test result.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Integration campaign</p></th>
+<th class="head"><p>Minimum injected/observed cases</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Boot/output</p></td>
+<td><p>Cold, warm, watchdog and peer resets; output-inactive waveforms</p></td>
+</tr>
+<tr class="row-odd"><td><p>Sensors/time</p></td>
+<td><p>Disconnect, stuck bus, corruption, saturation, timestamp jump and recovery</p></td>
+</tr>
+<tr class="row-even"><td><p>Battery/energy</p></td>
+<td><p>BMS loss, low energy, pack swap; secondary-source disagreement/loss if fitted</p></td>
+</tr>
+<tr class="row-odd"><td><p>Joint workload</p></td>
+<td><p>Linux/AI/media/network/storage saturation and crash/restart while measuring CR8 deadlines</p></td>
+</tr>
+<tr class="row-even"><td><p>IPC</p></td>
+<td><p>CRC/length/version, sequence/epoch, full queues, cache visibility and sustained-load latency</p></td>
+</tr>
+<tr class="row-odd"><td><p>Actuators</p></td>
+<td><p>ESC command timeout, telemetry loss, function mapping, stuck-output containment and safe waveforms</p></td>
+</tr>
+<tr class="row-even"><td><p>Cameras/navigation</p></td>
+<td><p>Sync error, frame drops, VIO divergence, stale obstacles and conditional navigation transitions</p></td>
+</tr>
+<tr class="row-odd"><td><p>Payload</p></td>
+<td><p>Gimbal stall/reboot, source arbitration and payload-rail transients</p></td>
+</tr>
+<tr class="row-even"><td><p>Release</p></td>
+<td><p>Parameter persistence, interrupted update, incompatible-image rejection and recovery</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="references-and-open-decisions">
+<h2>11. References and open decisions<a class="headerlink" href="#references-and-open-decisions" title="Link to this heading"></a></h2>
+<section id="normative-and-primary-references">
+<h3>11.1 Normative and primary references<a class="headerlink" href="#normative-and-primary-references" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.renesas.com/en/document/dst/rzv2h-group-datasheet">Renesas RZ/V2H Group Datasheet Rev.1.40</a></p></li>
+<li><p><a class="reference external" href="https://docs.px4.io/main/en/ros2/user_guide">PX4 ROS 2 User Guide</a></p></li>
+<li><p><a class="reference external" href="https://docs.px4.io/main/en/power_systems/">PX4 Power Systems</a></p></li>
+<li><p><a class="reference external" href="https://www.sbs-forum.org/specs/sbdat110.pdf">Smart Battery Data Specification 1.1</a></p></li>
+<li><p><a class="reference external" href="https://docs.px4.io/main/en/dronecan/">PX4 DroneCAN</a></p></li>
+<li><p><a class="reference external" href="https://docs.px4.io/main/en/peripherals/dshot">PX4 DShot</a></p></li>
+<li><p><a class="reference external" href="https://docs.px4.io/main/en/camera/mavlink_v2_camera">PX4 MAVLink Camera v2</a></p></li>
+<li><p><a class="reference external" href="https://docs.px4.io/main/en/advanced/gimbal_control">PX4 Gimbal Configuration</a></p></li>
+<li><p><a class="reference external" href="https://mavlink.io/en/services/">MAVLink Microservices</a></p></li>
+<li><p>Repository IPC architecture</p></li>
+<li><p>Repository hardware guide</p></li>
+<li><p><a class="reference internal" href="rzv2h-software-specification.html"><span class="std std-doc">Software specification</span></a></p></li>
+<li><p><a class="reference internal" href="rzv2h-development-ecosystem.html"><span class="std std-doc">RZ/V2H development ecosystem and RDK pre-development guide</span></a></p></li>
+<li><p><a class="reference external" href="https://www.renesas.com/en/document/gde/rzv2h-group-handbook">Renesas RZ/V2H hardware handbook</a></p></li>
+<li><p><a class="reference external" href="https://www.renesas.com/en/document/apn/rzv2h-group-and-rzv2n-group-power-supply-design-guide">Renesas power-supply design
+guide</a></p></li>
+<li><p><a class="reference external" href="https://onekiwi.com.vn/products/som-renesas-ai-rz-v2h/">OneKiwi module/carrier resources</a></p></li>
+</ul>
+</section>
+<section id="open-decisions-and-closure-criteria">
+<h3>11.2 Open decisions and closure criteria<a class="headerlink" href="#open-decisions-and-closure-criteria" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Decision</p></th>
+<th class="head"><p>Closure evidence</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Exact RZ/V2H ordering code</p></td>
+<td><p>BOM plus datasheet option review</p></td>
+</tr>
+<tr class="row-odd"><td><p>Airframe/ESC model, DShot speed and PWM400 backup qualification</p></td>
+<td><p>Preserve selected DShot primary; freeze device ICD, harness, timing and physical proof</p></td>
+</tr>
+<tr class="row-even"><td><p>BMS CAN/DroneCAN/vendor versus SMBus</p></td>
+<td><p>Selected BMS datasheet, ICD, EMI/harness review</p></td>
+</tr>
+<tr class="row-odd"><td><p>Optional customer-board voltage/current monitor</p></td>
+<td><p>Safety rationale, schematic, interface, accuracy/error budget, calibration method</p></td>
+</tr>
+<tr class="row-even"><td><p>Camera count/type/rate and synchronization</p></td>
+<td><p>Perception/VIO requirements and bandwidth/timing measurements</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gimbal transport and manager owner</p></td>
+<td><p>Selected gimbal ICD and arbitration test</p></td>
+</tr>
+<tr class="row-even"><td><p>Linux distribution and update mechanism</p></td>
+<td><p>Reproducible build, threat model, boot/update validation</p></td>
+</tr>
+<tr class="row-odd"><td><p>IPC transport and deadlines</p></td>
+<td><p>Implemented peers plus measured worst-case latency/load/reset evidence</p></td>
+</tr>
+<tr class="row-even"><td><p>Product safety/regulatory target</p></td>
+<td><p>Approved product requirements and safety plan</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="_sections/specifications.html" class="btn btn-neutral float-left" title="Specifications" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="rzv2h-software-specification.html" class="btn btn-neutral float-right" title="RZ/V2H Single-SoC Autonomous Drone Software Specification" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

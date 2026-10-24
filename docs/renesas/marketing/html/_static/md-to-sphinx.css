@@ -1,0 +1,154 @@
+/* md-to-sphinx theme layer for sphinx_rtd_theme.
+ * Brand values come from md-to-sphinx-brand.css (--md2s-* custom properties),
+ * so this file stays identical for every site. Caller CSS loads after it. */
+
+body,
+.rst-content .toctree-wrapper > p.caption,
+.wy-menu-vertical header,
+.wy-menu-vertical p.caption,
+.rst-content h1, .rst-content h2, .rst-content h3,
+.rst-content h4, .rst-content h5, .rst-content h6 {
+  font-family: var(--md2s-font);
+}
+body { color: var(--md2s-text); background: var(--md2s-surface); }
+
+/* Sidebar */
+.wy-nav-side, .wy-side-nav-search { background: var(--md2s-primary); }
+.wy-side-nav-search > a, .wy-side-nav-search .wy-dropdown > a,
+.wy-side-nav-search > div.version { color: var(--md2s-on-primary); }
+.wy-side-nav-search input[type="text"] {
+  border-color: var(--md2s-sidebar-line);
+  border-radius: 6px;
+  box-shadow: none;
+}
+.wy-side-nav-search img.logo,
+.wy-side-nav-search > a img.logo,
+.wy-side-nav-search .wy-dropdown > a img.logo {
+  max-width: 12rem;
+  max-height: 4.5rem;
+  width: auto;
+  background: var(--md2s-logo-background);
+  padding: var(--md2s-logo-padding);
+  border-radius: 6px;
+}
+.wy-menu-vertical p.caption,
+.wy-menu-vertical header { color: var(--md2s-sidebar-caption); letter-spacing: .04em; }
+.wy-menu-vertical a { color: var(--md2s-on-primary-muted); }
+.wy-menu-vertical a:hover { background: var(--md2s-sidebar-hover); color: var(--md2s-on-primary); }
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.on a { border-left: 3px solid var(--md2s-accent); }
+.wy-nav-top { background: var(--md2s-primary); }
+.wy-nav-top a { color: var(--md2s-on-primary); }
+
+/* Content column */
+.wy-nav-content-wrap, .wy-nav-content { background: var(--md2s-surface); }
+.wy-nav-content { max-width: var(--md2s-max-width); }
+.rst-content a, .rst-content a:visited { color: var(--md2s-link); }
+.rst-content a:hover { color: var(--md2s-heading); text-decoration: underline; }
+.rst-content h1, .rst-content h2, .rst-content h3, .rst-content h4 { color: var(--md2s-heading); }
+.rst-content h1 { font-weight: 700; }
+.rst-content h2 {
+  border-bottom: 2px solid var(--md2s-accent-tint-strong);
+  padding-bottom: .35rem;
+  margin-top: 2rem;
+}
+.rst-content p, .rst-content li { line-height: 1.65; }
+
+/* Code */
+.rst-content code.literal {
+  color: var(--md2s-heading);
+  background: var(--md2s-primary-tint);
+  border: 1px solid var(--md2s-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.rst-content div[class^="highlight"] { border-color: var(--md2s-border); border-radius: 6px; }
+
+/* Tables */
+.rst-content table.docutils { border-color: var(--md2s-border); }
+.rst-content table.docutils thead th {
+  background: var(--md2s-primary);
+  color: var(--md2s-on-primary);
+  border-color: var(--md2s-primary);
+}
+.rst-content table.docutils td, .rst-content table.docutils th { border-color: var(--md2s-border); }
+.rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td { background: var(--md2s-primary-tint); }
+.wy-table-responsive { overflow-x: auto; }
+.wy-table-responsive table td, .wy-table-responsive table th { white-space: normal; }
+
+/* Admonitions */
+.rst-content .admonition, .rst-content .note, .rst-content .tip,
+.rst-content .warning, .rst-content .important { border-radius: 6px; overflow: hidden; }
+.rst-content .note, .rst-content .seealso { background: var(--md2s-primary-tint); }
+.rst-content .note .admonition-title, .rst-content .seealso .admonition-title {
+  background: var(--md2s-primary);
+  color: var(--md2s-on-primary);
+}
+
+/* Figures and diagrams */
+.rst-content img, .rst-content figure img { max-width: 100%; height: auto; }
+.rst-content figure { margin: 1.75rem auto; }
+.rst-content figure.md2s-diagram { text-align: center; }
+.rst-content figure.md2s-diagram img {
+  cursor: zoom-in;
+  border-radius: 6px;
+  padding: .5rem;
+  background: var(--md2s-surface);
+}
+.rst-content figure.md2s-diagram img:focus-visible { outline: 3px solid var(--md2s-accent); }
+.rst-content figure figcaption,
+.rst-content figure .caption {
+  color: var(--md2s-muted);
+  font-size: .92em;
+  margin-top: .5rem;
+}
+.rst-content figure .caption-number { color: var(--md2s-heading); font-weight: 600; }
+.rst-content figure:has(.mermaid) { text-align: center; }
+.rst-content div.mermaid, .rst-content pre.mermaid {
+  text-align: center;
+  background: transparent;
+  border: 0;
+  overflow-x: auto;
+}
+
+.md2s-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 3rem 1.5rem;
+  background: rgba(15, 18, 30, .82);
+  cursor: zoom-out;
+}
+.md2s-lightbox img {
+  max-width: none;
+  height: auto;
+  margin: auto;
+  background: var(--md2s-surface);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+}
+.md2s-lightbox button {
+  position: fixed;
+  top: .75rem;
+  right: 1rem;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 768px) {
+  .wy-nav-content { padding: 1.25rem; }
+}
+@media print {
+  .wy-nav-side, .wy-nav-top, .rst-footer-buttons { display: none; }
+  .wy-nav-content-wrap { margin-left: 0; }
+  .rst-content figure.md2s-diagram img { cursor: auto; }
+}

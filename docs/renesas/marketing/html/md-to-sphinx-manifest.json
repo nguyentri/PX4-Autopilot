@@ -1,0 +1,761 @@
+{
+  "source_root": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input",
+  "output": "/home/tringuyen/PX4-Autopilot/docs/renesas/marketing/html",
+  "markdown": [
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/README.md",
+      "relative": "README.md",
+      "sha256": "aa904ec1392b055d895375250094dc8978ebbf8402384ac19ee32c0737148958"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-autonomous-drone-solution.md",
+      "relative": "rzv2h-autonomous-drone-solution.md",
+      "sha256": "1005c313742d07b91fd6d031b2999d86fee58cdb9131e3e88cc61cf1483391f8"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-actuator-safety-spec.md",
+      "relative": "rzv2h-demo-actuator-safety-spec.md",
+      "sha256": "a9d5a23277c50cbccc40cfd02082c9dafa65bca334b3e54065203bb083d4d502"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-battery-power-spec.md",
+      "relative": "rzv2h-demo-battery-power-spec.md",
+      "sha256": "b97498a5460e202d8151fd7c7ae4b1b09da09b4309f03f7b727e3500aaaea425"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-calibration-storage-spec.md",
+      "relative": "rzv2h-demo-calibration-storage-spec.md",
+      "sha256": "18506e5f3a33cd86a9b41b17be7f84e376d133dcde91d7403cdad4de8fe59937"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-diagnostics-release-spec.md",
+      "relative": "rzv2h-demo-diagnostics-release-spec.md",
+      "sha256": "c1a959ce29b8cb0a0897d205a07c6451b9a6a58dd81c8a53d41c019b25ca8ca4"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-flight-control-spec.md",
+      "relative": "rzv2h-demo-flight-control-spec.md",
+      "sha256": "f15c69f3aee93026b0eca078584d487a6078a9c1b23f5b8c9d82276c76186db0"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-ipc-spec.md",
+      "relative": "rzv2h-demo-ipc-spec.md",
+      "sha256": "e2c2f395d1e2c12cc4229daba5383bbea177b6bb8cf5c12027e09849979a9873"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-requirements.md",
+      "relative": "rzv2h-demo-requirements.md",
+      "sha256": "b951eedbf96ae158c2504b929e8690a2b47612783d6186a7074342719209609f"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-demo-sensors-navigation-spec.md",
+      "relative": "rzv2h-demo-sensors-navigation-spec.md",
+      "sha256": "8eb1d297fbf976500ee07fd039cf45fcb08a51ab12b8afa247e7d9fb3aa1a4cb"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-development-ecosystem.md",
+      "relative": "rzv2h-development-ecosystem.md",
+      "sha256": "6b6683f1f3efd3bdd508144b78b742f37471175b0bcf4b6b34e672179b3c40c9"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-dualcr8-demo-architecture.md",
+      "relative": "rzv2h-dualcr8-demo-architecture.md",
+      "sha256": "e6ddd83231321c82d418c56ff02f62ff801de1d9695ccffbfc1421b2a098e34c"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-dualcr8-demo-design.md",
+      "relative": "rzv2h-dualcr8-demo-design.md",
+      "sha256": "c0e8f998f355284bb0004574e5921c2200868251552e93fdedb7ff070c3d4a64"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-software-specification.md",
+      "relative": "rzv2h-software-specification.md",
+      "sha256": "facc07c642bec9cd285e89c9aeae67db87378b0092c8926dc48b27eaeebc99a3"
+    },
+    {
+      "source": "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/staged-input/rzv2h-system-specification.md",
+      "relative": "rzv2h-system-specification.md",
+      "sha256": "7eaf13d9eae2b51bede839c5d3e63399d3ba444f0b2df68d729a8c23c253ac90"
+    }
+  ],
+  "staged_as": {
+    "README.md": "index.md"
+  },
+  "landing": "README.md",
+  "navigation": {
+    "mode": "file",
+    "sections": [
+      {
+        "title": "Solution and Development",
+        "page": "_sections/solution-and-development.md",
+        "docs": 2
+      },
+      {
+        "title": "Specifications",
+        "page": "_sections/specifications.md",
+        "docs": 2
+      },
+      {
+        "title": "Dual-CR8 Architecture and Design",
+        "page": "_sections/dual-cr8-architecture-and-design.md",
+        "docs": 2
+      },
+      {
+        "title": "Demo Module Contracts",
+        "page": "_sections/demo-module-contracts.md",
+        "docs": 8
+      }
+    ],
+    "placed_by_authored_toctrees": [],
+    "generated_pages": [
+      "_sections/solution-and-development.md",
+      "_sections/specifications.md",
+      "_sections/dual-cr8-architecture-and-design.md",
+      "_sections/demo-module-contracts.md"
+    ]
+  },
+  "assets": [],
+  "diagrams": [
+    {
+      "document": "rzv2h-autonomous-drone-solution.md",
+      "line": 65,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-autonomous-drone-solution-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-autonomous-drone-solution.md",
+      "line": 156,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-autonomous-drone-solution-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-autonomous-drone-solution.md",
+      "line": 198,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-autonomous-drone-solution-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-autonomous-drone-solution.md",
+      "line": 298,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-autonomous-drone-solution-4.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-autonomous-drone-solution.md",
+      "line": 348,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-autonomous-drone-solution-5.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-actuator-safety-spec.md",
+      "line": 39,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-actuator-safety-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-actuator-safety-spec.md",
+      "line": 90,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-actuator-safety-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-actuator-safety-spec.md",
+      "line": 119,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-actuator-safety-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-battery-power-spec.md",
+      "line": 36,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-battery-power-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-battery-power-spec.md",
+      "line": 63,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-battery-power-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-battery-power-spec.md",
+      "line": 89,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-battery-power-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-calibration-storage-spec.md",
+      "line": 34,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-calibration-storage-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-calibration-storage-spec.md",
+      "line": 85,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-calibration-storage-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-calibration-storage-spec.md",
+      "line": 115,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-calibration-storage-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-diagnostics-release-spec.md",
+      "line": 37,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-diagnostics-release-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-diagnostics-release-spec.md",
+      "line": 88,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-diagnostics-release-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-diagnostics-release-spec.md",
+      "line": 118,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-diagnostics-release-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-flight-control-spec.md",
+      "line": 38,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-flight-control-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-flight-control-spec.md",
+      "line": 94,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-flight-control-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-flight-control-spec.md",
+      "line": 116,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-flight-control-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-ipc-spec.md",
+      "line": 36,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-ipc-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-ipc-spec.md",
+      "line": 77,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-ipc-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-ipc-spec.md",
+      "line": 104,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-ipc-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-requirements.md",
+      "line": 30,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-requirements-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-requirements.md",
+      "line": 154,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-requirements-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-sensors-navigation-spec.md",
+      "line": 35,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-sensors-navigation-spec-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-sensors-navigation-spec.md",
+      "line": 88,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-sensors-navigation-spec-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-demo-sensors-navigation-spec.md",
+      "line": 114,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-demo-sensors-navigation-spec-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-development-ecosystem.md",
+      "line": 56,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-development-ecosystem-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-development-ecosystem.md",
+      "line": 272,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-development-ecosystem-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-development-ecosystem.md",
+      "line": 353,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-development-ecosystem-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 24,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 51,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 113,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 153,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-4.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 187,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-5.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 212,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-6.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 259,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-7.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 301,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-8.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-architecture.md",
+      "line": 337,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-architecture-9.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 23,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 64,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 150,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 228,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-4.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 289,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-5.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 345,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-6.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 368,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-7.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 419,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-8.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 457,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-9.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-dualcr8-demo-design.md",
+      "line": 486,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-dualcr8-demo-design-10.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-software-specification.md",
+      "line": 77,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-software-specification-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-software-specification.md",
+      "line": 329,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-software-specification-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-software-specification.md",
+      "line": 360,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-software-specification-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-software-specification.md",
+      "line": 520,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-software-specification-4.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-software-specification.md",
+      "line": 543,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-software-specification-5.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-system-specification.md",
+      "line": 81,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-system-specification-1.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-system-specification.md",
+      "line": 159,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-system-specification-2.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-system-specification.md",
+      "line": 302,
+      "kind": "sequenceDiagram",
+      "caption": "",
+      "alt": "Sequence diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-system-specification-3.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-system-specification.md",
+      "line": 423,
+      "kind": "flowchart",
+      "caption": "",
+      "alt": "Flowchart",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-system-specification-4.svg",
+      "cached": true
+    },
+    {
+      "document": "rzv2h-system-specification.md",
+      "line": 592,
+      "kind": "stateDiagram-v2",
+      "caption": "",
+      "alt": "State diagram",
+      "mode": "prerender",
+      "file": "_diagrams/rzv2h-system-specification-5.svg",
+      "cached": true
+    }
+  ],
+  "logo": null,
+  "favicon": null,
+  "brand_file": "/home/tringuyen/PX4-Autopilot/refs/rzv2h_drone_sphinx_old/build/onekiwi-brand.json",
+  "stylesheets": [],
+  "font_css_url": null,
+  "preset": "classic",
+  "style": {
+    "primary": "#16163F",
+    "accent": "#ED6C00",
+    "surface": "#FFFFFF",
+    "text": "#303030",
+    "font_family": "Roboto, Arial, sans-serif",
+    "diagram_font": "Arial, sans-serif",
+    "max_width": "1140px",
+    "logo_background": ""
+  },
+  "diagram_mode": "prerender",
+  "diagram_mode_note": null,
+  "renderer": {
+    "command": [
+      "/home/tringuyen/.nvm/versions/node/v24.21.0/bin/mmdc"
+    ],
+    "version": "12.0.0"
+  },
+  "links": [],
+  "normalization": [],
+  "command": [
+    "/usr/bin/python3",
+    "-m",
+    "sphinx",
+    "-b",
+    "html",
+    "-c",
+    "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/sphinx-work",
+    "-d",
+    "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/sphinx-work/_build/doctrees",
+    "-W",
+    "--keep-going",
+    "/home/tringuyen/.gemini/antigravity-cli/brain/60a287eb-c208-4b34-801c-f12f3c486c44/scratch/sphinx-work/source",
+    "/home/tringuyen/PX4-Autopilot/docs/renesas/marketing/html"
+  ]
+}

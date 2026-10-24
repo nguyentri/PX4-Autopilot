@@ -1,0 +1,615 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo Module Contracts &mdash; RZ/V2H Autonomous Drone Solution and Design Guide</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/md-to-sphinx-brand.css?v=08b08d4a" />
+      <link rel="stylesheet" type="text/css" href="../_static/md-to-sphinx.css?v=6d52c6f5" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=7f41d439"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/md-to-sphinx.js?v=22a33ba5"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Dual-CR8 demo requirements registry" href="../rzv2h-demo-requirements.html" />
+    <link rel="prev" title="Dual-CR8 demo design companion" href="../rzv2h-dualcr8-demo-design.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            RZ/V2H Autonomous Drone Solution and Design Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="solution-and-development.html">Solution and Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html">RZ/V2H Single-SoC Autonomous Drone Solution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#executive-summary">Executive summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#what-single-soc-means">1. What single-SoC means</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#included-on-the-central-compute">1.1 Included on the central compute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#still-external-to-the-soc">1.2 Still external to the SoC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#hardware-delivery-options">1.3 Hardware delivery options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#reference-solution">2. Reference solution</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#rdk-pre-development-sample">2.1 RDK pre-development sample</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#external-device-story">3. External-device story</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#battery-and-bms">3.1 Battery and BMS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#cameras-vio-and-drp-ai3-perception">3.2 Cameras, VIO, and DRP-AI3 perception</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#precision-landing-and-docking">3.3 Precision landing and docking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#gimbal-and-payload">3.4 Gimbal and payload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#flight-sensors-and-actuators">3.5 Flight sensors and actuators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#predictable-degraded-operation">3.6 Predictable degraded operation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#customer-value">4. Customer value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#why-choose-this-architecture">4.1 Why choose this architecture?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#customer-evaluation-three-demonstrations">4.2 Customer evaluation: three demonstrations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#honest-trade-offs">4.3 Honest trade-offs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#target-use-cases">5. Target use cases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#message-and-claim-guide">6. Message and claim guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#recommended-messages">6.1 Recommended messages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#claims-requiring-qualifiers">6.2 Claims requiring qualifiers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#optional-feature-caution">6.3 Optional-feature caution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#safety-and-market-qualification">6.4 Safety and market qualification</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#evidence-and-productization">7. Evidence and productization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#evidence-boundary">7.1 Evidence boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#productization-sequence">7.2 Productization sequence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-autonomous-drone-solution.html#sources">Sources</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-development-ecosystem.html">RZ/V2H Development Ecosystem and RDK Pre-Development Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#choose-a-starting-profile">1. Choose a starting profile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#why-this-ecosystem-is-a-useful-starting-point">1.1 Why this ecosystem is a useful starting point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#choose-one-coherent-profile-per-workstream">1.2 Choose one coherent profile per workstream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#dual-cr8-real-sensor-evaluation">1.3 Dual-CR8 real-sensor evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#verified-software-snapshot">2. Verified software snapshot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#rdk-ubuntu-profile">2.1 RDK Ubuntu profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#rz-v2h-ai-sdk-yocto-profile">2.2 RZ/V2H AI SDK/Yocto profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#other-official-profiles-and-hardware-platforms">2.3 Other official profiles and hardware platforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#supplier-and-version-compatibility-boundaries">2.4 Supplier and version compatibility boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#official-repository-map">3. Official repository map</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#board-bsp-and-reproducible-workspaces">3.1 Board, BSP, and reproducible workspaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#ai-and-ros-2-packages">3.2 AI and ROS 2 packages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#drone-px4-and-autonomy-middleware">3.3 Drone, PX4, and autonomy middleware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#generic-rz-v2h-software-sources">3.4 Generic RZ/V2H software sources</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#ai-and-yolo-guidance">4. AI and YOLO guidance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#a-useful-benchmark-with-its-boundary">4.1 A useful benchmark, with its boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#from-rdk-to-a-customer-board">5. From RDK to a customer board</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#reproduce-one-linux-ai-demonstration">5.1 Reproduce one Linux/AI demonstration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#parallel-engineering-workstreams">5.2 Parallel engineering workstreams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#transfer-to-customer-hardware">5.3 Transfer to customer hardware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-development-ecosystem.html#release-and-support-checklist">5.4 Release and support checklist</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-development-ecosystem.html#sources">6. Sources</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-system-specification.html">RZ/V2H Single-SoC Autonomous Drone System Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#purpose-and-scope">1. Purpose and scope</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#product-intent">1.1 Product intent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#platform-applicability">1.2 Platform applicability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#included-aircraft-capabilities">1.3 Included aircraft capabilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#exclusions">1.4 Exclusions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#requirement-language">1.5 Requirement language</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#dual-cr8-evaluation-applicability">1.6 Dual-CR8 evaluation applicability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#system-context-and-boundaries">2. System context and boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#rz-v2h-allocation">3. RZ/V2H allocation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#soc-resources-used-by-the-target">3.1 SoC resources used by the target</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#common-cause-boundary">3.2 Common-cause boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#peripheral-and-shared-resource-ownership-ledger">3.3 Peripheral and shared-resource ownership ledger</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#external-device-architecture">4. External-device architecture</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#interface-selection-principles">4.1 Interface-selection principles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#external-device-inventory">4.2 External-device inventory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#battery-management-interface">4.3 Battery-management interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#camera-architecture">4.4 Camera architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#gimbal-architecture">4.5 Gimbal architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#actuator-architecture">4.6 Actuator architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#command-telemetry-and-payload-links">4.7 Command, telemetry, and payload links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#device-interface-control-record">4.8 Device interface-control record</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#power-and-electrical-design">5. Power and electrical design</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#power-tree">5.1 Power tree</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#external-memory-and-storage">5.2 External memory and storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#harness-and-transceivers">5.3 Harness and transceivers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#power-thermal-and-mechanical-budgets">5.4 Power, thermal and mechanical budgets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#board-design-start-package">5.5 Board-design start package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#operational-behavior">6. Operational behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#boot-and-readiness">6.1 Boot and readiness</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#navigation-ownership">6.2 Navigation ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#operating-states">6.3 Operating states</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#safety-reliability-and-security">7. Safety, reliability, and security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#safety-invariants">7.1 Safety invariants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#redundancy-and-common-cause">7.2 Redundancy and common cause</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#security">7.3 Security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#product-assurance-and-market-access">7.4 Product assurance and market access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#preliminary-hazard-and-containment-analysis">7.5 Preliminary hazard and containment analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#system-requirements">8. System requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#architecture-and-authority">8.1 Architecture and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#external-interfaces">8.2 External interfaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#safety-and-lifecycle">8.3 Safety and lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#performance-and-capacity">8.4 Performance and capacity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#advanced-autonomy-vision-and-precision-landing">8.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#evidence-boundary">9. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#verification-strategy">10. Verification strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-system-specification.html#references-and-open-decisions">11. References and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#normative-and-primary-references">11.1 Normative and primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-system-specification.html#open-decisions-and-closure-criteria">11.2 Open decisions and closure criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-software-specification.html">RZ/V2H Single-SoC Autonomous Drone Software Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#scope-and-design-rules">1. Scope and design rules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#included-software">1.1 Included software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#governing-design-rules">1.2 Governing design rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#dual-cr8-evaluation-design">1.3 Dual-CR8 evaluation design</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#software-decomposition">2. Software decomposition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#component-ownership">2.1 Component ownership</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#deployment-by-compute-domain">3. Deployment by compute domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#a55-linux-domain">3.1 A55 Linux domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#cr8-0-flight-domain">3.2 CR8-0 flight domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#cr8-1-i-o-domain">3.3 CR8-1 I/O domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#developer-start-path">3.4 Developer start path</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#inter-domain-communication">4. Inter-domain communication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#logical-links">4.1 Logical links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#common-envelope">4.2 Common envelope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#ownership-and-direction">4.3 Ownership and direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#backpressure-and-overload">4.4 Backpressure and overload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#time-synchronization">4.5 Time synchronization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#memory-and-transport-contract">4.6 Memory and transport contract</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#external-device-software-interfaces">5. External-device software interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#flight-sensors">5.1 Flight sensors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#bms-and-power-software">5.2 BMS and power software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#camera-vision-ai-and-precision-landing-software">5.3 Camera, vision AI, and precision landing software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#gimbal-software">5.4 Gimbal software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#rc-telemetry-and-modem-software">5.5 RC, telemetry, and modem software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#esc-and-actuator-software">5.6 ESC and actuator software</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#runtime-and-concurrency">6. Runtime and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#priority-classes">6.1 Priority classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#interrupt-and-dma-rules">6.2 Interrupt and DMA rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#watchdogs-and-liveness">6.3 Watchdogs and liveness</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#lifecycle-and-state">7. Lifecycle and state</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#cr8-1-output-state-machine">7.1 CR8-1 output state machine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#linux-service-lifecycle">7.2 Linux service lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#shutdown-and-update">7.3 Shutdown and update</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#data-and-control-flows">8. Data and control flows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#fault-handling">9. Fault handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#configuration-persistence-update-and-logging">10. Configuration, persistence, update, and logging</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#configuration-ownership">10.1 Configuration ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#persistent-storage">10.2 Persistent storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#update-compatibility">10.3 Update compatibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#minimum-release-manifest">10.4 Minimum release manifest</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#logging-and-observability">10.5 Logging and observability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#software-security">11. Software security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#trust-zones">11.1 Trust zones</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#required-controls">11.2 Required controls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#software-assurance-work-products">11.3 Software assurance work products</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#software-requirements">12. Software requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#partitioning-and-authority">12.1 Partitioning and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#communication-and-time">12.2 Communication and time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#devices-and-fault-behavior">12.3 Devices and fault behavior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#configuration-update-and-security">12.4 Configuration, update, and security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#advanced-autonomy-vision-and-precision-landing">12.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#evidence-boundary">13. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-software-specification.html#verification-and-open-decisions">14. Verification and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#software-verification-gates">14.1 Software verification gates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#primary-references">14.2 Primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-software-specification.html#open-decisions">14.3 Open decisions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dual-cr8-architecture-and-design.html">Dual-CR8 Architecture and Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html">RZ/V2H dual-CR8 demo system architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#boundary-and-allocation">1. Boundary and allocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#deployment-and-responsibilities">2. Deployment and responsibilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#exact-demo-bom-and-open-hardware-contracts">3. Exact demo BOM and open hardware contracts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#sensors-and-navigation">4. Sensors and navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#flight-control-and-command-authority">5. Flight control and command authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#battery-and-power">6. Battery and power</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#calibration-and-persistent-configuration">7. Calibration and persistent configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#ipc-and-freshness">8. IPC and freshness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#actuator-safety-and-output-semantics">9. Actuator safety and output semantics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#diagnostics-and-release">10. Diagnostics and release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#view-coverage-and-ownership-reconciliation">11. View coverage and ownership reconciliation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-architecture.html#open-decisions">12. Open decisions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html">Dual-CR8 demo design companion</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#outcome-product-context-and-allocation-deltas">1. Outcome, product context, and allocation deltas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership">2. Source authority, BOM, and shared-resource ownership</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas">2.1 Seven required subsystem/interface areas</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#existing-raw-transport-and-application-abi">3. Existing raw transport and application ABI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof">4. Proposed demo wire contract and freshness proof</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#producer-age-and-stale-queue-rejection-without-a-common-clock">4.1 Producer age and stale queue rejection without a common clock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age">4.2 Battery acquisition progress and bounded age</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#status-expiry-bootstrap-and-epoch-rotation">4.3 Status expiry, bootstrap and epoch rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency">5. PX4-to-output dataflow and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#reset-containment-before-negotiation">5.1 Reset containment before negotiation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models">6. Link, lease and output state models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#bootstrap-steady-operation-and-recovery-sequences">7. Bootstrap, steady operation, and recovery sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract">8. Implementation/test inventory and evidence contract</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#integration-into-the-five-document-product-set">9. Integration into the five-document product set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-dualcr8-demo-design.html#material-unresolved-inputs">10. Material unresolved inputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Demo Module Contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html">Dual-CR8 demo requirements registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#authority-and-decisions">Authority and decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#hardware-input-gates">Hardware input gates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#acceptance-and-revision-control">Acceptance and revision control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-requirements.html#open-gaps">Open gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html">Sensors and navigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html">Flight control and command authority</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html">Battery and power</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html">Calibration and persistent storage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html">Inter-core communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html">Actuator safety and physical outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html">Diagnostics and release qualification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">RZ/V2H Autonomous Drone Solution and Design Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Demo Module Contracts</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="demo-module-contracts">
+<h1>Demo Module Contracts<a class="headerlink" href="#demo-module-contracts" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-requirements.html">Dual-CR8 demo requirements registry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#authority-and-decisions">Authority and decisions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#hardware-input-gates">Hardware input gates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#acceptance-and-revision-control">Acceptance and revision control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-requirements.html#open-gaps">Open gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html">Sensors and navigation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-sensors-navigation-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html">Flight control and command authority</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-flight-control-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html">Battery and power</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-battery-power-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html">Calibration and persistent storage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-calibration-storage-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html">Inter-core communication</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-ipc-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html">Actuator safety and physical outputs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-actuator-safety-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html">Diagnostics and release qualification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior">Interfaces and behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rzv2h-demo-diagnostics-release-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../rzv2h-dualcr8-demo-design.html" class="btn btn-neutral float-left" title="Dual-CR8 demo design companion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../rzv2h-demo-requirements.html" class="btn btn-neutral float-right" title="Dual-CR8 demo requirements registry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

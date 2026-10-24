@@ -1,0 +1,21 @@
+:root {
+  --md2s-primary: #16163F;
+  --md2s-accent: #ED6C00;
+  --md2s-surface: #FFFFFF;
+  --md2s-text: #303030;
+  --md2s-font: Roboto, Arial, sans-serif;
+  --md2s-max-width: 1140px;
+  --md2s-link: #BE5600;
+  --md2s-heading: #16163F;
+  --md2s-muted: #646464;
+  --md2s-border: #DADAE0;
+  --md2s-primary-tint: #F3F3F5;
+  --md2s-accent-tint-strong: #F5AE73;
+  --md2s-on-primary: #FFFFFF;
+  --md2s-on-primary-muted: #DCDCE2;
+  --md2s-sidebar-caption: #ED6C00;
+  --md2s-sidebar-hover: #323256;
+  --md2s-sidebar-line: #686882;
+  --md2s-logo-background: transparent;
+  --md2s-logo-padding: 0;
+}

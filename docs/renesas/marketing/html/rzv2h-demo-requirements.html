@@ -1,0 +1,1682 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dual-CR8 demo requirements registry &mdash; RZ/V2H Autonomous Drone Solution and Design Guide</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/md-to-sphinx-brand.css?v=08b08d4a" />
+      <link rel="stylesheet" type="text/css" href="_static/md-to-sphinx.css?v=6d52c6f5" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=7f41d439"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/md-to-sphinx.js?v=22a33ba5"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sensors and navigation" href="rzv2h-demo-sensors-navigation-spec.html" />
+    <link rel="prev" title="Demo Module Contracts" href="_sections/demo-module-contracts.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            RZ/V2H Autonomous Drone Solution and Design Guide
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="_sections/solution-and-development.html">Solution and Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html">RZ/V2H Single-SoC Autonomous Drone Solution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#executive-summary">Executive summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#what-single-soc-means">1. What single-SoC means</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#included-on-the-central-compute">1.1 Included on the central compute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#still-external-to-the-soc">1.2 Still external to the SoC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#hardware-delivery-options">1.3 Hardware delivery options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#reference-solution">2. Reference solution</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#rdk-pre-development-sample">2.1 RDK pre-development sample</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#external-device-story">3. External-device story</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#battery-and-bms">3.1 Battery and BMS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#cameras-vio-and-drp-ai3-perception">3.2 Cameras, VIO, and DRP-AI3 perception</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#precision-landing-and-docking">3.3 Precision landing and docking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#gimbal-and-payload">3.4 Gimbal and payload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#flight-sensors-and-actuators">3.5 Flight sensors and actuators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#predictable-degraded-operation">3.6 Predictable degraded operation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#customer-value">4. Customer value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#why-choose-this-architecture">4.1 Why choose this architecture?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#customer-evaluation-three-demonstrations">4.2 Customer evaluation: three demonstrations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#honest-trade-offs">4.3 Honest trade-offs</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#target-use-cases">5. Target use cases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#message-and-claim-guide">6. Message and claim guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#recommended-messages">6.1 Recommended messages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#claims-requiring-qualifiers">6.2 Claims requiring qualifiers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#optional-feature-caution">6.3 Optional-feature caution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#safety-and-market-qualification">6.4 Safety and market qualification</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#evidence-and-productization">7. Evidence and productization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#evidence-boundary">7.1 Evidence boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#productization-sequence">7.2 Productization sequence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-autonomous-drone-solution.html#sources">Sources</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-development-ecosystem.html">RZ/V2H Development Ecosystem and RDK Pre-Development Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#choose-a-starting-profile">1. Choose a starting profile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#why-this-ecosystem-is-a-useful-starting-point">1.1 Why this ecosystem is a useful starting point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#choose-one-coherent-profile-per-workstream">1.2 Choose one coherent profile per workstream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#dual-cr8-real-sensor-evaluation">1.3 Dual-CR8 real-sensor evaluation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#verified-software-snapshot">2. Verified software snapshot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#rdk-ubuntu-profile">2.1 RDK Ubuntu profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#rz-v2h-ai-sdk-yocto-profile">2.2 RZ/V2H AI SDK/Yocto profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#other-official-profiles-and-hardware-platforms">2.3 Other official profiles and hardware platforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#supplier-and-version-compatibility-boundaries">2.4 Supplier and version compatibility boundaries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#official-repository-map">3. Official repository map</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#board-bsp-and-reproducible-workspaces">3.1 Board, BSP, and reproducible workspaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#ai-and-ros-2-packages">3.2 AI and ROS 2 packages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#drone-px4-and-autonomy-middleware">3.3 Drone, PX4, and autonomy middleware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#generic-rz-v2h-software-sources">3.4 Generic RZ/V2H software sources</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#ai-and-yolo-guidance">4. AI and YOLO guidance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#a-useful-benchmark-with-its-boundary">4.1 A useful benchmark, with its boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#from-rdk-to-a-customer-board">5. From RDK to a customer board</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#reproduce-one-linux-ai-demonstration">5.1 Reproduce one Linux/AI demonstration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#parallel-engineering-workstreams">5.2 Parallel engineering workstreams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#transfer-to-customer-hardware">5.3 Transfer to customer hardware</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-development-ecosystem.html#release-and-support-checklist">5.4 Release and support checklist</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-development-ecosystem.html#sources">6. Sources</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_sections/specifications.html">Specifications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-system-specification.html">RZ/V2H Single-SoC Autonomous Drone System Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#purpose-and-scope">1. Purpose and scope</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#product-intent">1.1 Product intent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#platform-applicability">1.2 Platform applicability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#included-aircraft-capabilities">1.3 Included aircraft capabilities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#exclusions">1.4 Exclusions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#requirement-language">1.5 Requirement language</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#dual-cr8-evaluation-applicability">1.6 Dual-CR8 evaluation applicability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#system-context-and-boundaries">2. System context and boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#rz-v2h-allocation">3. RZ/V2H allocation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#soc-resources-used-by-the-target">3.1 SoC resources used by the target</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#common-cause-boundary">3.2 Common-cause boundary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#peripheral-and-shared-resource-ownership-ledger">3.3 Peripheral and shared-resource ownership ledger</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#external-device-architecture">4. External-device architecture</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#interface-selection-principles">4.1 Interface-selection principles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#external-device-inventory">4.2 External-device inventory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#battery-management-interface">4.3 Battery-management interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#camera-architecture">4.4 Camera architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#gimbal-architecture">4.5 Gimbal architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#actuator-architecture">4.6 Actuator architecture</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#command-telemetry-and-payload-links">4.7 Command, telemetry, and payload links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#device-interface-control-record">4.8 Device interface-control record</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#power-and-electrical-design">5. Power and electrical design</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#power-tree">5.1 Power tree</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#external-memory-and-storage">5.2 External memory and storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#harness-and-transceivers">5.3 Harness and transceivers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#power-thermal-and-mechanical-budgets">5.4 Power, thermal and mechanical budgets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#board-design-start-package">5.5 Board-design start package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#operational-behavior">6. Operational behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#boot-and-readiness">6.1 Boot and readiness</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#navigation-ownership">6.2 Navigation ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#operating-states">6.3 Operating states</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#safety-reliability-and-security">7. Safety, reliability, and security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#safety-invariants">7.1 Safety invariants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#redundancy-and-common-cause">7.2 Redundancy and common cause</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#security">7.3 Security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#product-assurance-and-market-access">7.4 Product assurance and market access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#preliminary-hazard-and-containment-analysis">7.5 Preliminary hazard and containment analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#system-requirements">8. System requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#architecture-and-authority">8.1 Architecture and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#external-interfaces">8.2 External interfaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#safety-and-lifecycle">8.3 Safety and lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#performance-and-capacity">8.4 Performance and capacity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#advanced-autonomy-vision-and-precision-landing">8.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#evidence-boundary">9. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#verification-strategy">10. Verification strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-system-specification.html#references-and-open-decisions">11. References and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#normative-and-primary-references">11.1 Normative and primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-system-specification.html#open-decisions-and-closure-criteria">11.2 Open decisions and closure criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-software-specification.html">RZ/V2H Single-SoC Autonomous Drone Software Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#document-control">Document control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#contents">Contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#scope-and-design-rules">1. Scope and design rules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#included-software">1.1 Included software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#governing-design-rules">1.2 Governing design rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#dual-cr8-evaluation-design">1.3 Dual-CR8 evaluation design</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-decomposition">2. Software decomposition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#component-ownership">2.1 Component ownership</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#deployment-by-compute-domain">3. Deployment by compute domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#a55-linux-domain">3.1 A55 Linux domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-0-flight-domain">3.2 CR8-0 flight domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-1-i-o-domain">3.3 CR8-1 I/O domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#developer-start-path">3.4 Developer start path</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#inter-domain-communication">4. Inter-domain communication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#logical-links">4.1 Logical links</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#common-envelope">4.2 Common envelope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#ownership-and-direction">4.3 Ownership and direction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#backpressure-and-overload">4.4 Backpressure and overload</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#time-synchronization">4.5 Time synchronization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#memory-and-transport-contract">4.6 Memory and transport contract</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#external-device-software-interfaces">5. External-device software interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#flight-sensors">5.1 Flight sensors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#bms-and-power-software">5.2 BMS and power software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#camera-vision-ai-and-precision-landing-software">5.3 Camera, vision AI, and precision landing software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#gimbal-software">5.4 Gimbal software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#rc-telemetry-and-modem-software">5.5 RC, telemetry, and modem software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#esc-and-actuator-software">5.6 ESC and actuator software</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#runtime-and-concurrency">6. Runtime and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#priority-classes">6.1 Priority classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#interrupt-and-dma-rules">6.2 Interrupt and DMA rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#watchdogs-and-liveness">6.3 Watchdogs and liveness</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#lifecycle-and-state">7. Lifecycle and state</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#cr8-1-output-state-machine">7.1 CR8-1 output state machine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#linux-service-lifecycle">7.2 Linux service lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#shutdown-and-update">7.3 Shutdown and update</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#data-and-control-flows">8. Data and control flows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#fault-handling">9. Fault handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#configuration-persistence-update-and-logging">10. Configuration, persistence, update, and logging</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#configuration-ownership">10.1 Configuration ownership</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#persistent-storage">10.2 Persistent storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#update-compatibility">10.3 Update compatibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#minimum-release-manifest">10.4 Minimum release manifest</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#logging-and-observability">10.5 Logging and observability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-security">11. Software security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#trust-zones">11.1 Trust zones</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#required-controls">11.2 Required controls</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#software-assurance-work-products">11.3 Software assurance work products</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#software-requirements">12. Software requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#partitioning-and-authority">12.1 Partitioning and authority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#communication-and-time">12.2 Communication and time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#devices-and-fault-behavior">12.3 Devices and fault behavior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#configuration-update-and-security">12.4 Configuration, update, and security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#advanced-autonomy-vision-and-precision-landing">12.5 Advanced autonomy, vision, and precision landing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#evidence-boundary">13. Evidence boundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-software-specification.html#verification-and-open-decisions">14. Verification and open decisions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#software-verification-gates">14.1 Software verification gates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#primary-references">14.2 Primary references</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-software-specification.html#open-decisions">14.3 Open decisions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_sections/dual-cr8-architecture-and-design.html">Dual-CR8 Architecture and Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html">RZ/V2H dual-CR8 demo system architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#boundary-and-allocation">1. Boundary and allocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#deployment-and-responsibilities">2. Deployment and responsibilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#exact-demo-bom-and-open-hardware-contracts">3. Exact demo BOM and open hardware contracts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#sensors-and-navigation">4. Sensors and navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#flight-control-and-command-authority">5. Flight control and command authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#battery-and-power">6. Battery and power</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#calibration-and-persistent-configuration">7. Calibration and persistent configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#ipc-and-freshness">8. IPC and freshness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#actuator-safety-and-output-semantics">9. Actuator safety and output semantics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#diagnostics-and-release">10. Diagnostics and release</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#view-coverage-and-ownership-reconciliation">11. View coverage and ownership reconciliation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-architecture.html#open-decisions">12. Open decisions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html">Dual-CR8 demo design companion</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#outcome-product-context-and-allocation-deltas">1. Outcome, product context, and allocation deltas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership">2. Source authority, BOM, and shared-resource ownership</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas">2.1 Seven required subsystem/interface areas</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#existing-raw-transport-and-application-abi">3. Existing raw transport and application ABI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof">4. Proposed demo wire contract and freshness proof</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#producer-age-and-stale-queue-rejection-without-a-common-clock">4.1 Producer age and stale queue rejection without a common clock</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age">4.2 Battery acquisition progress and bounded age</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#status-expiry-bootstrap-and-epoch-rotation">4.3 Status expiry, bootstrap and epoch rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency">5. PX4-to-output dataflow and concurrency</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#reset-containment-before-negotiation">5.1 Reset containment before negotiation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models">6. Link, lease and output state models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#bootstrap-steady-operation-and-recovery-sequences">7. Bootstrap, steady operation, and recovery sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract">8. Implementation/test inventory and evidence contract</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#integration-into-the-five-document-product-set">9. Integration into the five-document product set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#material-unresolved-inputs">10. Material unresolved inputs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="_sections/demo-module-contracts.html">Demo Module Contracts</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Dual-CR8 demo requirements registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#authority-and-decisions">Authority and decisions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hardware-input-gates">Hardware input gates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#acceptance-and-revision-control">Acceptance and revision control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open-gaps">Open gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html">Sensors and navigation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html">Flight control and command authority</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html">Battery and power</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html">Calibration and persistent storage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-ipc-spec.html">Inter-core communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-ipc-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html">Actuator safety and physical outputs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html">Diagnostics and release qualification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#purpose-and-authority">Purpose and authority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#module-ownership">Module ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior">Interfaces and behavior</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#state-and-fault-transitions">State and fault transitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#configuration-and-persistence">Configuration and persistence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#requirements-registry">Requirements registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix">Verification matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#traceability">Traceability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria">Review criteria</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#evidence-ledger">Evidence ledger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#open-inputs-and-acceptance-gaps">Open inputs and acceptance gaps</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">RZ/V2H Autonomous Drone Solution and Design Guide</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="_sections/demo-module-contracts.html">Demo Module Contracts</a></li>
+      <li class="breadcrumb-item active">Dual-CR8 demo requirements registry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dual-cr8-demo-requirements-registry">
+<h1>Dual-CR8 demo requirements registry<a class="headerlink" href="#dual-cr8-demo-requirements-registry" title="Link to this heading"></a></h1>
+<section id="authority-and-decisions">
+<h2>Authority and decisions<a class="headerlink" href="#authority-and-decisions" title="Link to this heading"></a></h2>
+<p>The user approved the recommended decisions on 2026-10-21: “go ahead with your recommendations regarding pending decisions”. This document is the explicit shared registry for seven module owners. New SDS IDs are append-only within the domains below. Existing SYS/SW IDs are preserved with no migration. Module requirements tables are synchronized views of these records; this registry is the allocation authority.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Decision</p></th>
+<th class="head"><p>Approved allocation</p></th>
+<th class="head"><p>Consequence</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Mixer</p></td>
+<td><p>CR8-0 standard PWM_MAIN mapping/range/reversal/DIS/FAIL once</p></td>
+<td><p>CR8-1 validates bounds/protocol/rate and owns final physical inhibition; software §5.6 is reconciled</p></td>
+</tr>
+<tr class="row-odd"><td><p>Specifications</p></td>
+<td><p>Seven module owners and this shared registry</p></td>
+<td><p>Module boundaries include all product services, not just IPC</p></td>
+</tr>
+<tr class="row-even"><td><p>Hardware</p></td>
+<td><p>Keep unselected hardware as explicit input gates</p></td>
+<td><p>Continue independent source preparation; no purchase recommendation, electrical identity or pin assignment inferred</p></td>
+</tr>
+<tr class="row-odd"><td><p>Campaign</p></td>
+<td><p>Props-off qualification first</p></td>
+<td><p>Hover/GPS mission is a later campaign; full battery, durable calibration, command/kill and diagnostics remain required</p></td>
+</tr>
+<tr class="row-even"><td><p>ESC Protocol</p></td>
+<td><p>DShot selected as primary; PWM 400Hz retained as backup requiring qualification</p></td>
+<td><p>Primary backend targets DShot framing on CR8-1 GPT outputs; preserves 400Hz PWM fallback on PA4/GPT6A, PA7/GPT7B, P96/GPT9A, P53/GPT10B</p></td>
+</tr>
+<tr class="row-odd"><td><p>Production Board</p></td>
+<td><p>Fully custom discrete RZ/V2H board based on RDK-RZ/V2H drone demo</p></td>
+<td><p>Production layout derives from the RDK reference architecture; customer-board pinmux, clocks, power/reset and physical interfaces require qualification</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <a class="reference internal" href="rzv2h-system-specification.html"><span class="std std-doc">system</span></a> and <a class="reference internal" href="rzv2h-software-specification.html"><span class="std std-doc">software</span></a> specifications remain parent product authorities. The <a class="reference internal" href="rzv2h-dualcr8-demo-design.html"><span class="std std-doc">engineering design</span></a> records proposed wire layouts, states, sequences and physical proof. These contracts do not claim implementation, flight qualification or certification.</p>
+</section>
+<section id="module-ownership">
+<h2>Module ownership<a class="headerlink" href="#module-ownership" title="Link to this heading"></a></h2>
+<p><strong>Figure 1: Seven-module requirements hierarchy and domain ownership architecture</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-demo-requirements-1.svg" />
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Path</p></th>
+<th class="head"><p>Classification</p></th>
+<th class="head"><p>Owner</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html"><span class="std std-doc">Sensors and navigation</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>CR8-0 sensor/navigation integration</p></td>
+<td><p>SDS-SENS-001 through SDS-SENS-008; target requirements</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html"><span class="std std-doc">Flight control and command authority</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>CR8-0 flight authority</p></td>
+<td><p>SDS-FLIGHT-001 through SDS-FLIGHT-008; target requirements</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html"><span class="std std-doc">Battery and power</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>CR8-1 acquisition with CR8-0 energy policy</p></td>
+<td><p>SDS-POWER-001 through SDS-POWER-008; target requirements</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html"><span class="std std-doc">Calibration and persistent storage</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>CR8-0 canonical records with one selected medium owner</p></td>
+<td><p>SDS-STORE-001 through SDS-STORE-008; target requirements</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html"><span class="std std-doc">Inter-core communication</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>Single writer per direction; CR8-0 recovery initiator</p></td>
+<td><p>SDS-IPC-001 through SDS-IPC-008; target requirements</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html"><span class="std std-doc">Actuator safety and physical outputs</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>CR8-1 sole physical output owner</p></td>
+<td><p>SDS-ACT-001 through SDS-ACT-009; target requirements</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html"><span class="std std-doc">Diagnostics and release qualification</span></a></p></td>
+<td><p>product-owned</p></td>
+<td><p>Per-domain reporters with one release manifest authority</p></td>
+<td><p>SDS-REL-001 through SDS-REL-008; target requirements</p></td>
+</tr>
+</tbody>
+</table>
+<p>No module owns another module’s mutable state. Firmware sources shared physically by modules use the behavioral slices described in each ownership ledger and sequential integration. The system resource ledger owns shared pin/clock/reset conflicts. Requirements IDs are distinct from machine-owned wire/profile compatibility identities.</p>
+</section>
+<section id="hardware-input-gates">
+<h2>Hardware input gates<a class="headerlink" href="#hardware-input-gates" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Input</p></th>
+<th class="head"><p>Current state</p></th>
+<th class="head"><p>Closure evidence</p></th>
+<th class="head"><p>Work held</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Four ESCs</p></td>
+<td><p>Protocol selected: DShot primary, PWM 400Hz backup; SunnySky X2216 motor pair</p></td>
+<td><p>Exact label/revision, primary device specification, voltage/current compatibility, accepted DShot rate/timing, timeout, harness/order/direction and connector captures</p></td>
+<td><p>Final DShot timer DMA verification, backup PWM qualification and hardware-accepted compatibility identity</p></td>
+</tr>
+<tr class="row-odd"><td><p>Battery source/pack</p></td>
+<td><p>BMS/monitor and pack unselected</p></td>
+<td><p>Read-only ICD, chemistry/cells/capacity, calibrated units/sign, validity/age, bus/controller/core/pins and protection responsibilities</p></td>
+<td><p>Acquisition/normalization constants, energy policy and full acceptance</p></td>
+</tr>
+<tr class="row-even"><td><p>Durable storage</p></td>
+<td><p>Current staging uses volatile TMPFS; medium unselected</p></td>
+<td><p>Controller/partition owner, geometry/endurance, integrity/schema, atomic commit and real power-cut recovery</p></td>
+<td><p>Selected persistence backend and durability acceptance</p></td>
+</tr>
+<tr class="row-odd"><td><p>Command/kill</p></td>
+<td><p>Receiver, GCS link and local inhibit hardware unselected</p></td>
+<td><p>CR8-1 acquisition/local inhibit versus CR8-0 policy, loss budgets, electrical containment and recovery</p></td>
+<td><p>Selected input implementation and physical kill proof</p></td>
+</tr>
+<tr class="row-even"><td><p>Sensor fitting</p></td>
+<td><p>Devices selected, installation unqualified</p></td>
+<td><p>Rotation, mounting, wiring/supply/pull-up and measured sample/quality evidence</p></td>
+<td><p>Calibration and integrated navigation qualification</p></td>
+</tr>
+<tr class="row-odd"><td><p>Reset/core-halt containment</p></td>
+<td><p>Software lease alone insufficient when worker halts</p></td>
+<td><p>Warm-reset GPT/pad retention and wrong-pair isolation tested separately; selected hardware containment assessed and proven</p></td>
+<td><p>Powered qualification/full acceptance</p></td>
+</tr>
+</tbody>
+</table>
+<p>The ESC protocol is frozen: DShot is the primary protocol with PWM 400Hz retained as a backup mode requiring qualification. The production board strategy is frozen as a fully custom discrete RZ/V2H board based on the RDK reference architecture and reviewed port sources, with customer-board qualification required. No flash partition, power-gate GPIO or universal safe high-impedance level is assigned here. A later device choice must update its ICD, resources, compatibility identities and affected tests together.</p>
+</section>
+<section id="requirements-registry">
+<h2>Requirements registry<a class="headerlink" href="#requirements-registry" title="Link to this heading"></a></h2>
+<p>“Verified” below means verified against the approved target design. Software-subset evidence is recorded in the validation receipt; full integration, physical verification and pair admission remain pending.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Requirement</p></th>
+<th class="head"><p>Evidence</p></th>
+<th class="head"><p>Confidence</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SDS-SENS-001</p></td>
+<td><p>The demo profile shall instantiate exactly the declared sensor BOM.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-002</p></td>
+<td><p>The new SPI selector shall leave P94/P95 unassigned to sensor roles.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-003</p></td>
+<td><p>The sensor pipeline shall retain acquisition freshness through estimator ingestion.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-004</p></td>
+<td><p>The sensor pipeline shall apply the validated fitted orientation.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-005</p></td>
+<td><p>The profile shall declare every expected sensor in ordinary PX4 health checks.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-006</p></td>
+<td><p>The TFmini driver shall apply final serial framing before acquisition.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-007</p></td>
+<td><p>The estimator integration shall reject navigation data failing its selected validity policy.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-008</p></td>
+<td><p>Sensor bus recovery shall preserve unrelated output deadlines.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#source-authority-bom-and-shared-resource-ownership"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-001</p></td>
+<td><p>CR8-0 shall apply actuator function mapping exactly once.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-002</p></td>
+<td><p>CR8-0 shall retain sole arm/mode authority.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-003</p></td>
+<td><p>The remote producer shall commit one coherent output snapshot per generation.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-004</p></td>
+<td><p>The mixer callback shall complete without blocking transport work.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-005</p></td>
+<td><p>An armed snapshot shall require a newly advancing valid control generation.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-006</p></td>
+<td><p>Commander shall block arming without fresh backend readiness.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-007</p></td>
+<td><p>The flight authority shall distinguish command-loss causes.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-008</p></td>
+<td><p>The producer shall preserve configured disarmed values.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#px4-to-output-dataflow-and-concurrency"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-001</p></td>
+<td><p>CR8-1 shall acquire battery data from the selected physical source.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-002</p></td>
+<td><p>Battery acquisition shall remain read-only at the pack interface.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-003</p></td>
+<td><p>A battery sample generation shall advance only after a successful new acquisition.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-004</p></td>
+<td><p>The battery adapter shall invalidate samples exceeding the qualified age budget.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-005</p></td>
+<td><p>The battery adapter shall preserve unsupported fields as unavailable.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-006</p></td>
+<td><p>The battery adapter shall enforce the selected units/sign contract.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-007</p></td>
+<td><p>The battery adapter shall reject mismatched base/detail generations.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-008</p></td>
+<td><p>CR8-0 shall apply ordinary battery warning/source-loss policy.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#battery-acquisition-progress-and-bounded-age"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-001</p></td>
+<td><p>The store shall retain committed calibration through a cold power cycle.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-002</p></td>
+<td><p>The store shall expose only complete committed generations.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-003</p></td>
+<td><p>Startup shall reject records failing integrity validation.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-004</p></td>
+<td><p>Startup shall reject records incompatible with the selected schema.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-005</p></td>
+<td><p>Calibration eligibility shall require qualified physical identity binding.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-006</p></td>
+<td><p>Interrupted saves shall recover to a declared valid recovery state.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-007</p></td>
+<td><p>Storage work shall execute outside control/lease-critical contexts.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-008</p></td>
+<td><p>Incompatible rollback shall reject calibration reuse.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#seven-required-subsystem-interface-areas"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-001</p></td>
+<td><p>The demo codec shall keep each raw entry within 64 bytes.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-002</p></td>
+<td><p>The receiver shall reject frames failing the selected codec contract.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-003</p></td>
+<td><p>The sender shall bind authority to a snapshot created after token receipt.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-004</p></td>
+<td><p>The receiver shall age existing authority before accepting queued commands.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-005</p></td>
+<td><p>CR8-0 shall remain the sole raw recovery initiator.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-006</p></td>
+<td><p>Event status shall reuse the current freshness-token issue time.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-007</p></td>
+<td><p>An epoch change shall invalidate prior command generations.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-008</p></td>
+<td><p>Non-actuator traffic shall leave actuator authority unchanged.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#proposed-demo-wire-contract-and-freshness-proof"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-001</p></td>
+<td><p>CR8-1 shall remain the sole physical output owner in the new pair.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-002</p></td>
+<td><p>An unclaimed backend shall avoid output-resource writes.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-003</p></td>
+<td><p>Product boot/reset/negotiation/standby shall remain electrically inactive.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-004</p></td>
+<td><p>The worker shall enforce the qualified physical shutdown bound.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-005</p></td>
+<td><p>A backend failure shall latch output inhibition.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-006</p></td>
+<td><p>Recovery shall require a fresh current-epoch disarmed handshake.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-007</p></td>
+<td><p>A local kill request shall dominate received actuator commands.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-008</p></td>
+<td><p>Full acceptance shall require qualified reset/core-halt containment.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-009</p></td>
+<td><p>A valid stop-motors command shall inhibit every motor channel.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#link-lease-and-output-state-models"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-001</p></td>
+<td><p>The release manifest shall bind the complete compatible demo set.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-002</p></td>
+<td><p>Pair validation shall reject either new/legacy image mismatch.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-003</p></td>
+<td><p>Diagnostics shall retain the originating fault reason.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-004</p></td>
+<td><p>Normal release artifacts shall exclude fault-injection capability.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-005</p></td>
+<td><p>Qualification reports shall distinguish measured physical output from submission.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-006</p></td>
+<td><p>Interrupted update recovery shall retain propulsion inhibition.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-007</p></td>
+<td><p>The initial physical campaign shall stop at props-off qualification.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-008</p></td>
+<td><p>Release verification shall test the selected authentication policy.</p></td>
+<td><p><a class="reference internal" href="rzv2h-dualcr8-demo-design.html#implementation-test-inventory-and-evidence-contract"><span class="std std-ref">Approved target design</span></a></p></td>
+<td><p>verified</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="verification-matrix">
+<h2>Verification matrix<a class="headerlink" href="#verification-matrix" title="Link to this heading"></a></h2>
+<p><strong>Figure 2: Progressive verification and qualification lifecycle</strong></p>
+<figure class="md2s-diagram align-center">
+<img alt="Flowchart" src="_images/rzv2h-demo-requirements-2.svg" />
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Method</p></th>
+<th class="head"><p>Level</p></th>
+<th class="head"><p>Pass criterion</p></th>
+<th class="head"><p>Existing test/gap</p></th>
+<th class="head"><p>Code-review criterion</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SDS-SENS-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>One ICM-45686, BMM150, BMP390, M10 and TFmini Plus instance; no hidden second IMU.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Profile enumeration and artifact inspection</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Selected table and init/reset paths contain no P94/P95 sensor touches; legacy roles remain unchanged.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Selector exclusivity and conditional pin ownership</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Stopped acquisition cannot be refreshed by republishing cached samples under the selected stale thresholds.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Timestamp origin and stale rejection</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Known axis stimuli produce the signed expected body-axis response after reboot.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Rotation and calibration application once</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Missing declared barometer/GPS/magnetometer/rangefinder fails its normal readiness check.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>SYS_HAS declarations and no bypass</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Captured configured attributes are 115200 8N1 before first accepted frame.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>tcsetattr ordering and malformed framing</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Invalid GNSS fix or out-of-policy range cannot be treated as a valid aiding measurement.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Fix/range quality and estimator eligibility</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Injected stuck sensor bus causes no measured output deadline violation.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Bounded transaction/recovery ownership</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>One PWM_MAIN producer exists; no second mapping or reversal occurs on CR8-1.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Single mixer ownership</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>I/O or telemetry messages cannot arm the aircraft independently of commander.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Command authorization and mode arbitration</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Every interleaving contains values and effective safety state from the same transaction.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Bounded atomic/seqlock snapshot</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Callback call graph has no raw IPC write/recovery, filesystem or blocking logging.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Real-time context boundary</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Token-only callbacks over cached controls cannot extend output authority.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Allocator generation and token binding</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Missing first status, stale status, backend fault or rate mismatch blocks ordinary arming.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Selected-profile health integration</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>RC loss, GCS loss and local inhibit retain separate reason codes and selected policy results.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>No link-health conflation</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Nonzero DIS survives snapshot/transport unchanged while standby pins remain inhibited.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Configuration versus final physical inhibit</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Calibrated physical stimulus matches measured values; synthetic or disabled-battery inputs cannot close acceptance.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Device ICD and sole acquisition owner</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>No manufacturer/protection/configuration write is reachable in normal acquisition.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Allowlisted device transactions</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Frozen acquisition with live reporter never advances source generation.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Measurement versus publication sequence</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Source age plus bounded transit plus receiver elapsed exceeds limit and reports stale.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>No subtraction of unrelated clocks</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Missing cell/temperature/capacity fields never become healthy zero-valued measurements.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Validity mask and field normalization</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Positive discharge, valid zero current and invalid reading are distinguishable with calibrated input.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Conversion, scaling and polarity</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Mixed epoch/source/sample-generation fragments cannot form a valid pack snapshot.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Cross-frame assembly identity</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Selected threshold and disconnect tests produce the required readiness/action reasons without bypass.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Feasible aircraft action and energy state</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Exact eligible calibration values restore after power removal on the selected medium.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Durability through complete stack</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Injected interruption never exposes a mix of old and new record fields.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Atomic replace and publication boundary</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Truncation and corruption produce explicit invalid calibration/readiness.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Integrity coverage before activation</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Unsupported version cannot silently load as current calibration.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Version validation and explicit migration</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Same-model same-route replacement cannot silently inherit old calibration without qualified identity/replacement maintenance.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>DeviceId limitations</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Each write/erase/rename interruption recovers last complete set or safe defaults marked uncalibrated.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Recovery state selection</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Maximum selected save/load/logger workload leaves measured control and output deadlines intact.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Context and bounded access</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Image/schema/hardware mismatch on rollback cannot activate incompatible saved records.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Compatible release-set restore</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Static sizes/offsets and every serialized record fit the public entry.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Separate v2/v3 headers and all consumer layouts</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Malformed magic/version/type/length/CRC/reserved/state fields do not dispatch or renew authority.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Boundary validation before state mutation</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Delayed-token replay and cached-control replay cannot extend an armed lease.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Causal token and control-generation provenance</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Queued armed command after expiry cannot bypass fresh disarmed recovery.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Pre-receipt expiry ordering</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>CR8-1 requests rotation without issuing initiator-only recovery operations.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Epoch ownership and sticky request acknowledgement</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Bursty status cannot evict a live token early or refresh its lifetime.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Bounded token issuance/history</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Old snapshot/token/sequence cannot reactivate outputs in a new session.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Session reset and tracker initialization</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Battery, RC and diagnostic traffic cannot extend command lease or mask stale backend status.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Per-stream sequencing, expiry and bounded queues</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Selected CR8-0 init/reset/runtime never touches output GPT/pads.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Single mutable hardware owner</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Wrong/absent role hello produces zero pin/GPT/reset/cleanup writes.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Post-hello claim and claimed-only unwind</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Connector has no active pulse train with nonzero DIS stored across each listed condition.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Final inhibit and reset containment</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>External capture T_off is at most 50 ms + worker period + declared measured scheduler/HAL budget.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Independent worker timing</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Init/apply failure stays inhibited despite a live reporting/control loop.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Worker-owned latch</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>No queued old armed frame or reinitialization alone restores output.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Separate recovery eligibility from arm-ready</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Concurrent valid armed messages cannot override asserted local inhibit.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Independent command versus final gate</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Warm active reset and whole-core halt have distinct measured outcomes satisfying the selected hardware safety contract.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>No retained GPT pulse hidden by software-only proof</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-009</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>All four channels inactive with stop asserted irrespective of stored DIS.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Stop precedence and per-channel zero separation</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-001</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Both image hashes, configuration, calibration and hardware contract identities are resolved together.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Single manifest authority</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-002</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Current policy qualifies no actuator pair; historical staging images cannot pass as the merged dualcr8 contract. Future pair admission requires explicit selected identities.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Reciprocal pair policy</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-003</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Backend/lease/battery/storage/command failures remain distinguishable in correlated records.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Bounded source-tagged reporting</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-004</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Both linked artifacts prove the selector disabled outside explicitly labeled bench builds.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>No default-on hooks</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-005</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>ACK/HAL/log success is never reported as connector waveform or motor-stop evidence.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Observation layer and capture provenance</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-006</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Failure at each selected update boundary cannot activate an incompatible release or outputs.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Recoverable compatible set and physical inhibit</p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-007</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Acceptance report makes no hover/GPS-flight claim and retains all required battery/storage/kill gates.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Campaign scope without product scope reduction</p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-008</p></td>
+<td><p>analysis + test</p></td>
+<td><p>integration/system</p></td>
+<td><p>Invalid signatures/identities fail where product authority requires authenticated update or commands.</p></td>
+<td><p>gap: full integration and physical acceptance evidence pending</p></td>
+<td><p>Threat boundary and selected trust implementation</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="traceability">
+<h2>Traceability<a class="headerlink" href="#traceability" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Design or behavior trace</p></th>
+<th class="head"><p>Test trace</p></th>
+<th class="head"><p>Review trace</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SDS-SENS-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-SENS-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-SENS-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#interfaces-and-behavior"><span class="std std-ref">Sensors and navigation</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-sensors-navigation-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-FLIGHT-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-FLIGHT-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#interfaces-and-behavior"><span class="std std-ref">Flight control and command authority</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-flight-control-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-POWER-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-POWER-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#interfaces-and-behavior"><span class="std std-ref">Battery and power</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-battery-power-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-STORE-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-STORE-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#interfaces-and-behavior"><span class="std std-ref">Calibration and persistent storage</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-calibration-storage-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-IPC-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-IPC-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#interfaces-and-behavior"><span class="std std-ref">Inter-core communication</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-ipc-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-ACT-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-ACT-009</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#interfaces-and-behavior"><span class="std std-ref">Actuator safety and physical outputs</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-actuator-safety-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-001</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-002</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-003</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-004</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-005</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-006</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SDS-REL-007</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SDS-REL-008</p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#interfaces-and-behavior"><span class="std std-ref">Diagnostics and release qualification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#verification-matrix"><span class="std std-ref">Verification</span></a></p></td>
+<td><p><a class="reference internal" href="rzv2h-demo-diagnostics-release-spec.html#review-criteria"><span class="std std-ref">Review</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="acceptance-and-revision-control">
+<h2>Acceptance and revision control<a class="headerlink" href="#acceptance-and-revision-control" title="Link to this heading"></a></h2>
+<p>Every allocated requirement needs its named evidence before full props-off acceptance. Battery-disabled operation, volatile-only parameters, manual reload, live heartbeat, transport ACK and configured DIS values cannot substitute for battery health, durability, freshness or physical inactivity. Partial bench records remain explicitly incomplete.</p>
+<p>Version 1.0 allocates the initial module records. Later additions append unused IDs; removed requirements retain a retirement record. Change requirement text only with a recorded product decision and synchronized module view. Existing SYS/SW identifiers are not renamed. Broader A55/perception, redundancy and product variants retain their own requirements outside this demo runtime.</p>
+</section>
+<section id="open-gaps">
+<h2>Open gaps<a class="headerlink" href="#open-gaps" title="Link to this heading"></a></h2>
+<p>The hardware ledger remains open. V3 codecs, producer, lease, worker/reporter and battery ingestion have source/host/build evidence in the linked receipt. Physical acquisition, durable storage, command/local-kill, DShot integration, full-load/physical qualification and pair admission remain incomplete. Registry validation alone does not close acceptance.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="_sections/demo-module-contracts.html" class="btn btn-neutral float-left" title="Demo Module Contracts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="rzv2h-demo-sensors-navigation-spec.html" class="btn btn-neutral float-right" title="Sensors and navigation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
