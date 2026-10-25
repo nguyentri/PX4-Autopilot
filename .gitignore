@@ -119,7 +119,6 @@ keys/
 **/*.f
 **/*.j
 
-git config advice.addIgnoredFile false
 .vscode/.gitignore
 .vscode/c_cpp_properties.json
 .vscode/configurationCache.log
@@ -269,21 +268,36 @@ ak-engineer
 !/test/rzv2h-sdhi-wdt-instance-artifact-test.py
 docs/renesas/r01uh1015ej0045_rzv2h.pdf
 
-# Workspace integration artifacts and locks
+# Workspace integration artifacts, locks, and target state
 build/workspace-artifacts/
 platforms/nuttx/NuttX/.build.lock*
+*.build.lock*
+.target-state.json
 
 # Shared firmware workspace implementation and behavioral regressions.
 !Tools/firmware-workspace.py
 !Tools/firmware_workspace/*.py
 !test/firmware-workspace-*.py
 
-# Local extension-owned selection projections (developer launch files stay tracked).
+# Python bytecode, caches, and pytest
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.cache/
+
+# Local extension-owned selection projections and developer overrides
 .vscode/active-selection.json
 .vscode/firmware-selection-*.json
+.vscode/firmware-workspace.json
 .vscode/launch.generated.json
+.vscode/.cortex-debug.*
 
 # VS Code extension dependencies and build artifacts
 Tools/vscode_extension/node_modules/
 Tools/vscode_extension/dist/
+Tools/vscode_extension/out/
 Tools/vscode_extension/*.vsix
+Tools/vscode_extension/.vscode/
+Tools/vscode_extension/.vsce/
+Tools/vscode_extension/coverage/
