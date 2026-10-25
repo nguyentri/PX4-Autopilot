@@ -268,3 +268,22 @@ ak-engineer
 !/test/rzv2h-indexed-sdhi-wdt-runtime-test.py
 !/test/rzv2h-sdhi-wdt-instance-artifact-test.py
 docs/renesas/r01uh1015ej0045_rzv2h.pdf
+
+# Workspace integration artifacts and locks
+build/workspace-artifacts/
+platforms/nuttx/NuttX/.build.lock*
+
+# Shared firmware workspace implementation and behavioral regressions.
+!Tools/firmware-workspace.py
+!Tools/firmware_workspace/*.py
+!test/firmware-workspace-*.py
+
+# Local extension-owned selection projections (developer launch files stay tracked).
+.vscode/active-selection.json
+.vscode/firmware-selection-*.json
+.vscode/launch.generated.json
+
+# VS Code extension dependencies and build artifacts
+Tools/vscode_extension/node_modules/
+Tools/vscode_extension/dist/
+Tools/vscode_extension/*.vsix

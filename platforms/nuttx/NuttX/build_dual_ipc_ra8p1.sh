@@ -1,7 +1,39 @@
 #!/bin/bash
 set -e
 
-cd ./nuttx
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Side-effect-free recipe descriptor
+if [ "${1:-}" = "--describe-json" ]; then
+	cat <<'EOF'
+{
+  "id": "ra8p1-dual-ipc",
+  "board": "evk-ra8p1",
+  "members": [
+    {
+      "core": "cm85",
+      "config": "ipc-cm85",
+      "output": "nuttx_ra8p1_cm85.elf"
+    },
+    {
+      "core": "cm33",
+      "config": "ipc-cm33",
+      "output": "nuttx_ra8p1_cm33.elf"
+    }
+  ]
+}
+EOF
+	exit 0
+fi
+
+# Serialize the entire build with a verified inherited kernel lock.
+LOCK_HELPER="${SCRIPT_DIR}/../../../Tools/firmware_workspace/build_lock.sh"
+[ -x "$LOCK_HELPER" ] || { echo "Missing shared build lock helper: $LOCK_HELPER" >&2; exit 2; }
+if ! "$LOCK_HELPER" --check; then
+  exec "$LOCK_HELPER" "$0" "$@"
+fi
+
+cd "${SCRIPT_DIR}/nuttx"
 
 echo "========================================="
 echo "Building dual-core IPC configurations"

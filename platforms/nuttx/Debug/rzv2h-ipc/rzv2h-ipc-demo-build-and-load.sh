@@ -48,6 +48,14 @@ done
 
 [ -x "${HERE}/../../NuttX/build.sh" ] || { echo "project build helper not found" >&2; exit 2; }
 [ -f "${LOAD_BOTH}" ] || { echo "loader not found: ${LOAD_BOTH}" >&2; exit 2; }
+
+# Serialize the entire build with a verified inherited kernel lock.
+LOCK_HELPER="${HERE}/../../../../Tools/firmware_workspace/build_lock.sh"
+[ -x "$LOCK_HELPER" ] || { echo "Missing shared build lock helper: $LOCK_HELPER" >&2; exit 2; }
+if ! "$LOCK_HELPER" --check; then
+  exec "$LOCK_HELPER" "$0" "$@"
+fi
+
 mkdir -p "${OUT_DIR}"
 
 # Build one board:config and copy its nuttx ELF to OUT_DIR/nuttx-<config>.elf.

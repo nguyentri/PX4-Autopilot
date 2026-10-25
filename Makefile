@@ -243,7 +243,7 @@ endif
 # Functions
 # --------------------------------------------------------------------
 # describe how to build a cmake config
-define cmake-build
+define cmake-build-unlocked
 	$(eval override CMAKE_ARGS += -DCONFIG=$(1))
 	@$(eval BUILD_DIR = "$(SRC_DIR)/build/$(1)")
 	@# check if the desired cmake configuration matches the cache then CMAKE_CACHE_CHECK stays empty
@@ -261,6 +261,11 @@ define cmake-build
 	fi
 	@# run the build for the specified target
 	@cmake --build $(BUILD_DIR) -- $(PX4_MAKE_ARGS) $(ARGS)
+endef
+
+# Renesas direct make and build.sh share one inherited lock through configure/build.
+define cmake-build
+$(if $(filter renesas_%,$(1)),$(if $(shell "$(SRC_DIR)/Tools/firmware_workspace/build_lock.sh" --check >/dev/null 2>&1 && echo owned),$(call cmake-build-unlocked,$(1)),@"$(SRC_DIR)/Tools/firmware_workspace/build_lock.sh" $(MAKE) --no-print-directory $@ $(ARGS)),$(call cmake-build-unlocked,$(1)))
 endef
 
 # check if the options we want to build with in CMAKE_ARGS match the ones which are already configured in the cache inside BUILD_DIR

@@ -207,19 +207,27 @@ if(JLinkExe_PATH AND NOT CONFIG_ARCH_CHIP_RZV)
 		)
 	else()
 		# regular firmware ${PX4_BINARY_DIR}/${PX4_CONFIG}.bin
-		set(BOARD_FIRMWARE_BIN ${PX4_CONFIG}.bin)
-		set(BOARD_FIRMWARE_APP_OFFSET "0x08008000") # TODO: get from board
-		configure_file(${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_bin.jlink.in ${PX4_BINARY_DIR}/flash_bin.jlink @ONLY)
+		if(PX4_BOARD_VENDOR STREQUAL "renesas")
+			# Guarded: generic 0x08008000 address is invalid for Renesas targets (RZ is RAM-only, RA flash is 0x02000000)
+			add_custom_target(jlink_flash_bin
+				COMMAND ${CMAKE_COMMAND} -E echo "Error: generic raw-binary flashing is guarded on Renesas boards pending qualified board-specific flash contracts."
+				COMMAND ${CMAKE_COMMAND} -E false
+			)
+		else()
+			set(BOARD_FIRMWARE_BIN ${PX4_CONFIG}.bin)
+			set(BOARD_FIRMWARE_APP_OFFSET "0x08008000") # TODO: get from board
+			configure_file(${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_bin.jlink.in ${PX4_BINARY_DIR}/flash_bin.jlink @ONLY)
 
-		add_custom_target(jlink_flash_bin
-			COMMAND ${CMAKE_COMMAND} -E echo "WARNING jlink_flash_bin currently assumes starting address ${BOARD_FIRMWARE_APP_OFFSET}"
-			COMMAND ${JLinkExe_PATH} -CommandFile ${PX4_BINARY_DIR}/flash_bin.jlink
-			DEPENDS
-				${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_bin.jlink.in
-				${PX4_BINARY_DIR}/${PX4_CONFIG}.bin
-			WORKING_DIRECTORY ${PX4_BINARY_DIR}
-			USES_TERMINAL
-		)
+			add_custom_target(jlink_flash_bin
+				COMMAND ${CMAKE_COMMAND} -E echo "WARNING jlink_flash_bin currently assumes starting address ${BOARD_FIRMWARE_APP_OFFSET}"
+				COMMAND ${JLinkExe_PATH} -CommandFile ${PX4_BINARY_DIR}/flash_bin.jlink
+				DEPENDS
+					${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_bin.jlink.in
+					${PX4_BINARY_DIR}/${PX4_CONFIG}.bin
+				WORKING_DIRECTORY ${PX4_BINARY_DIR}
+				USES_TERMINAL
+			)
+		endif()
 	endif()
 
 endif()
