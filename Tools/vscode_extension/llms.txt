@@ -1,0 +1,42 @@
+# PX4/NuttX Firmware Workspace
+
+Repository-local backend: `Tools/firmware-workspace.py`. Extension: `Tools/vscode_extension/`.
+Read `docs/vscode-extension.md` for installation, native views, host limits and safety boundaries.
+Use the checked-out schemas as the contract; do not invent target catalogs or loader recipes.
+
+## CLI
+
+```bash
+python3 Tools/firmware-workspace.py catalog --json
+python3 Tools/firmware-workspace.py doctor --json
+python3 Tools/firmware-workspace.py resolve --selection .vscode/active-selection.json --operation build --json
+python3 Tools/firmware-workspace.py build --selection .vscode/active-selection.json --json
+python3 Tools/firmware-workspace.py build --selection .vscode/active-selection.json --clean --json
+python3 Tools/firmware-workspace.py load --selection .vscode/active-selection.json --receipt <receipt.json> --serial <jlink-serial> --json
+# Explicit recovery after diagnosis; ordinary retry is blocked.
+python3 Tools/firmware-workspace.py load --selection .vscode/active-selection.json --receipt <receipt.json> --serial <jlink-serial> --recover --json
+python3 Tools/firmware-workspace.py debug-config --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <jlink-serial> --json
+python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <jlink-serial> --action start --json
+python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --serial <jlink-serial> --action stop --json
+```
+
+`resolve --operation` accepts build, load, debug or console; defaults to build. Load/debug capabilities do not gate build-only profiles.
+`--clean` changes one build invocation without rewriting the saved selection. Target-switch cleanup remains owned by the original build scripts.
+`probe-session --serial <serial> --json` reserves a physical probe while stdin remains open; its first line returns a leaseToken and serial. Editor child operations inherit `FIRMWARE_PROBE_LEASE` and `FIRMWARE_PROBE_SERIAL`. It performs no target connection itself. Closing stdin stops its owned console and releases the reservation after child teardown.
+
+## Contracts
+
+- Selection (`firmware-selection.schema.json`): schemaVersion, id, board, core, build.{family,target|config,mode}; groups use group plus build.{family,mode}; optional load.{recipe}, debug.{mode}.
+- Receipt (`artifact-receipt.schema.json`): receiptId, timestamp, family, board, core, selectionId, target/config/group, gitRevision/gitDirty, compiler, artifacts[{path,sha256,size,core,entryPoint,rttAddress}], status; group receipts also bind groupDefinitionSha256.
+- Result (`operation-result.schema.json`): protocolVersion, operationId, status, data, diagnostics[{level,code,message,path}], childExitCode, receiptPath.
+- Exit codes: 0 success, 1 execution failure, 2 invalid input/admission, 3 blocked/recovery required, 130 cancelled. Status is ok, failed, blocked or cancelled; exit codes and status are distinct fields.
+- Committed receipts must match the exact selection and image set. Load uses private rehashed copies and canonical exact-device/hash admission. Debug symbols use a retained immutable snapshot. A receipt proves build provenance, never hardware qualification.
+
+## Boundaries
+
+Restricted Mode runs no repository code and writes no workspace files. Settings and state belong to the selected workspace folder; never assume folder zero.
+Build tasks, root make, root build.sh and standalone/dual builders share a live inherited flock through staging.
+Managed console is RTT on RDK-RZ/V2H CR8 cores only; UART/SCI4 routes remain manual via `nsh_console_exec.py --serial <device>`. The physical J-Link serial is passed as JLINK_SERIAL to the RTT bridge, never as a positional core argument.
+Only guarded RZ/V2H CR8 RAM loading is managed. Persistent flash and direct RZ/V2H CM33 connect are blocked. RA loading remains gated. Build compatibility is separate from hardware qualification.
+Per-probe/core target state lives in a private user runtime directory. Started/interrupted or failed operations require explicit recovery; never erase the journal to bypass admission.
+Cortex-Debug configurations are resolved in memory. Managed configurations use an owned server wrapper so supervisor cleanup covers the actual J-Link server after adapter/extension failure. The extension preserves launch.json and unrelated sessions/processes. Existing CMake-generated launch.generated.json remains a candidate, not an extension-managed launch entry.

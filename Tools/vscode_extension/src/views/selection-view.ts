@@ -1,0 +1,61 @@
+import * as vscode from 'vscode';
+import { SelectionStore } from '../selection-store';
+import { WorkspaceTreeItem } from '../tree-item';
+
+export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceTreeItem> {
+  private _onDidChangeTreeData = new vscode.EventEmitter<WorkspaceTreeItem | undefined | void>();
+  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+  constructor(private readonly store: SelectionStore) {
+    this.store.onDidChangeSelection(() => this.refresh());
+  }
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
+
+  getTreeItem(element: WorkspaceTreeItem): vscode.TreeItem {
+    return element;
+  }
+
+  getChildren(): Thenable<WorkspaceTreeItem[]> {
+    const sel = this.store.getSelection();
+    const probe = this.store.getSelectedProbe() || 'Automatic / None';
+    const target = sel.group || (sel.build.family === 'px4' ? sel.build.target : sel.build.config);
+    const targetLabel = sel.group ? `MULTICORE : ${sel.group}` : `${sel.build.family.toUpperCase()} : ${target}`;
+    const selectedCore = this.store.getSelectedCore();
+    const transport = this.store.getConsoleTransport(selectedCore);
+    const consoleManaged = this.store.getCapabilities('console', selectedCore).console;
+
+    const items = [
+      new WorkspaceTreeItem('Board', vscode.TreeItemCollapsibleState.None, {
+        description: sel.board,
+        iconPath: new vscode.ThemeIcon('circuit-board'),
+      }),
+      new WorkspaceTreeItem('Core', vscode.TreeItemCollapsibleState.None, {
+        description: sel.core === 'multicore' ? `${selectedCore} (selected member)` : selectedCore,
+        iconPath: new vscode.ThemeIcon('cpu'),
+        command: sel.core === 'multicore' ? { command: 'px4Nuttx.selectCore', title: 'Change Group Core' } : undefined,
+      }),
+      new WorkspaceTreeItem('Target', vscode.TreeItemCollapsibleState.None, {
+        description: targetLabel,
+        iconPath: new vscode.ThemeIcon('file-binary'),
+        command: { command: 'px4Nuttx.selectProfile', title: 'Change Target' },
+      }),
+      new WorkspaceTreeItem('Mode', vscode.TreeItemCollapsibleState.None, {
+        description: sel.build.mode,
+        iconPath: new vscode.ThemeIcon('settings-gear'),
+      }),
+      new WorkspaceTreeItem('Debug Probe', vscode.TreeItemCollapsibleState.None, {
+        description: probe,
+        iconPath: new vscode.ThemeIcon('plug'),
+        command: { command: 'px4Nuttx.selectProbe', title: 'Change Probe' },
+      }),
+      new WorkspaceTreeItem('Console Transport', vscode.TreeItemCollapsibleState.None, {
+        description: consoleManaged ? transport.toUpperCase() : `${transport.toUpperCase()} (manual-only)`,
+        iconPath: new vscode.ThemeIcon('terminal'),
+      }),
+    ];
+    return Promise.resolve(items);
+  }
+}

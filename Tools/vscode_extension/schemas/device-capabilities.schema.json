@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://px4.io/schemas/device-capabilities.schema.json",
+  "title": "DeviceCapabilities",
+  "description": "Hardware and tool capability contract for Renesas boards and cores",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "boards"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "boards": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "soc",
+          "cores"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "soc": {
+            "type": "string"
+          },
+          "cores": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "core",
+                "jlinkDevice",
+                "buildAvailable",
+                "loadAvailable",
+                "debugAvailable",
+                "qualification",
+                "supportedFamilies",
+                "reasons"
+              ],
+              "properties": {
+                "core": {
+                  "type": "string"
+                },
+                "jlinkDevice": {
+                  "type": "string"
+                },
+                "buildAvailable": {
+                  "type": "boolean"
+                },
+                "artifactValidated": {
+                  "type": "boolean"
+                },
+                "loadAvailable": {
+                  "type": "boolean"
+                },
+                "debugAvailable": {
+                  "type": "boolean"
+                },
+                "qualification": {
+                  "enum": [
+                    "stub",
+                    "source-audited",
+                    "build-clean",
+                    "bounded-on-target",
+                    "production"
+                  ]
+                },
+                "supportedFamilies": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "px4",
+                      "nuttx"
+                    ]
+                  }
+                },
+                "remediation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

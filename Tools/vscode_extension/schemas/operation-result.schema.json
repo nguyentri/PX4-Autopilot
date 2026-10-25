@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://px4.io/schemas/operation-result.schema.json",
+  "title": "OperationResult",
+  "description": "Terminal JSON result contract emitted by Tools/firmware-workspace.py commands",
+  "type": "object",
+  "required": [
+    "protocolVersion",
+    "operationId",
+    "status",
+    "data",
+    "diagnostics",
+    "childExitCode",
+    "receiptPath"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Backend protocol version"
+    },
+    "operationId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for the executed operation"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "blocked",
+        "failed",
+        "cancelled"
+      ],
+      "description": "Terminal status classification"
+    },
+    "data": {
+      "type": "object",
+      "description": "Structured operation payload"
+    },
+    "diagnostics": {
+      "type": "array",
+      "description": "Diagnostic notices, warnings, or errors",
+      "items": {
+        "type": "object",
+        "required": [
+          "level",
+          "code",
+          "message"
+        ],
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "childExitCode": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Raw returncode of underlying invoked tool, if any"
+    },
+    "receiptPath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Path to immutable artifact receipt on disk, if produced"
+    }
+  },
+  "additionalProperties": false
+}

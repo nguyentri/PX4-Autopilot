@@ -1,0 +1,294 @@
+{
+  "name": "px4-nuttx-firmware-workspace",
+  "displayName": "PX4/NuttX Firmware Workspace",
+  "description": "Unified workspace integration, profiles, guarded loading and Cortex-Debug for PX4 and NuttX on Renesas hardware",
+  "version": "0.1.0",
+  "icon": "media/icon.png",
+  "publisher": "px4-renesas",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PX4/PX4-Autopilot"
+  },
+  "keywords": [
+    "px4",
+    "nuttx",
+    "renesas",
+    "rzv2h",
+    "ra8p1",
+    "ra8e1",
+    "cortex-r8",
+    "cortex-m85",
+    "cortex-debug",
+    "drone",
+    "embedded"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:build.sh",
+    "workspaceContains:platforms/nuttx/CMakeLists.txt",
+    "onView:px4-nuttx.selection"
+  ],
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Static profile viewing and schema validation are available in Restricted Mode. Executing builds, loading, and debugging require workspace trust."
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "px4-nuttx-workspace",
+          "title": "PX4/NuttX Workspace",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "px4-nuttx-workspace": [
+        {
+          "id": "px4-nuttx.selection",
+          "name": "Selection & Profiles"
+        },
+        {
+          "id": "px4-nuttx.readiness",
+          "name": "Readiness & Doctor"
+        },
+        {
+          "id": "px4-nuttx.artifacts",
+          "name": "Artifacts & Receipts"
+        },
+        {
+          "id": "px4-nuttx.operations",
+          "name": "Actions & Target Control"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "px4Nuttx.checkDoctor",
+        "title": "Check Prerequisites (Doctor)",
+        "category": "PX4/NuttX",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "px4Nuttx.selectProfile",
+        "title": "Select Firmware Target / Profile",
+        "category": "PX4/NuttX",
+        "icon": "$(target)"
+      },
+      {
+        "command": "px4Nuttx.selectProbe",
+        "title": "Select J-Link Debug Probe",
+        "category": "PX4/NuttX",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "px4Nuttx.build",
+        "title": "Build Active Target",
+        "category": "PX4/NuttX",
+        "icon": "$(play)"
+      },
+      {
+        "command": "px4Nuttx.cleanRebuild",
+        "title": "Clean Rebuild Active Target",
+        "category": "PX4/NuttX",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "px4Nuttx.load",
+        "title": "Guarded Target Load (RAM)",
+        "category": "PX4/NuttX",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "px4Nuttx.attach",
+        "title": "Attach Cortex-Debug (No Reset)",
+        "category": "PX4/NuttX",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "px4Nuttx.loadAndDebug",
+        "title": "Load and Attach Cortex-Debug",
+        "category": "PX4/NuttX",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "px4Nuttx.startConsole",
+        "title": "Start Console (RTT / Serial)",
+        "category": "PX4/NuttX",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "px4Nuttx.stopConsole",
+        "title": "Stop Active Console",
+        "category": "PX4/NuttX",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "px4Nuttx.recoverLoad",
+        "title": "Recover Target Load",
+        "category": "PX4/NuttX",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "px4Nuttx.selectCore",
+        "title": "Select Group Core",
+        "category": "PX4/NuttX",
+        "icon": "$(chip)"
+      },
+      {
+        "command": "px4Nuttx.refresh",
+        "title": "Refresh Workspace & Profiles",
+        "category": "PX4/NuttX",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "px4Nuttx.refresh",
+          "when": "view == px4-nuttx.selection",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.selectProfile",
+          "when": "view == px4-nuttx.selection",
+          "group": "navigation@2"
+        },
+        {
+          "command": "px4Nuttx.checkDoctor",
+          "when": "view == px4-nuttx.readiness",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.refresh",
+          "when": "view == px4-nuttx.artifacts",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.cleanRebuild",
+          "when": "view == px4-nuttx.operations",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "px4-nuttx.selection",
+        "contents": "No target profile selected.\n[$(target) Select Firmware Profile](command:px4Nuttx.selectProfile)\n[$(pulse) Check Prerequisites](command:px4Nuttx.checkDoctor)"
+      },
+      {
+        "view": "px4-nuttx.readiness",
+        "contents": "Host and probe prerequisites not verified.\n[$(pulse) Run Doctor](command:px4Nuttx.checkDoctor)"
+      },
+      {
+        "view": "px4-nuttx.artifacts",
+        "contents": "No build receipts or ELF binaries staged yet.\n[$(play) Build Firmware](command:px4Nuttx.build)"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "px4-nuttx",
+        "required": [
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "type": "string",
+            "description": "Backend operation: build, cleanRebuild, or doctor"
+          },
+          "selection": {
+            "type": "string",
+            "description": "Optional selection JSON path"
+          }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "PX4/NuttX Firmware Workspace",
+      "properties": {
+        "px4Nuttx.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Path to Python 3 interpreter (>=3.9) with jsonschema installed."
+        },
+        "px4Nuttx.jlinkSerial": {
+          "type": "string",
+          "default": "",
+          "description": "Selected SEGGER J-Link probe serial number. If empty, detected probe is used."
+        },
+        "px4Nuttx.gdbPath": {
+          "type": "string",
+          "default": "gdb-multiarch",
+          "description": "Path to GDB executable for target debug sessions."
+        },
+        "px4Nuttx.consolePort": {
+          "type": "string",
+          "default": "",
+          "description": "Manual serial port hint for SCI4/UART fallback commands; managed console ownership supports admitted RTT only."
+        }
+      }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "*firmware-workspace.json",
+          "*firmware-selection.json",
+          "*.selection.json",
+          "active-selection.json",
+          "**/active-selection.json",
+          "firmware-selection-*.json"
+        ],
+        "url": "./schemas/firmware-selection.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*devices.json",
+          "*device-capabilities.json"
+        ],
+        "url": "./schemas/device-capabilities.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*receipt.json",
+          "build/workspace-artifacts/*/*.json"
+        ],
+        "url": "./schemas/artifact-receipt.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*operation-result.json",
+          "build/workspace-artifacts/*/operation-result.json"
+        ],
+        "url": "./schemas/operation-result.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/run-tests.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.0"
+  }
+}

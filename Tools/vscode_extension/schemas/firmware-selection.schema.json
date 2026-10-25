@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://px4.io/schemas/firmware-selection.schema.json",
+  "title": "FirmwareWorkspaceSelection",
+  "description": "User or group firmware selection schema for PX4 and NuttX on Renesas hardware",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "board",
+    "core",
+    "build"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Selection contract schema version"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique profile or selection identifier"
+    },
+    "board": {
+      "type": "string",
+      "enum": [
+        "rdk-rzv2h",
+        "evk-ra8p1",
+        "fpb-ra8e1"
+      ],
+      "description": "Target board identity"
+    },
+    "core": {
+      "type": "string",
+      "enum": [
+        "cr8_0",
+        "cr8_1",
+        "cm33",
+        "cm85",
+        "multicore"
+      ],
+      "description": "Target processor core identifier"
+    },
+    "build": {
+      "description": "Build definition for PX4, standalone NuttX, or multicore group",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "family",
+            "target",
+            "mode"
+          ],
+          "properties": {
+            "family": {
+              "const": "px4"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mode": {
+              "enum": [
+                "incremental",
+                "clean"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "family",
+            "config",
+            "mode"
+          ],
+          "properties": {
+            "family": {
+              "const": "nuttx"
+            },
+            "config": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mode": {
+              "enum": [
+                "incremental",
+                "clean"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "family",
+            "mode"
+          ],
+          "properties": {
+            "family": {
+              "enum": [
+                "px4",
+                "nuttx",
+                "multicore"
+              ]
+            },
+            "mode": {
+              "enum": [
+                "incremental",
+                "clean"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "load": {
+      "type": "object",
+      "description": "Guarded target load specification",
+      "required": [
+        "recipe"
+      ],
+      "properties": {
+        "recipe": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "debug": {
+      "type": "object",
+      "description": "Target debug configuration policy",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "attach",
+            "load-and-debug"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "group": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional multicore group identity"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "groups": {
+    "rzv-px4-dualcr8": {
+      "id": "rzv-px4-dualcr8",
+      "name": "RZ/V2H PX4 Dual-Core (dualcr8 + io-cr8_1_pwm)",
+      "board": "rdk-rzv2h",
+      "loadRecipe": "rzv-dual-cr8-ram",
+      "family": "px4",
+      "description": "Full PX4 sensor & flight core on CR8-0 (dualcr8) paired with PWM actuator supervisor on CR8-1 (io-cr8_1_pwm).",
+      "members": [
+        {
+          "core": "cr8_0",
+          "family": "px4",
+          "target": "renesas_rdk-rzv2h_dualcr8"
+        },
+        {
+          "core": "cr8_1",
+          "family": "px4",
+          "target": "renesas_rdk-rzv2h-io-cr8_1_pwm"
+        }
+      ],
+      "console": {
+        "cr8_0": "rtt",
+        "cr8_1": "rtt"
+      }
+    },
+    "rzv-native-ipc-rtt": {
+      "id": "rzv-native-ipc-rtt",
+      "name": "RZ/V2H Native Dual-CR8 IPC (RTT Console)",
+      "board": "rdk-rzv2h",
+      "loadRecipe": "rzv-dual-cr8-ram",
+      "description": "Native raw IPC pair on RZ/V2H CR8-0 and CR8-1 with RTT consoles on both cores.",
+      "members": [
+        {
+          "core": "cr8_0",
+          "family": "nuttx",
+          "config": "ipcc-raw-cr8_0"
+        },
+        {
+          "core": "cr8_1",
+          "family": "nuttx",
+          "config": "ipcc-raw-cr8_1"
+        }
+      ],
+      "console": {
+        "cr8_0": "rtt",
+        "cr8_1": "rtt"
+      }
+    },
+    "rzv-native-ipc-sci4": {
+      "id": "rzv-native-ipc-sci4",
+      "name": "RZ/V2H Native Dual-CR8 IPC (SCI4 Serial / RTT)",
+      "board": "rdk-rzv2h",
+      "loadRecipe": "rzv-dual-cr8-ram",
+      "description": "Native raw IPC pair on RZ/V2H with CR8-0 on SCI4 serial and CR8-1 on RTT.",
+      "members": [
+        {
+          "core": "cr8_0",
+          "family": "nuttx",
+          "config": "ipcc-raw-cr8_0-sci4"
+        },
+        {
+          "core": "cr8_1",
+          "family": "nuttx",
+          "config": "ipcc-raw-cr8_1"
+        }
+      ],
+      "console": {
+        "cr8_0": "sci4",
+        "cr8_1": "rtt"
+      }
+    },
+    "ra8p1-dual-ipc": {
+      "id": "ra8p1-dual-ipc",
+      "name": "RA8P1 Dual-Core IPC (CM85 + CM33)",
+      "board": "evk-ra8p1",
+      "loadRecipe": "ra-dual-blocked",
+      "description": "Dual-core IPC pair on RA8P1 (CM85 Core 0 + CM33 Core 1). Build supported; target load gated.",
+      "members": [
+        {
+          "core": "cm85",
+          "family": "nuttx",
+          "config": "ipc-cm85"
+        },
+        {
+          "core": "cm33",
+          "family": "nuttx",
+          "config": "ipc-cm33"
+        }
+      ],
+      "console": {
+        "cm85": "uart",
+        "cm33": "rtt"
+      }
+    },
+    "ra8p1-dual-mini": {
+      "id": "ra8p1-dual-mini",
+      "name": "RA8P1 Dual-Core Mini Startup (mini-CM85 + nsh-CM33)",
+      "board": "evk-ra8p1",
+      "loadRecipe": "ra-dual-blocked",
+      "description": "Mini CM85 startup + CM33 NSH pair on RA8P1. Build supported; target load gated.",
+      "members": [
+        {
+          "core": "cm85",
+          "family": "nuttx",
+          "config": "mini-cm85"
+        },
+        {
+          "core": "cm33",
+          "family": "nuttx",
+          "config": "nsh-cm33"
+        }
+      ],
+      "console": {
+        "cm85": "none",
+        "cm33": "rtt"
+      }
+    }
+  }
+}

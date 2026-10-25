@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "boards": {
+    "rdk-rzv2h": {
+      "id": "rdk-rzv2h",
+      "name": "Renesas RDK-RZ/V2H",
+      "soc": "R9A09G057H",
+      "cores": {
+        "cr8_0": {
+          "core": "cr8_0",
+          "jlinkDevice": "R9A09G057H44_R8_0",
+          "buildAvailable": true,
+          "loadAvailable": true,
+          "debugAvailable": true,
+          "qualification": "bounded-on-target",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": null,
+          "reasons": [
+            "Primary flight core running on Cortex-R8 core 0.",
+            "Volatile RAM loading and attach debug admitted."
+          ]
+        },
+        "cr8_1": {
+          "core": "cr8_1",
+          "jlinkDevice": "R9A09G057H44_R8_1",
+          "buildAvailable": true,
+          "loadAvailable": true,
+          "debugAvailable": true,
+          "qualification": "bounded-on-target",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": null,
+          "reasons": [
+            "IO core running on Cortex-R8 core 1.",
+            "Volatile RAM loading admitted."
+          ]
+        },
+        "cm33": {
+          "core": "cm33",
+          "jlinkDevice": "R9A09G057H44_M33",
+          "buildAvailable": true,
+          "loadAvailable": false,
+          "debugAvailable": false,
+          "qualification": "build-clean",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": "Direct J-Link attach to CM33 triggers SoC reset; lifecycle unadmitted.",
+          "reasons": [
+            "Direct connect resets the SoC.",
+            "Execution lifecycle remains unadmitted."
+          ]
+        },
+        "multicore": {
+          "core": "multicore",
+          "jlinkDevice": "R9A09G057H44_R8_0",
+          "buildAvailable": true,
+          "loadAvailable": true,
+          "debugAvailable": true,
+          "qualification": "bounded-on-target",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": null,
+          "reasons": [
+            "Dual Cortex-R8 multi-core execution (CR8-0 flight core + CR8-1 IO/supervisor).",
+            "Volatile RAM loading via rzv2h-ipc-demo-load-both-auto.sh admitted."
+          ]
+        }
+      }
+    },
+    "evk-ra8p1": {
+      "id": "evk-ra8p1",
+      "name": "Renesas EVK-RA8P1",
+      "soc": "R7FA8P1BH",
+      "cores": {
+        "cm85": {
+          "core": "cm85",
+          "jlinkDevice": "R7FA8P1BH",
+          "buildAvailable": true,
+          "loadAvailable": false,
+          "debugAvailable": true,
+          "qualification": "build-clean",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": "Guarded loader adapter qualification pending; manual attach preserved.",
+          "reasons": [
+            "ARMv8-M guarded loader contract pending qualification.",
+            "Generic raw-bin CMake programming route is guarded."
+          ]
+        },
+        "cm33": {
+          "core": "cm33",
+          "jlinkDevice": "R7FA8P1BH",
+          "buildAvailable": true,
+          "loadAvailable": false,
+          "debugAvailable": true,
+          "qualification": "build-clean",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": "Guarded loader adapter qualification pending; manual attach preserved.",
+          "reasons": [
+            "ARMv8-M guarded loader contract pending qualification.",
+            "Generic raw-bin CMake programming route is guarded."
+          ]
+        },
+        "multicore": {
+          "core": "multicore",
+          "jlinkDevice": "R7FA8P1BH",
+          "buildAvailable": true,
+          "loadAvailable": false,
+          "debugAvailable": true,
+          "qualification": "build-clean",
+          "supportedFamilies": [
+            "px4",
+            "nuttx"
+          ],
+          "remediation": "Guarded loader adapter qualification pending; manual attach preserved.",
+          "reasons": [
+            "ARMv8-M dual-core (CM85 + CM33) IPC execution.",
+            "Generic raw-bin CMake programming route is guarded."
+          ]
+        }
+      }
+    },
+    "fpb-ra8e1": {
+      "id": "fpb-ra8e1",
+      "name": "Renesas FPB-RA8E1",
+      "soc": "R7FA8E10D",
+      "cores": {
+        "cm85": {
+          "core": "cm85",
+          "jlinkDevice": "R7FA8E10D",
+          "buildAvailable": true,
+          "loadAvailable": false,
+          "debugAvailable": false,
+          "qualification": "build-clean",
+          "supportedFamilies": [
+            "px4"
+          ],
+          "remediation": "Target debug mapping and guarded adapter contract pending.",
+          "reasons": [
+            "No debug device mapping in platforms/nuttx/CMakeLists.txt.",
+            "Generic raw-bin CMake programming route is guarded."
+          ]
+        }
+      }
+    }
+  }
+}

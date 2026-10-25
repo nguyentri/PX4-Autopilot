@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://px4.io/schemas/artifact-receipt.schema.json",
+  "title": "ArtifactReceipt",
+  "description": "Immutable artifact provenance and receipt contract for firmware builds",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "receiptId",
+    "timestamp",
+    "family",
+    "board",
+    "core",
+    "selectionId",
+    "gitRevision",
+    "gitDirty",
+    "compiler",
+    "artifacts",
+    "status"
+  ],
+  "properties": {
+    "groupDefinitionSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Digest of the authoritative group member/operation definition used by the build"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "receiptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "family": {
+      "type": "string",
+      "enum": [
+        "px4",
+        "nuttx",
+        "multicore"
+      ]
+    },
+    "board": {
+      "type": "string"
+    },
+    "core": {
+      "type": "string"
+    },
+    "selectionId": {
+      "type": "string"
+    },
+    "target": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "config": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "gitRevision": {
+      "type": "string"
+    },
+    "gitDirty": {
+      "type": "boolean"
+    },
+    "compiler": {
+      "type": "string"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256",
+          "size"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "core": {
+            "type": "string"
+          },
+          "entryPoint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rttAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "provisional",
+        "committed",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "group": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
