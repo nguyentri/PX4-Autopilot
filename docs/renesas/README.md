@@ -12,6 +12,7 @@ validation result.
 | Port scope, software boundaries and intended direction | [System architecture](../system-architecture.md) |
 | Locate implementation and build inputs | [Codebase map](../codebase-summary.md) |
 | Build, load and connect a console | [Deployment guide](../deployment-guide.md) |
+| VS Code extension and workspace tooling | [VS Code workspace guide](../vscode-extension.md) |
 | Extend a driver or prepare an audit | [Porting playbook](porting-playbook.md) |
 | Formatting, comments and commits | [Code standards](../code-standards.md) |
 

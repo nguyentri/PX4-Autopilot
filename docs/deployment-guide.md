@@ -128,15 +128,19 @@ See the [checker](../platforms/nuttx/Debug/rzv2h-boot-package.py) and
 
 ## 4. Debug: J-Link + VS Code
 
-The generated RZ/V2H debug profile is a read-only attach. Use the exact ELF
+The generated RZ/V2H debug profile requests attach without reset/load commands. Use the exact ELF
 for the profile and the user-provided probe serial. The profile may halt the
 core; reset, load, and continue require explicit authorization. Stop PWMOut
 and confirm inactive outputs before halting a running actuator image because
 software timeouts do not run while the core is stopped.
 
-The generated profile is in `.vscode/launch.json` after a target build. The
-RZ/V2H configuration uses `request: "attach"` and `monitor halt`; it does not
-include reset, load, or continue commands.
+The generated candidate debug profile is emitted to `.vscode/launch.generated.json`
+after a target build, preserving any existing `.vscode/launch.json` file.
+The native PX4/NuttX Firmware Workspace extension (`Tools/vscode_extension/`) and
+the shared backend (`Tools/firmware-workspace.py debug-config`) generate
+in-memory Cortex-Debug configurations dynamically. The RZ/V2H configuration uses
+`request: "attach"` and `monitor halt`; it does not include reset or load
+commands in attach mode. A failed J-Link connection can still reset the board and invalidate RAM images; diagnose and use guarded recovery rather than retrying blindly.
 
 For a bounded command-line backtrace, bind the probe serial explicitly:
 
