@@ -22,7 +22,17 @@ console.log('  ✓ dist/extension.js exists and is bundled');
 const pkg = JSON.parse(fs.readFileSync(path.join(EXT_DIR, 'package.json'), 'utf-8'));
 assert.strictEqual(pkg.name, 'px4-nuttx-firmware-workspace');
 assert.strictEqual(pkg.license, 'BSD-3-Clause');
-assert.ok(pkg.contributes.views['px4-nuttx-workspace'].length >= 4, 'Must define 4 views');
+assert.ok(pkg.contributes.views['px4-nuttx-workspace'].length >= 5, 'Must define all five native views');
+assert.ok(pkg.contributes.views['px4-nuttx-workspace'].some((view) => view.id === 'px4-nuttx.dualCoreLoader'));
+for (const action of ['browse', 'folder', 'useBuild', 'buildBoth', 'validate', 'loadBoth', 'recoverBoth', 'debugR80', 'debugR81', 'keepCaptured', 'importUpdated', 'resume']) {
+  assert.ok(pkg.contributes.commands.some((command) => command.command === `px4Nuttx.dual.${action}`), `Missing dual-core action ${action}`);
+}
+assert.equal(pkg.contributes.views['px4-nuttx-workspace'].find((view) => view.id === 'px4-nuttx.dualCoreLoader').name, 'Firmware Setup');
+for (const action of ['select', 'saveAs', 'rename', 'buildCore', 'buildBoth', 'buildAndLoad', 'consoleCore', 'device', 'stopSessions']) {
+  const command = pkg.contributes.commands.find((entry) => entry.command === `px4Nuttx.setup.${action}`);
+  assert.ok(command?.enablement.includes('px4Nuttx.savedSetupOperationsReady'), `Missing runtime rollout context for ${action}`);
+}
+assert.ok(pkg.contributes.views['px4-nuttx-workspace'].filter((view) => ['px4-nuttx.selection', 'px4-nuttx.operations'].includes(view.id)).every((view) => view.when === '!px4Nuttx.savedSetupActive'));
 assert.ok(pkg.contributes.commands.length >= 8, 'Must contribute commands');
 assert.ok(pkg.contributes.jsonValidation.length >= 3, 'Must contribute schema validations');
 console.log('  ✓ package.json contributes all required views, commands, and schemas');
@@ -82,6 +92,7 @@ async function runBehavioralTests() {
   let lastDebugSession;
   const vscode = {
     EventEmitter,
+    CancellationTokenSource: class { constructor() { this.event = new EventEmitter(); this.token = { isCancellationRequested: false, onCancellationRequested: this.event.event }; } cancel() { this.token.isCancellationRequested = true; this.event.fire(); } dispose() {} },
     TreeItem,
     ThemeIcon,
     ThemeColor: ThemeIcon,
@@ -96,6 +107,8 @@ async function runBehavioralTests() {
     ProgressLocation: { Notification: 1 },
     workspace,
     window: {
+      onDidCloseTerminal: () => ({ dispose() {} }),
+      createTerminal: () => ({ show() {}, dispose() {} }),
       showInformationMessage: async () => undefined,
       showErrorMessage: async () => undefined,
       showWarningMessage: async () => undefined,
@@ -246,6 +259,7 @@ async function runBehavioralTests() {
     let loadedLease, attachedLease;
     let loadOutcome = { status: 'blocked', data: { recoveryRequired: true }, diagnostics: [{ message: 'blocked' }] };
     const executionStore = {
+      setConsoleStatusProvider() {}, setSessionGuard() {}, notifySessionChange() {}, assertMutable() {}, getActiveSetup() {}, getPreparedPair() {}, captureSetupToken() { return {}; }, isSetupTokenCurrent() { return true; },
       getSelection: () => currentSelection,
       getSelectedProbe: () => 'probe',
       getSelectedCore: () => 'cr8_0',
@@ -258,6 +272,7 @@ async function runBehavioralTests() {
       getConsoleTransport: () => 'rtt',
     };
     const executionClient = {
+      getWorkspaceRoot: () => REPO_ROOT,
       probeLeases: {
         acquire: async (serial) => ({ lease: { leaseToken: 'execution-lease', serial }, release: async () => {} }),
       },
@@ -265,6 +280,7 @@ async function runBehavioralTests() {
       buildSelection: async () => ({ status: 'ok', data: {}, diagnostics: [], receiptPath: 'receipt-a.json' }),
     };
     const executionController = registerExecutionCommands(selectionContext, executionClient, executionStore, {
+      hasOwnedSessions: () => false,
       startManagedAttach: async (...args) => { attached += 1; attachedLease = args[4]; return true; },
       setConsoleHandoff: () => {},
     }, { refresh: () => {} });
@@ -289,13 +305,17 @@ async function runBehavioralTests() {
     let stopFails = true;
     executionClient.consoleAction = async (action) => action === 'stop' && stopFails
       ? { status: 'failed', data: {}, diagnostics: [{ message: 'fixture stop failed' }] }
-      : { status: 'ok', data: { running: action === 'start' }, diagnostics: [] };
+      : { status: 'ok', data: { endpoint: '127.0.0.1:19021', running: action === 'start', core: 'cr8_0', transport: 'rtt' }, diagnostics: [] };
+    const rttServer = require('net').createServer();
+    const rttSockets = new Set(); rttServer.on('connection', (socket) => { rttSockets.add(socket); socket.on('close', () => rttSockets.delete(socket)); });
+    await new Promise((resolve, reject) => { rttServer.once('error', reject); rttServer.listen(19021, '127.0.0.1', resolve); });
     assert.strictEqual(await registered.get('px4Nuttx.startConsole')(), true);
     assert.strictEqual(await registered.get('px4Nuttx.stopConsole')(), false);
     assert.strictEqual((await executionController.stopConsoleForHandoff()).ok, false, 'stop failure must retain active ownership');
     stopFails = false;
     assert.strictEqual(await registered.get('px4Nuttx.stopConsole')(), true);
-    console.log('  ✓ console stop failure keeps ownership and prevents debug handoff');
+    for (const socket of rttSockets) { socket.destroy(); } await new Promise((resolve) => rttServer.close(resolve));
+    console.log('  ✓ interactive console stop failure keeps ownership and prevents debug handoff');
     const normalReceiptLookup = executionStore.getReceiptPath;
     executionStore.getReceiptPath = () => null;
     executionClient.buildSelection = async () => {
@@ -309,6 +329,14 @@ async function runBehavioralTests() {
     currentSelection = selection;
 
 
+    let failedHandleReleases = 0;
+    const failingManager = new ProbeLeaseManager({ startProbeSession: async (serial) => ({ lease: { serial, leaseToken: 'uncertain' },
+      isReleased: () => false, release: async () => { failedHandleReleases++; throw new Error('supervisor teardown uncertain'); }, sendEvent() {} }) });
+    const failingHandle = await failingManager.acquire('probe');
+    await assert.rejects(failingHandle.release(), /uncertain/);
+    await assert.rejects(failingHandle.release(), /uncertain/, 'repeated teardown must not report success after a failure');
+    assert.equal(failedHandleReleases, 1, 'all teardown callers join one acknowledgement');
+    await assert.rejects(failingManager.acquire('probe'), /already reserved/);
     const { Px4NuttxTaskProvider } = sourceModule('task-provider');
     const taskStore = {
       getSelection: () => selection,
@@ -338,6 +366,12 @@ async function runBehavioralTests() {
       },
       executionStore
     );
+    const manualConfiguration = { type: 'cortex-debug', request: 'attach', name: 'Developer JSONC', executable: '/my symbols.elf', custom: { keep: true } };
+    const developerLaunch = path.join(temporary, 'launch.json');
+    const developerJsonc = '// developer comment\n{ "version": "0.2.0", "configurations": [], }\n'; fs.writeFileSync(developerLaunch, developerJsonc);
+    const beforeManualRelease = leaseReleases;
+    assert.equal(debugProvider.resolveDebugConfiguration(undefined, manualConfiguration), manualConfiguration, 'unmanaged config passes through by identity');
+    assert.equal(leaseReleases, beforeManualRelease); assert.equal(fs.readFileSync(developerLaunch, 'utf8'), developerJsonc);
     const debugContext = { subscriptions: [] };
     debugProvider.registerLifecycle(debugContext);
     assert.strictEqual(await debugProvider.startManagedAttach('receipt-a.json', 'cr8_0', selection, 'probe'), true);
@@ -348,6 +382,16 @@ async function runBehavioralTests() {
     debugTerminated.fire({ id: 'unrelated', configuration: {} });
     assert.strictEqual(leaseReleases, 1, 'unrelated debug sessions must not release managed leases');
     await debugProvider.disposeAsync();
+    assert.equal(fs.readFileSync(developerLaunch, 'utf8'), developerJsonc, 'managed operations preserve developer JSONC bytes');
+    let failedRelease = true;
+    const failingDebug = new Px4NuttxDebugProvider({
+      probeLeases: { acquire: async () => ({ lease: { serial: 'probe', leaseToken: 'failed-start' }, release: async () => { if (failedRelease) { throw new Error('release pending'); } } }) },
+      getDebugConfig: async () => ({ status: 'failed', data: {}, diagnostics: [] }),
+    }, executionStore);
+    assert.equal(await failingDebug.startManagedAttach('receipt-a.json', 'cr8_0', selection, 'probe'), false);
+    assert.equal(failingDebug.hasOwnedSessions(), true, 'failed startup release retains ownership');
+    await assert.rejects(failingDebug.disposeAsync(), /release pending/);
+    failedRelease = false; await failingDebug.disposeAsync(); assert.equal(failingDebug.hasOwnedSessions(), false);
     console.log('  ✓ managed debug ownership follows exact session lifecycle');
 
     const fakeBackendRoot = path.join(temporary, 'backend-fixture');
@@ -397,12 +441,17 @@ async function runBehavioralTests() {
     await managerHandle.release();
     assert.strictEqual(sessionStarts, 1, 'generic acquisition must not share an active reservation');
     const cancellationListeners = [];
+    const cancelFixture = () => cancellationListeners.forEach((listener) => listener());
+    const cancellationDeadline = setTimeout(cancelFixture, 5000);
     const cancellationResultPromise = fixtureClient.executeCommand('slow', [], {
       cancellationToken: { onCancellationRequested: (listener) => { cancellationListeners.push(listener); return { dispose: () => {} }; } },
-      onOutput: (chunk, stream) => streamed.push({ chunk, stream }),
+      onOutput: (chunk, stream) => {
+        streamed.push({ chunk, stream });
+        if (stream === 'stderr' && chunk.includes('live-fixture')) { queueMicrotask(cancelFixture); }
+      },
     });
-    setTimeout(() => cancellationListeners.forEach((listener) => listener()), 100);
     const cancellationResult = await cancellationResultPromise;
+    clearTimeout(cancellationDeadline);
     assert.strictEqual(cancellationResult.status, 'cancelled');
     assert.ok(streamed.some((item) => item.chunk.includes('live-fixture')), 'stderr must stream before cancellation');
     fixtureClient.dispose();
@@ -439,7 +488,7 @@ async function runBehavioralTests() {
       selection,
       'trusted profile selection must publish the active-selection projection'
     );
-    persistentStore.setReceiptPath('receipt.json', selection);
+    await persistentStore.setReceiptPath('receipt.json', selection);
     assert.strictEqual(persistentStore.getReceiptPath(selection), 'receipt.json');
     const restoredStore = new SelectionStore(extensionContext, fakeBackendRoot);
     assert.strictEqual(restoredStore.getReceiptPath(selection), 'receipt.json');
@@ -471,13 +520,13 @@ async function runBehavioralTests() {
     const externalReceiptPath = path.join(externalReceiptDir, 'receipt.json');
     const externalReceipt = { ...JSON.parse(fs.readFileSync(receiptPath, 'utf8')), receiptId: 'external-run', target: 'x', timestamp: '2026-10-25T12:00:00Z' };
     fs.writeFileSync(externalReceiptPath, JSON.stringify(externalReceipt));
-    restoredStore.refreshReceipts();
+    await restoredStore.refreshReceipts();
     assert.strictEqual(restoredStore.getReceiptPath(), path.relative(fakeBackendRoot, externalReceiptPath));
     const { ArtifactsViewProvider } = sourceModule('views/artifacts-view');
     const artifactView = new ArtifactsViewProvider(fakeBackendRoot, restoredStore);
     assert.strictEqual(artifactView.getReceipt().receiptId, 'external-run');
     fs.unlinkSync(externalReceiptPath);
-    restoredStore.refreshReceipts();
+    await restoredStore.refreshReceipts();
     artifactView.refresh();
     assert.strictEqual(restoredStore.getReceiptPath(), null);
     assert.strictEqual(artifactView.getReceipt(), null);
@@ -520,6 +569,16 @@ async function runBehavioralTests() {
     const secondStore = new SelectionStore(extensionContext, secondRoot);
     assert.strictEqual(secondStore.getReceiptPath(), null, 'another folder must not inherit the first folder receipt');
     await entry.deactivate();
+    // Shutdown wins while the multi-root picker is unresolved. It must not hang
+    // or register resources if the old picker resolves later.
+    let resolveLateFolder;
+    vscode.window.showQuickPick = () => new Promise((resolve) => { resolveLateFolder = resolve; });
+    const beforeLateTask = capturedTaskProvider;
+    entry.activate({ ...activationContext, subscriptions: [] });
+    await entry.deactivate();
+    resolveLateFolder({ folder: workspace.workspaceFolders[2] });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(capturedTaskProvider, beforeLateTask);
     workspace.workspaceFolders = originalFolders;
     console.log('  ✓ real activation routes past unrelated folder to chosen firmware root, with no untrusted writes');
 
@@ -529,7 +588,7 @@ async function runBehavioralTests() {
   }
 }
 
-runBehavioralTests().then(() => {
+runBehavioralTests().then(() => require('./dual-core-loader-tests')()).then(() => require('./console-terminal-tests')()).then(() => {
   console.log('== All Extension Tests Passed ==\n');
 }).catch((error) => {
   console.error(error.stack || error.message);

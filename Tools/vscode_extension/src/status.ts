@@ -35,7 +35,9 @@ export class StatusBarManager implements vscode.Disposable {
     const selectedCore = this.store.getSelectedCore();
     const transport = this.store.getConsoleTransport(selectedCore);
     const consoleManaged = this.store.getCapabilities('console', selectedCore).console;
-    this.statusBarItem.text = `$(circuit-board) ${selection.board}:${selectedCore} (${shortTarget})`;
+    const setup = this.store.getActiveSetup();
+    this.statusBarItem.command = setup ? 'px4Nuttx.setup.select' : 'px4Nuttx.selectProfile';
+    this.statusBarItem.text = `$(circuit-board) ${setup ? `${setup.name} · ${selection.board}` : `${selection.board}:${selectedCore} (${shortTarget})`}`;
     this.statusBarItem.tooltip = new vscode.MarkdownString(
       `**PX4/NuttX Profile:** ${selection.id}\n\n` +
         `- **Board:** ${selection.board}\n` +

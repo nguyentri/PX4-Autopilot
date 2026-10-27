@@ -99,6 +99,8 @@ export function registerSelectionCommands(
       if (!ensureTrusted('load the firmware catalog')) {
         return;
       }
+      const setupToken = store.captureSetupToken?.();
+      const current = () => !setupToken || store.isSetupTokenCurrent(setupToken);
       try {
         const catRes = await client.getCatalog();
         if (catRes.status !== 'ok') {
@@ -174,7 +176,7 @@ export function registerSelectionCommands(
           matchOnDescription: true,
           matchOnDetail: true,
         });
-        if (picked?.selection) {
+        if (current() && picked?.selection) {
           await store.setSelection(picked.selection);
           selectionView.refresh();
           operationsView?.refresh();
@@ -191,6 +193,8 @@ export function registerSelectionCommands(
       if (!ensureTrusted('select a group core')) {
         return;
       }
+      const setupToken = store.captureSetupToken?.();
+      const current = () => !setupToken || store.isSetupTokenCurrent(setupToken);
       const members = store.getGroupMembers();
       if (members.length === 0) {
         vscode.window.showInformationMessage('The selected profile has one fixed core.');
@@ -204,7 +208,7 @@ export function registerSelectionCommands(
         })),
         { placeHolder: 'Select the group core for load, debug or console' }
       );
-      if (picked) {
+      if (current() && picked) {
         await store.setSelectedCore(picked.core);
         selectionView.refresh();
         operationsView?.refresh();
@@ -217,6 +221,8 @@ export function registerSelectionCommands(
       if (!ensureTrusted('enumerate debug probes')) {
         return;
       }
+      const setupToken = store.captureSetupToken?.();
+      const current = () => !setupToken || store.isSetupTokenCurrent(setupToken);
       try {
         const docRes = await client.runDoctor();
         const probes = docRes.data?.probes || [];
@@ -233,7 +239,7 @@ export function registerSelectionCommands(
         const serial = picked.serial === 'manual'
           ? await vscode.window.showInputBox({ prompt: 'Enter SEGGER J-Link serial number', placeHolder: 'e.g. 1061999999' })
           : picked.serial;
-        if (serial?.trim()) {
+        if (current() && serial?.trim()) {
           await store.setSelectedProbe(serial);
           selectionView.refresh();
         }

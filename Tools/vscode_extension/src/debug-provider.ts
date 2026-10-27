@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { BackendClient, ProbeLeaseHandle, WorkspaceTrustError } from './backend-client';
 import { SelectionStore } from './selection-store';
-import { ConsoleHandoff, FirmwareSelection } from './types';
+import { ConsoleHandoff, FirmwareSelection, PreparedExecutionRequest } from './types';
 
 const DEBUG_TEARDOWN_TIMEOUT_MS = 15000;
 
@@ -14,6 +14,8 @@ interface ManagedDebugLease {
 interface PendingDebugLease {
   lease: ProbeLeaseHandle;
   core: string;
+  receiptId?: string;
+  artifactSha256?: string;
 }
 
 interface TerminationWaiter {
@@ -24,6 +26,7 @@ interface TerminationWaiter {
 
 export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider, vscode.Disposable {
   private readonly pendingLeases = new Map<string, PendingDebugLease>();
+  private readonly failedLeases = new Map<string, ProbeLeaseHandle>();
   private readonly activeLeases = new Map<string, ManagedDebugLease>();
   private readonly terminationWaiters = new Map<string, TerminationWaiter>();
   private stopConsoleForHandoff: (() => Promise<ConsoleHandoff>) | undefined;
@@ -70,13 +73,30 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
     return config;
   }
 
-  public async startManagedAttach(
+  private readonly starts = new Set<Promise<boolean>>();
+  private closing = false;
+  private stopRevision = 0;
+  public shutdown(): void { this.closing = true; }
+  public startManagedAttach(...args: Parameters<Px4NuttxDebugProvider['attach']>): Promise<boolean> {
+    if (this.closing || this.stopping) { return Promise.resolve(false); }
+    const operation = this.attach(...args); this.starts.add(operation);
+    void operation.finally(() => this.starts.delete(operation)).catch(() => undefined);
+    return operation;
+  }
+  private async attach(
     receiptPath: string,
     targetCore?: string,
     selectionOverride?: FirmwareSelection,
     probeSerial?: string,
-    retainedLease?: ProbeLeaseHandle
+    retainedLease?: ProbeLeaseHandle,
+    prepared?: PreparedExecutionRequest,
+    stillCurrent?: () => boolean
   ): Promise<boolean> {
+    const stopRevision = this.stopRevision;
+    if (!prepared && this.store.getTargetTransition?.()) {
+      await retainedLease?.release().catch(() => undefined);
+      vscode.window.showErrorMessage('Wait for the active target operation to finish.'); return false;
+    }
     if (vscode.workspace?.isTrusted === false) {
       await retainedLease?.release().catch(() => undefined);
       vscode.window.showErrorMessage('Managed debugging requires workspace trust.');
@@ -99,6 +119,14 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
       await retainedLease?.release().catch(() => undefined);
       vscode.window.showErrorMessage('Select a J-Link probe before attaching the debugger.');
       return false;
+    }
+    if (prepared && (this.activeLeases.size || this.pendingLeases.size)) {
+      try { await this.stopOwned(); }
+      catch (error) {
+        await retainedLease?.release().catch(() => undefined);
+        vscode.window.showErrorMessage(`Stop the owned debug session before switching cores: ${(error as Error).message}`);
+        return false;
+      }
     }
 
     let handoffLease: ProbeLeaseHandle | undefined = retainedLease;
@@ -125,14 +153,16 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
 
     const releaseLease = async (): Promise<void> => {
       try {
-        await lease.release();
+        await lease.release(); this.failedLeases.delete(lease.lease.leaseToken);
       } catch (error) {
+        this.failedLeases.set(lease.lease.leaseToken, lease);
         vscode.window.showWarningMessage(`Probe reservation cleanup is still pending: ${(error as Error).message}`);
       }
     };
 
     let leaseId: string | undefined;
     try {
+      if (this.closing || stopRevision !== this.stopRevision || (stillCurrent && !stillCurrent())) { await releaseLease(); return false; }
       const selectionSnapshot = this.store.writeSelectionSnapshot(selection);
       const configuration = vscode.Uri?.file
         ? vscode.workspace.getConfiguration('px4Nuttx', vscode.Uri.file(this.store.getWorkspaceRoot()))
@@ -143,7 +173,9 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
         receiptPath,
         serial,
         core,
-        { lease: lease.lease, gdb: gdbPath || undefined }
+        { lease: lease.lease, gdb: gdbPath || undefined, requireLoaded: !!prepared,
+          expectReceiptId: prepared?.receiptId, expectPairSha256: prepared?.pairSha256,
+          operationInstanceId: prepared?.operationInstanceId }
       );
       if (res.status !== 'ok' || !res.data?.configuration) {
         const errs = res.diagnostics.map((diagnostic) => diagnostic.message).join('; ');
@@ -151,7 +183,13 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
         vscode.window.showErrorMessage(`Failed generating debug configuration: ${errs || 'operation was blocked'}`);
         return false;
       }
+      if (prepared && (res.data.receiptId !== prepared.receiptId || res.data.pairSha256 !== prepared.pairSha256
+        || res.data.core !== core || res.data.artifactSha256 !== prepared.artifactDigests[core as 'cr8_0' | 'cr8_1']
+        || res.data.operationInstanceId !== prepared.operationInstanceId || (stillCurrent && !stillCurrent()))) {
+        await releaseLease(); throw new Error('Debug result identity differs from the captured pair.');
+      }
 
+      if (this.closing || stopRevision !== this.stopRevision || (stillCurrent && !stillCurrent())) { await releaseLease(); return false; }
       leaseId = crypto.randomUUID();
       const debugConfig: vscode.DebugConfiguration = {
         ...res.data.configuration,
@@ -159,9 +197,12 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
         px4NuttxLeaseId: leaseId,
         px4NuttxWorkspaceRoot: this.store.getWorkspaceRoot(),
         px4NuttxCore: core,
+        px4NuttxReceiptId: prepared?.receiptId,
+        px4NuttxArtifactSha256: prepared?.artifactDigests[core as 'cr8_0' | 'cr8_1'],
       };
 
-      this.pendingLeases.set(leaseId, { lease, core });
+      this.pendingLeases.set(leaseId, { lease, core, receiptId: prepared?.receiptId,
+        artifactSha256: prepared?.artifactDigests[core as 'cr8_0' | 'cr8_1'] });
       const folder = this.getWorkspaceFolder();
       if (!folder) {
         this.pendingLeases.delete(leaseId);
@@ -207,21 +248,21 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
       return;
     }
     this.pendingLeases.delete(leaseId);
-    this.activeLeases.set(session.id, { lease: pending.lease, session });
+    this.activeLeases.set(session.id, { lease: pending.lease, session }); this.store.notifySessionChange?.();
   }
 
   private onSessionTerminated(session: vscode.DebugSession): void {
     const managed = this.activeLeases.get(session.id);
     if (managed) {
-      this.activeLeases.delete(session.id);
       const waiter = this.terminationWaiters.get(session.id);
       if (waiter) {
+        this.activeLeases.delete(session.id);
         this.terminationWaiters.delete(session.id);
         clearTimeout(waiter.timeout);
         waiter.resolve(managed);
         return;
       }
-      void managed.lease.release().catch((error: Error) => {
+      void managed.lease.release().then(() => { this.activeLeases.delete(session.id); this.store.notifySessionChange?.(); }).catch((error: Error) => {
         this.activeLeases.set(session.id, managed);
         vscode.window.showErrorMessage(`Probe reservation cleanup failed after debug termination: ${error.message}`);
       });
@@ -239,10 +280,10 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
     if (!pending) {
       return;
     }
-    this.pendingLeases.delete(leaseId);
     const failedCore = session.configuration?.px4NuttxCore as string | undefined;
     pending.lease.sendEvent?.({ event: 'debug-failed', core: failedCore || pending.core });
-    void pending.lease.release().catch((error: Error) => {
+    void pending.lease.release().then(() => { this.pendingLeases.delete(leaseId); this.store.notifySessionChange?.(); }).catch((error: Error) => {
+      this.pendingLeases.set(leaseId, pending);
       vscode.window.showErrorMessage(`Probe reservation cleanup failed after debugger startup failure: ${error.message}`);
     });
   }
@@ -272,55 +313,37 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
   }
 
   /** Stop only this provider's sessions before releasing their probe leases. */
-  public async disposeAsync(): Promise<void> {
-    const active = Array.from(this.activeLeases.entries());
-    for (const [sessionId, managed] of active) {
-      if (!this.activeLeases.has(sessionId)) {
-        continue;
-      }
-      const terminated = this.waitForTermination(sessionId);
-      let stopError: Error | undefined;
-      try {
-        const stopped = await vscode.debug.stopDebugging(managed.session) as unknown as boolean | void;
-        if (stopped === false && this.activeLeases.has(sessionId)) {
-          stopError = new Error(`Owned debug session ${sessionId} refused termination.`);
-        }
-      } catch (error) {
-        if (this.activeLeases.has(sessionId)) {
-          stopError = error as Error;
-        }
-      }
-      if (stopError) {
-        this.cancelTerminationWait(sessionId);
-        throw stopError;
-      }
-
-      let ended: ManagedDebugLease;
-      try {
-        ended = await terminated;
-      } catch (error) {
-        throw error;
-      }
-      try {
-        await ended.lease.release();
-      } catch (error) {
-        this.activeLeases.set(sessionId, ended);
-        throw error;
-      }
-    }
-
-    const pending = Array.from(this.pendingLeases.entries());
-    for (const [leaseId, pendingLease] of pending) {
-      this.pendingLeases.delete(leaseId);
-      pendingLease.lease.sendEvent?.({ event: 'debug-failed', core: pendingLease.core });
-      try {
-        await pendingLease.lease.release();
-      } catch (error) {
-        this.pendingLeases.set(leaseId, pendingLease);
-        throw error;
-      }
-    }
+  public hasOwnedSessions(): boolean { return !!this.stopping || this.failedLeases.size > 0 || this.starts.size > 0 || this.activeLeases.size > 0 || this.pendingLeases.size > 0; }
+  private stopping?: Promise<void>;
+  public disposeAsync(): Promise<void> {
+    if (!this.stopping) { ++this.stopRevision; this.stopping = Promise.allSettled([...this.starts]).then(() => this.stopOwned()).finally(() => { this.stopping = undefined; this.store.notifySessionChange?.(); }); }
+    return this.stopping;
   }
+  private async stopOwned(): Promise<void> {
+    const results = await Promise.allSettled([
+      ...Array.from(this.failedLeases.entries()).map(async ([token, lease]) => { await lease.release(); this.failedLeases.delete(token); }),
+      ...Array.from(this.activeLeases.entries()).map(async ([sessionId, managed]) => {
+        if (!this.activeLeases.has(sessionId)) { return; }
+        const terminated = this.waitForTermination(sessionId);
+        try {
+          const stopped = await vscode.debug.stopDebugging(managed.session) as unknown as boolean | void;
+          if (stopped === false && this.activeLeases.has(sessionId)) { throw new Error(`Owned debug session ${sessionId} refused termination.`); }
+        } catch (error) { this.cancelTerminationWait(sessionId); throw error; }
+        const ended = await terminated;
+        try { await ended.lease.release(); }
+        catch (error) { this.activeLeases.set(sessionId, ended); throw error; }
+      }),
+      ...Array.from(this.pendingLeases.entries()).map(async ([leaseId, pending]) => {
+        this.pendingLeases.delete(leaseId);
+        pending.lease.sendEvent?.({ event: 'debug-failed', core: pending.core });
+        try { await pending.lease.release(); }
+        catch (error) { this.pendingLeases.set(leaseId, pending); throw error; }
+      }),
+    ]);
+    const failures = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (failures.length) { throw new Error(failures.map((r) => String(r.reason)).join('; ')); }
+  }
+  public async settleStarts(): Promise<void> { await Promise.allSettled([...this.starts]); }
 
   public dispose(): void {
     void this.disposeAsync().catch((error: Error) => {

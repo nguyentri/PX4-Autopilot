@@ -28,6 +28,13 @@ export interface OperationOptions {
   onOutput?: (chunk: string, stream: 'stdout' | 'stderr') => void;
   env?: NodeJS.ProcessEnv;
   lease?: ProbeLease;
+  operationInstanceId?: string;
+  onProgress?: (event: LoadProgressEvent) => void;
+}
+
+export interface LoadProgressEvent {
+  eventVersion: 1; operationInstanceId: string; phase: 'load' | 'verify';
+  core: 'cr8_0' | 'cr8_1'; state: 'begin' | 'ok' | 'fail' | 'indeterminate'; logPath: string;
 }
 
 export interface ProbeLease {
@@ -84,6 +91,8 @@ export interface BoardCapability {
 }
 
 export interface CatalogData {
+  capabilities?: { importImages?: number; receiptVersions?: number[]; preparedIdentity?: number;
+    strictLoadedIdentity?: number; progressEvents?: number; targetHistory?: number };
   px4Targets: Array<{ target: string; board: string; core: string; family: string; file: string }>;
   nuttxConfigs: Record<string, Array<{ config: string; board: string; core: string; family: string; directory: string }>>;
   devices: Record<string, BoardCapability>;
@@ -123,6 +132,10 @@ export interface SelectionCapabilities {
 }
 
 export interface DoctorData {
+  importPrerequisites?: { ready: boolean; jsonschema: boolean; readelf: string | null; remediation: string };
+  targetHistory?: { state: string; recoveryRequired: boolean; verifiedPair?: {
+    pairSha256: string; groupDefinitionSha256: string; artifactDigests: Record<R8Core, string>; timestamp: string;
+  } | null };
   tools: Record<string, { ok: boolean; info?: string; path?: string; remediation?: string }>;
   probes: Array<{ usbDevice: string; product: string; serial: string }>;
   environment: { leakedToolchainVars: string[] };
@@ -137,10 +150,14 @@ export interface ArtifactItem {
   core?: string;
   entryPoint?: string | null;
   rttAddress?: string | null;
+  provenance?: ImageProvenance;
+  sourceObservation?: SourceObservation;
+  member?: GroupMember;
+  checks?: { bytes: string; address: string; startup: string; identity: string; hardwareQualified: false };
 }
 
-export interface ArtifactReceipt {
-  schemaVersion: number;
+export interface ArtifactReceiptV1 {
+  schemaVersion: 1;
   receiptId: string;
   timestamp: string;
   family: 'px4' | 'nuttx' | 'multicore';
@@ -156,4 +173,80 @@ export interface ArtifactReceipt {
   status: 'provisional' | 'committed' | 'failed' | 'cancelled';
   group?: string | null;
   groupDefinitionSha256?: string | null;
+}
+
+export interface ImageProvenance {
+  evidence: 'receipt-reported' | 'developer-declared' | 'unknown';
+  sourceReceiptId: string | null;
+  reportedGitRevision: string | null;
+  reportedGitDirty: boolean | null;
+  reportedCompiler: string | null;
+}
+
+export interface SourceObservation {
+  path: string; sha256: string; size: number; mtimeNs: string;
+}
+
+export interface ArtifactReceiptV2 extends Omit<ArtifactReceiptV1, 'schemaVersion' | 'gitRevision' | 'gitDirty' | 'compiler'> {
+  schemaVersion: 2;
+  operation: 'import-images';
+  requestId: string;
+  gitRevision: string | null;
+  gitDirty: boolean | null;
+  compiler: string | null;
+  provenance: ImageProvenance;
+}
+export type ArtifactReceipt = ArtifactReceiptV1 | ArtifactReceiptV2;
+export type R8Core = 'cr8_0' | 'cr8_1';
+export type ImageSource =
+  | { kind: 'file'; path: string; declaration: GroupMember }
+  | { kind: 'folder'; path: string; relativePath: string; declaration: GroupMember }
+  | { kind: 'build-receipt' | 'prepared-receipt'; receiptPath: string; artifactCore: R8Core };
+export interface FirmwareImport {
+  schemaVersion: 1; requestId: string; selection: FirmwareSelection; sources: Partial<Record<R8Core, ImageSource>>;
+}
+export interface ImportImagesData {
+  preparationState: 'partial' | 'ready'; requestId: string; receiptId: string;
+  groupDefinitionSha256: string; artifacts: ArtifactItem[];
+}
+
+export interface PreparedPairState {
+  generation: number;
+  sources: Partial<Record<R8Core, ImageSource>>;
+  pending?: { request: FirmwareImport; sourceDigest: string };
+  prepared?: { receiptPath: string; receiptId: string; receiptSha256: string;
+    groupDefinitionSha256: string; artifacts: ArtifactItem[]; pairSha256?: string };
+  acknowledged?: Partial<Record<R8Core, string>>;
+  sourceChanges?: Partial<Record<R8Core, SourceObservation>>;
+  validationError?: string;
+  history?: { verified: boolean; message: string; timestamp?: string };
+}
+
+export interface PreparedExecutionRequest {
+  setupToken?: SetupOperationToken;
+  workflowOwner?: symbol;
+  workflowCancellation?: vscode.CancellationToken;
+  selection: FirmwareSelection; selectionPath: string; receiptPath: string; receiptId: string;
+  pairGeneration: number; groupDefinitionSha256: string; pairSha256: string;
+  operationInstanceId: string; artifactDigests: Record<R8Core, string>; serial: string;
+}
+
+export interface SavedFirmwareSetup {
+  id: string;
+  name: string;
+  selection: FirmwareSelection;
+  selectedCore?: string;
+  pair?: PreparedPairState;
+  consoleDevices?: Record<string, string>;
+}
+
+export interface SetupOperationToken {
+  setupId?: string;
+  pairGeneration?: number;
+  revision: number;
+  selectionIdentity: string;
+  definition?: string;
+  probe: string;
+  core?: string;
+  device?: string;
 }

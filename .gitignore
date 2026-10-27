@@ -302,3 +302,5 @@ Tools/vscode_extension/*.vsix
 Tools/vscode_extension/.vscode/
 Tools/vscode_extension/.vsce/
 Tools/vscode_extension/coverage/
+
+!test/firmware-workspace-serial-console-test.py

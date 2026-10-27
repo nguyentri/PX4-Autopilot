@@ -55,6 +55,14 @@ export class ReadinessViewProvider implements vscode.TreeDataProvider<WorkspaceT
     }
 
     const items: WorkspaceTreeItem[] = [];
+    if (this.doctorData.importPrerequisites) {
+      const info = this.doctorData.importPrerequisites;
+      items.push(new WorkspaceTreeItem('Existing-image import readiness', vscode.TreeItemCollapsibleState.None, {
+        description: info.ready ? 'Ready (no compiler or probe required)' : 'Missing import prerequisites',
+        tooltip: info.ready ? `Python jsonschema and ${info.readelf}` : info.remediation,
+        iconPath: new vscode.ThemeIcon(info.ready ? 'check' : 'warning'),
+      }));
+    }
     if (this.doctorData.readiness) {
       for (const [operation, ready] of Object.entries(this.doctorData.readiness)) {
         items.push(

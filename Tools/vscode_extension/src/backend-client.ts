@@ -8,6 +8,8 @@ import {
   OperationOptions,
   OperationResult,
   ProbeLease,
+  ImportImagesData,
+  LoadProgressEvent,
 } from './types';
 
 // Python reaps its own process group with a three-second TERM grace. Let it
@@ -15,6 +17,17 @@ import {
 const CHILD_TERM_GRACE_MS = 10000;
 const PROBE_START_TIMEOUT_MS = 15000;
 const PROBE_RELEASE_TIMEOUT_MS = 30000;
+
+export function parseProgressLine(line: string, operationId?: string): LoadProgressEvent | undefined {
+  if (!line.startsWith('PX4_WORKSPACE_EVENT ') || !operationId) { return undefined; }
+  try {
+    const value = JSON.parse(line.slice('PX4_WORKSPACE_EVENT '.length));
+    if (value.eventVersion === 1 && value.operationInstanceId === operationId
+      && ['cr8_0', 'cr8_1'].includes(value.core) && ['load', 'verify'].includes(value.phase)
+      && ['begin', 'ok', 'fail', 'indeterminate'].includes(value.state) && typeof value.logPath === 'string') { return value; }
+  } catch { /* Unknown records remain ordinary stderr diagnostics. */ }
+  return undefined;
+}
 
 export class WorkspaceTrustError extends Error {
   public readonly code = 'WORKSPACE_TRUST_REQUIRED';
@@ -217,21 +230,19 @@ export class ProbeLeaseManager implements vscode.Disposable {
   }
 
   private createHandle(serial: string, session: ProbeSession): ProbeLeaseHandle {
-    let released = false;
+    let releasePromise: Promise<void> | undefined;
     return {
       lease: session.lease,
       sendEvent: (event) => session.sendEvent(event),
-      release: async (): Promise<void> => {
-        if (released) {
-          return;
+      release: (): Promise<void> => {
+        if (!releasePromise) {
+          releasePromise = (async () => {
+            if (this.sessions.get(serial) !== session) { return; }
+            await session.release();
+            if (this.sessions.get(serial) === session) { this.sessions.delete(serial); }
+          })();
         }
-        released = true;
-        const entry = this.sessions.get(serial);
-        if (!entry || entry !== session) {
-          return;
-        }
-        await session.release();
-        this.sessions.delete(serial);
+        return releasePromise;
       },
     };
   }
@@ -252,11 +263,18 @@ export interface BuildOptions extends OperationOptions {
 
 export interface LoadOptions extends OperationOptions {
   recover?: boolean;
+  expectReceiptId?: string;
+  expectPairSha256?: string;
 }
 
 export interface DebugConfigOptions extends OperationOptions {
   gdb?: string | boolean;
+  requireLoaded?: boolean;
+  expectReceiptId?: string;
+  expectPairSha256?: string;
 }
+
+export interface DoctorOptions extends OperationOptions { serial?: string }
 
 export interface ConsoleOptions extends OperationOptions {
   core?: string;
@@ -315,6 +333,7 @@ export class BackendClient {
     const fullArgs = [script, subcommand, ...args, '--json'];
     const optionEnvironment = options['env'] || {};
     const env = { ...optionEnvironment };
+    if (options.operationInstanceId) { env.FIRMWARE_WORKSPACE_OPERATION_ID = options.operationInstanceId; }
     if (options.lease) {
       env.FIRMWARE_PROBE_LEASE = options.lease.leaseToken;
       env.FIRMWARE_PROBE_SERIAL = options.lease.serial;
@@ -323,6 +342,7 @@ export class BackendClient {
     return new Promise((resolve, reject) => {
       let stdout = '';
       let stderr = '';
+      let progressBuffer = '';
       let settled = false;
       let cancellationSubscription: vscode.Disposable | undefined;
       let cancellationEscalation: NodeJS.Timeout | undefined;
@@ -359,6 +379,15 @@ export class BackendClient {
         const chunk = data.toString();
         stderr = (stderr + chunk).slice(-2 * 1024 * 1024);
         options.onOutput?.(chunk, 'stderr');
+        progressBuffer += chunk;
+        let newline: number;
+        while ((newline = progressBuffer.indexOf('\n')) >= 0) {
+          const line = progressBuffer.slice(0, newline).trim();
+          progressBuffer = progressBuffer.slice(newline + 1);
+          const event = parseProgressLine(line, options.operationInstanceId);
+          if (event) { options.onProgress?.(event); }
+        }
+        progressBuffer = progressBuffer.slice(-65536);
       });
 
       child.once('error', (error) => {
@@ -516,8 +545,13 @@ export class BackendClient {
     return this.executeCommand<CatalogData>('catalog');
   }
 
-  public async runDoctor(selectionPath?: string, options: OperationOptions = {}): Promise<OperationResult<DoctorData>> {
+  public async importImages(inputPath: string, options: OperationOptions = {}): Promise<OperationResult<ImportImagesData>> {
+    return this.executeCommand<ImportImagesData>('import-images', ['--input', inputPath], options);
+  }
+
+  public async runDoctor(selectionPath?: string, options: DoctorOptions = {}): Promise<OperationResult<DoctorData>> {
     const args = selectionPath ? ['--selection', selectionPath] : [];
+    if (options.serial) { args.push('--serial', options.serial); }
     return this.executeCommand<DoctorData>('doctor', args, options);
   }
 
@@ -553,6 +587,8 @@ export class BackendClient {
     if (options.recover) {
       args.push('--recover');
     }
+    if (options.expectReceiptId) { args.push('--expect-receipt-id', options.expectReceiptId); }
+    if (options.expectPairSha256) { args.push('--expect-pair-sha256', options.expectPairSha256); }
     return this.executeCommand('load', args, options);
   }
 
@@ -570,6 +606,9 @@ export class BackendClient {
     if (core) {
       args.push('--core', core);
     }
+    if (options.requireLoaded) { args.push('--require-loaded'); }
+    if (options.expectReceiptId) { args.push('--expect-receipt-id', options.expectReceiptId); }
+    if (options.expectPairSha256) { args.push('--expect-pair-sha256', options.expectPairSha256); }
     if (typeof options.gdb === 'string' && options.gdb) {
       args.push('--gdb', options.gdb);
     } else if (options.gdb === true) {
@@ -596,6 +635,10 @@ export class BackendClient {
       args.push('--core', options.core);
     }
     return this.executeCommand('console', args, options);
+  }
+
+  public cancelOperations(): void {
+    for (const child of this.ownedChildren) { terminateChildWithEscalation(child); }
   }
 
   public dispose(): void {

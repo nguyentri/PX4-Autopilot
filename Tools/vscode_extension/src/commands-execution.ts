@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
-import { BackendClient, ConsoleOptions, LoadOptions, ProbeLeaseHandle, WorkspaceTrustError } from './backend-client';
+import { BackendClient, LoadOptions, ProbeLeaseHandle, WorkspaceTrustError } from './backend-client';
 import { Px4NuttxDebugProvider } from './debug-provider';
+import { ConsoleTerminalController } from './console-terminal-controller';
 import { SelectionStore } from './selection-store';
-import { ConsoleHandoff, FirmwareSelection, OperationResult } from './types';
+import { ConsoleHandoff, FirmwareSelection, OperationResult, PreparedExecutionRequest, R8Core } from './types';
 import { ArtifactsViewProvider } from './workspace-view';
 
 interface OperationSnapshot {
@@ -13,14 +14,15 @@ interface OperationSnapshot {
   serial: string;
 }
 
-interface ConsoleState {
-  snapshot: OperationSnapshot;
-  lease: ProbeLeaseHandle;
-  core: string;
-  transport: string;
-}
-
 export interface ExecutionController extends vscode.Disposable {
+  buildSelectedGroup(selection: FirmwareSelection, clean?: boolean): Promise<OperationResult | null>;
+  buildExact(selection: FirmwareSelection, clean?: boolean, cancellationToken?: vscode.CancellationToken): Promise<OperationResult | null>;
+  startCoreConsole?(core: string): Promise<boolean>;
+  stopSessions?(): Promise<void>;
+  hasOwnedSessions?(): boolean;
+  setSetupRouter?(router: (name: string) => Promise<unknown>): void;
+  loadPrepared(request: PreparedExecutionRequest, options: { recover: boolean; allowImplicitBuild: false; retainedLease?: ProbeLeaseHandle }): Promise<OperationResult | null>;
+  debugPrepared(request: PreparedExecutionRequest, core: R8Core, options: { requireLoaded: true; retainedLease?: ProbeLeaseHandle }): Promise<boolean>;
   stopConsoleForHandoff(): Promise<ConsoleHandoff>;
   disposeAsync(): Promise<void>;
 }
@@ -51,15 +53,24 @@ export function registerExecutionCommands(
   debugProvider: Px4NuttxDebugProvider,
   artifactsView: ArtifactsViewProvider
 ): ExecutionController {
-  let activeConsole: ConsoleState | null = null;
-  let handoffLease: ProbeLeaseHandle | null = null;
+  let setupRouter: ((name: string) => Promise<unknown>) | undefined;
+  const routes: Record<string, string> = { 'px4Nuttx.build': 'buildBoth', 'px4Nuttx.cleanRebuild': 'cleanRebuild', 'px4Nuttx.load': 'loadBoth',
+    'px4Nuttx.attach': 'debugSelected', 'px4Nuttx.loadAndDebug': 'loadAndDebug', 'px4Nuttx.recoverLoad': 'recoverBoth' };
+  const register = (name: string, handler: (...args: any[]) => unknown) => vscode.commands.registerCommand(name, (...args: any[]) => {
+    if (store.getActiveSetup?.() && setupRouter && routes[name]) { return setupRouter(routes[name]); }
+    return handler(...args);
+  });
+  const consoles = new ConsoleTerminalController(client, store, () => debugProvider.hasOwnedSessions());
+  store.setConsoleStatusProvider((core) => consoles.describe(core));
+  store.setSessionGuard(() => consoles.hasOwnedSessions() || debugProvider.hasOwnedSessions());
+  context.subscriptions.push(consoles.onDidChange(() => store.notifySessionChange()));
 
   const receiptFor = (selection: FirmwareSelection): string | null => {
     return store.getReceiptPath(selection);
   };
 
-  const bindReceipt = (receiptPath: string | null, selection: FirmwareSelection): void => {
-    store.setReceiptPath(receiptPath, selection);
+  const bindReceipt = async (receiptPath: string | null, selection: FirmwareSelection): Promise<void> => {
+    await store.setReceiptPath(receiptPath, selection);
   };
 
   const selectionPathFor = (selection: FirmwareSelection): string => {
@@ -89,26 +100,30 @@ export function registerExecutionCommands(
   const showResultError = (label: string, result: OperationResult<any>): false => {
     const suffix = result.data?.recoveryRequired ? ' Recovery is required before another ordinary load.' : '';
     const prefix = result.status === 'cancelled' ? `${label} cancelled` : label;
-    vscode.window.showErrorMessage(`${prefix}: ${diagnostics(result)}${suffix}`);
+    const step = result.data?.steps?.slice().reverse().find((item: { state: string }) => ['fail', 'indeterminate'].includes(item.state));
+    const detail = step ? ` R8-${step.core.slice(-1)} ${step.phase}: ${step.state}.` : '';
+    const logs = result.data?.logPath ? ` Logs: ${result.data.logPath}` : '';
+    vscode.window.showErrorMessage(`${prefix}: ${diagnostics(result)}${detail}${suffix}${logs}`);
     return false;
   };
 
-  const runBuild = async (clean = false): Promise<boolean> => {
+  const runBuildResult = async (selection: FirmwareSelection, clean = false, bind = true, cancellationToken?: vscode.CancellationToken): Promise<OperationResult | null> => {
+    if (store.getTargetTransition?.()) { vscode.window.showErrorMessage('Wait for the active target operation to finish before building.'); return null; }
     if (!trusted()) {
-      return showTrustError('build firmware');
+      showTrustError('build firmware'); return null;
     }
-    const operation = snapshot();
+    const operation = snapshot(selection);
     return vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
         title: clean ? 'Cleaning and building firmware...' : 'Building firmware...',
-        cancellable: true,
+        cancellable: !cancellationToken,
       },
       async (progress, token) => {
         try {
           const result = await client.buildSelection(operation.selectionPath, {
             clean,
-            cancellationToken: token,
+            cancellationToken: cancellationToken || token,
             onOutput: (chunk) => {
               const message = chunk.trim().split(/\r?\n/).filter(Boolean).pop();
               if (message) {
@@ -117,31 +132,38 @@ export function registerExecutionCommands(
             },
           });
           if (!operationResultOk(result) || !result.receiptPath) {
-            return showResultError(clean ? 'Clean rebuild failed' : 'Build failed', result);
+            showResultError(clean ? 'Clean rebuild failed' : 'Build failed', result); return result;
           }
-          bindReceipt(result.receiptPath, operation.selection);
+          if (bind) { await bindReceipt(result.receiptPath, operation.selection); }
           artifactsView.refresh();
           vscode.window.showInformationMessage(`${clean ? 'Clean rebuild' : 'Build'} completed for ${operation.selection.id}.`);
-          return true;
+          return result;
         } catch (error) {
           const message = error instanceof WorkspaceTrustError ? error.message : (error as Error).message;
           vscode.window.showErrorMessage(`${clean ? 'Clean rebuild' : 'Build'} failed: ${message}`);
-          return false;
+          return null;
         }
       }
     );
   };
 
+  const runBuild = async (clean = false): Promise<boolean> => operationResultOk(await runBuildResult(store.getSelection(), clean));
+
   const runLoad = async (
     operation: OperationSnapshot,
     recover = false,
-    retainedLease?: ProbeLeaseHandle
+    retainedLease?: ProbeLeaseHandle,
+    prepared?: PreparedExecutionRequest
   ): Promise<OperationResult<any> | null> => {
+    if (!prepared && store.getTargetTransition?.()) {
+      vscode.window.showErrorMessage('Wait for the active target operation to finish.'); return null;
+    }
     if (!trusted()) {
       showTrustError('load firmware to a target');
       return null;
     }
-    const receiptPath = receiptFor(operation.selection);
+    const receiptPath = prepared ? prepared.receiptPath : receiptFor(operation.selection);
+    if (prepared && !preparedCurrent(prepared)) { await retainedLease?.release().catch(() => undefined); return null; }
     if (!receiptPath) {
       const choice = await vscode.window.showWarningMessage(
         'No committed receipt matches the selected profile. Build it before loading.',
@@ -160,30 +182,43 @@ export function registerExecutionCommands(
     }
     const options: LoadOptions = {
       recover,
+      expectReceiptId: prepared?.receiptId, expectPairSha256: prepared?.pairSha256, operationInstanceId: prepared?.operationInstanceId,
     };
     const lease = retainedLease || await acquireProbeLease(operation);
     if (!lease) {
       return null;
     }
     try {
+      if (prepared && (!preparedCurrent(prepared) || lease.lease.serial !== prepared.serial)) {
+        await lease.release(); throw new Error('Prepared pair changed during probe handoff; load cancelled.');
+      }
       const result = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: recover ? 'Running guarded recovery load...' : 'Loading selected ELF to RAM...',
-          cancellable: true,
+          cancellable: !prepared?.workflowCancellation,
         },
-        async (progress, token) => client.loadTarget(operation.selectionPath, receiptPath, operation.serial, {
+        async (progress, token) => {
+          if (prepared) { progress.report({ message: 'Checking images' }); }
+          const result = await client.loadTarget(operation.selectionPath, receiptPath, operation.serial, {
           ...options,
           lease: lease.lease,
-          cancellationToken: token,
-          onOutput: (chunk) => {
+          cancellationToken: prepared?.workflowCancellation || token,
+          onProgress: prepared ? (event) => progress.report({ message: `${event.phase === 'load' ? 'Loading' : 'Verifying pair:'} R8-${event.core.slice(-1)}: ${event.state}` }) : undefined,
+          onOutput: prepared ? undefined : (chunk) => {
             const message = chunk.trim().split(/\r?\n/).filter(Boolean).pop();
             if (message) {
               progress.report({ message: message.slice(-240) });
             }
           },
-        })
+          });
+          if (prepared && operationResultOk(result)) { progress.report({ message: 'Completed' }); }
+          return result;
+        }
       );
+      if (prepared && operationResultOk(result) && !resultMatches(prepared, result)) {
+        await lease.release(); throw new Error('Load result identity differs from the prepared request; inspect the operation logs before recovery.');
+      }
       if (!operationResultOk(result)) {
         showResultError(recover ? 'Recovery load failed' : 'Load failed', result);
         await lease.release().catch(() => undefined);
@@ -204,152 +239,22 @@ export function registerExecutionCommands(
     }
   };
 
-  const stopConsoleInternal = async (notify = true, preserveLease = false): Promise<boolean> => {
-    if (!activeConsole) {
-      return true;
-    }
-    const state = activeConsole;
-    const receiptPath = receiptFor(state.snapshot.selection) || state.snapshot.receiptPath;
-    if (!receiptPath) {
-      vscode.window.showErrorMessage('Cannot stop the console because its bound receipt is no longer available.');
-      return false;
-    }
-    try {
-      const result = await client.consoleAction(
-        'stop',
-        state.snapshot.selectionPath,
-        receiptPath,
-        state.lease.lease.serial,
-        { core: state.core, lease: state.lease.lease }
-      );
-      if (!operationResultOk(result)) {
-        if (notify) {
-          showResultError('Console stop failed', result);
-        }
-        return false;
-      }
-      if (preserveLease) {
-        handoffLease = state.lease;
-      } else {
-        await state.lease.release();
-      }
-      activeConsole = null;
-      if (notify) {
-        vscode.window.showInformationMessage('Console stopped.');
-      }
-      return true;
-    } catch (error) {
-      if (notify) {
-        vscode.window.showErrorMessage(`Console stop failed: ${(error as Error).message}`);
-      }
-      return false;
-    }
-  };
-
   acquireProbeLease = async (operation: OperationSnapshot): Promise<ProbeLeaseHandle | null> => {
-    if (!operation.serial) {
-      vscode.window.showErrorMessage('Select a J-Link probe before starting a target operation.');
-      return null;
-    }
-    if (activeConsole && !(await stopConsoleInternal(false, true))) {
-      vscode.window.showErrorMessage('Stop the active console before starting another target operation.');
-      return null;
-    }
-    if (handoffLease) {
-      const lease = handoffLease;
-      handoffLease = null;
-      return lease;
-    }
-    return client.probeLeases.acquire(operation.serial).catch((error: Error) => {
-      vscode.window.showErrorMessage(`Unable to reserve probe ${operation.serial}: ${error.message}`);
-      return null;
+    if (!operation.serial) { vscode.window.showErrorMessage('Select a J-Link probe before starting a target operation.'); return null; }
+    const handoff = await consoles.stopRttForDebugHandoff();
+    if (!handoff.ok) { return null; }
+    return handoff.lease as ProbeLeaseHandle | undefined || client.probeLeases.acquire(operation.serial).catch((error: Error) => {
+      vscode.window.showErrorMessage(`Unable to reserve probe ${operation.serial}: ${error.message}`); return null;
     });
   };
-
   const startConsole = async (): Promise<boolean> => {
-    if (!trusted()) {
-      return showTrustError('start the console');
-    }
-    const operation = snapshot();
-    const receiptPath = receiptFor(operation.selection);
-    if (!receiptPath) {
-      vscode.window.showWarningMessage('Build the selected profile before starting its console.');
-      return false;
-    }
-    const core = operation.core;
-    const transport = store.getConsoleTransport(core);
-    if (operation.selection.board !== 'rdk-rzv2h' || (core !== 'cr8_0' && core !== 'cr8_1')) {
-      vscode.window.showErrorMessage(`Managed console ownership is unavailable for ${operation.selection.board}:${core}; use the documented manual console route.`);
-      return false;
-    }
-    if (transport === 'none') {
-      vscode.window.showErrorMessage(`No supported console transport is configured for ${core}.`);
-      return false;
-    }
-    if (transport !== 'rtt') {
-      vscode.window.showErrorMessage(`${transport.toUpperCase()} console is not managed by the extension. Use platforms/nuttx/Debug/nsh_console_exec.py with the selected serial.`);
-      return false;
-    }
-    if (!operation.selection.group && operation.selection.build.family === 'px4') {
-      const receipt = store.readReceipt(receiptPath) as { artifacts?: Array<{ core?: string; rttAddress?: string | null }> } | null;
-      const artifact = receipt?.artifacts?.find((item) => item.core === core || (!item.core && core === operation.selection.core));
-      if (!artifact?.rttAddress) {
-        vscode.window.showErrorMessage(`No RTT control block is admitted for ${core}; use the documented manual console route.`);
-        return false;
-      }
-    }
-    if (activeConsole && !(await stopConsoleInternal(false))) {
-      vscode.window.showErrorMessage('Stop the active console before starting another one.');
-      return false;
-    }
-    if (handoffLease) {
-      const staleHandoff = handoffLease;
-      handoffLease = null;
-      try {
-        await staleHandoff.release();
-      } catch (error) {
-        vscode.window.showErrorMessage(`Previous probe handoff is still active: ${(error as Error).message}`);
-        return false;
-      }
-    }
-    const serial = operation.serial;
-    if (!serial) {
-      vscode.window.showErrorMessage('Select a J-Link probe before starting the console.');
-      return false;
-    }
-
-    const lease = await client.probeLeases.acquire(serial).catch((error: Error) => {
-      vscode.window.showErrorMessage(`Unable to reserve probe ${serial}: ${error.message}`);
-      return null;
-    });
-    if (!lease) {
-      return false;
-    }
-    const options: ConsoleOptions = { core, lease: lease.lease };
-    try {
-      const result = await client.consoleAction('start', operation.selectionPath, receiptPath, serial, options);
-      if (!operationResultOk(result)) {
-        await lease.release().catch((error: Error) => {
-          vscode.window.showWarningMessage(`Probe reservation cleanup is still pending: ${error.message}`);
-        });
-        return showResultError('Console start failed', result);
-      }
-      activeConsole = { snapshot: { ...operation, receiptPath }, lease, core, transport };
-      vscode.window.showInformationMessage(`${transport.toUpperCase()} console started on ${core}.`);
-      return true;
-    } catch (error) {
-      await lease.release().catch((releaseError: Error) => {
-        vscode.window.showWarningMessage(`Probe reservation cleanup is still pending: ${releaseError.message}`);
-      });
-      vscode.window.showErrorMessage(`Console start failed: ${(error as Error).message}`);
-      return false;
-    }
+    try { return await consoles.startCoreConsole(store.getSelectedCore()); }
+    catch (error) { vscode.window.showErrorMessage((error as Error).message); return false; }
   };
-
   context.subscriptions.push(
-    vscode.commands.registerCommand('px4Nuttx.build', () => runBuild(false)),
-    vscode.commands.registerCommand('px4Nuttx.cleanRebuild', () => runBuild(true)),
-    vscode.commands.registerCommand('px4Nuttx.load', async () => {
+    register('px4Nuttx.build', () => runBuild(false)),
+    register('px4Nuttx.cleanRebuild', () => runBuild(true)),
+    register('px4Nuttx.load', async () => {
       if (!trusted()) {
         showTrustError('load firmware to a target');
         return false;
@@ -358,7 +263,7 @@ export function registerExecutionCommands(
       const result = await runLoad(operation, false);
       return operationResultOk(result);
     }),
-    vscode.commands.registerCommand('px4Nuttx.recoverLoad', async () => {
+    register('px4Nuttx.recoverLoad', async () => {
       if (!trusted()) {
         showTrustError('run guarded recovery');
         return false;
@@ -366,7 +271,7 @@ export function registerExecutionCommands(
       const result = await runLoad(snapshot(), true);
       return operationResultOk(result);
     }),
-    vscode.commands.registerCommand('px4Nuttx.attach', async () => {
+    register('px4Nuttx.attach', async () => {
       if (!trusted()) {
         showTrustError('attach the debugger');
         return false;
@@ -390,7 +295,7 @@ export function registerExecutionCommands(
       const started = await debugProvider.startManagedAttach(receiptPath, operation.core, operation.selection, operation.serial);
       return started;
     }),
-    vscode.commands.registerCommand('px4Nuttx.loadAndDebug', async () => {
+    register('px4Nuttx.loadAndDebug', async () => {
       if (!trusted()) {
         showTrustError('load and debug firmware');
         return false;
@@ -430,28 +335,53 @@ export function registerExecutionCommands(
         return false;
       }
     }),
-    vscode.commands.registerCommand('px4Nuttx.startConsole', startConsole),
-    vscode.commands.registerCommand('px4Nuttx.stopConsole', () => stopConsoleInternal(true))
+    register('px4Nuttx.startConsole', startConsole),
+    register('px4Nuttx.stopConsole', async () => { try { await consoles.stopOwnedSessions(); return true; } catch (error) { vscode.window.showErrorMessage((error as Error).message); return false; } })
   );
 
-  const disposeAsync = async (): Promise<void> => {
-    if (!(await stopConsoleInternal(false))) {
-      throw new Error('Owned console did not acknowledge teardown; probe reservation remains active.');
-    }
-    if (handoffLease) {
-      const lease = handoffLease;
-      handoffLease = null;
-      await lease.release();
-    }
+  const disposeAsync = () => consoles.disposeAsync();
+
+  const preparedCurrent = (request: PreparedExecutionRequest): boolean => {
+    const state = store.getPreparedPair(request.selection.group);
+    return (!request.setupToken || store.isSetupTokenCurrent(request.setupToken)) && store.getSelectionIdentity(request.selection) === store.getSelectionIdentity()
+      && store.getSelectedProbe() === request.serial && state?.generation === request.pairGeneration
+      && !state.pending && !state.validationError && !Object.keys(state.sourceChanges || {}).length
+      && state.prepared?.receiptId === request.receiptId && state.prepared.receiptPath === request.receiptPath
+      && state.prepared.pairSha256 === request.pairSha256
+      && state.prepared.artifacts.every((artifact) => artifact.sha256 === request.artifactDigests[artifact.core as R8Core]);
   };
+  const resultMatches = (request: PreparedExecutionRequest, result: OperationResult): boolean =>
+    result.data.receiptId === request.receiptId && result.data.pairSha256 === request.pairSha256
+    && result.data.operationInstanceId === request.operationInstanceId
+    && result.data.groupDefinitionSha256 === request.groupDefinitionSha256
+    && Object.entries(request.artifactDigests).every(([core, digest]) => result.data.artifactDigests?.[core] === digest);
 
   const controller: ExecutionController = {
-    stopConsoleForHandoff: async (): Promise<ConsoleHandoff> => {
-      const ok = await stopConsoleInternal(false, true);
-      const lease = ok ? handoffLease || undefined : undefined;
-      handoffLease = null;
-      return { ok, lease };
+    setSetupRouter: (router) => { setupRouter = router; },
+    buildSelectedGroup: (selection, clean) => runBuildResult(selection, clean, false),
+    buildExact: (selection, clean, token) => runBuildResult(selection, clean, false, token),
+    loadPrepared: async (request, options) => {
+      if (!trusted() || !preparedCurrent(request)) { await options.retainedLease?.release().catch(() => undefined); return null; }
+      try { store.beginTargetTransition(options.recover ? 'Recovering captured pair' : 'Loading captured pair', request.workflowOwner); }
+      catch (error) { await options.retainedLease?.release().catch(() => undefined); throw error; }
+      try {
+        return await runLoad({ selection: request.selection, selectionPath: request.selectionPath, receiptPath: request.receiptPath,
+          serial: request.serial, core: request.selection.core }, options.recover, options.retainedLease, request);
+      } finally { store.endTargetTransition(); }
     },
+    debugPrepared: async (request, core, options) => {
+      if (!trusted() || !preparedCurrent(request)) { await options.retainedLease?.release().catch(() => undefined); return false; }
+      try { store.beginTargetTransition(`Attaching R8-${core.slice(-1)}`, request.workflowOwner); }
+      catch (error) { await options.retainedLease?.release().catch(() => undefined); throw error; }
+      try {
+        return await debugProvider.startManagedAttach(request.receiptPath, core, request.selection, request.serial,
+          options.retainedLease, request, () => preparedCurrent(request));
+      } finally { store.endTargetTransition(); }
+    },
+    startCoreConsole: (core) => consoles.startCoreConsole(core),
+    stopSessions: () => consoles.stopOwnedSessions(),
+    hasOwnedSessions: () => consoles.hasOwnedSessions(),
+    stopConsoleForHandoff: () => consoles.stopRttForDebugHandoff(),
     disposeAsync,
     dispose: () => {
       void disposeAsync().catch((error: Error) => {

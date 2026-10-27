@@ -7,3 +7,4 @@ export { OperationsViewProvider } from './views/operations-view';
 export { ReadinessViewProvider } from './views/readiness-view';
 export { SelectionViewProvider } from './views/selection-view';
 export { WorkspaceTreeItem } from './tree-item';
+export { DualCoreLoaderViewProvider } from './views/dual-core-loader-view';
