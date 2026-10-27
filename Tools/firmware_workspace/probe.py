@@ -35,6 +35,16 @@ def probe_directory(serial):
     return root
 
 
+def probe_history_path(serial):
+    """Read-only lookup: never creates a runtime directory or reserves hardware."""
+    root = Path(os.environ.get("FIRMWARE_WORKSPACE_RUNTIME", f"/tmp/px4-firmware-{os.getuid()}"))
+    directory = root / hashlib.sha256(serial.encode()).hexdigest()
+    for path in (root, directory):
+        if path.is_symlink() or (path.exists() and path.stat().st_uid != os.getuid()):
+            raise OperationError("Runtime directory is not owned by this user", "INVALID_RUNTIME", True)
+    return directory / "target-state.json"
+
+
 def resolve_serial(requested=None):
     serial = requested or os.environ.get("FIRMWARE_PROBE_SERIAL") or os.environ.get("JLINK_SERIAL")
     if not serial:

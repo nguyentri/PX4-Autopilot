@@ -202,6 +202,20 @@ def run_doctor() -> Tuple[Dict[str, Any], List[Dict[str, str]]]:
 def cmd_doctor(args: Any) -> int:
     """CLI handler for doctor command."""
     data, diags = run_doctor()
+    from .contracts import HAS_JSONSCHEMA
+    readelf = check_tool("arm-none-eabi-readelf")
+    data["importPrerequisites"] = {"ready": bool(HAS_JSONSCHEMA and readelf),
+        "jsonschema": HAS_JSONSCHEMA, "readelf": readelf,
+        "remediation": "Install Python jsonschema and arm-none-eabi-readelf on the workspace host."}
+    if getattr(args, "serial", None):
+        from .probe import probe_history_path
+        from .target_state import TargetState
+        from .verification import OperationError
+        try:
+            data["targetHistory"] = TargetState(probe_history_path(args.serial)).history()
+        except OperationError as error:
+            data["targetHistory"] = {"state": "unreadable", "recoveryRequired": True, "verifiedPair": None}
+            diags.append(make_diagnostic("error", error.code, str(error)))
     has_error = any(d["level"] == "error" for d in diags)
     status = "failed" if has_error else "ok"
     res = make_result("doctor", status, data=data, diagnostics=diags)

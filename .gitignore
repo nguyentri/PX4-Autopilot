@@ -127,6 +127,7 @@ keys/
 .vscode/targets.log
 
 *.py
+!test/rzv2h-ipc-build-load-modes-test.py
 !test/rzv2h-canfd-tx-lifecycle-runtime-test.py
 !test/rzv2h-canfd-sample-contract-test.py
 !test/rzv2h-irq-routing-runtime-test.py

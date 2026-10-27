@@ -8,14 +8,15 @@ import sys
 from .contracts import REPO_ROOT, EXIT_OK, make_result
 from .doctor import check_tool
 from .load import operation_failure
-from .probe import probe_directory, resolve_serial
+from .probe import probe_directory, probe_history_path, resolve_serial
 from .target_state import TargetState
-from .verification import OperationError, admitted_inputs, debug_snapshot
+from .verification import OperationError, admitted_inputs, debug_snapshot, prepared_identity
 
 
 def cmd_debug_config(args):
     try:
         selection, resolved, receipt, artifacts = admitted_inputs(args, "debug")
+        identity = prepared_identity(selection, resolved, receipt, artifacts)
         core = getattr(args, "core", None) or selection["core"]
         if core == "multicore":
             raise OperationError("Select a concrete core from this image group", "CORE_REQUIRED")
@@ -27,6 +28,10 @@ def cmd_debug_config(args):
         # Config generation remains host-only. A session reservation enforces
         # probe ownership when the client actually starts a debug session.
         requested_serial = getattr(args, "serial", None)
+        if getattr(args, "require_loaded", False):
+            if not requested_serial:
+                raise OperationError("Select the exact probe whose load history should match", "PROBE_REQUIRED", True)
+            TargetState(probe_history_path(requested_serial)).require_loaded(identity)
         if requested_serial:
             state = TargetState(probe_directory(requested_serial) / "target-state.json")
             state.require_ready([core])
@@ -66,8 +71,9 @@ def cmd_debug_config(args):
         svd = REPO_ROOT / "rzv2h.svd"
         if selection["board"] == "rdk-rzv2h" and svd.is_file():
             configuration["svdFile"] = str(svd)
-        print(json.dumps(make_result("debug-config", "ok", data={"configuration": configuration,
-                                      "artifactSha256": artifacts[core]["sha256"], "core": core})))
+        print(json.dumps(make_result("debug-config", "ok", data=dict(identity, configuration=configuration,
+                                      artifactSha256=artifacts[core]["sha256"], core=core,
+                                      operationInstanceId=os.environ.get("FIRMWARE_WORKSPACE_OPERATION_ID")))))
         return EXIT_OK
     except (OperationError, OSError, ValueError, KeyError) as error:
         return operation_failure("debug-config", error)

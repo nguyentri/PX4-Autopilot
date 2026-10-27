@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import tempfile
@@ -21,8 +22,15 @@ class OperationError(ValueError):
 
 
 def read_json(path):
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"Duplicate JSON key: {key}")
+            result[key] = value
+        return result
     try:
-        value = json.loads(Path(path).read_text(encoding="utf-8"))
+        value = json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=unique_pairs)
     except (OSError, ValueError, TypeError) as error:
         raise OperationError(f"Cannot read input: {error}", "INVALID_INPUT") from error
     if not isinstance(value, dict):
@@ -64,6 +72,8 @@ def admitted_inputs(args, operation):
             core = receipt["core"]  # Legacy single-image receipt has an unambiguous core.
         if core not in expected_cores or core in by_core:
             raise OperationError("Receipt core membership is invalid or duplicated", "RECEIPT_CORE_MISMATCH")
+        if receipt["schemaVersion"] == 2 and artifact.get("member") != next((m for m in members if m["core"] == core), None):
+            raise OperationError("Imported member declaration differs from the selected group", "RECEIPT_MISMATCH")
         source = Path(artifact["path"])
         source = source if source.is_absolute() else REPO_ROOT / source
         try:
@@ -75,7 +85,23 @@ def admitted_inputs(args, operation):
     requested_core = getattr(args, "core", None)
     if requested_core and requested_core not in by_core:
         raise OperationError("Requested core is absent from this receipt", "RECEIPT_CORE_MISMATCH")
+    actual = prepared_identity(selection, resolved, receipt, by_core)
+    if ((getattr(args, "expect_receipt_id", None) and args.expect_receipt_id != receipt["receiptId"]) or
+            (getattr(args, "expect_pair_sha256", None) and args.expect_pair_sha256 != actual.get("pairSha256"))):
+        raise OperationError("Prepared receipt or pair bytes differ from the frozen request", "PREPARED_IDENTITY_MISMATCH")
     return selection, resolved, receipt, by_core
+
+
+def prepared_identity(selection, resolved, receipt, artifacts):
+    digests = {core: item["sha256"].lower() for core, item in artifacts.items()}
+    definition = group_fingerprint(resolved["groupMeta"]) if resolved.get("groupMeta") else None
+    pair = None
+    if definition and set(digests) == {"cr8_0", "cr8_1"}:
+        payload = [selection["board"], selection["group"], definition,
+                   [[core, digests[core]] for core in ("cr8_0", "cr8_1")]]
+        pair = hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode()).hexdigest()
+    return {"receiptId": receipt["receiptId"], "artifactDigests": digests,
+            "groupDefinitionSha256": definition, "pairSha256": pair}
 
 
 def copy_verified(artifact, directory):

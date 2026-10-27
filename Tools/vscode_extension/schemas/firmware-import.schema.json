@@ -1,0 +1,289 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Firmware image preparation request",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "selection",
+    "sources"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "selection": {
+      "type": "object",
+      "description": "Validated separately through the existing firmware selection resolver."
+    },
+    "sources": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 2,
+      "properties": {
+        "cr8_0": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "path",
+                "declaration"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "file"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "declaration": {
+                  "type": "object",
+                  "required": [
+                    "core",
+                    "family"
+                  ],
+                  "properties": {
+                    "core": {
+                      "enum": [
+                        "cr8_0",
+                        "cr8_1"
+                      ]
+                    },
+                    "family": {
+                      "enum": [
+                        "px4",
+                        "nuttx"
+                      ]
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "path",
+                "declaration",
+                "relativePath"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "folder"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "declaration": {
+                  "type": "object",
+                  "required": [
+                    "core",
+                    "family"
+                  ],
+                  "properties": {
+                    "core": {
+                      "enum": [
+                        "cr8_0",
+                        "cr8_1"
+                      ]
+                    },
+                    "family": {
+                      "enum": [
+                        "px4",
+                        "nuttx"
+                      ]
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "relativePath": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "receiptPath",
+                "artifactCore"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "build-receipt",
+                    "prepared-receipt"
+                  ]
+                },
+                "receiptPath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "artifactCore": {
+                  "enum": [
+                    "cr8_0",
+                    "cr8_1"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "cr8_1": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "path",
+                "declaration"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "file"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "declaration": {
+                  "type": "object",
+                  "required": [
+                    "core",
+                    "family"
+                  ],
+                  "properties": {
+                    "core": {
+                      "enum": [
+                        "cr8_0",
+                        "cr8_1"
+                      ]
+                    },
+                    "family": {
+                      "enum": [
+                        "px4",
+                        "nuttx"
+                      ]
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "path",
+                "declaration",
+                "relativePath"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "folder"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "declaration": {
+                  "type": "object",
+                  "required": [
+                    "core",
+                    "family"
+                  ],
+                  "properties": {
+                    "core": {
+                      "enum": [
+                        "cr8_0",
+                        "cr8_1"
+                      ]
+                    },
+                    "family": {
+                      "enum": [
+                        "px4",
+                        "nuttx"
+                      ]
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "relativePath": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "receiptPath",
+                "artifactCore"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "build-receipt",
+                    "prepared-receipt"
+                  ]
+                },
+                "receiptPath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "artifactCore": {
+                  "enum": [
+                    "cr8_0",
+                    "cr8_1"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

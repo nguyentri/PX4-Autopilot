@@ -69,12 +69,28 @@ resolve_tools || exit 2
 mkdir -p "${LOG_DIR}"
 
 # --- load: initiator first so the responder adopts its recovery epoch -------
-load_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
-load_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
+run_step() {
+	step_core="$1"; step_phase="$2"; shift 2
+	if [ "${FIRMWARE_WORKSPACE_STEPS:-0}" = 1 ]; then
+		echo "PX4_WORKSPACE_STEP ${step_core} ${step_phase} begin" >&2
+	fi
+	if "$@"; then
+		if [ "${FIRMWARE_WORKSPACE_STEPS:-0}" = 1 ]; then
+			echo "PX4_WORKSPACE_STEP ${step_core} ${step_phase} ok" >&2
+		fi
+	else
+		if [ "${FIRMWARE_WORKSPACE_STEPS:-0}" = 1 ]; then
+			echo "PX4_WORKSPACE_STEP ${step_core} ${step_phase} fail" >&2
+		fi
+		return 1
+	fi
+}
+run_step cr8_0 load load_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
+run_step cr8_1 load load_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
 
 # --- verify both are actually running ---------------------------------------
-verify_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
-verify_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
+run_step cr8_0 verify verify_core "${DEV_CR8_0}" "${CR8_0_ELF}" "CR8-0" || exit 1
+run_step cr8_1 verify verify_core "${DEV_CR8_1}" "${CR8_1_ELF}" "CR8-1" || exit 1
 
 # Suggest an RTT bridge only for an image that has an RTT control block.
 has_rtt() {

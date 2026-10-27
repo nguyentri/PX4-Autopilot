@@ -2,132 +2,437 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://px4.io/schemas/artifact-receipt.schema.json",
   "title": "ArtifactReceipt",
-  "description": "Immutable artifact provenance and receipt contract for firmware builds",
-  "type": "object",
-  "required": [
-    "schemaVersion",
-    "receiptId",
-    "timestamp",
-    "family",
-    "board",
-    "core",
-    "selectionId",
-    "gitRevision",
-    "gitDirty",
-    "compiler",
-    "artifacts",
-    "status"
+  "oneOf": [
+    {
+      "$ref": "#/definitions/v1"
+    },
+    {
+      "$ref": "#/definitions/v2"
+    }
   ],
-  "properties": {
-    "groupDefinitionSha256": {
-      "type": "string",
-      "pattern": "^[0-9a-f]{64}$",
-      "description": "Digest of the authoritative group member/operation definition used by the build"
-    },
-    "schemaVersion": {
-      "type": "integer",
-      "const": 1
-    },
-    "receiptId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "timestamp": {
-      "type": "string"
-    },
-    "family": {
-      "type": "string",
-      "enum": [
-        "px4",
-        "nuttx",
-        "multicore"
-      ]
-    },
-    "board": {
-      "type": "string"
-    },
-    "core": {
-      "type": "string"
-    },
-    "selectionId": {
-      "type": "string"
-    },
-    "target": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "config": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "gitRevision": {
-      "type": "string"
-    },
-    "gitDirty": {
-      "type": "boolean"
-    },
-    "compiler": {
-      "type": "string"
-    },
-    "artifacts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "path",
-          "sha256",
-          "size"
-        ],
-        "properties": {
-          "path": {
-            "type": "string"
-          },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-fA-F]{64}$"
-          },
-          "size": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "core": {
-            "type": "string"
-          },
-          "entryPoint": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "rttAddress": {
-            "type": [
-              "string",
-              "null"
-            ]
+  "definitions": {
+    "v1": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "receiptId",
+        "timestamp",
+        "family",
+        "board",
+        "core",
+        "selectionId",
+        "gitRevision",
+        "gitDirty",
+        "compiler",
+        "artifacts",
+        "status"
+      ],
+      "properties": {
+        "groupDefinitionSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Digest of the authoritative group member/operation definition used by the build"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "receiptId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "family": {
+          "type": "string",
+          "enum": [
+            "px4",
+            "nuttx",
+            "multicore"
+          ]
+        },
+        "board": {
+          "type": "string"
+        },
+        "core": {
+          "type": "string"
+        },
+        "selectionId": {
+          "type": "string"
+        },
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "config": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gitRevision": {
+          "type": "string"
+        },
+        "gitDirty": {
+          "type": "boolean"
+        },
+        "compiler": {
+          "type": "string"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256",
+              "size"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "core": {
+                "type": "string"
+              },
+              "entryPoint": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rttAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
           }
         },
-        "additionalProperties": false
-      }
+        "status": {
+          "type": "string",
+          "enum": [
+            "provisional",
+            "committed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "group": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
-    "status": {
-      "type": "string",
-      "enum": [
-        "provisional",
-        "committed",
-        "failed",
-        "cancelled"
-      ]
+    "v2": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "receiptId",
+        "timestamp",
+        "family",
+        "board",
+        "core",
+        "selectionId",
+        "gitRevision",
+        "gitDirty",
+        "compiler",
+        "artifacts",
+        "status",
+        "operation",
+        "requestId",
+        "provenance"
+      ],
+      "properties": {
+        "groupDefinitionSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Digest of the authoritative group member/operation definition used by the build"
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "receiptId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "family": {
+          "type": "string",
+          "enum": [
+            "px4",
+            "nuttx",
+            "multicore"
+          ]
+        },
+        "board": {
+          "type": "string"
+        },
+        "core": {
+          "type": "string"
+        },
+        "selectionId": {
+          "type": "string"
+        },
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "config": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gitRevision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gitDirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "compiler": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256",
+              "size",
+              "core",
+              "provenance",
+              "sourceObservation",
+              "checks",
+              "member"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "core": {
+                "type": "string"
+              },
+              "entryPoint": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rttAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "provenance": {
+                "$ref": "#/definitions/provenance"
+              },
+              "sourceObservation": {
+                "$ref": "#/definitions/observation"
+              },
+              "checks": {
+                "type": "object",
+                "required": [
+                  "bytes",
+                  "address",
+                  "startup",
+                  "identity",
+                  "hardwareQualified"
+                ],
+                "properties": {
+                  "bytes": {
+                    "const": "sha256-verified"
+                  },
+                  "address": {
+                    "const": "address-compatible"
+                  },
+                  "startup": {
+                    "const": "supported"
+                  },
+                  "identity": {
+                    "enum": [
+                      "receipt-reported",
+                      "developer-declared",
+                      "unknown"
+                    ]
+                  },
+                  "hardwareQualified": {
+                    "const": false
+                  }
+                },
+                "additionalProperties": false
+              },
+              "member": {
+                "$ref": "#/definitions/member"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "provisional",
+            "committed",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "group": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "operation": {
+          "const": "import-images"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        }
+      },
+      "additionalProperties": false
     },
-    "group": {
-      "type": [
-        "string",
-        "null"
-      ]
+    "member": {
+      "type": "object",
+      "required": [
+        "core",
+        "family"
+      ],
+      "properties": {
+        "core": {
+          "enum": [
+            "cr8_0",
+            "cr8_1"
+          ]
+        },
+        "family": {
+          "enum": [
+            "px4",
+            "nuttx"
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "config": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "observation": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256",
+        "size",
+        "mtimeNs"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mtimeNs": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "evidence",
+        "sourceReceiptId",
+        "reportedGitRevision",
+        "reportedGitDirty",
+        "reportedCompiler"
+      ],
+      "properties": {
+        "evidence": {
+          "enum": [
+            "receipt-reported",
+            "developer-declared",
+            "unknown"
+          ]
+        },
+        "sourceReceiptId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reportedGitRevision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reportedGitDirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "reportedCompiler": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

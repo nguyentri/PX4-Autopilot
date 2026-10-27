@@ -31,7 +31,7 @@ class ManagedProcess:
         self.proc = None
         self.cancelled = False
 
-    def run(self, stream_stderr=True, timeout=None, preserve_streams=False):
+    def run(self, stream_stderr=True, timeout=None, preserve_streams=False, on_output=None):
         descriptors = list(inherited_fds())
         try:
             probe_fd = int(self.env.get("FIRMWARE_PROBE_LOCK_FD", ""))
@@ -81,6 +81,8 @@ class ManagedProcess:
                             selector.unregister(key.fileobj)
                             continue
                         outputs[key.data].extend(chunk)
+                        if on_output:
+                            on_output(chunk.decode("utf-8", errors="replace"), key.data)
                         if len(outputs[key.data]) > 2 * 1024 * 1024:
                             del outputs[key.data][:-2 * 1024 * 1024]
                         if stream_stderr:

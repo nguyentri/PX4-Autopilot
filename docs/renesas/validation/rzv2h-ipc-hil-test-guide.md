@@ -249,12 +249,13 @@ opens **both** NSH consoles side by side in a single `tmux` window:
    `Ctrl-b` (switch panes `Ctrl-b o`). Use `--no-tmux` to instead get the RTT
    console in the current terminal and open CR8-0 SCI4 yourself.
 
-2. Screen-record the one tmux window, then run the relay+ack across the panes —
-   e.g. CR8-1 (RTT, right) displays, CR8-0 (SCI4, left) sends:
+2. On the already-loaded pair, complete the bounded 100-message test commands
+   below first, skipping its build/load/console setup. This leaves no boot
+   echo task competing for replies. Then run the relay+ack across the panes —
+   CR8-1 (RTT, right) displays, CR8-0 (SCI4, left) sends:
 
    ```sh
    # CR8-1 (RTT pane)
-   ipctest --recover -d /dev/ipcc1
    ipctest --sink    -d /dev/ipcc1
 
    # CR8-0 (SCI4 pane)
@@ -267,18 +268,71 @@ opens **both** NSH consoles side by side in a single `tmux` window:
    film the reverse direction.
 
 **Manual / step-by-step alternative.** When you want to drive each stage
-yourself (or debug one), use the split scripts instead of `run.sh`:
+yourself, run from the repository root:
 
 ```sh
-# build both images only (ELFs -> nuttx-<config>.elf)
-JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-build-and-load.sh --build-only
-# silent load + auto-verify both, then exit (frees the probe)
-JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh <cr8_0-sci4-elf> <cr8_1-elf>
-# guided steps: load | verify | reset <0|1> | rtt | sci  (see `guide`)
-JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-manual.sh guide
-JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-manual.sh rtt <exact-cr8_1-elf>  # CR8-1 RTT bridge -> :19021
-./rzv2h-ipc-demo-load-both-manual.sh sci /dev/ttyUSB0
+D=platforms/nuttx/Debug
+N=platforms/nuttx/NuttX/nuttx
+source ./build_setup.sh
+
+# Preserve each ELF before the next build overwrites the shared nuttx output.
+"$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --build-only
+export JLINK_SERIAL="$("$D/jlink-debug-preflight.py" --print-serial)"
+
+# Load saved CR8-0 SCI4 + CR8-1 RTT images and verify both, without rebuilding.
+"$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --load-only
+
+# After successful verification, start CR8-1 RTT in this terminal.
+C1="$N/nuttx-ipcc-raw-cr8_1.elf"
+"$D/nuttx-rtt-bridge.sh" start cr8_1 "$C1"
+nc 127.0.0.1 19021
 ```
+
+Open CR8-0 SCI4 in a second terminal, substituting the actual UART path:
+
+```sh
+platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0
+```
+
+`--load-only` uses the saved `nuttx-ipcc-raw-cr8_0-sci4.elf` and
+`nuttx-ipcc-raw-cr8_1.elf` files, checks both exist before invoking the guarded
+loader, and returns only after its load/verify operation finishes. It retains
+the shared build lock so this helper cannot overwrite those files concurrently.
+`OUT_DIR`, `CR8_0_CONFIG` and `CR8_1_CONFIG` retain their existing meanings;
+use the same overrides when building and loading, and pass the matching saved
+ELF to RTT. Do not externally overwrite images during a load. A failure stops
+the sequence; inspect its logs before a deliberate recovery attempt.
+`--build-only` and `--load-only` cannot be combined. With neither flag, the
+existing build-then-load behavior is unchanged. None of these modes starts a
+console; `--help` prints the options and manual console commands.
+
+On **CR8-0 SCI4**, run `ps`. Both configurations start an `ipc-auto-echo` task;
+stop only that task on CR8-0 with `kill <pid>` using its actual numeric PID,
+and confirm it disappears before sending test traffic. Leave CR8-1's boot
+auto-echo running. Run these commands sequentially on CR8-0, waiting up to
+35 seconds for recovery to finish before ping:
+
+```text
+ipctest --recover -d /dev/ipcc1
+ipctest --ping -d /dev/ipcc1 -n 100 -s 64
+```
+
+Require CR8-0 `mode=ping status=pass pass=100 expected=100 timeouts=0` and
+CR8-1 `mode=auto-echo status=pass echoed=100`. Confirm CR8-1's `ipc-auto-echo`
+task has exited before starting `--sink` for the text/heartbeat demo above.
+The sample commands run asynchronously on these configurations: wait for their
+result lines, not just the next NSH prompt. Reload the pair for another bounded
+boot-echo test, or explicitly start one new echo peer when no reader remains.
+
+Exit picocom with `Ctrl-A Ctrl-X`, leave `nc` with `Ctrl-C`, then stop the RTT
+bridge from the first terminal:
+
+```sh
+"$D/nuttx-rtt-bridge.sh" stop
+```
+
+Keep GDB/Cortex-Debug stopped while RTT owns the probe. The older guided
+`rzv2h-ipc-demo-load-both-manual.sh guide` route remains available.
 
 **Automated regression (RTT only, no UART).** One command RAM-loads both cores
 (RTT-console images `ipcc-raw-cr8_0` + `ipcc-raw-cr8_1`), drives CR8-0 NSH over

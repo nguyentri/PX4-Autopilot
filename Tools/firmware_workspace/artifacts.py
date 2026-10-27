@@ -18,6 +18,50 @@ from .doctor import check_tool
 ARTIFACTS_ROOT = REPO_ROOT / "build" / "workspace-artifacts"
 
 
+def atomic_json(path: Path, value: Any) -> None:
+    """Publish durable JSON without exposing an incomplete document."""
+    import tempfile
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor, name = tempfile.mkstemp(prefix=".publish-", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+            json.dump(value, output, indent=2)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(name, path)
+        directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        Path(name).unlink(missing_ok=True)
+
+
+def create_import_receipt(run_dir: Path, request: Dict[str, Any], artifacts: List[Dict[str, Any]],
+                          group_digest: str) -> Path:
+    """Import metadata describes supplied bytes, never the current checkout's origin."""
+    selection = request["selection"]
+    provenance = {"evidence": "unknown", "sourceReceiptId": None, "reportedGitRevision": None,
+                  "reportedGitDirty": None, "reportedCompiler": None}
+    receipt = {
+        "schemaVersion": 2, "operation": "import-images", "requestId": request["requestId"],
+        "receiptId": "import-" + request["requestId"], "timestamp": datetime.now(timezone.utc).isoformat(),
+        "family": selection["build"]["family"], "board": selection["board"], "core": "multicore",
+        "selectionId": selection["id"], "target": selection["build"].get("target"),
+        "config": selection["build"].get("config"), "group": selection["group"],
+        "groupDefinitionSha256": group_digest, "gitRevision": None, "gitDirty": None,
+        "compiler": None, "provenance": provenance, "artifacts": artifacts,
+        "status": "committed" if len(artifacts) == 2 else "provisional",
+    }
+    errors = validate_schema(receipt, "artifact-receipt")
+    if errors:
+        raise ValueError(f"Import receipt validation failed: {errors}")
+    destination = run_dir / "receipt.json"
+    atomic_json(destination, receipt)
+    return destination
+
+
 def compute_sha256(path: Path) -> str:
     """Calculate SHA-256 digest of a file."""
     h = hashlib.sha256()

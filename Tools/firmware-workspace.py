@@ -51,6 +51,8 @@ def cmd_catalog(args: argparse.Namespace) -> int:
         },
         "devices": devices,
         "groups": groups,
+        "capabilities": {"importImages": 1, "receiptVersions": [1, 2], "preparedIdentity": 1,
+                         "strictLoadedIdentity": 1, "progressEvents": 1, "targetHistory": 1},
         "counts": {
             "px4": len(px4_targets),
             "rzv2hNuttx": len(rzv_configs),
@@ -139,9 +141,14 @@ def main() -> int:
     # doctor
     p_doc = subparsers.add_parser("doctor", help="Check prerequisite tools and probes")
     p_doc.add_argument("--selection", help="Optional selection JSON file")
+    p_doc.add_argument("--serial", help="Read-only load history for an exact probe serial")
     p_doc.add_argument("--json", action="store_true", help="Output JSON result")
 
     # build
+    p_import = subparsers.add_parser("import-images", help="Capture and validate explicitly assigned CR8 images without hardware")
+    p_import.add_argument("--input", required=True, help="Path to schema-versioned import request JSON")
+    p_import.add_argument("--json", action="store_true", help="Output JSON result")
+
     p_bld = subparsers.add_parser("build", help="Build firmware for selected profile")
     p_bld.add_argument("--selection", required=True, help="Path to selection JSON file")
     p_bld.add_argument("--receipt", help="Output receipt path")
@@ -154,6 +161,8 @@ def main() -> int:
     p_load.add_argument("--receipt", required=True, help="Path to validated artifact receipt")
     p_load.add_argument("--serial", help="Authorized J-Link probe serial")
     p_load.add_argument("--recover", action="store_true", help="Explicit recovery reload after an interrupted/failed operation")
+    p_load.add_argument("--expect-receipt-id", help="Reject a replaced prepared receipt before probe interaction")
+    p_load.add_argument("--expect-pair-sha256", help="Require exact prepared pair bytes")
     p_load.add_argument("--json", action="store_true", help="Output JSON result")
 
     # debug-config
@@ -163,6 +172,9 @@ def main() -> int:
     p_dbg.add_argument("--core", help="Target core to debug (e.g. cr8_0, cr8_1)")
     p_dbg.add_argument("--serial", help="Authorized J-Link probe serial")
     p_dbg.add_argument("--gdb", help="GDB executable override")
+    p_dbg.add_argument("--require-loaded", action="store_true", help="Require exact verified paired load history")
+    p_dbg.add_argument("--expect-receipt-id", help="Require exact prepared receipt ID")
+    p_dbg.add_argument("--expect-pair-sha256", help="Require exact prepared pair bytes")
     p_dbg.add_argument("--json", action="store_true", help="Output JSON result")
 
     # console
@@ -195,6 +207,9 @@ def main() -> int:
         elif args.command == "build":
             from firmware_workspace import build
             return build.cmd_build(args)
+        elif args.command == "import-images":
+            from firmware_workspace.import_images import cmd_import_images
+            return cmd_import_images(args)
         elif args.command == "load":
             from firmware_workspace import load
             return load.cmd_load(args)
