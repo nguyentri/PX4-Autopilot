@@ -80,7 +80,15 @@ export class ArtifactsViewProvider implements vscode.TreeDataProvider<WorkspaceT
       new WorkspaceTreeItem(`Receipt: ${receipt.receiptId}`, vscode.TreeItemCollapsibleState.None, {
         description: `${receipt.status} · ${receipt.board}:${receipt.core}`,
         iconPath: new vscode.ThemeIcon('tag'),
-        tooltip: `Selection: ${receipt.selectionId}\nTimestamp: ${receipt.timestamp}\nGit: ${receipt.gitRevision} (dirty: ${receipt.gitDirty})`,
+        tooltip: new vscode.MarkdownString(
+          `**Build Receipt:** \`${receipt.receiptId}\`\n\n` +
+          `- **Status:** \`${receipt.status}\`\n` +
+          `- **Selection:** \`${receipt.selectionId}\`\n` +
+          `- **Board / Core:** \`${receipt.board}:${receipt.core}\`\n` +
+          `- **Timestamp:** \`${receipt.timestamp}\`\n` +
+          `- **Git Revision:** \`${receipt.gitRevision}\` *(dirty: ${receipt.gitDirty})*\n` +
+          `- **Compiler:** \`${receipt.compiler || 'unknown'}\``
+        ),
       }),
     ];
 
@@ -91,7 +99,13 @@ export class ArtifactsViewProvider implements vscode.TreeDataProvider<WorkspaceT
         new WorkspaceTreeItem(fileName, vscode.TreeItemCollapsibleState.None, {
           description: `${sizeKb} KB (${art.core || 'generic'})`,
           iconPath: new vscode.ThemeIcon('file-binary'),
-          tooltip: `Path: ${art.path}\nSHA-256: ${art.sha256}`,
+          tooltip: new vscode.MarkdownString(
+            `**Artifact:** \`${fileName}\`\n\n` +
+            `- **Path:** \`${art.path}\`\n` +
+            `- **Size:** \`${sizeKb} KB\` (${art.size} bytes)\n` +
+            `- **SHA-256:** \`${art.sha256}\`\n` +
+            `- **Target Core:** \`${art.core || 'generic'}\``
+          ),
         })
       );
       if (art.entryPoint) {
@@ -99,6 +113,7 @@ export class ArtifactsViewProvider implements vscode.TreeDataProvider<WorkspaceT
           new WorkspaceTreeItem('Entry Point', vscode.TreeItemCollapsibleState.None, {
             description: art.entryPoint,
             iconPath: new vscode.ThemeIcon('sign-in'),
+            tooltip: new vscode.MarkdownString(`**ELF Entry Point Address:** \`${art.entryPoint}\``),
           })
         );
       }
@@ -107,6 +122,7 @@ export class ArtifactsViewProvider implements vscode.TreeDataProvider<WorkspaceT
           new WorkspaceTreeItem('RTT Control Block', vscode.TreeItemCollapsibleState.None, {
             description: art.rttAddress,
             iconPath: new vscode.ThemeIcon('terminal'),
+            tooltip: new vscode.MarkdownString(`**_SEGGER_RTT Control Block Address:** \`${art.rttAddress}\``),
           })
         );
       }

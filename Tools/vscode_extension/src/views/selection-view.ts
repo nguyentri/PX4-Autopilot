@@ -31,29 +31,35 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
       new WorkspaceTreeItem('Board', vscode.TreeItemCollapsibleState.None, {
         description: sel.board,
         iconPath: new vscode.ThemeIcon('circuit-board'),
+        tooltip: new vscode.MarkdownString(`**Target Board:** \`${sel.board}\`\n\nHardware target platform and peripheral mapping.`),
       }),
       new WorkspaceTreeItem('Core', vscode.TreeItemCollapsibleState.None, {
         description: sel.core === 'multicore' ? `${selectedCore} (selected member)` : selectedCore,
         iconPath: new vscode.ThemeIcon('cpu'),
         command: sel.core === 'multicore' ? { command: 'px4Nuttx.selectCore', title: 'Change Group Core' } : undefined,
+        tooltip: new vscode.MarkdownString(`**Active Execution Core:** \`${selectedCore}\`\n\n${sel.core === 'multicore' ? 'Click to switch selected member core in this multicore group.' : 'Dedicated single-core profile.'}`),
       }),
       new WorkspaceTreeItem('Target', vscode.TreeItemCollapsibleState.None, {
         description: targetLabel,
         iconPath: new vscode.ThemeIcon('file-binary'),
         command: { command: 'px4Nuttx.selectProfile', title: 'Change Target' },
+        tooltip: new vscode.MarkdownString(`**Firmware Target / Profile:** \`${target}\`\n\nFamily: \`${sel.build.family.toUpperCase()}\`\n\nClick to choose another target profile or multicore group.`),
       }),
       new WorkspaceTreeItem('Mode', vscode.TreeItemCollapsibleState.None, {
         description: sel.build.mode,
         iconPath: new vscode.ThemeIcon('settings-gear'),
+        tooltip: new vscode.MarkdownString(`**Build Mode:** \`${sel.build.mode}\`\n\nIncremental build configuration.`),
       }),
       new WorkspaceTreeItem('Debug Probe', vscode.TreeItemCollapsibleState.None, {
         description: probe,
         iconPath: new vscode.ThemeIcon('plug'),
         command: { command: 'px4Nuttx.selectProbe', title: 'Change Probe' },
+        tooltip: new vscode.MarkdownString(`**Debug Probe:** \`${probe}\`\n\nClick to select or change connected SEGGER J-Link probe.`),
       }),
       new WorkspaceTreeItem('Console Transport', vscode.TreeItemCollapsibleState.None, {
         description: consoleManaged ? transport.toUpperCase() : `${transport.toUpperCase()} (manual-only)`,
         iconPath: new vscode.ThemeIcon('terminal'),
+        tooltip: new vscode.MarkdownString(`**Console Transport:** \`${transport.toUpperCase()}\`\n\n${consoleManaged ? 'Managed interactive bridge available.' : 'Manual console connection required.'}`),
       }),
     ];
     return Promise.resolve(items);

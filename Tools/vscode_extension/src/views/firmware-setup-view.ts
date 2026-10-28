@@ -21,11 +21,116 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
     return item;
   }
 
-  private row(label: string, description: string, command?: string, core?: R8Core, tooltip?: string): WorkspaceTreeItem {
+  private themeColor(id: string): vscode.ThemeColor | undefined {
+    return typeof vscode.ThemeColor === 'function' ? new vscode.ThemeColor(id) : undefined;
+  }
+
+  private getSemanticIcon(label: string, command?: string, status?: string): vscode.ThemeIcon {
+    if (label.startsWith('Build R8-')) {
+      return new vscode.ThemeIcon('play');
+    }
+    if (label.startsWith('Console R8-')) {
+      return new vscode.ThemeIcon('terminal');
+    }
+    if (label.startsWith('Keep Captured')) {
+      return new vscode.ThemeIcon('check');
+    }
+    if (label.startsWith('Import Updated')) {
+      return new vscode.ThemeIcon('refresh');
+    }
+    if (label === 'R8-0' || label === 'R8-1') {
+      return new vscode.ThemeIcon('chip');
+    }
+    if (label === 'R8-0 profile' || label === 'R8-1 profile') {
+      return new vscode.ThemeIcon('symbol-misc');
+    }
+    switch (label) {
+      case 'Setup':
+        return new vscode.ThemeIcon('layers');
+      case 'Save As':
+        return new vscode.ThemeIcon('save-as');
+      case 'Rename':
+        return new vscode.ThemeIcon('edit');
+      case 'Board':
+        return new vscode.ThemeIcon('circuit-board');
+      case 'Probe':
+        return new vscode.ThemeIcon('plug');
+      case 'Build mode':
+        return new vscode.ThemeIcon('settings-gear');
+      case 'Sessions':
+        return new vscode.ThemeIcon('pulse');
+      case 'Build readiness':
+        return new vscode.ThemeIcon('tools');
+      case 'RAM load readiness':
+        return new vscode.ThemeIcon('cloud-upload');
+      case 'Debug readiness':
+        return new vscode.ThemeIcon('debug-alt');
+      case 'Pair': {
+        if (this.store.getTargetTransition() || this.store.hasWorkflow() || this.store.isPreparingImages()) {
+          return new vscode.ThemeIcon('sync~spin');
+        }
+        if (status === 'Ready') {
+          return new vscode.ThemeIcon('pass-filled', this.themeColor('testing.iconPassed'));
+        }
+        if (status === 'Preparation pending') {
+          return new vscode.ThemeIcon('debug-pause', this.themeColor('problemsWarningIcon.foreground'));
+        }
+        if (status?.includes('validation') || status?.includes('warning') || status?.includes('Recovery') || status?.includes('changed')) {
+          return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
+        }
+        return new vscode.ThemeIcon('symbol-property');
+      }
+      case 'State needs attention':
+        return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
+      case 'SCI4 device':
+        return new vscode.ThemeIcon('plug');
+      case 'Load history':
+        return new vscode.ThemeIcon('history');
+      case 'Browse ELF':
+        return new vscode.ThemeIcon('file-binary');
+      case 'Choose Build Folder':
+        return new vscode.ThemeIcon('folder');
+      case 'Use Build Receipt':
+        return new vscode.ThemeIcon('tag');
+      case 'Build All':
+        return new vscode.ThemeIcon('play');
+      case 'Build & Load':
+        return new vscode.ThemeIcon('rocket');
+      case 'Stop Sessions':
+        return new vscode.ThemeIcon('stop-circle');
+      case 'Validate Images':
+        return new vscode.ThemeIcon('checklist');
+      case 'Resume Preparation':
+        return new vscode.ThemeIcon('debug-continue');
+      case 'Load Both to RAM':
+        return new vscode.ThemeIcon('cloud-upload');
+      case 'Recover Both':
+        return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
+      case 'Debug R8-0':
+      case 'Debug R8-1':
+        return new vscode.ThemeIcon('debug-alt');
+      case 'Workspace trust required':
+        return new vscode.ThemeIcon('lock');
+      case 'Select a dual-CR8 group':
+        return new vscode.ThemeIcon('target');
+      case 'Backend update required':
+        return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
+      default:
+        return new vscode.ThemeIcon(command ? 'tools' : 'info');
+    }
+  }
+
+  private row(
+    label: string,
+    description: string,
+    command?: string,
+    core?: R8Core,
+    tooltip?: string | vscode.MarkdownString
+  ): WorkspaceTreeItem {
     const item = new WorkspaceTreeItem(label, vscode.TreeItemCollapsibleState.None, {
       description,
       tooltip: tooltip || description,
-      iconPath: new vscode.ThemeIcon(command ? 'tools' : 'info'),
+      iconPath: this.getSemanticIcon(label, command, description),
       command: command && this.store.isSetupOperationsReady() ? {
         command: `px4Nuttx.setup.${command}`,
         title: label,
@@ -55,7 +160,8 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
     }
 
     const state = this.store.getPreparedPair();
-    const busy = this.store.getTargetTransition() || (this.store.hasWorkflow() ? 'Firmware workflow in progress' : '');
+    const busy = this.store.getTargetTransition() || (this.store.hasWorkflow() ? 'Firmware workflow in progress'
+      : this.store.isPreparingImages() ? 'Preparing images' : '');
     const changes = Object.keys(state?.sourceChanges || {});
     let status = 'Waiting for images';
     if (state?.prepared?.artifacts.length === 2) {

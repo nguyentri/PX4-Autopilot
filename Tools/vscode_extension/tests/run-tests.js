@@ -37,6 +37,37 @@ assert.ok(pkg.contributes.commands.length >= 8, 'Must contribute commands');
 assert.ok(pkg.contributes.jsonValidation.length >= 3, 'Must contribute schema validations');
 console.log('  ✓ package.json contributes all required views, commands, and schemas');
 
+// Firmware chords must preserve normal editing and stay within an initialized workspace.
+const shortcutContext = {
+  'px4Nuttx.workspaceReady': true,
+  isWorkspaceTrusted: true,
+  inputFocus: false,
+  terminalFocus: false,
+  'px4Nuttx.savedSetupActive': false,
+};
+for (const binding of pkg.contributes.keybindings) {
+  const reservedPrefixes = ['alt+r', 'alt+cmd+r', 'alt+ctrl+r'].map((key) => key.split('+').sort().join('+'));
+  for (const key of [binding.key, binding.mac].filter(Boolean)) {
+    const prefix = key.split(' ')[0].split('+').sort().join('+');
+    assert.ok(!reservedPrefixes.includes(prefix), 'firmware chords must preserve regex and existing reveal/session shortcuts');
+  }
+  // These contributions use conjunctions of boolean context keys.
+  const enabled = (context) => !!binding.when && binding.when.split(/\s*&&\s*/).every((term) =>
+    term.startsWith('!') ? !context[term.slice(1)] : !!context[term]);
+  assert.equal(enabled(shortcutContext), true, `${binding.command} must be available in its workspace`);
+  for (const context of [
+    { ...shortcutContext, 'px4Nuttx.workspaceReady': false },
+    { ...shortcutContext, isWorkspaceTrusted: false },
+    { ...shortcutContext, inputFocus: true },
+    { ...shortcutContext, terminalFocus: true },
+  ]) {
+    assert.equal(enabled(context), false, `${binding.command} must respect workspace, trust and focus`);
+  }
+  const singleCoreOnly = ['px4Nuttx.load', 'px4Nuttx.attach', 'px4Nuttx.startConsole'].includes(binding.command);
+  assert.equal(enabled({ ...shortcutContext, 'px4Nuttx.savedSetupActive': true }), !singleCoreOnly);
+}
+console.log('  ✓ firmware shortcuts preserve regex search, text inputs, terminals and workspace guards');
+
 // Test 3: Verify all schemas exist and parse
 for (const jv of pkg.contributes.jsonValidation) {
   const schemaPath = path.join(EXT_DIR, jv.url);
@@ -58,7 +89,9 @@ assert.ok(devs.boards['fpb-ra8e1'], 'fpb-ra8e1 must be defined in devices.json')
 console.log('  ✓ devices.json and groups.json contain all supported Renesas platforms');
 
 // Test 5: Verify packaged VSIX exists
-const vsixFile = path.join(EXT_DIR, 'px4-nuttx-firmware-workspace-0.1.0.vsix');
+const vsixCandidate1 = path.join(EXT_DIR, 'px4-nuttx-dashboard-0.1.0.vsix');
+const vsixCandidate2 = path.join(EXT_DIR, 'px4-nuttx-firmware-workspace-0.1.0.vsix');
+const vsixFile = fs.existsSync(vsixCandidate1) ? vsixCandidate1 : vsixCandidate2;
 assert.ok(fs.existsSync(vsixFile), 'VSIX package must be present');
 const vsixStats = fs.statSync(vsixFile);
 assert.ok(vsixStats.size > 5000, `VSIX package must be > 5KB (got ${vsixStats.size} bytes)`);
@@ -89,6 +122,7 @@ async function runBehavioralTests() {
   };
   const debugStarted = new EventEmitter();
   const debugTerminated = new EventEmitter();
+  const contexts = new Map();
   let lastDebugSession;
   const vscode = {
     EventEmitter,
@@ -118,7 +152,7 @@ async function runBehavioralTests() {
     },
     commands: {
       registerCommand: (id, callback) => { registered.set(id, callback); return { dispose: () => registered.delete(id) }; },
-      executeCommand: async (id, ...args) => registered.get(id)?.(...args),
+      executeCommand: async (id, ...args) => id === 'setContext' ? contexts.set(args[0], args[1]) : registered.get(id)?.(...args),
     },
     Uri: { file: (value) => ({ fsPath: value, toString: () => value }), parse: (value) => value },
     debug: {
@@ -559,6 +593,7 @@ async function runBehavioralTests() {
     entry.activate(activationContext);
     await new Promise((resolve) => setImmediate(resolve));
     assert.ok(capturedTaskProvider, 'activation must initialize the explicitly selected folder');
+    assert.equal(contexts.get('px4Nuttx.workspaceReady'), true);
     assert.ok(shownStatus, 'native status identity must be visible');
     assert.ok(!fs.existsSync(path.join(secondRoot, '.vscode')), 'untrusted activation must not write selection files');
     assert.deepStrictEqual(capturedTaskProvider.provideTasks(), [], 'untrusted tasks must remain unavailable');
@@ -569,16 +604,24 @@ async function runBehavioralTests() {
     const secondStore = new SelectionStore(extensionContext, secondRoot);
     assert.strictEqual(secondStore.getReceiptPath(), null, 'another folder must not inherit the first folder receipt');
     await entry.deactivate();
+    assert.equal(contexts.get('px4Nuttx.workspaceReady'), false, 'shutdown must disable firmware shortcuts');
     // Shutdown wins while the multi-root picker is unresolved. It must not hang
     // or register resources if the old picker resolves later.
     let resolveLateFolder;
     vscode.window.showQuickPick = () => new Promise((resolve) => { resolveLateFolder = resolve; });
     const beforeLateTask = capturedTaskProvider;
     entry.activate({ ...activationContext, subscriptions: [] });
+    assert.equal(contexts.get('px4Nuttx.workspaceReady'), false, 'an unresolved workspace must not enable shortcuts');
     await entry.deactivate();
     resolveLateFolder({ folder: workspace.workspaceFolders[2] });
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(capturedTaskProvider, beforeLateTask);
+    assert.equal(contexts.get('px4Nuttx.workspaceReady'), false, 'a late picker must not re-enable shortcuts');
+    workspace.workspaceFolders = [workspace.workspaceFolders[0]];
+    entry.activate({ ...activationContext, subscriptions: [] });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(contexts.get('px4Nuttx.workspaceReady'), false, 'unrelated workspaces must not enable shortcuts');
+    await entry.deactivate();
     workspace.workspaceFolders = originalFolders;
     console.log('  ✓ real activation routes past unrelated folder to chosen firmware root, with no untrusted writes');
 

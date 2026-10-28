@@ -1,10 +1,14 @@
 {
   "name": "px4-nuttx-firmware-workspace",
-  "displayName": "PX4/NuttX Firmware Workspace",
+  "displayName": "PX4-NuttX: Dashboard",
   "description": "Unified workspace integration, profiles, guarded loading and Cortex-Debug for PX4 and NuttX on Renesas hardware",
   "version": "0.1.0",
   "icon": "media/icon.png",
-  "publisher": "px4-renesas",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "publisher": "px4-nuttx",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -51,7 +55,7 @@
       "activitybar": [
         {
           "id": "px4-nuttx-workspace",
-          "title": "PX4/NuttX Workspace",
+          "title": "PX4-NuttX: Dashboard",
           "icon": "$(circuit-board)"
         }
       ]
@@ -165,216 +169,252 @@
         "command": "px4Nuttx.dual.browse",
         "title": "Browse ELF",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(file-binary)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.folder",
         "title": "Choose Build Folder",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(folder)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.useBuild",
         "title": "Use Build Receipt",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(tag)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.buildBoth",
         "title": "Build Both",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(play)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.validate",
         "title": "Validate Images",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(checklist)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.refresh",
         "title": "Refresh Images",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(refresh)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.resume",
         "title": "Resume Preparation",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(debug-continue)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.keepCaptured",
         "title": "Keep Captured",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(check)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.importUpdated",
         "title": "Import Updated",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(sync)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.loadBoth",
         "title": "Load Both to RAM",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(cloud-upload)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.recoverBoth",
         "title": "Recover Both",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(warning)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.debugR80",
         "title": "Debug R8-0",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(debug-alt)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.dual.debugR81",
         "title": "Debug R8-1",
         "category": "PX4/NuttX Dual-Core",
+        "icon": "$(debug-alt)",
         "enablement": "isWorkspaceTrusted"
       },
       {
         "command": "px4Nuttx.setup.select",
         "title": "Select Saved Setup",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(layers)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.saveAs",
         "title": "Save Setup As",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(save-as)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.rename",
         "title": "Rename Setup",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(edit)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.probe",
         "title": "Select Debug Probe",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(plug)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.mode",
         "title": "Select Build Mode",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(settings-gear)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.browse",
         "title": "Choose Image File",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(file-binary)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.folder",
         "title": "Choose Image from Folder",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(folder)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.useBuild",
         "title": "Choose Build Receipt",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(tag)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.buildBoth",
         "title": "Build All",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(play)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.buildCore",
         "title": "Build Core",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(play)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.buildAndLoad",
         "title": "Build & Load",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(rocket)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.validate",
         "title": "Check Images",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(checklist)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.refresh",
         "title": "Refresh Images",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(refresh)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.resume",
         "title": "Resume Preparation",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-continue)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.keepCaptured",
         "title": "Keep Captured Image",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(check)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.importUpdated",
         "title": "Import Updated Image",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(sync)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.loadBoth",
         "title": "Load Both to RAM",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(cloud-upload)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.recoverBoth",
         "title": "Recover Both",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(warning)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.debugR80",
         "title": "Debug R8-0",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-alt)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.debugR81",
         "title": "Debug R8-1",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-alt)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.consoleCore",
         "title": "Open Core Console",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(terminal)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.device",
         "title": "Select SCI4 Device",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(plug)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
         "command": "px4Nuttx.setup.stopSessions",
         "title": "Stop Sessions",
         "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(stop-circle)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       }
     ],
@@ -602,7 +642,57 @@
       },
       {
         "view": "px4-nuttx.dualCoreLoader",
-        "contents": "Choose a fixed RDK-RZ/V2H CR8 group, save a named setup, and build or choose an exact image for each core. Load writes RAM only.\n[Select Setup / Target](command:px4Nuttx.setup.select)"
+        "contents": "Choose a fixed RDK-RZ/V2H CR8 group, save a named setup, and build or choose an exact image for each core. Load writes RAM only.\n[$(layers) Select Setup / Target](command:px4Nuttx.setup.select)\n[$(pulse) Check Prerequisites](command:px4Nuttx.checkDoctor)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "px4Nuttx.build",
+        "key": "ctrl+alt+k b",
+        "mac": "ctrl+alt+k b",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.cleanRebuild",
+        "key": "ctrl+alt+k c",
+        "mac": "ctrl+alt+k c",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.checkDoctor",
+        "key": "ctrl+alt+k d",
+        "mac": "ctrl+alt+k d",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.selectProfile",
+        "key": "ctrl+alt+k p",
+        "mac": "ctrl+alt+k p",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.refresh",
+        "key": "ctrl+alt+k r",
+        "mac": "ctrl+alt+k r",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.load",
+        "key": "ctrl+alt+k l",
+        "mac": "ctrl+alt+k l",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
+      },
+      {
+        "command": "px4Nuttx.attach",
+        "key": "ctrl+alt+k a",
+        "mac": "ctrl+alt+k a",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
+      },
+      {
+        "command": "px4Nuttx.startConsole",
+        "key": "ctrl+alt+k t",
+        "mac": "ctrl+alt+k t",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
       }
     ],
     "taskDefinitions": [
@@ -624,7 +714,7 @@
       }
     ],
     "configuration": {
-      "title": "PX4/NuttX Firmware Workspace",
+      "title": "PX4-NuttX: Dashboard",
       "properties": {
         "px4Nuttx.pythonPath": {
           "type": "string",

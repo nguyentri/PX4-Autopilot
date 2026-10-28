@@ -19,7 +19,8 @@ async function runDualCoreTests() {
     dispose() {}
   }
   const vscode = {
-    EventEmitter, TreeItem: class { constructor(label) { this.label = label; } }, ThemeIcon: class {},
+    EventEmitter, TreeItem: class { constructor(label) { this.label = label; } },
+    ThemeIcon: class { constructor(id, color) { this.id = id; this.color = color; } },
     TreeItemCollapsibleState: { None: 0 }, ProgressLocation: { Notification: 1 }, Uri: { file: (file) => ({ fsPath: file, scheme: 'file' }) },
     workspace: { isTrusted: true, getConfiguration: () => ({ get: (_, fallback) => fallback }) },
     window: { onDidCloseTerminal: () => ({ dispose() {} }), showErrorMessage: async (text) => errors.push(text), showWarningMessage: async () => 'Use Declared Image',
@@ -54,6 +55,10 @@ async function runDualCoreTests() {
     let imports = 0;
     const backend = { importImages: async (file) => {
       imports++;
+      assert.equal(store.isPreparingImages(), true, 'import execution must publish live activity');
+      const pair = (await preparationView.getChildren()).find((row) => row.label === 'Pair');
+      assert.equal(pair.description, store.hasWorkflow() ? 'Firmware workflow in progress' : 'Preparing images');
+      assert.equal(pair.iconPath.id, 'sync~spin');
       const request = JSON.parse(fs.readFileSync(file));
       const run = path.join(root, 'build', 'workspace-artifacts', `import-${request.requestId}`); fs.mkdirSync(run, { recursive: true });
       const artifacts = [];
@@ -73,9 +78,15 @@ async function runDualCoreTests() {
     const execution = { buildSelectedGroup: async () => { throw new Error('must not build implicitly'); },
       loadPrepared: async (request, options) => { target = { request, options }; return { status: 'ok' }; }, debugPrepared: async () => true };
     const controller = new DualCoreLoaderController(backend, store, execution);
+    const preparationView = new DualCoreLoaderViewProvider(store);
     const member = (core) => groups[selection.group].members.find((item) => item.core === core);
     const file = (core, filePath) => ({ kind: 'file', path: filePath, declaration: member(core) });
+    const preparationEvents = [];
+    const preparationSubscription = store.onDidChangeSelection(() => preparationEvents.push(store.isPreparingImages()));
     await controller.assign('cr8_0', file('cr8_0', one));
+    assert.ok(preparationEvents.includes(true), 'live preparation must refresh the view');
+    assert.equal(preparationEvents.at(-1), false, 'completed preparation must refresh the view without a spinner');
+    preparationSubscription.dispose();
     assert.equal(store.getPreparedPair().prepared.artifacts.length, 1);
     fs.writeFileSync(one, Buffer.from('\x7fELFreplaced'));
     await controller.assign('cr8_1', file('cr8_1', two));
@@ -240,8 +251,15 @@ async function runDualCoreTests() {
     await assert.rejects(controller.assign('cr8_0', file('cr8_0', one)), /disk full/);
     rejectPersistence = false; backend.importImages = importNormally;
     const pendingAfterDelivery = store.getPreparedPair().pending.request.requestId;
+    assert.equal(store.isPreparingImages(), false, 'failed persistence must clear live activity');
     const interruptedStore = new SelectionStore(context, root); interruptedStore.setCatalog(catalog);
     assert.equal(interruptedStore.getPreparedPair().pending.request.requestId, pendingAfterDelivery);
+    const interruptedView = new DualCoreLoaderViewProvider(interruptedStore);
+    const interruptedRows = await interruptedView.getChildren();
+    assert.equal(interruptedRows.find((row) => row.label === 'Pair').description, 'Preparation pending');
+    assert.equal(interruptedRows.find((row) => row.label === 'Pair').iconPath.id, 'debug-pause', 'restored preparation must wait without spinning');
+    assert.ok(interruptedRows.some((row) => row.label === 'Resume Preparation'));
+    interruptedView.dispose();
     await controller.resume();
     assert.equal(store.getPreparedPair().pending, undefined);
     assert.equal(store.getPreparedPair().prepared.receiptId, `import-${pendingAfterDelivery}`);
@@ -253,6 +271,17 @@ async function runDualCoreTests() {
     await assert.rejects(store.setSelectedProbe('other'), /wait/); store.endTargetTransition();
     const view = new DualCoreLoaderViewProvider(store);
     const rows = await view.getChildren(); assert.ok(rows.some((item) => item.label === 'R8-0')); assert.ok(rows.some((item) => item.label === 'R8-1'));
+    assert.equal(rows.find((row) => row.label === 'Pair').iconPath.id, 'pass-filled');
+    for (const transition of ['Loading captured pair', 'Recovering captured pair', 'Attaching R8-0']) {
+      store.beginTargetTransition(transition);
+      try {
+        assert.equal((await view.getChildren()).find((row) => row.label === 'Pair').iconPath.id, 'sync~spin');
+      } finally { store.endTargetTransition(); }
+    }
+    await store.withSetupMutationGuard(async () => {
+      assert.equal((await view.getChildren()).find((row) => row.label === 'Pair').iconPath.id, 'sync~spin');
+    });
+    assert.equal((await view.getChildren()).find((row) => row.label === 'Pair').iconPath.id, 'pass-filled', 'workflow completion must stop animation');
     assert.equal(rows.find((item) => item.label === 'R8-0').core, 'cr8_0', 'native context-menu arguments must retain the row core');
     assert.equal(new Set(rows.map((item) => item.id)).size, rows.length, 'native row identities must be unique');
     vscode.workspace.isTrusted = false;

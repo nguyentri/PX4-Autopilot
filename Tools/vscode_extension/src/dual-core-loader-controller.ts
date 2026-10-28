@@ -62,7 +62,8 @@ export function pairDigest(selection: FirmwareSelection, definition: string, dig
 }
 
 export class DualCoreLoaderController implements vscode.Disposable {
-  private preparing = false;
+  private get preparing(): boolean { return this.store.isPreparingImages(); }
+  private set preparing(active: boolean) { this.store.setImagePreparationActive(active); }
   private historyToken = 0;
   private disposed = false;
   private historyContext = '';

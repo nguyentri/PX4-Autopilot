@@ -8,7 +8,7 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
       description?: string;
       iconPath?: vscode.ThemeIcon;
       command?: vscode.Command;
-      tooltip?: string;
+      tooltip?: string | vscode.MarkdownString;
     }
   ) {
     super(label, collapsibleState);

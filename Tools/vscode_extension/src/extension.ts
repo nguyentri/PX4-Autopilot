@@ -103,6 +103,7 @@ async function initialize(context: vscode.ExtensionContext, epoch: number, token
     operationsView
   );
   activeExecutionControllers.push(executionController);
+  void vscode.commands.executeCommand('setContext', 'px4Nuttx.workspaceReady', true);
 
   if (vscode.workspace.isTrusted) {
     await Promise.allSettled([client.getCatalog().then((result) => {
@@ -125,6 +126,7 @@ async function initialize(context: vscode.ExtensionContext, epoch: number, token
 
 export function activate(context: vscode.ExtensionContext): void {
   const epoch = ++lifecycle;
+  void vscode.commands.executeCommand('setContext', 'px4Nuttx.workspaceReady', false);
   deactivation = undefined;
   activationCancellation?.dispose();
   activationCancellation = new vscode.CancellationTokenSource();
@@ -136,6 +138,7 @@ export function activate(context: vscode.ExtensionContext): void {
 export function deactivate(): Promise<void> {
   if (deactivation) { return deactivation; }
   ++lifecycle; activationCancellation?.cancel();
+  void vscode.commands.executeCommand('setContext', 'px4Nuttx.workspaceReady', false);
   void vscode.commands.executeCommand('setContext', 'px4Nuttx.savedSetupOperationsReady', false);
   for (const store of activeStores) { store.shutdown(); }
   for (const provider of activeDebugProviders) { provider.shutdown(); }

@@ -60,6 +60,7 @@ export class SelectionStore implements vscode.Disposable {
   private pendingWrites = 0;
   private targetTransition = '';
   private workflowOwner?: symbol;
+  private imagePreparationActive = false;
   private closed = false;
   private canonicalLoaded: boolean;
   private consoleStatus: (core: string) => string | undefined = () => undefined;
@@ -95,6 +96,12 @@ export class SelectionStore implements vscode.Disposable {
   public setSetupOperationsReady(ready: boolean): void { this.setupOperationsReady = ready; this.notifySessionChange(); }
   public isSetupOperationsReady(): boolean { return this.setupOperationsReady; }
   public hasWorkflow(): boolean { return !!this.workflowOwner; }
+  public isPreparingImages(): boolean { return this.imagePreparationActive; }
+  public setImagePreparationActive(active: boolean): void {
+    if (this.imagePreparationActive === active) { return; }
+    this.imagePreparationActive = active;
+    if (!this.closed) { this._onDidChangeSelection.fire(this.getSelection()); }
+  }
   public assertSetupOperationsReady(): void {
     if (!this.setupOperationsReady) { throw new Error('Firmware Setup actions are not ready. Finish workspace initialization first.'); }
   }
