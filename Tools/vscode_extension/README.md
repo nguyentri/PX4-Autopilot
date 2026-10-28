@@ -1,34 +1,147 @@
-# PX4/NuttX Firmware Workspace for Renesas
+# PX4-NuttX: Dashboard
 
-VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas RZ/V2H, RA8P1, and RA8E1 hardware.
+[![License](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE.md)
+[![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.85.0-007ACC.svg?logo=visual-studio-code)](package.json)
+[![Hardware](https://img.shields.io/badge/Renesas-RZ%2FV2H%20%7C%20RA8P1%20%7C%20RA8E1-orange.svg)](profiles/devices.json)
 
-## Features
+VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading, Cortex-Debug attach routing, and managed RTT/UART console sessions.
 
-- **Profile & Target Selection**: Interactive QuickPick for PX4 targets, NuttX sample configurations, and multicore pair groups.
-- **Readiness & Doctor**: Host-only prerequisite checking for ARM GCC (>= 9), CMake (>= 3.20), Python (>= 3.9 with kconfiglib and jsonschema), Make, Ninja, GDB, and connected SEGGER J-Link probes.
-- **Guarded Target Loading**: Safe volatile RAM loading on RZ/V2H CR8 cores with ELF address allowlist checking and durable per-probe/core recovery journaling. Direct attach to RZ/V2H CM33 (SoC reset) and unadmitted flash routes are prevented.
-- **Cortex-Debug Integration**: Generates verified in-memory attach configurations with explicit halt-only override commands and SVD symbol mappings. Existing user `launch.json` configurations are never modified.
-- **Console Session Management**: Integration with the SEGGER RTT bridge on admitted CR8 cores, with explicit lifetime controls. UART/SCI4 consoles remain manual.
-- **Shared Concurrency & Lock**: Shared build mutex across editor tasks, `./build.sh`, and root `make` preventing concurrent mutation of the NuttX source tree.
+---
 
-## Supported Hardware
+## Architecture Overview
 
-- **Renesas RDK-RZ/V2H**: Cortex-R8 Core 0 (flight core), Cortex-R8 Core 1 (IO core), CM33 (build only; direct attach gated).
-- **Renesas EVK-RA8P1**: Cortex-M85 / Cortex-M33 (build supported; target loading gated pending ARMv8-M adapter qualification).
-- **Renesas FPB-RA8E1**: Cortex-M85 (build supported).
+```
++-------------------------------------------------------------------------------+
+|                       VS Code Workspace Extension Host                        |
+|                                                                               |
+|  +--------------------+  +--------------------+  +-------------------------+  |
+|  | Native Tree Views  |  | Status Bar Item    |  | Cortex-Debug Provider   |  |
+|  | - Selection & Profile | Active Setup/Profile  | In-memory configuration |  |
+|  | - Readiness/Doctor |  | Target Core & Probe| Owned J-Link wrapper       |  |
+|  | - Artifacts/Receipt|  +--------------------+  Halt-only overrides       |  |
+|  | - Actions & Target |                          +-------------------------+  |
+|  | - Firmware Setup   |                                                       |
+|  +---------+----------+                                                       |
+|            |                                                                  |
+|            v                                                                  |
+|  +--------------------+  +--------------------+  +-------------------------+  |
+|  |  SelectionStore    |  | BackendClient      |  | Console Controllers    |  |
+|  |  - Active profile  |  | - Subprocess exec  |  | - RTT bridge (JLinkExe) |  |
+|  |  - Setup variants  |  | - JSON streams     |  | - SCI4 UART (picocom)   |  |
+|  |  - State cache     |  | - Flocks & Leases  |  | - Kernel lock tracking  |  |
+|  +---------+----------+  +---------+----------+  +-------------------------+  |
++------------|-----------------------|------------------------------------------+
+             |                       |
+             v                       v
++-------------------------------------------------------------------------------+
+|                      Repository Backend Tools & Hardware                      |
+|                                                                               |
+|  Tools/firmware-workspace.py <-----------------+                              |
+|  - catalog, doctor, build, load, debug, console|                              |
+|                                                |                              |
+|  Target Hardware & Probes:                     |                              |
+|  - Renesas RDK-RZ/V2H (CR8-0, CR8-1, CM33)     |                              |
+|  - Renesas EVK-RA8P1 (CM85, CM33)              |                              |
+|  - Renesas FPB-RA8E1 (CM85)                    |                              |
+|  - SEGGER J-Link Debug Probes (SWD/JTAG)       |                              |
++-------------------------------------------------------------------------------+
+```
 
-## Requirements
+---
 
-- Python 3.9+ with `jsonschema` and `kconfiglib`
-- ARM GNU Toolchain (`arm-none-eabi-gcc` >= 9)
-- CMake 3.20+ and Ninja
-- SEGGER J-Link Software and Documentation Pack
-- Cortex-Debug extension (`marus25.cortex-debug`) for target debugging
+## Key Features
 
-## Workflow and scope
+- **Profile & Target Discovery**: Interactive QuickPick for complete PX4 autopilot targets, standalone NuttX configurations, and multicore pair groups discovered directly from the workspace.
+- **Readiness & Doctor Diagnostics**: Host-only prerequisite checking for ARM GCC toolchain, CMake (>= 3.20), Ninja, Make, Python dependencies (`kconfiglib`, `jsonschema`), NuttX submodule state, and connected SEGGER J-Link probes.
+- **Guarded Target Loading**: Safe volatile RAM loading for Renesas RZ/V2H Cortex-R8 cores (`cr8_0` at `0x081A0000`, `cr8_1` at `0x081E0000`) with ELF address allowlist checking and host journal recovery tracking. Direct attach to RZ/V2H CM33 (which triggers SoC cold reset) and unverified flash routes are strictly gated.
+- **Cortex-Debug Integration**: Dynamically generates in-memory debug attach configurations with halt-only commands and SVD symbol mappings. Existing user `launch.json` files are never overwritten.
+- **Managed Dual Consoles**: Native terminal integration for SEGGER RTT channel 0 and SCI4 host serial UART (115200 8N1 via `picocom` with Linux kernel file locks).
+- **Firmware Setup Variants**: Manage named setups of fixed RDK-RZ/V2H CR8 groups, allowing independent image preparation, per-core builds, atomic SHA-256 pair validation, and explicit Build & Load workflows.
+- **Shared Build Mutex**: Cooperative file locking across VS Code editor tasks, root `./build.sh`, and `make` preventing concurrent modification of the NuttX source tree.
 
-Select the repository folder, firmware profile and physical J-Link probe in the native sidebar. PX4 and complete standalone NuttX catalogs are discovered from this checkout. Build and Clean Rebuild produce receipts bound to the selected profile. Group debug and console actions require a concrete member core. Load and Debug attaches only after a verified load; failed operations require diagnosis and explicit Recover Target Load.
+---
 
-Restricted Mode displays static guidance and schemas without running workspace code or writing workspace files. Build/load operations stream progress and support cancellation. The extension runs on the workspace extension host; Linux and Remote WSL paths/tools/probes must exist there. Native Windows/macOS hardware workflows have not been validated.
+## Quick Start
 
-The local VSIX includes the extension and schemas; it requires a compatible repository checkout containing `Tools/firmware-workspace.py`. See the [workspace guide](../../docs/vscode-extension.md) for CLI examples, state ownership and qualification boundaries. Host regression tests do not qualify hardware routes.
+1. **Open Workspace**: Open the repository root in VS Code. Click **Trust Workspace** when prompted.
+2. **Run Doctor**: Open the **PX4-NuttX: Dashboard** in the Activity Bar. In the **Readiness & Doctor** view, click **Run Doctor Check** (or press `Ctrl+Alt+K D`).
+3. **Select Profile / Setup**: In the **Selection & Profiles** view, click **Target** (or press `Ctrl+Alt+K P`) to choose a PX4 target (e.g. `rdk-rzv2h_default`), NuttX configuration, or multicore group.
+4. **Build & Debug**:
+   - Press `Ctrl+Alt+K B` to build the active target.
+   - Connect your SEGGER J-Link probe to the board.
+   - Click **Guarded Load (RAM)** (`Ctrl+Alt+K L`) to stage and flash to RAM.
+   - Click **Attach Debugger** (`Ctrl+Alt+K A`) to launch Cortex-Debug.
+
+---
+
+## Native Sidebar Views
+
+The Activity Bar container contributes 5 dedicated tree views:
+
+| View | Purpose | Key Actions |
+|------|---------|-------------|
+| **Selection & Profiles** | Active target profile, board, execution core, build mode, debug probe, and console transport. | Select Profile (`Ctrl+Alt+K P`), Change Core, Select Probe, Refresh (`Ctrl+Alt+K R`). |
+| **Readiness & Doctor** | Prerequisite validation for compilers, build systems, Python packages, submodules, and probes. | Run Doctor (`Ctrl+Alt+K D`), View Remediation Guides. |
+| **Artifacts & Receipts** | Inspect committed build receipts, staged ELF binaries, SHA-256 digests, entry points, and RTT addresses. | Refresh Receipts, Build Target (`Ctrl+Alt+K B`). |
+| **Actions & Target Control** | Target execution center with availability gating based on capabilities and prerequisites. | Build (`Ctrl+Alt+K B`), Clean Rebuild (`Ctrl+Alt+K C`), Guarded Load (`Ctrl+Alt+K L`), Attach Debug (`Ctrl+Alt+K A`), Start Console (`Ctrl+Alt+K T`). |
+| **Firmware Setup** | Advanced dual-core image setup for RZ/V2H CR8 pairs with variant management and atomic validation. | Select Setup, Save As, Build Core, Build All, Build & Load, Validate Images, Load Both, Recover Both. |
+
+---
+
+## Commands & Keyboard Shortcuts
+
+Press `Ctrl+Alt+K`, release the keys, then press the action letter. Chords are
+enabled only in an initialized, trusted firmware workspace, outside text inputs
+and terminals. Load, attach, and console chords apply to single-core profiles;
+use the explicit Firmware Setup actions for saved dual-core setups.
+
+| Shortcut | Command ID | Title | Description |
+|----------|------------|-------|-------------|
+| `Ctrl+Alt+K B` | `px4Nuttx.build` | **Build Active Target** | Incremental build of active selection using shared flock. |
+| `Ctrl+Alt+K C` | `px4Nuttx.cleanRebuild` | **Clean Rebuild Active Target** | Distclean and full rebuild. |
+| `Ctrl+Alt+K D` | `px4Nuttx.checkDoctor` | **Check Prerequisites (Doctor)** | Evaluates host toolchain, submodules, and J-Link probes. |
+| `Ctrl+Alt+K P` | `px4Nuttx.selectProfile` | **Select Firmware Target / Profile** | QuickPick for PX4 targets, NuttX configs, and multicore groups. |
+| `Ctrl+Alt+K R` | `px4Nuttx.refresh` | **Refresh Workspace & Profiles** | Reloads catalog, receipts, and view states. |
+| `Ctrl+Alt+K L` | `px4Nuttx.load` | **Guarded Target Load (RAM)** | Loads committed receipt ELF to target volatile RAM. |
+| `Ctrl+Alt+K A` | `px4Nuttx.attach` | **Attach Cortex-Debug** | In-memory Cortex-Debug attach without resetting the target. |
+| `Ctrl+Alt+K T` | `px4Nuttx.startConsole` | **Start Console (RTT)** | Opens interactive RTT; SCI4 uses the saved setup's core console row. |
+
+---
+
+## Extension Settings
+
+Configure via **Settings** (`Ctrl+,` or `Cmd+,` -> search for `PX4-NuttX`):
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `px4Nuttx.pythonPath` | `string` | `"python3"` | Path to Python 3 interpreter (>=3.9) with `jsonschema` and `kconfiglib` installed. |
+| `px4Nuttx.jlinkSerial` | `string` | `""` | Specific SEGGER J-Link probe serial number. If empty, auto-detected probe is used. |
+| `px4Nuttx.gdbPath` | `string` | `"gdb-multiarch"` | Path to GDB executable for target debug sessions (`gdb-multiarch` or `arm-none-eabi-gdb`). |
+| `px4Nuttx.consolePort` | `string` | `""` | Default SCI4 serial device path on the workspace host (e.g., `/dev/ttyUSB0`, 115200 8N1). |
+
+---
+
+## Guarded Loading & Safety Boundaries
+
+When working with Renesas multicore targets (especially RZ/V2H), observe these hardware safety principles:
+
+1. **Volatile RAM Loading Only**: All managed target loads write to SRAM addresses (`0x081A0000` for CR8-0, `0x081E0000` for CR8-1). Flash routes remain unadmitted.
+2. **RZ/V2H CM33 Attach Prevention**: Connecting J-Link directly to the RZ/V2H CM33 core triggers an immediate SoC cold reset. Direct attach to CM33 is strictly blocked.
+3. **Exit Code 3 (Recovery Protocol)**: If a target load fails or is interrupted, the backend marks the target state as requiring recovery (`exit code 3`). Blind retries are rejected. Use **Recover Target Load** / **Recover Both** to clear recovery state.
+4. **Single Probe Ownership**: J-Link probes cannot bridge RTT and GDB simultaneously on CR8 cores. The extension automatically coordinates console handoffs and probe leases.
+
+---
+
+## AI Agent & Automation Integration
+
+The extension provides structured schemas and machine-readable contracts for AI coding assistants:
+
+- **`llms.txt`**: Curated API overview and CLI reference for coding agents.
+- **`llms-full.txt`**: Comprehensive specification covering subcommands, JSON schemas, IPC protocols, and error codes.
+- **`schemas/`**: JSON Schema Draft 7 definitions for device capabilities, firmware selections, artifact receipts, operation results, and firmware imports.
+
+---
+
+## License
+
+This extension is licensed under the [BSD-3-Clause License](LICENSE.md).

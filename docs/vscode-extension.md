@@ -1,10 +1,10 @@
-# PX4/NuttX Firmware Workspace Extension Guide
+# PX4-Nuttx: Dashboard Extension Guide
 
 The native VS Code extension in `Tools/vscode_extension/` delegates discovery, checks, builds, RAM loading and configuration resolution to `Tools/firmware-workspace.py`. Existing CLI entry points and manually maintained `.vscode/launch.json` remain available.
 
 ## Installation and host
 
-From `Tools/vscode_extension/`, run `npm run typecheck`, `npm run build`, `npm test` and `npm run package` using the installed project dependencies. Install the resulting local VSIX with VS Code. The VSIX contains the extension, profiles and schemas; the backend stays in the compatible repository checkout. Marketplace publication is separate.
+From the repository root, run `./Tools/vscode_extension/build.sh`. The script installs locked dependencies with `npm ci` when `node_modules` is absent, then typechecks, builds and packages `Tools/vscode_extension/px4-nuttx-dashboard-<version>.vsix` using the version in `package.json`. It runs the tests against that package and also works from another directory. Install the resulting local VSIX with VS Code. The VSIX contains the extension, profiles and schemas; the backend stays in the compatible repository checkout. Marketplace publication is separate.
 
 The extension runs on the workspace extension host. Linux and Remote WSL are the intended initial hosts; Python, compiler, J-Link, GDB and USB-forwarded probes must be visible there. Native Windows and macOS hardware workflows have not been validated. Use the current usbipd-win instructions when forwarding a Windows USB probe into WSL; Doctor enumerates SEGGER USB devices through sysfs without connecting to a core.
 
@@ -19,6 +19,13 @@ When several eligible repositories are open, select the owning workspace folder.
 Select Firmware Profile offers all discovered PX4 targets, standalone NuttX configs for RZ/V2H and RA8P1, and fixed multicore groups. Select a physical J-Link separately from board, SoC and core. Group console/debug operations use a selected concrete member core. Catalog discovery uses the current checkout rather than a copied target list.
 
 Firmware Setup is the primary surface for saved RDK dual-CR8 groups. Selection & Profiles and Actions remain available for single-core and build-only selections. Readiness & Doctor reports compiler/build tools, Python packages, submodules, GDB, J-Link server and USB probes with remediation. Missing target tools do not prevent a build-only selection. No probe is attached or reset by discovery/Doctor.
+
+Firmware shortcuts use a `Ctrl+Alt+K` chord followed by an action letter: B build,
+C clean rebuild, D Doctor, P profile, R refresh, L load, A attach, and T RTT console.
+They require an initialized, trusted firmware workspace and are inactive in text
+inputs and terminals. L/A/T are for single-core profiles; saved setups use their
+explicit per-core console/debug actions and Load Both. Bare Alt+R remains available
+for VS Code's normal search behavior.
 
 ## Build and artifacts
 
@@ -44,6 +51,9 @@ Each variant retains independent sources, exact captured bytes/receipts, pending
 **Last load verified** describes recorded history, not live execution. A new debug attach halts the chosen core. The PX4 `dualcr8` + `io-cr8_1_pwm` group remains a build-clean software candidate without an admitted actuator pair.
 
 Preparation persists the exact pending request before starting the backend. After an interruption or a failed workspace-state write, **Resume Preparation** uses that request ID and completed captures; it never searches for the newest receipt. Incomplete copies remain unready. Successful assignments survive extension reload and are scoped by workspace folder and saved setup. Profile/probe/image mutations are blocked during target transitions. Refresh never replaces an explicitly captured pair with a newer build.
+
+The Pair row uses a static pause icon for idle pending preparation. Its spinner
+indicates live image preparation, a firmware workflow, or a target transition.
 
 An exact-request resume retains its recorded ELF metadata when optional symbol tools become available or disappear. Start a new preparation to refresh that metadata. Validation and history updates preserve newer image choices, and target actions wait until pending image-selection saves finish.
 

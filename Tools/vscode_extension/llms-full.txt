@@ -1,0 +1,195 @@
+# PX4-NuttX: Dashboard — Complete Technical Reference
+
+> Full-fidelity reference documentation for AI agents, answer engines, and systems engineers interacting with the PX4-NuttX VS Code extension and backend workspace tools.
+
+---
+
+## 1. System Overview & Architecture
+
+The PX4-NuttX Dashboard (`Tools/vscode_extension/`) provides native VS Code integration for developing, building, loading, and debugging PX4 Autopilot and NuttX RTOS on Renesas embedded targets.
+
+```
++-------------------------------------------------------------------------------+
+|                       VS Code Workspace Extension Host                        |
+|                                                                               |
+|  +--------------------+  +--------------------+  +-------------------------+  |
+|  | Activity Bar Views |  | Status Bar Manager |  | Cortex-Debug Provider   |  |
+|  | - Selection/Profile|  | - Active Profile   |  | - In-memory config      |  |
+|  | - Readiness/Doctor |  | - Core & Target    |  | - Owned server wrapper  |  |
+|  | - Artifacts Receipt|  | - Probe Status     |  | - Halt-only overrides   |  |
+|  | - Actions Control  |  +--------------------+  +-------------------------+  |
+|  | - Firmware Setup   |                                                       |
+|  +---------+----------+                                                       |
+|            |                                                                  |
+|            v                                                                  |
+|  +--------------------+  +--------------------+  +-------------------------+  |
+|  |  SelectionStore    |  | BackendClient      |  | Console Controllers    |  |
+|  |  - Active profile  |  | - Subprocess exec  |  | - RTT bridge (JLinkExe) |  |
+|  |  - Setup variants  |  | - JSON streams     |  | - SCI4 UART (picocom)   |  |
+|  |  - State cache     |  | - Flocks & Leases  |  | - Kernel lock tracking  |  |
+|  +---------+----------+  +---------+----------+  +-------------------------+  |
++------------|-----------------------|------------------------------------------+
+             |                       |
+             v                       v
++-------------------------------------------------------------------------------+
+|                      Repository Backend Tools & Hardware                      |
+|                                                                               |
+|  Tools/firmware-workspace.py <-----------------+                              |
+|  - catalog, doctor, build, load, debug, console|                              |
+|                                                |                              |
+|  Target Hardware & Probes:                     |                              |
+|  - Renesas RDK-RZ/V2H (CR8-0, CR8-1, CM33)     |                              |
+|  - Renesas EVK-RA8P1 (CM85, CM33)              |                              |
+|  - Renesas FPB-RA8E1 (CM85)                    |                              |
+|  - SEGGER J-Link Debug Probes (SWD/JTAG)       |                              |
++-------------------------------------------------------------------------------+
+```
+
+### Supported Target Hardware Profiles
+
+| Platform | Primary Core | Secondary Core / Role | Loading Support | Debug Support |
+|----------|--------------|-----------------------|-----------------|---------------|
+| **Renesas RDK-RZ/V2H** | Cortex-R8 Core 0 (`cr8_0`) | Cortex-R8 Core 1 (`cr8_1`), CM33 | Volatile RAM only (`0x081A0000`, `0x081E0000`) | Cortex-Debug via J-Link |
+| **Renesas EVK-RA8P1** | Cortex-M85 (`cm85`) | Cortex-M33 (`cm33`) | Build supported; Load gated | Cortex-Debug via J-Link |
+| **Renesas FPB-RA8E1** | Cortex-M85 (`cm85`) | N/A | Build supported | Cortex-Debug via J-Link |
+
+---
+
+## 2. Backend CLI Reference (`Tools/firmware-workspace.py`)
+
+All backend commands accept `--json` for machine-readable output adhering to `operation-result.schema.json`.
+
+### `catalog`
+Discovers all supported boards, cores, standalone NuttX configurations, PX4 autopilot targets, multicore groups, and capabilities.
+```bash
+python3 Tools/firmware-workspace.py catalog --json
+```
+
+### `doctor`
+Evaluates host development prerequisites (toolchain, CMake, Python dependencies, submodules, connected J-Link probes).
+```bash
+python3 Tools/firmware-workspace.py doctor --json
+python3 Tools/firmware-workspace.py doctor --serial <jlink-serial> --json
+```
+
+### `build`
+Compiles the active profile or target selection. Shares a file lock across invocations to avoid mutating the NuttX tree concurrently.
+```bash
+python3 Tools/firmware-workspace.py build --selection .vscode/active-selection.json --json
+python3 Tools/firmware-workspace.py build --selection .vscode/active-selection.json --clean --json
+```
+
+### `load`
+Loads a verified build receipt to target RAM with explicit safety gates. Ordinary retry is rejected; explicit `--recover` is required after failure.
+```bash
+# Normal guarded load
+python3 Tools/firmware-workspace.py load \
+  --selection .vscode/active-selection.json \
+  --receipt build/workspace-artifacts/<target>/receipt.json \
+  --serial <jlink-serial> \
+  --json
+
+# Guarded recovery load
+python3 Tools/firmware-workspace.py load \
+  --selection .vscode/active-selection.json \
+  --receipt build/workspace-artifacts/<target>/receipt.json \
+  --serial <jlink-serial> \
+  --recover \
+  --json
+```
+
+### `import-images`
+Validates and imports pre-built or external ELF images into an atomic dual-core pair receipt (v2).
+```bash
+python3 Tools/firmware-workspace.py import-images --input <request.firmware-import.json> --json
+```
+
+### `debug-config`
+Generates an in-memory Cortex-Debug configuration matching the verified load receipt.
+```bash
+python3 Tools/firmware-workspace.py debug-config \
+  --selection .vscode/active-selection.json \
+  --receipt <receipt.json> \
+  --core cr8_0 \
+  --serial <jlink-serial> \
+  --require-loaded \
+  --json
+```
+
+### `console`
+Starts or stops a managed RTT console bridge via `nuttx-rtt-bridge.sh`. Both actions
+require an explicit artifact receipt. This subcommand does not manage SCI4 UART.
+```bash
+python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <serial> --action start --json
+python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <serial> --action stop --json
+```
+
+SCI4 uses the saved Firmware Setup's core console row, which starts the separate
+`firmware_workspace.serial_console` supervisor. It requires Linux-host `picocom`,
+a local UART character device, and its own device lock; it takes no J-Link lease.
+See the [console workflow](../../docs/vscode-extension.md#console-and-cortex-debug).
+
+### `probe-session`
+Holds a physical probe reservation while stdin remains open. Child processes inherit `FIRMWARE_PROBE_LEASE` and `FIRMWARE_PROBE_SERIAL`.
+```bash
+python3 Tools/firmware-workspace.py probe-session --serial <serial> --json
+```
+
+---
+
+## 3. Schemas & Data Contracts
+
+All schemas are located under `Tools/vscode_extension/schemas/` and adhere to JSON
+Schema Draft 7. The linked schema definitions are authoritative; these field lists
+are summaries, not replacement validation contracts.
+
+1. **`firmware-selection.schema.json`**:
+   - `schemaVersion`: Integer (1)
+   - `id`: String identifier
+   - `board`: Target board enum (`rdk-rzv2h`, `evk-ra8p1`, `fpb-ra8e1`)
+   - `core`: Core string (`cr8_0`, `cr8_1`, `cm33`, `cm85`, `multicore`)
+   - `build`: Object specifying `family` (`px4` or `nuttx`), `target` or `config`, and `mode` (`incremental`, `clean`)
+   - `load`: Optional object with `recipe` (`rzv-cr8-ram`, `rzv-dual-cr8-ram`)
+   - `debug`: Optional object with `mode` (`attach`)
+
+2. **[artifact-receipt.schema.json](schemas/artifact-receipt.schema.json)**:
+   - `schemaVersion`: Integer (1 or 2)
+   - `receiptId`: Nonempty string. Builders use a run ID; imports use `import-<requestId>`, not a bare UUID.
+   - `timestamp`: ISO-8601 date-time string
+   - `status`: Enum (`provisional`, `committed`, `failed`, `cancelled`); only complete admitted image sets are committed.
+   - `artifacts`: Array of build outputs with `path`, `sha256`, `size`, `core`, `entryPoint`, and `rttAddress`
+   - `groupDefinitionSha256`: Binding hash for multicore pair definitions
+
+3. **`firmware-import.schema.json`**:
+   - `schemaVersion`: Integer (1)
+   - `requestId`: UUID
+   - `selection`: Embedded firmware selection object
+   - `sources`: Core-keyed dictionary of file, folder, or receipt source declarations
+
+4. **`operation-result.schema.json`**:
+   - `protocolVersion`: Integer (1)
+   - `operationId`: String
+   - `status`: Enum (`ok`, `failed`, `blocked`, `cancelled`)
+   - `childExitCode`: Optional integer
+   - `diagnostics`: Array of `{ level, code, message, path }`
+   - `receiptPath`: Optional receipt file path
+
+---
+
+## 4. Exit Codes & Safety Boundaries
+
+| Exit Code | Meaning | Agent Action |
+|-----------|---------|--------------|
+| **0** | Success (`ok`) | Proceed to next step. |
+| **1** | Execution Failure | Inspect diagnostics and logs; do not blindly retry if target error occurred. |
+| **2** | Invalid Input / Admission Failure | Validate JSON schema, paths, and core declarations. |
+| **3** | Blocked / Recovery Required | Do NOT retry standard load. Review target journal, check probe connectivity, run diagnostic triage, then invoke `--recover`. |
+| **4** | Resource Busy (e.g., UART locked) | Stop conflicting session or release device. |
+| **130** | Cancelled | Operation interrupted by user or cancellation token. |
+
+### Absolute Safety Rules
+
+1. **RAM-Only Loading**: Flash writes are gated; loads target volatile memory addresses (`0x081A0000` for CR8-0, `0x081E0000` for CR8-1).
+2. **RZ/V2H CM33 Direct Attach Gated**: Never connect J-Link directly to RZ/V2H CM33 core (causes immediate hardware SoC cold reset).
+3. **Exit Code 3 Protection**: A failed connection or corrupted target state leaves a recovery marker. Retrying without recovery is blocked to prevent hardware instability.
+4. **Probe Leasing**: Target operations must hold an active lease (`FIRMWARE_PROBE_LEASE`) to prevent concurrent debug and console conflicts on a single probe.
