@@ -175,7 +175,13 @@ export class ConsoleTerminalController implements vscode.Disposable {
       close: () => { if (!session.stopping) { void this.stopSession(session).catch((error) => this.report(error)); } },
       handleInput: (data) => { if (!socket.destroyed) { socket.write(data); } },
     };
-    socket.on('data', (data) => output.fire(data.toString()));
+    // NSH emits bare LF but a pseudoterminal needs CRLF; a CR may end one chunk and its LF start the next.
+    let afterCr = false;
+    socket.on('data', (data) => {
+      const text = data.toString();
+      output.fire(text.replace(/\r?\n/g, (eol, offset: number) => (eol === '\n' && !(offset === 0 && afterCr) ? '\r\n' : eol)));
+      afterCr = text.endsWith('\r');
+    });
     socket.on('close', () => { if (!session.stopping) { void this.stopSession(session).catch((error) => this.report(error)); } });
     socket.on('error', (error) => { output.fire(`\r\nRTT: ${error.message}\r\n`); });
     await new Promise<void>((resolve, reject) => {

@@ -86,6 +86,9 @@ async function runConsoleTests() {
     const terminal = terminals.at(-1); terminal.options.pty.handleInput('ipctest\r');
     await wait(() => terminal.output.includes('ipctest'));
     assert.ok(terminal.output.includes('not live proof'));
+    terminal.output = ''; terminal.options.pty.handleInput('ps\nPID\r'); await new Promise((resolve) => setTimeout(resolve, 20));
+    terminal.options.pty.handleInput('\nIdle\r\nend'); await wait(() => terminal.output.includes('end'));
+    assert.equal(terminal.output, 'ps\r\nPID\r\nIdle\r\nend');
     assert.equal(await controller.startCoreConsole('cr8_0'), true); assert.equal(starts, 1, 'same owned console reuses terminal');
     stopFails = true;
     await assert.rejects(controller.stopOwnedSessions(), /reservation retained/);
