@@ -63,7 +63,9 @@ Raw-link semantics that callers must design around:
   any other length fails with `EMSGSIZE`.
 - Each write is stop-and-wait. It blocks until the peer's `read()`
   consumes and acknowledges the entry, for up to
-  `CONFIG_RZV_IPC_TX_TIMEOUT_MS` (100 ms). A timeout quarantines the link:
+  `CONFIG_RZV_IPC_TX_TIMEOUT_MS` (100 ms default; 400 ms in the RTT-console
+  `ipcc-raw-*` and `ipcc-demo-*` images, so a write outlasts one J-Link
+  stop-mode RTT halt of the peer). A timeout quarantines the link:
   later reads and writes fail with `ENOLINK`. A slow reader therefore paces
   the writer's loop, and a reader that stops for longer than the timeout
   ends the stream.

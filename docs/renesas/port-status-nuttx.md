@@ -265,8 +265,10 @@ changes as a result of formatting or documentation:
   read; this is unconfirmed on target.
 - Open decision (2026-10-13): RTT up-buffer trim mode
   (`CONFIG_SEGGER_RTT_UP_MODE_TRIM`) is set only in the PX4 rdk-rzv2h
-  defconfigs. The NuttX-only RZ/V configs (`nsh-rtt` and others) and the
-  RA8 `fpb-ra8e1` / `evk-ra8p1` nsh defconfigs still block on a full buffer.
+  defconfigs and the RTT-console IPC samples (`ipcc-raw-cr8_0`,
+  `ipcc-raw-cr8_1`, `ipcc-raw-cm33`, `ipcc-demo-cr8_1`; 2026-10-31). The
+  other NuttX-only RZ/V configs (`nsh-rtt` and others) and the RA8
+  `fpb-ra8e1` / `evk-ra8p1` nsh defconfigs still block on a full buffer.
 
 When submitting a driver PR:
 1. Update the driver row: status, sample config (if applicable).

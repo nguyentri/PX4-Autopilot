@@ -92,8 +92,18 @@ behaved as designed.
 - This is bounded on-target evidence for the demo profile only:
   - the CM33 links, cold power cycles and PX4 images were not tested;
   - all timing comes from host-side console timestamps.
-- The `ipcc-raw-*` configs still use the 100 ms TX timeout and BLOCK RTT.
-  - Their auto-echo prints nothing per frame, so the stall stays latent there.
-    The raw autotest still passed.
-  - A manual `ipctest` run with the RTT bridge attached can still hit the
-    stop-mode timeout.
+- The raw autotest in section H used the `ipcc-raw-*` defaults of that time
+  (100 ms TX timeout, BLOCK RTT).
+
+## Follow-up: raw configs with 400 ms + TRIM
+
+nuttx `147383e7b0` gives the `ipcc-raw-*` configs the same 400 ms TX-ACK
+timeout and, on the RTT-console images, the TRIM RTT up-buffer. A manual
+`ipctest` under the RTT bridge could otherwise hit "write timeout (no peer?)".
+The rebuilt pair passed the HIL autotest 7/7 (recover, ping 100/100 with 0
+timeouts, CR8-1 auto-echo 100, both NSH consoles alive, no abort/overflow/assert):
+
+| Image | sha256 |
+|---|---|
+| `nuttx-ipcc-raw-cr8_0.elf` (`_SEGGER_RTT` 0x081a0000) | `27f9b9f4670de7a844faab3c2ea782455d0a127262d9ddaf425dc51ffe265e78` |
+| `nuttx-ipcc-raw-cr8_1.elf` (`_SEGGER_RTT` 0x081e0000) | `ddd93a6800cf4d3805331284db31ce07ba975ecadeb4b10f131e1bb10edc76f5` |
