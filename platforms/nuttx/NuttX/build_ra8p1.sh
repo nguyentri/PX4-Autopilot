@@ -110,7 +110,7 @@ fi
 LOCK_HELPER="${SCRIPT_DIR}/../../../Tools/firmware_workspace/build_lock.sh"
 [ -x "$LOCK_HELPER" ] || { echo "Missing shared build lock helper: $LOCK_HELPER" >&2; exit 2; }
 if ! "$LOCK_HELPER" --check; then
-  exec "$LOCK_HELPER" "$0" "$@"
+  exec "$LOCK_HELPER" "${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")" "$@"
 fi
 
 # Records which config the tree was last configured with, so --no-clean can
