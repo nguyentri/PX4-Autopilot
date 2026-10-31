@@ -16,15 +16,15 @@ Restricted Mode displays static guidance and schema information. It runs no repo
 
 When several eligible repositories are open, select the owning workspace folder. Settings, saved selections, receipts, paths and task execution are scoped to that folder; an unrelated first folder is never the implicit target.
 
-Select Firmware Profile offers all discovered PX4 targets, standalone NuttX configs for RZ/V2H and RA8P1, and fixed multicore groups. Select a physical J-Link separately from board, SoC and core. Group console/debug operations use a selected concrete member core. Catalog discovery uses the current checkout rather than a copied target list.
+Select Firmware Profile offers all discovered PX4 targets, standalone NuttX configs for RZ/V2H and RA8P1, and fixed multicore groups. Select a physical J-Link separately from board, SoC and core. Group debug operations use a selected concrete member core. Catalog discovery uses the current checkout rather than a copied target list.
 
 Firmware Setup is the primary surface for saved RDK dual-CR8 groups. Selection & Profiles and Actions remain available for single-core and build-only selections. Readiness & Doctor reports compiler/build tools, Python packages, submodules, GDB, J-Link server and USB probes with remediation. Missing target tools do not prevent a build-only selection. No probe is attached or reset by discovery/Doctor.
 
 Firmware shortcuts use a `Ctrl+Alt+K` chord followed by an action letter: B build,
-C clean rebuild, D Doctor, P profile, R refresh, L load, A attach, and T RTT console.
+C clean rebuild, D Doctor, P profile, R refresh, L load and A attach.
 They require an initialized, trusted firmware workspace and are inactive in text
-inputs and terminals. L/A/T are for single-core profiles; saved setups use their
-explicit per-core console/debug actions and Load Both. Bare Alt+R remains available
+inputs and terminals. L/A are for single-core profiles; saved setups use their
+explicit per-core debug actions and Load Both. Bare Alt+R remains available
 for VS Code's normal search behavior.
 
 ## Build and artifacts
@@ -39,7 +39,7 @@ Artifacts & Receipts and target commands share a per-selection committed receipt
 
 Select one of the three RDK-RZ/V2H CR8 groups, then open **Firmware Setup** (the former Dual-Core Loader view keeps its existing layout ID). Use **Save As** to keep named image variants such as “IPC known working” and “IPC driver changes”; **Setup** switches between those variants or opens the complete target catalog. Names are local labels: fixed members, recipes and backend selection IDs remain authoritative. Arbitrary new core combinations are not supported.
 
-Each variant retains independent sources, exact captured bytes/receipts, pending request, history and per-core UART preferences. **Rename** changes only its label. Save As waits for preparation to finish and cannot clone a pending request. Stop owned sessions before changing the setup, profile, probe, core, build mode or console device. The fixed R8-0 and R8-1 rows act on the clicked core without changing the legacy global core selection.
+Each variant retains independent sources, exact captured bytes/receipts, pending request, history and per-core UART preferences. **Rename** changes only its label. Save As waits for preparation to finish and cannot clone a pending request. Stop owned sessions before changing the setup, profile, probe, core or build mode. The fixed R8-0 and R8-1 rows act on the clicked core without changing the legacy global core selection.
 
 1. Choose **Browse ELF**, **Choose Build Folder**, or **Use Build Receipt** for each row. Folder selection lists ELF-magic candidates, including suffixless `nuttx`, and always asks for the exact file. Scans are cancellable and stop with an explanation if the folder exceeds 10,000 entries; choose a narrower folder. Folder symlinks are excluded; Browse ELF can explicitly select their final file target.
 2. For a loose image, confirm its declared core and selected target/config. The first image is captured and checked immediately, before choosing or building the other core. Its provisional receipt preserves the bytes even if the shared NuttX output is overwritten. **Build All** delegates the existing sequential group builder and captures its exact returned receipt. **Build R8-0/R8-1** builds only that fixed member and carries the peer from its immutable capture, so the shared `nuttx` output cannot overwrite the peer. A first per-core build may leave a partial, unloadable setup.
@@ -67,19 +67,20 @@ Managed loading is volatile RAM loading on admitted RZ/V2H CR8 routes. Persisten
 
 Load resolves exact immutable private ELF copies, runs the canonical checker with exact device/hash, then invokes the existing guarded single-core or paired loader. Pair order remains owned by the existing loader. A missing checker, malformed ELF, wrong core/range/hash, incomplete group or incompatible receipt fails before a target command.
 
-A private user runtime directory holds a durable journal for each physical probe/core. A started/interrupted or failed operation blocks ordinary retry, console and attach. Diagnose the failure, then choose Recover Target Load explicitly; recovery re-admits the exact images before loading. A failed connection can invalidate sibling RAM images too. Do not erase a journal to bypass the gate.
+A private user runtime directory holds a durable journal for each physical probe/core. A started/interrupted or failed operation blocks ordinary retry and attach. Diagnose the failure, then choose Recover Target Load explicitly; recovery re-admits the exact images before loading. A failed connection can invalidate sibling RAM images too. Do not erase a journal to bypass the gate.
 
 Load and Debug waits for the exact operation's successful verified load before attaching. Failed, blocked, cancelled and indeterminate outcomes cannot advance to debug.
 
-## Console and Cortex-Debug
+## Consoles (manual) and Cortex-Debug
 
-Open the explicit **Console R8-0/R8-1** row. RTT creates an interactive terminal connected to the owned bridge; input is sent to the target, so press Enter for NSH. A saved group requires verified history for its exact pair. Only one RTT/debug owner may use J-Link at a time; stop RTT before opening the other core's RTT console. The SCI4/RTT group can keep R8-0 SCI4 and R8-1 RTT open together.
+The extension starts no console. Each **Console R8-0/R8-1** row in Firmware Setup is read-only and names the transport: `Manual · SCI4 115200 8N1` or `Manual · RTT 127.0.0.1:19021`; its tooltip carries the command.
 
-For SCI4, choose **SCI4 device** on the Linux workspace host, preferably `/dev/serial/by-id/...`. Saved setup preferences override `px4Nuttx.consolePort`. The host needs `picocom`, access to that character device, and the configured Python; the extension does not install tools or change permissions. WSL needs the UART visible inside WSL. The native terminal runs the fixed interactive SCI4 helper at 115200 8N1. Exit picocom with Ctrl-A Ctrl-X, close the terminal, or choose **Stop Sessions**. The J-Link probe serial and UART path are separate inputs.
+- SCI4: open the board UART yourself (μScope, picocom, ...) at 115200 8N1. It does not use J-Link and may stay open during load/debug.
+- RTT: `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <core> <elf>`, then connect a terminal to `127.0.0.1:19021`. Stop it (`nuttx-rtt-bridge.sh stop`) before Load, Debug or Load Both; a running bridge makes the probe busy and the `PROBE_BUSY` refusal says so.
 
-A dedicated `firmware_workspace.serial_console` supervisor holds a host-wide kernel lock by UART device identity (aliases collide), retains that lock in the client, and reaps only its exact child. It takes no J-Link/build lease. `UART_BUSY` means another client still owns the device; diagnose that owner. Persistent metadata cannot authorize killing it after reload. The extension verifies kernel-lock release before clearing its owner; uncertain teardown remains busy. Manual UART tools do not participate in this extension lock and must be coordinated by the developer. Other UART transports remain manual via the established CLI.
+A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops only this extension's debugger session and never touches manual consoles.
 
-A probe supervisor holds the reservation for the console/debug lifetime. Before managed attach, the extension stops its own RTT bridge and waits for acknowledged teardown while retaining that reservation. Another window cannot acquire the probe in the handoff gap. Stop failure retains ownership and reports failure. Shutdown stops only exact owned processes and debug sessions, preserving unrelated manual sessions.
+The backend `console` CLI command and `firmware_workspace.serial_console` supervisor remain available for scripted use; the extension UI no longer calls them.
 
 Cortex-Debug configurations are generated in memory with exact core/device, retained immutable symbols, selected probe, configured GDB and RZ/V2H SVD. Attach/reset/restart overrides request halt without an intentional reset/load. These commands can halt firmware, and a failed J-Link connection may still reset hardware; no claim of reset immunity is made. Confirm safe actuator outputs before halting an image. A startup failure marks RAM state uncertain before the lease ends.
 
@@ -113,6 +114,6 @@ The new view passes `--expect-receipt-id` and `--expect-pair-sha256` to load/deb
 
 ## Verification boundaries
 
-Run every `test/firmware-workspace-*-test.py` script directly (their hyphenated names are not discovered by default unittest patterns), then extension typecheck/build/behavioral tests and local packaging. The importer tests use real binutils with small ELF fixtures; controller tests cover persistence, source choices, pinned identity and trust. Host tests also cover saved-state migration/rollback, exact per-core adoption, build/load guards, interactive loopback RTT, terminal argv/startup races, PTY SCI4 input/output, kernel-lock aliases, child/supervisor cancellation and recovery with temporary fixtures. Run `python3 test/firmware-workspace-serial-console-test.py` and `node Tools/vscode_extension/tests/console-terminal-tests.js` for the console-specific gates. Existing J-Link host suites use fake servers rather than a board.
+Run every `test/firmware-workspace-*-test.py` script directly (their hyphenated names are not discovered by default unittest patterns), then extension typecheck/build/behavioral tests and local packaging. The importer tests use real binutils with small ELF fixtures; controller tests cover persistence, source choices, pinned identity and trust. Host tests also cover saved-state migration/rollback, exact per-core adoption, build/load guards, PTY SCI4 input/output, kernel-lock aliases, child/supervisor cancellation and recovery with temporary fixtures. Run `python3 test/firmware-workspace-serial-console-test.py` for the backend console CLI gate. Existing J-Link host suites use fake servers rather than a board.
 
-Real workbench keyboard/focus, narrow-sidebar/zoom, Restricted Mode integration and adapter teardown and real picocom foreground/TTY behavior still need a native Extension Development Host. Representative single/pair RAM loading, RTT-to-debug handoff, failed-connect recovery and safe outputs need named on-target transcripts. Host checks and a packaged VSIX do not establish those passes or flight qualification.
+Real workbench keyboard/focus, narrow-sidebar/zoom, Restricted Mode integration and adapter teardown still need a native Extension Development Host. Representative single/pair RAM loading, manual-bridge PROBE_BUSY refusal, failed-connect recovery and safe outputs need named on-target transcripts. Host checks and a packaged VSIX do not establish those passes or flight qualification.

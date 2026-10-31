@@ -34,7 +34,6 @@ export class StatusBarManager implements vscode.Disposable {
 
     const selectedCore = this.store.getSelectedCore();
     const transport = this.store.getConsoleTransport(selectedCore);
-    const consoleManaged = this.store.getCapabilities('console', selectedCore).console;
     const setup = this.store.getActiveSetup();
     this.statusBarItem.command = setup ? 'px4Nuttx.setup.select' : 'px4Nuttx.selectProfile';
     this.statusBarItem.text = `$(circuit-board) ${setup ? `${setup.name} · ${selection.board}` : `${selection.board}:${selectedCore} (${shortTarget})`}`;
@@ -43,7 +42,7 @@ export class StatusBarManager implements vscode.Disposable {
         `- **Board:** ${selection.board}\n` +
         `- **Core:** ${selectedCore}${selection.core === 'multicore' ? ' (group member)' : ''}\n` +
         `- **Target:** ${targetName} (${selection.build.mode})\n` +
-        `- **Console:** ${transport.toUpperCase()}${consoleManaged ? '' : ' (manual-only)'}\n` +
+        `- **Console:** ${transport.toUpperCase()} (manual)\n` +
         `- **${probeInfo}**\n\n` +
         `Click to select a different target or profile.`
     );

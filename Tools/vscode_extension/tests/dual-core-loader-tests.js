@@ -194,7 +194,7 @@ async function runDualCoreTests() {
           artifactDigests: Object.fromEntries(state.prepared.artifacts.map((item) => [item.core, item.sha256])) } };
       },
     };
-    const debugProvider = { hasOwnedSessions: () => false, setConsoleHandoff() {}, startManagedAttach: async (...args) => { debugCall = args; return args[6](); } };
+    const debugProvider = { hasOwnedSessions: () => false, startManagedAttach: async (...args) => { debugCall = args; return args[6](); } };
     const actualExecution = registerExecutionCommands(context, realBackend, store, debugProvider, { refresh() {} });
     const prepared = store.getPreparedPair();
     const exactRequest = { selection, selectionPath: store.writeSelectionSnapshot(), receiptPath: prepared.prepared.receiptPath,
@@ -271,6 +271,10 @@ async function runDualCoreTests() {
     await assert.rejects(store.setSelectedProbe('other'), /wait/); store.endTargetTransition();
     const view = new DualCoreLoaderViewProvider(store);
     const rows = await view.getChildren(); assert.ok(rows.some((item) => item.label === 'R8-0')); assert.ok(rows.some((item) => item.label === 'R8-1'));
+    for (const label of ['Console R8-0', 'Console R8-1']) {
+      const consoleRow = rows.find((row) => row.label === label);
+      assert.ok(consoleRow && /^Manual · /.test(consoleRow.description) && !consoleRow.command, `${label} must be a read-only manual console row`);
+    }
     assert.equal(rows.find((row) => row.label === 'Pair').iconPath.id, 'pass-filled');
     for (const transition of ['Loading captured pair', 'Recovering captured pair', 'Attaching R8-0']) {
       store.beginTargetTransition(transition);
@@ -405,7 +409,7 @@ async function runDualCoreTests() {
     assert.equal(target.request.receiptId, store.getPreparedPair().prepared.receiptId);
     assert.ok(target.request.workflowOwner); assert.ok(target.request.setupToken.setupId);
     const compositeLease = { lease: { serial: 'fixture', leaseToken: 'same-owner' }, release: async () => {} };
-    execution.stopConsoleForHandoff = async () => ({ ok: true, lease: compositeLease });
+    backend.probeLeases = { acquire: async (serial) => { assert.equal(serial, target.request.serial); return compositeLease; } };
     execution.debugPrepared = async (request, key, options) => {
       assert.equal(request, target.request, 'composite debug consumes the identical prepared request');
       assert.equal(options.retainedLease, compositeLease); assert.equal(key, store.getSelectedCore());

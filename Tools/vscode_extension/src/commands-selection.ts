@@ -69,7 +69,7 @@ export function registerSelectionCommands(
             if (res.status === 'ok') {
               const readiness = res.data?.readiness;
               const message = readiness
-                ? `Build ${readiness.build ? 'ready' : 'blocked'}; load ${readiness.load ? 'ready' : 'blocked'}; debug ${readiness.debug ? 'ready' : 'blocked'}; console ${readiness.console ? 'ready' : 'blocked'}.`
+                ? `Build ${readiness.build ? 'ready' : 'blocked'}; load ${readiness.load ? 'ready' : 'blocked'}; debug ${readiness.debug ? 'ready' : 'blocked'}.`
                 : (res.data?.probes?.length
                   ? 'Build prerequisites are available; inspect Readiness for target-tool status.'
                   : 'Build ready. Connect/select a probe to load or debug.');
@@ -206,7 +206,7 @@ export function registerSelectionCommands(
           description: `${member.family.toUpperCase()} · ${store.getConsoleTransport(member.core).toUpperCase()}`,
           core: member.core,
         })),
-        { placeHolder: 'Select the group core for load, debug or console' }
+        { placeHolder: 'Select the group core for load or debug' }
       );
       if (current() && picked) {
         await store.setSelectedCore(picked.core);

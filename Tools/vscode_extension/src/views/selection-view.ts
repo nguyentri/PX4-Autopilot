@@ -25,7 +25,6 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
     const targetLabel = sel.group ? `MULTICORE : ${sel.group}` : `${sel.build.family.toUpperCase()} : ${target}`;
     const selectedCore = this.store.getSelectedCore();
     const transport = this.store.getConsoleTransport(selectedCore);
-    const consoleManaged = this.store.getCapabilities('console', selectedCore).console;
 
     const items = [
       new WorkspaceTreeItem('Board', vscode.TreeItemCollapsibleState.None, {
@@ -57,9 +56,9 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
         tooltip: new vscode.MarkdownString(`**Debug Probe:** \`${probe}\`\n\nClick to select or change connected SEGGER J-Link probe.`),
       }),
       new WorkspaceTreeItem('Console Transport', vscode.TreeItemCollapsibleState.None, {
-        description: consoleManaged ? transport.toUpperCase() : `${transport.toUpperCase()} (manual-only)`,
+        description: `${transport.toUpperCase()} (manual)`,
         iconPath: new vscode.ThemeIcon('terminal'),
-        tooltip: new vscode.MarkdownString(`**Console Transport:** \`${transport.toUpperCase()}\`\n\n${consoleManaged ? 'Managed interactive bridge available.' : 'Manual console connection required.'}`),
+        tooltip: new vscode.MarkdownString(`**Console Transport:** \`${transport.toUpperCase()}\`\n\nOpen the console manually: SCI4 in a serial terminal, RTT through \`nuttx-rtt-bridge.sh\`.`),
       }),
     ];
     return Promise.resolve(items);

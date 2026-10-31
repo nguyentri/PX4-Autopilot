@@ -100,6 +100,9 @@ def check_probe_availability(authorized_serial=None):
 def require_probe_available(serial):
     available, errors = check_probe_availability(serial)
     if not available:
+        # Consoles are started by hand; point at the usual owner of the probe.
+        if any("RTT console bridge" in error or "JLinkExe" in error for error in errors):
+            errors.append("Stop the manual RTT console first: platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop")
         raise OperationError("; ".join(errors), "PROBE_BUSY", True)
 
 

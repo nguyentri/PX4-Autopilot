@@ -143,6 +143,26 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
     return item;
   }
 
+  /**
+   * Consoles are opened manually outside the extension; this read-only row
+   * only names the transport and the command that reaches it.
+   */
+  private manualConsoleRow(core: R8Core, elf?: string): WorkspaceTreeItem {
+    const transport = this.store.getConsoleTransport(core);
+    const label = `Console ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`;
+    if (transport === 'sci4') {
+      return this.row(label, 'Manual · SCI4 115200 8N1', undefined, undefined,
+        'Open the board SCI4 UART in your own serial terminal (115200 8N1).');
+    }
+    if (transport === 'rtt') {
+      return this.row(label, 'Manual · RTT 127.0.0.1:19021', undefined, undefined,
+        `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start ${core} ${elf || '<elf>'}\n` +
+        'Then connect a terminal (for example μScope) to 127.0.0.1:19021. ' +
+        'Stop the bridge before loading or debugging: nuttx-rtt-bridge.sh stop');
+    }
+    return this.row(label, `Manual · ${transport.toUpperCase()}`);
+  }
+
   public async getChildren(): Promise<WorkspaceTreeItem[]> {
     if (vscode.workspace.isTrusted === false) {
       return [this.row('Workspace trust required', 'Trust this workspace to prepare, load and debug images.')];
@@ -216,10 +236,7 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       items.push(this.row(`${core === 'cr8_0' ? 'R8-0' : 'R8-1'} profile`, member.target || member.config || 'Unavailable'));
       if (!busy) {
         items.push(this.row(`Build ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`, 'Build and capture this member only', 'buildCore', core));
-        const transport = this.store.getConsoleTransport(core);
-        items.push(this.row(`Console ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`, this.store.getConsoleStatus(core) || (transport === 'sci4'
-          ? `SCI4 · ${this.store.getConsoleDevice(core) || 'Select UART'}` : `${transport.toUpperCase()} · exact loaded pair required`), 'consoleCore', core));
-        if (transport === 'sci4') { items.push(this.row('SCI4 device', this.store.getConsoleDevice(core) || 'Choose workspace-host UART', 'device', core)); }
+        items.push(this.manualConsoleRow(core, image?.path));
       }
 
       if (!busy && state?.sourceChanges?.[core]) {
@@ -250,7 +267,7 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       ['Use Build Receipt', 'Choose an existing matching build explicitly', 'useBuild'],
       ['Build All', 'Build through the existing group builder', 'buildBoth'],
       ['Build & Load', 'Explicitly build, capture, then load this exact pair', 'buildAndLoad'],
-      ['Stop Sessions', 'Stop only this extension’s debugger and consoles', 'stopSessions'],
+      ['Stop Sessions', 'Stop only this extension’s debugger session', 'stopSessions'],
       ['Validate Images', 'Check source changes and captured hashes without hardware', 'validate'],
     ];
 

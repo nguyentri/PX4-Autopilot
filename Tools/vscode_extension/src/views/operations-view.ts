@@ -63,34 +63,17 @@ export class OperationsViewProvider implements vscode.TreeDataProvider<Workspace
         this.action('Guarded Load (RAM)', 'Load selected ELF to RAM', 'cloud-upload', 'px4Nuttx.load', true, '', 'Ctrl+Alt+K L'),
         this.action('Attach Debugger', 'Cortex-Debug (no reset)', 'debug-alt', 'px4Nuttx.attach', true, '', 'Ctrl+Alt+K A'),
         this.action('Load and Debug', 'Load then attach after verified success', 'debug-start', 'px4Nuttx.loadAndDebug', true, ''),
-        this.action('Start Console', 'Selected core transport', 'terminal', 'px4Nuttx.startConsole', true, '', 'Ctrl+Alt+K T'),
-        this.action('Stop Console', 'Stop the owned console bridge', 'debug-stop', 'px4Nuttx.stopConsole', true, ''),
       ]);
     }
 
     const capabilities = this.store.getCapabilities();
     const reasons = capabilities.reasons.join(' ') || 'Refresh the catalog and select a supported profile.';
-    const transport = this.store.getConsoleTransport();
     return Promise.resolve([
       this.action('Build Target', 'Incremental compile', 'play', 'px4Nuttx.build', capabilities.build, reasons, 'Ctrl+Alt+K B'),
       this.action('Clean Rebuild', 'Distclean and compile', 'trash', 'px4Nuttx.cleanRebuild', capabilities.build, reasons, 'Ctrl+Alt+K C'),
       this.action('Load Selected ELF', 'Load selected ELF to RAM', 'cloud-upload', 'px4Nuttx.load', capabilities.load, reasons, 'Ctrl+Alt+K L'),
       this.action('Attach Debugger', 'Cortex-Debug (no reset)', 'debug-alt', 'px4Nuttx.attach', capabilities.debug, reasons, 'Ctrl+Alt+K A'),
       this.action('Load and Debug', 'Load then attach after verified success', 'debug-start', 'px4Nuttx.loadAndDebug', capabilities.load && capabilities.debug, reasons),
-      this.action(
-        `Start Console (${transport.toUpperCase()})`,
-        `Selected core: ${this.store.getSelectedCore()}`,
-        'terminal',
-        'px4Nuttx.startConsole',
-        capabilities.console,
-        transport === 'none'
-          ? 'No supported console transport for the selected core.'
-          : transport !== 'rtt'
-            ? `${transport.toUpperCase()} is manual-only; use nsh_console_exec.py with the selected serial.`
-            : reasons,
-        'Ctrl+Alt+K T'
-      ),
-      this.action('Stop Console', 'Stop the owned console bridge', 'debug-stop', 'px4Nuttx.stopConsole', true, ''),
     ]);
   }
 }

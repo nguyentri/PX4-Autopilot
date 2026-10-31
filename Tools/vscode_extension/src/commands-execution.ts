@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import { BackendClient, LoadOptions, ProbeLeaseHandle, WorkspaceTrustError } from './backend-client';
 import { Px4NuttxDebugProvider } from './debug-provider';
-import { ConsoleTerminalController } from './console-terminal-controller';
 import { SelectionStore } from './selection-store';
-import { ConsoleHandoff, FirmwareSelection, OperationResult, PreparedExecutionRequest, R8Core } from './types';
+import { FirmwareSelection, OperationResult, PreparedExecutionRequest, R8Core } from './types';
 import { ArtifactsViewProvider } from './workspace-view';
 
 interface OperationSnapshot {
@@ -17,13 +16,9 @@ interface OperationSnapshot {
 export interface ExecutionController extends vscode.Disposable {
   buildSelectedGroup(selection: FirmwareSelection, clean?: boolean): Promise<OperationResult | null>;
   buildExact(selection: FirmwareSelection, clean?: boolean, cancellationToken?: vscode.CancellationToken): Promise<OperationResult | null>;
-  startCoreConsole?(core: string): Promise<boolean>;
-  stopSessions?(): Promise<void>;
-  hasOwnedSessions?(): boolean;
   setSetupRouter?(router: (name: string) => Promise<unknown>): void;
   loadPrepared(request: PreparedExecutionRequest, options: { recover: boolean; allowImplicitBuild: false; retainedLease?: ProbeLeaseHandle }): Promise<OperationResult | null>;
   debugPrepared(request: PreparedExecutionRequest, core: R8Core, options: { requireLoaded: true; retainedLease?: ProbeLeaseHandle }): Promise<boolean>;
-  stopConsoleForHandoff(): Promise<ConsoleHandoff>;
   disposeAsync(): Promise<void>;
 }
 
@@ -60,10 +55,9 @@ export function registerExecutionCommands(
     if (store.getActiveSetup?.() && setupRouter && routes[name]) { return setupRouter(routes[name]); }
     return handler(...args);
   });
-  const consoles = new ConsoleTerminalController(client, store, () => debugProvider.hasOwnedSessions());
-  store.setConsoleStatusProvider((core) => consoles.describe(core));
-  store.setSessionGuard(() => consoles.hasOwnedSessions() || debugProvider.hasOwnedSessions());
-  context.subscriptions.push(consoles.onDidChange(() => store.notifySessionChange()));
+  // Consoles are manual (SCI4 terminal or nuttx-rtt-bridge.sh); only the
+  // debugger owns sessions here.
+  store.setSessionGuard(() => debugProvider.hasOwnedSessions());
 
   const receiptFor = (selection: FirmwareSelection): string | null => {
     return store.getReceiptPath(selection);
@@ -241,15 +235,9 @@ export function registerExecutionCommands(
 
   acquireProbeLease = async (operation: OperationSnapshot): Promise<ProbeLeaseHandle | null> => {
     if (!operation.serial) { vscode.window.showErrorMessage('Select a J-Link probe before starting a target operation.'); return null; }
-    const handoff = await consoles.stopRttForDebugHandoff();
-    if (!handoff.ok) { return null; }
-    return handoff.lease as ProbeLeaseHandle | undefined || client.probeLeases.acquire(operation.serial).catch((error: Error) => {
+    return client.probeLeases.acquire(operation.serial).catch((error: Error) => {
       vscode.window.showErrorMessage(`Unable to reserve probe ${operation.serial}: ${error.message}`); return null;
     });
-  };
-  const startConsole = async (): Promise<boolean> => {
-    try { return await consoles.startCoreConsole(store.getSelectedCore()); }
-    catch (error) { vscode.window.showErrorMessage((error as Error).message); return false; }
   };
   context.subscriptions.push(
     register('px4Nuttx.build', () => runBuild(false)),
@@ -334,12 +322,10 @@ export function registerExecutionCommands(
         vscode.window.showErrorMessage(`Failed starting managed debugger: ${(error as Error).message}`);
         return false;
       }
-    }),
-    register('px4Nuttx.startConsole', startConsole),
-    register('px4Nuttx.stopConsole', async () => { try { await consoles.stopOwnedSessions(); return true; } catch (error) { vscode.window.showErrorMessage((error as Error).message); return false; } })
+    })
   );
 
-  const disposeAsync = () => consoles.disposeAsync();
+  const disposeAsync = async (): Promise<void> => undefined;
 
   const preparedCurrent = (request: PreparedExecutionRequest): boolean => {
     const state = store.getPreparedPair(request.selection.group);
@@ -378,10 +364,6 @@ export function registerExecutionCommands(
           options.retainedLease, request, () => preparedCurrent(request));
       } finally { store.endTargetTransition(); }
     },
-    startCoreConsole: (core) => consoles.startCoreConsole(core),
-    stopSessions: () => consoles.stopOwnedSessions(),
-    hasOwnedSessions: () => consoles.hasOwnedSessions(),
-    stopConsoleForHandoff: () => consoles.stopRttForDebugHandoff(),
     disposeAsync,
     dispose: () => {
       void disposeAsync().catch((error: Error) => {
@@ -389,7 +371,6 @@ export function registerExecutionCommands(
       });
     },
   };
-  debugProvider.setConsoleHandoff(controller.stopConsoleForHandoff);
   return controller;
 }
 

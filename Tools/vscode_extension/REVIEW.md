@@ -23,7 +23,7 @@ declarations alone do not establish visual or keyboard usability.
 - **Target Surface**: VS Code Extension (`Tools/vscode_extension/`) and Python workspace backend (`Tools/firmware-workspace.py`).
 - **Stack**: TypeScript 5.5, VS Code Extension API (`^1.85.0`), esbuild, JSON Schema Draft 7, Python 3.9+ backend.
 - **Hardware Coverage**: Renesas RDK-RZ/V2H (CR8-0, CR8-1, CM33), EVK-RA8P1 (CM85, CM33), FPB-RA8E1 (CM85).
-- **Verification Commands**: `npm run typecheck`, `npm run build`, `npm test` (`tests/run-tests.js`, `tests/dual-core-loader-tests.js`, `tests/console-terminal-tests.js`).
+- **Verification Commands**: `npm run typecheck`, `npm run build`, `npm test` (`tests/run-tests.js`, `tests/dual-core-loader-tests.js`).
 
 ---
 

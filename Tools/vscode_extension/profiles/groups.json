@@ -71,6 +71,29 @@
         "cr8_1": "rtt"
       }
     },
+    "rzv-native-ipc-demo-sci4": {
+      "id": "rzv-native-ipc-demo-sci4",
+      "name": "RZ/V2H IPC Showcase Demo (SCI4 Serial / RTT)",
+      "board": "rdk-rzv2h",
+      "loadRecipe": "rzv-dual-cr8-ram",
+      "description": "Customer IPC showcase (ipcdemo): ping, messages and a 5 s heartbeat between CR8-0 on SCI4 serial and CR8-1 on RTT, with automatic link recovery.",
+      "members": [
+        {
+          "core": "cr8_0",
+          "family": "nuttx",
+          "config": "ipcc-demo-cr8_0-sci4"
+        },
+        {
+          "core": "cr8_1",
+          "family": "nuttx",
+          "config": "ipcc-demo-cr8_1"
+        }
+      ],
+      "console": {
+        "cr8_0": "sci4",
+        "cr8_1": "rtt"
+      }
+    },
     "ra8p1-dual-ipc": {
       "id": "ra8p1-dual-ipc",
       "name": "RA8P1 Dual-Core IPC (CM85 + CM33)",

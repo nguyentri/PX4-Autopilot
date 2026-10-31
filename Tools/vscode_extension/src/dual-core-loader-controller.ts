@@ -409,10 +409,7 @@ export class DualCoreLoaderController implements vscode.Disposable {
     ++this.historyToken;
     if (action === 'loadAndDebug') {
       if (!core || !CORES.includes(core)) { throw new Error('Choose a concrete CR8 member before loading and debugging.'); }
-      const handoff = await this.execution.stopConsoleForHandoff();
-      try { this.assertContext(context); } catch (error) { await handoff.lease?.release(); throw error; }
-      if (!handoff.ok) { return false; }
-      const lease = handoff.lease || await this.client.probeLeases.acquire(request.serial);
+      const lease = await this.client.probeLeases.acquire(request.serial);
       let transferred = false;
       try {
         this.assertContext(context);

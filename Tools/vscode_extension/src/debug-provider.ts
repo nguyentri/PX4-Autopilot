@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { BackendClient, ProbeLeaseHandle, WorkspaceTrustError } from './backend-client';
 import { SelectionStore } from './selection-store';
-import { ConsoleHandoff, FirmwareSelection, PreparedExecutionRequest } from './types';
+import { FirmwareSelection, PreparedExecutionRequest } from './types';
 
 const DEBUG_TEARDOWN_TIMEOUT_MS = 15000;
 
@@ -29,7 +29,6 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
   private readonly failedLeases = new Map<string, ProbeLeaseHandle>();
   private readonly activeLeases = new Map<string, ManagedDebugLease>();
   private readonly terminationWaiters = new Map<string, TerminationWaiter>();
-  private stopConsoleForHandoff: (() => Promise<ConsoleHandoff>) | undefined;
 
   constructor(
     private readonly client: BackendClient,
@@ -48,10 +47,6 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
     if (debugApi.onDidTerminateDebugSession) {
       context.subscriptions.push(debugApi.onDidTerminateDebugSession((session) => this.onSessionTerminated(session)));
     }
-  }
-
-  public setConsoleHandoff(handler: (() => Promise<ConsoleHandoff>) | undefined): void {
-    this.stopConsoleForHandoff = handler;
   }
 
   /**
@@ -111,7 +106,7 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
       return false;
     }
 
-    // Freeze the probe/core before any asynchronous console handoff. A later
+    // Freeze the probe/core before any asynchronous probe reservation. A later
     // profile or probe selection must not redirect this operation.
     const serial = probeSerial || this.store.getSelectedProbe();
     const core = targetCore || this.store.getSelectedCore();
@@ -129,16 +124,7 @@ export class Px4NuttxDebugProvider implements vscode.DebugConfigurationProvider,
       }
     }
 
-    let handoffLease: ProbeLeaseHandle | undefined = retainedLease;
-    if (!handoffLease && this.stopConsoleForHandoff) {
-      const handoff = await this.stopConsoleForHandoff();
-      if (!handoff.ok) {
-        vscode.window.showErrorMessage('Debugging is waiting for the owned console to stop cleanly.');
-        return false;
-      }
-      handoffLease = handoff.lease;
-    }
-    const lease = handoffLease || await this.client.probeLeases.acquire(serial).catch((error: Error) => {
+    const lease = retainedLease || await this.client.probeLeases.acquire(serial).catch((error: Error) => {
       vscode.window.showErrorMessage(`Unable to reserve probe ${serial}: ${error.message}`);
       return null;
     });

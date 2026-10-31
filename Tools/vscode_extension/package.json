@@ -136,18 +136,6 @@
         "icon": "$(debug-start)"
       },
       {
-        "command": "px4Nuttx.startConsole",
-        "title": "Start Console (RTT / Serial)",
-        "category": "PX4/NuttX",
-        "icon": "$(terminal)"
-      },
-      {
-        "command": "px4Nuttx.stopConsole",
-        "title": "Stop Active Console",
-        "category": "PX4/NuttX",
-        "icon": "$(debug-stop)"
-      },
-      {
         "command": "px4Nuttx.recoverLoad",
         "title": "Recover Target Load",
         "category": "PX4/NuttX",
@@ -397,20 +385,6 @@
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
-        "command": "px4Nuttx.setup.consoleCore",
-        "title": "Open Core Console",
-        "category": "PX4/NuttX Firmware Setup",
-        "icon": "$(terminal)",
-        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
-      },
-      {
-        "command": "px4Nuttx.setup.device",
-        "title": "Select SCI4 Device",
-        "category": "PX4/NuttX Firmware Setup",
-        "icon": "$(plug)",
-        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
-      },
-      {
         "command": "px4Nuttx.setup.stopSessions",
         "title": "Stop Sessions",
         "category": "PX4/NuttX Firmware Setup",
@@ -481,10 +455,6 @@
         },
         {
           "command": "px4Nuttx.setup.buildCore",
-          "when": "view == px4-nuttx.dualCoreLoader && viewItem == dualCoreImage && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
-        },
-        {
-          "command": "px4Nuttx.setup.consoleCore",
           "when": "view == px4-nuttx.dualCoreLoader && viewItem == dualCoreImage && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
         }
       ],
@@ -616,14 +586,6 @@
         {
           "command": "px4Nuttx.setup.debugR81",
           "when": "px4Nuttx.savedSetupActive"
-        },
-        {
-          "command": "px4Nuttx.setup.consoleCore",
-          "when": "px4Nuttx.savedSetupActive"
-        },
-        {
-          "command": "px4Nuttx.setup.device",
-          "when": "px4Nuttx.savedSetupActive"
         }
       ]
     },
@@ -687,12 +649,6 @@
         "key": "ctrl+alt+k a",
         "mac": "ctrl+alt+k a",
         "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
-      },
-      {
-        "command": "px4Nuttx.startConsole",
-        "key": "ctrl+alt+k t",
-        "mac": "ctrl+alt+k t",
-        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
       }
     ],
     "taskDefinitions": [
@@ -730,11 +686,6 @@
           "type": "string",
           "default": "gdb-multiarch",
           "description": "Path to GDB executable for target debug sessions."
-        },
-        "px4Nuttx.consolePort": {
-          "type": "string",
-          "default": "",
-          "description": "Default SCI4 device path on the workspace extension host (115200 8N1). Saved setups may override this per core; requires picocom."
         }
       }
     },

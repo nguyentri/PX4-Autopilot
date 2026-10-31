@@ -63,9 +63,6 @@ export class SelectionStore implements vscode.Disposable {
   private imagePreparationActive = false;
   private closed = false;
   private canonicalLoaded: boolean;
-  private consoleStatus: (core: string) => string | undefined = () => undefined;
-  public setConsoleStatusProvider(provider: (core: string) => string | undefined): void { this.consoleStatus = provider; }
-  public getConsoleStatus(core: string): string | undefined { return this.consoleStatus(core); }
   private sessionGuard: () => boolean = () => false;
   private compatibilityWarning = '';
   private setupOperationsReady = false;
@@ -191,13 +188,13 @@ export class SelectionStore implements vscode.Disposable {
     return value ? clone(value) : undefined;
   }
   private assertSessionMutable(): void {
-    if (this.sessionGuard()) { throw new Error('Stop Sessions before changing the setup, core, probe or console device.'); }
+    if (this.sessionGuard()) { throw new Error('Stop Sessions before changing the setup, core or probe.'); }
   }
   public captureSetupToken(core?: string, includePair = false): SetupOperationToken {
     return { setupId: this.state.activeSetupId, revision: this.state.revision,
       selectionIdentity: this.getSelectionIdentity(), definition: this.getGroupMeta()?.definitionSha256,
       ...(includePair ? { pairGeneration: this.getPreparedPair()?.generation || 0 } : {}),
-      probe: this.getSelectedProbe(), core, device: core ? this.getConsoleDevice(core) : undefined };
+      probe: this.getSelectedProbe(), core };
   }
   public isSetupTokenCurrent(token: SetupOperationToken): boolean {
     const now = this.captureSetupToken(token.core, Object.prototype.hasOwnProperty.call(token, 'pairGeneration'));
@@ -241,19 +238,6 @@ export class SelectionStore implements vscode.Disposable {
       this.assertSessionMutable(); next.selection!.build.mode = mode;
       if (next.activeSetupId) { next.setups[next.activeSetupId].selection.build.mode = mode; }
       next.revision++;
-    });
-  }
-  public getConsoleDevice(core: string): string {
-    return this.getActiveSetup()?.consoleDevices?.[core]
-      || vscode.workspace.getConfiguration('px4Nuttx', vscode.Uri?.file?.(this.workspaceRoot)).get<string>('consolePort', '');
-  }
-  public async setSetupConsoleDevice(core: string, device: string): Promise<void> {
-    this.assertSessionMutable();
-    if (!device || /[\x00-\x1f\x7f]/.test(device) || device.includes('://')) { throw new Error('Select a workspace-host serial device path.'); }
-    await this.transact((next) => {
-      this.assertSessionMutable(); const setup = next.activeSetupId && next.setups[next.activeSetupId];
-      if (!setup || !['cr8_0', 'cr8_1'].includes(core)) { throw new Error('Select a supported saved setup/core.'); }
-      setup.consoleDevices ||= {}; setup.consoleDevices[core] = device; next.revision++;
     });
   }
 
@@ -555,19 +539,11 @@ export class SelectionStore implements vscode.Disposable {
     const has = (field: 'buildAvailable' | 'loadAvailable' | 'debugAvailable'): boolean =>
       selectedMembers.length > 0 && validCapabilities.length === selectedMembers.length && validCapabilities.every((capability) => capability[field]);
 
-    const transport = this.getConsoleTransport(core);
-    const managedRtt = this.activeSelection.board === 'rdk-rzv2h'
-      && (core === 'cr8_0' || core === 'cr8_1')
-      && transport === 'rtt';
     const reasons = validCapabilities.flatMap((capability) => capability.reasons || []);
-    if (transport === 'rtt' && !managedRtt) {
-      reasons.push('Managed RTT console ownership is admitted only for RDK-RZ/V2H CR8 cores.');
-    }
     const result: SelectionCapabilities = {
       build: has('buildAvailable'),
       load: has('loadAvailable'),
       debug: has('debugAvailable'),
-      console: validCapabilities.length === selectedMembers.length && managedRtt,
       reasons,
       groupMeta: group,
       coreCapabilities: Object.fromEntries(validCapabilities.map((capability) => [capability.core, capability])),
@@ -580,9 +556,6 @@ export class SelectionStore implements vscode.Disposable {
     }
     if (operation === 'debug') {
       result.build = result.load = false;
-    }
-    if (operation === 'console') {
-      result.build = result.load = result.debug = false;
     }
     return result;
   }

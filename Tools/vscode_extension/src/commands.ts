@@ -48,27 +48,7 @@ export function registerCommands(
     debugSelected: () => dual.targetAction('debug', store.getSelectedCore() as 'cr8_0' | 'cr8_1'),
     loadAndDebug: () => dual.loadAndDebug(),
     debugR80: () => dual.targetAction('debug', 'cr8_0'), debugR81: () => dual.targetAction('debug', 'cr8_1'),
-    device: async (core) => {
-      if (!core) { throw new Error('Choose a core console row.'); }
-      const token = store.captureSetupToken(core, true);
-      const device = await vscode.window.showInputBox({ title: 'SCI4 Device on Workspace Host', value: store.getConsoleDevice(core), prompt: 'For example /dev/serial/by-id/… (115200 8N1)' });
-      if (!store.isSetupTokenCurrent(token)) { return; }
-      if (device !== undefined) { await store.setSetupConsoleDevice(core, device); }
-    },
-    consoleCore: async (core) => {
-      const starting = store.captureSetupToken(undefined, true);
-      if (!core) {
-        const picked = await vscode.window.showQuickPick(store.getGroupMembers().map((member) => ({ label: `${member.core} · ${store.getConsoleTransport(member.core).toUpperCase()}`, core: member.core })), { title: 'Open Core Console' });
-        if (!store.isSetupTokenCurrent(starting)) { throw new Error('Setup changed while choosing a console core.'); }
-        core = picked?.core as 'cr8_0' | 'cr8_1' | undefined;
-      }
-      if (!execution.startCoreConsole || !core) { return false; }
-      const token = store.captureSetupToken(core, true);
-      if (store.getConsoleTransport(core) === 'rtt' && !await dual.validate()) { throw new Error('Validate captured images before opening RTT.'); }
-      if (!store.isSetupTokenCurrent(token)) { throw new Error('Setup changed before console startup.'); }
-      return execution.startCoreConsole(core);
-    },
-    stopSessions: async () => { const results = await Promise.allSettled([execution.stopSessions?.(), debugProvider.disposeAsync()]); const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected'); if (failed.length) { throw new Error(failed.map((r) => String(r.reason)).join('; ')); } store.notifySessionChange(); },
+    stopSessions: async () => { await debugProvider.disposeAsync(); store.notifySessionChange(); },
   };
   const invoke = async (name: string, argument?: { setupId?: string; core?: 'cr8_0' | 'cr8_1'; token?: SetupOperationToken }): Promise<unknown> => {
     try {
@@ -78,7 +58,7 @@ export function registerCommands(
       if (argument?.token && !store.isSetupTokenCurrent(argument.token)) { throw new Error('The clicked setup row changed. Refresh the view and choose it again.'); }
       const token = store.captureSetupToken(undefined, true);
       // A setup picker may wait while another operation changes inputs.
-      if (['saveAs', 'rename', 'device', 'mode', 'select', 'probe'].includes(name)) { store.assertMutable(); }
+      if (['saveAs', 'rename', 'mode', 'select', 'probe'].includes(name)) { store.assertMutable(); }
       if (!store.isSetupTokenCurrent(token)) { return false; }
       return await actions[name](argument?.core);
     } catch (error) { void vscode.window.showErrorMessage((error as Error).message); return false; }

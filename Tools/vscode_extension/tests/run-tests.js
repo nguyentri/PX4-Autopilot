@@ -28,7 +28,7 @@ for (const action of ['browse', 'folder', 'useBuild', 'buildBoth', 'validate', '
   assert.ok(pkg.contributes.commands.some((command) => command.command === `px4Nuttx.dual.${action}`), `Missing dual-core action ${action}`);
 }
 assert.equal(pkg.contributes.views['px4-nuttx-workspace'].find((view) => view.id === 'px4-nuttx.dualCoreLoader').name, 'Firmware Setup');
-for (const action of ['select', 'saveAs', 'rename', 'buildCore', 'buildBoth', 'buildAndLoad', 'consoleCore', 'device', 'stopSessions']) {
+for (const action of ['select', 'saveAs', 'rename', 'buildCore', 'buildBoth', 'buildAndLoad', 'stopSessions']) {
   const command = pkg.contributes.commands.find((entry) => entry.command === `px4Nuttx.setup.${action}`);
   assert.ok(command?.enablement.includes('px4Nuttx.savedSetupOperationsReady'), `Missing runtime rollout context for ${action}`);
 }
@@ -63,7 +63,7 @@ for (const binding of pkg.contributes.keybindings) {
   ]) {
     assert.equal(enabled(context), false, `${binding.command} must respect workspace, trust and focus`);
   }
-  const singleCoreOnly = ['px4Nuttx.load', 'px4Nuttx.attach', 'px4Nuttx.startConsole'].includes(binding.command);
+  const singleCoreOnly = ['px4Nuttx.load', 'px4Nuttx.attach'].includes(binding.command);
   assert.equal(enabled({ ...shortcutContext, 'px4Nuttx.savedSetupActive': true }), !singleCoreOnly);
 }
 console.log('  ✓ firmware shortcuts preserve regex search, text inputs, terminals and workspace guards');
@@ -293,7 +293,7 @@ async function runBehavioralTests() {
     let loadedLease, attachedLease;
     let loadOutcome = { status: 'blocked', data: { recoveryRequired: true }, diagnostics: [{ message: 'blocked' }] };
     const executionStore = {
-      setConsoleStatusProvider() {}, setSessionGuard() {}, notifySessionChange() {}, assertMutable() {}, getActiveSetup() {}, getPreparedPair() {}, captureSetupToken() { return {}; }, isSetupTokenCurrent() { return true; },
+      setSessionGuard() {}, notifySessionChange() {}, assertMutable() {}, getActiveSetup() {}, getPreparedPair() {}, captureSetupToken() { return {}; }, isSetupTokenCurrent() { return true; },
       getSelection: () => currentSelection,
       getSelectedProbe: () => 'probe',
       getSelectedCore: () => 'cr8_0',
@@ -316,7 +316,6 @@ async function runBehavioralTests() {
     const executionController = registerExecutionCommands(selectionContext, executionClient, executionStore, {
       hasOwnedSessions: () => false,
       startManagedAttach: async (...args) => { attached += 1; attachedLease = args[4]; return true; },
-      setConsoleHandoff: () => {},
     }, { refresh: () => {} });
     await registered.get('px4Nuttx.loadAndDebug')();
     assert.strictEqual(attached, 0, 'blocked load must not attach the debugger');
@@ -336,20 +335,13 @@ async function runBehavioralTests() {
     assert.strictEqual(attached, 1);
     assert.deepStrictEqual(attachedLease.lease, loadedLease, 'verified load and attach must transfer one reservation');
     console.log('  ✓ failed/blocked/cancelled composites never attach; successful composite retains one probe lease');
-    let stopFails = true;
-    executionClient.consoleAction = async (action) => action === 'stop' && stopFails
-      ? { status: 'failed', data: {}, diagnostics: [{ message: 'fixture stop failed' }] }
-      : { status: 'ok', data: { endpoint: '127.0.0.1:19021', running: action === 'start', core: 'cr8_0', transport: 'rtt' }, diagnostics: [] };
-    const rttServer = require('net').createServer();
-    const rttSockets = new Set(); rttServer.on('connection', (socket) => { rttSockets.add(socket); socket.on('close', () => rttSockets.delete(socket)); });
-    await new Promise((resolve, reject) => { rttServer.once('error', reject); rttServer.listen(19021, '127.0.0.1', resolve); });
-    assert.strictEqual(await registered.get('px4Nuttx.startConsole')(), true);
-    assert.strictEqual(await registered.get('px4Nuttx.stopConsole')(), false);
-    assert.strictEqual((await executionController.stopConsoleForHandoff()).ok, false, 'stop failure must retain active ownership');
-    stopFails = false;
-    assert.strictEqual(await registered.get('px4Nuttx.stopConsole')(), true);
-    for (const socket of rttSockets) { socket.destroy(); } await new Promise((resolve) => rttServer.close(resolve));
-    console.log('  ✓ interactive console stop failure keeps ownership and prevents debug handoff');
+    for (const removed of ['px4Nuttx.startConsole', 'px4Nuttx.stopConsole', 'px4Nuttx.setup.consoleCore', 'px4Nuttx.setup.device']) {
+      assert.ok(!registered.has(removed), `${removed} must not be registered: consoles are manual`);
+      assert.ok(!pkg.contributes.commands.some((command) => command.command === removed), `${removed} must not be contributed`);
+    }
+    assert.ok(!('px4Nuttx.consolePort' in pkg.contributes.configuration.properties), 'console port setting is retired');
+    assert.ok(!('stopConsoleForHandoff' in executionController), 'load/debug ownership is the probe lease alone');
+    console.log('  ✓ no extension-managed console: commands, settings and handoff are gone');
     const normalReceiptLookup = executionStore.getReceiptPath;
     executionStore.getReceiptPath = () => null;
     executionClient.buildSelection = async () => {
@@ -631,7 +623,7 @@ async function runBehavioralTests() {
   }
 }
 
-runBehavioralTests().then(() => require('./dual-core-loader-tests')()).then(() => require('./console-terminal-tests')()).then(() => {
+runBehavioralTests().then(() => require('./dual-core-loader-tests')()).then(() => {
   console.log('== All Extension Tests Passed ==\n');
 }).catch((error) => {
   console.error(error.stack || error.message);

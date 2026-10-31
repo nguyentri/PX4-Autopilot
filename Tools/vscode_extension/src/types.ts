@@ -21,7 +21,7 @@ export interface OperationResult<T = any> {
   receiptPath: string | null;
 }
 
-export type FirmwareOperation = 'build' | 'load' | 'debug' | 'console';
+export type FirmwareOperation = 'build' | 'load' | 'debug';
 
 export interface OperationOptions {
   cancellationToken?: vscode.CancellationToken;
@@ -40,14 +40,6 @@ export interface LoadProgressEvent {
 export interface ProbeLease {
   leaseToken: string;
   serial: string;
-}
-
-export interface ConsoleHandoff {
-  ok: boolean;
-  lease?: {
-    readonly lease: ProbeLease;
-    release(): Promise<void>;
-  };
 }
 
 export interface FirmwareSelection {
@@ -125,7 +117,6 @@ export interface SelectionCapabilities {
   build: boolean;
   load: boolean;
   debug: boolean;
-  console: boolean;
   reasons: string[];
   groupMeta?: GroupMetadata;
   coreCapabilities?: Record<string, CoreCapability>;
@@ -248,5 +239,4 @@ export interface SetupOperationToken {
   definition?: string;
   probe: string;
   core?: string;
-  device?: string;
 }
