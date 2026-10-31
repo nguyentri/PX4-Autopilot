@@ -398,6 +398,9 @@ class WarmStart(unittest.TestCase):
         gdb = [line.strip() for line in (DEBUG / 'rzv2h-ipc/rzv2h-ipc-hil-loadstart.gdb').read_text().splitlines()]
         self.assert_each_start_masks_interrupts(gdb, 'loadstart.gdb')
         self.assertLess(gdb.index('set $cpsr = 0x1d3'), gdb.index('monitor go'))
+        # The resident image's MPU can block the debugger's RAM writes, so the
+        # loader must restore the Cortex-R8 reset SCTLR before 'load'.
+        self.assertLess(gdb.index('monitor cp15 1, 0, 0, 0 = 0x00C50078'), gdb.index('load'))
         launch = re.findall(r'^\s*"([^"]*)",?\s*$', (DEBUG / 'launch_renesas.json.in').read_text(), re.M)
         self.assert_each_start_masks_interrupts(launch, 'launch_renesas.json.in')
 

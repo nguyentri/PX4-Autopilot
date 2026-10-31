@@ -16,6 +16,12 @@
 set pagination off
 monitor halt
 printf "PRE_LOAD_PC=%#x CPSR=%#x\n", $pc, $cpsr
+# SCTLR to the Cortex-R8 reset value (MPU, caches, branch prediction off).
+# The halted image's MPU only maps its own windows: after a different image
+# ran on this core (e.g. the CR8-1 image on CR8-0) the debugger's writes to
+# this core's SDRAM window are blocked and __start prefetch-aborts forever.
+# __start invalidates the caches and programs SCTLR/MPU itself.
+monitor cp15 1, 0, 0, 0 = 0x00C50078
 load
 set $pc = &__start
 set $cpsr = 0x1d3
