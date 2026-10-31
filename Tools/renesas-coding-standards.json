@@ -1462,6 +1462,12 @@
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ipc-local-loopback-rtt/defconfig": {
       "classification": "configuration"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ipcc-demo-cr8_0-sci4/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ipcc-demo-cr8_1/defconfig": {
+      "classification": "configuration"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ipcc-multi/defconfig": {
       "classification": "configuration",
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",

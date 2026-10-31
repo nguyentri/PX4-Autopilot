@@ -3020,6 +3020,58 @@
       "core_source": "defconfig-selector",
       "core_selector": "RZV2H_BUILD_CR8_0",
       "console": "sci4",
+      "entrypoint": "rzv_ipc_boot_main",
+      "profile": "ipcc-demo-cr8_0-sci4",
+      "defconfig_sha256": "7792a939ca42f33e7e6a89acc0ed99d9b37dd50fb8c8c95bb66b0f3ff2c8516e",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [
+        "peer-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_1",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_1",
+      "console": "rtt",
+      "entrypoint": "rzv_ipc_boot_main",
+      "profile": "ipcc-demo-cr8_1",
+      "defconfig_sha256": "fd31c5c75a9423ee7cbd9acbab74afb0cfb20d6eccd6b559194827baf51721e4",
+      "mode": "blocked",
+      "oracle": "ipc",
+      "commands": [],
+      "requirements": [
+        "peer-pair"
+      ],
+      "hazards": [
+        "peer-autostart"
+      ],
+      "timeout": 15,
+      "evidence_class": "peer-function",
+      "builtin": null,
+      "reason": "Pair/legacy peer admission and per-core traffic capture required",
+      "completion": "boot-terminal",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "sci4",
       "entrypoint": "nsh_main",
       "profile": "ipcc-multi",
       "defconfig_sha256": "bed98b6d7f9b61f984d484fb6c3fef5e98b2559b0ffb93720998e919c9523bba",
