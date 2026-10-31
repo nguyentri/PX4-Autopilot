@@ -1,0 +1,249 @@
+RZ/V2H ipcdemo showcase board transcript, 2026-10-31 (local time, host-side timestamps)
+Consoles: CR8-0 NSH on SCI4 (115200), CR8-1 NSH on J-Link RTT via nuttx-rtt-bridge.sh.
+Per-ping lines are elided except failures; heartbeats are kept only where noted.
+
+== A0. pre-fix build (BLOCK RTT up-buffer, 100 ms TX timeout): link drops ~100 ms after each CR8-1 heartbeat ==
+   (no RTT host until 23:10:15; CR8-1 output then drains in one burst; 38 link-down events 23:09:30-23:12:00)
+23:09:34.647 CR8-0 nsh> [CR8-0] ipcdemo up: initiator /dev/ipcc1, heartbeat 5000 ms
+23:09:34.698 CR8-0 [CR8-0] link up epoch=35
+23:09:35.501 CR8-0 [CR8-0] heartbeat #40 from CR8-1 -> ack
+23:09:40.479 CR8-0 [CR8-0] heartbeat #41 from CR8-1 -> ack
+23:09:40.580 CR8-0 [CR8-0] link down (no link)
+23:09:40.781 CR8-0 [CR8-0] link up epoch=36
+23:09:45.506 CR8-0 [CR8-0] heartbeat #42 from CR8-1 -> ack
+23:09:45.607 CR8-0 [CR8-0] link down (no link)
+23:09:45.859 CR8-0 [CR8-0] link up epoch=37
+23:09:50.582 CR8-0 [CR8-0] heartbeat #43 from CR8-1 -> ack
+23:09:50.682 CR8-0 [CR8-0] link down (no link)
+23:09:50.933 CR8-0 [CR8-0] link up epoch=38
+23:09:55.609 CR8-0 [CR8-0] heartbeat #44 from CR8-1 -> ack
+23:09:55.760 CR8-0 [CR8-0] link down (no link)
+23:09:56.011 CR8-0 [CR8-0] link up epoch=39
+23:10:00.688 CR8-0 [CR8-0] heartbeat #45 from CR8-1 -> ack
+23:10:00.788 CR8-0 [CR8-0] link down (no link)
+23:10:01.090 CR8-0 [CR8-0] link up epoch=40
+23:10:05.762 CR8-0 [CR8-0] heartbeat #46 from CR8-1 -> ack
+23:10:05.863 CR8-0 [CR8-0] link down (no link)
+23:10:06.115 CR8-0 [CR8-0] link up epoch=41
+23:10:10.789 CR8-0 [CR8-0] heartbeat #47 from CR8-1 -> ack
+23:10:10.890 CR8-0 [CR8-0] link down (no link)
+23:10:11.191 CR8-0 [CR8-0] link up epoch=42
+23:10:15.863 CR8-0 [CR8-0] heartbeat #48 from CR8-1 -> ack
+23:10:15.942 CR8-1 --- rtt connected
+23:10:15.963 CR8-0 [CR8-0] link down (no link)
+23:10:16.412 CR8-1 RZ/V2H raw IPCC registered at /dev/ipcc3 (CR8_1-CM33, TX timeout 100 ms)
+23:10:16.412 CR8-1 nsh> [CR8-1] ipcdemo up: responder /dev/ipcc1, heartbeat 5000 ms
+23:10:16.412 CR8-1 [CR8-1] recovering... (errno 67, waiting for initiator)
+23:10:16.412 CR8-1 [CR8-1] peer lost (3 heartbeats unacknowledged)
+23:10:16.412 CR8-1 [CR8-1] recovering... (errno 67, waiting for initiator)
+                   ... same line repeated 18 more times
+23:10:16.412 CR8-1 [CR8-1] link up epoch=35
+23:10:16.412 CR8-1 [CR8-1] heartbeat #40 acked, rtt 318 ms
+23:10:16.412 CR8-1 [CR8-1] link up epoch=36
+23:10:16.412 CR8-1 [CR8-1] link up epoch=37
+23:10:16.412 CR8-1 [CR8-1] link up epoch=38
+23:10:16.412 CR8-1 [CR8-1] link up epoch=39
+23:10:16.412 CR8-1 [CR8-1] link up epoch=40
+23:10:16.412 CR8-1 [CR8-1] link up epoch=41
+23:10:16.412 CR8-1 [CR8-1] link up epoch=42
+23:10:16.717 CR8-0 [CR8-0] link up epoch=43
+23:10:16.732 CR8-1 [CR8-1] link up epoch=43
+23:10:20.586 CR8-1 nsh> ipcdemo running on /dev/ipcc1 (responder): link up, peer ok
+23:10:20.586 CR8-1   tx 9 (failed 40)  rx 1  heartbeats acked 1 missed 39  links up 9
+23:10:21.040 CR8-0 [CR8-0] link down (no link)
+23:10:21.187 CR8-1 [CR8-1] link up epoch=44
+23:10:21.191 CR8-0 [CR8-0] link up epoch=44
+23:10:22.599 CR8-0 [CR8-0] heartbeat #49 from CR8-1 -> ack
+23:10:22.699 CR8-0 [CR8-0] link down (no link)
+
+== A. old build (TRIM, 100 ms TX timeout), bridge attached: one-way ping -n 300 ==
+23:23:52.750 CR8-0 [CR8-0] heartbeat #1226 acked, rtt 0 ms
+23:23:52.772 CR8-1 [CR8-1] heartbeat #1226 from CR8-0 -> ack
+23:23:52.950 CR8-0 >>> ipcdemo ping -n 300
+23:23:53.051 CR8-0 ipcdemo ping -n 300
+23:23:53.051 CR8-0 ipcdemo [38:100]
+23:23:53.302 CR8-0 [CR8-0] link down (no link)
+23:23:53.403 CR8-0 [CR8-0] link up epoch=151
+23:23:53.690 CR8-1 [CR8-1] link up epoch=151
+23:23:53.755 CR8-0 [CR8-0] ping 68 failed: timeout
+23:23:53.956 CR8-0 [CR8-0] link down (no link)
+23:23:54.006 CR8-0 [CR8-0] link up epoch=152
+23:23:54.223 CR8-1 [CR8-1] link up epoch=152
+23:23:54.358 CR8-0 [CR8-0] ping 114 failed: timeout
+23:23:54.710 CR8-0 [CR8-0] link down (no link)
+23:23:54.812 CR8-0 [CR8-0] link up epoch=153
+23:23:55.109 CR8-1 [CR8-1] link up epoch=153
+23:23:55.112 CR8-0 [CR8-0] ping 192 failed: timeout
+23:23:55.365 CR8-0 [CR8-0] link down (no link)
+23:23:55.365 CR8-0 [CR8-0] link up epoch=154
+23:23:55.631 CR8-1 [CR8-1] link up epoch=154
+23:23:55.816 CR8-0 [CR8-0] ping 244 failed: timeout
+23:23:55.967 CR8-0 [CR8-0] ping: 296/300 acked, rtt min/avg/max = 0/1/57 ms
+
+== B. CR8-1-only reload of the TRIM build, no console commands ==
+23:19:20.855 CR8-0 [CR8-0] recovering... (errno 116, waiting for peer)
+23:19:33.016 CR8-0 [CR8-0] recovering... (errno 116, waiting for peer)
+23:19:45.176 CR8-0 [CR8-0] recovering... (errno 116, waiting for peer)
+23:19:49.799 CR8-0 [CR8-0] link up epoch=144
+23:19:50.000 CR8-0 [CR8-0] peer back
+
+== C. say both ways (old build) ==
+23:13:14.778 CR8-0 >>> ipcdemo status
+23:13:14.779 CR8-1 >>> ipcdemo status
+23:13:14.865 CR8-1 ipcdemo status
+23:13:14.865 CR8-1 ipcdemo [4:100]
+23:13:14.865 CR8-1 nsh> 
+23:13:14.878 CR8-0 ipcdemo status
+23:13:14.880 CR8-0 ipcdemo [4:100]
+23:13:14.880 CR8-0 nsh> ipcdemo running on /dev/ipcc1 (initiator): link up, peer ok
+23:13:14.880 CR8-0   tx 16 (failed 0)  rx 16  heartbeats acked 9 missed 0  links up 1
+23:13:14.880 CR8-0   driver: ready=1 degraded=0 epoch=83 tx=16 rx=16 timeouts=0 recoveries=1
+23:13:15.062 CR8-1 nsh> ipcdemo running on /dev/ipcc1 (responder): link up, peer ok
+23:13:15.063 CR8-1   tx 16 (failed 0)  rx 16  heartbeats acked 7 missed 0  links up 1
+23:13:15.063 CR8-1   driver: ready=1 degraded=0 epoch=83 tx=16 rx=16 timeouts=0 recoveries=1
+23:13:15.532 CR8-0 [CR8-0] heartbeat #9 acked, rtt 0 ms
+23:13:15.559 CR8-1 [CR8-1] heartbeat #9 from CR8-0 -> ack
+23:13:18.181 CR8-1 [CR8-1] heartbeat #7 acked, rtt 0 ms
+23:13:18.194 CR8-0 [CR8-0] heartbeat #7 from CR8-1 -> ack
+23:13:20.608 CR8-0 [CR8-0] heartbeat #10 acked, rtt 0 ms
+23:13:20.632 CR8-1 [CR8-1] heartbeat #10 from CR8-0 -> ack
+23:13:24.529 CR8-0 [CR8-0] heartbeat #8 from CR8-1 -> ack
+23:13:24.552 CR8-1 [CR8-1] heartbeat #8 acked, rtt 0 ms
+23:13:25.683 CR8-0 [CR8-0] heartbeat #11 acked, rtt 0 ms
+23:13:25.691 CR8-1 [CR8-1] heartbeat #11 from CR8-0 -> ack
+23:13:25.713 CR8-0 >>> ipcdemo say hello from CR8-0
+23:13:25.733 CR8-1 >>> ipcdemo say hello from CR8-1
+23:13:25.782 CR8-0 ipcdemo say hello from CR8-0
+23:13:25.782 CR8-0 ipcdemo [5:100]
+23:13:25.819 CR8-1 [CR8-1] message #12: "hello from CR8-0" -> ack
+23:13:25.819 CR8-1 ipcdemo say hello from CR8-1
+23:13:25.819 CR8-1 ipcdemo [5:100]
+23:13:25.819 CR8-1 nsh> 
+23:13:25.834 CR8-0 nsh> [CR8-0] message #12 delivered, rtt 3 ms
+23:13:25.834 CR8-0 [CR8-0] message #9: "hello from CR8-1" -> ack
+23:13:25.934 CR8-1 nsh> [CR8-1] message #9 delivered, rtt 0 ms
+
+== D. fixed build (400 ms), bridge attached: link up ==
+23:27:31.548 CR8-0 NUTTX
+23:27:31.548 CR8-0 NuttX: RDK-RZV2H Board bring-up starting...
+23:27:31.548 CR8-0 Mounted procfs at /proc
+23:27:31.548 CR8-0 RZ/V2H raw IPCC registered at /dev/ipcc1 (CR8-0CR8-1, initiator)
+23:27:31.548 CR8-0 RZ/V2H raw IPCC registered at /dev/ipcc4 (loopback)
+23:27:31.548 CR8-0 Starting RDK-RZV2H application examples...
+23:27:31.548 CR8-0 All RDK-RZV2H examples completed successfully
+23:27:31.548 CR8-0 NuttX: RDK-RZV2H Board bring-up complete
+23:27:31.548 CR8-0 
+23:27:31.548 CR8-0 NuttShell (NSH)
+23:27:31.648 CR8-0 nsh> [CR8-0] ipcdemo up: initiator /dev/ipcc1, heartbeat 5000 ms
+23:27:35.714 CR8-0 [CR8-0] link up epoch=157
+23:27:37.673 CR8-0 [CR8-0] heartbeat #0 acked, rtt 243 ms
+23:27:41.591 CR8-0 [CR8-0] heartbeat #0 from CR8-1 -> ack
+23:27:42.496 CR8-0 [CR8-0] heartbeat #1 acked, rtt 0 ms
+23:27:45.210 CR8-1 --- rtt connected
+23:27:45.210 CR8-1 SEGGER J-Link V8.94 - Real time terminal output
+23:27:45.210 CR8-1 SEGGER J-Link V12.0, SN=<probe-sn>
+23:27:45.210 CR8-1 Process: JLinkExe
+23:27:45.312 CR8-1 NUTTX
+23:27:45.312 CR8-1 NuttX: RDK-RZV2H Board bring-up starting...
+23:27:45.312 CR8-1 Mounted procfs at /proc
+23:27:45.312 CR8-1 RZ/V2H raw IPCC registered at /dev/ipcc1 (CR8-0CR8-1, responder)
+23:27:45.312 CR8-1 RZ/V2H raw IPCC registered at /dev/ipcc3 (CR8_1-CM33, TX timeout 400 ms)
+23:27:45.312 CR8-1 Starting RDK-RZV2H application examples...
+23:27:45.312 CR8-1 All RDK-RZV2H examples completed successfully
+23:27:45.312 CR8-1 NuttX: RDK-RZV2H Board bring-up complete
+23:27:45.312 CR8-1 
+23:27:45.312 CR8-1 NuttShell (NSH)
+23:27:45.312 CR8-1 nsh> [CR8-1] ipcdemo up: responder /dev/ipcc1, heartbeat 5000 ms
+23:27:45.312 CR8-1 [CR8-1] link up epoch=157
+23:27:45.312 CR8-1 [CR8-1] heartbeat #0 from CR8-0 -> ack
+23:27:45.312 CR8-1 [CR8-1] heartbeat #0 acked, rtt 0 ms
+23:27:45.312 CR8-1 [CR8-1] heartbeat #1 from CR8-0 -> ack
+23:27:47.471 CR8-0 [CR8-0] heartbeat #1 from CR8-1 -> ack
+23:27:47.487 CR8-1 [CR8-1] heartbeat #1 acked, rtt 0 ms
+23:27:47.522 CR8-0 [CR8-0] heartbeat #2 acked, rtt 0 ms
+23:27:47.585 CR8-1 [CR8-1] heartbeat #2 from CR8-0 -> ack
+
+== E. fixed build, bridge attached: one-way ping -n 300 + 3x concurrent ping -n 100 ==
+23:28:02.444 CR8-0 >>> ipcdemo ping -n 300
+23:28:02.543 CR8-0 ipcdemo ping -n 300
+23:28:02.543 CR8-0 ipcdemo [4:100]
+23:28:03.750 CR8-0 [CR8-0] ping: 300/300 acked, rtt min/avg/max = 0/1/167 ms
+23:29:23.769 CR8-0 >>> ipcdemo ping -n 100
+23:29:23.769 CR8-1 >>> ipcdemo ping -n 100
+23:29:23.855 CR8-1 ipcdemo ping -n 100
+23:29:23.855 CR8-1 ipcdemo [4:100]
+23:29:23.855 CR8-1 nsh> 
+23:29:23.869 CR8-0 
+23:29:23.869 CR8-0 ipcdemo [5:100]
+23:29:24.625 CR8-0 [CR8-0] ping: 100/100 acked, rtt min/avg/max = 0/5/173 ms
+23:29:24.891 CR8-1 [CR8-1] ping: 100/100 acked, rtt min/avg/max = 0/3/6 ms
+23:29:48.792 CR8-0 >>> ipcdemo ping -n 100
+23:29:48.803 CR8-1 >>> ipcdemo ping -n 100
+23:29:48.904 CR8-0 ipcdemo ping -n 100
+23:29:48.904 CR8-0 ipcdemo [6:100]
+23:29:48.953 CR8-1 ipcdemo ping -n 100
+23:29:48.953 CR8-1 ipcdemo [5:100]
+23:29:48.953 CR8-1 nsh> 
+23:29:49.660 CR8-0 [CR8-0] ping: 100/100 acked, rtt min/avg/max = 0/5/168 ms
+23:29:49.765 CR8-1 [CR8-1] ping: 100/100 acked, rtt min/avg/max = 0/4/8 ms
+23:30:13.770 CR8-0 >>> ipcdemo ping -n 100
+23:30:13.786 CR8-1 >>> ipcdemo ping -n 100
+23:30:13.836 CR8-0 ipcdemo ping -n 100
+23:30:13.836 CR8-0 ipcdemo [7:100]
+23:30:13.950 CR8-1 ipcdemo ping -n 100
+23:30:13.950 CR8-1 ipcdemo [6:100]
+23:30:13.950 CR8-1 nsh> 
+23:30:14.894 CR8-0 [CR8-0] ping: 100/100 acked, rtt min/avg/max = 0/7/241 ms
+23:30:15.319 CR8-1 [CR8-1] ping: 100/100 acked, rtt min/avg/max = 0/3/9 ms
+
+== F. fixed build, bridge attached: heartbeat soak 23:30:50-23:36:11 (first/last 6 lines, then counts) ==
+23:30:52.224 CR8-0 [CR8-0] heartbeat #330 from CR8-1 -> ack
+23:30:52.312 CR8-1 [CR8-1] heartbeat #330 acked, rtt 0 ms
+23:30:54.638 CR8-0 [CR8-0] heartbeat #639 acked, rtt 0 ms
+23:30:54.696 CR8-1 [CR8-1] heartbeat #639 from CR8-0 -> ack
+23:30:58.609 CR8-0 [CR8-0] heartbeat #331 from CR8-1 -> ack
+23:30:58.625 CR8-1 [CR8-1] heartbeat #331 acked, rtt 0 ms
+                   ...
+23:36:03.140 CR8-0 [CR8-0] heartbeat #700 acked, rtt 9 ms
+23:36:03.236 CR8-1 [CR8-1] heartbeat #700 from CR8-0 -> ack
+23:36:08.217 CR8-0 [CR8-0] heartbeat #701 acked, rtt 0 ms
+23:36:08.221 CR8-1 [CR8-1] heartbeat #701 from CR8-0 -> ack
+23:36:09.374 CR8-0 [CR8-0] heartbeat #380 from CR8-1 -> ack
+23:36:09.536 CR8-1 [CR8-1] heartbeat #380 acked, rtt 0 ms
+CR8-0: heartbeats acked=63 (#639..#701), received from peer=51, other lines=0
+CR8-1: heartbeats acked=51 (#330..#380), received from peer=63, other lines=0
+
+== G. demo pair reloaded, no RTT host attached: 3x ping -n 100 ==
+23:38:57.644 CR8-0 NUTTX
+23:38:57.644 CR8-0 NuttX: RDK-RZV2H Board bring-up starting...
+23:38:57.644 CR8-0 Mounted procfs at /proc
+23:38:57.644 CR8-0 RZ/V2H raw IPCC registered at /dev/ipcc1 (CR8-0CR8-1, initiator)
+23:38:57.644 CR8-0 RZ/V2H raw IPCC registered at /dev/ipcc4 (loopback)
+23:38:57.644 CR8-0 Starting RDK-RZV2H application examples...
+23:38:57.644 CR8-0 All RDK-RZV2H examples completed successfully
+23:38:57.644 CR8-0 NuttX: RDK-RZV2H Board bring-up complete
+23:38:57.644 CR8-0 
+23:38:57.644 CR8-0 NuttShell (NSH)
+23:39:01.964 CR8-0 [CR8-0] link up epoch=162
+23:39:19.165 CR8-0 >>> ipcdemo ping -n 100
+23:39:19.250 CR8-0 ipcdemo ping -n 100
+23:39:19.250 CR8-0 ipcdemo [4:100]
+23:39:19.552 CR8-0 [CR8-0] ping: 100/100 acked, rtt min/avg/max = 0/0/1 ms
+23:39:31.125 CR8-0 >>> ipcdemo ping -n 100
+23:39:31.213 CR8-0 ipcdemo ping -n 100
+23:39:31.213 CR8-0 ipcdemo [5:100]
+23:39:31.516 CR8-0 [CR8-0] ping: 100/100 acked, rtt min/avg/max = 0/0/1 ms
+23:39:43.135 CR8-0 >>> ipcdemo ping -n 100
+23:39:43.226 CR8-0 ipcdemo ping -n 100
+23:39:43.226 CR8-0 ipcdemo [6:100]
+23:39:43.529 CR8-0 [CR8-0] ping: 100/100 acked, rtt min/avg/max = 0/0/1 ms
+
+== H. raw pair autotest (rzv2h-ipc-demo-autotest.sh, ipcc-raw-cr8_0 + ipcc-raw-cr8_1) ==
+  PASS  CR8-0 recover status=pass ready=1
+  PASS  CR8-0 ping 100/100 timeouts=0 rx=100
+  PASS  CR8-0 RTT NSH alive after test
+  PASS  CR8-1 auto-echo status=pass echoed=100 (own RTT console)
+  PASS  CR8-1 ipc-auto-echo task finished (ps)
+  PASS  CR8-1 RTT NSH alive after test
+  PASS  no data abort / stack overflow / assert on either console
+== PASS: CR8-0 <-> CR8-1 IPC over /dev/ipcc1 proven on both cores ==

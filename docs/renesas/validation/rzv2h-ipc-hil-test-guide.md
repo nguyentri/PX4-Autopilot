@@ -391,3 +391,98 @@ already controlled debug session. The frame recipe contains a historical
 address that must be replaced with the fault frame from the exact image;
 never treat it as a current frame. PX4 health snippets require their matching
 PX4 ELFs and cannot qualify these NuttX raw-demo images.
+
+## Customer IPC showcase (`ipcdemo`)
+
+A two-console customer demo on `/dev/ipcc1`: ping and text messages in both
+directions, each acknowledged by the peer application, plus a heartbeat every
+5 s. Images: `ipcc-demo-cr8_0-sci4` (CR8-0, NSH on SCI4, link initiator) and
+`ipcc-demo-cr8_1` (CR8-1, NSH on RTT, responder). Both start the `ipcdemo`
+daemon at boot (`CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_SHOWCASE`); it waits for the
+device, brings the link up and recovers it on its own. `ipctest` stays
+available for the raw-transport checks above.
+
+Commands (either core):
+
+| Command | Effect |
+|---------|--------|
+| `ipcdemo status` | Daemon/link/peer state, counters, driver `ready/degraded/epoch` |
+| `ipcdemo ping [-n count] [-i interval_ms]` | Ping the other core; each ping waits for its ACK (500 ms) |
+| `ipcdemo say <text>` | Send up to 60 bytes of text; the peer prints it and ACKs |
+| `ipcdemo recover` | CR8-0: force a link recovery. CR8-1 only adopts the initiator's recovery |
+| `ipcdemo stop` / `ipcdemo start` | Stop or restart the daemon on this core |
+
+### Build and load
+
+From the repository root, reusing the raw demo's build/load wrapper with the
+showcase configs:
+
+```sh
+D=platforms/nuttx/Debug
+N=platforms/nuttx/NuttX/nuttx
+export CR8_0_CONFIG=rdk-rzv2h:ipcc-demo-cr8_0-sci4 CR8_1_CONFIG=rdk-rzv2h:ipcc-demo-cr8_1
+"$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --build-only
+export JLINK_SERIAL="$("$D/jlink-debug-preflight.py" --print-serial)"
+"$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --load-only
+```
+
+VS Code alternative: select the **RZ/V2H IPC Showcase Demo (SCI4 Serial / RTT)**
+group in Firmware Setup and use Build Both, then Load Both. The extension opens
+no console (see `docs/vscode-extension.md`).
+
+Open both consoles yourself:
+
+```sh
+# CR8-1 on RTT (stop it again before any later load or debug)
+"$D/nuttx-rtt-bridge.sh" start cr8_1 "$N/nuttx-ipcc-demo-cr8_1.elf"
+# then connect μScope or `nc 127.0.0.1 19021`
+# CR8-0 on SCI4: any serial terminal on the board UART, 115200 8N1
+```
+
+### Demo script
+
+1. `ipcdemo status` on both cores: `link up, peer ok`.
+2. CR8-0 `ipcdemo ping -n 5`, then CR8-1 `ipcdemo ping -n 5`.
+3. CR8-0 `ipcdemo say hello from CR8-0`, then the reverse from CR8-1.
+4. Wait 10–15 s and show the heartbeat lines on both consoles.
+5. Optional resilience: reload CR8-1 only (`rzv2h-load-one-core.sh cr8_1 <elf>`
+   with the bridge stopped), restart the bridge, and show CR8-0 reporting
+   `peer lost` then `link up` / `peer back` without intervention.
+
+While the RTT bridge is attached, J-Link halts CR8-1 for every RTT read
+(stop mode on Cortex-R8). CR8-1's clock pauses during each halt, so its
+heartbeats arrive about every 6.3 s instead of 5 s, and CR8-0 ping round trips
+can reach about 250 ms. The demo images therefore use a 400 ms raw TX-ACK
+timeout (`CONFIG_RZV_IPC_TX_TIMEOUT_MS`), and CR8-1 uses a non-blocking RTT
+up-buffer (`CONFIG_SEGGER_RTT_UP_MODE_TRIM`), so the link stays up with or
+without a host draining RTT.
+
+Expected lines (`[core]` is the printing core; numbers vary):
+
+```text
+[CR8-0] ipcdemo up: initiator /dev/ipcc1, heartbeat 5000 ms
+[CR8-0] link up epoch=<n>
+[CR8-0] ping #1 acked, rtt 0 ms
+[CR8-0] ping: 5/5 acked, rtt min/avg/max = 0/0/1 ms
+[CR8-1] ping #1 from CR8-0 -> ack
+[CR8-1] message #7: "hello from CR8-0" -> ack
+[CR8-0] message #7 delivered, rtt 0 ms
+[CR8-0] heartbeat #3 acked, rtt 0 ms
+[CR8-1] heartbeat #3 from CR8-0 -> ack
+[CR8-0] peer lost (3 heartbeats unacknowledged)
+[CR8-0] peer back
+```
+
+### Recovery runbook
+
+| Symptom | Fix |
+|---------|-----|
+| `link down` / `peer lost` with both daemons alive | Wait about 3–10 s: CR8-0 retries recovery every ~3 s (1 s retry + up to 2 s wait) and CR8-1 adopts it. Check `ipcdemo status` on both. To force it: CR8-0 `ipcdemo recover`. |
+| CR8-1 daemon not running (`ps` shows no ipcdemo) | CR8-1 `ipcdemo start`, then CR8-0 `ipcdemo recover`. |
+| Daemon wedged | `ipcdemo stop` then `ipcdemo start` on that core. |
+| Raw pair (`ipctest`) after auto-echo ended | CR8-1 `ipctest --echo -d /dev/ipcc1`; within 30 s CR8-0 `ipctest --recover -d /dev/ipcc1`; then `--ping`. |
+| μScope silent | `nuttx-rtt-bridge.sh status`; `stop`; `jlink-debug-preflight.py` (owners); `start cr8_1 <exact elf>`. Close other RTT viewers and Cortex-Debug. |
+| Bridge exit 3 | Do not retry. Read `/tmp/nuttx-rtt-bridge/jlinkexe.log`. Reset logged: the images are lost, so reload the pair. DBGEN message: no image on that core, so reload. |
+| SCI4 no prompt | `lsof /dev/ttyUSB0` (close a second picocom or serial terminal); press Enter. |
+| VS Code load refused with `PROBE_BUSY` | Your manual bridge holds the probe: `nuttx-rtt-bridge.sh stop`, retry the load, then restart the bridge. |
+| Last resort | Stop the bridge and reload both (`rzv2h-ipc-demo-load-both-auto.sh <cr8_0.elf> <cr8_1.elf>` or VS Code Load Both); restart the bridge. |
