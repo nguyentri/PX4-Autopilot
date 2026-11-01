@@ -282,10 +282,12 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                 self.assertEqual(result.returncode, status, pc + result.stdout + result.stderr)
 
     def test_single_attempt_loader_stops_on_failure_or_reset(self):
+        # A core that stays held in reset gets exactly one plain start connect.
         for gdb_result, marker, expected in (
                 ('0', '', 0), ('1', '', 1),
                 ('0', 'Resetting via Reset pin', 1),
                 ('0', 'DBGEN is not asserted', 1),
+                ('0', 'DBGEN is not asserted. Resetting via Reset pin', 1),
                 ('0', 'Connect failed', 1)):
             with self.subTest(gdb_result=gdb_result, marker=marker), \
                     tempfile.TemporaryDirectory() as directory:
@@ -306,9 +308,12 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                                         capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
                 attempts = (tmp / 'arguments').read_text().splitlines()
-                self.assertEqual(len(attempts), 1, result.stdout + result.stderr)
+                held = marker == 'DBGEN is not asserted'
+                self.assertEqual(len(attempts), 2 if held else 1, result.stdout + result.stderr)
                 self.assertIn('-noreset', attempts[0])
                 self.assertIn('-noir', attempts[0])
+                if held:
+                    self.assertNotIn('-noreset', attempts[1])
                 if not marker:
                     self.assertIn(f'target remote 127.0.0.1:{env["GDB_PORT"]}', (tmp / 'gdb-args').read_text())
                 else:

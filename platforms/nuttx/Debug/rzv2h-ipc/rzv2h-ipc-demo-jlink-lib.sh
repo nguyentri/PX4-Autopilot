@@ -15,7 +15,9 @@
 # GDB_BIN and STDBUF_BIN. Server + gdb chatter goes to per-core logs under LOG_DIR; only
 # VERBOSE=1 tees it to stderr so the default run stays quiet.
 # Loads are single-attempt, with no reset/register init. LOAD_ATTEMPTS, if
-# supplied, must be 1. A failed connection requires renewed operator approval.
+# supplied, must be 1. A core held in reset (DBGEN, no reset logged) is first
+# started by one plain connect; any other failed connection requires renewed
+# operator approval.
 
 # --- tool discovery ---------------------------------------------------------
 resolve_tools() {
@@ -144,18 +146,60 @@ _connect_failed() {
 	grep -Eq 'Resetting via Reset pin|cold reset sequence|DBGEN is not asserted|Connect failed|Cannot connect|Could not connect' "$1"
 }
 
+# DBGEN without any reset marker: the core is held in reset or was never
+# started, so it runs no image that a start sequence could destroy.
+_held_in_reset() {
+	grep -q 'DBGEN is not asserted' "$1" &&
+		! grep -Eq 'Resetting via Reset pin|cold reset sequence' "$1"
+}
+
+# Start a held CR8 with one plain J-Link connect: unlike -noreset, the DLL
+# then runs its CR8 start sequence, which asserts DBGEN. Fails if that
+# connect logged a reset (the SoC-wide pin would discard the peer image).
+_start_held_core() {
+	dev="$1"; label="$2"
+	start_log="${LOG_DIR}/start-$(echo "${label}" | tr ' /()' '____').log"
+	: >"${start_log}"
+	echo "== ${label}: core held in reset; starting it (log: ${start_log}) =="
+	preflight_probe_free || return 1
+	_start_server "${dev}" "${start_log}" || return 1
+	out=$("${GDB_BIN}" -q -batch -nx -ex "target remote 127.0.0.1:${GDB_PORT}" \
+		-ex 'monitor halt' -ex 'detach' 2>&1) || true
+	echo "${out}" >>"${start_log}"
+	_stop_server
+	if grep -Eq 'Resetting via Reset pin|cold reset sequence|DBGEN is not asserted' "${start_log}"; then
+		echo "!! ${label}: start sequence failed or reset the target (see ${start_log})" >&2
+		return 1
+	fi
+	return 0
+}
+
 # --- volatile RAM load of one core (mutating), without automatic retries ----
+# The only repeat is cause-specific: a core proven held in reset is started
+# once and its guarded load runs again. Every other failure ends the batch.
 load_core() {
-	dev="$1"; elf="$2"; label="$3"
 	[ "${LOAD_ATTEMPTS:-1}" = 1 ] || {
 		echo "LOAD_ATTEMPTS must be 1; another load requires renewed approval" >&2
 		return 2
 	}
+	load_ret=0
+	_load_core_once "$1" "$2" "$3" || load_ret=$?
+	[ "${load_ret}" -eq 3 ] || return "${load_ret}"
+	_start_held_core "$1" "$3" || return 1
+	_load_core_once "$1" "$2" "$3"
+}
+
+# Returns 0 loaded, 1 failed, 3 held in reset (no image ran on the core).
+_load_core_once() {
+	dev="$1"; elf="$2"; label="$3"
 	log="${LOG_DIR}/load-$(echo "${label}" | tr ' /()' '____').log"
 	: >"${log}"
 	echo "== ${label}: single guarded load (log: ${log}) =="
 	preflight_probe_free || return 1
-	_start_server "${dev}" "${log}" -noreset -noir || return 1
+	if ! _start_server "${dev}" "${log}" -noreset -noir; then
+		_held_in_reset "${log}" && return 3
+		return 1
+	fi
 
 	gdb_ret=0
 	out=$("${GDB_BIN}" -q -batch -nx "${elf}" \

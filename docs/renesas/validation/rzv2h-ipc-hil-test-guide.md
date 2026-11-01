@@ -82,7 +82,10 @@ JLINK_SERIAL=<probe-sn> platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both
 
 The pair loader starts CR8-0, then CR8-1, and performs a brief halt/PC/resume
 check of each. It uses one connection attempt per operation, always with
-`-noreset -noir`. Any failed-connect/reset/DBGEN marker stops the batch; another
+`-noreset -noir`. A core held in reset (DBGEN with no reset marker, so no image
+runs there) is started once by a plain J-Link connect, which runs the DLL's CR8
+start sequence; its guarded load then runs once more. Any other failed-connect
+or reset marker, including one from that start connect, stops the batch; another
 attempt requires renewed approval. `LOAD_ATTEMPTS`, if provided, must be `1`.
 The compatibility `load-both.sh` entry delegates to this same loader.
 
@@ -330,6 +333,24 @@ bridge from the first terminal:
 ```sh
 "$D/nuttx-rtt-bridge.sh" stop
 ```
+
+**VS Code workspace images + μScope viewer.** The firmware-workspace group
+`rzv-native-ipc-sci4` stages the same pair as
+`build/workspace-artifacts/<receipt-id>/rzv-native-ipc-sci4-cr8_{0,1}.elf`. After
+loading that pair (`rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>`),
+bridge CR8-1 RTT with the matching staged ELF; CR8-0 has no RTT block in this
+variant, so its console stays on SCI4:
+
+```sh
+export JLINK_SERIAL=$(platforms/nuttx/Debug/jlink-debug-preflight.py --print-serial)
+A=build/workspace-artifacts/<receipt-id>
+platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_1 "$A/rzv-native-ipc-sci4-cr8_1.elf"
+platforms/nuttx/Debug/nuttx-rtt-bridge.sh status
+# expect: RTT bridge up: cr8_1 (R9A09G057H44_R8_1) _SEGGER_RTT=0x081e0000 -> 127.0.0.1:19021
+```
+
+Connect μScope (or `nc`) to `127.0.0.1:19021`; do not start JLinkGDBServer for
+it. The port serves one client at a time. Stop with `nuttx-rtt-bridge.sh stop`.
 
 Keep GDB/Cortex-Debug stopped while RTT owns the probe. The older guided
 `rzv2h-ipc-demo-load-both-manual.sh guide` route remains available.

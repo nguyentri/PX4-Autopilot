@@ -401,15 +401,15 @@ class LoaderVerifyGuard(unittest.TestCase):
             wait = int(re.search(r'CONFIG_RZV_IPC_RECOVERY_WAIT_MS=(\d+)', config).group(1))
             self.assertGreaterEqual(deadline * 1000, wait + 5000)
 
-    def test_load_failure_stops_before_gdb_and_never_retries(self):
+    def test_load_starts_a_held_core_once_then_loads(self):
         with tempfile.TemporaryDirectory() as directory:
             tmp = Path(directory)
-            # First server start: the core is held in reset (dead image).
+            # First server start: the core is held in reset (no image runs).
             executable(tmp / 'server', FAKE_SERVER.replace(
                 "print(os.environ.get('SERVER_SAYS',''),flush=True)",
                 "print('ERROR: Core internal signal DBGEN is not asserted.' if len(open(os.environ['ARGV_LOG'])"
                 ".read().splitlines())==1 else '',flush=True)"))
-            # First gdb run fails like the first remote connect does on the board.
+            # The start step's gdb run fails like the first remote connect does on the board.
             executable(tmp / 'gdb', '#!/bin/sh\nif [ -f "$GDB_RAN" ]; then echo "SET_PC=0x40800000"; '
                        'else : >"$GDB_RAN"; echo "Protocol error: QStartNoAckMode"; exit 1; fi\n')
             env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'), JLINK_SERIAL='fixture',
@@ -418,10 +418,12 @@ class LoaderVerifyGuard(unittest.TestCase):
             shell = '. "$1"; trap _stop_server EXIT; resolve_tools; load_core fixture fixture.elf test'
             result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
                                     capture_output=True, text=True, timeout=60)
-            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-            self.assertIn('no automatic retry', result.stderr)
-            self.assertEqual(len((tmp / 'server.argv').read_text().splitlines()), 1)
-            self.assertFalse((tmp / 'gdb.ran').exists())
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('core held in reset; starting it', result.stdout)
+            guarded, start, reload = (tmp / 'server.argv').read_text().splitlines()
+            self.assertIn('-noreset -noir', guarded)
+            self.assertNotIn('-noreset', start)
+            self.assertIn('-noreset -noir', reload)
             self.assertNotIn('cold reset', result.stderr)
 
     def test_one_core_loader_loads_then_verifies(self):

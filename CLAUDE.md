@@ -83,6 +83,6 @@ Project facts (code map, build scripts, RTT/J-Link debug, `refs/` layout, eviden
 
 ## AgentKit workflow
 
-ClaudeKit has been replaced by AgentKit Engineer. The project Claude plugin is enabled as `ak-engineer@agentkit-local`; global Claude, Codex, and Antigravity retain their own AK installations. Use the live installed `ak:*` skill catalog for workflows. Custom firmware skills remain under `.claude/skills/`, with existing Codex symlinks preserved.
+ClaudeKit has been replaced by AgentKit Engineer. Claude Code uses the global native AK install (`~/.claude/hooks`, `~/.claude/skills`); the project plugin `ak-engineer@agentkit-local` is deliberately not enabled because its hooks duplicate the global ones. Codex and Antigravity retain their own AK installations. Use the live installed `ak:*` skill catalog for workflows. Custom firmware skills remain under `.claude/skills/`, with existing Codex symlinks preserved.
 
-From the repository root, refresh the project plugin with `ak kit refresh engineer --target claude-code --switch-to-plugin --yes`. Verify its content with `ak audit engineer --project-dir . --plugin-mode --json`. Global Codex is maintained with `ak kit refresh engineer --global --target codex --yes`.
+Refresh Claude Code with `ak kit refresh engineer --global --target claude-code --yes`. Do not run `--switch-to-plugin` in this project: it re-adds `enabledPlugins` to `.claude/settings.json` and every hook runs twice. `.claude/settings.json` must not contain a `hooks` block (the old ClaudeKit `.claude/hooks/*.cjs` scripts no longer exist). Global Codex is maintained with `ak kit refresh engineer --global --target codex --yes`.
