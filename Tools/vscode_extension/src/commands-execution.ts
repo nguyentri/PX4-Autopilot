@@ -55,7 +55,7 @@ export function registerExecutionCommands(
     if (store.getActiveSetup?.() && setupRouter && routes[name]) { return setupRouter(routes[name]); }
     return handler(...args);
   });
-  // Consoles are manual (SCI4 terminal or nuttx-rtt-bridge.sh); only the
+  // Consoles are manual (serial terminal or nuttx-rtt-bridge.sh); only the
   // debugger owns sessions here.
   store.setSessionGuard(() => debugProvider.hasOwnedSessions());
 

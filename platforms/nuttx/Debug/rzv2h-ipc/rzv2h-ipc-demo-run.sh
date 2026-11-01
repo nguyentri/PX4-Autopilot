@@ -4,7 +4,7 @@
 #
 # Pipeline: (optional build) -> silent load+verify BOTH cores -> open the CR8-1
 # RTT bridge -> open BOTH NSH consoles side by side in one tmux window:
-#   left  pane: CR8-0 NSH on the SCI4 UART (picocom on /dev/ttyUSB0)
+#   left  pane: CR8-0 NSH on the serial UART (picocom on /dev/ttyUSB0)
 #   right pane: CR8-1 NSH on RTT (nc/telnet to 127.0.0.1:19021)
 # So one command gives you both prompts to type on -- no separate terminal, no
 # manual serial monitor. Type ipctest across /dev/ipcc1 on either side.
@@ -26,8 +26,8 @@
 # Env:
 #   JLINK_SERIAL   Authorized probe serial (required).
 #   RTT_PORT       RTT server / client port (default 19021).
-#   SCI_PORT       CR8-0 SCI4 serial device (default /dev/ttyUSB0).
-#   SCI_BAUD       CR8-0 SCI4 baud (default 115200).
+#   SCI_PORT       CR8-0 serial console device (default /dev/ttyUSB0).
+#   SCI_BAUD       CR8-0 serial baud (default 115200).
 #   TMUX_SESSION   tmux session name (default rzv2h-ipc-demo).
 #   plus JLINK_GDB / GDB / GDB_PORT / LOG_DIR (see the auto loader).
 
@@ -73,7 +73,7 @@ for arg in "$@"; do
 	esac
 done
 
-CR8_0_ELF="${ARG_ELF0:-${NUTTX}/nuttx-ipcc-raw-cr8_0-sci4.elf}"
+CR8_0_ELF="${ARG_ELF0:-${NUTTX}/nuttx-ipcc-raw-cr8_0-serial.elf}"
 CR8_1_ELF="${ARG_ELF1:-${NUTTX}/nuttx-ipcc-raw-cr8_1.elf}"
 
 [ -n "${JLINK_SERIAL:-}" ] || { echo "JLINK_SERIAL must identify the authorized probe" >&2; exit 2; }
@@ -130,18 +130,18 @@ EOF
 
 # Decide how to present the two consoles.
 #   tmux path (default): both NSH prompts side by side in one window.
-#   --no-tmux / no tmux: RTT here, CR8-0 SCI4 opened by you in another terminal.
+#   --no-tmux / no tmux: RTT here, CR8-0 serial opened by you in another terminal.
 if [ "${DO_CONNECT}" -eq 0 ]; then
 	[ -n "${RTT_CLIENT}" ] || echo "(no telnet/nc found; connect a client to 127.0.0.1:${RTT_PORT})"
 	echo "Bridge is up. Connect ${RTT_LABEL} with: ${RTT_CLIENT:-nc 127.0.0.1 ${RTT_PORT}}"
-	echo "CR8-0 SCI4: ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh ${SCI_PORT}"
+	echo "CR8-0 serial: ${HERE}/rzv2h-ipc-demo-type-cr8_0-serial.sh ${SCI_PORT}"
 	echo "Press Ctrl-C here to stop the bridge and release the probe."
 	while "${BRIDGE}" status 2>/dev/null | grep -q '^running'; do sleep 1; done
 
 elif [ "${USE_TMUX}" -eq 1 ] && command -v tmux >/dev/null 2>&1 && [ -e "${SCI_PORT}" ] && [ -n "${RTT_CLIENT}" ]; then
 	echo "== opening both NSH consoles in tmux ('${TMUX_SESSION}'):"
-	echo "   left = CR8-0 SCI4 (${SCI_PORT}), right = CR8-1 RTT (:${RTT_PORT}) =="
-	# Left pane: CR8-0 NSH on the SCI4 UART.
+	echo "   left = CR8-0 serial (${SCI_PORT}), right = CR8-1 RTT (:${RTT_PORT}) =="
+	# Left pane: CR8-0 NSH on the serial UART.
 	tmux new-session -d -s "${TMUX_SESSION}" -n ipc-demo \
 		"picocom -b ${SCI_BAUD} ${SCI_PORT}"
 	TMUX_OWNED=1
@@ -149,7 +149,7 @@ elif [ "${USE_TMUX}" -eq 1 ] && command -v tmux >/dev/null 2>&1 && [ -e "${SCI_P
 	# shellcheck disable=SC2086
 	tmux split-window -h -t "${TMUX_SESSION}" ${RTT_CLIENT}
 	tmux set-option -t "${TMUX_SESSION}" pane-border-status top 2>/dev/null || true
-	tmux select-pane -t "${TMUX_SESSION}.0" -T "CR8-0 SCI4 ${SCI_PORT}" 2>/dev/null || true
+	tmux select-pane -t "${TMUX_SESSION}.0" -T "CR8-0 serial ${SCI_PORT}" 2>/dev/null || true
 	tmux select-pane -t "${TMUX_SESSION}.1" -T "CR8-1 RTT :${RTT_PORT}" 2>/dev/null || true
 	tmux set-option -t "${TMUX_SESSION}" mouse on 2>/dev/null || true
 	tmux select-pane -t "${TMUX_SESSION}.0"
@@ -159,9 +159,9 @@ elif [ -n "${RTT_CLIENT}" ]; then
 	# Fallback: no tmux (or SCI port absent). Single RTT console here.
 	echo "== ${RTT_LABEL} NSH (RTT) on 127.0.0.1:${RTT_PORT}. =="
 	if [ "${RTT_LABEL}" = "CR8-1" ]; then
-		# Dual-console split: the other core (CR8-0) is on the SCI4 UART.
+		# Dual-console split: the other core (CR8-0) is on the serial UART.
 		[ -e "${SCI_PORT}" ] || echo "(note: ${SCI_PORT} not present -- attach the FT232 for the CR8-0 console)"
-		echo "   Open CR8-0 in another terminal: ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh ${SCI_PORT}"
+		echo "   Open CR8-0 in another terminal: ${HERE}/rzv2h-ipc-demo-type-cr8_0-serial.sh ${SCI_PORT}"
 	fi
 	echo "== Quit this client to end the session. =="
 	# shellcheck disable=SC2086

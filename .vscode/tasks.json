@@ -35,7 +35,7 @@
             "type": "shell",
             "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh",
             "args": [
-                "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf",
+                "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-serial.elf",
                 "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf"
             ],
             "options": {
@@ -58,7 +58,7 @@
             // Path A: load the CR8-0 RTT-console build (arg1 -> R8_0) + the
             // CR8-1 responder (arg2 -> R8_1). Pairs with the launch config
             // "IPC RZV2H — load BOTH (CR8-0 RTT), attach CR8-0 (RTT)": drives
-            // the initiator over RTT so the flaky SCI4 UART is bypassed.
+            // the initiator over RTT so the flaky serial UART is bypassed.
             "label": "rzv2h-ipc-load-both-cr8_0-rtt",
             "type": "shell",
             "command": "${workspaceFolder}/platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh",

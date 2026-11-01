@@ -162,7 +162,7 @@ def main():
         print(f"  J-Link    usb {name:6} {prod:12} JLINK_SERIAL={serial}")
     for name, pid, prod, _, ttys in usb_devices("0403"):
         print(f"  FTDI {pid} usb {name:6} {prod:18} tty={','.join('/dev/' + t for t in ttys) or '-'}"
-              "  (RZ/V2H SCI4 NSH console in nsh/nsh-scif images)")
+              "  (RZ/V2H NSH serial console in standalone NuttX images)")
 
     print("== probe owners (stop these before taking the probe; kill by PID)")
     found = list(owners())

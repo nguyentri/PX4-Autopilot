@@ -22,7 +22,7 @@ gate the first PX4 run. Audit:
 | Arch driver (SDIO lower half) | `arch/arm/src/rzv/rzv_sdhi.c`, `rzv_sdhi.h` |
 | Register defs | `arch/arm/src/rzv/hardware/rzv_sdhi.h` |
 | Board glue | `boards/arm/rzv/rdk-rzv2h/src/rzv2h_sdhi.c` (`rzv2h_sdhi_initialize()`, called from `rzv2h_bringup.c`) |
-| Config | `sdhi` — `CONFIG_RZV_SDHI`, `CONFIG_MMCSD`, `CONFIG_MMCSD_SDIO`, `CONFIG_FS_FAT`; SCI4 console |
+| Config | `sdhi` — `CONFIG_RZV_SDHI`, `CONFIG_MMCSD`, `CONFIG_MMCSD_SDIO`, `CONFIG_FS_FAT`; serial console (SCI5) |
 
 Build: `platforms/nuttx/NuttX/build.sh sdhi`.
 

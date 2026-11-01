@@ -114,7 +114,7 @@ class ArchiveAdmission(unittest.TestCase):
         p, d = self.artifact()
         target = self.copied(d)
         path = target/'resolved.config'
-        path.write_text(path.read_text()+'\nCONFIG_SCI4_SERIAL_CONSOLE=y\n')
+        path.write_text(path.read_text()+'\nCONFIG_SCI5_SERIAL_CONSOLE=y\n')
         with self.assertRaisesRegex(ValueError, 'prohibited setting'):
             verify(p, target)
 

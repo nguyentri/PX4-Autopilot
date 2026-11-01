@@ -61,8 +61,8 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
 
         groups = load_groups().get("groups", {})
         self.assertIn("rzv-native-ipc-rtt", groups)
-        self.assertIn("rzv-native-ipc-sci4", groups)
-        self.assertIn("rzv-native-ipc-demo-sci4", groups)
+        self.assertIn("rzv-native-ipc-serial", groups)
+        self.assertIn("rzv-native-ipc-demo-serial", groups)
         self.assertIn("ra8p1-dual-ipc", groups)
 
     def test_04_valid_px4_selection(self):
@@ -175,7 +175,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
     def test_10_multicore_groups(self):
         """Verify multi-core PX4 and NuttX group profiles resolve cleanly."""
         for gid, fam in [("rzv-px4-dualcr8", "px4"), ("rzv-native-ipc-rtt", "nuttx"),
-                         ("rzv-native-ipc-demo-sci4", "nuttx")]:
+                         ("rzv-native-ipc-demo-serial", "nuttx")]:
             sel = {
                 "schemaVersion": 1,
                 "id": gid,

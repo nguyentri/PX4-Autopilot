@@ -727,7 +727,7 @@
     "boards/renesas/rdk-rzv2h/nuttx-config/drone/defconfig": "9e80782756e6a081ae987c199475b7b60a3ccf718f51c3a14f79532da82fd9a3",
     "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "673f48fe276fcfcd444ec60f3b3ee47cb1f89a70a2211934c2449beb179e9f42",
     "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig": "10e4f5fc98005e48c5c5c423e310fbb08aefbfb537223b160eb12667313add60",
-    "boards/renesas/rdk-rzv2h/nuttx-config/sih/defconfig": "13490f47b1343fec51d7fa2471d215983962c8c8e90c8f8922bac575654af9f7",
+    "boards/renesas/rdk-rzv2h/nuttx-config/sih/defconfig": "1d76769b9064eac0343b8ff6f1db6499a57511887b63e60992b11c2bbc200759",
     "boards/renesas/rdk-rzv2h/nuttx-config/simple/defconfig": "582afae91cea0e7e743decf4ee355494a2104f760e76111035bd2cf0ff4f120f",
     "boards/renesas/rdk-rzv2h/sih.px4board": "ff4bc98360e39d798e642a3391962c84634cb49e59878883cf9e3327b844614f",
     "boards/renesas/rdk-rzv2h/simple.px4board": "bf03410d0d46dc47149ffd7bd4f615bb0e0d400bfe0f0279040397fc634da3d1",
@@ -749,9 +749,9 @@
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/module.yaml": "b46ea1aa91d9e3a657026e1dacf78caabeacde40c077e9783822f94a77f1efc1",
     "src/apps/Kconfig": "241a0650de88da9779c27f5a1080dfbd732018e34d33ec37974579e74f207eb2",
     "src/apps/CMakeLists.txt": "4d7387feb8b8fcd5a035f56c3d4a946253d02301941665e0007c8d534d36bdba",
-    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "2620389029e575c4ef27b38a950ec1d7f2ee6a8f005148f253609f7bb9ba2320",
+    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "c0308b2172a9be7f44bc426a278c9326c8a1f40209e9840b203c80c6c8022caa",
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
-    "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "bd94b5bd8b605588e163be852c690fc7ca823bd1c8fa564c834dc47feafa3c30"
+    "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b"
   },
   "abi_sources": [
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h",

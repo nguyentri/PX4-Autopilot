@@ -58,7 +58,7 @@ class InventoryContracts(unittest.TestCase):
 
     def test_diagnostic_rtt_and_scif_are_not_interactive_rtt(self):
         rows = {x['profile']:x for x in self.manifest['profiles']}
-        self.assertEqual(rows['nsh-rtt']['console'], 'sci4')
+        self.assertEqual(rows['nsh-rtt']['console'], 'sci5')
         self.assertEqual(rows['nsh-scif']['console'], 'scif0')
         self.assertEqual(rows['hil-uart-loopback']['console'], 'rtt-output')
         self.assertEqual(rows['hil-uart-loopback']['entrypoint'], 'hwtest_main')

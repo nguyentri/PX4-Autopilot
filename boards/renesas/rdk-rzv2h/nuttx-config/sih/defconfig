@@ -1,7 +1,7 @@
 #
 # RDK-RZ/V2H CR8-0 PX4 flight-controller SIH configuration
 #
-# This image keeps PX4 core prerequisites, an interactive SCI4 console with
+# This image keeps PX4 core prerequisites, an interactive serial console with
 # RTT output diagnostics, HRT, work queues, uORB, parameters, procfs, and
 # volatile TMPFS. Physical PWM/GPT, payload UART, SPI, I2C, DMA, persistent
 # storage, and IPC are excluded.
@@ -73,14 +73,15 @@ CONFIG_RZV2H_BUILD_CR8_0=y
 # CONFIG_RZV2H_EXAMPLE_SUPPORT is not set
 CONFIG_RDK_RZV2H_VOLATILE_PARAMFS=y
 
-# Interactive shell runs on SCI4 (P70/P71) at 115200 8N1, mirroring the
-# standalone nsh-rtt routing: the NSH prompt, input, and command output use the
-# SCI4 /dev/console while SEGGER RTT channel 0 stays output-only for syslog,
-# boot progress, and low-level diagnostics.
+# Interactive shell runs on the telemetry UART at 115200 8N1 because this
+# image has no MAVLink telemetry, mirroring the standalone nsh-rtt routing: the
+# NSH prompt, input, and command output use the serial /dev/console while
+# SEGGER RTT channel 0 stays output-only for syslog, boot progress, and
+# low-level diagnostics.
 CONFIG_DEV_CONSOLE=y
 CONFIG_DEV_SIMPLE_ADDRENV=y
-CONFIG_RZV_SCI4=y
-CONFIG_SCI4_SERIAL_CONSOLE=y
+CONFIG_RZV_SCI5=y
+CONFIG_SCI5_SERIAL_CONSOLE=y
 CONFIG_RZV_SCI_FIFO_MODE=y
 CONFIG_RZV_SCI_FIFO_RX_TRIGGER=31
 CONFIG_RZV_SCI_FIFO_TX_TRIGGER=0

@@ -237,7 +237,7 @@ def execute(args, row, admission, directory, fixture):
                    env,output,'bridge-start',110,serial)
             bridge = True
             transport = ['--rtt','19021']
-        elif row['console'] == 'sci4':
+        elif row['console'] == 'sci5':  # fixture USB-serial adapter is wired to SCI5 only
             transport = ['--serial','/dev/ttyUSB0','--baud','115200']
         else:
             raise LabError('console route not available on this fixture')

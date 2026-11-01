@@ -48,17 +48,17 @@
         "cr8_1": "rtt"
       }
     },
-    "rzv-native-ipc-sci4": {
-      "id": "rzv-native-ipc-sci4",
-      "name": "RZ/V2H Native Dual-CR8 IPC (SCI4 Serial / RTT)",
+    "rzv-native-ipc-serial": {
+      "id": "rzv-native-ipc-serial",
+      "name": "RZ/V2H Native Dual-CR8 IPC (Serial / RTT)",
       "board": "rdk-rzv2h",
       "loadRecipe": "rzv-dual-cr8-ram",
-      "description": "Native raw IPC pair on RZ/V2H with CR8-0 on SCI4 serial and CR8-1 on RTT.",
+      "description": "Native raw IPC pair on RZ/V2H with CR8-0 on serial and CR8-1 on RTT.",
       "members": [
         {
           "core": "cr8_0",
           "family": "nuttx",
-          "config": "ipcc-raw-cr8_0-sci4"
+          "config": "ipcc-raw-cr8_0-serial"
         },
         {
           "core": "cr8_1",
@@ -67,21 +67,21 @@
         }
       ],
       "console": {
-        "cr8_0": "sci4",
+        "cr8_0": "sci5",
         "cr8_1": "rtt"
       }
     },
-    "rzv-native-ipc-demo-sci4": {
-      "id": "rzv-native-ipc-demo-sci4",
-      "name": "RZ/V2H IPC Showcase Demo (SCI4 Serial / RTT)",
+    "rzv-native-ipc-demo-serial": {
+      "id": "rzv-native-ipc-demo-serial",
+      "name": "RZ/V2H IPC Showcase Demo (Serial / RTT)",
       "board": "rdk-rzv2h",
       "loadRecipe": "rzv-dual-cr8-ram",
-      "description": "Customer IPC showcase (ipcdemo): ping, messages and a 5 s heartbeat between CR8-0 on SCI4 serial and CR8-1 on RTT, with automatic link recovery.",
+      "description": "Customer IPC showcase (ipcdemo): ping, messages and a 5 s heartbeat between CR8-0 on serial and CR8-1 on RTT, with automatic link recovery.",
       "members": [
         {
           "core": "cr8_0",
           "family": "nuttx",
-          "config": "ipcc-demo-cr8_0-sci4"
+          "config": "ipcc-demo-cr8_0-serial"
         },
         {
           "core": "cr8_1",
@@ -90,7 +90,7 @@
         }
       ],
       "console": {
-        "cr8_0": "sci4",
+        "cr8_0": "sci5",
         "cr8_1": "rtt"
       }
     },

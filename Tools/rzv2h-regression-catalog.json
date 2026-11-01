@@ -1623,8 +1623,8 @@
       "note": "Interactive/static-address/legacy route; not a default CI entry point. Build-and-load bypasses the current build wrapper."
     },
     {
-      "id": "rzv2h-ipc-demo-type-cr8_0-sci4",
-      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-sci4.sh",
+      "id": "rzv2h-ipc-demo-type-cr8_0-serial",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-serial.sh",
       "kind": "tool",
       "groups": [
         "legacy-hardware"

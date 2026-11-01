@@ -5,7 +5,7 @@
 # Convenience wrapper around the project NuttX build helper and the
 # existing rzv2h-ipc-demo-load-both.sh loader, for the single-probe transport
 # split demo:
-#   CR8-0 -> rdk-rzv2h:ipcc-raw-cr8_0-sci4  (NSH on SCI4 / FT232 USB-serial)
+#   CR8-0 -> rdk-rzv2h:ipcc-raw-cr8_0-serial  (NSH on SCI5 / FT232 USB-serial)
 #   CR8-1 -> rdk-rzv2h:ipcc-raw-cr8_1       (NSH on RTT block 0x081E0000)
 #
 # Each config uses the project clean build helper so switching
@@ -23,7 +23,7 @@
 #   --load-only    Load and verify saved images; skip builds and consoles.
 #   -jN | JOBS=N   Parallel make jobs (default: nproc).
 #   OUT_DIR        Where to copy the built ELFs (default: the nuttx dir).
-#   CR8_0_CONFIG   Override CR8-0 config (default rdk-rzv2h:ipcc-raw-cr8_0-sci4).
+#   CR8_0_CONFIG   Override CR8-0 config (default rdk-rzv2h:ipcc-raw-cr8_0-serial).
 #   CR8_1_CONFIG   Override CR8-1 config (default rdk-rzv2h:ipcc-raw-cr8_1).
 #   JLINK_SERIAL   Authorized probe serial (required unless --build-only);
 #                  passed through to rzv2h-ipc-demo-load-both.sh.
@@ -45,10 +45,10 @@ Default: build both images, then RAM-load and verify CR8-0 followed by CR8-1.
 No mode starts an RTT bridge or interactive console.
 JLINK_SERIAL is required for loading. OUT_DIR overrides the saved ELF directory;
 CR8_0_CONFIG and CR8_1_CONFIG select their nuttx-<config>.elf filenames.
-Defaults: rdk-rzv2h:ipcc-raw-cr8_0-sci4 and rdk-rzv2h:ipcc-raw-cr8_1.
+Defaults: rdk-rzv2h:ipcc-raw-cr8_0-serial and rdk-rzv2h:ipcc-raw-cr8_1.
 
 After a successful load, open these separately from the repository root:
-  platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0
+  platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-serial.sh /dev/ttyUSB0
   platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_1 <exact-loaded-cr8_1-elf>
   nc 127.0.0.1 19021
 Use the actual UART path, keep JLINK_SERIAL exported, and stop your debugger
@@ -56,7 +56,7 @@ before starting RTT. Stop the bridge when finished with nuttx-rtt-bridge.sh stop
 EOF
 }
 
-CR8_0_CONFIG="${CR8_0_CONFIG:-rdk-rzv2h:ipcc-raw-cr8_0-sci4}"
+CR8_0_CONFIG="${CR8_0_CONFIG:-rdk-rzv2h:ipcc-raw-cr8_0-serial}"
 CR8_1_CONFIG="${CR8_1_CONFIG:-rdk-rzv2h:ipcc-raw-cr8_1}"
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 BUILD_ONLY=0
@@ -105,7 +105,7 @@ if [ "${LOAD_ONLY}" -eq 1 ]; then
 		[ -f "${elf}" ] || { echo "saved ELF not found: ${elf}; run --build-only first" >&2; exit 2; }
 	done
 	"${LOAD_BOTH}" "${OUT_DIR}/nuttx-${CR8_0_CONFIG#*:}.elf" "${OUT_DIR}/nuttx-${CR8_1_CONFIG#*:}.elf"
-	echo "Both images loaded and verified; consoles were not started. See --help for SCI4 and RTT commands."
+	echo "Both images loaded and verified; consoles were not started. See --help for serial and RTT commands."
 	exit 0
 fi
 
@@ -136,7 +136,7 @@ CR8_1_ELF=$(build_one "${CR8_1_CONFIG}")
 
 echo
 echo "Built:"
-echo "  CR8-0 (SCI4): ${CR8_0_ELF}"
+echo "  CR8-0 (serial): ${CR8_0_ELF}"
 echo "  CR8-1 (RTT):  ${CR8_1_ELF}"
 
 if [ "${BUILD_ONLY}" -eq 1 ]; then

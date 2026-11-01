@@ -22,6 +22,8 @@ class Rzv2hDefaultBoardContractTest(unittest.TestCase):
                 self.assertIn(option, config)
         self.assertNotIn("\nCONFIG_SCI4_SERIAL_CONSOLE=y", config)
         self.assertNotIn("\nCONFIG_SCI4_SERIAL_CONSOLE=y", self.source)
+        # SCI5 carries MAVLink telemetry here, so it must never be the shell.
+        self.assertNotIn("\nCONFIG_SCI5_SERIAL_CONSOLE=y", config)
         self.assertIn("CONFIG_RZV_SCI4=y", config)
         self.assertIn('#CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"', self.source)
 

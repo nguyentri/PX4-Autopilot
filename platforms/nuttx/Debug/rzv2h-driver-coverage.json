@@ -148,7 +148,7 @@
       "entrypoint": "rzv_ipc_boot_main"
     },
     {
-      "profile": "ipcc-raw-cr8_0-sci4",
+      "profile": "ipcc-raw-cr8_0-serial",
       "core": "cr8_0",
       "entrypoint": "rzv_ipc_boot_main"
     },

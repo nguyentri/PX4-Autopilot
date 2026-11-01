@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Host-only SCI4 supervisor contract tests using pseudo terminals."""
+"""Host-only serial-console supervisor contract tests using pseudo terminals."""
 import fcntl
 import json
 import os

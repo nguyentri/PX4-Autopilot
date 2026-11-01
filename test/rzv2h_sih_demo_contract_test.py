@@ -181,10 +181,10 @@ class SIHBoardContracts(unittest.TestCase):
             with self.subTest(symbol=symbol):
                 self.assertNotEqual(self.nuttx.get(symbol), "y")
 
-    def test_shell_console_routes_to_sci4_with_rtt_diagnostics(self) -> None:
+    def test_shell_console_routes_to_telemetry_uart_with_rtt_diagnostics(self) -> None:
         required = {
-            "CONFIG_RZV_SCI4": "y",
-            "CONFIG_SCI4_SERIAL_CONSOLE": "y",
+            "CONFIG_RZV_SCI5": "y",
+            "CONFIG_SCI5_SERIAL_CONSOLE": "y",
             "CONFIG_RZV_SCI_FIFO_MODE": "y",
             "CONFIG_SYSLOG_RTT": "y",
         }
@@ -193,7 +193,7 @@ class SIHBoardContracts(unittest.TestCase):
             with self.subTest(symbol=symbol):
                 self.assertEqual(self.nuttx.get(symbol), value)
 
-        # The shell must own SCI4; RTT stays output-only for logs, so the
+        # The shell must own the telemetry UART; RTT stays output-only for logs, so the
         # RTT-console and console-to-syslog redirects must be absent.
         for absent in (
             "CONFIG_NO_SERIAL_CONSOLE",

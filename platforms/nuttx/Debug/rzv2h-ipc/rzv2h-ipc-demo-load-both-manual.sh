@@ -7,7 +7,7 @@
 #
 # It does NOT invent new mechanics: load/verify reuse the same gdb scripts as
 # the auto loader, `rtt` uses the managed bridge with the exact ELF, and
-# `sci` hands off to rzv2h-ipc-demo-type-cr8_0-sci4.sh.
+# `sci` hands off to rzv2h-ipc-demo-type-cr8_0-serial.sh.
 #
 # Subcommands:
 #   guide                         (default) print the full runbook + reset notes
@@ -15,7 +15,7 @@
 #   verify <cr8_0-elf> <cr8_1-elf>   halt/PC/resume check of both (non-destructive)
 #   reset  <0|1> <elf>            soft-restart ONE core (re-run its image; no SoC reset)
 #   rtt <cr8_1-elf>            start a managed, detached CR8-1 RTT bridge
-#   sci    [port]                open the CR8-0 NSH on SCI4 (default /dev/ttyUSB0)
+#   sci    [port]                open the CR8-0 NSH on serial (default /dev/ttyUSB0)
 #
 # Env: JLINK_SERIAL (required for load/verify/reset/rtt), plus the same
 # JLINK_GDB / GDB / GDB_PORT / LOG_DIR overrides as the auto loader.
@@ -38,7 +38,7 @@ export VERBOSE
 
 DEV_CR8_0="R9A09G057H44_R8_0"
 DEV_CR8_1="R9A09G057H44_R8_1"
-SCI_SCRIPT="${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh"
+SCI_SCRIPT="${HERE}/rzv2h-ipc-demo-type-cr8_0-serial.sh"
 
 need_serial() {
 	[ -n "${JLINK_SERIAL:-}" ] || { echo "JLINK_SERIAL must identify the authorized probe" >&2; exit 2; }
@@ -50,7 +50,7 @@ RZ/V2H single-probe IPC demo -- manual runbook
 ==============================================
 
 Images (build first, e.g. via rzv2h-ipc-demo-build-and-load.sh --build-only):
-  CR8-0  rdk-rzv2h:ipcc-raw-cr8_0-sci4   NSH on SCI4 -> FT232 /dev/ttyUSB0
+  CR8-0  rdk-rzv2h:ipcc-raw-cr8_0-serial   NSH on serial -> FT232 /dev/ttyUSB0
   CR8-1  rdk-rzv2h:ipcc-raw-cr8_1        NSH on RTT block 0x081E0000
 
 One physical J-Link = one active owner at a time, so the order is:
@@ -98,7 +98,7 @@ case "${cmd}" in
 		[ "$#" -ge 2 ] || { echo "usage: $0 load <cr8_0-elf> <cr8_1-elf>" >&2; exit 2; }
 		need_serial; resolve_tools || exit 2; mkdir -p "${LOG_DIR}"
 		for f in "$1" "$2" "${LOADSTART}"; do [ -f "${f}" ] || { echo "not found: ${f}" >&2; exit 2; }; done
-		load_core "${DEV_CR8_0}" "$1" "CR8-0 (SCI4 console)" || exit 1
+		load_core "${DEV_CR8_0}" "$1" "CR8-0 (serial console)" || exit 1
 		load_core "${DEV_CR8_1}" "$2" "CR8-1 (RTT console)"  || exit 1
 		echo "Both loaded. Next: '$0 rtt <cr8_1-elf>' and '$0 sci /dev/ttyUSB0'."
 		;;
@@ -107,7 +107,7 @@ case "${cmd}" in
 		[ "$#" -ge 2 ] || { echo "usage: $0 verify <cr8_0-elf> <cr8_1-elf>" >&2; exit 2; }
 		need_serial; resolve_tools || exit 2; mkdir -p "${LOG_DIR}"
 		for f in "$1" "$2" "${VERIFY}"; do [ -f "${f}" ] || { echo "not found: ${f}" >&2; exit 2; }; done
-		verify_core "${DEV_CR8_0}" "$1" "CR8-0 (SCI4 console)" || exit 1
+		verify_core "${DEV_CR8_0}" "$1" "CR8-0 (serial console)" || exit 1
 		verify_core "${DEV_CR8_1}" "$2" "CR8-1 (RTT console)"  || exit 1
 		exit 0
 		;;
@@ -117,7 +117,7 @@ case "${cmd}" in
 		need_serial; resolve_tools || exit 2; mkdir -p "${LOG_DIR}"
 		[ -f "$2" ] || { echo "not found: $2" >&2; exit 2; }
 		case "$1" in
-			0) load_core "${DEV_CR8_0}" "$2" "CR8-0 (SCI4 console)" ;;
+			0) load_core "${DEV_CR8_0}" "$2" "CR8-0 (serial console)" ;;
 			1) load_core "${DEV_CR8_1}" "$2" "CR8-1 (RTT console)"  ;;
 			*) echo "core must be 0 or 1" >&2; exit 2 ;;
 		esac

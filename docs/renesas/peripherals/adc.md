@@ -18,7 +18,7 @@ Source-verified notes for `rzv_adc.c` (ADC_E, 12-bit SAR). Audit:
 | Register defs | `arch/arm/src/rzv/hardware/rzv_adc.h` |
 | Board glue | `boards/arm/rzv/rdk-rzv2h/src/rzv2h_adc.c` (`rzv2h_adc_setup()`, called from `rzv2h_bringup.c`) |
 | Channels / pins | `boards/arm/rzv/rdk-rzv2h/include/board.h` (`BOARD_ADC_CHANNEL_n`, `BOARD_ADC_PIN_ANnnn`) |
-| Config | `adc` — `CONFIG_RZV_ADC`, `CONFIG_RZV_ADC0`; SCI4 console, RTT off |
+| Config | `adc` — `CONFIG_RZV_ADC`, `CONFIG_RZV_ADC0`; serial console (SCI5), RTT off |
 
 Build: `platforms/nuttx/NuttX/build.sh adc`.
 

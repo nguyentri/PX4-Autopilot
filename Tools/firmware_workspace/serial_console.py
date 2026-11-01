@@ -1,4 +1,4 @@
-"""Foreground SCI4 client with a host-wide character-device lease.
+"""Foreground serial client with a host-wide character-device lease.
 
 Metadata is diagnostic only. Kernel flock ownership, including the inherited
 client descriptor, is the authority; a missing supervisor never frees a live UART.
@@ -23,7 +23,7 @@ from .probe import runtime_root
 from .target_state import atomic_json
 from .verification import OperationError
 
-HELPER = REPO_ROOT / "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-sci4.sh"
+HELPER = REPO_ROOT / "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-serial.sh"
 
 
 def canonical_device(value):
@@ -32,7 +32,7 @@ def canonical_device(value):
     device = Path(value).resolve(strict=True)
     info = device.stat()
     if not stat.S_ISCHR(info.st_mode) or not os.access(device, os.R_OK | os.W_OK):
-        raise ValueError("SCI4 device must be a readable/writable character device")
+        raise ValueError("serial device must be a readable/writable character device")
     return device, f"{os.major(info.st_rdev)}-{os.minor(info.st_rdev)}"
 
 
@@ -55,7 +55,7 @@ def device_lock(identity):
 def run(device, session_id):
     canonical, identity = canonical_device(device)
     if not HELPER.is_file() or not os.access(HELPER, os.X_OK) or not shutil.which("picocom"):
-        raise ValueError("SCI4 requires picocom and the repository interactive SCI4 helper on the workspace host")
+        raise ValueError("serial requires picocom and the repository interactive serial helper on the workspace host")
     fd = device_lock(identity)
     directory = runtime_root() / "uart"
     child = None
@@ -118,7 +118,7 @@ def main(argv=None):
         print("UART_BUSY: stop the existing console owner before reopening this UART", file=sys.stderr)
         return 4
     except (OSError, ValueError, OperationError) as error:
-        print(f"SCI4 prerequisite: {error}", file=sys.stderr)
+        print(f"serial prerequisite: {error}", file=sys.stderr)
         return 2
 
 

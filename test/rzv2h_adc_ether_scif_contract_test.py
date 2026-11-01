@@ -56,7 +56,7 @@ class EarlyConsoleRouting(unittest.TestCase):
             (["SYSLOG_RTT", "RZV_DIAGNOSTICS_RTT", "SERIAL_CONSOLE"], 1),
             (["SYSLOG_RTT", "CONSOLE_SYSLOG"], 1),
             (["SYSLOG_RTT", "CONSOLE_SYSLOG", "NO_SERIAL_CONSOLE"], 1),
-            (["SYSLOG_RTT", "SERIAL_CONSOLE", "SCI4_SERIAL_CONSOLE"], 0),
+            (["SYSLOG_RTT", "SERIAL_CONSOLE", "SCI5_SERIAL_CONSOLE"], 0),
         ]
         for options, expected_rtt in cases:
             with self.subTest(options=options), tempfile.TemporaryDirectory() as directory:

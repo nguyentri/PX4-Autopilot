@@ -12,7 +12,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 IPC = ROOT / "platforms/nuttx/Debug/rzv2h-ipc"
-CONFIGS = ("ipcc-raw-cr8_0-sci4", "ipcc-raw-cr8_1")
+CONFIGS = ("ipcc-raw-cr8_0-serial", "ipcc-raw-cr8_1")
 
 
 def executable(path, body):

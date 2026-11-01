@@ -32,7 +32,7 @@ completion report, responder-task exit and responsive consoles on both cores.
 CR8-0 reports zero invalid headers; CR8-1 increments `invalid_headers` once per
 warm recovery/traffic run. The increment site was not instrumented. The
 byte-exact result does not establish zero diagnostic counters on both cores.
-Cold boot, long-run soak and the SCI4 variant remain separate gates.
+Cold boot, long-run soak and the serial variant remain separate gates.
 
 ## Prerequisites
 
@@ -154,7 +154,7 @@ rule that applies to `--ping`/`--echo` is not needed for them.
 ### Two-console run (relay + ack)
 
 Bring up both cores per the [Procedure](#procedure) above (CR8-0 first, CR8-1
-last). For simultaneous consoles with one probe, use the SCI4 + RTT split
+last). For simultaneous consoles with one probe, use the serial + RTT split
 below. For RTT-only operation, switch the single bridge between cores as the
 autotest does; do not start competing probe owners.
 
@@ -205,27 +205,27 @@ IPCTEST_RESULT core=CR8-0 mode=heartbeat dev=/dev/ipcc1 status=pass beats=5 time
 
 The `--sink` console prints one `IPCTEST_RX ... kind=beat` line per beat.
 
-### Single-probe transport split (SCI4 + RTT), one screen recording
+### Single-probe transport split (serial + RTT), one screen recording
 
 The two-console recipe above needs one RTT session per core, but a single
 physical J-Link can bridge only **one** RTT control block at a time. To film
 both cores of the link with one probe, split the console transports: keep CR8-1
-on RTT and move CR8-0's NSH to the SCI4 physical UART (P70/P71). SCI4 is a plain
+on RTT and move CR8-0's NSH to the board serial UART (SCI5, P72/P73). That UART is a plain
 UART independent of the MHU IPC link, so the 100/100 `/dev/ipcc1` path is
 untouched — only where CR8-0's console prints changes.
 
-**Images** — build CR8-0 from the SCI4-console variant, CR8-1 unchanged:
+**Images** — build CR8-0 from the serial-console variant, CR8-1 unchanged:
 
 | Core | Build config | Console |
 |---|---|---|
-| CR8-0 (initiator) | `rdk-rzv2h:ipcc-raw-cr8_0-sci4` | SCI4 UART, 115200 8N1 |
+| CR8-0 (initiator) | `rdk-rzv2h:ipcc-raw-cr8_0-serial` | Serial UART (SCI5), 115200 8N1 |
 | CR8-1 (responder) | `rdk-rzv2h:ipcc-raw-cr8_1` | RTT block `0x081E0000` |
 
-`ipcc-raw-cr8_0-sci4` is `ipcc-raw-cr8_0` with the NSH console moved from RTT to
-SCI4; role, loopback, and the 64-B raw ABI are identical.
+`ipcc-raw-cr8_0-serial` is `ipcc-raw-cr8_0` with the NSH console moved from RTT to
+the board serial UART; role, loopback, and the 64-B raw ABI are identical.
 
 **Wiring** — one J-Link to the board (SWD) for CR8-1 RTT, plus an FT232
-USB-serial adapter on the SCI4 pins (P70 TXD / P71 RXD, GND common) at 115200
+USB-serial adapter on the board serial UART pins (SCI5: P72 TXD / P73 RXD, GND common) at 115200
 8N1 for CR8-0. Under WSL, `usbipd attach --wsl --busid <id>` both the J-Link and
 the FT232; the FT232 then enumerates as e.g. `/dev/ttyUSB0`.
 
@@ -234,7 +234,7 @@ opens **both** NSH consoles side by side in a single `tmux` window:
 
 1. **One command.** Loads **both** cores to DDR (CR8-0 first), verifies each is
    running, opens the CR8-1 RTT bridge on `127.0.0.1:19021`, then launches a
-   `tmux` window with the CR8-0 SCI4 console (left, `picocom` on `/dev/ttyUSB0`)
+   `tmux` window with the CR8-0 serial console (left, `picocom` on `/dev/ttyUSB0`)
    and the CR8-1 RTT console (right, `nc`/`telnet` on `:19021`). Add `--build`
    to rebuild both images first; it reloads both cores every launch (a board
    reset invalidates the running images and requires a fresh load):
@@ -250,18 +250,18 @@ opens **both** NSH consoles side by side in a single `tmux` window:
    `SCI_PORT=`). Quit by exiting both tmux panes (picocom `Ctrl-A Ctrl-X`, nc
    `Ctrl-C`), which stops the bridge and releases the probe. tmux prefix is
    `Ctrl-b` (switch panes `Ctrl-b o`). Use `--no-tmux` to instead get the RTT
-   console in the current terminal and open CR8-0 SCI4 yourself.
+   console in the current terminal and open CR8-0 serial yourself.
 
 2. On the already-loaded pair, complete the bounded 100-message test commands
    below first, skipping its build/load/console setup. This leaves no boot
    echo task competing for replies. Then run the relay+ack across the panes —
-   CR8-1 (RTT, right) displays, CR8-0 (SCI4, left) sends:
+   CR8-1 (RTT, right) displays, CR8-0 (serial, left) sends:
 
    ```sh
    # CR8-1 (RTT pane)
    ipctest --sink    -d /dev/ipcc1
 
-   # CR8-0 (SCI4 pane)
+   # CR8-0 (serial pane)
    ipctest --say "hello core1" -d /dev/ipcc1
    ipctest --heartbeat -d /dev/ipcc1 -n 5 --interval 1000
    ```
@@ -282,7 +282,7 @@ source ./build_setup.sh
 "$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --build-only
 export JLINK_SERIAL="$("$D/jlink-debug-preflight.py" --print-serial)"
 
-# Load saved CR8-0 SCI4 + CR8-1 RTT images and verify both, without rebuilding.
+# Load saved CR8-0 serial + CR8-1 RTT images and verify both, without rebuilding.
 "$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --load-only
 
 # After successful verification, start CR8-1 RTT in this terminal.
@@ -291,13 +291,13 @@ C1="$N/nuttx-ipcc-raw-cr8_1.elf"
 nc 127.0.0.1 19021
 ```
 
-Open CR8-0 SCI4 in a second terminal, substituting the actual UART path:
+Open CR8-0 serial in a second terminal, substituting the actual UART path:
 
 ```sh
-platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0
+platforms/nuttx/Debug/rzv2h-ipc/rzv2h-ipc-demo-type-cr8_0-serial.sh /dev/ttyUSB0
 ```
 
-`--load-only` uses the saved `nuttx-ipcc-raw-cr8_0-sci4.elf` and
+`--load-only` uses the saved `nuttx-ipcc-raw-cr8_0-serial.elf` and
 `nuttx-ipcc-raw-cr8_1.elf` files, checks both exist before invoking the guarded
 loader, and returns only after its load/verify operation finishes. It retains
 the shared build lock so this helper cannot overwrite those files concurrently.
@@ -309,7 +309,7 @@ the sequence; inspect its logs before a deliberate recovery attempt.
 existing build-then-load behavior is unchanged. None of these modes starts a
 console; `--help` prints the options and manual console commands.
 
-On **CR8-0 SCI4**, run `ps`. Both configurations start an `ipc-auto-echo` task;
+On **CR8-0 serial**, run `ps`. Both configurations start an `ipc-auto-echo` task;
 stop only that task on CR8-0 with `kill <pid>` using its actual numeric PID,
 and confirm it disappears before sending test traffic. Leave CR8-1's boot
 auto-echo running. Run these commands sequentially on CR8-0, waiting up to
@@ -335,16 +335,16 @@ bridge from the first terminal:
 ```
 
 **VS Code workspace images + μScope viewer.** The firmware-workspace group
-`rzv-native-ipc-sci4` stages the same pair as
-`build/workspace-artifacts/<receipt-id>/rzv-native-ipc-sci4-cr8_{0,1}.elf`. After
+`rzv-native-ipc-serial` stages the same pair as
+`build/workspace-artifacts/<receipt-id>/rzv-native-ipc-serial-cr8_{0,1}.elf`. After
 loading that pair (`rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>`),
 bridge CR8-1 RTT with the matching staged ELF; CR8-0 has no RTT block in this
-variant, so its console stays on SCI4:
+variant, so its console stays on the serial UART:
 
 ```sh
 export JLINK_SERIAL=$(platforms/nuttx/Debug/jlink-debug-preflight.py --print-serial)
 A=build/workspace-artifacts/<receipt-id>
-platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_1 "$A/rzv-native-ipc-sci4-cr8_1.elf"
+platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_1 "$A/rzv-native-ipc-serial-cr8_1.elf"
 platforms/nuttx/Debug/nuttx-rtt-bridge.sh status
 # expect: RTT bridge up: cr8_1 (R9A09G057H44_R8_1) _SEGGER_RTT=0x081e0000 -> 127.0.0.1:19021
 ```
@@ -370,14 +370,14 @@ It uses the generic `platforms/nuttx/Debug/nuttx-rtt-bridge.sh` (JLinkExe RTT
 bridge, no reset/halt) and `nsh_console_exec.py` (scripted NSH over RTT or UART),
 which work for any NuttX/PX4 image.
 
-### Optional console variant: SCI4 display on CR8-1
+### Optional console variant: serial display on CR8-1
 
-The transport split above puts SCI4 on **CR8-0** (`ipcc-raw-cr8_0-sci4`).
+The transport split above puts the serial console on **CR8-0** (`ipcc-raw-cr8_0-serial`).
 Showing the relayed text on a physical UART owned by **CR8-1** instead is still a
-separate physical-qualification task: SCI4 (P70/P71) is a single physical UART with no multi-core
-arbitration, and both the flight `default.px4board` and the `ipcc-raw-cr8_0-sci4`
-image already assign it to CR8-0. Handing SCI4 to CR8-1 means rebuilding the
-CR8-1 image with `CONFIG_RZV_SCI4` **and** taking it out of the CR8-0 image to
+separate physical-qualification task: the board serial UART (SCI5, P72/P73) is a single physical UART with no multi-core
+arbitration, and both the flight `default.px4board` (MAVLink telemetry) and the `ipcc-raw-cr8_0-serial`
+image already assign it to CR8-0. Handing it to CR8-1 means rebuilding the
+CR8-1 image with `CONFIG_RZV_SCI5` **and** taking it out of the CR8-0 image to
 avoid a two-master pin conflict. Not required for the demos above. The
 `115200` setting in the split-console profile is explicit to that test image;
 it does not change native telemetry's 57600 default or silently adopt the
@@ -417,7 +417,7 @@ PX4 ELFs and cannot qualify these NuttX raw-demo images.
 
 A two-console customer demo on `/dev/ipcc1`: ping and text messages in both
 directions, each acknowledged by the peer application, plus a heartbeat every
-5 s. Images: `ipcc-demo-cr8_0-sci4` (CR8-0, NSH on SCI4, link initiator) and
+5 s. Images: `ipcc-demo-cr8_0-serial` (CR8-0, NSH on the serial UART, link initiator) and
 `ipcc-demo-cr8_1` (CR8-1, NSH on RTT, responder). Both start the `ipcdemo`
 daemon at boot (`CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_SHOWCASE`); it waits for the
 device, brings the link up and recovers it on its own. `ipctest` stays
@@ -441,13 +441,13 @@ showcase configs:
 ```sh
 D=platforms/nuttx/Debug
 N=platforms/nuttx/NuttX/nuttx
-export CR8_0_CONFIG=rdk-rzv2h:ipcc-demo-cr8_0-sci4 CR8_1_CONFIG=rdk-rzv2h:ipcc-demo-cr8_1
+export CR8_0_CONFIG=rdk-rzv2h:ipcc-demo-cr8_0-serial CR8_1_CONFIG=rdk-rzv2h:ipcc-demo-cr8_1
 "$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --build-only
 export JLINK_SERIAL="$("$D/jlink-debug-preflight.py" --print-serial)"
 "$D/rzv2h-ipc/rzv2h-ipc-demo-build-and-load.sh" --load-only
 ```
 
-VS Code alternative: select the **RZ/V2H IPC Showcase Demo (SCI4 Serial / RTT)**
+VS Code alternative: select the **RZ/V2H IPC Showcase Demo (Serial / RTT)**
 group in Firmware Setup and use Build Both, then Load Both. The extension opens
 no console (see `docs/vscode-extension.md`).
 
@@ -457,7 +457,7 @@ Open both consoles yourself:
 # CR8-1 on RTT (stop it again before any later load or debug)
 "$D/nuttx-rtt-bridge.sh" start cr8_1 "$N/nuttx-ipcc-demo-cr8_1.elf"
 # then connect μScope or `nc 127.0.0.1 19021`
-# CR8-0 on SCI4: any serial terminal on the board UART, 115200 8N1
+# CR8-0 on the serial UART: any terminal on the board UART, 115200 8N1
 ```
 
 ### Demo script
@@ -504,6 +504,6 @@ Expected lines (`[core]` is the printing core; numbers vary):
 | Raw pair (`ipctest`) after auto-echo ended | CR8-1 `ipctest --echo -d /dev/ipcc1`; within 30 s CR8-0 `ipctest --recover -d /dev/ipcc1`; then `--ping`. |
 | μScope silent | `nuttx-rtt-bridge.sh status`; `stop`; `jlink-debug-preflight.py` (owners); `start cr8_1 <exact elf>`. Close other RTT viewers and Cortex-Debug. |
 | Bridge exit 3 | Do not retry. Read `/tmp/nuttx-rtt-bridge/jlinkexe.log`. Reset logged: the images are lost, so reload the pair. DBGEN message: no image on that core, so reload. |
-| SCI4 no prompt | `lsof /dev/ttyUSB0` (close a second picocom or serial terminal); press Enter. |
+| Serial console no prompt | `lsof /dev/ttyUSB0` (close a second picocom or serial terminal); press Enter. |
 | VS Code load refused with `PROBE_BUSY` | Your manual bridge holds the probe: `nuttx-rtt-bridge.sh stop`, retry the load, then restart the bridge. |
 | Last resort | Stop the bridge and reload both (`rzv2h-ipc-demo-load-both-auto.sh <cr8_0.elf> <cr8_1.elf>` or VS Code Load Both); restart the bridge. |

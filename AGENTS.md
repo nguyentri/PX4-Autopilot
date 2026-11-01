@@ -47,7 +47,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 
 ## 3. Run and debug on hardware
 
-- Console is **SEGGER RTT**, not UART (SCI4 shell only in `nsh`/`nsh-scif` style configs).
+- Console is **SEGGER RTT**, not UART (serial shell on SCI5 only in standalone `nsh`-style configs; SCI5 is MAVLink telemetry in PX4 images).
 - Start with `platforms/nuttx/Debug/jlink-debug-preflight.py` (host-only: probe serial, owners, ports, ELF → core/RTT map;
   `--print-serial` for `JLINK_SERIAL`). Do not probe with `JLinkExe -ShowEmuList` (invalid) or `-?` (exits 1).
 - RTT: `JLinkGDBServer` **cannot** bridge RTT on CR8. Use `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 <elf>`

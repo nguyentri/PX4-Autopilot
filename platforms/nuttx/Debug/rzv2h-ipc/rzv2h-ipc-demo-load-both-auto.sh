@@ -4,7 +4,7 @@
 #
 # Same volatile RAM load as rzv2h-ipc-demo-load-both.sh (CR8-0 image first,
 # CR8-1 image last), but hardened for unattended use. Works for any CR8 pair:
-# the NuttX IPC demo (SCI4 or RTT CR8-0 console) or PX4 dualcr8 + io-cr8_1:
+# the NuttX IPC demo (serial or RTT CR8-0 console) or PX4 dualcr8 + io-cr8_1:
 #   * preflight refuses an occupied GDB port; release its existing owner
 #     before loading and keep one probe owner at a time;
 #   * one guarded connect per operation; failure ends the batch;
@@ -104,5 +104,5 @@ echo "Open a console (one RTT bridge at a time; it takes the probe):"
 has_rtt "${CR8_0_ELF}" && echo "  ${HERE}/../nuttx-rtt-bridge.sh start cr8_0 ${CR8_0_ELF}"
 has_rtt "${CR8_1_ELF}" && echo "  ${HERE}/../nuttx-rtt-bridge.sh start cr8_1 ${CR8_1_ELF}"
 echo "  ${HERE}/../nsh_console_exec.py --marker 'ps'"
-has_rtt "${CR8_0_ELF}" || echo "  ${HERE}/rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0   # CR8-0 NSH on SCI4"
+has_rtt "${CR8_0_ELF}" || echo "  ${HERE}/rzv2h-ipc-demo-type-cr8_0-serial.sh /dev/ttyUSB0   # CR8-0 NSH on serial"
 exit 0

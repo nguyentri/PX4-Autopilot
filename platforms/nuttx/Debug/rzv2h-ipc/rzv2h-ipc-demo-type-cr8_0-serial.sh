@@ -1,17 +1,17 @@
 #!/bin/sh
 #
-# Drive the CR8-0 NSH console over its SCI4 / FT232 USB-serial adapter for the
-# transport-split IPC demo. CR8-0 runs the SCI4-console image; its NSH prompt is
+# Drive the CR8-0 NSH console over its serial / FT232 USB-serial adapter for the
+# transport-split IPC demo. CR8-0 runs the serial-console image; its NSH prompt is
 # on a plain UART, so this is just a 115200 8N1 serial session — no probe.
 #
 # Two ways to use it:
 #
 #   Interactive (best for filming) -- opens picocom so you type live:
-#     ./rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0
+#     ./rzv2h-ipc-demo-type-cr8_0-serial.sh /dev/ttyUSB0
 #
 #   Scripted send -- push one NSH command and show the reply for a few seconds:
-#     ./rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0 -- ipctest --recover -d /dev/ipcc1
-#     ./rzv2h-ipc-demo-type-cr8_0-sci4.sh /dev/ttyUSB0 -- ipctest --sink    -d /dev/ipcc1
+#     ./rzv2h-ipc-demo-type-cr8_0-serial.sh /dev/ttyUSB0 -- ipctest --recover -d /dev/ipcc1
+#     ./rzv2h-ipc-demo-type-cr8_0-serial.sh /dev/ttyUSB0 -- ipctest --sink    -d /dev/ipcc1
 #
 # Scripted mode word-splits the command, so it cannot carry a quoted multi-word
 # --say string ("hello core1" would arrive as two tokens). Send --say with text,

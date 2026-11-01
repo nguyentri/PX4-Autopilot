@@ -211,13 +211,13 @@ class SIHArtifactContracts(unittest.TestCase):
         active_physical_prefix = re.compile(
             r"^CONFIG_RZV_(SCI|SCIF|RIIC|RSPI|SPI|I2C|GPT|DMAC|IPC|OPENAMP|XSPI)"
         )
-        # SCI4 (P70/P71) is the one intentionally active serial peripheral: it
-        # carries the interactive shell, mirroring the standalone nsh-rtt
-        # routing. Its enabling symbols are exempt from the physical-surface
+        # The telemetry UART is the one intentionally active serial peripheral:
+        # with MAVLink disabled it carries the interactive shell, mirroring the
+        # standalone nsh-rtt routing. Its enabling symbols are exempt from the physical-surface
         # ban; every other SCI channel, SCIF, RIIC, RSPI, SPI, I2C, GPT, DMAC,
         # IPC, OpenAMP, and XSPI stays disabled.
         console_serial_allowlist = {
-            "CONFIG_RZV_SCI4",
+            "CONFIG_RZV_SCI5",
             "CONFIG_RZV_SCI_FIFO_MODE",
             "CONFIG_RZV_SCI_FIFO_RX_TRIGGER",
             "CONFIG_RZV_SCI_FIFO_TX_TRIGGER",
@@ -235,9 +235,9 @@ class SIHArtifactContracts(unittest.TestCase):
                 self.assertNotIn(symbol, forbidden)
                 self.assertIsNone(active_physical_prefix.match(symbol))
 
-    def test_shell_console_runs_on_sci4_with_rtt_diagnostics(self) -> None:
-        self.assertEqual(self.nuttx.get("CONFIG_RZV_SCI4"), "y")
-        self.assertEqual(self.nuttx.get("CONFIG_SCI4_SERIAL_CONSOLE"), "y")
+    def test_shell_console_runs_on_telemetry_uart_with_rtt_diagnostics(self) -> None:
+        self.assertEqual(self.nuttx.get("CONFIG_RZV_SCI5"), "y")
+        self.assertEqual(self.nuttx.get("CONFIG_SCI5_SERIAL_CONSOLE"), "y")
         self.assertEqual(self.nuttx.get("CONFIG_SYSLOG_RTT"), "y")
         self.assertNotEqual(self.nuttx.get("CONFIG_NO_SERIAL_CONSOLE"), "y")
         self.assertNotEqual(self.nuttx.get("CONFIG_SYSLOG_RTT_CONSOLE_INPUT"), "y")

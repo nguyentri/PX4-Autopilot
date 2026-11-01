@@ -25,8 +25,8 @@ bounded on-target transcript. It is built from `sih.px4board`,
 `nuttx-config/sih/defconfig`, and the compact
 `ROMFS/rdk-rzv2h-sih` startup tree. It starts simulated accel/gyro/baro/mag/GPS
 paths through HIL sensors and `pwm_out_sim`, but it does not start physical
-payload/sensor buses, GPT/PWM output, or `control_allocator`. SCI4 remains the
-interactive shell. Cold-cycle provenance, physical pin-safety measurement,
+payload/sensor buses, GPT/PWM output, or `control_allocator`. Because this image has no
+MAVLink telemetry, the SCI5 telemetry UART carries the interactive shell. Cold-cycle provenance, physical pin-safety measurement,
 and soak validation remain open.
 
 ## Hardware Configuration
@@ -71,14 +71,13 @@ The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
 | ttyS6 | SCI6 | P75         | /dev/ttyS6  | FS-A8S SBUS, 100000 8E2; external NPN inverter |
 | ttyS9 | SCI9 | P82/P83     | /dev/ttyS9  | GPS M10 |
 
-SCI3 is not an active console on the RDK-RZV2H board. The board uses
-SCI4 for the standalone CR8-0 NuttX shell, and integrated PX4 diagnostics
-use RTT rather than SCI3.
+SCI3 is not an active console on the RDK-RZV2H board. SCI5 is shared:
+PX4 images use it for MAVLink telemetry, and NuttX/PX4 images without
+telemetry use it as the serial shell. Integrated PX4 diagnostics use RTT.
 
 The integrated PX4 images expose SCI4 as the generated `EXT2` serial role and
 assign `SENS_TFMINI_CFG=401`, so common `rc.serial` starts TFmini on
-`/dev/ttyS4`. The standalone NuttX shell is a separate image that owns SCI4
-instead.
+`/dev/ttyS4`. SCI4 is not a shell UART.
 
 ### I2C Buses
 | Bus | SCI | Pins     | Device      |
@@ -324,7 +323,7 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
 | Mode | Console / Debug | Serial Policy | Validation State |
 |------|-----------------|---------------|------------------|
 | Simple PWM + ICM20948 bench | RTT0 console/debug only | HRT, lazy work queues, volatile params, raw accel/gyro, PWMOut and diagnostics; no flight/payload startup | build-clean; fresh four-profile software checks passed; hardware untested |
-| Standalone CR8-0 NuttX | SCI4 shell + RTT diagnostics | SCI4 is the interactive shell; RTT carries boot, syslog, and debug output | Validated by `nsh-rtt` |
+| Standalone CR8-0 NuttX | Serial shell (SCI5) + RTT diagnostics | SCI5 is the interactive shell when no telemetry runs; RTT carries boot, syslog, and debug output | Earlier `nsh-rtt` pass was on SCI4; SCI5 shell needs on-target validation |
 | Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 is the intended shell path for the CR8-1 IO target; not yet hardware validated | Target policy only |
 | Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 is the intended shell path for the CM33 IO target; not yet hardware validated | Target policy only |
 | Integrated PX4 CR8-0 | RTT0 console/debug + SCI4/5/6/9 peripheral links | RTT0 `/dev/console` input/output is build-clean; SCI4 LiDAR, SCI5 MAVLink/QGC, SCI6 RC, SCI9 GPS | Target shell I/O pending |
@@ -400,7 +399,7 @@ validation proves the GPT/DMAC timing path.
 2. Verify `COM_ARM_WO_GPS 1` is set for GPS-less operation
 3. Check sensor calibration status
 
-1. No USB support; console/debug routes are mode-specific (SCI4 standalone CR8-0 shell, RTT0 for integrated PX4)
+1. No USB support; console/debug routes are mode-specific (SCI5 serial shell when telemetry is absent, RTT0 for integrated PX4)
 2. No CAN bus support
 3. Battery monitoring ADC not implemented
 4. Single I2C bus (I2C7 only)

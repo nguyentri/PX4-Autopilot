@@ -49,7 +49,7 @@ extension-board nets and populated revision separately before target use.
 The RDK-RZV2H board does not use SCI3 as an active console. Current and target
 serial roles are split by mode:
 
-- Standalone CR8-0 NuttX: SCI4 shell + RTT diagnostics.
+- Standalone CR8-0 NuttX: SCI5 serial shell + RTT diagnostics (SCI5 is the telemetry UART; the shell uses it only when telemetry is absent).
 - Standalone CR8-1 target: SCI5 shell + RTT diagnostics, not yet hardware validated.
 - Standalone CM33 target: SCI9 shell + RTT diagnostics, not yet hardware validated.
 - Integrated PX4 CR8-0: RTT0 console/debug, SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC, SCI9 GPS.

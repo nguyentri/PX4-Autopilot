@@ -69,13 +69,13 @@ class NativeArchive(unittest.TestCase):
                 self.assertEqual(result['on_target'],'NOT-RUN')
 
     def test_declared_core_console_and_entry_must_match_resolved_config(self):
-        for key,value in (('core','cr8_1'),('console','sci4'),('entrypoint','hwtest_main')):
+        for key,value in (('core','cr8_1'),('console','sci5'),('entrypoint','hwtest_main')):
             inputs=self.copied()
             config=inputs[1]/'resolved.config'
             if key=='core':
                 config.write_text(config.read_text().replace('CONFIG_RZV2H_BUILD_CR8_0=y','CONFIG_RZV2H_BUILD_CR8_1=y'))
             elif key=='console':
-                config.write_text(config.read_text().replace('CONFIG_SYSLOG_RTT_CONSOLE_INPUT=y','# CONFIG_SYSLOG_RTT_CONSOLE_INPUT is not set')+'\nCONFIG_SCI4_SERIAL_CONSOLE=y\n')
+                config.write_text(config.read_text().replace('CONFIG_SYSLOG_RTT_CONSOLE_INPUT=y','# CONFIG_SYSLOG_RTT_CONSOLE_INPUT is not set')+'\nCONFIG_SCI5_SERIAL_CONSOLE=y\n')
             else:
                 config.write_text(config.read_text().replace('CONFIG_INIT_ENTRYPOINT="nsh_main"','CONFIG_INIT_ENTRYPOINT="hwtest_main"'))
             self.refresh(inputs[1],inputs[2])

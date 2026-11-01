@@ -4,7 +4,7 @@
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.85.0-007ACC.svg?logo=visual-studio-code)](package.json)
 [![Hardware](https://img.shields.io/badge/Renesas-RZ%2FV2H%20%7C%20RA8P1%20%7C%20RA8E1-orange.svg)](profiles/devices.json)
 
-VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Consoles (RTT, SCI4) are started manually outside the extension.
+VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Consoles (RTT, serial UART) are started manually outside the extension.
 
 ---
 
@@ -55,7 +55,7 @@ VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renes
 - **Readiness & Doctor Diagnostics**: Host-only prerequisite checking for ARM GCC toolchain, CMake (>= 3.20), Ninja, Make, Python dependencies (`kconfiglib`, `jsonschema`), NuttX submodule state, and connected SEGGER J-Link probes.
 - **Guarded Target Loading**: Safe volatile RAM loading for Renesas RZ/V2H Cortex-R8 cores (`cr8_0` at `0x081A0000`, `cr8_1` at `0x081E0000`) with ELF address allowlist checking and host journal recovery tracking. Direct attach to RZ/V2H CM33 (which triggers SoC cold reset) and unverified flash routes are strictly gated.
 - **Cortex-Debug Integration**: Dynamically generates in-memory debug attach configurations with halt-only commands and SVD symbol mappings. Existing user `launch.json` files are never overwritten.
-- **Manual Consoles**: The extension starts no console. Firmware Setup shows each core's transport as a read-only row (`Manual · SCI4 115200 8N1` or `Manual · RTT 127.0.0.1:19021`) with the command to open it; see [Consoles are manual](#consoles-are-manual).
+- **Manual Consoles**: The extension starts no console. Firmware Setup shows each core's transport as a read-only row (`Manual · SCI5 115200 8N1` or `Manual · RTT 127.0.0.1:19021`) with the command to open it; see [Consoles are manual](#consoles-are-manual).
 - **Firmware Setup Variants**: Manage named setups of fixed RDK-RZ/V2H CR8 groups, allowing independent image preparation, per-core builds, atomic SHA-256 pair validation, and explicit Build & Load workflows.
 - **Shared Build Mutex**: Cooperative file locking across VS Code editor tasks, root `./build.sh`, and `make` preventing concurrent modification of the NuttX source tree.
 
@@ -132,7 +132,7 @@ When working with Renesas multicore targets (especially RZ/V2H), observe these h
 
 The extension does not open, stop or hand off consoles. Open them yourself:
 
-- **SCI4 (R8-0 in the SCI4 groups)**: any serial terminal (for example μScope or picocom) on the board UART at 115200 8N1. SCI4 does not use the J-Link, so it may stay open during load and debug.
+- **Serial (R8-0 in the serial groups)**: any serial terminal (for example μScope or picocom) on the board serial UART (SCI5, P72/P73) at 115200 8N1. The serial console does not use the J-Link, so it may stay open during load and debug.
 - **RTT**: `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <cr8_0|cr8_1> <elf>`, then connect a terminal to `127.0.0.1:19021` (μScope can send input). One J-Link owner at a time: run `platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop` before **Load**, **Debug** or **Load Both**, and restart it afterwards.
 
 **Stop Sessions** stops only this extension's debugger session; it never touches a manual console.

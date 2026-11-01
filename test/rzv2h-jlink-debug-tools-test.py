@@ -396,7 +396,7 @@ class LoaderVerifyGuard(unittest.TestCase):
         source = (DEBUG / 'rzv2h-ipc/rzv2h-ipc-demo-autotest.sh').read_text()
         deadline = int(re.search(r'rtt cr8_0-recover (\d+) --until', source).group(1))
         board = ROOT / 'platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs'
-        for profile in ('ipcc-raw-cr8_0', 'ipcc-raw-cr8_0-sci4'):
+        for profile in ('ipcc-raw-cr8_0', 'ipcc-raw-cr8_0-serial'):
             config = (board / profile / 'defconfig').read_text()
             wait = int(re.search(r'CONFIG_RZV_IPC_RECOVERY_WAIT_MS=(\d+)', config).group(1))
             self.assertGreaterEqual(deadline * 1000, wait + 5000)

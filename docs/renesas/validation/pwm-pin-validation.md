@@ -52,7 +52,7 @@ qualification remains pending.
 | `/dev/pwm3` | P53 | 11 | GPT10 B |
 
 Build with `platforms/nuttx/NuttX/build.sh pwm`. Flash/load requires separate
-approval. These profiles use SCI4 NSH at 115200, not the RTT console.
+approval. These profiles use the serial NSH (SCI5) at 115200, not the RTT console.
 
 For the full command lines below, configure `CONFIG_NSH_MAXARGUMENTS=16`.
 CPU-side register reads also require `CONFIG_NSH_DISABLE_MW` to be unset;

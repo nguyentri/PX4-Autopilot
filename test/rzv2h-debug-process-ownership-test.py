@@ -69,7 +69,7 @@ verify_core() { echo "$3" >>"$CORE_LOG"; return 1; }
                                     env=dict(os.environ, JLINK_SERIAL='fixture', LOG_DIR=directory, CORE_LOG=str(log)),
                                     capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 1)
-            self.assertEqual(log.read_text().splitlines(), ['CR8-0 (SCI4 console)'])
+            self.assertEqual(log.read_text().splitlines(), ['CR8-0 (serial console)'])
 
     def test_legacy_loader_delegates_exact_paths_to_guarded_loader(self):
         with tempfile.TemporaryDirectory() as directory:

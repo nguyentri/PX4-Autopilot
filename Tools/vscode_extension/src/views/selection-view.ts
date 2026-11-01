@@ -58,7 +58,7 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
       new WorkspaceTreeItem('Console Transport', vscode.TreeItemCollapsibleState.None, {
         description: `${transport.toUpperCase()} (manual)`,
         iconPath: new vscode.ThemeIcon('terminal'),
-        tooltip: new vscode.MarkdownString(`**Console Transport:** \`${transport.toUpperCase()}\`\n\nOpen the console manually: SCI4 in a serial terminal, RTT through \`nuttx-rtt-bridge.sh\`.`),
+        tooltip: new vscode.MarkdownString(`**Console Transport:** \`${transport.toUpperCase()}\`\n\nOpen the console manually: serial in a serial terminal, RTT through \`nuttx-rtt-bridge.sh\`.`),
       }),
     ];
     return Promise.resolve(items);

@@ -82,7 +82,7 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       }
       case 'State needs attention':
         return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
-      case 'SCI4 device':
+      case 'Serial device':
         return new vscode.ThemeIcon('plug');
       case 'Load history':
         return new vscode.ThemeIcon('history');
@@ -150,9 +150,10 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
   private manualConsoleRow(core: R8Core, elf?: string): WorkspaceTreeItem {
     const transport = this.store.getConsoleTransport(core);
     const label = `Console ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`;
-    if (transport === 'sci4') {
-      return this.row(label, 'Manual · SCI4 115200 8N1', undefined, undefined,
-        'Open the board SCI4 UART in your own serial terminal (115200 8N1).');
+    if (transport.startsWith('sci')) {
+      const uart = transport.toUpperCase();
+      return this.row(label, `Manual · ${uart} 115200 8N1`, undefined, undefined,
+        `Open the board ${uart} UART in your own serial terminal (115200 8N1).`);
     }
     if (transport === 'rtt') {
       return this.row(label, 'Manual · RTT 127.0.0.1:19021', undefined, undefined,
