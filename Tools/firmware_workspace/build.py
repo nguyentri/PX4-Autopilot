@@ -24,6 +24,35 @@ from .locks import BuildLock, BuildLockContentionError
 from .process import ManagedProcess
 
 
+# Written by build.sh / build_ra8p1.sh after configure as "<board>:<config>".
+NUTTX_CONFIG_STAMP = ".config-build-sh"
+
+
+def nuttx_tree_configured_for(board: str, config: str, tree: Path) -> bool:
+    """True when the shared NuttX tree was last configured for board:config."""
+    try:
+        stamp = (tree / NUTTX_CONFIG_STAMP).read_text(encoding="utf-8").strip()
+    except OSError:
+        return False
+    return (tree / ".config").is_file() and stamp == f"{board}:{config}"
+
+
+def nuttx_build_command(board: str, config: str, mode: str, tree: Path) -> List[str]:
+    """Build-script command for a NuttX config.
+
+    All NuttX configs share one tree, so the build script refuses --no-clean
+    when the tree is configured for another config. Incremental mode therefore
+    only passes --no-clean when the tree already matches; otherwise the script
+    reconfigures, which is what switching configs requires anyway.
+    """
+    helper = "build.sh" if board == "rdk-rzv2h" else "build_ra8p1.sh"
+    cmd = [str(tree.parent / helper)]
+    if mode == "incremental" and nuttx_tree_configured_for(board, config, tree):
+        cmd.append("--no-clean")
+    cmd.append(config)
+    return cmd
+
+
 def build_single_target(
     family: str,
     board: str,
@@ -41,12 +70,9 @@ def build_single_target(
         cmd.append(target_or_config)
         expected_elf = REPO_ROOT / "build" / target_or_config / f"{target_or_config}.elf"
     else:
-        helper = "build.sh" if board == "rdk-rzv2h" else "build_ra8p1.sh"
-        cmd = [str(REPO_ROOT / "platforms" / "nuttx" / "NuttX" / helper)]
-        if mode == "incremental":
-            cmd.append("--no-clean")
-        cmd.append(target_or_config)
-        expected_elf = REPO_ROOT / "platforms" / "nuttx" / "NuttX" / "nuttx" / "nuttx"
+        tree = REPO_ROOT / "platforms" / "nuttx" / "NuttX" / "nuttx"
+        cmd = nuttx_build_command(board, target_or_config, mode, tree)
+        expected_elf = tree / "nuttx"
 
     proc = ManagedProcess(cmd, cwd=str(REPO_ROOT))
     rc, _, err = proc.run(stream_stderr=True)

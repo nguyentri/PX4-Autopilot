@@ -97,7 +97,7 @@ use the explicit Firmware Setup actions for saved dual-core setups.
 
 | Shortcut | Command ID | Title | Description |
 |----------|------------|-------|-------------|
-| `Ctrl+Alt+K B` | `px4Nuttx.build` | **Build Active Target** | Incremental build of active selection using shared flock. |
+| `Ctrl+Alt+K B` | `px4Nuttx.build` | **Build Active Target** | Incremental build of active selection using shared flock; a NuttX config switch reconfigures the shared tree first. |
 | `Ctrl+Alt+K C` | `px4Nuttx.cleanRebuild` | **Clean Rebuild Active Target** | Distclean and full rebuild. |
 | `Ctrl+Alt+K D` | `px4Nuttx.checkDoctor` | **Check Prerequisites (Doctor)** | Evaluates host toolchain, submodules, and J-Link probes. |
 | `Ctrl+Alt+K P` | `px4Nuttx.selectProfile` | **Select Firmware Target / Profile** | QuickPick for PX4 targets, NuttX configs, and multicore groups. |

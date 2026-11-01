@@ -121,6 +121,30 @@ class TestFirmwareWorkspaceBuild(unittest.TestCase):
         self.assertEqual(desc_ipc["id"], "ra8p1-dual-ipc")
         self.assertEqual(len(desc_ipc["members"]), len(groups["ra8p1-dual-ipc"]["members"]))
 
+    def test_07_incremental_nuttx_build_reconfigures_on_config_switch(self):
+        """Incremental mode drops --no-clean when the shared tree holds another config."""
+        from firmware_workspace.build import nuttx_build_command
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tree = Path(tmpdir) / "nuttx"
+            tree.mkdir()
+            want = "ipcc-demo-cr8_0-serial"
+            # Unconfigured tree: build.sh must configure.
+            cmd = nuttx_build_command("rdk-rzv2h", want, "incremental", tree)
+            self.assertNotIn("--no-clean", cmd)
+            (tree / ".config").write_text("", encoding="utf-8")
+            (tree / ".config-build-sh").write_text("rdk-rzv2h:nsh-cr8_1\n", encoding="utf-8")
+            cmd = nuttx_build_command("rdk-rzv2h", want, "incremental", tree)
+            self.assertNotIn("--no-clean", cmd)
+            self.assertEqual(cmd[-1], want)
+            (tree / ".config-build-sh").write_text(f"rdk-rzv2h:{want}\n", encoding="utf-8")
+            cmd = nuttx_build_command("rdk-rzv2h", want, "incremental", tree)
+            self.assertIn("--no-clean", cmd)
+            self.assertTrue(cmd[0].endswith("build.sh"))
+            self.assertNotIn("--no-clean", nuttx_build_command("rdk-rzv2h", want, "clean", tree))
+            ra8 = nuttx_build_command("evk-ra8p1", "nsh", "incremental", tree)
+            self.assertTrue(ra8[0].endswith("build_ra8p1.sh"))
+            self.assertNotIn("--no-clean", ra8)
+
 
 if __name__ == "__main__":
     unittest.main()
