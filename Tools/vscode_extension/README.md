@@ -149,6 +149,19 @@ The extension provides structured schemas and machine-readable contracts for AI 
 
 ---
 
+## Build & Install
+
+Run from the repository root. The build script type-checks, bundles, packages and tests the extension:
+
+```bash
+Tools/vscode_extension/build.sh
+code --install-extension Tools/vscode_extension/px4-nuttx-dashboard-0.1.0.vsix --force
+```
+
+`--force` replaces an installed copy with the same version. Run **Developer: Reload Window** afterwards to load it.
+
+---
+
 ## License
 
 This extension is licensed under the [BSD-3-Clause License](LICENSE.md).
