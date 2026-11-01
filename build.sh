@@ -121,6 +121,9 @@ resolve_target()
 	return 1
 }
 
+# Keep the original arguments; the parser below shifts them away before the
+# build lock re-executes this script.
+ORIG_ARGS=("$@")
 DO_CLEAN=1
 LIST_ONLY=0
 TARGETS=()
@@ -192,7 +195,7 @@ fi
 LOCK_HELPER="Tools/firmware_workspace/build_lock.sh"
 [ -x "$LOCK_HELPER" ] || { echo "Missing shared build lock helper: $LOCK_HELPER" >&2; exit 2; }
 if ! "$LOCK_HELPER" --check; then
-  exec "$LOCK_HELPER" "$0" "$@"
+  exec "$LOCK_HELPER" "$0" "${ORIG_ARGS[@]}"
 fi
 
 echo "=========================================="
