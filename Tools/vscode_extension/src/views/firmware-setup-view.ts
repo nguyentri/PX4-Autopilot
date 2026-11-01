@@ -98,6 +98,8 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
         return new vscode.ThemeIcon('rocket');
       case 'Stop Sessions':
         return new vscode.ThemeIcon('stop-circle');
+      case 'Stop RTT Bridge':
+        return new vscode.ThemeIcon('debug-disconnect');
       case 'Validate Images':
         return new vscode.ThemeIcon('checklist');
       case 'Resume Preparation':
@@ -144,10 +146,11 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
   }
 
   /**
-   * Consoles are opened manually outside the extension; this read-only row
-   * only names the transport and the command that reaches it.
+   * The extension never opens a console terminal. A UART row is read-only; an
+   * RTT row starts the backend-owned bridge, and the user connects any terminal
+   * to its TCP port.
    */
-  private manualConsoleRow(core: R8Core, elf?: string): WorkspaceTreeItem {
+  private consoleRow(core: R8Core, elf?: string): WorkspaceTreeItem {
     const transport = this.store.getConsoleTransport(core);
     const label = `Console ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`;
     if (transport.startsWith('sci')) {
@@ -156,10 +159,10 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
         `Open the board ${uart} UART in your own serial terminal (115200 8N1).`);
     }
     if (transport === 'rtt') {
-      return this.row(label, 'Manual · RTT 127.0.0.1:19021', undefined, undefined,
-        `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start ${core} ${elf || '<elf>'}\n` +
-        'Then connect a terminal (for example μScope) to 127.0.0.1:19021. ' +
-        'Stop the bridge before loading or debugging: nuttx-rtt-bridge.sh stop');
+      return this.row(label, 'RTT · Start bridge on 127.0.0.1:19021', 'startRtt', core,
+        'Starts the RTT bridge for this core after a verified Load Both. It reserves the probe, so use ' +
+        'Stop RTT Bridge before Load, Recover or Debug.\nThen connect a terminal (for example μScope) to 127.0.0.1:19021.\n' +
+        `Manual alternative: platforms/nuttx/Debug/nuttx-rtt-bridge.sh start ${core} ${elf || '<elf>'}`);
     }
     return this.row(label, `Manual · ${transport.toUpperCase()}`);
   }
@@ -237,7 +240,7 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       items.push(this.row(`${core === 'cr8_0' ? 'R8-0' : 'R8-1'} profile`, member.target || member.config || 'Unavailable'));
       if (!busy) {
         items.push(this.row(`Build ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`, 'Build and capture this member only', 'buildCore', core));
-        items.push(this.manualConsoleRow(core, image?.path));
+        items.push(this.consoleRow(core, image?.path));
       }
 
       if (!busy && state?.sourceChanges?.[core]) {
@@ -271,6 +274,9 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       ['Stop Sessions', 'Stop only this extension’s debugger session', 'stopSessions'],
       ['Validate Images', 'Check source changes and captured hashes without hardware', 'validate'],
     ];
+    if ((['cr8_0', 'cr8_1'] as R8Core[]).some((core) => this.store.getConsoleTransport(core) === 'rtt')) {
+      actions.push(['Stop RTT Bridge', 'Free the probe before Load, Recover or Debug', 'stopRtt']);
+    }
 
     if (state?.pending) {
       actions.push(['Resume Preparation', 'Resume this exact pending request', 'resume']);

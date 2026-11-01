@@ -146,7 +146,11 @@ class ProbeLease:
         except BlockingIOError as error:
             os.close(self.fd)
             self.fd = None
-            raise OperationError("Another session reserves this physical probe", "PROBE_BUSY", True) from error
+            message = "Another session reserves this physical probe"
+            # An owned RTT bridge holds the lease for as long as it runs.
+            if (probe_directory(self.serial) / "console.json").exists():
+                message += "; an RTT console bridge owns it: use Stop RTT Bridge in Firmware Setup first"
+            raise OperationError(message, "PROBE_BUSY", True) from error
         self.token = uuid.uuid4().hex
         owner = {"pid": os.getpid(), "start": process_start(os.getpid()),
                  "token": self.token, "root": str(REPO_ROOT.resolve())}

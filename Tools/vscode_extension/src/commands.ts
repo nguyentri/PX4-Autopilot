@@ -48,6 +48,7 @@ export function registerCommands(
     debugSelected: () => dual.targetAction('debug', store.getSelectedCore() as 'cr8_0' | 'cr8_1'),
     loadAndDebug: () => dual.loadAndDebug(),
     debugR80: () => dual.targetAction('debug', 'cr8_0'), debugR81: () => dual.targetAction('debug', 'cr8_1'),
+    startRtt: (core) => dual.startRtt(core), stopRtt: () => dual.stopRtt(),
     stopSessions: async () => { await debugProvider.disposeAsync(); store.notifySessionChange(); },
   };
   const invoke = async (name: string, argument?: { setupId?: string; core?: 'cr8_0' | 'cr8_1'; token?: SetupOperationToken }): Promise<unknown> => {

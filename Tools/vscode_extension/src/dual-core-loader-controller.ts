@@ -113,9 +113,57 @@ export class DualCoreLoaderController implements vscode.Disposable {
     return selection;
   }
 
-  private async chooseCore(core?: R8Core): Promise<R8Core | undefined> {
+  private async chooseCore(core?: R8Core, placeHolder = 'Choose the image row to update'): Promise<R8Core | undefined> {
     return core && CORES.includes(core) ? core : (await vscode.window.showQuickPick(CORES.map((value) => ({ label: value === 'cr8_0' ? 'R8-0' : 'R8-1', core: value })),
-      { placeHolder: 'Choose the image row to update' }))?.core;
+      { placeHolder }))?.core;
+  }
+
+  /**
+   * Starts the backend-owned RTT bridge for one loaded core of the captured pair.
+   * The backend reserves the probe for the bridge's lifetime, refuses a core the
+   * last verified load did not leave ready, and marks the target for recovery when
+   * the J-Link connect fails (a failed CR8 connect can reset the SoC). The bridge
+   * serves 127.0.0.1:19021 for any terminal; the extension opens none itself.
+   */
+  public async startRtt(core?: R8Core): Promise<boolean> {
+    const selection = this.requireReady(['importImages', 'preparedIdentity']);
+    const token = this.store.captureSetupToken(undefined, true);
+    core = await this.chooseCore(core, 'Choose the core whose RTT console to bridge');
+    this.assertContext(token);
+    if (!core) { return false; }
+    const name = core === 'cr8_0' ? 'R8-0' : 'R8-1';
+    const transport = this.store.getConsoleTransport(core);
+    if (transport !== 'rtt') { throw new Error(`${name} uses ${transport.toUpperCase()}, not RTT. Open that UART in your own serial terminal.`); }
+    const serial = this.store.getSelectedProbe();
+    if (!serial) { throw new Error('Select a J-Link probe before starting the RTT bridge.'); }
+    if (this.store.hasOwnedSessions()) { throw new Error('Stop the debug session first: the RTT bridge needs the probe.'); }
+    if (!await this.validate()) { throw new Error('Images need attention. Validate and load this exact pair before starting the RTT bridge.'); }
+    this.assertContext(token);
+    const receiptPath = this.store.getPreparedPair()!.prepared!.receiptPath;
+    const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Starting ${name} RTT bridge` },
+      () => this.client.consoleAction('start', this.store.writeSelectionSnapshot(selection), receiptPath, serial, { core }));
+    if (result.status !== 'ok') {
+      throw new Error(result.diagnostics.map((item) => item.message).join('; ') || `${name} RTT bridge did not start.`);
+    }
+    void vscode.window.showInformationMessage(`${name} RTT bridge is up on ${result.data?.endpoint || '127.0.0.1:19021'}. ` +
+      'Connect a terminal such as μScope to it. Use Stop RTT Bridge before Load, Recover or Debug.');
+    return true;
+  }
+
+  /** Stops the RTT bridge this checkout's backend started; a manual bridge is not touched. */
+  public async stopRtt(): Promise<boolean> {
+    if (vscode.workspace.isTrusted === false) { throw new Error('Trust this workspace before stopping the RTT bridge.'); }
+    const serial = this.store.getSelectedProbe();
+    if (!serial) { throw new Error('Select the J-Link probe whose RTT bridge to stop.'); }
+    // The CLI requires both paths; stop reads neither, so an unprepared setup still stops.
+    const receiptPath = this.store.getPreparedPair()?.prepared?.receiptPath || '';
+    const result = await this.client.consoleAction('stop', this.store.writeSelectionSnapshot(this.store.getSelection()), receiptPath, serial);
+    if (result.status !== 'ok') {
+      throw new Error(result.diagnostics.map((item) => item.message).join('; ') || 'RTT bridge did not stop.');
+    }
+    void vscode.window.showInformationMessage(result.data?.stopped ? 'RTT bridge stopped; the probe is free.'
+      : 'No extension-started RTT bridge was running. Stop a manual one with platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop.');
+    return true;
   }
 
   public async pickSource(core?: R8Core, folder = false): Promise<void> {

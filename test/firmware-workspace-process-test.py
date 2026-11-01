@@ -120,6 +120,31 @@ class TestFirmwareWorkspaceProcess(unittest.TestCase):
                 child.stdout.close()
                 child.stderr.close()
 
+    def test_06_busy_probe_names_the_owned_rtt_bridge(self):
+        """A probe held by an owned RTT bridge says how to free it."""
+        import fcntl
+        from unittest import mock
+        from firmware_workspace.verification import OperationError
+        from firmware_workspace.probe import ProbeLease, probe_directory
+
+        with tempfile.TemporaryDirectory() as runtime, \
+                mock.patch.dict(os.environ, {"FIRMWARE_WORKSPACE_RUNTIME": runtime}):
+            os.environ.pop("FIRMWARE_PROBE_LEASE", None)
+            directory = probe_directory("fixture")
+            holder = os.open(directory / "probe.lock", os.O_RDWR | os.O_CREAT, 0o600)
+            try:
+                fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with self.assertRaises(OperationError) as plain:
+                    ProbeLease("fixture").acquire()
+                self.assertEqual(plain.exception.code, "PROBE_BUSY")
+                self.assertNotIn("RTT", str(plain.exception))
+                (directory / "console.json").write_text("{}")
+                with self.assertRaises(OperationError) as bridged:
+                    ProbeLease("fixture").acquire()
+                self.assertIn("Stop RTT Bridge", str(bridged.exception))
+            finally:
+                os.close(holder)
+
 
 if __name__ == "__main__":
     unittest.main()

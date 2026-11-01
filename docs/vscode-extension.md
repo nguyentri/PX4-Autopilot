@@ -71,16 +71,16 @@ A private user runtime directory holds a durable journal for each physical probe
 
 Load and Debug waits for the exact operation's successful verified load before attaching. Failed, blocked, cancelled and indeterminate outcomes cannot advance to debug.
 
-## Consoles (manual) and Cortex-Debug
+## Consoles and Cortex-Debug
 
-The extension starts no console. Each **Console R8-0/R8-1** row in Firmware Setup is read-only and names the transport: `Manual · SCI4 115200 8N1` or `Manual · RTT 127.0.0.1:19021`; its tooltip carries the command.
+The extension opens no terminal. Each **Console R8-0/R8-1** row in Firmware Setup names the transport. A UART row is read-only (`Manual · SCI5 115200 8N1`). An RTT row (`RTT · Start bridge on 127.0.0.1:19021`) runs **Start RTT Bridge** for that core: it requires a validated pair, a selected probe and no extension debug session, then calls `console --action start --core <core>`. The backend supervisor holds the probe lease, runs `nuttx-rtt-bridge.sh` against the receipt's ELF and serves `127.0.0.1:19021` for any terminal (for example μScope). **Stop RTT Bridge** calls `console --action stop` and frees the probe; it does not stop a manually started bridge.
 
-- SCI4: open the board UART yourself (μScope, picocom, ...) at 115200 8N1. It does not use J-Link and may stay open during load/debug.
-- RTT: `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <core> <elf>`, then connect a terminal to `127.0.0.1:19021`. Stop it (`nuttx-rtt-bridge.sh stop`) before Load, Debug or Load Both; a running bridge makes the probe busy and the `PROBE_BUSY` refusal says so.
+- SCI5: open the board UART yourself (μScope, picocom, ...) at 115200 8N1. It does not use J-Link and may stay open during load/debug.
+- RTT: use the console row, or run `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <core> <elf>` manually; either way, connect a terminal to `127.0.0.1:19021`. Stop the bridge before Load, Recover, Debug or Load Both. A running bridge makes the probe busy; the `PROBE_BUSY` refusal names **Stop RTT Bridge** when the extension's bridge owns the probe.
 
-A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops only this extension's debugger session and never touches manual consoles.
+A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops only this extension's debugger session and never touches a console or RTT bridge.
 
-The backend `console` CLI command and `firmware_workspace.serial_console` supervisor remain available for scripted use; the extension UI no longer calls them.
+The extension calls the backend `console` CLI only for the RTT bridge. The `firmware_workspace.serial_console` UART supervisor remains available for scripted use; the extension UI does not call it.
 
 Cortex-Debug configurations are generated in memory with exact core/device, retained immutable symbols, selected probe, configured GDB and RZ/V2H SVD. Attach/reset/restart overrides request halt without an intentional reset/load. These commands can halt firmware, and a failed J-Link connection may still reset hardware; no claim of reset immunity is made. Confirm safe actuator outputs before halting an image. A startup failure marks RAM state uncertain before the lease ends.
 

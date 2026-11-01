@@ -271,10 +271,30 @@ async function runDualCoreTests() {
     await assert.rejects(store.setSelectedProbe('other'), /wait/); store.endTargetTransition();
     const view = new DualCoreLoaderViewProvider(store);
     const rows = await view.getChildren(); assert.ok(rows.some((item) => item.label === 'R8-0')); assert.ok(rows.some((item) => item.label === 'R8-1'));
+    store.setSetupOperationsReady(true);
+    const consoleRows = await view.getChildren();
     for (const label of ['Console R8-0', 'Console R8-1']) {
-      const consoleRow = rows.find((row) => row.label === label);
-      assert.ok(consoleRow && /^Manual · /.test(consoleRow.description) && !consoleRow.command, `${label} must be a read-only manual console row`);
+      const consoleRow = consoleRows.find((row) => row.label === label);
+      assert.ok(consoleRow && /^RTT · /.test(consoleRow.description), `${label} must offer the RTT bridge`);
+      assert.equal(consoleRow.command.command, 'px4Nuttx.setup.startRtt');
+      assert.equal(consoleRow.command.arguments[0].core, label === 'Console R8-0' ? 'cr8_0' : 'cr8_1', 'the console row must start its own core');
     }
+    assert.equal(consoleRows.find((row) => row.label === 'Stop RTT Bridge').command.command, 'px4Nuttx.setup.stopRtt');
+    const consoleCalls = [];
+    backend.consoleAction = async (action, selectionPath, receiptPath, serial, options) => {
+      consoleCalls.push({ action, selectionPath, receiptPath, serial, core: options?.core });
+      return action === 'start' ? { status: 'ok', diagnostics: [], data: { endpoint: '127.0.0.1:19021' } } : { status: 'ok', diagnostics: [], data: { stopped: true } };
+    };
+    assert.equal(await controller.startRtt('cr8_1'), true);
+    assert.deepEqual({ ...consoleCalls[0], selectionPath: undefined }, { action: 'start', selectionPath: undefined, receiptPath: store.getPreparedPair().prepared.receiptPath, serial: 'fixture', core: 'cr8_1' });
+    assert.equal(await controller.stopRtt(), true); assert.equal(consoleCalls[1].action, 'stop'); assert.equal(consoleCalls[1].serial, 'fixture');
+    store.getConsoleTransport = () => 'sci5';
+    await assert.rejects(controller.startRtt('cr8_0'), /SCI5, not RTT/, 'a UART console must not start an RTT bridge');
+    delete store.getConsoleTransport;
+    backend.consoleAction = async () => ({ status: 'error', diagnostics: [{ message: 'probe busy' }] });
+    await assert.rejects(controller.startRtt('cr8_1'), /probe busy/, 'a refused bridge must surface the backend diagnostic');
+    assert.equal(consoleCalls.length, 2, 'a UART console must not reach the backend');
+    delete backend.consoleAction; store.setSetupOperationsReady(false);
     assert.equal(rows.find((row) => row.label === 'Pair').iconPath.id, 'pass-filled');
     for (const transition of ['Loading captured pair', 'Recovering captured pair', 'Attaching R8-0']) {
       store.beginTargetTransition(transition);

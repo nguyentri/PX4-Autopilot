@@ -4,7 +4,7 @@
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.85.0-007ACC.svg?logo=visual-studio-code)](package.json)
 [![Hardware](https://img.shields.io/badge/Renesas-RZ%2FV2H%20%7C%20RA8P1%20%7C%20RA8E1-orange.svg)](profiles/devices.json)
 
-VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Consoles (RTT, serial UART) are started manually outside the extension.
+VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Serial UART consoles are opened outside the extension; an RTT console bridge can be started from Firmware Setup for any terminal to connect to.
 
 ---
 
@@ -55,7 +55,7 @@ VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renes
 - **Readiness & Doctor Diagnostics**: Host-only prerequisite checking for ARM GCC toolchain, CMake (>= 3.20), Ninja, Make, Python dependencies (`kconfiglib`, `jsonschema`), NuttX submodule state, and connected SEGGER J-Link probes.
 - **Guarded Target Loading**: Safe volatile RAM loading for Renesas RZ/V2H Cortex-R8 cores (`cr8_0` at `0x081A0000`, `cr8_1` at `0x081E0000`) with ELF address allowlist checking and host journal recovery tracking. Direct attach to RZ/V2H CM33 (which triggers SoC cold reset) and unverified flash routes are strictly gated.
 - **Cortex-Debug Integration**: Dynamically generates in-memory debug attach configurations with halt-only commands and SVD symbol mappings. Existing user `launch.json` files are never overwritten.
-- **Manual Consoles**: The extension starts no console. Firmware Setup shows each core's transport as a read-only row (`Manual · SCI5 115200 8N1` or `Manual · RTT 127.0.0.1:19021`) with the command to open it; see [Consoles are manual](#consoles-are-manual).
+- **Consoles**: The extension opens no terminal. A UART console row is read-only (`Manual · SCI5 115200 8N1`). An RTT console row (`RTT · Start bridge on 127.0.0.1:19021`) starts the guarded RTT bridge for that core, and **Stop RTT Bridge** frees the probe; see [Consoles](#consoles).
 - **Firmware Setup Variants**: Manage named setups of fixed RDK-RZ/V2H CR8 groups, allowing independent image preparation, per-core builds, atomic SHA-256 pair validation, and explicit Build & Load workflows.
 - **Shared Build Mutex**: Cooperative file locking across VS Code editor tasks, root `./build.sh`, and `make` preventing concurrent modification of the NuttX source tree.
 
@@ -126,16 +126,16 @@ When working with Renesas multicore targets (especially RZ/V2H), observe these h
 1. **Volatile RAM Loading Only**: All managed target loads write to SRAM addresses (`0x081A0000` for CR8-0, `0x081E0000` for CR8-1). Flash routes remain unadmitted.
 2. **RZ/V2H CM33 Attach Prevention**: Connecting J-Link directly to the RZ/V2H CM33 core triggers an immediate SoC cold reset. Direct attach to CM33 is strictly blocked.
 3. **Exit Code 3 (Recovery Protocol)**: If a target load fails or is interrupted, the backend marks the target state as requiring recovery (`exit code 3`). Blind retries are rejected. Use **Recover Target Load** / **Recover Both** to clear recovery state.
-4. **Single Probe Ownership**: J-Link probes cannot bridge RTT and GDB simultaneously on CR8 cores. A probe lease guards every load and debug session; a running manual RTT bridge makes the probe busy, and the refusal says to stop it first.
+4. **Single Probe Ownership**: J-Link probes cannot bridge RTT and GDB simultaneously on CR8 cores. A probe lease guards every load and debug session; a running RTT bridge makes the probe busy, and the refusal says to stop it first.
 
-### Consoles are manual
+### Consoles
 
-The extension does not open, stop or hand off consoles. Open them yourself:
+The extension opens no terminal of its own. Connect your own terminal:
 
 - **Serial (R8-0 in the serial groups)**: any serial terminal (for example μScope or picocom) on the board serial UART (SCI5, P72/P73) at 115200 8N1. The serial console does not use the J-Link, so it may stay open during load and debug.
-- **RTT**: `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <cr8_0|cr8_1> <elf>`, then connect a terminal to `127.0.0.1:19021` (μScope can send input). One J-Link owner at a time: run `platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop` before **Load**, **Debug** or **Load Both**, and restart it afterwards.
+- **RTT**: after a verified **Load Both**, click the **Console R8-0** or **Console R8-1** row (`RTT · Start bridge on 127.0.0.1:19021`), then connect a terminal to `127.0.0.1:19021` (μScope can send input). The backend bridge holds the probe while it runs, so click **Stop RTT Bridge** before **Load**, **Recover** or **Debug**, and start it again afterwards. One bridge per probe: start R8-1 or R8-0, not both. A manual bridge (`platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <cr8_0|cr8_1> <elf>`) also works; stop it with `nuttx-rtt-bridge.sh stop`, because **Stop RTT Bridge** stops only the bridge the extension started.
 
-**Stop Sessions** stops only this extension's debugger session; it never touches a manual console.
+**Stop Sessions** stops only this extension's debugger session; it never touches a console or RTT bridge.
 
 ---
 
