@@ -417,7 +417,7 @@ PX4 ELFs and cannot qualify these NuttX raw-demo images.
 
 A two-console customer demo on `/dev/ipcc1`: ping and text messages in both
 directions, each acknowledged by the peer application, plus a heartbeat every
-5 s. Images: `ipcc-demo-cr8_0-serial` (CR8-0, NSH on the serial UART, link initiator) and
+10 s (`CONFIG_EXAMPLES_RZV_IPC_DEMO_HEARTBEAT_MS`). Images: `ipcc-demo-cr8_0-serial` (CR8-0, NSH on the serial UART, link initiator) and
 `ipcc-demo-cr8_1` (CR8-1, NSH on RTT, responder). Both start the `ipcdemo`
 daemon at boot (`CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_SHOWCASE`); it waits for the
 device, brings the link up and recovers it on its own. `ipctest` stays
@@ -465,14 +465,15 @@ Open both consoles yourself:
 1. `ipcdemo status` on both cores: `link up, peer ok`.
 2. CR8-0 `ipcdemo ping -n 5`, then CR8-1 `ipcdemo ping -n 5`.
 3. CR8-0 `ipcdemo say hello from CR8-0`, then the reverse from CR8-1.
-4. Wait 10–15 s and show the heartbeat lines on both consoles.
+4. Wait 20–30 s and show the heartbeat lines on both consoles.
 5. Optional resilience: reload CR8-1 only (`rzv2h-load-one-core.sh cr8_1 <elf>`
    with the bridge stopped), restart the bridge, and show CR8-0 reporting
    `peer lost` then `link up` / `peer back` without intervention.
 
 While the RTT bridge is attached, J-Link halts CR8-1 for every RTT read
 (stop mode on Cortex-R8). CR8-1's clock pauses during each halt, so its
-heartbeats arrive about every 6.3 s instead of 5 s, and CR8-0 ping round trips
+heartbeats arrive about 25 % later than the configured period (6.3 s
+measured at the former 5 s setting), and CR8-0 ping round trips
 can reach about 250 ms. The demo images therefore use a 400 ms raw TX-ACK
 timeout (`CONFIG_RZV_IPC_TX_TIMEOUT_MS`), and CR8-1 uses a non-blocking RTT
 up-buffer (`CONFIG_SEGGER_RTT_UP_MODE_TRIM`), so the link stays up with or
