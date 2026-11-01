@@ -145,6 +145,20 @@
       "note": "Exercise debug script ownership using isolated host processes and tools."
     },
     {
+      "id": "rzv2h-ipc-build-load-modes-test",
+      "path": "test/rzv2h-ipc-build-load-modes-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ipc-build-load-modes-test.py"
+      ],
+      "note": "Exercise paired IPC build/load wrapper modes with stub builder and loader scripts; no probe access."
+    },
+    {
       "id": "rzv2h-dmac-runtime-test",
       "path": "test/rzv2h-dmac-runtime-test.py",
       "kind": "test",

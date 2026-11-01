@@ -164,6 +164,10 @@ class RootScript(unittest.TestCase):
             ' f.write(json.dumps([sys.argv[1:],os.getenv("CC"),os.getenv("GIT_SUBMODULES_ARE_EVIL")])+"\\n")\n'
             'raise SystemExit(int(os.getenv("MAKE_EXIT","0")))\n')
         make.chmod(0o755)
+        # build.sh refuses to run without the shared build-lock helper; report the lock as
+        # already held so these cases exercise target resolution and make dispatch only.
+        lock = self.root/'Tools/firmware_workspace/build_lock.sh'; lock.parent.mkdir(parents=True)
+        lock.write_text('#!/bin/sh\n[ "$1" = --check ] && exit 0\nexec "$@"\n'); lock.chmod(0o755)
         self.process_environment = dict(os.environ,PATH=str(self.root/'bin')+os.pathsep+os.environ['PATH'],
                                         CALLS=str(self.root/'calls'),CC='bad-compiler')
 
