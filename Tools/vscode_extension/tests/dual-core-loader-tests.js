@@ -49,6 +49,12 @@ async function runDualCoreTests() {
     for (const group of Object.values(groups)) { group.definitionSha256 = 'a'.repeat(64); }
     const catalog = { groups, capabilities: { importImages: 1, receiptVersions: [1, 2], preparedIdentity: 1, strictLoadedIdentity: 1, targetHistory: 1 }, devices: {}, px4Targets: [], nuttxConfigs: {} };
     const selection = { schemaVersion: 1, id: 'rzv-native-ipc-rtt', board: 'rdk-rzv2h', core: 'multicore', group: 'rzv-native-ipc-rtt', build: { family: 'nuttx', mode: 'incremental' } };
+    const noGroupStore = new SelectionStore(context, root); noGroupStore.setCatalog(catalog);
+    const noGroupView = new DualCoreLoaderViewProvider(noGroupStore);
+    const [groupHint] = await noGroupView.getChildren();
+    assert.equal(groupHint.label, 'Select a dual-CR8 group');
+    assert.equal(groupHint.command?.command, 'px4Nuttx.selectProfile', 'the group hint must open the Target picker');
+    noGroupView.dispose(); noGroupStore.dispose();
     const store = new SelectionStore(context, root); store.setCatalog(catalog); await store.setSelection(selection); await store.setSelectedCore('cr8_1'); await store.setSelectedProbe('fixture');
     const one = path.join(root, 'nuttx'); const two = path.join(root, 'other.elf');
     fs.writeFileSync(one, Buffer.from('\x7fELFfirst')); fs.writeFileSync(two, Buffer.from('\x7fELFsecond'));

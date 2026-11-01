@@ -175,7 +175,11 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
     if (this.store.getStateError()) { return [this.row('Saved state preserved · read-only', this.store.getStateError()!)]; }
     const group = this.store.getGroupMeta();
     if (group?.loadRecipe !== 'rzv-dual-cr8-ram') {
-      return [this.row('Select a dual-CR8 group', 'Use Select Target/Profile. RZ/V2H CR8 RAM loading only; RA8P1 and CM33 routes are unavailable.')];
+      // The hint opens the Target picker directly, where the Multicore groups live.
+      const hint = this.row('Select a dual-CR8 group', 'Click to choose a Multicore group', undefined, undefined,
+        'Opens the Target picker. Choose an entry marked (Multicore). RZ/V2H CR8 RAM loading only; RA8P1 and CM33 routes are unavailable.');
+      hint.command = { command: 'px4Nuttx.selectProfile', title: 'Choose a Multicore group' };
+      return [hint];
     }
 
     const caps = this.store.getCatalog()?.capabilities;
