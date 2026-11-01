@@ -96,7 +96,6 @@
   "C_Cpp.default.intelliSenseMode": "gcc-arm",
   "C_Cpp.errorSquiggles": "enabled",
   "makefile.extensionOutputFolder": "./.vscode",
-  "makefile.configureOnOpen": false,
   "files.eol": "\n",
   "terminal.integrated.profiles.windows": {
     "MSYS2": {
