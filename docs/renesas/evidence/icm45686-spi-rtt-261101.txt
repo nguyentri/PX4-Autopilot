@@ -1,0 +1,81 @@
+NUTTX
+Clock enabled: domain=0 bit=5
+Reset deasserted: domain=3 mask=0x40
+NuttX: RDK-RZV2H Board bring-up starting...
+Mounted procfs at /proc
+Clock enabled: domain=5 bit=4
+Reset deasserted: domain=7 mask=0x1800
+SPI0 initialized
+SPI initialized successfully
+Starting RDK-RZV2H application examples...
+All RDK-RZV2H examples completed successfully
+NuttX: RDK-RZV2H Board bring-up complete
+
+NuttShell (NSH)
+nsh> cho NSHX_1727127_0
+nsh: cho: command not found
+nsh> 
+nsh> 
+nsh> 
+nsh> uname -a
+NuttX 0.0.0 d763971843-dirty Nov  1 2026 18:26:17 arm rdk-rzv2h
+nsh> 
+nsh> icm45686_test 1
+ICM-45686 FIFO Test Application
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+ICM45686 first accel=(-6864,11084,-9490) gyro=(23,-90,39) temp=792 ts=0
+ICM45686 last accel=(-6864,11084,-9490) gyro=(23,-90,39) temp=792 ts=0
+ICM45686 result=0 samples=1/1 bursts=1 empty=1 max_fifo=12
+nsh> 
+nsh> icm45686_test 20
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-6934,11254,-9594) gyro=(76,-90,-32) temp=792 ts=0
+ICM45686 last accel=(-7042,11314,-9598) gyro=(10,-34,70) temp=784 ts=0
+ICM45686 result=0 samples=20/20 bursts=3 empty=1 max_fifo=65
+nsh> 
+nsh> icm45686_test 20
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-6966,11198,-9558) gyro=(76,-19,-72) temp=792 ts=0
+ICM45686 last accel=(-6874,11174,-9490) gyro=(79,-62,-2) temp=768 ts=0
+ICM45686 result=0 samples=20/20 bursts=7 empty=1 max_fifo=11
+nsh> 
+nsh> icm45686_test 1000
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-6958,11150,-9586) gyro=(97,6,-13) temp=776 ts=0
+ICM45686 last accel=(-6934,11170,-9588) gyro=(85,-59,30) temp=808 ts=0
+ICM45686 result=0 samples=1000/1000 bursts=207 empty=39 max_fifo=108
+nsh> 
+nsh> icm45686_test
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-7036,11124,-9630) gyro=(46,-78,-9) temp=768 ts=0
+ICM45686 last accel=(-7028,11126,-9556) gyro=(53,-143,9) temp=800 ts=0
+ICM45686 result=0 samples=10/10 bursts=2 empty=1 max_fifo=11
+nsh> 
+nsh> icm45686_test 0
+ICM-45686 FIFO Test Application
+Usage: icm45686_test [sample-count: 1..1000]
+nsh> 
+nsh> icm45686_test 1001
+ICM-45686 FIFO Test Application
+Usage: icm45686_test [sample-count: 1..1000]
+nsh> 
+nsh> icm45686_test abc
+ICM-45686 FIFO Test Application
+Usage: icm45686_test [sample-count: 1..1000]
+nsh> 
+nsh> icm45686_test 5 5
+ICM-45686 FIFO Test Application
+Usage: icm45686_test [sample-count: 1..1000]
+nsh> 
+nsh> icm45686_test 20
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-6854,11204,-9560) gyro=(34,-91,-44) temp=784 ts=0
+ICM45686 last accel=(-6954,11160,-9516) gyro=(64,-107,0) temp=800 ts=0
+ICM45686 result=0 samples=20/20 bursts=8 empty=2 max_fifo=13
+nsh> 
+nsh> free
+                   total       used       free    largest  nused  nfree
+        Umem:    8246624       5744    8240880    8240880     28      1
+nsh> 
+nsh> 

@@ -1,0 +1,58 @@
+NUTTX
+Clock enabled: domain=0 bit=5
+Reset deasserted: domain=3 mask=0x40
+NuttX: RDK-RZV2H Board bring-up starting...
+Mounted procfs at /proc
+Clock enabled: domain=5 bit=4
+Reset deasserted: domain=7 mask=0x1800
+SPI0 initialized
+SPI initialized successfully
+Starting RDK-RZV2H application examples...
+All RDK-RZV2H examples completed successfully
+NuttX: RDK-RZV2H Board bring-up complete
+
+NuttShell (NSH)
+nsh> uname -a
+NuttX 0.0.0 d763971843-dirty Nov  1 2026 18:26:17 arm rdk-rzv2h
+nsh> 
+nsh> icm45686_test 1
+ICM-45686 FIFO Test Application
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+ICM45686 first accel=(-2822,9116,-13282) gyro=(53,-123,2) temp=776 ts=0
+ICM45686 last accel=(-2822,9116,-13282) gyro=(53,-123,2) temp=776 ts=0
+ICM45686 result=0 samples=1/1 bursts=1 empty=0 max_fifo=1
+nsh> 
+nsh> icm45686_test 20
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-2708,9156,-13164) gyro=(62,-64,24) temp=792 ts=0
+ICM45686 last accel=(-2680,9152,-13216) gyro=(85,-36,63) temp=776 ts=0
+ICM45686 result=0 samples=20/20 bursts=7 empty=2 max_fifo=13
+nsh> 
+nsh> icm45686_test 20
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-2772,9204,-13198) gyro=(81,-102,-58) temp=768 ts=0
+ICM45686 last accel=(-2822,9036,-13250) gyro=(79,-108,-21) temp=768 ts=0
+ICM45686 result=0 samples=20/20 bursts=7 empty=2 max_fifo=13
+nsh> 
+nsh> icm45686_test 1000
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-2618,9060,-13252) gyro=(120,-68,5) temp=800 ts=0
+ICM45686 last accel=(-2644,9174,-13308) gyro=(76,-21,35) temp=784 ts=0
+ICM45686 result=0 samples=1000/1000 bursts=217 empty=42 max_fifo=99
+nsh> 
+nsh> icm45686_test
+ICM-45686 FIFO Test Application
+ICM45686 first accel=(-2674,9126,-13178) gyro=(113,-112,35) temp=776 ts=0
+ICM45686 last accel=(-2792,9012,-13262) gyro=(60,-81,11) temp=768 ts=0
+ICM45686 result=0 samples=10/10 bursts=1 empty=1 max_fifo=12
+nsh> 
+nsh> icm45686_test 0
+ICM-45686 FIFO Test Application
+Usage: icm45686_test [sample-count: 1..1000]
+nsh> 
+nsh> free
+                   total       used       free    largest  nused  nfree
+        Umem:    8246624       5744    8240880    8240880     28      1
+nsh> 
+nsh> 
