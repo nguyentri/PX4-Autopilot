@@ -893,7 +893,7 @@
     },
     "platforms/nuttx/NuttX/nuttx": {
       "origin": "https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx_px4.git",
-      "branch": "nuttx_ra_rzv"
+      "branch": "main"
     },
     "platforms/nuttx/NuttX/apps": {
       "origin": "https://gitlab.com/OneKiwiTech/onekiwi_wiki/drone_solutions/nuttx-apps.git",
