@@ -323,6 +323,21 @@ def check_native(profile, transcript, health, receipt, admission):
                 re.search(r'bmm150: 20 valid, \d+ not-ready, \d+ overflow',body),
                 'BMM150 sample count mismatch')
         require(len(re.findall(r'rhall=([1-9]\d*)',body)) == 20, 'BMM150 sample data missing')
+    elif oracle == 'bmp280':
+        # Whole-line grammar: echoed command text cannot satisfy any record.
+        lines = [x.strip() for x in body.splitlines()]
+        ident = 'bmp280: addr 0x76 chip ID 0x58 (BMP280)'
+        require(lines.count(ident) == 1, 'BMP280 address/chip ID missing')
+        records = [(n, re.fullmatch(r'bmp280: \[(\d+)\] T=(-?\d{1,3}\.\d{2}) degC P=(\d{5,6}\.\d{2}) Pa', x))
+                   for n, x in enumerate(lines) if x.startswith('bmp280: [')]
+        require(len(records) == 10 and all(m for _, m in records) and
+                [int(m[1]) for _, m in records] == list(range(10)), 'BMP280 sample count/order mismatch')
+        require(all(-40 <= float(m[2]) <= 85 and 30000 <= float(m[3]) <= 110000 for _, m in records),
+                'BMP280 sample outside the datasheet envelope')
+        require(lines.count('bmp280: 10 samples') == 1 and lines.count('bmp280: PASS') == 1,
+                'BMP280 sample summary/terminal missing')
+        require(lines.index(ident) < records[0][0] and records[-1][0] < lines.index('bmp280: 10 samples') <
+                lines.index('bmp280: PASS'), 'BMP280 records out of order')
     elif oracle == 'spi-board':
         require('SPI Loopback example completed successfully' in body, 'board SPI compare incomplete')
     elif oracle == 'shell':

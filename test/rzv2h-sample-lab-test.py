@@ -213,6 +213,46 @@ class NativeEvidence(unittest.TestCase):
         self.transcript=self.transcript.replace('rhall=100','rhall=0',1)
         with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,'sample data'):self.verify()
 
+    BMP280_BODY=('nsh> bmp280 -n 10\nbmp280: /dev/i2c7 addr 0x76 100000 Hz samples 10\n'
+                 'bmp280: ctrl_meas 0x55 config 0x00 osrs_t x2 osrs_p x16 wait 43225 us\n'
+                 'bmp280: addr 0x76 chip ID 0x58 (BMP280)\nbmp280: trim T1=27504 T2=26435 T3=-1000 P1=36477 '
+                 'P2=-10685 P3=3024 P4=2855 P5=140 P6=-7 P7=15500 P8=-14600 P9=6000\n'+''.join(
+                 f'bmp280: [{n}] T=25.0{n} degC P=10065{n}.25 Pa\n' for n in range(10))+
+                 'bmp280: 10 samples\nbmp280: PASS')
+
+    def test_bmp280_requires_identity_ordered_samples_and_terminal(self):
+        self.choose('bmp280',self.BMP280_BODY)
+        self.assertEqual(self.verify()['status'],'PASS')
+        self.assertEqual(self.profile['commands'],['bmp280 -n 10'])
+        self.assertIn('bmp280',LAB.ALLOWED_COMMANDS)
+        for text in ('bmp280: PASS','bmp280: FAIL'):
+            self.assertIsNotNone(LAB.re.search(LAB.TERMINAL['bmp280'],text))
+        self.assertIsNone(LAB.re.search(LAB.TERMINAL['bmp280'],'nsh> bmp280 -n 10'))
+        sample='bmp280: [3] T=25.03 degC P=100653.25 Pa\n'
+        cases=(('chip ID',lambda b:b.replace('chip ID 0x58 (BMP280)','chip ID 0x60 (BME280)')),
+               ('chip ID',lambda b:b.replace('addr 0x76 chip','addr 0x77 chip')),
+               ('chip ID',lambda b:b.replace('bmp280: addr 0x76 chip ID 0x58 (BMP280)\n','bmp280: addr 0x76 chip ID 0x58 (BMP280)\n'*2)),
+               ('count/order',lambda b:b.replace(sample,'')),
+               ('count/order',lambda b:b.replace(sample,sample*2)),
+               ('count/order',lambda b:b.replace(sample,'').replace('bmp280: [9]',sample+'bmp280: [9]')),
+               ('count/order',lambda b:b.replace('degC P=100653.25 Pa','degF P=100653.25 Pa')),
+               ('count/order',lambda b:b.replace('P=100653.25 Pa','P=1006.53 hPa')),
+               ('envelope',lambda b:b.replace('T=25.03','T=95.03')),
+               ('envelope',lambda b:b.replace('P=100653.25','P=129999.00')),
+               ('summary',lambda b:b.replace('bmp280: 10 samples\n','')),
+               ('out of order',lambda b:b.replace('bmp280: addr 0x76 chip ID 0x58 (BMP280)\n','')+
+                '\nbmp280: addr 0x76 chip ID 0x58 (BMP280)'),
+               ('error/skip',lambda b:b.replace('bmp280: PASS','bmp280: FAIL')),
+               ('chip ID',lambda b:'nsh> bmp280 -n 10'))
+        for reason,mutate in cases:
+            with self.subTest(reason=reason):
+                self.choose('bmp280',mutate(self.BMP280_BODY))
+                with self.assertRaisesRegex(LAB.RUNNER.EvidenceError,reason):self.verify()
+
+    def test_bmp280_fixture_must_be_verified_before_archive_access(self):
+        with self.assertRaisesRegex(LAB.LabError,'fixture prerequisites: bmp280'):
+            LAB.prepare(Path('/nonexistent'),'bmp280',{'reset_class':'warm-load','initial_state':'known','verified':{}})
+
     def test_dmac_requires_all_80_comparisons_and_every_indexed_batch_exit(self):
         body='\n'.join(f'PASS: DMAC memcpy ch={channel}' for channel in range(80))
         self.choose('dmac-memcpy-rtt',body)

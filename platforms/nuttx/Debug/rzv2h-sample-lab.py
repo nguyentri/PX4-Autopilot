@@ -38,14 +38,14 @@ LAB_PORTS = (19021, 50000)
 PASSTHROUGH_ENVIRONMENT = ('PATH', 'HOME', 'LANG', 'LC_ALL')
 ALLOWED_COMMANDS = {
     'free', 'ps', 'hwtest', 'can', 'rzv_canfd', 'rzv_dmac', 'timer',
-    'gy912_test', 'bmm150', 'adc'
+    'gy912_test', 'bmm150', 'bmp280', 'adc'
 }
 REDACTED_SUFFIXES = ('.log', '.txt', '.jlink', '.gdb', '.json')
 RESET = re.compile(r'Resetting via Reset pin|cold reset sequence|DBGEN(?: is)? not asserted|DBGEN is not asserted', re.I)
 TERMINAL = {'hwtest': r'TEST_DONE: exit=', 'can': r'Terminating!',
             'canfd': r'(?:FAIL|PASS) frames=',
             'timer': r'Finished', 'gy912': r'ICM20948 result=',
-            'bmm150': r'bmm150: (?:scan )?PASS', 'adc': r'channel:\s*3 value:\s*-?\d+\b'}
+            'bmm150': r'bmm150: (?:scan )?PASS', 'bmp280': r'bmp280: (?:PASS|FAIL)\b', 'adc': r'channel:\s*3 value:\s*-?\d+\b'}
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 TASK_GDB = '''printf "TASK_HEALTH_BEGIN count=%d\\n", g_npidhash
 if g_npidhash > 0 && g_npidhash <= 256

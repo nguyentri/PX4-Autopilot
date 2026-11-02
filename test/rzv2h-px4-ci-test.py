@@ -72,7 +72,7 @@ class ProfileContracts(unittest.TestCase):
         self.assertIsNone(profile['peer'])
         self.assertIn('pwm_out', profile['forbidden_builtins'])
         self.assertIn('px4io_bridge', profile['forbidden_builtins'])
-        self.assertEqual(profile['required_config']['CONFIG_RZV2H_DUALCR8_DRONE'], 'y')
+        self.assertEqual(profile['required_config']['CONFIG_RZV2H_SPI0_SINGLE_IMU'], 'y')
         with self.assertRaisesRegex(ValueError, 'unknown target'):
             CHECK.select_profiles(contract, ['renesas_rdk-rzv2h_dualcr8demo'])
         with tempfile.TemporaryDirectory() as temp:

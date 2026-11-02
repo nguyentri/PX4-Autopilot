@@ -468,6 +468,77 @@
       }
     },
     {
+      "target": "renesas_rdk-rzv2h_demo",
+      "board": "rdk-rzv2h",
+      "label": "demo",
+      "nuttx_config": "demo",
+      "core": "CR8-0",
+      "px4board": "boards/renesas/rdk-rzv2h/demo.px4board",
+      "defconfig": "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig",
+      "prototype": "boards/renesas/rdk-rzv2h/firmware.prototype",
+      "board_id": 89,
+      "magic": "PX4FWv1",
+      "image_maxsize": 2097152,
+      "required_builtins": [
+        "pwm_out",
+        "icm45686",
+        "bmp280",
+        "tfmini",
+        "mavlink",
+        "commander",
+        "sensors",
+        "ekf2"
+      ],
+      "forbidden_builtins": [
+        "mpu9250",
+        "icm20948",
+        "bmp388",
+        "bmm150",
+        "ina228",
+        "gps",
+        "rc_input",
+        "dshot",
+        "simulator_sih",
+        "px4io_bridge"
+      ],
+      "peer": null,
+      "hex": true,
+      "package": true,
+      "focused_tests": [
+        "test/rzv2h-boot-package-test.py"
+      ],
+      "required_config": {
+        "CONFIG_FS_ROMFS": "y",
+        "CONFIG_NSH_BUILTIN_APPS": "y",
+        "CONFIG_RZV_HRT": "y",
+        "CONFIG_ARCH_ARMV7R": "y",
+        "CONFIG_ARCH_CORTEXR8": "y",
+        "CONFIG_BOARDCTL_RESET": "y",
+        "CONFIG_RDK_RZV2H_VOLATILE_PARAMFS": "y",
+        "CONFIG_NSH_ARCHROMFS": "y",
+        "CONFIG_RZV2H_SPI0_SINGLE_IMU": "y"
+      },
+      "forbidden_config": [
+        "CONFIG_RZV_OPENAMP",
+        "CONFIG_RDK_RZV2H_XSPI_PARAMFS",
+        "CONFIG_RZV_IPC_RAW",
+        "CONFIG_RZV_IPC_IPCC",
+        "CONFIG_RZV2H_DRONE_SENSOR_EXTENSION"
+      ],
+      "required_symbols": [
+        "hrt_init",
+        "romfs_img",
+        "board_on_reset",
+        "board_reset",
+        "up_systemreset"
+      ],
+      "startup_sources": {
+        "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "etc/init.d/rc.board_sensors",
+        "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "etc/init.d/rc.board_defaults.cmds",
+        "ROMFS/px4fmu_common/init.d/rcS": "etc/init.d/rcS"
+      }
+    },
+    {
       "target": "renesas_rdk-rzv2h_dualcr8",
       "board": "rdk-rzv2h",
       "label": "dualcr8",
@@ -520,7 +591,7 @@
         "CONFIG_RZV_IPC_ROLE_INITIATOR": "y",
         "CONFIG_RDK_RZV2H_VOLATILE_PARAMFS": "y",
         "CONFIG_NSH_ARCHROMFS": "y",
-        "CONFIG_RZV2H_DUALCR8_DRONE": "y"
+        "CONFIG_RZV2H_SPI0_SINGLE_IMU": "y"
       },
       "forbidden_config": [
         "CONFIG_RZV_OPENAMP",
@@ -725,7 +796,7 @@
     "boards/renesas/rdk-rzv2h/dualcr8.px4board": "00c89943d62ab85e738e4e3dc8457bd360b1304821a945053156523b94b97186",
     "boards/renesas/rdk-rzv2h/firmware.prototype": "acb9715393520dcf44788277aaf1ca4a3676299e6f4fbed7ed5a4279c06358c3",
     "boards/renesas/rdk-rzv2h/nuttx-config/drone/defconfig": "9e80782756e6a081ae987c199475b7b60a3ccf718f51c3a14f79532da82fd9a3",
-    "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "673f48fe276fcfcd444ec60f3b3ee47cb1f89a70a2211934c2449beb179e9f42",
+    "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "c697fdcc94ac584e70ba1c756023d7d1fc682905e8e0ac2a92f84d0389fb79fc",
     "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig": "10e4f5fc98005e48c5c5c423e310fbb08aefbfb537223b160eb12667313add60",
     "boards/renesas/rdk-rzv2h/nuttx-config/sih/defconfig": "1d76769b9064eac0343b8ff6f1db6499a57511887b63e60992b11c2bbc200759",
     "boards/renesas/rdk-rzv2h/nuttx-config/simple/defconfig": "582afae91cea0e7e743decf4ee355494a2104f760e76111035bd2cf0ff4f120f",
@@ -749,9 +820,13 @@
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/module.yaml": "b46ea1aa91d9e3a657026e1dacf78caabeacde40c077e9783822f94a77f1efc1",
     "src/apps/Kconfig": "241a0650de88da9779c27f5a1080dfbd732018e34d33ec37974579e74f207eb2",
     "src/apps/CMakeLists.txt": "4d7387feb8b8fcd5a035f56c3d4a946253d02301941665e0007c8d534d36bdba",
-    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "c0308b2172a9be7f44bc426a278c9326c8a1f40209e9840b203c80c6c8022caa",
+    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "b152fa2a0024a3adbed32d6aaa78b230030da2aeeef0e725d8deaa64423d14e2",
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
-    "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b"
+    "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b",
+    "boards/renesas/rdk-rzv2h/demo.px4board": "58ac182941b76c3bc4de01ab594733cba8660e07e546755afc2ef60be2d79e41",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "bd0c21b8d8c2691bd2b064da64f3bdd3b46892a32a17898863c96edfc5c71c02",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "f8df82760ed9fb72ccd5f3008335dd92562d1069f24da6c10bc9e72604cfaaab",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "429d98b592053dee839988693cddd5e16dd51d478dd155486d749d6a59fe0fda"
   },
   "abi_sources": [
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h",

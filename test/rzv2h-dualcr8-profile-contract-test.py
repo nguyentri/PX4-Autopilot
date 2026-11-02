@@ -21,7 +21,7 @@ class SingleSensorSelection(unittest.TestCase):
     def compile(self, name, extra=()):
         return DRONE['CompiledSensorSelection'].compile(
             self, name, ['-UCONFIG_RZV2H_DRONE_SENSOR_EXTENSION',
-                         '-DCONFIG_RZV2H_DUALCR8_DRONE', *extra])
+                         '-DCONFIG_RZV2H_SPI0_SINGLE_IMU', *extra])
 
     def test_one_real_descriptor_only_touches_p93_and_retries_failed_init(self):
         binary, result = self.compile('single-cs')
@@ -106,7 +106,7 @@ bmp388() { echo "CALL bmp388 $*"; return 0; }
         for symbol in ('PWM_OUT', 'DSHOT', 'POWER_MONITOR_INA228'):
             self.assertIn('CONFIG_DRIVERS_' + symbol + '=n', profile)
         self.assertIn('CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS=y', profile)
-        self.assertIn('CONFIG_RZV2H_DUALCR8_DRONE=y', config)
+        self.assertIn('CONFIG_RZV2H_SPI0_SINGLE_IMU=y', config)
         self.assertNotIn('CONFIG_RZV2H_DRONE_SENSOR_EXTENSION=y', config)
         self.assertNotIn('CONFIG_RZV_GPT6=y', config)
         for symbol in ('BARO', 'GPS', 'MAG', 'NUM_DIST'):

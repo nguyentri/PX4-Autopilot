@@ -250,7 +250,7 @@ ina228() { echo "CALL ina228 $*"; return 0; }
                                                  max(width, inner[2]))
             return deepest, words, width
 
-        for label, init_subdir in (("nsh", ""), ("drone", "drone"), ("dualcr8", "dualcr8")):
+        for label, init_subdir in (("nsh", ""), ("drone", "drone"), ("dualcr8", "dualcr8"), ("demo", "demo")):
             roots = (BOARD.parent / "init" / init_subdir,
                      ROOT / "ROMFS/px4fmu_common/init.d")
             deepest, words, width = needs(roots[1] / "rcS", 0, frozenset())

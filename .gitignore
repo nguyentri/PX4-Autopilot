@@ -190,6 +190,7 @@ refs
 !test/rzv2h-simple-artifact-contract-test.py
 !test/rzv2h-simple-test-support.py
 !test/rzv2h_bmm150_sample_contract_test.py
+!test/rzv2h-bmp280-sample-test.py
 rzv2h_sd.txt
 ak-engineer
 .agentkit
@@ -306,4 +307,4 @@ Tools/vscode_extension/esbuild.js
 
 !test/firmware-workspace-serial-console-test.py
 **/*firmware-import.json
-son
+/*.png

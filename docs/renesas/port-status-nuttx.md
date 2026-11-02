@@ -95,10 +95,10 @@ records bounded warm-load evidence for the repaired TMPFS and raw RTT pair; it
 does not promote unrelated drivers or establish cold-state or physical
 qualification.
 
-The default-off `CONFIG_RZV2H_DUALCR8_DRONE` board selector registers exactly
+The default-off `CONFIG_RZV2H_SPI0_SINGLE_IMU` board selector registers exactly
 one polled SPI0 device on P93 and excludes P94/P95 sensor or button ownership.
-The three-CS extension and native GY912 paths remain separate. This selector
-has source/host/build evidence, not a new physical SPI qualification result.
+The three-CS extension and native GY912 paths remain separate. The `dualcr8` and `demo`
+PX4 profiles use it. This selector has source/host/build evidence, not a new physical SPI qualification result.
 
 The [driver catalogue](../../platforms/nuttx/Debug/rzv2h-driver-coverage.json)
 tracks RIIC0–8, native SPI0–2, SCI mode dispatch0–9 and logical GPT0–15

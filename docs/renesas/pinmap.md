@@ -19,8 +19,9 @@ measurements remain target-validation tasks; see [reference sources](./reference
 | P95 | No sensor ownership in existing bench profile | IMU #3 CS (reference SSLA2); no DRDY | No sensor ownership |
 | SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x77, INA228 0x45 | BMM150 0x10, BMP390 via `bmp388` 0x77; battery hardware unselected |
 
-The `dualcr8` profile selects `CONFIG_RZV2H_DUALCR8_DRONE` exclusively
-with the other SPI sensor layouts. Its source/host contracts and firmware build
+The `dualcr8` and `demo` profiles select `CONFIG_RZV2H_SPI0_SINGLE_IMU`
+exclusively with the other SPI sensor layouts. `demo` uses the same SPI0/P93
+wiring as `dualcr8` and the default BMP280 at 0x76 on SCI7. Its source/host contracts and firmware build
 pass; fitted wiring, orientation and electrical behavior remain unqualified.
 
 The `drone` profile selects default-off
@@ -140,11 +141,15 @@ DMA transfers or CS waveforms. New multi-CS routing starts with PIO.
 
 ### I2C Bus (RSCI7 SCI-mode I2C)
 
-**Address:** Legacy BMP280 0x76; BMM150 sample defaults to 0x10 with address
-configuration. Extension addresses are in the profile table above;
-reference runtime `rcS` selects BMP390L 0x77 despite a legacy 0x76 board macro.
-**Speed:** 100 kHz (BMP280 HIL); 400 kHz default for the BMM150 sample. Neither validated on target.
-**Module power:** Pin 1 3V3, Pin 6 GND. See [bmm150-i2c-validation.md](./validation/bmm150-i2c-validation.md).
+**Address:** BMP280 0x76 (SDO low; `bmp280` sample default, `-a 0x77` for
+SDO high); BMM150 sample defaults to 0x10 with address configuration.
+Extension addresses are in the profile table above; reference runtime `rcS`
+selects BMP390L 0x77 despite a legacy 0x76 board macro.
+**Speed:** 100 kHz request (BMP280 HIL and `bmp280` sample; 97,656 Hz nominal);
+400 kHz default for the BMM150 sample. Neither validated on target: the
+2026-11-01 `bmp280` run got no ACK at 0x76/0x77 with pads verified.
+**Module power:** Pin 1 3V3, Pin 6 GND. See [bmp280-i2c-validation.md](./validation/bmp280-i2c-validation.md)
+and [bmm150-i2c-validation.md](./validation/bmm150-i2c-validation.md).
 **DMA:** Disabled (PIO mode).
 
 ### PWM / GPT Outputs (ESC Control)

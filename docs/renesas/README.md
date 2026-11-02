@@ -73,9 +73,11 @@ what was actually observed.
 | Profile or path | Procedure |
 |---|---|
 | Standalone SCI7 BMM150 | [I2C validation](validation/bmm150-i2c-validation.md) |
+| Standalone SCI7 BMP280 | [BMP280 I2C validation](validation/bmp280-i2c-validation.md) |
 | Standalone SPI0/P94 ICM20948 | [GY-912 validation](validation/gy912-icm20948-validation.md) |
 | Standalone SPI0/SSLA0 DMA ICM-45686 | [ICM-45686 SPI validation](validation/icm45686-spi-validation.md) |
 | Standalone GPT PWM | [PWM pin validation](validation/pwm-pin-validation.md) |
+| Integrated `demo` PWM/ICM-45686/BMP280/TFmini/QGC bench | [Demo bench validation](validation/demo-bench-validation.md) |
 | Integrated simple PWM/ICM20948 bench | [Simple profile validation](validation/simple-pwm-icm20948-validation.md) |
 | Canonical dual-CR8 v3 candidates | [Sensor/actuator candidate validation](validation/dualcr8-sensor-actuator-demo.md) and [software receipt](evidence/dualcr8-software-validation-261021.md) |
 | Regression/build/offline checks | [Regression tooling](validation/rzv2h-regression-ci.md) |

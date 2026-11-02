@@ -293,3 +293,7 @@ endif()
 if(PX4_BOARD_LABEL STREQUAL "dualcr8" AND NOT NUTTX_CONFIG STREQUAL "dualcr8")
 	message(FATAL_ERROR "The exact-BOM dual-CR8 target requires NUTTX_CONFIG=dualcr8")
 endif()
+
+if(PX4_BOARD_LABEL STREQUAL "demo" AND NOT NUTTX_CONFIG STREQUAL "demo")
+	message(FATAL_ERROR "The RZ/V2H bench demo target requires NUTTX_CONFIG=demo")
+endif()

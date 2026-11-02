@@ -114,7 +114,7 @@ class ICM45686Contracts(unittest.TestCase):
                      "CONFIG_RZV_SPI0_DMA=y", "CONFIG_RZV2H_SPI0_HARDWARE_SSL=y"):
             self.assertIn(line, config)
         for symbol in ("RZV2H_ICM20948_TEST", "EXAMPLES_GY912",
-                       "RZV2H_DRONE_SENSOR_EXTENSION", "RZV2H_DUALCR8_DRONE"):
+                       "RZV2H_DRONE_SENSOR_EXTENSION", "RZV2H_SPI0_SINGLE_IMU"):
             self.assertIn(f"# CONFIG_{symbol} is not set", config)
         self.assertNotIn("CONFIG_RZV_GPIO_IRQ=y", config)
         kconfig = (BOARD / "Kconfig").read_text()

@@ -71,6 +71,30 @@
       "core_selector": "RZV2H_BUILD_CR8_0",
       "console": "rtt",
       "entrypoint": "nsh_main",
+      "profile": "ads1115",
+      "defconfig_sha256": "06cb90b57e10cfc9d990f217709725d82b5eb3c955e25876f8dd95ee62763368",
+      "mode": "blocked",
+      "oracle": "ads1115",
+      "commands": [],
+      "requirements": [
+        "ads1115"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "connected-function",
+      "builtin": null,
+      "reason": "Runner oracle and reviewed execution policy not yet admitted",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
       "profile": "bmm150",
       "defconfig_sha256": "d72062df18ce8115e7c0c25522427bc3417b14fde70c69a436ea9c0e65bf4f29",
       "mode": "native",
@@ -88,6 +112,35 @@
       "builtin": {
         "name": "bmm150",
         "symbol": "bmm150_main"
+      },
+      "reason": null,
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "bmp280",
+      "defconfig_sha256": "f5cb47c572b5a31ff1a7ef29ec6e2b793c3d4262a1f580bfacad65e8ec6618d3",
+      "mode": "native",
+      "oracle": "bmp280",
+      "commands": [
+        "bmp280 -n 10"
+      ],
+      "requirements": [
+        "bmp280"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "connected-function",
+      "builtin": {
+        "name": "bmp280",
+        "symbol": "bmp280_main"
       },
       "reason": null,
       "completion": "waitpid-or-task-resource-oracle",
@@ -2965,6 +3018,30 @@
     },
     {
       "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
+      "profile": "icm45686-dma-ssl-rtt",
+      "defconfig_sha256": "7dced23bddcaf77e010009b59b380a43fea32a7ecf58eca3afcd465558e835dc",
+      "mode": "blocked",
+      "oracle": "icm45686",
+      "commands": [],
+      "requirements": [
+        "icm45686"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "connected-function",
+      "builtin": null,
+      "reason": "Runner oracle and reviewed execution policy not yet admitted",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
       "core_source": "kconfig-default",
       "core_selector": "RZV2H_BUILD_CR8_0",
       "console": "rtt",
@@ -3022,7 +3099,7 @@
       "console": "sci5",
       "entrypoint": "rzv_ipc_boot_main",
       "profile": "ipcc-demo-cr8_0-serial",
-      "defconfig_sha256": "7c729e511c6d3cbdbd63a65a63bf4f210dc012db89cbea0d46466cab9bb30252",
+      "defconfig_sha256": "6220a8088f1340d7c0b4480b2a1f7b8eba99c1cc9c51f81ef1c23d8321c2a007",
       "mode": "blocked",
       "oracle": "ipc",
       "commands": [],
@@ -3048,7 +3125,7 @@
       "console": "rtt",
       "entrypoint": "rzv_ipc_boot_main",
       "profile": "ipcc-demo-cr8_1",
-      "defconfig_sha256": "33f740149d97da740dd92e6befca9800abac7c513c482c76d8b1d6a9d7269fb3",
+      "defconfig_sha256": "1f44d123dabea59f35fb624e33fb0a324e16530743fbeaa660c38d854e4caf65",
       "mode": "blocked",
       "oracle": "ipc",
       "commands": [],
@@ -6516,6 +6593,9 @@
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.h",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-test.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm45686-spi.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm45686-spi.h",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm45686-test.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_adc.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_app_examples.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h_appinit.c",

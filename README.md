@@ -38,6 +38,7 @@ renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
 renesas_rdk-rzv2h-io-cr8_1_pwm
 renesas_rdk-rzv2h_default
+renesas_rdk-rzv2h_demo
 renesas_rdk-rzv2h_drone
 renesas_rdk-rzv2h_dshot
 renesas_rdk-rzv2h_dualcr8
@@ -79,6 +80,10 @@ the [reference-port plan](./plans/261011-2017-rzv2h-drone-reference-port/plan.md
 Its profile wiring preserves existing native samples; source/host/build
 work proceeds independently of later physical qualification.
 The retired core-only target is historical; its NuttX/ROMFS resources and evidence remain archived.
+
+The `demo` target is a CR8-0 bench image: four 400 Hz PWM outputs, one polled
+ICM-45686 on SPI0/P93, BMP280 on SCI7, TFmini on SCI4 and QGroundControl on
+SCI5. See the [demo bench validation guide](./docs/renesas/validation/demo-bench-validation.md).
 
 The `dualcr8` target is build-clean for the exact-BOM sensor bring-up in the
 [dual-CR8 demo plan](./plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md).
