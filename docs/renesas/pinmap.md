@@ -17,7 +17,7 @@ measurements remain target-validation tasks; see [reference sources](./reference
 | P93 | Single sensor CS; GPIO or hardware SSLA0 by configuration | IMU #1 CS (reference SSLA0) | Single GPIO CS, polled sensor |
 | P94 | DRDY/TINT for MPU9250/GY912/simple, or exclusive button demo | IMU #2 CS (reference SSLA1); no DRDY | No sensor ownership |
 | P95 | No sensor ownership in existing bench profile | IMU #3 CS (reference SSLA2); no DRDY | No sensor ownership |
-| SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x77, INA228 0x45 | BMM150 0x10, BMP390 via `bmp388` 0x77; battery hardware unselected |
+| SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x76, INA228 0x45 | BMM150 0x10, BMP390 via `bmp388` 0x76; battery hardware unselected |
 
 The `dualcr8` and `demo` profiles select `CONFIG_RZV2H_SPI0_SINGLE_IMU`
 exclusively with the other SPI sensor layouts. `demo` uses the same SPI0/P93
@@ -41,7 +41,8 @@ CS1 wiring.
 
 This retained RDK connector drawing maps SoC pads to header positions, not
 sensors or firmware profiles. It labels P93 at pin 24, P94 at pin 26 and P95
-at pin 12; P76/P77 at pins 3/5. Its Raspberry Pi alternate-function labels
+at pin 12; P76/P77 at pins 3/5, with R181/R180 2.2 kΩ pull-ups to D3.3V
+(see [hardware.md §6.5](./hardware.md#65-40-pin-header-i2c-sci7-p76p77)). Its Raspberry Pi alternate-function labels
 (for example PCM_CLK on P95) do not override selected RZ/V2H pinmux. Verify
 extension-board nets and populated revision separately before target use.
 
@@ -143,8 +144,9 @@ DMA transfers or CS waveforms. New multi-CS routing starts with PIO.
 
 **Address:** BMP280 0x76 (SDO low; `bmp280` sample default, `-a 0x77` for
 SDO high); BMM150 sample defaults to 0x10 with address configuration.
-Extension addresses are in the profile table above; reference runtime `rcS`
-selects BMP390L 0x77 despite a legacy 0x76 board macro.
+Extension addresses are in the profile table above. The bench GY-912 and
+BMP280 modules tie SDO to GND, so every profile starts the barometer at 0x76
+(the reference runtime `rcS` used 0x77 for an SDO-high module).
 **Speed:** 100 kHz request (BMP280 HIL and `bmp280` sample; 97,656 Hz nominal);
 400 kHz default for the BMM150 sample. Neither validated on target: the
 2026-11-01 `bmp280` run got no ACK at 0x76/0x77 with pads verified.

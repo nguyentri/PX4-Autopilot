@@ -154,6 +154,30 @@
       "core_selector": "RZV2H_BUILD_CR8_0",
       "console": "rtt",
       "entrypoint": "nsh_main",
+      "profile": "bmp388",
+      "defconfig_sha256": "d4466d6293788115c8711c79b3fda2e7e7fb4fe0f70ecf24353ed20fc233d196",
+      "mode": "blocked",
+      "oracle": "bmp388",
+      "commands": [],
+      "requirements": [
+        "bmp388"
+      ],
+      "hazards": [],
+      "timeout": 30,
+      "evidence_class": "connected-function",
+      "builtin": null,
+      "reason": "Runner oracle and reviewed execution policy not yet admitted",
+      "completion": "waitpid-or-task-resource-oracle",
+      "reset_classes": [
+        "warm-load"
+      ]
+    },
+    {
+      "core": "cr8_0",
+      "core_source": "defconfig-selector",
+      "core_selector": "RZV2H_BUILD_CR8_0",
+      "console": "rtt",
+      "entrypoint": "nsh_main",
       "profile": "canfd",
       "defconfig_sha256": "a53bd1ee86da8df2612450f884450549d4637c2ec15a9255b27f83e7858c9fc0",
       "mode": "native",
@@ -6590,6 +6614,9 @@
     "boards/arm/rzv/rdk-rzv2h/src/CMakeLists.txt",
     "boards/arm/rzv/rdk-rzv2h/src/Makefile",
     "boards/arm/rzv/rdk-rzv2h/src/rdk-rzv2h.h",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-bmp388-compensation.c",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-bmp388-compensation.h",
+    "boards/arm/rzv/rdk-rzv2h/src/rzv2h-bmp388-test.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.c",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.h",
     "boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-test.c",

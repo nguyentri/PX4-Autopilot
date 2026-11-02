@@ -207,7 +207,7 @@ ina228() { echo "CALL ina228 $*"; return 0; }
         self.assertEqual(result.returncode, 0, result.stderr)
         for cs in (3, 4, 5):
             self.assertIn(f"CALL icm45686 -s -b 0 -c {cs} -R 0 start", result.stdout)
-        for driver, address in (("bmm150", "0x10"), ("bmp388", "0x77"), ("ina228", "0x45")):
+        for driver, address in (("bmm150", "0x10"), ("bmp388", "0x76"), ("ina228", "0x45")):
             self.assertIn(f"CALL {driver} -I -b 7 -a {address} start", result.stdout)
         self.assertIn("ERROR [init] BMM150 failed", result.stdout)
         self.assertIn("ERROR [init] ICM45686 failed on SPI0 CS pin 4", result.stdout)

@@ -15,7 +15,7 @@ else
 	echo "ERROR [init] BMM150 failed on SCI7"
 fi
 
-if bmp388 -I -b 7 -a 0x77 start
+if bmp388 -I -b 7 -a 0x76 start
 then
 	echo "BMP390 started on SCI7"
 else

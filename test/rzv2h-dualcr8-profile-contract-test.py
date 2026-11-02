@@ -94,7 +94,7 @@ bmp388() { echo "CALL bmp388 $*"; return 0; }
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(run.stdout.count('CALL icm45686'), 1)
         for command in ('icm45686 -s -b 0 -c 3 -R 0 start',
-                        'bmm150 -I -b 7 -a 0x10 start', 'bmp388 -I -b 7 -a 0x77 start'):
+                        'bmm150 -I -b 7 -a 0x10 start', 'bmp388 -I -b 7 -a 0x76 start'):
             self.assertIn('CALL ' + command, run.stdout)
         self.assertIn('ERROR [init] ICM45686 failed', run.stdout)
         self.assertNotIn('ina228', script.read_text())

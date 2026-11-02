@@ -172,7 +172,7 @@ tfmini start -d /dev/ttyS4
 mpu9250 -S -R 4 -M  # -M enables internal magnetometer
 ```
 
-**BMP280**: I2C @ addr 0x76/0x77, altitude backup
+**BMP280**: I2C @ addr 0x76 (SDO to GND; 0x77 only with SDO high), altitude backup
 ```bash
 bmp280 start -X  # -X for external I2C
 ```
