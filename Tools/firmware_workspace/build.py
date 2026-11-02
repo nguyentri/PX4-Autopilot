@@ -32,9 +32,24 @@ def nuttx_tree_configured_for(board: str, config: str, tree: Path) -> bool:
     """True when the shared NuttX tree was last configured for board:config."""
     try:
         stamp = (tree / NUTTX_CONFIG_STAMP).read_text(encoding="utf-8").strip()
+        if not (tree / ".config").is_file() or stamp != f"{board}:{config}":
+            return False
+
+        # PX4/CMake can replace the shared configuration without removing the
+        # standalone stamp. Match the files installed by tools/configure.sh
+        # before allowing --no-clean; .config itself may include menuconfig edits.
+        config_dir = next(tree.glob(f"boards/*/*/{board}/configs/{config}"), None)
+        if config_dir is None:
+            return False
+        make_defs = config_dir / "Make.defs"
+        if not make_defs.is_file():
+            make_defs = config_dir.parent.parent / "scripts" / "Make.defs"
+        return (
+            (tree / "defconfig").read_bytes() == (config_dir / "defconfig").read_bytes()
+            and (tree / "Make.defs").read_bytes() == make_defs.read_bytes()
+        )
     except OSError:
         return False
-    return (tree / ".config").is_file() and stamp == f"{board}:{config}"
 
 
 def nuttx_build_command(board: str, config: str, mode: str, tree: Path) -> List[str]:

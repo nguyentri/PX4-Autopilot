@@ -128,6 +128,14 @@ class TestFirmwareWorkspaceBuild(unittest.TestCase):
             tree = Path(tmpdir) / "nuttx"
             tree.mkdir()
             want = "ipcc-demo-cr8_0-serial"
+            config_dir = tree / "boards/arm/rzv/rdk-rzv2h/configs" / want
+            config_dir.mkdir(parents=True)
+            (config_dir / "defconfig").write_text("CONFIG_STANDALONE=y\n", encoding="utf-8")
+            make_defs = config_dir.parent.parent / "scripts/Make.defs"
+            make_defs.parent.mkdir()
+            make_defs.write_text("CC = arm-none-eabi-gcc\n", encoding="utf-8")
+            (tree / "Make.defs").symlink_to(make_defs)
+            (tree / "defconfig").write_bytes((config_dir / "defconfig").read_bytes())
             # Unconfigured tree: build.sh must configure.
             cmd = nuttx_build_command("rdk-rzv2h", want, "incremental", tree)
             self.assertNotIn("--no-clean", cmd)
@@ -144,6 +152,34 @@ class TestFirmwareWorkspaceBuild(unittest.TestCase):
             ra8 = nuttx_build_command("evk-ra8p1", "nsh", "incremental", tree)
             self.assertTrue(ra8[0].endswith("build_ra8p1.sh"))
             self.assertNotIn("--no-clean", ra8)
+
+    def test_08_incremental_nuttx_rejects_stale_stamp_after_px4_configuration(self):
+        """A matching stamp must not reuse files replaced by PX4/CMake."""
+        from firmware_workspace.build import nuttx_build_command
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tree = Path(tmpdir) / "nuttx"
+            config_dir = tree / "boards/arm/ra8/evk-ra8p1/configs/nsh"
+            config_dir.mkdir(parents=True)
+            (config_dir / "defconfig").write_text("CONFIG_STANDALONE=y\n", encoding="utf-8")
+            # A config-local Make.defs takes precedence over the board script.
+            make_defs = config_dir / "Make.defs"
+            make_defs.write_text("CC = arm-none-eabi-gcc\n", encoding="utf-8")
+            (tree / ".config-build-sh").write_text("evk-ra8p1:nsh\n", encoding="utf-8")
+            (tree / ".config").write_text("CONFIG_STANDALONE=y\nCONFIG_LOCAL_EDIT=y\n", encoding="utf-8")
+            (tree / "defconfig").write_bytes((config_dir / "defconfig").read_bytes())
+            (tree / "Make.defs").write_bytes(make_defs.read_bytes())
+
+            def command():
+                return nuttx_build_command("evk-ra8p1", "nsh", "incremental", tree)
+
+            self.assertIn("--no-clean", command())
+            (tree / "Make.defs").write_bytes((REPO_ROOT / "platforms/nuttx/NuttX/Make.defs.in").read_bytes())
+            self.assertNotIn("--no-clean", command())
+            (tree / "Make.defs").write_bytes(make_defs.read_bytes())
+            (tree / "defconfig").write_text("CONFIG_PX4=y\n", encoding="utf-8")
+            self.assertNotIn("--no-clean", command())
+            (tree / "defconfig").unlink()
+            self.assertNotIn("--no-clean", command())
 
 
 if __name__ == "__main__":
