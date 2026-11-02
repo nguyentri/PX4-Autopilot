@@ -216,6 +216,29 @@ a shipping all-six command profile.
 Build modes and the bounded two-port command are documented in
 [CAN-FD peripheral notes](peripherals/canfd.md).
 
+### 6.5 40-pin Header I2C (SCI7, P76/P77)
+
+The RDK schematic page "RasPi GPIO Connector Block" (J1, 7-146250-0) is
+captured in [rzv2h-rdk-40_pin_header_pin.png](./rzv2h-rdk-40_pin_header_pin.png).
+For the SCI7 Simple-I2C pair it shows:
+
+| Net | SoC pad | J1 pin | Pull-up |
+|-----|---------|--------|---------|
+| SDA7 | P76 | 3 (GPIO2/SDA) | R181, 2.2 kΩ to D3.3V |
+| SCL7 | P77 | 5 (GPIO3/SCL) | R180, 2.2 kΩ to D3.3V |
+
+- The page draws no buffer, level translator or series resistor between the
+  pads and the header. The pull-ups go to the same D3.3V rail that feeds
+  pins 1 and 17. Pins 2 and 4 are D5.0V2; GND is on pins 6, 9, 14, 20, 25,
+  30, 34 and 39.
+- The bus therefore idles at 3.3 V on this page. A 3.3 V module (for example
+  the GY-912 or a BMP280 breakout) needs no level shifter. Its own pull-ups sit
+  in parallel with R180/R181.
+- This page does not show the P7 pad I/O supply inside the SoC or the board's
+  power tree. On 2026-11-02 the user measured 3.3 V idle on SDA/SCL at the
+  GY-912 pins, so the bus level is confirmed. SCI7 still got no ACK from
+  either the BMP388 or the BMP280 at that level.
+
 ### PX4/NuttX Development Notes
 
 - Treat `pinmap.md` as the software assignment matrix. Confirm external wiring

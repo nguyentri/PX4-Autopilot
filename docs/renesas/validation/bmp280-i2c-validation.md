@@ -29,7 +29,8 @@ Module straps:
 - **SDO** low selects 0x76, the default. SDO high selects 0x77, which needs
   `-a 0x77`. There is no silent fallback to the other address.
 
-The board fits R180/R181 pull-ups on P76/P77. A module with its own pull-ups
+The board fits 2.2 kΩ pull-ups to D3.3V: R181 on P76/SDA and R180 on
+P77/SCL ([hardware.md §6.5](../hardware.md#65-40-pin-header-i2c-sci7-p76p77)). A module with its own pull-ups
 places them in parallel. The sample accepts a BMP280 (ID 0x58) or a BME280
 (ID 0x60, temperature and pressure only; humidity is not read). Any other ID,
 such as a BMP388/BMP390, fails the run.
@@ -58,7 +59,10 @@ archive path the sample lab expects. On 2026-11-01 it failed for every profile
 (BMM150 too) with `Missing shared build lock helper`. The cause is
 `platforms/nuttx/NuttX/build.sh` resolving `Tools/firmware_workspace/build_lock.sh`
 relative to the tool's isolated `/tmp` snapshot. The board run below therefore
-used a direct `build.sh bmp280` ELF that was hashed before loading.
+used a direct `build.sh bmp280` ELF that was hashed before loading. Since
+2026-11-02 the snapshot mirrors the repository layout and links `Tools/`, so
+`rzv2h-sample-build.py --all-configs --profile bmp280 --output <dir>` reports
+`BUILD-CHECKED`.
 
 ## Run
 
