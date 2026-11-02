@@ -79,11 +79,6 @@ export function registerExecutionCommands(
     serial: store.getSelectedProbe(),
   });
 
-  const selectionStillCurrent = (operation: OperationSnapshot): boolean =>
-    selectionEquals(operation.selection, store.getSelection())
-      && operation.core === store.getSelectedCore()
-      && operation.serial === store.getSelectedProbe();
-
   let acquireProbeLease: (operation: OperationSnapshot) => Promise<ProbeLeaseHandle | null>;
 
   const showTrustError = (operation: string): false => {
@@ -160,17 +155,10 @@ export function registerExecutionCommands(
     if (prepared && !preparedCurrent(prepared)) { await retainedLease?.release().catch(() => undefined); return null; }
     if (!receiptPath) {
       const choice = await vscode.window.showWarningMessage(
-        'No committed receipt matches the selected profile. Build it before loading.',
+        'No committed receipt matches the selected profile. Build it, then choose Load again.',
         'Build Target'
       );
-      if (choice === 'Build Target' && await runBuild()) {
-        if (!selectionStillCurrent(operation)) {
-          await retainedLease?.release().catch(() => undefined);
-          vscode.window.showErrorMessage('The selection changed while building; target loading was cancelled.');
-          return null;
-        }
-        return runLoad({ ...operation, receiptPath: receiptFor(operation.selection) }, recover, retainedLease);
-      }
+      if (choice === 'Build Target') { await runBuild(); }
       await retainedLease?.release().catch(() => undefined);
       return null;
     }
@@ -264,20 +252,11 @@ export function registerExecutionCommands(
         showTrustError('attach the debugger');
         return false;
       }
-      let operation = snapshot();
-      let receiptPath = receiptFor(operation.selection);
+      const operation = snapshot();
+      const receiptPath = receiptFor(operation.selection);
       if (!receiptPath) {
-        const choice = await vscode.window.showWarningMessage('Build the selected profile before debugging.', 'Build Target');
-        if (choice !== 'Build Target' || !(await runBuild())) {
-          return false;
-        }
-        if (!selectionStillCurrent(operation)) {
-          vscode.window.showErrorMessage('The selection changed while building; debugger attach was cancelled.');
-          return false;
-        }
-        receiptPath = receiptFor(operation.selection);
-      }
-      if (!receiptPath) {
+        const choice = await vscode.window.showWarningMessage('Build the selected profile, then choose Attach Debugger again.', 'Build Target');
+        if (choice === 'Build Target') { await runBuild(); }
         return false;
       }
       const started = await debugProvider.startManagedAttach(receiptPath, operation.core, operation.selection, operation.serial);
@@ -288,15 +267,11 @@ export function registerExecutionCommands(
         showTrustError('load and debug firmware');
         return false;
       }
-      let operation = snapshot();
+      const operation = snapshot();
       if (!receiptFor(operation.selection)) {
-        if (!(await runBuild())) {
-          return false;
-        }
-        if (!selectionStillCurrent(operation)) {
-          vscode.window.showErrorMessage('The selection changed while building; Load and Debug was cancelled.');
-          return false;
-        }
+        const choice = await vscode.window.showWarningMessage('Build the selected profile, then choose Load and Debug again.', 'Build Target');
+        if (choice === 'Build Target') { await runBuild(); }
+        return false;
       }
       const lease = await acquireProbeLease(operation);
       if (!lease) {

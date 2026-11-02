@@ -226,6 +226,42 @@ class OperationFixtures(unittest.TestCase):
         self.assertIsNotNone(resolve_selection(selection, operation='build')[0])
         self.assertIsNone(resolve_selection(selection, operation='debug')[0])
 
+    def test_build_and_clean_do_not_start_probe_or_target_operations(self):
+        """Saved load/debug settings never make a build acquire target hardware."""
+        self.selection['debug'] = {'mode': 'load-and-debug'}
+        self.write_inputs()
+        output = self.root / 'build' / self.selection['build']['target'] / (self.selection['build']['target'] + '.elf')
+        calls = []
+
+        class BuildChild:
+            def __init__(child, argv, **kwargs):
+                calls.append(argv)
+
+            def run(child, **kwargs):
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(b'host build fixture')
+                return 0, '', ''
+
+        with patch.dict(os.environ, {'FIRMWARE_BUILD_LOCK_PATH': str(self.root / 'build.lock')}), \
+             patch.object(build, 'REPO_ROOT', self.root), patch.object(artifacts, 'REPO_ROOT', self.root), \
+             patch.object(artifacts, 'ARTIFACTS_ROOT', self.root / 'build/workspace-artifacts'), \
+             patch.object(artifacts, 'get_git_info', return_value={'revision': 'fixture', 'dirty': False}), \
+             patch.object(build, 'ManagedProcess', BuildChild), \
+             patch.object(ProbeLease, 'acquire') as acquire, patch.object(load, 'cmd_load') as load_target, \
+             patch.object(debug, 'cmd_debug_config') as attach, patch.object(console, 'start_owned_console') as start_console:
+            for clean in (False, True):
+                with self.subTest(clean=clean):
+                    self.args.clean = clean
+                    code, result = self.invoke(build.cmd_build)
+                    self.assertEqual(code, 0)
+                    self.assertEqual(result['status'], 'ok')
+                    self.assertEqual(calls[-1], [str(self.root / 'build.sh')]
+                                     + ([] if clean else ['--no-clean']) + [self.selection['build']['target']])
+                    acquire.assert_not_called()
+                    load_target.assert_not_called()
+                    attach.assert_not_called()
+                    start_console.assert_not_called()
+
     def test_group_build_stages_before_switch_and_clean_override_is_immutable(self):
         self.selection.update(core='multicore', group='rzv-native-ipc-rtt', id='rzv-native-ipc-rtt')
         self.selection['build'] = {'family': 'nuttx', 'mode': 'incremental'}

@@ -112,6 +112,7 @@ async function runBehavioralTests() {
   }
   class TreeItem { constructor(label, collapsibleState) { this.label = label; this.collapsibleState = collapsibleState; } }
   class ThemeIcon { constructor(id, color) { this.id = id; this.color = color; } }
+  class MarkdownString { constructor(value) { this.value = value; } }
   class Task { constructor(definition, scope, name, source, execution) { Object.assign(this, { definition, scope, name, source, execution }); } }
   class ProcessExecution { constructor(process, args, options) { Object.assign(this, { process, args, options }); } }
   class ShellExecution { constructor(commandLine, options) { Object.assign(this, { commandLine, options }); } }
@@ -129,6 +130,7 @@ async function runBehavioralTests() {
     CancellationTokenSource: class { constructor() { this.event = new EventEmitter(); this.token = { isCancellationRequested: false, onCancellationRequested: this.event.event }; } cancel() { this.token.isCancellationRequested = true; this.event.fire(); } dispose() {} },
     TreeItem,
     ThemeIcon,
+    MarkdownString,
     ThemeColor: ThemeIcon,
     Task,
     ProcessExecution,
@@ -290,6 +292,7 @@ async function runBehavioralTests() {
     let currentSelection = selection;
     let attached = 0;
     let loadCalls = 0;
+    let probeAcquisitions = 0;
     let loadedLease, attachedLease;
     let loadOutcome = { status: 'blocked', data: { recoveryRequired: true }, diagnostics: [{ message: 'blocked' }] };
     const executionStore = {
@@ -308,7 +311,7 @@ async function runBehavioralTests() {
     const executionClient = {
       getWorkspaceRoot: () => REPO_ROOT,
       probeLeases: {
-        acquire: async (serial) => ({ lease: { leaseToken: 'execution-lease', serial }, release: async () => {} }),
+        acquire: async (serial) => { probeAcquisitions++; return { lease: { leaseToken: 'execution-lease', serial }, release: async () => {} }; },
       },
       loadTarget: async (...args) => { loadCalls += 1; loadedLease = args[3].lease; return loadOutcome; },
       buildSelection: async () => ({ status: 'ok', data: {}, diagnostics: [], receiptPath: 'receipt-a.json' }),
@@ -343,7 +346,50 @@ async function runBehavioralTests() {
     assert.ok(!('stopConsoleForHandoff' in executionController), 'load/debug ownership is the probe lease alone');
     console.log('  ✓ no extension-managed console: commands, settings and handoff are gone');
     const normalReceiptLookup = executionStore.getReceiptPath;
+    const normalReceiptBinding = executionStore.setReceiptPath;
+    const normalBuild = executionClient.buildSelection;
+    const normalWarning = vscode.window.showWarningMessage;
+    const hardwareCalls = () => [probeAcquisitions, loadCalls, attached];
+    let offeredReceipt;
+    let offeredBuilds = 0;
+    executionStore.getReceiptPath = () => offeredReceipt;
+    executionStore.setReceiptPath = async (value) => { offeredReceipt = value; };
+    vscode.window.showWarningMessage = async () => 'Build Target';
+    executionClient.buildSelection = async () => {
+      offeredBuilds++;
+      return { status: 'ok', data: {}, diagnostics: [], receiptPath: 'receipt-a.json' };
+    };
+    for (const mode of ['incremental', 'clean']) {
+      currentSelection = { ...selection, build: { ...selection.build, mode } };
+      for (const command of ['px4Nuttx.load', 'px4Nuttx.recoverLoad', 'px4Nuttx.attach', 'px4Nuttx.loadAndDebug']) {
+        offeredReceipt = null;
+        const before = hardwareCalls();
+        const buildsBefore = offeredBuilds;
+        assert.equal(await registered.get(command)(), false, `${command} must stop after its offered build`);
+        assert.equal(offeredBuilds, buildsBefore + 1);
+        assert.equal(offeredReceipt, 'receipt-a.json', 'successful build must remain available for the next explicit action');
+        assert.deepEqual(hardwareCalls(), before, `${command} must not reserve J-Link, load, or attach after building`);
+      }
+    }
+    currentSelection = selection;
+    for (const outcome of ['ok', 'failed', 'cancelled']) {
+      const cleanOptions = [];
+      executionClient.buildSelection = async (_selectionPath, options) => {
+        cleanOptions.push(options.clean);
+        return { status: outcome, data: {}, diagnostics: [], receiptPath: outcome === 'ok' ? 'receipt-a.json' : null };
+      };
+      const before = hardwareCalls();
+      for (const command of ['px4Nuttx.build', 'px4Nuttx.cleanRebuild']) { await registered.get(command)(); }
+      assert.deepEqual(cleanOptions, [false, true]);
+      assert.deepEqual(hardwareCalls(), before, `${outcome} Build and Clean Rebuild must never start a target operation`);
+    }
+    executionStore.getReceiptPath = normalReceiptLookup;
+    executionStore.setReceiptPath = normalReceiptBinding;
+    executionClient.buildSelection = normalBuild;
+    vscode.window.showWarningMessage = normalWarning;
+    console.log('  ✓ build and clean stay host-only, including builds offered by load/debug prompts');
     executionStore.getReceiptPath = () => null;
+    vscode.window.showWarningMessage = async () => 'Build Target';
     executionClient.buildSelection = async () => {
       currentSelection = { ...selection, id: 'changed-during-build' };
       return { status: 'ok', data: {}, diagnostics: [], receiptPath: 'receipt-a.json' };
@@ -352,6 +398,7 @@ async function runBehavioralTests() {
     assert.strictEqual(await registered.get('px4Nuttx.loadAndDebug')(), false);
     assert.strictEqual(loadCalls, callsBeforeBuildSwitch, 'selection change during build must not retarget a composite operation');
     executionStore.getReceiptPath = normalReceiptLookup;
+    vscode.window.showWarningMessage = normalWarning;
     currentSelection = selection;
 
 
@@ -551,6 +598,9 @@ async function runBehavioralTests() {
     const { ArtifactsViewProvider } = sourceModule('views/artifacts-view');
     const artifactView = new ArtifactsViewProvider(fakeBackendRoot, restoredStore);
     assert.strictEqual(artifactView.getReceipt().receiptId, 'external-run');
+    const artifactRows = await artifactView.getChildren();
+    assert.equal(artifactRows.find((item) => item.label === 'fixture.elf').description, path.join(fakeBackendRoot, 'fixture.elf'),
+      'Artifacts must show the captured ELF filename and full path inline');
     fs.unlinkSync(externalReceiptPath);
     await restoredStore.refreshReceipts();
     artifactView.refresh();

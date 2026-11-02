@@ -31,9 +31,15 @@ for VS Code's normal search behavior.
 
 Build uses the saved clean/incremental mode. Clean Rebuild overrides one invocation without rewriting the saved selection. Existing scripts retain target-switch cleanup protections. Root `make renesas_*`, root `build.sh`, standalone builders, dual helpers and editor builds share the physical NuttX tree lock. Inheritance requires a live lock descriptor and matching process generation; an environment token alone cannot bypass it.
 
+Build Target, Clean Rebuild and per-core builds do not start J-Link, load firmware or attach a debugger. Choosing **Build Target** from a missing-receipt Load or Attach prompt completes only the build; choose the target action again afterwards. **Build & Load** and **Load and Debug** remain explicit combined actions when their required images are ready.
+
+For standalone NuttX targets, Build Target reuses the tree only when its configuration marker, saved defconfig and Make.defs match the selected board/config. If a PX4 build or CMake configuration replaced those files, it reconfigures automatically before building. Repeated builds of an intact configuration remain incremental.
+
 Group members build sequentially. Each output is staged before the next member can overwrite the shared NuttX output; the group receipt is committed only after all members succeed. A cancelled/failed group never publishes a complete receipt. Build progress streams during execution and cancellation terminates/reaps the owned child group.
 
 Artifacts & Receipts and target commands share a per-selection committed receipt binding, restored from per-folder workspace state. Selecting another profile cannot silently reuse an incompatible receipt. Backend checks compare board, core, family, target/config, group and selection ID, then validate every artifact size/hash and complete core membership. Group receipts also bind the authoritative member/operation definition digest; older group receipts without it require a rebuild. Build compatibility and a successful receipt do not qualify an image pair for hardware operation.
+
+**Artifacts & Receipts** shows each captured ELF filename with its full absolute path beside it. **Firmware Setup** shows the captured ELF filename on each core row and its full path on the **R8-0 ELF** / **R8-1 ELF** row. These are the immutable files used for target operations; original sources and receipt details remain in the tooltips.
 
 ## Saved Firmware Setup
 

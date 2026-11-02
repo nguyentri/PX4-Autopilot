@@ -26,6 +26,9 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
   }
 
   private getSemanticIcon(label: string, command?: string, status?: string): vscode.ThemeIcon {
+    if (label.endsWith(' ELF')) {
+      return new vscode.ThemeIcon('file-binary');
+    }
     if (label.startsWith('Build R8-')) {
       return new vscode.ThemeIcon('play');
     }
@@ -235,11 +238,15 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
 
       items.push(this.row(
         core === 'cr8_0' ? 'R8-0' : 'R8-1',
-        image ? `${path.basename(sourcePath || image.path)} · ${notice || 'Captured'}` : `Waiting for ${core}`,
+        image ? `${path.basename(image.path)} · ${notice || 'Captured'}` : `Waiting for ${core}`,
         busy ? undefined : 'browse',
         core,
         `${member.target || member.config}\nSource: ${source?.kind || 'none'} ${sourcePath || ''}\nCaptured: ${image?.path || 'none'}\nSHA-256: ${image?.sha256 || 'none'}\nEvidence: ${image?.provenance?.evidence || 'unknown'}\nAddress: ${image?.checks?.address || 'unchecked'}\nHardware qualified: no\n${notice}`
       ));
+
+      if (image) {
+        items.push(this.row(`${core === 'cr8_0' ? 'R8-0' : 'R8-1'} ELF`, this.store.resolveReceiptPath(image.path)));
+      }
 
       items.push(this.row(`${core === 'cr8_0' ? 'R8-0' : 'R8-1'} profile`, member.target || member.config || 'Unavailable'));
       if (!busy) {

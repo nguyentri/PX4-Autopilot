@@ -81,8 +81,9 @@ async function runDualCoreTests() {
       return { status: 'ok', receiptPath, data: { requestId: request.requestId, receiptId, preparationState: artifacts.length === 2 ? 'ready' : 'partial', artifacts, groupDefinitionSha256: 'a'.repeat(64) } };
     }, runDoctor: async () => ({ data: { targetHistory: { recoveryRequired: false } } }) };
     let target;
+    let debugCalls = 0;
     const execution = { buildSelectedGroup: async () => { throw new Error('must not build implicitly'); },
-      loadPrepared: async (request, options) => { target = { request, options }; return { status: 'ok' }; }, debugPrepared: async () => true };
+      loadPrepared: async (request, options) => { target = { request, options }; return { status: 'ok' }; }, debugPrepared: async () => { debugCalls++; return true; } };
     const controller = new DualCoreLoaderController(backend, store, execution);
     const preparationView = new DualCoreLoaderViewProvider(store);
     const member = (core) => groups[selection.group].members.find((item) => item.core === core);
@@ -277,6 +278,14 @@ async function runDualCoreTests() {
     await assert.rejects(store.setSelectedProbe('other'), /wait/); store.endTargetTransition();
     const view = new DualCoreLoaderViewProvider(store);
     const rows = await view.getChildren(); assert.ok(rows.some((item) => item.label === 'R8-0')); assert.ok(rows.some((item) => item.label === 'R8-1'));
+    for (const core of ['cr8_0', 'cr8_1']) {
+      const label = core === 'cr8_0' ? 'R8-0' : 'R8-1';
+      const image = store.getPreparedPair().prepared.artifacts.find((item) => item.core === core);
+      assert.equal(rows.find((item) => item.label === `${label} ELF`).description, store.resolveReceiptPath(image.path),
+        'Firmware Setup must show each captured ELF full path inline');
+      assert.ok(rows.find((item) => item.label === label).description.startsWith(path.basename(image.path)),
+        'the core row must show the ELF filename, not a receipt filename');
+    }
     store.setSetupOperationsReady(true);
     const consoleRows = await view.getChildren();
     for (const label of ['Console R8-0', 'Console R8-1']) {
@@ -421,11 +430,20 @@ async function runDualCoreTests() {
       return { status: 'ok', receiptPath: exactReceipt };
     };
     // Rebuild both first to replace the deliberately tampered capture used above.
+    const targetBeforeBuild = target;
+    const debugBeforeBuild = debugCalls;
     await controller.buildBoth(true);
     assert.equal(buildCalls[0].clean, true);
+    assert.equal(target, targetBeforeBuild, 'Clean Rebuild must not load firmware');
+    assert.equal(debugCalls, debugBeforeBuild, 'Clean Rebuild must not attach a debugger');
     const peer = store.getPreparedPair().prepared.artifacts.find((a) => a.core === 'cr8_1');
     const peerBytes = fs.readFileSync(peer.path);
     await controller.buildCore('cr8_0');
+    assert.equal(target, targetBeforeBuild, 'Build Core must not load firmware');
+    assert.equal(debugCalls, debugBeforeBuild, 'Build Core must not attach a debugger');
+    const builtRows = await view.getChildren();
+    assert.ok(builtRows.find((item) => item.label === 'R8-0').description.startsWith('cr8_0.elf'),
+      'build-receipt sources must display the captured ELF name instead of receipt.json');
     assert.equal(buildCalls[1].building.group, undefined); assert.equal(buildCalls[1].building.core, 'cr8_0');
     assert.equal(buildCalls[1].building.build.config, member('cr8_0').config);
     assert.deepEqual(fs.readFileSync(store.getPreparedPair().prepared.artifacts.find((a) => a.core === 'cr8_1').path), peerBytes);

@@ -11,7 +11,7 @@ export class ArtifactsViewProvider implements vscode.TreeDataProvider<WorkspaceT
   private selectedReceipt: ArtifactReceipt | null = null;
 
   constructor(
-    _workspaceRoot: string,
+    private readonly workspaceRoot: string,
     private readonly store?: SelectionStore
   ) {
     this.store?.onDidChangeSelection(() => this.refresh());
@@ -94,14 +94,15 @@ export class ArtifactsViewProvider implements vscode.TreeDataProvider<WorkspaceT
 
     for (const art of receipt.artifacts) {
       const fileName = path.basename(art.path);
+      const elfPath = path.resolve(this.workspaceRoot, art.path);
       const sizeKb = (art.size / 1024).toFixed(1);
       items.push(
         new WorkspaceTreeItem(fileName, vscode.TreeItemCollapsibleState.None, {
-          description: `${sizeKb} KB (${art.core || 'generic'})`,
+          description: elfPath,
           iconPath: new vscode.ThemeIcon('file-binary'),
           tooltip: new vscode.MarkdownString(
             `**Artifact:** \`${fileName}\`\n\n` +
-            `- **Path:** \`${art.path}\`\n` +
+            `- **Path:** \`${elfPath}\`\n` +
             `- **Size:** \`${sizeKb} KB\` (${art.size} bytes)\n` +
             `- **SHA-256:** \`${art.sha256}\`\n` +
             `- **Target Core:** \`${art.core || 'generic'}\``
