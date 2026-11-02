@@ -43,9 +43,23 @@ def new_output(path):
     return path
 
 
+def snapshot_root(temporary):
+    """Return a snapshot path that mirrors the repository layout.
+
+    build.sh locates the shared build lock helper at ../../../Tools relative to
+    itself, so the snapshot sits at <temporary>/platforms/nuttx/NuttX next to a
+    Tools link into this repository. The helper then takes the same kernel lock
+    as direct builds of the working tree.
+    """
+    root = Path(temporary)
+    (root/NUTTX).parent.mkdir(parents=True, exist_ok=True)
+    (root/'Tools').symlink_to(ROOT/'Tools', target_is_directory=True)
+    return root/NUTTX
+
+
 def snapshot(destination):
     """Use the working source, preserving uncommitted driver/config changes."""
-    destination.mkdir()
+    destination.mkdir(parents=True)
     for name in ('nuttx', 'apps'):
         # Configure must recreate these links for this tree and target. Even
         # relative links can retain the previous chip/board selection.
@@ -233,7 +247,7 @@ def build_native(args, manifest_path, manifest):
     else:
         new_output(output)
     with tempfile.TemporaryDirectory(prefix='rzv2h-native-build-') as temporary:
-        base = Path(temporary)/'sources'
+        base = snapshot_root(Path(temporary)/'pristine')
         snapshot(base)
         state = source_state(base, [], manifest_path)
         state['snapshot_overrides'] = configure_cache(base, args.cache_dir)
@@ -260,7 +274,9 @@ def build_native(args, manifest_path, manifest):
                                                        output/'source-state.json', manifest)
                 native_reports(output, results)
                 continue
-            work = Path(temporary)/'work'
+            # Each profile builds in a fresh copy that keeps the repository layout.
+            work_root = Path(temporary)/'work'
+            work = snapshot_root(work_root)
             subprocess.run(['cp', '-a', '--reflink=auto', str(base), str(work)], check=True)
             try:
                 try:
@@ -275,7 +291,7 @@ def build_native(args, manifest_path, manifest):
                 native_reports(output, results)
                 print(name, item['status'], item.get('reason', ''), flush=True)
             finally:
-                shutil.rmtree(work)
+                shutil.rmtree(work_root)
         return 0 if all(x['status'] == 'BUILD-CHECKED' for x in results) else 1
 
 
@@ -327,7 +343,7 @@ def main():
     try:
         output = new_output(args.output)
         with tempfile.TemporaryDirectory(prefix='rzv2h-sample-build-') as temporary:
-            work = Path(temporary)/'NuttX'
+            work = snapshot_root(temporary)
             snapshot(work)
             # Record the pristine source snapshot before applying cache-only URLs.
             state = source_state(work, [], manifest_path)

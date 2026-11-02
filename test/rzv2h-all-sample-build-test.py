@@ -34,7 +34,7 @@ class NativeBuildOrchestration(unittest.TestCase):
     def test_failure_is_retained_and_remaining_profiles_are_attempted(self):
         attempted = []
         def snapshot(destination):
-            destination.mkdir()
+            destination.mkdir(parents=True)
             (destination/'input.c').write_text('original')
         def compile_boundary(work, output, row, *args):
             self.assertEqual((work/'input.c').read_text(), 'original')
@@ -81,12 +81,24 @@ class NativeBuildOrchestration(unittest.TestCase):
             (self.args.output/'source-state.json').write_text(json.dumps(original))
             changed=copy.deepcopy(original);changed[key]=value
             with self.subTest(key=key),patch.object(BUILDER.ARTIFACTS.INVENTORY,'validate'), \
-                 patch.object(BUILDER,'snapshot',side_effect=lambda destination:destination.mkdir()), \
+                 patch.object(BUILDER,'snapshot',side_effect=lambda destination:destination.mkdir(parents=True)), \
                  patch.object(BUILDER,'source_state',return_value=changed), \
                  patch.object(BUILDER,'archive_profile') as compiler, \
                  self.assertRaisesRegex(ValueError,'resume source/input drift: '+key):
                 BUILDER.build_native(self.args,self.policy,self.manifest)
             compiler.assert_not_called()
+
+    def test_snapshot_build_script_reaches_the_shared_lock_helper(self):
+        # build.sh resolves the lock helper three directories above itself;
+        # the snapshot must keep that path valid and point at this repository.
+        work=BUILDER.snapshot_root(self.root)
+        self.assertEqual(work, self.root/'platforms/nuttx/NuttX')
+        work.mkdir(parents=True)
+        helper=work/'../../../Tools/firmware_workspace/build_lock.sh'
+        self.assertTrue(os.access(helper, os.X_OK))
+        self.assertEqual(helper.resolve(), (ROOT/'Tools/firmware_workspace/build_lock.sh').resolve())
+        self.assertIn('../../../Tools/firmware_workspace/build_lock.sh',
+                      (ROOT/'platforms/nuttx/NuttX/build.sh').read_text())
 
     def test_compile_timeout_reaps_the_owned_process(self):
         work=self.root/'work';work.mkdir()
