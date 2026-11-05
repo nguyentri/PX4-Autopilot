@@ -1,12 +1,12 @@
-# PX4-NuttX: Dashboard — Complete Technical Reference
+# 1KW-Px4-Nuttx — Complete Technical Reference
 
-> Full-fidelity reference documentation for AI agents, answer engines, and systems engineers interacting with the PX4-NuttX VS Code extension and backend workspace tools.
+> Full-fidelity reference documentation for AI agents, answer engines, and systems engineers interacting with the 1KW-Px4-Nuttx VS Code extension and backend workspace tools.
 
 ---
 
 ## 1. System Overview & Architecture
 
-The PX4-NuttX Dashboard (`Tools/vscode_extension/`) provides native VS Code integration for developing, building, loading, and debugging PX4 Autopilot and NuttX RTOS on Renesas embedded targets.
+The 1KW-Px4-Nuttx extension (`Tools/vscode_extension/`) provides native VS Code integration with OneKiwi Technology design styling for developing, building, loading, and debugging PX4 Autopilot and NuttX RTOS on Renesas embedded targets.
 
 ```
 +-------------------------------------------------------------------------------+

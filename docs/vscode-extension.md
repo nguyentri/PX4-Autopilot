@@ -1,10 +1,10 @@
-# PX4-Nuttx: Dashboard Extension Guide
+# 1KW-Px4-Nuttx Extension Guide
 
 The native VS Code extension in `Tools/vscode_extension/` delegates discovery, checks, builds, RAM loading and configuration resolution to `Tools/firmware-workspace.py`. Existing CLI entry points and manually maintained `.vscode/launch.json` remain available.
 
 ## Installation and host
 
-From the repository root, run `./Tools/vscode_extension/build.sh`. The script installs locked dependencies with `npm ci` when `node_modules` is absent, then typechecks, builds and packages `Tools/vscode_extension/px4-nuttx-dashboard-<version>.vsix` using the version in `package.json`. It runs the tests against that package and also works from another directory. Install the resulting local VSIX with VS Code. The VSIX contains the extension, profiles and schemas; the backend stays in the compatible repository checkout. Marketplace publication is separate.
+From the repository root, run `./Tools/vscode_extension/build.sh`. The script installs locked dependencies with `npm ci` when `node_modules` is absent, then typechecks, builds and packages `Tools/vscode_extension/1kw-px4-nuttx-<version>.vsix` (also mirrored to `px4-nuttx-dashboard-<version>.vsix`) using the version in `package.json`. It runs the tests against that package and also works from another directory. Install the resulting local VSIX with VS Code. The VSIX contains the extension, profiles, themes and schemas; the backend stays in the compatible repository checkout. Marketplace publication is separate.
 
 The extension runs on the workspace extension host. Linux and Remote WSL are the intended initial hosts; Python, compiler, J-Link, GDB and USB-forwarded probes must be visible there. Native Windows and macOS hardware workflows have not been validated. Use the current usbipd-win instructions when forwarding a Windows USB probe into WSL; Doctor enumerates SEGGER USB devices through sysfs without connecting to a core.
 

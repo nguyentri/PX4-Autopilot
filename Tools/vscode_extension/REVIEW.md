@@ -1,4 +1,4 @@
-# UX/AX Review: PX4-NuttX Dashboard Extension
+# UX/AX Review: 1KW-Px4-Nuttx Extension
 
 > Review Date: 2026-10-28\
 > Subject: `Tools/vscode_extension/` (VS Code Extension & Workspace Integration)\
@@ -9,7 +9,7 @@
 ## Verdict
 
 The enhancement adds semantic icons, formatted tooltips, `Ctrl+Alt+K` chords,
-dashboard branding, and agent-facing documentation. Follow-up review found
+1KW OneKiwi branding, and agent-facing documentation. Follow-up review found
 shortcut collisions, an idle spinner, invalid console examples, and inaccurate
 receipt fields. Those repairs have host regression coverage or direct contract
 checks. Native workbench acceptance remains pending; theme tokens and manifest
@@ -31,7 +31,7 @@ declarations alone do not establish visual or keyboard usability.
 
 | Category | Finding / Defect Identified | Severity | Status Post-Enhancement |
 |----------|-----------------------------|----------|--------------------------|
-| **Branding & Recall** | Lowercase "Nuttx" typo (`PX4-Nuttx: Dashboard`) in display names; inconsistent command categories (`PX4/NuttX` vs `PX4/NuttX Dual-Core` vs `PX4/NuttX Firmware Setup`). | Medium | Fixed (`PX4-NuttX: Dashboard` standardized). |
+| **Branding & Recall** | Lowercase "Nuttx" typo (`PX4-Nuttx: Dashboard`) in display names; inconsistent command categories (`PX4/NuttX` vs `PX4/NuttX Dual-Core` vs `PX4/NuttX Firmware Setup`). | Medium | Fixed (`1KW-Px4-Nuttx` standardized with OneKiwi styling). |
 | **Visual Hierarchy & Scanning** | `FirmwareSetupViewProvider` used generic `'tools'` and `'info'` icons for every row, flattening visual distinction. | High | Fixed (Semantic Codicons mapped per row type). |
 | **Hover Tooltips** | Views used plain strings lacking structure, code spans, memory addresses, or keyboard shortcut hints. | Medium | Fixed (Rich `vscode.MarkdownString` tooltips implemented). |
 | **Command Palette Ergonomics** | 23 dual-core and setup commands had NO `icon` defined in `package.json`. | Medium | Fixed (Semantic Codicons contributed for all commands). |

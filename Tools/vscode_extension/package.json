@@ -1,11 +1,11 @@
 {
   "name": "px4-nuttx-firmware-workspace",
-  "displayName": "PX4-NuttX: Dashboard",
+  "displayName": "1KW-Px4-Nuttx",
   "description": "Unified workspace integration, profiles, guarded loading and Cortex-Debug for PX4 and NuttX on Renesas hardware",
   "version": "0.1.0",
   "icon": "media/icon.png",
   "galleryBanner": {
-    "color": "#1e1e1e",
+    "color": "#16163F",
     "theme": "dark"
   },
   "publisher": "px4-nuttx",
@@ -31,6 +31,7 @@
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Themes",
     "Programming Languages",
     "Debuggers",
     "Other"
@@ -55,8 +56,8 @@
       "activitybar": [
         {
           "id": "px4-nuttx-workspace",
-          "title": "PX4-NuttX: Dashboard",
-          "icon": "$(circuit-board)"
+          "title": "1KW-Px4-Nuttx",
+          "icon": "media/activity-icon.svg"
         }
       ]
     },
@@ -692,7 +693,7 @@
       }
     ],
     "configuration": {
-      "title": "PX4-NuttX: Dashboard",
+      "title": "1KW-Px4-Nuttx",
       "properties": {
         "px4Nuttx.pythonPath": {
           "type": "string",
@@ -711,6 +712,56 @@
         }
       }
     },
+    "themes": [
+      {
+        "label": "1KW Dark (OneKiwi)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/1kw-dark.json"
+      },
+      {
+        "label": "1KW Light (OneKiwi)",
+        "uiTheme": "vs",
+        "path": "./themes/1kw-light.json"
+      }
+    ],
+    "colors": [
+      {
+        "id": "onekiwi.brandOrange",
+        "description": "OneKiwi brand orange accent color",
+        "defaults": {
+          "dark": "#ED6C00",
+          "light": "#ED6C00",
+          "highContrast": "#ED6C00"
+        }
+      },
+      {
+        "id": "onekiwi.brandNavy",
+        "description": "OneKiwi primary deep navy color",
+        "defaults": {
+          "dark": "#16163F",
+          "light": "#16163F",
+          "highContrast": "#16163F"
+        }
+      },
+      {
+        "id": "onekiwi.accentGreen",
+        "description": "OneKiwi accent green success color",
+        "defaults": {
+          "dark": "#61CE70",
+          "light": "#61CE70",
+          "highContrast": "#61CE70"
+        }
+      },
+      {
+        "id": "onekiwi.accentBlue",
+        "description": "OneKiwi accent sky blue info color",
+        "defaults": {
+          "dark": "#6EC1E4",
+          "light": "#6EC1E4",
+          "highContrast": "#6EC1E4"
+        }
+      }
+    ],
     "jsonValidation": [
       {
         "fileMatch": [

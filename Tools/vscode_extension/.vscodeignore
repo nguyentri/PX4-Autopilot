@@ -4,3 +4,4 @@ esbuild.js
 tests/**
 *.vsix
 .vscode/**
+Vscode_Extension.png

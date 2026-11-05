@@ -35,7 +35,17 @@ for (const action of ['select', 'saveAs', 'rename', 'buildCore', 'buildBoth', 'b
 assert.ok(pkg.contributes.views['px4-nuttx-workspace'].filter((view) => ['px4-nuttx.selection', 'px4-nuttx.operations'].includes(view.id)).every((view) => view.when === '!px4Nuttx.savedSetupActive'));
 assert.ok(pkg.contributes.commands.length >= 8, 'Must contribute commands');
 assert.ok(pkg.contributes.jsonValidation.length >= 3, 'Must contribute schema validations');
-console.log('  ✓ package.json contributes all required views, commands, and schemas');
+assert.strictEqual(pkg.displayName, '1KW-Px4-Nuttx');
+assert.ok(pkg.contributes.themes?.length >= 2, 'Must contribute 1KW themes');
+for (const theme of pkg.contributes.themes) {
+  const themePath = path.join(EXT_DIR, theme.path);
+  assert.ok(fs.existsSync(themePath), `Theme ${theme.label} must exist at ${themePath}`);
+  const parsed = JSON.parse(fs.readFileSync(themePath, 'utf-8'));
+  assert.ok(parsed.colors, `Theme ${theme.label} must define colors`);
+}
+const activityIcon = pkg.contributes.viewsContainers.activitybar[0].icon;
+assert.ok(activityIcon && fs.existsSync(path.join(EXT_DIR, activityIcon)), 'Activity bar icon must exist');
+console.log('  ✓ package.json contributes all required views, commands, themes, and schemas');
 
 // Firmware chords must preserve normal editing and stay within an initialized workspace.
 const shortcutContext = {
@@ -89,10 +99,11 @@ assert.ok(devs.boards['fpb-ra8e1'], 'fpb-ra8e1 must be defined in devices.json')
 console.log('  ✓ devices.json and groups.json contain all supported Renesas platforms');
 
 // Test 5: Verify packaged VSIX exists
-const vsixCandidate1 = path.join(EXT_DIR, 'px4-nuttx-dashboard-0.1.0.vsix');
-const vsixCandidate2 = path.join(EXT_DIR, 'px4-nuttx-firmware-workspace-0.1.0.vsix');
-const vsixFile = fs.existsSync(vsixCandidate1) ? vsixCandidate1 : vsixCandidate2;
-assert.ok(fs.existsSync(vsixFile), 'VSIX package must be present');
+const vsixCandidate1 = path.join(EXT_DIR, '1kw-px4-nuttx-0.1.0.vsix');
+const vsixCandidate2 = path.join(EXT_DIR, 'px4-nuttx-dashboard-0.1.0.vsix');
+const vsixCandidate3 = path.join(EXT_DIR, 'px4-nuttx-firmware-workspace-0.1.0.vsix');
+const vsixFile = [vsixCandidate1, vsixCandidate2, vsixCandidate3].find((f) => fs.existsSync(f));
+assert.ok(vsixFile && fs.existsSync(vsixFile), 'VSIX package must be present');
 const vsixStats = fs.statSync(vsixFile);
 assert.ok(vsixStats.size > 5000, `VSIX package must be > 5KB (got ${vsixStats.size} bytes)`);
 console.log('  ✓ packaged VSIX exists and is valid');
@@ -156,7 +167,11 @@ async function runBehavioralTests() {
       registerCommand: (id, callback) => { registered.set(id, callback); return { dispose: () => registered.delete(id) }; },
       executeCommand: async (id, ...args) => id === 'setContext' ? contexts.set(args[0], args[1]) : registered.get(id)?.(...args),
     },
-    Uri: { file: (value) => ({ fsPath: value, toString: () => value }), parse: (value) => value },
+    Uri: {
+      file: (value) => ({ fsPath: value, toString: () => value }),
+      parse: (value) => value,
+      joinPath: (base, ...segments) => ({ fsPath: path.join(base.fsPath, ...segments), toString: () => path.join(base.fsPath, ...segments) }),
+    },
     debug: {
       onDidStartDebugSession: (listener) => debugStarted.event(listener),
       onDidTerminateDebugSession: (listener) => debugTerminated.event(listener),
@@ -266,6 +281,23 @@ async function runBehavioralTests() {
     assert.strictEqual(raItem.selection.load, undefined, 'build-only target must not advertise load');
     assert.strictEqual(raItem.selection.debug, undefined, 'build-only target must not advertise debug');
     console.log('  ✓ build-only targets remain selectable without optional load/debug gates');
+
+    const { SelectionViewProvider } = sourceModule('views/selection-view');
+    const mockViewStore = {
+      getSelection: () => ({ board: 'rdk-rzv2h', core: 'cr8_0', build: { family: 'px4', target: 'rdk-rzv2h_default', mode: 'incremental' } }),
+      getSelectedProbe: () => '000052000195',
+      getSelectedCore: () => 'cr8_0',
+      getConsoleTransport: () => 'rtt',
+      onDidChangeSelection: () => ({ dispose() {} }),
+    };
+    const view = new SelectionViewProvider(mockViewStore, { fsPath: EXT_DIR });
+    const viewItems = await view.getChildren();
+    const coreItem = viewItems.find((item) => item.label === 'Core');
+    assert.ok(coreItem, 'Core item must exist in selection view');
+    assert.strictEqual(coreItem.iconPath?.id, 'chip', 'Core item must use valid chip codicon');
+    const wsItem = viewItems.find((item) => item.label === 'OneKiwi-Px4-Nuttx');
+    assert.ok(wsItem, 'OneKiwi-Px4-Nuttx logo item must exist in selection view');
+    console.log('  ✓ selection view renders OneKiwi logo and valid chip codicon for Core');
 
     const refreshed = { selection: 0, readiness: 0, artifacts: 0, operations: 0 };
     const refreshContext = { subscriptions: [] };

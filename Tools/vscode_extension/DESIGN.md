@@ -1,31 +1,33 @@
-# Design System & UX/AX Guidelines: PX4-NuttX Dashboard
+# Design System & UX/AX Guidelines: 1KW-Px4-Nuttx
 
-> Unified design system, visual taxonomy, and user/agent experience guidelines for the PX4-NuttX VS Code extension (`Tools/vscode_extension/`).
+> Unified design system, visual taxonomy, and user/agent experience guidelines for the 1KW-Px4-Nuttx VS Code extension (`Tools/vscode_extension/`), styled after [OneKiwi Technology](https://onekiwi.com.vn/).
 
 ---
 
 ## 1. Product & Art Direction
 
 - **Product Category**: Embedded Systems Developer Tool / Multi-Core Firmware IDE Dashboard
-- **Target Audience**: Firmware engineers, drone developers, robotics researchers, and AI coding agents
-- **Art Direction**: Industrial, technical, precise, and trustworthy. High information density with instant visual scannability, clear hierarchical distinction, and zero decorative noise.
+- **Brand Identity**: **1KW (OneKiwi Technology)** — high-reliability embedded platforms, IoT solutions, and multi-core firmware engineering.
+- **Target Audience**: Firmware engineers, drone developers, robotics researchers, and AI coding agents.
+- **Art Direction**: Industrial, technical, precise, and trustworthy with OneKiwi's signature Deep Navy (`#16163F`) and vibrant OneKiwi Orange (`#ED6C00`) aesthetic. High information density with instant visual scannability, clear hierarchical distinction, and zero decorative noise.
 - **Platform**: VS Code Extension API (`^1.85.0`) adhering to VS Code UX Guidelines and Web Content Accessibility Guidelines (WCAG 2.1 AA).
 
 ---
 
-## 2. Color Palette & Semantic Tokens
+## 2. Color Palette & OneKiwi Semantic Tokens
 
-The extension uses VS Code Theme Color tokens to follow the active theme. Contrast
-across dark, light, and high-contrast themes requires native workbench verification.
+The extension provides dedicated `1KW Dark` and `1KW Light` themes and defines semantic tokens rooted in the [OneKiwi design system](https://onekiwi.com.vn/):
 
-| Semantic Purpose | Theme Color Token | Fallback Hex (Dark Theme) | Usage |
-|------------------|-------------------|---------------------------|-------|
-| **Pass / Ready / OK** | `testing.iconPassed` / `charts.green` | `#89D185` | Ready targets, verified pairs, passed doctor checks |
-| **Warning / Attention** | `problemsWarningIcon.foreground` | `#CCA700` | Recovery required, outdated source, manual-only routes |
-| **Error / Blocked** | `testing.iconFailed` / `problemsErrorIcon.foreground` | `#F14C4C` | Missing toolchain, prerequisite failure, build error |
-| **Informational / Neutral** | `descriptionForeground` | `#CCCCCC` | Descriptions, hardware architecture, paths, hashes |
-| **Focus / Highlight** | `focusBorder` / `charts.blue` | `#3794FF` | Active selection, primary CTA links, status bar |
-| **Inactive / Gated** | `disabledForeground` | `#666666` | Disabled commands, unavailable routes |
+| Semantic Purpose | OneKiwi Token | Dark Theme Hex | Light Theme Hex | Usage |
+|------------------|---------------|----------------|-----------------|-------|
+| **Brand Primary / Headers** | `onekiwi.brandNavy` | `#16163F` | `#16163F` | Activity bar, title bar, container headers, status bar |
+| **Brand Accent / CTAs** | `onekiwi.brandOrange` | `#ED6C00` | `#ED6C00` | Primary CTA buttons, active border, focus indicator, badges |
+| **Pass / Ready / OK** | `onekiwi.accentGreen` | `#61CE70` | `#2E7D32` | Ready targets, verified pairs, passed doctor checks |
+| **Warning / Attention** | `onekiwi.warmPeach` | `#ED6C00` / `#FFBC7D` | `#ED6C00` | Recovery required, outdated source, manual-only routes |
+| **Error / Blocked** | `errorForeground` | `#F14C4C` | `#D32F2F` | Missing toolchain, prerequisite failure, build error |
+| **Info / Tech Blue** | `onekiwi.accentBlue` | `#6EC1E4` | `#2A3882` | Diagnostic info, entry points, architecture labels |
+| **Neutral Surface** | `surface` | `#0D0D1A` | `#F8F9FF` | View containers, card backgrounds, sidebar |
+| **Borders & Dividers** | `border` | `#222254` | `#E8E8E8` | Card outlines, widget borders, tree item separators |
 
 ---
 
@@ -35,7 +37,7 @@ Icons must be semantically accurate and consistent across Tree Views, QuickPicks
 
 ### Hardware & Profile Elements
 - Target Board: `$(circuit-board)`
-- Execution Core / CPU: `$(chip)` or `$(cpu)`
+- Execution Core / CPU: `$(chip)`
 - Multicore Pair Group: `$(layers)`
 - Firmware Binary / ELF: `$(file-binary)`
 - Configuration / Mode: `$(settings-gear)`

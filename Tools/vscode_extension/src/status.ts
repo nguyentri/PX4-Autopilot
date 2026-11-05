@@ -38,7 +38,7 @@ export class StatusBarManager implements vscode.Disposable {
     this.statusBarItem.command = setup ? 'px4Nuttx.setup.select' : 'px4Nuttx.selectProfile';
     this.statusBarItem.text = `$(circuit-board) ${setup ? `${setup.name} · ${selection.board}` : `${selection.board}:${selectedCore} (${shortTarget})`}`;
     this.statusBarItem.tooltip = new vscode.MarkdownString(
-      `**PX4/NuttX Profile:** ${selection.id}\n\n` +
+      `**1KW-Px4-Nuttx Profile:** ${selection.id}\n\n` +
         `- **Board:** ${selection.board}\n` +
         `- **Core:** ${selectedCore}${selection.core === 'multicore' ? ' (group member)' : ''}\n` +
         `- **Target:** ${targetName} (${selection.build.mode})\n` +

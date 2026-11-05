@@ -6,7 +6,7 @@ export class WorkspaceTreeItem extends vscode.TreeItem {
     collapsibleState: vscode.TreeItemCollapsibleState = vscode.TreeItemCollapsibleState.None,
     options?: {
       description?: string;
-      iconPath?: vscode.ThemeIcon;
+      iconPath?: vscode.TreeItem['iconPath'];
       command?: vscode.Command;
       tooltip?: string | vscode.MarkdownString;
     }

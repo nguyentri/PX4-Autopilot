@@ -1,10 +1,33 @@
-# PX4-NuttX: Dashboard
+# 1KW-Px4-Nuttx
 
 [![License](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE.md)
 [![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.85.0-007ACC.svg?logo=visual-studio-code)](package.json)
+[![Branding](https://img.shields.io/badge/Style-OneKiwi%20(%2316163F%20%7C%20%23ED6C00)-orange.svg)](https://onekiwi.com.vn/)
 [![Hardware](https://img.shields.io/badge/Renesas-RZ%2FV2H%20%7C%20RA8P1%20%7C%20RA8E1-orange.svg)](profiles/devices.json)
 
-VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Serial UART consoles are opened outside the extension; an RTT console bridge can be started from Firmware Setup for any terminal to connect to.
+VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware with official [OneKiwi](https://onekiwi.com.vn/) design system styling. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Serial UART consoles are opened outside the extension; an RTT console bridge can be started from Firmware Setup for any terminal to connect to.
+
+---
+
+## OneKiwi Styling & Brand Themes
+
+The extension incorporates the visual styling and brand tokens of [OneKiwi Technology](https://onekiwi.com.vn/):
+
+| Brand Token | Hex / Value | Semantic Role in Extension & Workbench |
+|-------------|-------------|----------------------------------------|
+| **Deep Navy (Primary)** | `#16163F` | Activity bar, title bar, status bar, and container header backgrounds |
+| **OneKiwi Orange (Accent)** | `#ED6C00` | Primary CTAs, active focus borders, activity badges, cursor, progress bars |
+| **Deep Indigo (Secondary)** | `#200066` / `#2A3882` | Circuit trace accents, secondary buttons, subtle glow gradients |
+| **Success Green** | `#61CE70` | Ready targets, passed doctor prerequisites, verified image pairs |
+| **Electric / Sky Blue** | `#6EC1E4` | Subtitle badges, info indicators, tech nodes, active functions |
+| **Peach / Soft Warm** | `#FFBC7D` | Section headers, warnings, queued/transitional states |
+| **Light Surface** | `#F8F9FF` / `#FBFCFC` | Light theme sidebar, card background, panel surfaces |
+| **Card Borders** | `#E8E8E8` / `#222254` | Card dividers, widget borders, tree item separators |
+
+### Bundled Color Themes
+The extension contributes two official color themes that can be selected in VS Code via **Preferences: Color Theme** (`Ctrl+K Ctrl+T`):
+- **`1KW Dark (OneKiwi)`**: High-contrast, deep navy midnight theme with signature OneKiwi Orange highlights and rich syntax coloring.
+- **`1KW Light (OneKiwi)`**: Clean, crisp light theme with Deep Navy headers, `#F8F9FF` surfaces, and `#ED6C00` action accents.
 
 ---
 
@@ -64,7 +87,7 @@ VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renes
 ## Quick Start
 
 1. **Open Workspace**: Open the repository root in VS Code. Click **Trust Workspace** when prompted.
-2. **Run Doctor**: Open the **PX4-NuttX: Dashboard** in the Activity Bar. In the **Readiness & Doctor** view, click **Run Doctor Check** (or press `Ctrl+Alt+K D`).
+2. **Run Doctor**: Open the **1KW-Px4-Nuttx** in the Activity Bar. In the **Readiness & Doctor** view, click **Run Doctor Check** (or press `Ctrl+Alt+K D`).
 3. **Select Profile / Setup**: In the **Selection & Profiles** view, click **Target** (or press `Ctrl+Alt+K P`) to choose a PX4 target (e.g. `rdk-rzv2h_default`), NuttX configuration, or multicore group.
 4. **Build & Debug**:
    - Press `Ctrl+Alt+K B` to build the active target.
@@ -155,12 +178,12 @@ Run from the repository root. For Remote WSL, use the WSL terminal in the VS Cod
 
 ```bash
 Tools/vscode_extension/build.sh
-code --install-extension Tools/vscode_extension/px4-nuttx-dashboard-0.1.0.vsix --force
+code --install-extension Tools/vscode_extension/1kw-px4-nuttx-0.1.0.vsix --force
 ```
 
 `--force` replaces an installed copy with the same version. Run **Developer: Reload Window** afterwards to load it.
 
-If the VSIX has already been rebuilt, run only the `code --install-extension` command above. You can also open the Extensions view, choose **… → Install from VSIX…**, and select `Tools/vscode_extension/px4-nuttx-dashboard-0.1.0.vsix`, then reload the window.
+If the VSIX has already been rebuilt, run only the `code --install-extension` command above. You can also open the Extensions view, choose **… → Install from VSIX…**, and select `Tools/vscode_extension/1kw-px4-nuttx-0.1.0.vsix` (or `px4-nuttx-dashboard-0.1.0.vsix`), then reload the window.
 
 ---
 

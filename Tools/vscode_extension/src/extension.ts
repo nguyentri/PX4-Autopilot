@@ -66,7 +66,7 @@ async function initialize(context: vscode.ExtensionContext, epoch: number, token
   const store = new SelectionStore(context, rootPath);
   const statusBar = new StatusBarManager(store);
   statusBar.show();
-  const selectionView = new SelectionViewProvider(store);
+  const selectionView = new SelectionViewProvider(store, context.extensionUri);
   const readinessView = new ReadinessViewProvider(client);
   const artifactsView = new ArtifactsViewProvider(rootPath, store);
   const operationsView = new OperationsViewProvider(store);

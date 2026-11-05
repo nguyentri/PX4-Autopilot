@@ -1,6 +1,6 @@
-# PX4-NuttX: Dashboard
+# 1KW-Px4-Nuttx
 
-> VS Code extension and workspace tooling for PX4 Autopilot and NuttX RTOS development on Renesas RZ/V2H, RA8P1, and RA8E1 hardware.
+> VS Code extension and workspace tooling for PX4 Autopilot and NuttX RTOS development on Renesas RZ/V2H, RA8P1, and RA8E1 hardware, styled after OneKiwi Technology.
 
 Repository backend: `Tools/firmware-workspace.py`.
 Extension workspace: `Tools/vscode_extension/`.

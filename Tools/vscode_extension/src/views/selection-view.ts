@@ -6,7 +6,10 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
   private _onDidChangeTreeData = new vscode.EventEmitter<WorkspaceTreeItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  constructor(private readonly store: SelectionStore) {
+  constructor(
+    private readonly store: SelectionStore,
+    private readonly extensionUri?: vscode.Uri
+  ) {
     this.store.onDidChangeSelection(() => this.refresh());
   }
 
@@ -26,7 +29,24 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
     const selectedCore = this.store.getSelectedCore();
     const transport = this.store.getConsoleTransport(selectedCore);
 
+    const logoIcon = this.extensionUri
+      ? vscode.Uri.joinPath(this.extensionUri, 'media', 'icon.png')
+      : new vscode.ThemeIcon('circuit-board');
+
     const items = [
+      new WorkspaceTreeItem('OneKiwi-Px4-Nuttx', vscode.TreeItemCollapsibleState.None, {
+        iconPath: logoIcon,
+        command: {
+          command: 'vscode.open',
+          title: 'Open OneKiwi Website',
+          arguments: [vscode.Uri.parse('https://onekiwi.com.vn/')],
+        },
+        tooltip: new vscode.MarkdownString(
+          '**OneKiwi-Px4-Nuttx**\n\n' +
+          'OneKiwi unified PX4 Autopilot & NuttX RTOS development environment for Renesas RZ/V2H & RA8 hardware.\n\n' +
+          'Website: [https://onekiwi.com.vn/](https://onekiwi.com.vn/)'
+        ),
+      }),
       new WorkspaceTreeItem('Board', vscode.TreeItemCollapsibleState.None, {
         description: sel.board,
         iconPath: new vscode.ThemeIcon('circuit-board'),
@@ -34,7 +54,7 @@ export class SelectionViewProvider implements vscode.TreeDataProvider<WorkspaceT
       }),
       new WorkspaceTreeItem('Core', vscode.TreeItemCollapsibleState.None, {
         description: sel.core === 'multicore' ? `${selectedCore} (selected member)` : selectedCore,
-        iconPath: new vscode.ThemeIcon('cpu'),
+        iconPath: new vscode.ThemeIcon('chip'),
         command: sel.core === 'multicore' ? { command: 'px4Nuttx.selectCore', title: 'Change Group Core' } : undefined,
         tooltip: new vscode.MarkdownString(`**Active Execution Core:** \`${selectedCore}\`\n\n${sel.core === 'multicore' ? 'Click to switch selected member core in this multicore group.' : 'Dedicated single-core profile.'}`),
       }),
