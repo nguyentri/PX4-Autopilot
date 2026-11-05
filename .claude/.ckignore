@@ -1,0 +1,4 @@
+# Project override for the scout hook. Firmware work reads build trees
+# (ELFs, generated headers, map files) through targeted paths, so the
+# default size block on build directories is lifted here.
+!build

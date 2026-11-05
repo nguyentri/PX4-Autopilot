@@ -1,0 +1,12 @@
+{
+  "name": "agentkit-local",
+  "owner": {
+    "name": "AgentKit"
+  },
+  "plugins": [
+    {
+      "name": "ak-engineer",
+      "source": "./ak-engineer"
+    }
+  ]
+}

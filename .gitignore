@@ -308,3 +308,18 @@ Tools/vscode_extension/esbuild.js
 !test/firmware-workspace-serial-console-test.py
 **/*firmware-import.json
 /*.png
+# Share debug instructions and portable templates; keep local agent state private.
+!/.claude/
+/.claude/*
+!/.claude/.ckignore
+!/.claude/.env.example
+!/.claude/.gitignore
+!/.claude/.mcp.json.example
+!/.claude/settings.json
+!/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/.env.example
+!/.claude/skills/.gitignore
+!/.claude/skills/gdb-jlink-debug/
+!/.claude/skills/gdb-jlink-debug/**
+!/.claude-plugin/

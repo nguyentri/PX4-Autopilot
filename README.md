@@ -99,6 +99,12 @@ The CR8-1 `default` image retains its legacy relay role and is not its peer.
 
 ### AI Agents
 
+The repository includes the [gdb-jlink-debug skill](.claude/skills/gdb-jlink-debug/SKILL.md)
+and its RZ/V2H references as regular files. Claude Code can discover it in
+`.claude/skills/`; other agents can read `SKILL.md` directly. Install SEGGER
+J-Link tools and an ARM GDB, then follow the skill's host preflight with your
+board and matching ELF. No home-directory skill installation is required.
+
 [AGENTS.md](./AGENTS.md) is the agent entry point: code map, the two build scripts, RTT/J-Link debug, `refs/` layout, and evidence rules. [CLAUDE.md](./CLAUDE.md) adds Claude Code workflow rules on top.
 
 ## Quick Start
