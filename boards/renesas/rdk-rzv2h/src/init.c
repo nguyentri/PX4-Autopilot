@@ -232,18 +232,12 @@ __EXPORT void board_on_reset(int status)
 
 static void rdk_rzv2h_gpio_initialize(void)
 {
-	/* Configure LEDs */
-#ifdef GPIO_nLED_1
-	px4_arch_configgpio(GPIO_nLED_1);
+	/* Configure LEDs (2 user LEDs: PB4, PB5 — active high) */
+#ifdef GPIO_LED_1
+	px4_arch_configgpio(GPIO_LED_1);
 #endif
-#ifdef GPIO_nLED_2
-	px4_arch_configgpio(GPIO_nLED_2);
-#endif
-#ifdef GPIO_nLED_3
-	px4_arch_configgpio(GPIO_nLED_3);
-#endif
-#ifdef GPIO_nLED_4
-	px4_arch_configgpio(GPIO_nLED_4);
+#ifdef GPIO_LED_2
+	px4_arch_configgpio(GPIO_LED_2);
 #endif
 
 	/* Configure only the selected IMU's DRDY input. P94 has one owner. */

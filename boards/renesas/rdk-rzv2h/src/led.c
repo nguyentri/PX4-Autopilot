@@ -50,50 +50,34 @@
 
 /**
  * Initialize LED GPIOs
+ *
+ * The RDK-RZV2H has 2 user LEDs: PB4 (LED0) and PB5 (LED1), active HIGH.
  */
 __EXPORT void board_autoled_initialize(void)
 {
-#ifdef GPIO_nLED_1
-	px4_arch_configgpio(GPIO_nLED_1);
+#ifdef GPIO_LED_1
+	px4_arch_configgpio(GPIO_LED_1);
 #endif
-#ifdef GPIO_nLED_2
-	px4_arch_configgpio(GPIO_nLED_2);
-#endif
-#ifdef GPIO_nLED_3
-	px4_arch_configgpio(GPIO_nLED_3);
-#endif
-#ifdef GPIO_nLED_4
-	px4_arch_configgpio(GPIO_nLED_4);
+#ifdef GPIO_LED_2
+	px4_arch_configgpio(GPIO_LED_2);
 #endif
 }
 
 /**
- * Turn on/off a single LED
+ * Turn on a single LED (active high: write true to turn ON)
  */
 __EXPORT void board_autoled_on(int led)
 {
 	switch (led) {
 	case 0:
-#ifdef GPIO_nLED_1
-		px4_arch_gpiowrite(GPIO_nLED_1, false);  /* Active low - write false to turn ON */
+#ifdef GPIO_LED_1
+		px4_arch_gpiowrite(GPIO_LED_1, true);
 #endif
 		break;
 
 	case 1:
-#ifdef GPIO_nLED_2
-		px4_arch_gpiowrite(GPIO_nLED_2, false);
-#endif
-		break;
-
-	case 2:
-#ifdef GPIO_nLED_3
-		px4_arch_gpiowrite(GPIO_nLED_3, false);
-#endif
-		break;
-
-	case 3:
-#ifdef GPIO_nLED_4
-		px4_arch_gpiowrite(GPIO_nLED_4, false);
+#ifdef GPIO_LED_2
+		px4_arch_gpiowrite(GPIO_LED_2, true);
 #endif
 		break;
 
@@ -106,26 +90,14 @@ __EXPORT void board_autoled_off(int led)
 {
 	switch (led) {
 	case 0:
-#ifdef GPIO_nLED_1
-		px4_arch_gpiowrite(GPIO_nLED_1, true);  /* Active low - write true to turn OFF */
+#ifdef GPIO_LED_1
+		px4_arch_gpiowrite(GPIO_LED_1, false);
 #endif
 		break;
 
 	case 1:
-#ifdef GPIO_nLED_2
-		px4_arch_gpiowrite(GPIO_nLED_2, true);
-#endif
-		break;
-
-	case 2:
-#ifdef GPIO_nLED_3
-		px4_arch_gpiowrite(GPIO_nLED_3, true);
-#endif
-		break;
-
-	case 3:
-#ifdef GPIO_nLED_4
-		px4_arch_gpiowrite(GPIO_nLED_4, true);
+#ifdef GPIO_LED_2
+		px4_arch_gpiowrite(GPIO_LED_2, false);
 #endif
 		break;
 

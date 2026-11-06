@@ -134,6 +134,12 @@
 /* I2C Bus Configuration
  * I2C7 = RSCI7 in SCI-mode I2C (NOT a standalone RIIC peripheral): BMP280 barometer
  * (P76=SDA, P77=SCL). Driver: rzv_sci_i2c.c. PIO mode; DMAC is disabled.
+ *
+ * Secondary / ADC-I2C Bus (RSCI0):
+ * SCI0: RXD0=P51(Mode1) -> SCL (40-pin Pin 36), TXD0=P50(Mode1) -> SDA (40-pin Pin 22)
+ * Driver: rzv_sci_i2c.c (/dev/i2c10). Used for ADC-I2C (e.g. ADS1115 via standalone
+ * ads1115 config), candidate dedicated interface for BMS monitor (battery management).
+ * External pull-ups to 3.3V are required (RDK has no on-board pull-ups on P50/P51).
  */
 #define PX4_NUMBER_I2C_BUSES            1
 #define BOARD_NUMBER_I2C_BUSES          1
@@ -279,26 +285,27 @@
  * LED Configuration
  ****************************************************************************************************/
 
-/* LED GPIO Definitions (from NuttX board.h)
- * LED1: P0_0 (GPIO Port 0, Pin 0)
- * LED2: P0_1 (GPIO Port 0, Pin 1)
- * LED3: P0_2 (GPIO Port 0, Pin 2)
- * LED4: P0_3 (GPIO Port 0, Pin 3)
- * LEDs are active low (write 0 to turn on)
+/* LED GPIO Definitions (matched to NuttX board.h and actual RDK hardware)
+ *
+ * The RDK-RZV2H has 2 user LEDs on the board silk:
+ *   LED0 (index 0): PB4 (GPIO Port B / PORT11, Pin 4) — active HIGH
+ *   LED1 (index 1): PB5 (GPIO Port B / PORT11, Pin 5) — active HIGH
+ *
+ * Active high: write 1 to turn on, 0 to turn off.
+ * Initial state OUTPUT_LOW = LED off at boot.
+ *
+ * PX4 naming uses GPIO_LED_n (non-inverted) since these are active-high.
  */
-#define GPIO_nLED_1                     GPIO_P0_0_OUTPUT_HIGH  /* LED1 - Status */
-#define GPIO_nLED_2                     GPIO_P0_1_OUTPUT_HIGH  /* LED2 - Armed */
-#define GPIO_nLED_3                     GPIO_P0_2_OUTPUT_HIGH  /* LED3 */
-#define GPIO_nLED_4                     GPIO_P0_3_OUTPUT_HIGH  /* LED4 */
+#define GPIO_LED_1                      GPIO_PB_4_OUTPUT_LOW   /* LED0 - Status (PB4) */
+#define GPIO_LED_2                      GPIO_PB_5_OUTPUT_LOW   /* LED1 - Armed  (PB5) */
 
-#define GPIO_nLED_BLUE                  GPIO_nLED_1
-#define GPIO_nLED_GREEN                 GPIO_nLED_2
-#define GPIO_nLED_RED                   GPIO_nLED_3
+#define GPIO_LED_BLUE                   GPIO_LED_1
+#define GPIO_LED_GREEN                  GPIO_LED_2
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS   1
-#define BOARD_OVERLOAD_LED              0  /* LED1 for overload */
-#define BOARD_ARMED_STATE_LED           1  /* LED2 for armed state */
-#define BOARD_MAX_LEDS                  4
+#define BOARD_OVERLOAD_LED              0  /* LED0 for overload */
+#define BOARD_ARMED_STATE_LED           1  /* LED1 for armed state */
+#define BOARD_MAX_LEDS                  2
 
 /****************************************************************************************************
  * Button/Switch Configuration
