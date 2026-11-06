@@ -82,7 +82,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P43** | 4.3 | AF=5 | CANFD CRX4 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW4 |
 | **P46** | 4.6 | AF=5 | CANFD CTX5 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW5, `/dev/can5`, external transceiver required |
 | **P47** | 4.7 | AF=5 | CANFD CRX5 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW5 |
-| **P50** | 5.0 | Profile-dependent | No native sensor DRDY owner | — | — | — | board.h | Reference SPI table retires INT1; comments reserve pad for debug UART |
+| **P50** | 5.0 | AF=1 | RSCI0 TXD / SDA (I2C) | Bidirectional | External pull-up required | B01 | board.h / rzv_sci_i2c.c | Header Pin 22; ADC-I2C (SDA), potential dedicated for BMS monitor |
+| **P51** | 5.1 | AF=1 | RSCI0 RXD / SCL (I2C) | Bidirectional | External pull-up required | B01 | board.h / rzv_sci_i2c.c | Header Pin 36; ADC-I2C (SCL), potential dedicated for BMS monitor |
 | **P52** | 5.2 | Profile-dependent | Safety candidate not established | — | — | — | board safety (planned) | Selected reference XML uses RSCI1 TX; do not infer safety input from old labels |
 | **P53** | 5.3 | AF=11 | GPT10B (PWM4) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P70** | 7.0 | AF=1 | RSCI4 TXD | Output | None | B01 | rzv_serial.c | TFmini TX |
@@ -113,6 +114,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **PA4 / P10_04** | A.4 | AF=11 | GPT6A (PWM1) | Output | None | B01 | rzv_gpt.c | PWM |
 | **PA6 / P10_06** | A.6 | GPIO | Safety LED | Output low | None | B01 | board GPIO (planned) | GPS safety LED |
 | **PA7 / P10_07** | A.7 | AF=11 | GPT7B (PWM2) | Output | None | B01 | rzv_gpt.c | PWM |
+| **PB4 / P11_04** | B.4 | GPIO | User LED0 | Output, active-high | None | B01 | board.h / led.c | Board silk LED0 (Status, GPIO_LED_1) |
+| **PB5 / P11_05** | B.5 | GPIO | User LED1 | Output, active-high | None | B01 | board.h / led.c | Board silk LED1 (Armed, GPIO_LED_2) |
 
 ---
 
@@ -140,8 +143,12 @@ Read the selected defconfig and [SPI source](../../platforms/nuttx/NuttX/nuttx/a
 for current channel allocation; neither host checks nor a build prove external
 DMA transfers or CS waveforms. New multi-CS routing starts with PIO.
 
-### I2C Bus (RSCI7 SCI-mode I2C)
+### I2C Buses
 
+#### Sensor I2C (RSCI7 SCI-mode I2C)
+
+**Pins:** P76 (SDA) / P77 (SCL) on 40-pin Header Pins 3 / 5.
+**Pull-ups:** Board-level R181 / R180 2.2 kΩ pull-ups to D3.3V populated on RDK.
 **Address:** BMP280 0x76 (SDO low; `bmp280` sample default, `-a 0x77` for
 SDO high); BMM150 sample defaults to 0x10 with address configuration.
 Extension addresses are in the profile table above. The bench GY-912 and
@@ -154,14 +161,22 @@ BMP280 modules tie SDO to GND, so every profile starts the barometer at 0x76
 and [bmm150-i2c-validation.md](./validation/bmm150-i2c-validation.md).
 **DMA:** Disabled (PIO mode).
 
+#### ADC-I2C / BMS Monitor Bus (RSCI0 SCI-mode I2C)
+
+**Pins:** P50 (TXD0 Mode 1 -> SDA) / P51 (RXD0 Mode 1 -> SCL) on 40-pin Header Pins 22 / 36.
+**Pull-ups:** **No** onboard pull-up resistors on RDK; external module or carrier must supply pull-ups to 3.3V.
+**Device path:** Registered as `/dev/i2c10` (SCI bus offset 10).
+**Role:** Used for external ADC-I2C (e.g. ADS1115 via standalone `ads1115` defconfig) and potential dedicated interface for BMS monitor (Battery Management System / battery voltage & current sensing).
+**DMA:** Disabled (PIO mode).
+
 ### PWM / GPT Outputs (ESC Control)
 
-| GPIO / AF | GPT Timer | Output | Function | Pin |
-|-----------|-----------|--------|----------|-----|
-| PA4 | GPT6A | PWM1 | Motor 1 (front-right) | PA4 |
-| PA7 | GPT7B | PWM2 | Motor 2 (rear-left) | PA7 |
-| P96 | GPT9A | PWM3 | Motor 3 (front-left) | P96 |
-| P53 | GPT10B | PWM4 | Motor 4 (rear-right) | P53 |
+| PX4 Channel (0-based) | GPIO / AF | GPT Timer | Output | Motor / ESC (1-based) | Header Pin |
+|-----------------------|-----------|-----------|--------|-----------------------|------------|
+| PWM0 (CH0) | PA4 / P10_04 | GPT6A  | GTIOC6A  | Motor 1 / ESC1 (front-right) | Pin 32 (GPIO12/PWM0) |
+| PWM1 (CH1) | PA7 / P10_07 | GPT7B  | GTIOC7B  | Motor 2 / ESC2 (rear-left)   | Pin 33 (GPIO13/PWM1) |
+| PWM2 (CH2) | P96 / P9_06  | GPT9A  | GTIOC9A  | Motor 3 / ESC3 (front-left)  | Pin 35 (GPIO19)      |
+| PWM3 (CH3) | P53 / P5_03  | GPT10B | GTIOC10B | Motor 4 / ESC4 (rear-right)  | Pin 31 (GPIO06)      |
 
 **Frequency:** Configurable (typically 400 Hz for ESC).
 **Duty Cycle:** 1000–2000 µs (1–2 ms pulse width).
@@ -203,7 +218,7 @@ python3 test/rzv2h_board_gpio_contract_test.py
 rg -n 'pincfg|active="true"|selected="true"' \
   refs/rzv2h_drone_px4-dev/configuration.xml
 
-rg -n "P42|P43|P46|P47|P50|P52|P53|P70|P71|P72|P73|P75|P76|P77|P80|P81|P82|P83|P84|P85|P86|P87|P90|P91|P92|P93|P94|P96|P97|PA2|PA3|PA4|PA6|PA7" \
+rg -n "P42|P43|P46|P47|P50|P51|P52|P53|P70|P71|P72|P73|P75|P76|P77|P80|P81|P82|P83|P84|P85|P86|P87|P90|P91|P92|P93|P94|P96|P97|PA2|PA3|PA4|PA6|PA7|PB4|PB5" \
   boards/renesas/rdk-rzv2h \
   platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h
 ```

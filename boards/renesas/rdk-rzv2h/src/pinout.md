@@ -73,6 +73,7 @@ profile's INT wiring.
 | **18** | GPIO24 | **GPS TX** (UART9) |
 | **19** | GPIO10/MOSI | **MPU9250 MOSI** (SPI) |
 | **21** | GPIO09/MISO | **MPU9250 MISO** (SPI) |
+| **22** | GPIO25 | **ADC-I2C SDA** (SCI0, P50) – BMS candidate |
 | **23** | GPIO11/SCK | **MPU9250 SCK** (SPI) |
 | **24** | GPIO08/CE0 | **MPU9250 CS** (P93, GPIO) |
 | **26** | GPIO07/CE1 | **MPU9250 INT** (P94) |
@@ -80,6 +81,7 @@ profile's INT wiring.
 | **32** | GPIO12/PWM0 | **ESC1 PWM** (GPT6A) |
 | **33** | GPIO13/PWM1 | **ESC2 PWM** (GPT7B) |
 | **35** | GPIO19/PCM_FS | **ESC3 PWM** (GPT9A) |
+| **36** | GPIO16 | **ADC-I2C SCL** (SCI0, P51) – BMS candidate |
 
 **UART mapping:**
 - UART4 (P70/P71): TFmini → `/dev/ttyS4`
@@ -183,6 +185,8 @@ bmp280 start -X  # -X for external I2C
 ```
 
 **fs-a8s**: SBUS (inverted UART, 100000 baud, 8E2), requires hardware inverter
+
+**ADC-I2C (SCI0)**: Simple-I2C on Pin 22 (P50/SDA, TXD0 Mode 1) and Pin 36 (P51/SCL, RXD0 Mode 1), `/dev/i2c10`. Dedicated for external ADC-I2C (e.g., ADS1115) and candidate interface for BMS monitor (battery management). Requires external 3.3V pull-up resistors (none populated on board for P50/P51).
 
 ---
 

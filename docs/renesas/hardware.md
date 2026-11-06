@@ -239,6 +239,27 @@ For the SCI7 Simple-I2C pair it shows:
   GY-912 pins, so the bus level is confirmed. SCI7 still got no ACK from
   either the BMP388 or the BMP280 at that level.
 
+### 6.6 40-pin Header ADC-I2C (SCI0, P50/P51)
+
+The RDK J1 40-pin connector routes the secondary SCI0 Simple-I2C interface as follows:
+
+| Net / Function | SoC pad | J1 pin | Pull-up |
+|----------------|---------|--------|---------|
+| SDA0 (TXD0 Mode 1) | P50 | 22 (GPIO25) | None on board (external required) |
+| SCL0 (RXD0 Mode 1) | P51 | 36 (GPIO16) | None on board (external required) |
+
+- **Controller & Device:** RSCI0 in SCI-mode I2C, registered as `/dev/i2c10` (SCI bus offset 10).
+- **Use Case:** Used for ADC-I2C (e.g., ADS1115 via the standalone `ads1115` defconfig) and potential dedicated interface for BMS monitor (Battery Management System / battery voltage and current telemetry).
+- **Pull-ups:** Unlike SCI7 (which has onboard R180/R181 pull-ups), P50/P51 have **no** on-board pull-up resistors on the RDK. External pull-ups to 3.3V (typically 2.2 kΩ – 4.7 kΩ) must be supplied by the connected ADC/BMS module or carrier board.
+
+### 6.7 User LEDs (PB4 / PB5)
+
+The RDK-RZV2H board provides 2 user LEDs on the board silk:
+- **LED0** (macro `BOARD_LED1_GPIO` in NuttX, `GPIO_LED_1` in PX4): PB4 (Port 11, Pin 4), active-high. Used for status / overload indication.
+- **LED1** (macro `BOARD_LED2_GPIO` in NuttX, `GPIO_LED_2` in PX4): PB5 (Port 11, Pin 5), active-high. Used for armed state indication.
+
+Both LEDs are active-high (write 1 to turn on, 0 to turn off), with initial boot state `OUTPUT_LOW` (LEDs off).
+
 ### PX4/NuttX Development Notes
 
 - Treat `pinmap.md` as the software assignment matrix. Confirm external wiring
