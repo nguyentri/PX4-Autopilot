@@ -282,7 +282,7 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       ['Use Build Receipt', 'Choose an existing matching build explicitly', 'useBuild'],
       ['Build All', 'Build through the existing group builder', 'buildBoth'],
       ['Build & Load', 'Explicitly build, capture, then load this exact pair', 'buildAndLoad'],
-      ['Stop Sessions', 'Stop only this extension’s debugger session', 'stopSessions'],
+      ['Stop Sessions', 'Stop this extension’s debugger session and RTT bridge', 'stopSessions'],
       ['Validate Images', 'Check source changes and captured hashes without hardware', 'validate'],
     ];
     if ((['cr8_0', 'cr8_1'] as R8Core[]).some((core) => this.store.getConsoleTransport(core) === 'rtt')) {

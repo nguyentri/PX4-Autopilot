@@ -158,7 +158,7 @@ The extension opens no terminal of its own. Connect your own terminal:
 - **Serial (R8-0 in the serial groups)**: any serial terminal (for example μScope or picocom) on the board serial UART (SCI5, P72/P73) at 115200 8N1. The serial console does not use the J-Link, so it may stay open during load and debug.
 - **RTT**: after a verified **Load Both**, click the **Console R8-0** or **Console R8-1** row (`RTT · Start bridge on 127.0.0.1:19021`), then connect a terminal to `127.0.0.1:19021` (μScope can send input). The backend bridge holds the probe while it runs, so click **Stop RTT Bridge** before **Load**, **Recover** or **Debug**, and start it again afterwards. One bridge per probe: start R8-1 or R8-0, not both. A manual bridge (`platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <cr8_0|cr8_1> <elf>`) also works; stop it with `nuttx-rtt-bridge.sh stop`, because **Stop RTT Bridge** stops only the bridge the extension started.
 
-**Stop Sessions** stops only this extension's debugger session; it never touches a console or RTT bridge.
+**Stop Sessions** stops this extension's debugger session and the RTT bridge the extension started; it never touches a serial console or a manually started bridge.
 
 ---
 

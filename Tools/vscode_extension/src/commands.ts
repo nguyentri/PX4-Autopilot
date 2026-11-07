@@ -49,7 +49,12 @@ export function registerCommands(
     loadAndDebug: () => dual.loadAndDebug(),
     debugR80: () => dual.targetAction('debug', 'cr8_0'), debugR81: () => dual.targetAction('debug', 'cr8_1'),
     startRtt: (core) => dual.startRtt(core), stopRtt: () => dual.stopRtt(),
-    stopSessions: async () => { await debugProvider.disposeAsync(); store.notifySessionChange(); },
+    // The RTT bridge also holds the probe, so Stop Sessions frees it as well.
+    stopSessions: async () => {
+      await debugProvider.disposeAsync();
+      store.notifySessionChange();
+      if (store.getSelectedProbe()) { await dual.stopRtt(true); }
+    },
   };
   const invoke = async (name: string, argument?: { setupId?: string; core?: 'cr8_0' | 'cr8_1'; token?: SetupOperationToken }): Promise<unknown> => {
     try {

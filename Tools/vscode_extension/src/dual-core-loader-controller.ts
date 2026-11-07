@@ -150,8 +150,11 @@ export class DualCoreLoaderController implements vscode.Disposable {
     return true;
   }
 
-  /** Stops the RTT bridge this checkout's backend started; a manual bridge is not touched. */
-  public async stopRtt(): Promise<boolean> {
+  /**
+   * Stops the RTT bridge this checkout's backend started; a manual bridge is not touched.
+   * `quiet` (used by Stop Sessions) reports only a bridge that was actually stopped.
+   */
+  public async stopRtt(quiet = false): Promise<boolean> {
     if (vscode.workspace.isTrusted === false) { throw new Error('Trust this workspace before stopping the RTT bridge.'); }
     const serial = this.store.getSelectedProbe();
     if (!serial) { throw new Error('Select the J-Link probe whose RTT bridge to stop.'); }
@@ -161,8 +164,11 @@ export class DualCoreLoaderController implements vscode.Disposable {
     if (result.status !== 'ok') {
       throw new Error(result.diagnostics.map((item) => item.message).join('; ') || 'RTT bridge did not stop.');
     }
-    void vscode.window.showInformationMessage(result.data?.stopped ? 'RTT bridge stopped; the probe is free.'
-      : 'No extension-started RTT bridge was running. Stop a manual one with platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop.');
+    if (result.data?.stopped) {
+      void vscode.window.showInformationMessage('RTT bridge stopped; the probe is free.');
+    } else if (!quiet) {
+      void vscode.window.showInformationMessage('No extension-started RTT bridge was running. Stop a manual one with platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop.');
+    }
     return true;
   }
 

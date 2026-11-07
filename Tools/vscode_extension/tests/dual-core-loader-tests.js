@@ -303,6 +303,8 @@ async function runDualCoreTests() {
     assert.equal(await controller.startRtt('cr8_1'), true);
     assert.deepEqual({ ...consoleCalls[0], selectionPath: undefined }, { action: 'start', selectionPath: undefined, receiptPath: store.getPreparedPair().prepared.receiptPath, serial: 'fixture', core: 'cr8_1' });
     assert.equal(await controller.stopRtt(), true); assert.equal(consoleCalls[1].action, 'stop'); assert.equal(consoleCalls[1].serial, 'fixture');
+    assert.equal(await controller.stopRtt(true), true, 'Stop Sessions must reach the backend bridge stop');
+    assert.equal(consoleCalls[2].action, 'stop'); consoleCalls.pop();
     store.getConsoleTransport = () => 'sci5';
     await assert.rejects(controller.startRtt('cr8_0'), /SCI5, not RTT/, 'a UART console must not start an RTT bridge');
     delete store.getConsoleTransport;

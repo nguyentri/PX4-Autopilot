@@ -84,7 +84,7 @@ The extension opens no terminal. Each **Console R8-0/R8-1** row in Firmware Setu
 - SCI5: open the board UART yourself (μScope, picocom, ...) at 115200 8N1. It does not use J-Link and may stay open during load/debug.
 - RTT: use the console row, or run `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <core> <elf>` manually; either way, connect a terminal to `127.0.0.1:19021`. Stop the bridge before Load, Recover, Debug or Load Both. A running bridge makes the probe busy; the `PROBE_BUSY` refusal names **Stop RTT Bridge** when the extension's bridge owns the probe.
 
-A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops only this extension's debugger session and never touches a console or RTT bridge.
+A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops this extension's debugger session and the RTT bridge the extension started, so the probe is free; it never touches a serial console or a bridge started manually with `nuttx-rtt-bridge.sh`.
 
 The extension calls the backend `console` CLI only for the RTT bridge. The `firmware_workspace.serial_console` UART supervisor remains available for scripted use; the extension UI does not call it.
 
