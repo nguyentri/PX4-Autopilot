@@ -417,7 +417,7 @@ PX4 ELFs and cannot qualify these NuttX raw-demo images.
 
 A two-console customer demo on `/dev/ipcc1`: ping and text messages in both
 directions, each acknowledged by the peer application, plus a heartbeat every
-10 s (`CONFIG_EXAMPLES_RZV_IPC_DEMO_HEARTBEAT_MS`). Images: `ipcc-demo-cr8_0-serial` (CR8-0, NSH on the serial UART, link initiator) and
+20 s (`CONFIG_EXAMPLES_RZV_IPC_DEMO_HEARTBEAT_MS`). Images: `ipcc-demo-cr8_0-serial` (CR8-0, NSH on the serial UART, link initiator) and
 `ipcc-demo-cr8_1` (CR8-1, NSH on RTT, responder). Both start the `ipcdemo`
 daemon at boot (`CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_SHOWCASE`); it waits for the
 device, brings the link up and recovers it on its own. `ipctest` stays
@@ -465,35 +465,70 @@ Open both consoles yourself:
 1. `ipcdemo status` on both cores: `link up, peer ok`.
 2. CR8-0 `ipcdemo ping -n 5`, then CR8-1 `ipcdemo ping -n 5`.
 3. CR8-0 `ipcdemo say hello from CR8-0`, then the reverse from CR8-1.
-4. Wait 20–30 s and show the heartbeat lines on both consoles.
+4. Wait 40–60 s and show the heartbeat lines on both consoles.
 5. Optional resilience: reload CR8-1 only (`rzv2h-load-one-core.sh cr8_1 <elf>`
    with the bridge stopped), restart the bridge, and show CR8-0 reporting
    `peer lost` then `link up` / `peer back` without intervention.
 
+Each core sends its own heartbeat with its own counter, so each console
+shows two unrelated sequences:
+
+- `heartbeat #N sent -> <peer> replied in <t> us`: this core's heartbeat and
+  the round trip to the peer's reply, measured on this core's clock. A steady
+  value (about 70–100 µs) is healthy; it does not grow over time.
+- `heartbeat #N received <- <peer>, interval <t> s (expected <p> s)`: the
+  peer's heartbeat and the gap since its previous one, measured
+  on this core's clock. `<p>` is the configured period; both images use the
+  same `CONFIG_EXAMPLES_RZV_IPC_DEMO_HEARTBEAT_MS`.
+
 While the RTT bridge is attached, J-Link halts CR8-1 for every RTT read
 (stop mode on Cortex-R8). CR8-1's clock pauses during each halt, so its
-heartbeats arrive about 25 % later than the configured period (6.3 s
-measured at the former 5 s setting), and CR8-0 ping round trips
-can reach about 250 ms. The demo images therefore use a 400 ms raw TX-ACK
+timers run slow. CR8-0 therefore sees CR8-1's heartbeats arrive later than
+expected (24–27 s measured at the 20 s setting), and CR8-1 sees CR8-0's arrive
+early (about 15 s). With no bridge attached both cores report 20.0 s. Neither
+is a link fault. The CR8-0 figure is the real
+spacing. CR8-0 ping round trips can reach about 250 ms. The demo images therefore use a 400 ms raw TX-ACK
 timeout (`CONFIG_RZV_IPC_TX_TIMEOUT_MS`), and CR8-1 uses a non-blocking RTT
 up-buffer (`CONFIG_SEGGER_RTT_UP_MODE_TRIM`), so the link stays up with or
 without a host draining RTT.
 
-Expected lines (`[core]` is the printing core; numbers vary):
+Board transcript (2026-11-07, RDK-RZ/V2H, 20 s heartbeat). CR8-1 was on
+RTT and CR8-0 on serial; ping and say were sent from CR8-1. Numbers vary
+between runs.
+
+Before the RTT bridge attached (no halts, so both clocks agree):
 
 ```text
-[CR8-0] ipcdemo up: initiator /dev/ipcc1, heartbeat 5000 ms
-[CR8-0] link up epoch=<n>
-[CR8-0] ping #1 acked, rtt 0 ms
-[CR8-0] ping: 5/5 acked, rtt min/avg/max = 0/0/1 ms
-[CR8-1] ping #1 from CR8-0 -> ack
-[CR8-1] message #7: "hello from CR8-0" -> ack
-[CR8-0] message #7 delivered, rtt 0 ms
-[CR8-0] heartbeat #3 acked, rtt 0 ms
-[CR8-1] heartbeat #3 from CR8-0 -> ack
-[CR8-0] peer lost (3 heartbeats unacknowledged)
-[CR8-0] peer back
+[CR8-1] ipcdemo up: responder /dev/ipcc1, heartbeat 20000 ms
+[CR8-1] link up epoch=172
+[CR8-1] heartbeat #1 received <- CR8-0, interval 20.0 s (expected 20.0 s)
+[CR8-1] heartbeat #1 sent -> CR8-0 replied in 65 us
+[CR8-0] heartbeat #4 sent -> CR8-1 replied in 65 us
+[CR8-0] heartbeat #4 received <- CR8-1, interval 20.0 s (expected 20.0 s)
 ```
+
+With the bridge attached, from the CR8-1 console:
+
+```text
+[CR8-1] ping #11 acked, rtt 113 us
+[CR8-1] ping: 5/5 acked, rtt min/avg/max = 75/97/127 us
+[CR8-1] message #16 delivered, rtt 112 us
+[CR8-1] heartbeat #18 sent -> CR8-0 replied in 99 us
+[CR8-1] heartbeat #13 received <- CR8-0, interval 14.9 s (expected 20.0 s)
+```
+
+The same exchange on the CR8-0 console:
+
+```text
+[CR8-0] ping #11 from CR8-1 -> ack
+[CR8-0] message #16: "hello from CR8-1" -> ack
+[CR8-0] heartbeat #12 sent -> CR8-1 replied in 71 us
+[CR8-0] heartbeat #18 received <- CR8-1, interval 26.7 s (expected 20.0 s)
+```
+
+Ping, say and heartbeat share one sequence counter per core, so a heartbeat
+number jumps after a ping burst (CR8-1 sent `#10`, then `#17`). The resilience step
+adds `peer lost (3 heartbeats unacknowledged)` and then `peer back` on CR8-0.
 
 ### Recovery runbook
 
