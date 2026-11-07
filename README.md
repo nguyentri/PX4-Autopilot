@@ -117,20 +117,31 @@ cd PX4-Autopilot
 # Use `source` so the env scrub propagates into your shell.
 source ./build_setup.sh
 
-# Build one target...
+# Build one or more targets (a target is required; bare ./build.sh prints help)
 ./build.sh renesas_rdk-rzv2h_default
-# ...or build every Renesas target
-./build.sh
 ```
 
 `./build.sh --list` enumerates every supported target. `make <target>` works too
 and is equivalent to `./build.sh <target>`.
+
+Load a built target onto the board with `./flash.sh` (same target names;
+bare `./flash.sh` prints help and the built targets):
+
+```bash
+./flash.sh renesas_rdk-rzv2h_default                      # CR8-0 RAM load + start
+./flash.sh rdk-rzv2h_dualcr8 rdk-rzv2h-io-cr8_1_pwm       # CR8-0 + CR8-1 pair
+./flash.sh renesas_evk-ra8p1_default                      # RA8: flash, reset, run
+```
+
+RZ/V2H CR8 images are volatile RAM loads started at `__start` (no SoC reset);
+the RZ/V2H CM33 target is refused because connecting to it resets the SoC.
 
 NuttX-only builds (driver bring-up, NSH test configs) use a separate script:
 
 ```bash
 platforms/nuttx/NuttX/build.sh --list      # nsh-rtt, ipcc, adc, canfd, ...
 platforms/nuttx/NuttX/build.sh nsh-rtt     # ELF: platforms/nuttx/NuttX/nuttx/nuttx
+platforms/nuttx/NuttX/flash.sh             # load that last build on its core
 ```
 
 ## Quick Start for Contributors

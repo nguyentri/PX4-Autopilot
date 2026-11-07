@@ -153,6 +153,26 @@ JLINK_SERIAL=<probe-serial> \
 The build does not provide a raw-binary flash target. One J-Link probe has one
 owner at a time; stop the RTT bridge before a GDB session.
 
+`./flash.sh <target> [<cr8_1-target>]` wraps the guarded loaders: a CR8-0 or
+CR8-1 target goes through `rzv2h-load-one-core.sh`, a CR8-0 + CR8-1 pair
+through `rzv2h-ipc-demo-load-both-auto.sh`, and RA8 targets are programmed
+from the ELF with JLinkExe, then reset and run. It first shuts down any RTT
+console holding the probe (`platforms/nuttx/Debug/rtt-console-stop.sh`: the
+managed bridge, other JLinkExe bridges on port 19021 and SEGGER RTT client,
+logger and viewer tools) and never restarts it; open RTT manually afterwards. It
+auto-detects `JLINK_SERIAL` when one probe is attached and refuses
+`renesas_rdk-rzv2h-io-cm33_*`. Loading a pair is mechanical only; it does not
+qualify an actuator pair.
+
+`platforms/nuttx/NuttX/flash.sh [<elf> [<cr8_1-elf>]]` does the same for NuttX
+samples. With no argument it loads the last build, `nuttx/nuttx`, on the core
+its `nuttx/.config` names (RZ/V2H CR8-0/CR8-1, EVK-RA8P1, FPB-RA8E1), and
+refuses when `.config` is newer than the ELF. An explicit ELF is mapped by its
+entry address (CR8-0 `0x408xxxxx`, CR8-1 `0x418xxxxx`) or file name;
+`--core cr8_0|cr8_1|ra8p1|ra8e1` overrides. Two ELFs load as a CR8-0 + CR8-1
+pair, e.g. `nuttx/nuttx-ipcc-demo-cr8_0-serial.elf nuttx/nuttx-ipcc-demo-cr8_1.elf`.
+Both scripts share `platforms/nuttx/Debug/jlink-flash-ra8.sh` for RA8 flashing.
+
 ## 5. Serial Console (UART Debug)
 
 The integrated RZ/V2H PX4 images use RTT for text diagnostics. Standalone
