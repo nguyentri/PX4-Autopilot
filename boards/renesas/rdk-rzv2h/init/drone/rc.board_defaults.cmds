@@ -28,6 +28,10 @@ param set-default SENS_TFMINI_CFG 401
 param set-default MAV_0_RATE 4000
 param set-default RC_INPUT_PROTO 2
 
+# Emit MAVLink 2 framing from boot on every instance instead of starting in
+# MAVLink 1 and switching only after the GCS sends a MAVLink 2 packet.
+param set-default MAV_PROTO_VER 2
+
 # Probe only the explicitly configured on-board sensors.
 param set-default SENS_EXT_I2C_PRB 0
 param set-default SYS_HAS_BARO 1

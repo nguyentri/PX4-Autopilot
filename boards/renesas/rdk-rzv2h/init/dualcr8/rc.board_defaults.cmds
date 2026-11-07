@@ -16,6 +16,7 @@ set PWM_OUT_START no
 param set-default SER_GPS1_BAUD 115200
 param set-default SER_EXT2_BAUD 115200
 param set-default SENS_TFMINI_CFG 401
+param set-default MAV_PROTO_VER 2
 param set-default SENS_EXT_I2C_PRB 0
 param set-default SYS_HAS_BARO 1
 param set-default SYS_HAS_GPS 1
