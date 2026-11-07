@@ -107,6 +107,7 @@ _server_owns_port() {
 # Drops -strict and uses a longer -timeout than the original loader so a slow
 # SWD bring-up does not abort the connect. Extra arguments after <log> go to
 # the server (verify_core passes -noreset -noir to attach without side effects).
+SERVER_READY_TIMEOUT="${SERVER_READY_TIMEOUT:-90}"
 _start_server() {
 	dev="$1"; log="$2"; shift 2
 	# Fully buffered native stdout can hide readiness (and failure markers)
@@ -136,7 +137,12 @@ _start_server() {
 		fi
 		_server_identity || { _stop_server; return 1; }
 		tries=$((tries + 1))
-		[ "${tries}" -gt 200 ] && { _stop_server; return 1; }
+		# A held CR8 reports DBGEN only after the J-Link R8 start sequence
+		# (up to ~60 s), so wait longer than that before giving up.
+		if [ "${tries}" -gt $((SERVER_READY_TIMEOUT * 10)) ]; then
+			echo "!! J-Link target connect unfinished after ${SERVER_READY_TIMEOUT} s; no automatic retry (see ${log})" >&2
+			_stop_server; return 1
+		fi
 		sleep 0.1
 	done
 	return 0
