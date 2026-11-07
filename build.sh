@@ -35,6 +35,12 @@ export GIT_SUBMODULES_ARE_EVIL=1
 clean_nuttx_artifacts()
 {
 	echo "Cleaning NuttX build artifacts..."
+	# An interrupted in-tree configure/build can leave .config without the
+	# arch/arm/src/chip symlink; distclean then fails on chip/Make.defs.
+	# Recreate the links from the existing .config so distclean can run.
+	if [ -f platforms/nuttx/NuttX/nuttx/.config ]; then
+		make -C platforms/nuttx/NuttX/nuttx .dirlinks >/dev/null || true
+	fi
 	make -C platforms/nuttx/NuttX/nuttx distclean
 	echo "NuttX artifacts cleaned."
 	echo
@@ -52,8 +58,9 @@ print_usage()
 	cat <<'EOF'
 Usage: ./build.sh [options] [target ...]
 
-Build one or more Renesas PX4 board configurations. With no target given,
-every Renesas .px4board config (except backups ending in _bk) is built.
+Build one or more Renesas PX4 board configurations. At least one target is
+required; with no target the script prints this help and the target list,
+builds nothing, and exits 2.
 
 Options:
   --list      Print available Renesas targets and exit.
@@ -166,8 +173,12 @@ if [ "$LIST_ONLY" -eq 1 ]; then
 fi
 
 if [ "${#TARGETS[@]}" -eq 0 ]; then
-	# No explicit target: build everything.
-	TARGETS=("${AVAILABLE[@]}")
+	# No target: never clean or build anything implicitly; show how to pick one.
+	print_usage >&2
+	echo >&2
+	echo "Available targets:" >&2
+	printf '  %s\n' "${AVAILABLE[@]}" >&2
+	exit 2
 else
 	# Resolve each requested target (full name, board name, or shortcut) to a
 	# canonical make target before building, so nothing is cleaned or built
