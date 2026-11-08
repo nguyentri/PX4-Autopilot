@@ -251,7 +251,23 @@ int main(int argc, char **argv) {
         assert(sci_i2c_transfer(&priv.dev, messages, 1) == -ENOTSUP);
         messages[1].frequency = 400000;
         assert(sci_i2c_transfer(&priv.dev, messages, 2) == -ENOTSUP);
+        messages[0].flags = 0; messages[1].frequency = 100000;
+        /* A read phase with no bytes cannot NACK its last byte: rejected,
+         * alone or with only empty NOSTART continuations. */
+        messages[1].length = 0;
+        assert(sci_i2c_transfer(&priv.dev, messages, 2) == -EINVAL);
+        struct i2c_msg_s empty_read[2] = {
+            {.frequency = 100000, .addr = 0x10, .flags = I2C_M_READ, .buffer = data, .length = 0},
+            {.frequency = 100000, .addr = 0x10, .flags = I2C_M_READ | I2C_M_NOSTART, .buffer = data, .length = 0}
+        };
+        assert(sci_i2c_transfer(&priv.dev, empty_read, 2) == -EINVAL);
         assert(!atomic_load(&maximum) && !starts);
+        /* A zero-length write probe and an empty read head with a non-empty
+         * NOSTART continuation stay valid. */
+        messages[0].length = 0;
+        assert(sci_i2c_transfer(&priv.dev, messages, 1) == 0);
+        empty_read[1].length = 3;
+        assert(sci_i2c_transfer(&priv.dev, empty_read, 2) == 0);
     } else if (!strcmp(argv[1], "allocation")) {
         mode = 4;
         assert(sci_i2c_transfer(&priv.dev, messages, 1) == -ENOMEM);

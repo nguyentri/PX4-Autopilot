@@ -4,6 +4,8 @@
 rzv_setup() rewrites CCR0 without the receive/transmit interrupt enables that
 the serial upper half set at open.  A reader that waits in poll() before
 read() (PX4 MAVLink) never re-enables RIE, so TCSETS itself must keep them.
+rzv_setup() also resets the TX FIFO, so TCSETS first drains the bytes already
+queued in hardware at the old settings, with TX interrupts masked.
 """
 from pathlib import Path
 import importlib.util
@@ -75,6 +77,21 @@ static int fake_setup(struct uart_dev_s *d)
   return OK;
 }
 static const struct uart_ops_s ops = { fake_setup };
+
+/* Drain runs outside the critical section, with TIE/TEIE masked so the ISR
+ * cannot refill, and before the new line settings are stored.
+ */
+
+static int drain_calls, drain_ret;
+static uint32_t drain_baud, drain_ccr0;
+static int rzv_tx_drain(struct rzv_uart_s *p)
+{
+  assert(critical == 0);
+  drain_calls++;
+  drain_baud = p->baud;
+  drain_ccr0 = ccr0;
+  return drain_ret;
+}
 '''
 
 MAIN = r'''
@@ -87,7 +104,7 @@ static int tcsets(struct rzv_uart_s *p, uint32_t before, int fails,
   struct inode in = { &dev };
   struct file f = { &in };
   struct termios t = { CS8, baud };
-  ccr0 = RUN | before; setup_calls = 0; fail_mask = fails;
+  ccr0 = RUN | before; setup_calls = 0; fail_mask = fails; drain_calls = 0;
   int ret = rzv_ioctl(&f, TCSETS, (unsigned long)(uintptr_t)&t);
   assert(critical == 0);
   return ret;
@@ -99,6 +116,14 @@ int main(void)
   /* Opened port with RX and TX interrupts armed keeps all of them. */
   assert(tcsets(&p, EN, 0, 57600) == OK);
   assert(ccr0 == (RUN | EN) && p.baud == 57600 && setup_calls == 1);
+  assert(drain_calls == 1 && drain_baud == 115200);
+  assert(drain_ccr0 == (RUN | SCI_CCR0_RIE));
+
+  /* A drain timeout is logged; reconfiguration still proceeds. */
+  drain_ret = -ETIMEDOUT;
+  assert(tcsets(&p, EN, 0, 115200) == OK);
+  assert(ccr0 == (RUN | EN) && p.baud == 115200 && drain_calls == 1);
+  drain_ret = OK;
 
   /* Idle TX: only RIE was armed, so TIE/TEIE must not be invented. */
   assert(tcsets(&p, SCI_CCR0_RIE, 0, 921600) == OK);
@@ -107,7 +132,7 @@ int main(void)
   /* Rejected configuration: old settings restored and re-armed. */
   assert(tcsets(&p, SCI_CCR0_RIE, 1, 300) == -ETIMEDOUT);
   assert(ccr0 == (RUN | SCI_CCR0_RIE) && p.baud == 921600);
-  assert(setup_calls == 2);
+  assert(setup_calls == 2 && drain_baud == 921600);
 
   /* Restore also failed: a stopped channel must stay quiet. */
   assert(tcsets(&p, EN, 3, 300) == -ETIMEDOUT);

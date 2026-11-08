@@ -480,6 +480,16 @@ int main(void) {
         self.assertIn("gpt_quiesce_locked", stop)
         self.assertIn("gpt_quiesce_locked", irq)
 
+    def test_stopped_start_clears_the_counter_after_output_setup(self) -> None:
+        # r_gpt_hardware_initialize: GTIOR, then the GTUDDTYC direction latch,
+        # then GTCLR, so counting starts from 0 with the final output setting.
+        body = function_body(self.gpt, "rzv_gpt_start")
+        self.assertEqual(body.count("RZV_GPT_GTCLR_OFFSET"), 1)
+        order = [body.index(token) for token in (
+            "RZV_GPT_GTSTP_OFFSET", "RZV_GPT_GTIOR_OFFSET", "gpt_write_gtuddtyc",
+            "RZV_GPT_GTCLR_OFFSET", "RZV_GPT_GTSTR_OFFSET")]
+        self.assertEqual(order, sorted(order))
+
     def test_finite_start_publishes_state_before_enabling_irq(self) -> None:
         body = function_body(self.gpt, "rzv_gpt_start")
         self.assertLess(body.index("priv->running = true"), body.index("up_enable_irq"))

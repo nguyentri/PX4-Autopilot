@@ -170,14 +170,23 @@ static size_t rzv_spi_wordsize(struct rzv_spi_priv_s *p) { return p->nbits / 8; 
 static int rzv_spi_dma_exchange(struct rzv_spi_priv_s *p, const void *tx, void *rx, size_t bytes) {
   *(uint32_t *)rx = 0xaabbccddu; return failure;
 }
-static uint32_t rzv_spi_getreg32(struct rzv_spi_priv_s *p, unsigned off) { return 0; }
-static void rzv_spi_putreg32(struct rzv_spi_priv_s *p, unsigned off, uint32_t value) {}
+static int rzv_spi_poll_word(struct rzv_spi_priv_s *p, uint32_t wd, uint32_t *rd) {
+  if (failure == 0) *rd = 0xaabbccddu;
+  return failure;
+}
 ''' + extract(source, 'static uint32_t rzv_spi_send(struct spi_dev_s *dev, uint32_t wd)\n') + r'''
 int main(void) {
   struct rzv_spi_config_s cfg = {.dma_tx_channel = 48};
   struct rzv_spi_priv_s p = {.config = &cfg};
   const unsigned widths[] = {8, 16, 32};
   const uint32_t values[] = {0xdd, 0xccdd, 0xaabbccdd};
+  for (unsigned i = 0; i < 3; ++i) {
+    p.nbits = widths[i]; failure = -EIO;
+    assert(rzv_spi_send(&p.dev, 123) == UINT32_MAX);
+    failure = -ETIMEDOUT; assert(rzv_spi_send(&p.dev, 123) == UINT32_MAX);
+    failure = 0; assert(rzv_spi_send(&p.dev, 123) == values[i]);
+  }
+  cfg.dma_tx_channel = -1;
   for (unsigned i = 0; i < 3; ++i) {
     p.nbits = widths[i]; failure = -EIO;
     assert(rzv_spi_send(&p.dev, 123) == UINT32_MAX);

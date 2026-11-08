@@ -98,7 +98,9 @@ static uint32_t rzv_spi_getreg32(struct rzv_spi_priv_s *priv, unsigned offset) {
 static void rzv_spi_setfrequency(struct rzv_spi_priv_s *priv, unsigned frequency) { priv->actual = frequency; }
 static void rzv_spi_setbitorder(struct rzv_spi_priv_s *priv, bool order) { (void)priv; (void)order; }
 static size_t rzv_spi_wordsize(struct rzv_spi_priv_s *priv) { return priv->nbits / 8; }
-static uint32_t rzv_spi_send(struct spi_dev_s *dev, uint32_t word) { (void)dev; return word; }
+static int rzv_spi_poll_word(struct rzv_spi_priv_s *priv, uint32_t word, uint32_t *rd) {
+  (void)priv; *rd = word; return 0;
+}
 static int rzv_spi_dma_exchange(struct rzv_spi_priv_s *priv, const void *tx, void *rx, size_t size) {
   (void)priv; (void)tx;
   ++chunks;

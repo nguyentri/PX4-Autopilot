@@ -269,6 +269,10 @@ ak-engineer
 !/test/rzv2h-ether-two-port-runtime-test.py
 !/test/rzv2h-indexed-sdhi-wdt-runtime-test.py
 !/test/rzv2h-sdhi-wdt-instance-artifact-test.py
+!/test/rzv2h-serial-fifo-runtime-test.py
+!/test/rzv2h-scif-baud-and-console-runtime-test.py
+!/test/rzv2h-sdhi-command-data-runtime-test.py
+!/test/rzv2h-spi-recovery-and-bitrate-runtime-test.py
 docs/renesas/r01uh1015ej0045_rzv2h.pdf
 
 # Workspace integration artifacts, locks, and target state

@@ -189,7 +189,7 @@ static void check_clock(uint32_t hz, uint32_t request) {
 int main(int argc, char **argv) {
   assert(argc == 2);
   for (unsigned i=0; i<16; ++i) pending[i] = UINT32_MAX;
-  struct rzv_sci_i2c_priv_s priv = {.actual_scl_hz = 100000};
+  struct rzv_sci_i2c_priv_s priv = {.actual_scl_hz = 100000, .half_bit_us = 5};
   if (!strcmp(argv[1], "mode")) {
     assert(sci_i2c_hw_init(&priv, 100000) == 0);
     uint32_t ccr3 = regs[RZV_SCI_CCR3_OFFSET / 4];
@@ -253,7 +253,8 @@ int main(int argc, char **argv) {
   } else {
     struct i2c_msg_s messages[2] = {{.frequency=100000}, {.frequency=100000}};
     struct sci_i2c_msgmeta_s metadata[2] = {{.next=1}, {.next=2}};
-    priv.msgs = messages; priv.metadata = metadata; priv.msg_count = 2;
+    priv.msgs = messages; priv.metadata = metadata;
+    priv.msg_count = !strcmp(argv[1], "stop-final") ? 1 : 2;
     priv.state = SCI_I2C_STATE_STOP;
     regs[RZV_SCI_ISR_OFFSET / 4] = SCI_ISR_IICSTIF;
     regs[RZV_SCI_CCR0_OFFSET / 4] = SCI_CCR0_TE | SCI_CCR0_RE | SCI_CCR0_TIE | SCI_CCR0_TEIE;
@@ -268,6 +269,11 @@ int main(int argc, char **argv) {
       if (!strcmp(argv[1], "stop-error")) {
         assert(requests == 0 && posts == 1 && priv.result == -EIO);
         assert(regs[RZV_SCI_CCR0_OFFSET / 4] == 0);
+      } else if (!strcmp(argv[1], "stop-final")) {
+        /* Last STOP: disable and complete; only the short stop interval. */
+        assert(requests == 0 && posts == 1 && priv.result == OK);
+        assert(regs[RZV_SCI_CCR0_OFFSET / 4] == 0);
+        assert(usec == priv.stop_interval_us && usec < priv.half_bit_us);
       } else {
         assert(requests == 1 && posts == 0);
         for (unsigned i=0; i<event_count; ++i)
@@ -311,6 +317,7 @@ class SCIMode(unittest.TestCase):
     def test_mode_transition_observes_stop_and_mode_settle_intervals(self): self.case("transition")
     def test_stop_to_start_observes_half_bit_interval(self): self.case("stop-start")
     def test_stop_overrun_finishes_without_reissuing_stop(self): self.case("stop-error")
+    def test_final_stop_completes_without_half_bit_wait(self): self.case("stop-final")
     def test_late_txi_does_not_reissue_pending_condition(self): self.case("late-txi")
 
 

@@ -77,12 +77,12 @@ int main(void) {
 #define mcerr(...) ((void)0)
 #define mcinfo(...) ((void)0)
 struct sdio_dev_s {int unused;};
-struct rzv_sdhi_dev_s {struct sdio_dev_s dev; int waitsem,slot,base,blocksize,nblocks;bool initialized;};
+struct rzv_sdhi_dev_s {struct sdio_dev_s dev; int waitsem,cmdsem,slot,base,blocksize,nblocks;bool initialized;};
 static struct rzv_sdhi_dev_s g_rzv_sdhi_dev[3];
 static int g_rzv_sdhi_base[3]={1,2,3};
 static int failure,sems,clocks,mmio;
 static void rzv_sdhi_bind_ops(struct rzv_sdhi_dev_s *p) {(void)p;}
-static int nxsem_init(int *s,int shared,int n) {(void)s;(void)shared;(void)n;++sems;return 0;}
+static int nxsem_init(int *s,int shared,int n) {(void)s;(void)shared;(void)n;if(failure==3&&sems==1)return -ENOMEM;++sems;return 0;}
 static __attribute__((unused)) void nxsem_destroy(int *s) {(void)s;--sems;}
 static int rzv_clock_enable_sdhi(int s) {(void)s;if(failure==1)return -ETIMEDOUT;++clocks;return 0;}
 static int rzv_reset_release_sdhi(int s) {(void)s;return failure==2 ? -ETIMEDOUT:0;}
@@ -92,13 +92,13 @@ static void rzv_sdhi_reset(struct sdio_dev_s *p) {(void)p;++mmio;}
 ''' + EXTRACT.definition((ARCH / "rzv_sdhi.c").read_text(), "FAR struct sdio_dev_s *rzv_sdhi_initialize(")
         code += r'''
 int main(void) {
-  for(failure=1;failure<=2;++failure) {
+  for(failure=1;failure<=3;++failure) {
     assert(rzv_sdhi_initialize(0)==NULL);
     assert(!mmio && !sems && !clocks && !g_rzv_sdhi_dev[0].initialized);
   }
   failure=0;
-  assert(rzv_sdhi_initialize(0)==&g_rzv_sdhi_dev[0].dev && mmio==1 && sems==1 && clocks==1);
-  assert(rzv_sdhi_initialize(0)==&g_rzv_sdhi_dev[0].dev && mmio==1 && sems==1 && clocks==1);
+  assert(rzv_sdhi_initialize(0)==&g_rzv_sdhi_dev[0].dev && mmio==1 && sems==2 && clocks==1);
+  assert(rzv_sdhi_initialize(0)==&g_rzv_sdhi_dev[0].dev && mmio==1 && sems==2 && clocks==1);
 }
 '''
         BOUNDARY.compile_run(code)

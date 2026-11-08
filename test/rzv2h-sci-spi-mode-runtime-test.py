@@ -67,6 +67,7 @@ struct model_s {
   uint8_t tx_fifo[32], rx_fifo[128], tx_log[128];
   size_t tx_count, rx_count, shifted, written;
   unsigned posts, waits, starts, delays, irq_byte_writes, config_writes;
+  unsigned ccr3_zero_writes, ccr3_premode_writes;
   unsigned cesr_byte_reads, cesr_active_reads, cesr_stop_reads;
   bool tend, final_edge, pending_txi, seeded;
   bool te_tie_together, pre_mode, reset_before_mode;
@@ -170,6 +171,10 @@ static void putreg32(uint32_t value, uintptr_t address) {
   unsigned offset = (address - RZV_SCI0_BASE) % 0x400u;
   if (offset == RZV_SCI_CCR2_OFFSET || offset == RZV_SCI_CCR3_OFFSET)
     ++m->config_writes;
+  if (offset == RZV_SCI_CCR3_OFFSET) {
+    if (value == 0) ++m->ccr3_zero_writes;
+    else if ((value & SCI_CCR3_MOD_MASK) != SCI_CCR3_MOD_SPI) ++m->ccr3_premode_writes;
+  }
   if (offset == RZV_SCI_TDR_OFFSET) {
     if (strict_tdr) assert((value & UINT32_C(0xfffffe00)) == UINT32_C(0xfffffe00));
     assert(m->tx_count < 32); /* Manual p.2643: NFIFO - FTSR.T. */
@@ -273,7 +278,8 @@ static int nxsem_tickwait_uninterruptible(sem_t *sem, uint32_t ticks) {
 }
 '''
     code += without_includes((ARCH / 'rzv_sci_spi_clock.c').read_text())
-    for name in ('rzv_sci_spi_sync_delay', 'sci_spi_quiesce', 'sci_spi_hardware_idle', 'sci_spi_hw_configure',
+    for name in ('rzv_sci_spi_sync_delay', 'sci_spi_quiesce', 'sci_spi_hardware_idle',
+                 'sci_spi_ccr3_format', 'sci_spi_write_ccr3', 'sci_spi_hw_configure',
                  'sci_spi_setfrequency', 'sci_spi_setmode', 'sci_spi_timeout_ticks',
                  'sci_spi_exchange'):
         if re.search(rf'^(?:static )?[^;\n]*\b{name}\(', source, re.M):
@@ -296,8 +302,18 @@ static void run_transfer(size_t words, bool rx_only, bool tx_only) {
   memset(rx, 0xcc, sizeof(rx));
   expected_words = words; expected_tx = rx_only ? NULL : tx; expected_rx = tx_only ? NULL : rx;
   priv[current].sem_isr.count = 3; /* Stale posts from a prior exchange. */
-  sci_spi_exchange(&priv[current].dev, expected_tx, expected_rx, words);
   struct model_s *m = &hw[current];
+  unsigned old_zero = m->ccr3_zero_writes, old_premode = m->ccr3_premode_writes;
+  uint32_t old_ccr2 = m->registers[RZV_SCI_CCR2_OFFSET / 4];
+  sci_spi_exchange(&priv[current].dev, expected_tx, expected_rx, words);
+  /* A failed or timed-out stop clears CCR3 (FM, so TEND sets) and then
+   * reprograms the same format, mode and rate; a clean one leaves CCR3.
+   */
+  uint32_t ccr3 = m->registers[RZV_SCI_CCR3_OFFSET / 4];
+  assert(ccr3 == (sci_spi_ccr3_format(&priv[current]) | SCI_CCR3_MOD_SPI));
+  assert(m->registers[RZV_SCI_CCR2_OFFSET / 4] == old_ccr2);
+  if (scenario == 0) assert(m->ccr3_zero_writes == old_zero && m->ccr3_premode_writes == old_premode);
+  else assert(m->ccr3_zero_writes == old_zero + 1 && m->ccr3_premode_writes == old_premode + 1);
   assert(m->te_tie_together && m->starts == 1);
   assert(!m->registers[RZV_SCI_CCR0_OFFSET / 4] && priv[current].state == SCI_SPI_STATE_IDLE);
   assert(!m->tx_count && !m->rx_count && priv[current].sem_isr.count == 0);
@@ -333,17 +349,33 @@ int main(int argc, char **argv) {
       assert(sci_spi_setfrequency(&priv[ch].dev, 2500000) == 2500000);
       ccr2 = hw[ch].registers[RZV_SCI_CCR2_OFFSET / 4];
       assert(!(ccr2 & (1u << 16)) && (ccr2 & (1u << 4)));
-      uint32_t saved_rate = priv[ch].actual, saved_ccr2 = ccr2;
-      assert(sci_spi_setfrequency(&priv[ch].dev, 7500000) == saved_rate);
+      /* Vendor round-down: 7.5 MHz runs at the next slower rate (BRR 6). */
+      assert(sci_spi_setfrequency(&priv[ch].dev, 7500000) == 7142857);
+      assert(((hw[ch].registers[RZV_SCI_CCR2_OFFSET / 4] >> 8) & 255) == 6);
+      uint32_t saved_rate = priv[ch].actual;
+      uint32_t saved_ccr2 = hw[ch].registers[RZV_SCI_CCR2_OFFSET / 4];
+      assert(sci_spi_setfrequency(&priv[ch].dev, 30000000) == saved_rate);
       assert(hw[ch].registers[RZV_SCI_CCR2_OFFSET / 4] == saved_ccr2);
+      /* setmode drops MOD before writing CPOL/CPHA, then selects SPI. */
+      unsigned premode = hw[ch].ccr3_premode_writes;
       sci_spi_setmode(&priv[ch].dev, (mode + 1) % 4);
-      assert((hw[ch].registers[RZV_SCI_CCR3_OFFSET / 4] & 3) == (((mode + 1) % 4 >> 1) * 2 + ((mode + 1) % 4 & 1)));
+      assert(hw[ch].ccr3_premode_writes == premode + 1);
+      ccr3 = hw[ch].registers[RZV_SCI_CCR3_OFFSET / 4];
+      assert((ccr3 & SCI_CCR3_MOD_MASK) == SCI_CCR3_MOD_SPI && (ccr3 & SCI_CCR3_FM));
+      assert((ccr3 & 3) == (((mode + 1) % 4 >> 1) * 2 + ((mode + 1) % 4 & 1)));
     }
   } else if (!strcmp(argv[1], "fractional")) {
     uint8_t brr = 0, cks = 0, mddr = 0;
     assert(rzv_sci_spi_calc_bitrate(100000000, 3000000, &brr, &cks, &mddr) == 0);
     assert(mddr == 0);
-    assert(rzv_sci_spi_calc_bitrate(100000000, 7500000, &brr, &cks, &mddr) == -EINVAL);
+    assert(rzv_sci_spi_calc_bitrate(100000000, 7500000, &brr, &cks, &mddr) == 0);
+    assert(brr == 6 && cks == 0 && mddr == 0);
+    /* Slowest setting is P5 / (2 * 4^3 * 256): 3052 Hz fits, 3051 Hz not. */
+    assert(rzv_sci_spi_calc_bitrate(100000000, 3052, &brr, &cks, &mddr) == 0);
+    assert(brr == 255 && cks == 3);
+    brr = cks = mddr = 77;
+    assert(rzv_sci_spi_calc_bitrate(100000000, 3051, &brr, &cks, &mddr) == -EINVAL);
+    assert(brr == 77 && cks == 77 && mddr == 77);
   } else if (!strcmp(argv[1], "early-rx")) {
     setup(0, SPIDEV_MODE0); hw[0].tend = false;
     priv[0].state = SCI_SPI_STATE_BUSY;

@@ -259,6 +259,8 @@ static int TEST_UNUSED rzv_gpioconfig(uint32_t pin) { (void)pin; ++pin_calls; re
     functions = without_includes((ARCH / f"rzv_sci_{mode}_clock.c").read_text())
     if mode == "spi":
         functions += definition(source, "void rzv_sci_spi_sync_delay(void)")
+        functions += definition(source, "static uint32_t sci_spi_ccr3_format(const struct rzv_sci_spi_priv_s *priv)")
+        functions += definition(source, "static void sci_spi_write_ccr3(struct rzv_sci_spi_priv_s *priv, uint32_t ccr3)")
         functions += definition(source, "static int sci_spi_hw_configure(struct rzv_sci_spi_priv_s *priv)")
         init = "struct spi_dev_s *rzv_sci_spi_initialize(int channel)"
     else:
@@ -814,31 +816,32 @@ class SciSpiClockContracts(unittest.TestCase):
         for name in ('hardware/rzv_sci.h', 'hardware/rzv_sci_spi.h', 'rzv_sci_spi_clock.c'):
             code += without_includes((ARCH / name).read_text())
         code += r'''
-static uint32_t error_ppm(uint32_t actual, uint32_t request) {
-  uint64_t delta = actual > request ? actual - request : request - actual;
-  return delta * 1000000u / request;
-}
 int main(void) {
   const uint32_t clocks[] = {25000000, 50000000, 100000000, 200000000, 400000000};
   const uint32_t requests[] = {1000, 1500, 3000, 3906, 15625, 62500, 100000,
-                             1000000, 2500000, 3000000, 5000000, 7500000, 10000000, 25000000};
+                             1000000, 2500000, 3000000, 5000000, 6000000, 7000000,
+                             7500000, 8000000, 10000000, 12000000, 20000000, 25000000};
   for (unsigned clock = 0; clock < sizeof(clocks)/sizeof(clocks[0]); ++clock)
     for (unsigned request = 0; request < sizeof(requests)/sizeof(requests[0]); ++request) {
       uint8_t brr = 66, cks = 77, mddr = 88;
-      uint32_t best = UINT32_MAX;
-      /* Table 7.3-8, BGDM=1: B = P5 / (2 * 4^CKS * (BRR+1)). */
+      uint64_t best = 0;
+      /* Table 7.3-8, BGDM=1: B = P5 / (2 * 4^CKS * (BRR+1)).  Vendor
+       * round-down: the smallest divisor whose rate does not exceed the
+       * request, or no setting when even the largest divisor is too fast.
+       */
       for (unsigned k = 0; k < 4; ++k) for (unsigned n = 0; n < 256; ++n) {
-        uint32_t actual = clocks[clock] / (2u * (1u << (2u * k)) * (n + 1u));
-        uint32_t error = error_ppm(actual, requests[request]);
-        if (error < best) best = error;
+        uint64_t div = 2ull * (1u << (2u * k)) * (n + 1u);
+        if ((uint64_t)requests[request] * div >= clocks[clock] && (!best || div < best)) best = div;
       }
       int result = rzv_sci_spi_calc_bitrate(clocks[clock], requests[request], &brr, &cks, &mddr);
-      if (best > 20000u) {
+      if (!best) {
         assert(result == -EINVAL && brr == 66 && cks == 77 && mddr == 88);
       } else {
         assert(result == 0 && cks <= 3 && mddr == 0);
-        uint32_t actual = clocks[clock] / (2u * (1u << (2u * cks)) * (brr + 1u));
-        assert(error_ppm(actual, requests[request]) == best);
+        uint64_t div = 2ull * (1u << (2u * cks)) * (brr + 1u);
+        assert(div == best);
+        uint32_t actual = clocks[clock] / (uint32_t)div;
+        assert(actual <= requests[request]);
         assert(rzv_sci_spi_actual_bitrate(clocks[clock], brr, cks, 0) == actual);
         assert(rzv_sci_spi_actual_bitrate(clocks[clock], brr, cks, 255) == actual);
       }
