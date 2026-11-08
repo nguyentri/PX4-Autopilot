@@ -297,3 +297,13 @@ endif()
 if(PX4_BOARD_LABEL STREQUAL "demo" AND NOT NUTTX_CONFIG STREQUAL "demo")
 	message(FATAL_ERROR "The RZ/V2H bench demo target requires NUTTX_CONFIG=demo")
 endif()
+
+if(PX4_BOARD_LABEL STREQUAL "demo")
+	add_custom_target(rzv2h_demo_startup_test
+		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-demo-startup-test.py
+		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
+		COMMENT "Running demo sensor telemetry and QGC startup regressions"
+		VERBATIM
+	)
+	add_dependencies(rzv2h_source_contract_tests rzv2h_demo_startup_test)
+endif()

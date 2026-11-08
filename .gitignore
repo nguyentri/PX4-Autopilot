@@ -151,6 +151,7 @@ keys/
 !test/test_rzv2h_ipc_recovery_contract.py
 !test/rzv2h_remaining_peripherals_contract_test.py
 !test/rzv2h-drone-profile-contract-test.py
+!test/rzv2h-demo-startup-test.py
 !test/rzv2h-drone-artifact-contract-test.py
 !test/rzv2h-bmp388-reset-contract-test.py
 !test/rzv2h-xspi-paramfs-contract-test.py

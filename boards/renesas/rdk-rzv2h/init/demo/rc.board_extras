@@ -1,0 +1,23 @@
+#!/bin/sh
+# Apply demo streams after rc.serial has started MAVLink on SCI5.
+# rc.board_mavlink runs before rc.serial and cannot configure this instance.
+
+if ! mavlink stream -d /dev/ttyS5 -s HIGHRES_IMU -r 10
+then
+	echo "ERROR [init] Demo HIGHRES_IMU stream failed on SCI5"
+fi
+
+if ! mavlink stream -d /dev/ttyS5 -s SCALED_PRESSURE -r 2
+then
+	echo "ERROR [init] Demo SCALED_PRESSURE stream failed on SCI5"
+fi
+
+if ! mavlink stream -d /dev/ttyS5 -s DISTANCE_SENSOR -r 2
+then
+	echo "ERROR [init] Demo DISTANCE_SENSOR stream failed on SCI5"
+fi
+
+if ! mavlink stream -d /dev/ttyS5 -s SERVO_OUTPUT_RAW_0 -r 2
+then
+	echo "ERROR [init] Demo SERVO_OUTPUT_RAW_0 stream failed on SCI5"
+fi
