@@ -1,0 +1,59 @@
+# SCI5 NSH console board run, CR8-0, 2026-11-08
+# image: build.sh nsh, sha256 1dc6bc79f1cd315586aa5714727bb721b8f893114b787be391c59f7da3ebf5cf
+# host: FT232 /dev/ttyUSB0 115200 8N1 raw; probe J-Link 52000195
+
+## boot capture (python repr of raw bytes)
+b'NUTTX\r\nClock enabled: domain=0 bit=5\nReset deasserted: domain=3 mask=0x40\nNuttX: RDK-RZV2H Board bring-up starting...\nMounted procfs at /proc\nStarting RDK-RZV2H application examples...\nAll RDK-RZV2H examples completed successfully\nNuttX: RDK-RZV2H Board bring-up complete\n\r\nNuttShell (NSH)\r\nnsh> \x1b[K'
+
+## console checks
+prompt raw: b'\r\nnsh> \x1b[K'
+help bytes=533 crlf=12 bare_lf=0
+help
+help usage:  help [-v] [<cmd>]
+
+  .         cd        dmesg     help      mount     rmdir     true      xd        
+  [         cp        echo      hexdump   mv        set       truncate  
+  ?         cmp       exec      kill      printf    sleep     uname     
+  basename  dirname   exit      ls        ps        source    umount    
+  break     dd        false     mkdir     pwd       test      unset     
+  cat       df        free      mkrd      rm        time      usleep    
+
+Builtin Apps:
+  nsh  sh   
+nsh> [K
+echo rounds=30 fails=0
+--- cat /proc/version: bytes=86 bare_lf=0
+cat /proc/version
+NuttX version 0.0.0 23e4246429-dirty Nov  8 2026 23:33:52
+nsh> [K
+--- ls -l /proc: bytes=244 bare_lf=0
+ls -l /proc
+/proc:
+ dr--r--r--       0 0/
+ dr--r--r--       0 1/
+ -r--r--r--       0 meminfo
+ -r--r--r--       0 memdump
+ dr--r--r--       0 fs/
+ dr--r--r--       0 self/
+ -r--r--r--       0 uptime
+ -r--r--r--       0 version
+nsh> [K
+--- free: bytes=160 bare_lf=0
+free
+                   total       used       free    largest  nused  nfree
+        Umem:    8274064       5760    8268304    8268304     29      1
+nsh> [K
+--- ps: bytes=258 bare_lf=0
+ps
+  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK COMMAND
+    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 Idle Task
+    1     1 100 FIFO     Task    --- Running            00000000 002000 nsh_main
+nsh> [K
+
+## 4 KB xd burst x3 (fresh guarded load of the same image)
+run0 bytes=18471 dumplines=0 bare_lf=0
+run1 bytes=18471 dumplines=0 bare_lf=0
+run2 bytes=18471 dumplines=0 bare_lf=0
+identical: True
+b'xd 0x40800000 4096\r\nHex dump:\r\n0000: df 00 0e f1 02 08 a0 e3 21 00 80 e3 11 0f 09 ee ........!.......\r\n0010: 6f f0 7f f5 6c d0 9f e5 00 b0 a0 e3 00 00 a0 e3 o...l...........\r\n0020: d5 0f 07 ee 15 0f 0'
+parsed=4096 match_elf=True

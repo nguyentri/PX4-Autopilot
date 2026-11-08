@@ -1,0 +1,41 @@
+# ICM-45686 SPI0 (DMA48/49 + hardware SSLA0, P93) after the SPI bit-rate fix, CR8-0, 2026-11-08
+# Loader: rzv2h-load-one-core.sh cr8_0 (VERIFY PASS); console: nuttx-rtt-bridge.sh + nsh_console_exec.py --rtt
+# Lines below are the console output lines as printed by nsh_console_exec.py in this session.
+
+## Image A: build.sh icm45686-dma-ssl-rtt, request 8 MHz (checked-in header)
+## sha256 26aad3e973a06e539b9b6881a71a3462c3a970d53cc95fd442a2c17fbaf2e3cb
+nsh> icm45686_test 200
+ICM-45686 FIFO Test Application
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+ICM45686 first accel=(-13222,-168,-9474) gyro=(101,-104,76) temp=352 ts=0
+ICM45686 last accel=(-13324,-102,-9452) gyro=(61,-91,4) temp=344 ts=0
+ICM45686 result=0 samples=200/200 bursts=52 empty=11 max_fifo=12
+nsh> icm45686_test 1000
+ICM45686 result=0 samples=1000/1000 bursts=203 empty=36 max_fifo=66
+nsh> icm45686_test 1000
+ICM45686 result=0 samples=1000/1000 bursts=217 empty=40 max_fifo=66
+# GDB one-shot x/8wx 0x12800000 (SPI0) after the runs:
+0x12800000:	0x00000000	0x00020202	0xc0001001	0x00000000
+0x12800010:	0x00000c00	0x0007e003	0x00070000	0x00070000
+# SPCR3.SPBR=12, SPCMD0.BRDV=0 -> 200 MHz / (2*13) = 7.69 MHz (was 8.33 MHz before the fix)
+
+## Image B: scratch build, ICM45686_FREQUENCY temporarily 24000000 (PX4 SPI_SPEED), header reverted after the build
+## sha256 f5dec65de64de93fb8f0e5251a3017794d4c4423cf724a83441e3360b02b8eb3
+nsh> icm45686_test 200
+ICM-45686 FIFO Test Application
+Clock enabled: domain=0 bit=0
+Reset deasserted: domain=3 mask=0x3e
+ICM45686 first accel=(-13314,-74,-9634) gyro=(91,-81,-44) temp=288 ts=0
+ICM45686 last accel=(-13308,-72,-9606) gyro=(84,-96,-28) temp=288 ts=0
+ICM45686 result=0 samples=200/200 bursts=39 empty=16 max_fifo=12
+nsh> icm45686_test 1000
+ICM45686 result=0 samples=1000/1000 bursts=180 empty=63 max_fifo=65
+nsh> icm45686_test 1000
+ICM45686 result=0 samples=1000/1000 bursts=171 empty=57 max_fifo=73
+nsh> icm45686_test 1000
+ICM45686 result=0 samples=1000/1000 bursts=167 empty=58 max_fifo=119
+# GDB one-shot x/8wx 0x12800000 (SPI0) after the runs:
+0x12800000:	0x00000000	0x00020202	0xc0001001	0x00000000
+0x12800010:	0x00000400	0x0007e003	0x00070000	0x00070000
+# SPCR3.SPBR=4, SPCMD0.BRDV=0 -> 200 MHz / (2*5) = 20 MHz (was 25 MHz before the fix)

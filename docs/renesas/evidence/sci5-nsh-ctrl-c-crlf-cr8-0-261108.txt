@@ -1,0 +1,18 @@
+# SCI5 NSH Ctrl-C and syslog CRLF board run, CR8-0, 2026-11-08
+# image: build.sh nsh (TTY_SIGINT, SIG_DEFAULT, SCHED_WAITPID, cpuhog), sha256 430112ca9be9ad1855d57173dac15eae08b468ca8a62c31e58959ccebccc67f1
+# host: FT232 /dev/ttyUSB0 115200 8N1 raw; probe J-Link 52000195; guarded loader rc 0
+# change under test: up_putc sends CR before LF on the SCI-B console; console
+# isconsole set at early init, so the upper half raises SIGINT on 0x03
+
+## boot capture (python repr of raw bytes): 10 lines, 0 bare LF
+b'NUTTX\r\nClock enabled: domain=0 bit=5\r\nReset deasserted: domain=3 mask=0x40\r\nNuttX: RDK-RZV2H Board bring-up starting...\r\nMounted procfs at /proc\r\nStarting RDK-RZV2H application examples...\r\nAll RDK-RZV2H examples completed successfully\r\nNuttX: RDK-RZV2H Board bring-up complete\r\n\r\nNuttShell (NSH)\r\nnsh> \x1b[K'
+
+## sequence
+# 0x03 at idle prompt, then CR -> prompt
+# 3x: "cpuhog" (0: blocked consumer open, 1: blocked producer, 2: CPU loop),
+#     no prompt for 0.5 s, 0x03 -> prompt within 3 s, "ps" lists no cpuhog
+# "echo sigint-done" -> echoed, prompt
+# result: all steps PASS
+
+## session after boot (python repr of raw bytes)
+b'\r\nnsh> \x1b[Kcpuhog\r\ncpuhog initialized\r\ncpuhog 0: consumer\r\nnsh> \x1b[Kps\r\n  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK COMMAND\r\n    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 Idle Task\r\n    1     1 100 FIFO     Task    --- Running            00000000 002000 nsh_main\r\nnsh> \x1b[Kcpuhog\r\ncpuhog 1: producer\r\n++++nsh> \x1b[Kps\r\n  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK COMMAND\r\n    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 Idle Task\r\n    1     1 100 FIFO     Task    --- Running            00000000 002000 nsh_main\r\nnsh> \x1b[Kcpuhog\r\ncpuhog 2\r\nnsh> \x1b[Kps\r\n  PID GROUP PRI POLICY   TYPE    NPX STATE    EVENT     SIGMASK   STACK COMMAND\r\n    0     0   0 FIFO     Kthread N-- Ready              00000000 002024 Idle Task\r\n    1     1 100 FIFO     Task    --- Running            00000000 002000 nsh_main\r\nnsh> \x1b[Kecho sigint-done\r\nsigint-done\r\nnsh> \x1b[K'

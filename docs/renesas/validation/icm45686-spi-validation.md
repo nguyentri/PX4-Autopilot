@@ -107,9 +107,26 @@ orientation) repeated the matrix with `result=0` for 1/1, 20/20, 20/20,
 `0` printed usage and `free` stayed at 5744 bytes
 ([second transcript](../evidence/icm45686-spi-rtt-261101-run2.txt)).
 
+## Board run after the SPI bit-rate fix (2026-11-08)
+
+`rzv_spi_setfrequency` now follows FSP `R_SPI_B_CalculateBitrate`: it picks
+the fastest rate at or below the request. Previously it picked the next rate
+above. Two images were each loaded with the guarded loader on CR8-0
+([transcript](../evidence/icm45686-spi-rtt-261108-bitrate.txt)):
+
+| Request | SPI0 readback | Achieved SCK | Runs |
+|---|---|---|---|
+| 8 MHz (checked-in sample) | SPBR 12, BRDV 0 | 7.69 MHz (was 8.33) | 200, 1000, 1000: all `result=0` |
+| 24 MHz (scratch build, PX4 `SPI_SPEED`) | SPBR 4, BRDV 0 | 20 MHz (was 25) | 200, 1000, 1000, 1000: all `result=0` |
+
+The 24 MHz image changed only `ICM45686_FREQUENCY`, and the header was
+reverted after the build. The achieved rates come from the divider registers
+(P4CLK 200 MHz), not from a scope measurement.
+
 ## Open gates
 
 - P93 SSLA0 and SCK waveform: one assertion per exchange, no frame >241
-  bytes, achieved SCK. Not measured.
+  bytes, measured SCK. Not measured; the divider readback above is register
+  evidence only.
 - Cold boot, long-duration and temperature stress: not run.
 - PX4 driver/uORB path on this sensor: out of scope for this sample.

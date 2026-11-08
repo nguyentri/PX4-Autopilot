@@ -1,0 +1,38 @@
+# SCI5 NSH cold-start RX board run, CR8-0, 2026-11-09
+# image: build.sh nsh, sha256 20eeaacd094ef73f49b1dd78f410405a2ffa3250bb554c06fd250a39960c8495
+# host: FT232 /dev/ttyUSB0 115200 8N1 raw; probe J-Link 52000195; guarded loader rc 0
+# change under test: rzv_setup writes CCR3.FM and resets the FIFOs before
+# CCR0.RE is set (FSP r_sci_b_uart open order); previously FM was set after RE
+
+## cause (before the change)
+# Symptom: SCI5 starting from reset-value registers (CCR3=0x00001203, FM=0)
+# transmits the boot text but never receives: FRSR.R=0, rx_count=0, no error
+# flags, while PIN(7) bit 3 toggles under host input and GIC INTID 176-179 are
+# enabled and routed to CPU0. Warm reloads inherit FM=1 and never show it.
+# GDB replay of the full setup sequence from SCI5 reset, two runs each:
+#   C: CCR3=0x00009200 before RE, FM set after RE   -> RX dead
+#   D: CCR3=0x00109200 before RE                     -> RX alive
+# Toggling CCR0.RE after FM is set also recovers RX; toggling FM while RE=1
+# does not break it.
+
+## runs (after the change)
+# A register reset: RST(8) 0x10420920 = 0x18000000 then 0x18001800
+#   -> SCI5 read back CCR0..CCR3 = 0 / 0x10 / 0xff00ff04 / 0x1203
+# B cold CPG: SCI5 reset 0x10420920 = 0x18000000, clocks gated
+#   0x1042061C = 0x07C00000 (CLKMON(3) 0xf83fffff), MSTOP 0x10420D28 = 0x01000100
+# C warm reload, no reset
+# each: guarded reload, then idle 0x03, 3x cpuhog + 0x03 + ps, echo
+# result: A, B, C all steps PASS; boot 10 lines, 0 bare LF; echo_check ALIVE (B, C)
+
+## boot capture, first 40 bytes (python repr)
+# A: b'\xf3UTTX\r\nClock enabled: domain=0 bit=5\r\nRe'
+# B: b'\xf3UTTX\r\nClock enabled: domain=0 bit=5\r\nRe'
+# C: b'NUTTX\r\nClock enabled: domain=0 bit=5\r\nRe'
+
+## limits
+# A and B corrupt the first boot progress byte ('N' -> 0xF3), with both the
+# old and the new image. Moving the early pinmux after the CCR1 write did not
+# change it (two cold-CPG runs), so that change was not kept. The simulation
+# leaves P7_2/P7_3 in SCI mode while the module is held in reset, unlike a
+# power-up; a real power-cycle capture is still open.
+# No PX4 image, MAVLink or error injection in this run.
