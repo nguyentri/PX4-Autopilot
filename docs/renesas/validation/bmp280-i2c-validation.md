@@ -1,10 +1,12 @@
 # BMP280 SCI7 I2C Standalone Validation
 
-**Date:** 2026-11-01  
+**Date:** 2026-11-01, updated 2026-11-08  
 **Board/core:** RDK-RZ/V2H, CR8-0  
 **Config:** `rdk-rzv2h:bmp280`  
-**Evidence:** host tests passed; firmware build-clean; one board run failed with
-no ACK at 0x76 or 0x77, so sensor hardware remains **pending**
+**Evidence:** **bounded on-target PASS on 2026-11-08** at 0x76 (chip ID 0x58,
+trim, compensated samples) after the SCI-I2C TXI fix described in
+[Board run, 2026-11-08](#board-run-2026-11-08-pass-after-txi-fix). The earlier
+-6 failures were a driver bug, not the sensor.
 
 ## Scope and wiring
 
@@ -266,12 +268,10 @@ The user's capture (`BMP_280_I2C.png`) decodes as one clean address phase:
 | 9th clock | SDA high: NACK |
 | End | SDA low, SCL high, then SDA rises: STOP |
 
-The SCI7 Simple-I2C driver therefore produces a correct START, address, clock
-rate and STOP, and it reports the NACK correctly as -6. No device pulls SDA low
-during the ACK slot. The fault is on the sensor side of the probe point:
-module power or ground, the wire from the probe point to the module, a CSB
-latched low at power-up, or a dead module. This capture covers only the address
-phase; data-phase transfers remain unproven until a device ACKs.
+At the time this was read as a sensor-side fault. **That conclusion was wrong**
+(see 2026-11-08 below): bit-banged and hand-driven RSCI reads later returned ID
+0x58 on the same wiring, and the -6 came from the TXI handler clearing
+CFCLR.TDREC.
 
 Logs: `plans/261101-1810-bmp280-sci7-i2c-sample/artifacts/rebuild-261102/board-run/`.
 
@@ -284,6 +284,51 @@ With VCC and CSB at 3.3 V and SDO at GND (expected address 0x76), the
 `2d74ec6c…` image again returned `chip ID read failed: -6` at 0x76 and 0x77.
 CR8-0 was found held in reset before this load. Logs:
 `artifacts/rebuild-261102b/board-run-csb-3v3-sdo-gnd/`.
+
+## Board run, 2026-11-08 (PASS after TXI fix)
+
+The user confirmed the module works on another board with the same SDA/SCL.
+
+**Isolation (observed):**
+
+- A GDB bit-bang of P76/P77 (RSCI7 bypassed) read chip ID 0x58 at 0x76.
+- A hand-driven RSCI7 sequence with interrupts off (START, 0xEC, 0xD0,
+  RESTART, 0xED, NACKed read, STOP) also read 0x58.
+- The pads, sensor and SCI7 setup were therefore good. The fault was in the
+  interrupt-driven state machine.
+
+**Root cause (observed in a cycle-stamped ISR trace, confirmed by the fix):**
+
+- `sci_i2c_txi_isr()` started by writing `CFCLR.TDREC`.
+- With TE=1, that write re-arms TDRE, clears TEND and raises another TXI. The
+  trace showed TXIs about 2 µs apart through each frame.
+- Those mid-frame TXIs sampled IICACKR before the acknowledge slot. Address
+  0xED after the repeated START was reported as a NACK (-6).
+- FSP `r_sci_b_i2c.c` never writes TDREC during a transfer. Its TXI handler
+  only clears the interrupt-controller pending bit; with `ICR.IICINTM=1`, TXI
+  is the acknowledge-slot event.
+
+**Fix (NuttX `arch/arm/src/rzv/rzv_sci_i2c_isr.c`):** TXI clears the GIC
+pending bit (`sci_i2c_clear_pending`) instead of `CFCLR.TDREC`. No other logic
+changed.
+
+**Run:** ELF SHA-256
+`52060393a2317260c94ac0db12d0814bc0b08dbc653ca7e723bb642777eaea3e`, guarded
+CR8-0 load (VERIFY PASS, PC `0x40806400`), NuttX base `aa8e31efc8` plus the fix.
+
+| Command | Result |
+|---|---|
+| `bmp280 -n 3` | `chip ID 0x58 (BMP280)`, trim read, 3 samples at about 32.5 degC and 99,324 Pa, `PASS` |
+| `bmp280 -n 10` | 10 samples, `PASS` |
+| `bmp280 -a 0x77 -n 1` | Negative test, nothing at 0x77: `-6`, `FAIL`, bounded |
+| `bmp280 -n 2` | Recovery after the NACK, `PASS` |
+
+These runs cover writes, NOSTOP plus repeated START reads, multi-byte reads
+with a master NACK on the last byte, and address NACK recovery on SCI7 at
+97,656 Hz. Analyzer timing and the other SCI channels remain unqualified.
+`test/rzv2h-sci-i2c-mode-runtime-test.py` still passes (12 tests).
+
+Logs: `plans/261101-1810-bmp280-sci7-i2c-sample/artifacts/txi-tdrec-fix-261108/`.
 
 ## Evidence to archive for a pass
 
@@ -333,6 +378,9 @@ On 2026-11-01:
 
 ## Unresolved questions
 
-- The module part, CSB/SDO straps and power are unrecorded.
-- No passing hardware transcript exists yet.
+- The module part and straps are still unrecorded (the 2026-11-08 run used
+  0x76, so SDO is low).
+- `CCR3.CPOL/CPHA`: the hardware manual says to set both to 1 outside SPI and
+  clock-synchronous modes, and the driver does. FSP 4.2.0 writes 0. Both work
+  here, so the driver keeps the manual value.
 - The archive build tool's lock-helper path is still broken.
