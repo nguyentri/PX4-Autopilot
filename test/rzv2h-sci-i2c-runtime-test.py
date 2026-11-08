@@ -88,6 +88,11 @@ static uint32_t regs[256], tdr[16384];
 static uint32_t pending[16];
 static unsigned mode, starts, stops, restarts, tdr_count, receive_count, polls;
 static unsigned late_txi;
+/* The TXI handler acknowledges its own GIC/NVIC pending bit once on entry,
+ * even while the transfer keeps CCR0 enabled, and must never write
+ * CFCLR.TDREC (with TE=1 that re-arms TDRE and raises a mid-frame TXI).
+ */
+static bool in_txi_isr, txi_entry_ack_due;
 static atomic_int active, maximum;
 static bool condition_pending;
 #ifdef CONFIG_RZV2H_BUILD_CM33
@@ -136,11 +141,18 @@ static uint32_t getreg32(uintptr_t address) {
     if (address == RZV_SCI_RDR_OFFSET) return 0x11 + receive_count++;
     return regs[address / 4];
 }
+static void txi_event(void) {
+    assert(!in_txi_isr);
+    in_txi_isr = txi_entry_ack_due = true;
+    sci_i2c_txi_isr(0, NULL, &priv);
+    assert(!txi_entry_ack_due); /* every TXI acknowledges its pending bit */
+    in_txi_isr = false;
+}
 static void inject_late_txi(void) {
     unsigned saved_tdr = tdr_count, saved_rx = receive_count;
     uint32_t saved_byte = priv.byte_idx;
     enum sci_i2c_state_e saved_state = priv.state;
-    sci_i2c_txi_isr(0, NULL, &priv);
+    txi_event();
     ++late_txi;
     assert(tdr_count == saved_tdr && receive_count == saved_rx);
     assert(priv.byte_idx == saved_byte && priv.state == saved_state);
@@ -151,12 +163,16 @@ static void putreg32(uint32_t value, uintptr_t address) {
         unsigned txi = txi_input(), tei = PENDING_INPUT(RZV_IRQ_SCI_TEI(priv.channel));
         assert((address == PENDING_BASE + 4u * (txi / 32) && value == (1u << (txi % 32))) ||
                (address == PENDING_BASE + 4u * (tei / 32) && value == (1u << (tei % 32))));
-        assert(regs[RZV_SCI_CCR0_OFFSET / 4] == 0 ||
+        bool txi_entry_ack = txi_entry_ack_due &&
+                             address == PENDING_BASE + 4u * (txi / 32) && value == (1u << (txi % 32));
+        txi_entry_ack_due = false;
+        assert(txi_entry_ack || regs[RZV_SCI_CCR0_OFFSET / 4] == 0 ||
                priv.state == SCI_I2C_STATE_START_PENDING ||
                priv.state == SCI_I2C_STATE_RESTART_PENDING);
         pending[(address - PENDING_BASE) / 4] &= ~value;
         return;
     }
+    if (in_txi_isr && address == RZV_SCI_CFCLR_OFFSET) assert(!(value & SCI_CFCLR_TDREC));
     if (address == RZV_SCI_ICR_OFFSET) {
         if (value & (SCI_ICR_IICSTAREQ | SCI_ICR_IICSTPREQ | SCI_ICR_IICRSTAREQ)) condition_pending = true;
         if (value & SCI_ICR_IICSTAREQ) ++starts;
@@ -199,7 +215,7 @@ static int nxsem_tickwait_uninterruptible(sem_t *sem, uint32_t ticks) {
             if (mode >= 5 && mode <= 7 && starting) assert_no_pending_txi();
         } else {
             regs[RZV_SCI_ISR_OFFSET / 4] = mode == 3 ? SCI_ISR_IICACKR : 0;
-            sci_i2c_txi_isr(0, NULL, &priv);
+            txi_event();
         }
     }
     assert(false); return -ETIMEDOUT;
