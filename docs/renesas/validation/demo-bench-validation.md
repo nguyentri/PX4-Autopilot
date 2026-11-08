@@ -3,7 +3,8 @@
 **Board/core:** RDK-RZ/V2H, CR8-0
 **Status:** build-clean; ICM-45686 bounded on-target (2026-11-01); TFmini
 bounded on-target at the unit's 1 Hz (2026-11-02); BMP280 bounded on-target
-after the SCI-I2C TXI fix (2026-11-08); QGC and PWM capture **pending**
+after the SCI-I2C TXI fix (2026-11-08); SCI5 MAVLink RX/reconnect bounded
+on-target with a host GCS emulator (2026-11-08); QGC GUI and PWM capture **pending**
 
 ## Scope
 
@@ -237,3 +238,21 @@ handler bug, not the module; see
 [BMP280 validation, 2026-11-08](bmp280-i2c-validation.md#board-run-2026-11-08-pass-after-txi-fix).
 The host transaction test `test/rzv2h-sci-i2c-runtime-test.py` now models the
 TXI entry acknowledge and fails if the handler writes `CFCLR.TDREC` again.
+
+### 2026-11-08 — SCI5 MAVLink RX after the TCSETS fix: reconnect works
+
+ELF sha256 `f6503c66…fe76f2180d` (NuttX `23e4246429`, build variant `demo`),
+guarded single-core load, VERIFY PASS.
+
+- Before the fix: `mavlink status` showed `rx 0.0 B/s`, and SCI5 had
+  `rx_count 0` with `CCR0 0x00000411` (RIE clear). The `TCSETS` from MAVLink's
+  `tcsetattr()` re-ran `rzv_setup()`, which cleared the interrupt enables set
+  at open. MAVLink waits in `poll()`, so nothing turned RIE back on.
+- After the fix: SCI5 shows `CCR0 0x00010411` after boot.
+- Host FT232R on P72/P73 at 57600 8N1: 680 valid frames in 15 s with 2 bad
+  bytes, both from a partial frame when the capture started.
+- A pymavlink GCS emulator ran heartbeat, `AUTOPILOT_VERSION` request and a
+  full parameter download, then disconnected, three rounds in a row. Every
+  round got the version and 802/802 parameters in 11–15 s.
+- Host regression test: `test/rzv2h-serial-tcsets-runtime-test.py`.
+
