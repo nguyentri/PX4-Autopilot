@@ -1,8 +1,9 @@
 # Demo Bench Validation (`renesas_rdk-rzv2h_demo`)
 
 **Board/core:** RDK-RZ/V2H, CR8-0
-**Status:** build-clean; ICM-45686 bounded on-target (2026-11-01); BMP280,
-TFmini, QGC and PWM capture **pending**
+**Status:** build-clean; ICM-45686 bounded on-target (2026-11-01); TFmini
+bounded on-target at the unit's 1 Hz (2026-11-02); BMP280 bounded on-target
+after the SCI-I2C TXI fix (2026-11-08); QGC and PWM capture **pending**
 
 ## Scope
 
@@ -109,3 +110,32 @@ Same ELF, reloaded after a power cycle.
   per second), frame/overrun 0. The SCI4 link loses nothing; the sensor itself
   outputs 1 Hz. The PX4 driver does not set the sensor frame rate (factory
   default 100 Hz), so the unit's stored configuration needs changing.
+
+### 2026-11-08 — BMP280 after the SCI-I2C TXI fix: working, about 11 Hz
+
+ELF sha256 `7aa63d05…3405320d` (PX4 `b3307083505`, NuttX `edef1d3f78`,
+build variant `demo`), guarded single-core load, VERIFY PASS.
+
+- Boot: `bmp280 #0 on I2C bus 7 address 0x76`, `BMP280 started on SCI7 I2C
+  bus 7`; ICM-45686 and TFmini start as before.
+- `listener sensor_baro`: 99,301 Pa, 32.7 °C, device `I2C:7 (0x76)`,
+  `error_count 0`; `vehicle_air_data`: baro altitude 169.9 m.
+- `bmp280 status`: comms errors 0 after 9,874 samples.
+- Rate: 8,194 samples over the first 754 s of uptime, most of it with no
+  RTT attached (10.9 Hz), and 1,677 samples over the next 155.6 s of target
+  time (10.8 Hz). RTT attachment does not change it. This is the stock
+  driver's forced-mode cycle: `measure()` and `collect()` each reschedule
+  after 43.2 ms, so one sample takes two intervals plus I2C time.
+  `work_queue status` shows about 18 Hz because it counts both phases.
+- `BARO #0 failed: TIMEOUT` (`vehicle_air_data`) still appears while RTT is
+  attached, alongside the known `Accel #0 fail: TIMEOUT`. One early measure
+  took 1.49 s. Whether the timeout also occurs detached was not separated:
+  the log buffered while detached was drained without inspection.
+- Same image: ICM-45686 at 629 Hz, |a| = 9.79 m/s², `error_count 0`;
+  TFmini 0.91 m at 1 Hz.
+
+The earlier `no instance started` result on this target was the SCI-I2C TXI
+handler bug, not the module; see
+[BMP280 validation, 2026-11-08](bmp280-i2c-validation.md#board-run-2026-11-08-pass-after-txi-fix).
+The host transaction test `test/rzv2h-sci-i2c-runtime-test.py` now models the
+TXI entry acknowledge and fails if the handler writes `CFCLR.TDREC` again.
