@@ -18,6 +18,40 @@ Not in scope: arming or flight, magnetometer, GPS, RC, DShot, CR8-1 outputs.
 The image starts commander, but with no magnetometer, GPS or RC its
 pre-arm checks are not expected to pass.
 
+`COM_RC_IN_MODE` remains available to QGC and defaults to 4 (stick input
+disabled). This does not enable an RC receiver or driver. `SYS_AUTOSTART`
+remains 4014. Their presence in the parameter table is independent of whether
+the optional RC hardware is built.
+
+The IMU, barometer, TFmini and PWM driver start automatically. The demo's
+`rc.board_extras` hook runs after the generated serial startup and requests
+these streams on SCI5; no manual RTT stream commands are needed:
+
+| Stream | Requested rate | QGC MAVLink Inspector fields |
+|---|---|---|
+| `HIGHRES_IMU` | 10 Hz | `xacc/yacc/zacc`, `xgyro/ygyro/zgyro` |
+| `SCALED_PRESSURE` | 2 Hz | `press_abs` (hPa), `temperature` (centidegrees C) |
+| `DISTANCE_SENSOR` | 2 Hz | `current_distance` (cm) |
+| `SERVO_OUTPUT_RAW` (port 0) | 2 Hz | `servo1_raw` through `servo4_raw` (µs) |
+
+Rates depend on available samples and link bandwidth. In particular, the
+recorded TFmini unit produces only 1 Hz. These settings do not change its
+stored measurement rate. Parameter defaults preserve explicit user settings;
+if telemetry was disabled, check `MAV_0_CONFIG=101` (TEL1), `MAV_0_MODE=0`
+(Normal), `MAV_0_FLOW_CTRL=0` and `SER_TEL1_BAUD=57600`. Parameters remain
+volatile on this board.
+
+SCI5 RX/TX rings are 512 bytes each. The prior 256-byte ring exposed only
+255 usable TX bytes, less than the 266-byte MAVLink 2 FTP frame/burst-send
+requirement. Small sensor messages could be sent while metadata downloads
+stalled. The packet regression serializes an FTP response and exercises the
+production send guard; it also checks the resolved firmware buffer sizes.
+
+The demo embeds parameter, event and actuator metadata in ROMFS for retrieval
+over MAVLink FTP, so QGC can load the Actuators page for this custom target
+without relying on metadata published on PX4's firmware server. Other board
+profiles retain their existing flash-size settings.
+
 ## Wiring
 
 | Function | RDK pins | Notes |
@@ -36,6 +70,14 @@ Run the standalone samples first to separate wiring faults from PX4:
 ```bash
 ./build.sh renesas_rdk-rzv2h_demo
 platforms/nuttx/Debug/rzv2h-ipc/rzv2h-load-one-core.sh cr8_0 build/renesas_rdk-rzv2h_demo/renesas_rdk-rzv2h_demo.elf
+```
+
+RTT is optional for diagnostics; QGC startup does not require it. Firmware
+does not start the host bridge. A bridge from an earlier host session can
+remain running until explicitly stopped. If a boot transcript is needed,
+start it with the exact loaded ELF and stop it after collecting diagnostics:
+
+```bash
 platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_demo/renesas_rdk-rzv2h_demo.elf
 ```
 
@@ -44,15 +86,71 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
 1. Boot log: `ICM45686 started on SPI0 CS pin 3` and `BMP280 started on SCI7 I2C bus 7`, no `ERROR [init]`.
 2. Sensors over RTT (`nsh_console_exec.py --marker ...`):
    `listener sensor_accel`, `listener sensor_gyro`, `listener sensor_baro`, `listener distance_sensor`.
-3. QGC: connect the USB-UART at 57600 baud; check the vehicle connects
-   and the attitude, baro altitude and distance values update.
-4. PWM: capture all four channels. Disarmed output is 400 Hz at 1000 µs
+3. Stop the RTT bridge before watching live data:
+   `platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop`. RTT stop-mode access can
+   introduce sensor timing gaps. In QGC, add a Serial link for the USB-UART
+   at 57600 baud with flow control off. Open Analyze Tools → MAVLink Inspector
+   and check the fields above update. Tilt the IMU and move a flat target in
+   front of the LiDAR. Attitude/altitude estimates depend on estimator health;
+   inspect the sensor messages directly if those displays do not update.
+4. PWM: capture all four channels. Expected disarmed output is 400 Hz at 1000 µs
    (`PWM_MAIN_DIS`). Drive one channel with `actuator_test set -m 1 -v 0.5 -t 2`
    or the QGC Actuators tab (`COM_MOT_TEST_EN`, default 1) and capture the pulse width change
    (1100–1900 µs range).
 
+For QGC actuator testing, keep the vehicle disarmed and remove propellers
+(prefer a logic analyzer with ESCs disconnected for initial checks). Open
+Configure → Actuators (Vehicle Setup in older QGC versions) and enable its
+test sliders, then move one motor slider at a time. The demo explicitly
+defaults `COM_MOT_TEST_EN=1`; an
+explicit user value of 0 still disables tests. Commander rejects tests while
+armed or while an available safety button is engaged, and bounds each
+request to 3 seconds. Boot does not send actuator-test or arm commands.
+If the sliders are unavailable, use Analyze Tools → MAVLink Console to run
+`actuator_test set -m 1 -v 0.5 -t 2`, repeating with `-m 2`, `-m 3` and `-m 4`.
+Verify the pulse change and return to 1000 µs on the analyzer; reported
+`SERVO_OUTPUT_RAW` values alone do not prove electrical PWM output.
+
+Software regression checks:
+
+```bash
+python3 test/rzv2h-demo-startup-test.py --build-dir build/renesas_rdk-rzv2h_demo
+python3 test/rzv2h-drone-profile-contract-test.py
+```
+
 Record the ELF hash, RTT transcript and analyzer capture together before
 updating any driver's status in `port-status-*.md`.
+
+## Parameter-storage check
+
+`/fs` is TMPFS, not xSPI/LittleFS; `/etc` is ROMFS. On a fresh boot,
+`/fs/params` may not exist until parameters are first saved. That initial
+import error alone is not evidence of an xSPI fault. Compiled and board
+defaults remain available in the live parameter table. The BSON file stores
+changed values, so a parameter at its board default need not appear there.
+
+With the matching demo image running, use the RTT helper with `--marker`:
+
+```text
+mount
+param status
+param show SYS_AUTOSTART
+param show COM_RC_IN_MODE
+param save
+bsondump docsize /fs/params
+bsondump /fs/params
+```
+
+Check that `param save` succeeds and the BSON saved/decoded lengths match.
+These commands save the current values without resetting calibration.
+This verifies the current RAM-backed store, not power-cycle persistence.
+
+The 2026-11-08 on-target check used demo ELF SHA256
+`ca9de163811fb6c0204963d13be096ea02bc9525a80b4d7e2d68fef0a3c42f3c`.
+It confirmed `SYS_AUTOSTART=4014`, `COM_RC_IN_MODE=4`, successful save and
+complete BSON readback with matching decoded/saved sizes of 153 bytes.
+QGC download confirmation remains open: SCI5 RX was zero during that check,
+so bidirectional UART communication still needs verification with QGC connected.
 
 ## Results
 
