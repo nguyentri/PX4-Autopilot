@@ -52,6 +52,17 @@ owns device numbers, per-core MHU routes, shared windows, ring layout and ABI
 constants. Use it together with the [memory map](multicore-memory-map.md)
 instead of transcribing channel or offset tables into another document.
 
+MHU routing follows FSP 4.2 `r_mhu_b_ns` and the `bsp_mhu_b.h` channel
+pairing (`rzv_mhu_msg_peer()` / `rzv_mhu_rsp_peer()` in `rzv_mhu_core.c`).
+An endpoint owns its TX and RX blocks: it rings MSG on the message peer of
+its TX block, takes the ACK as the RSP interrupt of its TX block, takes
+kicks as the MSG interrupt of its RX block and acknowledges on the response
+peer of its RX block. Only blocks owned by CR8 or CM33 carry raw IPC; no
+CA55-paired block is used. FSP offers a single acknowledged CR8 ↔ CM33 route,
+so `/dev/ipcc2` (CR8-0 ↔ CM33) and `/dev/ipcc3` (CR8-1 ↔ CM33) share MHU
+blocks and must not run on the same board. The 2026-11-09 route change
+supersedes earlier on-target IPC transcripts until they are repeated.
+
 The transport separates doorbell delivery from payload ownership. Producers
 must publish cache-visible data before signaling; consumers must observe the
 published data before acknowledging it. Ring bounds, channel separation and
@@ -328,14 +339,16 @@ verification on target remain required before flight use.
 The CA55 path still requires agreement with the Linux remoteproc device tree
 on resource-table and vring addresses. Software cache cleaning remains
 necessary until a non-cacheable MPU mapping is verified. Interrupt delivery
-uses `RPTUN_NOTIFY_ALL`; the shared notifyid slot is currently not consumed.
-Per-vqid decoding requires a matching CA55 doorbell contract. The active
+uses `RPTUN_NOTIFY_ALL`. The CR8 endpoint owns MHU block 3 as an FSP
+MSG-type instance: it rings MSG on block 24 and writes the notify id to the
+block-24 `MSG_TXD` word of the MHU mailbox (`__mhu_shmem_start`); inbound
+kicks arrive as RSP3 or MSG3 and the mailbox is not read. Per-vqid decoding
+requires a matching CA55 doorbell contract. The active
 board route returns an ordinary RPTUN resource table while publishing a
 different table in the CA55-visible `.resource_table` section. Their entry
 counts, configuration lengths and vring notify IDs differ. The local callback table and CA55-visible section serve distinct consumers;
 different entry counts alone do not prove a conflict. CA55 interoperability
-still requires peer agreement on the shared-memory and vring contract. The local IRQ
-fallback is retained for configurations lacking the canonical IRQ macro.
+still requires peer agreement on the shared-memory and vring contract.
 Moving raw links into the secure MHU window requires explicit domain
 configuration and qualification.
 

@@ -7,10 +7,10 @@
 # GIC distributor base 0x12C10100; ICDIPTR (byte-per-INTID target) at +0x1700.
 # Byte address of an SPI's target = 0x12C11800 + INTID.
 #
-#   INTID 347  MSG4_NS  CR8-1 responder RX   0x12C1195B
-#   INTID 348  MSG9_NS  CR8-0 initiator  RX  0x12C1195C
-#   INTID 359  RSP4_NS  CR8-0 initiator  TX  0x12C11967
-#   INTID 360  RSP9_NS  CR8-1 responder TX   0x12C11968
+#   INTID 354  MSG28_NS CR8-1 responder RX   0x12C11962
+#   INTID 355  MSG34_NS CR8-0 initiator  RX  0x12C11963
+#   INTID 362  RSP15_NS CR8-0 initiator  TX  0x12C1196A
+#   INTID 368  RSP40_NS CR8-1 responder TX   0x12C11970
 #   INTID 0    banked SGI target (RAO)       0x12C11800  -> local CPU mask
 #
 # Usage:
@@ -25,12 +25,12 @@ bt
 printf "== GIC ICDIPTR local-CPU self mask (INTID 0, RAO) ==\n"
 x/1bx 0x12C11800
 printf "== GIC ICDIPTR target bytes for CR8<->CR8 MHU SPIs ==\n"
-printf "INTID347 MSG4_NS:\n"
-x/1bx 0x12C1195B
-printf "INTID348 MSG9_NS:\n"
-x/1bx 0x12C1195C
-printf "INTID359 RSP4_NS:\n"
-x/1bx 0x12C11967
-printf "INTID360 RSP9_NS:\n"
-x/1bx 0x12C11968
+printf "INTID354 MSG28_NS:\n"
+x/1bx 0x12C11962
+printf "INTID355 MSG34_NS:\n"
+x/1bx 0x12C11963
+printf "INTID362 RSP15_NS:\n"
+x/1bx 0x12C1196A
+printf "INTID368 RSP40_NS:\n"
+x/1bx 0x12C11970
 detach

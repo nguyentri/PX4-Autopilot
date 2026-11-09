@@ -10,6 +10,10 @@ probe/reset rules in
 ## What the link does
 
 - `/dev/ipcc1` = raw MHU-B-NS doorbell IPC, Link 1, CR8-0 ↔ CR8-1.
+  CR8-0 owns blocks 15 (TX, rings 28) and 34 (RX); CR8-1 owns blocks 40
+  (TX, rings 34) and 28 (RX), per FSP `bsp_mhu_b.h` pairing. Transcripts
+  recorded before the 2026-11-09 route change (blocks 4/9) must be
+  repeated on these blocks.
 - CR8-0 is the **initiator** (owns the recovery epoch), CR8-1 the **responder**
   (adopts the initiator epoch). The responder converges automatically on the
   doorbell/poll path — no manual `--recover` on CR8-1.
@@ -394,7 +398,7 @@ reference startup's 115200 setting.
 |---|---|
 | `--recover` returns `ETIMEDOUT` (116), link `degraded=1` | Responder never adopted — check load order (CR8-0 before CR8-1) and that both images carry the convergence fix. |
 | Echo prints `echo transport error` and exits | Poll returned `POLLERR` — the link diverged in a way that is not a clean recovery. Re-run `--recover` on the initiator. |
-| Unexpected-IRQ panic on a core | MHU SPI not retargeted to the local core. Confirm with `rzv2h-ipc-hil-verify-resume.gdb` that the SPI target bytes (INTID 347/348/359/360) hold the local CPU mask, not `0x01`. |
+| Unexpected-IRQ panic on a core | MHU SPI not retargeted to the local core. Confirm with `rzv2h-ipc-hil-verify-resume.gdb` that the SPI target bytes (INTID 354/355/362/368 for `/dev/ipcc1`) hold the local CPU mask, not `0x01`. |
 | Data abort / `User Stack pointer is not within the stack` on `--ping` | Demo task stack too small. `CONFIG_EXAMPLES_RZV_IPC_DEMO_STACKSIZE` must be 4096 for the two-buffer ping frame. |
 
 ## Safety
