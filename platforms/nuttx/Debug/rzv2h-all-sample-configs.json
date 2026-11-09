@@ -206,7 +206,7 @@
       "console": "sci5",
       "entrypoint": "nsh_main",
       "profile": "canfd-dual",
-      "defconfig_sha256": "f4c5160879e40080f1f96aa0f1c086780cff255ab9279e2c1ec566c22d9ba2d5",
+      "defconfig_sha256": "de3966a00ecef8ceb9d84861133f5197acd96765fe5a30775158ac00bcc0c613",
       "mode": "native",
       "oracle": "can",
       "commands": [
