@@ -555,3 +555,40 @@ adds `peer lost (3 heartbeats unacknowledged)` and then `peer back` on CR8-0.
 | Serial console no prompt | `lsof /dev/ttyUSB0` (close a second picocom or serial terminal); press Enter. |
 | VS Code load refused with `PROBE_BUSY` | Your manual bridge holds the probe: `nuttx-rtt-bridge.sh stop`, retry the load, then restart the bridge. |
 | Last resort | Stop the bridge and reload both (`rzv2h-ipc-demo-load-both-auto.sh <cr8_0.elf> <cr8_1.elf>` or VS Code Load Both); restart the bridge. |
+
+## PX4 demo heartbeat pair (`rzv2h_heartbeat`)
+
+The PX4 `demo` images use the same raw `/dev/ipcc1` link, but only for
+liveness. CR8-0 `renesas_rdk-rzv2h_demo` is the initiator and CR8-1
+`renesas_rdk-rzv2h-io-cr8_1_demo` is the responder. CR8-0 sends one v3
+heartbeat every 100 ms; CR8-1 replies to each one it accepts, because a raw
+write blocks until the peer reads and two timer-driven writers time out. Each
+side reports its peer lost after 500 ms. Neither
+publishes uORB or drives outputs. CR8-0 also boots and flies the demo
+without CR8-1; its heartbeat then stays `lost`.
+
+Build both (`./build.sh renesas_rdk-rzv2h_demo`,
+`./build.sh renesas_rdk-rzv2h-io-cr8_1_demo`), or select the `rzv-px4-demo`
+group in the VS Code extension and run Build All and Load Both. Then:
+
+```sh
+# --load RAM-loads both images first; omit it when they are already resident.
+JLINK_SERIAL=<probe-sn> platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-demo-heartbeat-check.sh --load
+```
+
+The check queries CR8-0 only through the MAVLink shell on SCI5
+(`platforms/nuttx/Debug/rzv2h-mavlink-shell-exec.py`, `/dev/ttyUSB0` at
+57600; PX4 images run MAVLink, not NSH, on SCI5). It queries CR8-1 through
+one RTT bridge. It then holds CR8-1 halted for `HOLD_S` seconds (default 15)
+with `rzv2h-core-halt-resume.sh cr8_1 hold <s>` (no reset), expects CR8-0 to
+report `peer: lost` inside that window while its MAVLink shell still answers,
+and expects `peer: alive` again after the hold ends. The hold stays inside one
+JLinkExe session because a CR8 core halted by JLinkExe runs again as soon as
+JLinkExe disconnects. Exit codes: 0 pass, 1 evidence failed,
+2 usage or preflight, 3 load or J-Link connect failed (diagnose, never
+blind-retry), 4 console not answering.
+
+For a manual check, run `rzv2h_heartbeat status` on each console. A GDB
+attach halts the sampled core for 1-3 s, so its peer legitimately reports
+`lost` during the sample
+(`rzv2h-ipc/rzv2h-px4-demo-heartbeat-health.gdb`).

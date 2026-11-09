@@ -41,6 +41,8 @@ software receipt records the exact builds, host checks and review repairs
 without promoting either image to a hardware-qualified actuator pair:
 [dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md).
 
+The PX4 `demo` pair is a separate heartbeat-only path: CR8-0 `renesas_rdk-rzv2h_demo` (raw IPC initiator) and CR8-1 `renesas_rdk-rzv2h-io-cr8_1_demo` (responder, RTT NSH) both run `rzv2h_heartbeat`: CR8-0 sends one v3 heartbeat every 100 ms, CR8-1 replies to each one it accepts (a raw write blocks until the peer reads, so the cores never write at once), and each side reports the peer lost after 500 ms. It publishes no uORB topic (never `px4io_status`), so it cannot gate arming, and it sends no actuator frames. Status: **bounded on-target** (2026-11-09): paired exchange, loss while CR8-1 is held halted, recovery, and standalone CR8-0 with a baseline `commander check`, proven in `docs/renesas/evidence/px4-demo-dual-cr8-heartbeat-261109.md`. Host tests: `test/rzv2h-ipc-heartbeat-test.py`. A 6-minute steady-state soak (3226 exchanges, no new session, timeout or bad header) passed; a multi-hour soak is still open.
+
 The `src/apps/gateway.*` advisory validator is a host-tested component contract.
 Its A55 transport, deployment, uORB handoff and Commander fallback remain
 future integration work; it does not change the compiled CR8-0 v3 status path.
