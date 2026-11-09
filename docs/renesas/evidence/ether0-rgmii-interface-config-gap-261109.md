@@ -1,11 +1,13 @@
 # ether0 MAC TX stall: RGMII interface configuration gap (2026-11-09)
 
 Scope: RDK-RZ/V2H CR8-0, NuttX `rzv_ether.c`, `ether-mac-loopback-rtt` and
-`ether0-board-rtt` profiles. This record compares source code only. The
-register values below come from the
-[2026-11-09 hardware run](rtt-hil-demo-hardware-run-261109.md), and this
-analysis made no new board access. **The cause is inferred and untested on
-the board.** It does not change any status tier.
+`ether0-board-rtt` profiles. This record compares the source code first. The
+stall-time register values come from the
+[2026-11-09 hardware run](rtt-hil-demo-hardware-run-261109.md). A read-only
+board check of the interface registers followed the same day (see
+[Board readback](#board-readback-2026-11-09)). It rules out two of the three
+gaps and leaves `PFC_OEN.OEN0` as the leading cause. **No fix has been tried
+on the board yet.** This record does not change any status tier.
 
 ## Finding
 
@@ -65,45 +67,91 @@ clock, or which interface mode the MAC latched.
   `SELCTL2`. Likewise, FSP's SSEL1 value 0x0100 is bit 8. Which clock mux bit
   12 selects (taken here to be the GBE0 RX clock from ET0_RXC) is inferred
   from the FSP RGMII context, not from the hardware manual.
-- **PFC_OEN offset.** FSP, the SVD and NuttX put PFC_OEN at GPIO + 0x3C20,
-  while the GbEther reference uses GPIO + 0x3C40. This may be a
-  silicon-revision difference.
+- **PFC_OEN offset (resolved).** FSP, the SVD and NuttX put PFC_OEN at GPIO
+  + 0x3C20 from a GPIO base of 0x10410020. The GbEther reference writes
+  `BASE_ADDRESS_GPIO + 0x3C40` from a base of 0x10410000
+  (`refs/rzv2h_gb_ether/include/rzv2h_base_addr.h:8-18`,
+  `plat/include/ether_register.h:21`). Both name the same address,
+  0x10413C40. The reference clears OEN0 and OEN1 (mask 0x3) and polls the
+  readback until both read 0.
 
 ## Ranked hypotheses
 
+The ranking below includes the board readback. The source-only confidence
+is in parentheses.
+
 | # | Hypothesis | Confidence |
 |---|---|---|
-| 1 | `PHY_INTF_TYPE` is not RGMII, so the MAC latched a GMII/MII interface and its TX path waits on a clock or handshake that never arrives. It has to be written before the GBETH or DMA software reset that samples it. | Medium |
-| 2 | `OEN0` = 1 leaves the TXC pad as an input, so the TX clock loop through the pad is broken. | Medium |
-| 3 | SSEL0 bit 12 = 0 sources the RX clock from CSDIV instead of the PHY RXC. This fits the `ether0-board-rtt` RX failure better than the TX stall. | Low-medium for the TX stall |
+| 2 | `OEN0` = 1 leaves the TXC pad as an input, so the TX clock loop through the pad is broken. The board reads OEN0 = 1, and the stall reproduces with that value. | **Leading** (medium) |
 | 4 | Another fault stalls the TX status return, such as `SYS_AOF24` or the TX FIFO size. DDR descriptor fetches already work without a bus error. | Low |
+| 1 | `PHY_INTF_TYPE` is not RGMII, so the MAC latched a GMII/MII interface. | Excluded: it reads 1 = RGMII (medium) |
+| 3 | SSEL0 bit 12 = 0 sources the RX clock from CSDIV instead of the PHY RXC. | Excluded: bit 12 reads 1 (low-medium) |
 | — | Half-duplex backoff, or a speed/divider mismatch | Excluded (DM=1; 100M and 1000M failed identically) |
 
-## Discriminating board check (not yet run)
+## Board readback (2026-11-09)
 
-1. **Read only, no change.** With the `ether-mac-loopback-rtt` ELF at the
-   prompt, read the following and add the values to this record:
-   - `SYS_GBETH0_CFG`
-   - `CPG_SSEL0`
-   - `PFC_OEN` at both GPIO + 0x3C20 and GPIO + 0x3C40
-   - `PWPR` (GPIO + 0x3BE4)
+Under the AGENTS.md standing board grant, the `ether-mac-loopback-rtt` ELF
+(sha256 prefix `3f196f9a9e6508ec`, `_SEGGER_RTT` 0x081a2400) was RAM-loaded
+on CR8-0 with `rzv2h-load-one-core.sh`. CR8-0 was held in reset after the
+earlier `reboot`; the loader started it, loaded the ELF and verified it. The
+CM33 was not connected. Every read used `jlink-gdb-oneshot.py` (read-only,
+`-noreset -noir`). No J-Link log showed a reset, DBGEN or connect-failure
+marker, and NuttX never writes these registers.
 
-   This alone confirms or rules out hypotheses 1-3.
-2. **Driver change.** Before the MAC reset in the GBETH bring-up:
-   - set `PHY_INTF_TYPE = 1`;
-   - unlock PWPR, clear `OEN0`, and relock;
-   - set SSEL0 bit 12 together with its WEN bit 28, then verify the readback.
-3. **Rerun the profiles.** Rerun `ether-mac-loopback-rtt`. It passes when RX
+| Register (address) | Before `hwtest` | After `hwtest` | SVD decode |
+|---|---|---|---|
+| `SYS_GBETH0_CFG` (0x10430F00) | 0x00010000 | 0x00010000 | `PHY_INTF_TYPE` = 1 (RGMII), `MAC_SPEED` = 0 |
+| `SYS_GBETH1_CFG` (0x10430F04) | 0x00010000 | — | `PHY_INTF_TYPE` = 1 |
+| `CPG_SSEL0` (0x10420300) | 0x00001000 | 0x00001000 | SELCTL3 (bit 12) = 1, every WEN bit 0 |
+| `CPG_SSEL1` (0x10420304) | 0x00000010 | — | SELCTL1 (bit 4) = 1 |
+| `PFC_OEN` (0x10413C40) | 0x0000003F | 0x0000003F | OEN0-OEN5 = 1: every pad is an input (MII direction) |
+| GPIO + 0x3C40 (0x10413C60) | 0x00000000 | — | No SVD register: confirms that 0x10413C40 is the OEN register |
+| `PWPR` (0x10413C04) | 0x000000A0 | 0x000000A0 | REGWE_A = 0 (OEN locked), REGWE_B = 1 |
+| `CPG_CLKON_11` / `CLKMON_5` | — | 0x0000FFFF / 0x7FFFFFFF | ETH0 gates on and running |
+| `CPG_RST_11` / `RSTMON_5` | — | 0x0000FFFF / 0x00000000 | GBETH resets released |
+
+`hwtest` reproduced the stall with these values:
+
+```text
+TEST: ether.function_mac_loopback START
+Clock enabled: domain=11 bit=8
+Reset deasserted: domain=11 mask=0x1
+GBETH0 initialized successfully
+TEST: ether.function_mac_loopback FAIL reason="expected=0 actual=-116"
+TEST: ether.function_loopback_cleanup FAIL reason="expected=2 actual=0"
+TEST_DONE: exit=1
+```
+
+The test cleanup puts the MAC back in reset (MACCR reads 0 afterwards), so
+the stall-time MAC state above still comes from the earlier run.
+`PHY_INTF_TYPE` and SSEL0 bit 12 already hold the values FSP writes. OEN0
+does not: FSP and the reference clear it, and the board leaves it at 1.
+
+The `ether1` values match the `ether0` values, which suggests that 1 is the
+reset value of `PHY_INTF_TYPE` rather than a boot-firmware write. That is
+inferred: the readback cannot tell the two apart.
+
+## Next board check
+
+1. **Driver change.** In the GBETH bring-up, before the MAC reset:
+   - set REGWE_A in PWPR, clear `PFC_OEN.OEN0` (the reference also clears
+     OEN1), and restore PWPR;
+   - read the OEN register back.
+
+   Leave `PHY_INTF_TYPE` and SSEL0 alone; they already hold the RGMII values.
+2. **Rerun the profiles.** Rerun `ether-mac-loopback-rtt`. It passes when RX
    descriptor 0 OWN clears and MAC_DEBUG returns to 0. Then rerun
    `ether0-board-rtt` against the PHY.
+3. If the loopback still stalls with OEN0 = 0, look at hypothesis 4
+   (`SYS_AOF24`, TX FIFO sizing).
 
 ## Unresolved
 
-- What are the reset values of `PHY_INTF_TYPE`, `CPG_SSEL0` and `PFC_OEN`?
-  Neither the SVD nor FSP gives them.
-- Is PFC_OEN at GPIO + 0x3C20 or GPIO + 0x3C40?
-- Does an SSEL write need its WEN bit? FSP writes without it.
-- Does internal loopback (LM=1) still need a valid `PHY_INTF_TYPE` or the
-  external RXC?
-- Is `PHY_INTF_TYPE` sampled at the CPG GBETH reset, at the DMA software
-  reset, or at both?
+- Is `PHY_INTF_TYPE` = 1 the reset value, or did the boot firmware write it?
+- What is the reset value of `PFC_OEN`? It read 0x3F after boot, and nothing
+  in NuttX writes it.
+- Does OEN1 also need clearing for ether0? The reference clears both bits.
+- Does internal loopback (LM=1) need the TXC pad driven, or is OEN0 only an
+  external-path setting? The step 1 result answers this.
+- Does an SSEL write need its WEN bit? This no longer matters for ether0,
+  since SSEL0 bit 12 is already set.
