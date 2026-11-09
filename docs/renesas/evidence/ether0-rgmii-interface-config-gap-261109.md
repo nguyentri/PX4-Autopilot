@@ -6,8 +6,10 @@ stall-time register values come from the
 [2026-11-09 hardware run](rtt-hil-demo-hardware-run-261109.md). A read-only
 board check of the interface registers followed the same day (see
 [Board readback](#board-readback-2026-11-09)). It rules out two of the three
-gaps and leaves `PFC_OEN.OEN0` as the leading cause. **No fix has been tried
-on the board yet.** This record does not change any status tier.
+gaps and leaves `PFC_OEN.OEN0` as the leading cause. A driver change then
+cleared OEN0 on the board, and the loopback still failed (see
+[OEN0 fix result](#oen0-fix-result-2026-11-09)). **Ethernet is deferred** with
+the TX stall open. This record does not change any status tier.
 
 ## Finding
 
@@ -82,8 +84,8 @@ is in parentheses.
 
 | # | Hypothesis | Confidence |
 |---|---|---|
-| 2 | `OEN0` = 1 leaves the TXC pad as an input, so the TX clock loop through the pad is broken. The board reads OEN0 = 1, and the stall reproduces with that value. | **Leading** (medium) |
-| 4 | Another fault stalls the TX status return, such as `SYS_AOF24` or the TX FIFO size. DDR descriptor fetches already work without a bus error. | Low |
+| 4 | Another fault stalls the TX status return, such as the TX FIFO size or a MAC setting the reference programs and NuttX does not. DDR descriptor fetches already work without a bus error. `SYS_AOF24.OFS01_GBETH_0` already reads 1, the reference value. | **Open** (low) |
+| 2 | `OEN0` = 1 leaves the TXC pad as an input, so the TX clock loop through the pad is broken. | Not sufficient: with OEN0 = 0 the loopback still returns `-116` (medium) |
 | 1 | `PHY_INTF_TYPE` is not RGMII, so the MAC latched a GMII/MII interface. | Excluded: it reads 1 = RGMII (medium) |
 | 3 | SSEL0 bit 12 = 0 sources the RX clock from CSDIV instead of the PHY RXC. | Excluded: bit 12 reads 1 (low-medium) |
 | — | Half-duplex backoff, or a speed/divider mismatch | Excluded (DM=1; 100M and 1000M failed identically) |
@@ -131,7 +133,52 @@ The `ether1` values match the `ether0` values, which suggests that 1 is the
 reset value of `PHY_INTF_TYPE` rather than a boot-firmware write. That is
 inferred: the readback cannot tell the two apart.
 
-## Next board check
+## OEN0 fix result (2026-11-09)
+
+NuttX `5e57276938` adds `rzv_gpio_setoen()`. It writes one `PFC_OEN` bit
+inside the PWPR REGWE_A window and checks the readback. `rzv_dma_setup()`
+calls it with `intf` 0 before the DMA software reset. Both images were
+RAM-loaded on CR8-0 with the guarded loader under the AGENTS.md grant. The
+CM33 was never connected.
+
+| Profile | ELF sha256 (prefix) | Result |
+|---|---|---|
+| `ether-mac-loopback-rtt` | `bc110b61f1c631c9` | Fails as before: `ether.function_mac_loopback` `expected=0 actual=-116`, cleanup `expected=2 actual=0`, `TEST_DONE: exit=1` |
+| `ether0-board-rtt` | `e96b9d2a73da8962` | Passes 3/3 (`instance.guard`, `instance.identity`, `instance.stable`), `TEST_DONE: exit=0` |
+
+Read-only GDB after the loopback run:
+
+| Register | Address | Value | Meaning |
+|---|---|---|---|
+| PFC_OEN | 0x10413C40 | 0x3E | OEN0 = 0 (pad output); OEN1–5 unchanged |
+| PWPR | 0x10413C04 | 0xA0 | REGWE_A restored to 0 |
+| SYS_GBETH0_CFG | 0x10430F00 | 0x00010000 | still RGMII |
+| SYS_AOF24 | 0x10430560 | 0x03020100 | `OFS01_GBETH_0` (bits 13:8) = 1, as the reference programs |
+| MACCR, MAC_DEBUG, MTL TXQ0/RXQ0 debug | GBETH0 +0x0, +0x114, +0xD08, +0xD38 | 0 | the cleanup path stopped the MAC |
+| DMA_CH0.DCSR | 0x15C31160 | 0x003F1102 | same as before the change |
+
+The write takes effect and does not disturb registration, so the change stays
+committed as a required RGMII setting. It does not clear the stall. The
+in-test MAC_DEBUG value was not captured, because the test's cleanup runs
+before the probe can attach.
+
+The host suites `rzv2h-ether-runtime-test.py`,
+`rzv2h-ether-two-port-runtime-test.py`,
+`rzv2h-ether-gbeth-cmsis-register-definitions-test.py`,
+`rzv2h_adc_ether_scif_contract_test.py` and `rzv2h_board_gpio_contract_test.py`
+pass. `tools/checkpatch.sh` reports no issue on the changed files.
+
+## Deferred
+
+Ethernet bring-up is deferred to a later phase. For that phase:
+
+1. Capture MAC_DEBUG, MTL TXQ0 debug and the TX descriptor 0 words while the
+   loopback is stalled, by halting before cleanup.
+2. Compare the remaining MAC/MTL setup with the GbEther reference
+   `EtherMain.c` sequence, starting with the TX FIFO size.
+3. Decide the OEN1 question below.
+
+## Earlier next-step plan (done)
 
 1. **Driver change.** In the GBETH bring-up, before the MAC reset:
    - set REGWE_A in PWPR, clear `PFC_OEN.OEN0` (the reference also clears
@@ -150,8 +197,10 @@ inferred: the readback cannot tell the two apart.
 - Is `PHY_INTF_TYPE` = 1 the reset value, or did the boot firmware write it?
 - What is the reset value of `PFC_OEN`? It read 0x3F after boot, and nothing
   in NuttX writes it.
-- Does OEN1 also need clearing for ether0? The reference clears both bits.
-- Does internal loopback (LM=1) need the TXC pad driven, or is OEN0 only an
-  external-path setting? The step 1 result answers this.
+- Does OEN1 also need clearing for ether0? The reference clears bits 0–1
+  together but calls them "OEN0" in its comment. NuttX clears only bit
+  `intf`.
+- Why does the MAC still not transmit with OEN0 = 0, the RGMII
+  `PHY_INTF_TYPE`, SSEL0 bit 12 set and `SYS_AOF24` at the reference value?
 - Does an SSEL write need its WEN bit? This no longer matters for ether0,
   since SSEL0 bit 12 is already set.

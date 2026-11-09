@@ -103,5 +103,6 @@ SDHI profiles; the archive from this run lacks them.
 - Why the ether0 MAC TX path stalls after it fetches descriptors
   (MAC_DEBUG 0x00020000). The source comparison in
   [ether0 RGMII configuration gap](ether0-rgmii-interface-config-gap-261109.md)
-  and its board readback narrow this to the TXC pad direction
-  (`PFC_OEN.OEN0` = 1). No fix has been tried yet.
+  and its board readback pointed to the TXC pad direction (`PFC_OEN.OEN0` = 1).
+  Clearing OEN0 on the board did not fix the loopback, so Ethernet is
+  deferred to a later phase.
