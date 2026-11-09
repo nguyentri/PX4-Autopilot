@@ -370,6 +370,11 @@ It uses the generic `platforms/nuttx/Debug/nuttx-rtt-bridge.sh` (JLinkExe RTT
 bridge, no reset/halt) and `nsh_console_exec.py` (scripted NSH over RTT or UART),
 which work for any NuttX/PX4 image.
 
+On 2026-11-09 the autotest passed all seven checks with images built after the
+MHU block-pairing change: recovery passed, ping returned 100/100 with 0
+timeouts, and CR8-1 echoed 100/100
+([run](../evidence/rtt-hil-demo-hardware-run-261109.md)).
+
 ### Optional console variant: serial display on CR8-1
 
 The transport split above puts the serial console on **CR8-0** (`ipcc-raw-cr8_0-serial`).

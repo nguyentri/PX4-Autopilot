@@ -72,6 +72,13 @@ Core frequencies depend on boot-switch and loader configuration. Record the
 live clock state for timing evidence rather than assuming the nominal loader
 settings.
 
+Hardware the RDK does not have:
+
+- **No ether1 PHY.** Only ether0 (GBETH0) has a PHY, so GBETH1 link or traffic
+  tests cannot pass on this board.
+- **No ADC analog pin.** The ADC inputs float, so an ADC check on the RDK can
+  only prove that conversions complete.
+
 ---
 
 ## 3. Clock System: CPG
@@ -499,6 +506,9 @@ required by the current GPT/PWM driver scope.
 
 - **Type:** 16-bit counter.
 - Requires periodic reset to prevent reboot.
+- **Board precondition:** on the RDK, SYS_WDT0–3_CTRL (`0x10430C00`–`0x10430C0C`)
+  read 0, so BP_HALTED is clear and the WDT RTT profiles refuse to run
+  (observed 2026-10-22 and 2026-11-09).
 
 **Source:** `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_wdt.c`
 

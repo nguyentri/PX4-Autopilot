@@ -50,7 +50,8 @@ include separately named CR8-0 validation fixtures. List them with
 `nsh-rtt-interactive` provides the baseline; `dmac-memcpy-rtt`, `gtm-rtt`,
 `canfd-rtt`, `hil-spi-loopback-rtt` and `spi-loopback-rtt` provide internal
 tests. `pwm-rtt`, `pwm-oneshot-rtt` and `adc-rtt` check software completion
-without qualifying a physical waveform or analog input.
+without qualifying a physical waveform or analog input. The RDK brings out no
+ADC analog pin, so for `adc-rtt` conversion completion is the full check there.
 
 These fixtures use RTT console input/output, foreground builtin completion,
 nonblocking trim and NSH memory commands. Use only address-only `mb`/`mh`/`mw`

@@ -256,3 +256,18 @@ guarded single-core load, VERIFY PASS.
   round got the version and 802/802 parameters in 11–15 s.
 - Host regression test: `test/rzv2h-serial-tcsets-runtime-test.py`.
 
+### 2026-11-09 — free-running HRT: sensors and PWM unchanged, reboot resets
+
+ELF sha256 `b9f836ef…86b6bf7f` (NuttX `cac03a185e` plus the
+free-running `rzv_hrt.c`, build variant `demo`), single-core load.
+[Run record](../evidence/rtt-hil-demo-hardware-run-261109.md).
+
+- `icm45686 status`: bad register/transfer 0, FIFO overflow 0, one FIFO reset
+  at start. Accel at 666.7 Hz.
+- `pwm_out` interval averaged 1459 us, and `bmp280` reported 0 comms errors.
+- The `Accel #0` / `BARO #0` TIMEOUTs and `vehicle_imu` gaps match the
+  2026-11-01 run. Over 30 s with the bridge stopped, the gap counters (13 →
+  27–31) rose only around the two reconnects.
+- `reboot` stopped the console. A follow-up read-only connect reported CR8-0
+  `DBGEN is not asserted`, so the SoC reset happened.
+

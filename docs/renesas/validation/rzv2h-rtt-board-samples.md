@@ -45,7 +45,8 @@ disable automatic network initialization. Their three generic instance cases
 inspect actual identity/base/interface with no DMA, loopback, PHY writes,
 queued work or attached IRQs. They preserve the legacy MAC0 case grammar.
 Registration requires the declared Ethernet parent-clock handoff; it does not
-establish a working PHY, physical link or traffic path.
+establish a working PHY, physical link or traffic path. The RDK has no ether1
+PHY, so `ether1-board-rtt` is not applicable on that board.
 
 `sdhi0-board-rtt` through `sdhi2-board-rtt` query the selected lower half after
 the declared handoff, without MMCSD/FAT or media probing. Identity checks
@@ -55,7 +56,9 @@ semaphore waiter. These profiles use the current CR8-only SDHI path.
 They read its always-on inhibition state before registration and require
 zero start/feed calls both before and after it. Counting inhibition must
 already exist; the test does not create it. Each watchdog's core/domain
-ownership remains an independent prerequisite.
+ownership remains an independent prerequisite. On the RDK, SYS_WDT0–3_CTRL
+read 0 (BP_HALTED clear), so these profiles refuse to run. This is an accepted
+board precondition.
 These checks establish controller selection and stable ownership; SPI loopback
 adds an internal byte comparison. External
 transfers, waveforms and physical pad routing require separate evidence.
@@ -91,6 +94,14 @@ current campaign evidence. They account for 92 PASS, 2 NOT-PASS, 6 BLOCKED and
 limited to registers, ISR delivery and internal functions; no sensors, PWM
 waveforms or production qualification are implied. Both GBETH units remain
 supported, with matching-core I/O headers taking precedence where present.
+
+The [2026-11-09 run](../evidence/rtt-hil-demo-hardware-run-261109.md) passed
+87 of the 90 runner profiles. `bmp280` and `canfd-dual` passed after their
+defconfigs gained `CONFIG_SCHED_WAITPID`. `ether1-board-rtt` is not applicable
+(no PHY), and `ether-mac-loopback-rtt` still fails with `-116`. `ads1115`,
+`icm45686-dma-ssl-rtt` and `adc-rtt` passed when run by hand.
+`adc-rtt` only proves that conversions complete: the RDK has no analog input
+pin.
 
 ## Build and check
 

@@ -55,6 +55,7 @@ scope and provenance when citing these records:
 | [SCI5 Ctrl-C and CRLF run](evidence/sci5-nsh-ctrl-c-crlf-cr8-0-261108.txt) | Standalone `nsh` on CR8-0: syslog CRLF and three `cpuhog` Ctrl-C interrupts; no PX4 image |
 | [SCI5 cold-start RX run](evidence/sci5-nsh-cold-start-rx-cr8-0-261109.txt) | Standalone `nsh` on CR8-0 after SCI5 register reset and simulated cold CPG state; RX alive with FIFO mode set before RE; no real power cycle |
 | [ICM-45686 bit-rate run](evidence/icm45686-spi-rtt-261108-bitrate.txt) | Standalone sample at 7.69 and 20 MHz achieved SCK (divider readback); no waveform |
+| [RTT, HIL and PX4 demo run](evidence/rtt-hil-demo-hardware-run-261109.md) | 2026-11-09 CR8-0: 87/90 runner profiles, IPC autotest pass, PX4 demo on the free-running HRT, `reboot` SoC reset; ether0 TX stall open, no analog or waveform qualification |
 | [Sensor-free RTT validation](evidence/sensor-free-rtt-validation-261024.md) and [machine matrix](evidence/sensor-free-rtt-matrix-261024.json) | 128 native entries: 92 PASS, 2 NOT-PASS, 6 BLOCKED and 28 OUT-OF-SCOPE; register/ISR/internal-function scope only, with no sensors or PWM waveforms |
 
 The all-sample snapshot is incomplete: load verification, warm-load results and
