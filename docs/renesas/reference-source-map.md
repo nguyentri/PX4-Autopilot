@@ -183,11 +183,28 @@ refs/rzv2h_evk/sci_b_uart/sci_b_uart_rzv2h_evk_cr8_0_ep/e2studio/rzv/fsp/src/bsp
 `refs/rzv2h_gb_ether/drivers/uartc.c` and `uart.h` are secondary CA55
 support-code evidence. They do not establish CR8/CM33 SCIFA pins or lifecycle.
 
-## Ethernet and PHY gap
+## Ethernet and PHY authority
 
-No Ethernet/Ether-PHY EVK FSP example, `r_ether`, or `r_phy` exists under
-`refs/rzv2h_evk/`. Keep using these legacy sources as secondary same-SoC/IP
-evidence:
+No Ethernet/Ether-PHY EVK example project exists under `refs/rzv2h_evk/`.
+The primary GBETH behaviour authority is the FSP 4.2 driver pair
+`refs/rz-fsp-4.2.0/rzv/rz/fsp/src/r_gmac_b/` (MAC/MTL/DMA init, ordered stop,
+descriptor tail, interrupt set) and `r_ether_phy/` (MDIO, reset, autoneg and
+the KSZ9131 TX DLL sequence: MMD 2 register 77, clear bit 12, pulse bit 13).
+Register offsets and bit fields come from the CMSIS
+`refs/rz-fsp-4.2.0/rzv/rz/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cm/iodefines/gbeth_iodefine.h`
+(`R_GBETH_Type`); the generated `rzv2h.svd` carries the same layout as
+`R_GBETH0`/`R_GBETH1` (from the CR8 header copy). The
+[CMSIS bit-definition regression](../../test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py)
+checks every driver offset, bit, shift and mask macro against that header.
+
+RDK PHY evidence: `refs/rzv2h_drone_px4-dev/r9a09g057h4-rdk-ver1-disabled-spi-gpt-serial-i2c-canfd.dtb`
+enables only `ethernet@15C30000` (GBETH0, `phy-mode = rgmii-id`) with PHY
+`ethernet-phy-id0022.1640` (KSZ9131) at MDIO address 0 and
+`rxc/txc-skew-psec = 1400`; GBETH1 is disabled. NuttX enables the KSZ9131 TX
+DLL (ID-gated) and leaves the pad skews at PHY defaults; RGMII timing still
+needs a board transcript.
+
+The following legacy CA55 sources remain secondary same-SoC/IP evidence:
 
 ```text
 refs/rzv2h_gb_ether/plat/ether/EtherMain.c
@@ -251,8 +268,8 @@ their own physical qualification.
 | NuttX surface | Gap |
 |---|---|
 | SCIF/SCIFA | No application/FSP driver example; CMSIS/BSP and CA55 polling code only |
-| Ethernet MAC/DMA | No per-core EVK FSP example; legacy CA55 project only |
-| Ethernet PHY/RGMII | No per-core EVK FSP example; exact fitted PHY/strap/schematic authority required |
+| Ethernet MAC/DMA | No per-core EVK example project; FSP 4.2 `r_gmac_b` + CMSIS `gbeth_iodefine.h` are primary, legacy CA55 project secondary |
+| Ethernet PHY/RGMII | FSP 4.2 `r_ether_phy` KSZ9131 sequence + RDK DTB (KSZ9131, `rgmii-id`, addr 0); pad skews, straps and link timing need physical qualification |
 | Native SPI (`rzv_spi.c`) | CR8 `spi_b` FSP uses the same bases/register bank and `FSP_IP_RSPI` lifecycle. Use `r_spi_b.c` and its core-matched BSP as primary behavior authority; the legacy `drivers/rspi.c` is secondary. RDK pins remain independent. |
 | SCI-B I2C/SPI modes | All ten CMSIS instances share the SCI-B layout (`0x3ff` channel mask). Mode-specific FSP is absent; the official hardware manual above supplies behavioral authority. Its source audit and regression evidence are distinct from RDK route, waveform and physical qualification. |
 | SDHI | No dedicated example in the current EVK corpus |

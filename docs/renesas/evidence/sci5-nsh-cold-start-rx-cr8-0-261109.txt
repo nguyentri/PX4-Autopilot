@@ -30,9 +30,32 @@
 # C: b'NUTTX\r\nClock enabled: domain=0 bit=5\r\nRe'
 
 ## limits
-# A and B corrupt the first boot progress byte ('N' -> 0xF3), with both the
-# old and the new image. Moving the early pinmux after the CCR1 write did not
-# change it (two cold-CPG runs), so that change was not kept. The simulation
-# leaves P7_2/P7_3 in SCI mode while the module is held in reset, unlike a
-# power-up; a real power-cycle capture is still open.
+# A and B corrupted the first boot progress byte ('N' -> 0xF3) with both the
+# old and the new image; see the follow-up below for the cause and fix.
 # No PX4 image, MAVLink or error injection in this run.
+
+## follow-up: first boot byte 0xF3 (same day)
+# cause: rzv_lowsetup() runs its own init only when CCR0.TE = 0 (any reset
+# or power-up) and wrote LOWPUTC_CCR2_115200 = 0xff011a10. With BGDM=1,
+# CKS=0 the divisor is 16, not the 32 its comment assumed, so the first byte
+# left at ~230.6 kbaud. 'N' at twice the rate, sampled by a 115200 receiver,
+# reads 0xf3. rzv_setup() then writes 0xb8012610 and the rest is correct.
+# Warm reloads skip lowsetup (TE already 1), which is why run C was clean.
+# The earlier "simulation artefact" note was wrong: a real power-up takes the
+# same path. TE-off on the old image reproduced it without any CPG change:
+#   b'\xf3UTTX\r\nClock enabled: domain=0 bit=5\r\nRe'
+# fix: LOWPUTC_CCR2_115200 = 0xb8012610 (MDDR 184, BRME, BRR 38, BGDM),
+#   the value rzv_setup() selects; 115184 baud, -0.01 %
+# image: build.sh nsh, sha256 8fe8bc6e39cca6275b162585447a629e818793d9e44ad70e689135884dcf84cf
+#   (built from a working tree that also held another session's uncommitted
+#   hrt/irq/clock edits)
+# D TE-off: GDB one-shot CCR0 (0x12802008) = 0, then guarded reload
+# E cold CPG: run B recipe, RST(8) reads 0xe7ff, then guarded reload
+# each: idle 0x03, 3x cpuhog + 0x03 + ps, echo; all steps PASS
+# D: b'NUTTX\r\nClock enabled: domain=0 bit=5\r\nRe'
+# E: b'NUTTX\r\nClock enabled: domain=0 bit=5\r\nRe'  10 lines, 0 bare LF
+# echo_check after E: ALIVE
+# host test: rzv2h-serial-fifo-runtime-test.py decodes the constant with the
+# driver's divisor tables; fails on 0xff011a10 (230577 baud), passes on fix.
+# Not done: a physical power-cycle capture; PX4 default link was blocked by
+# the other session's in-progress rzv_hrt.c edits (undefined hrt symbols).

@@ -328,3 +328,4 @@ Tools/vscode_extension/esbuild.js
 !/.claude/skills/gdb-jlink-debug/
 !/.claude/skills/gdb-jlink-debug/**
 !/.claude-plugin/
+docs/renesas/r01uh1032ej0130-rzv2h.pdf
