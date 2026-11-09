@@ -823,9 +823,9 @@
     "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "4fa89fc3dacd93197d040dd5ff00a1489db2deae560b3611ec44f879ce762f58",
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
     "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b",
-    "boards/renesas/rdk-rzv2h/demo.px4board": "58ac182941b76c3bc4de01ab594733cba8660e07e546755afc2ef60be2d79e41",
-    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "bd0c21b8d8c2691bd2b064da64f3bdd3b46892a32a17898863c96edfc5c71c02",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "f8df82760ed9fb72ccd5f3008335dd92562d1069f24da6c10bc9e72604cfaaab",
+    "boards/renesas/rdk-rzv2h/demo.px4board": "b0eb9a200b9397c19f3aa3e8337f06460553cf87e512a6fd1eb8db627acc4686",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "e63a9def5737d6fa0f54f46febd77ac0d89927c374fb07eba2c0edc24caa10e1",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "d21f39f7d7faa985c6a627d8eb886d249629e72ab09d89105c41a744d71cf499",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "429d98b592053dee839988693cddd5e16dd51d478dd155486d749d6a59fe0fda"
   },
   "abi_sources": [

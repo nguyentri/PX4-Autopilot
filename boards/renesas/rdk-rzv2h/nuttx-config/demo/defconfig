@@ -173,6 +173,9 @@ CONFIG_I2C=y
 CONFIG_I2C_RESET=y
 CONFIG_RZV_SCI_I2C=y
 CONFIG_RZV_SCI7_I2C=y
+# ADC-I2C: SCI0 simple-I2C on P50 SDA / P51 SCL (40-pin 22/36) is PX4 bus 0
+# for an ADS1115 at 0x48, started by init/demo/rc.board_sensors.
+CONFIG_RZV_SCI0_I2C=y
 
 # ADC is intentionally excluded from the integrated image. The checked-in
 # drone reference has no active ADC path; retain it as a post-G9 standalone

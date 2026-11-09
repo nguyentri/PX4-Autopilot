@@ -2,6 +2,7 @@
 """Exercise demo startup hooks and their ordering in the shared PX4 boot path."""
 
 import argparse
+import itertools
 import json
 import lzma
 from pathlib import Path
@@ -173,18 +174,21 @@ printf 'test=%s link=%s mode=%s flow=%s lidar=%s baud=%s pwm=%s stick=%s\n' \
                 self.assertIn(f"test={expected} link=101 mode=0 flow=0 lidar=401 "
                               "baud=57600 pwm=no stick=4", result.stdout)
 
-    def test_both_bus_sensors_are_attempted_even_if_one_fails(self):
+    def test_all_bus_sensors_are_attempted_even_if_one_fails(self):
         # The harness substitutes only driver exits, never sensor data.
-        for imu_exit, baro_exit in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        for imu_exit, baro_exit, adc_exit in itertools.product((0, 1), repeat=3):
             harness = f'''
 icm45686() {{ echo "CALL icm45686 $*"; return {imu_exit}; }}
 bmp280() {{ echo "CALL bmp280 $*"; return {baro_exit}; }}
+ads1115() {{ echo "CALL ads1115 $*"; return {adc_exit}; }}
 '''
-            with self.subTest(imu=imu_exit, baro=baro_exit):
+            with self.subTest(imu=imu_exit, baro=baro_exit, adc=adc_exit):
                 output = self.run_hook("rc.board_sensors", harness)
                 self.assertIn("CALL icm45686 -s -b 0 -c 3 -R 0 start", output)
                 self.assertIn("CALL bmp280 -I -b 7 -a 0x76 start", output)
-                self.assertEqual(output.count("ERROR [init]"), imu_exit + baro_exit)
+                self.assertIn("CALL ads1115 -X -b 0 start", output)
+                self.assertEqual(output.count("ERROR [init]"),
+                                 imu_exit + baro_exit + adc_exit)
 
     def test_hook_runs_after_serial_and_before_boot_complete(self):
         rcs = (ROOT / "ROMFS/px4fmu_common/init.d/rcS").read_text()

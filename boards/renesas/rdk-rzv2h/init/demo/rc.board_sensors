@@ -1,5 +1,6 @@
 #!/bin/sh
-# Bench demo sensors: one polled ICM45686 on SPI0 P93 and a BMP280 on SCI7.
+# Bench demo sensors: one polled ICM45686 on SPI0 P93, a BMP280 on SCI7 and an
+# ADS1115 ADC on SCI0 (PX4 bus 0, 0x48).
 # Rotation 0 is the driver frame, not fitted-board proof. The BMP280 module
 # needs CSB high (I2C) and SDO low (0x76).
 
@@ -15,4 +16,11 @@ then
 	echo "BMP280 started on SCI7 I2C bus 7"
 else
 	echo "ERROR [init] BMP280 failed on SCI7 I2C bus 7"
+fi
+
+if ads1115 -X -b 0 start
+then
+	echo "ADS1115 started on SCI0 I2C bus 0"
+else
+	echo "ERROR [init] ADS1115 failed on SCI0 I2C bus 0"
 fi

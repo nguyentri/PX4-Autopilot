@@ -12,6 +12,7 @@ One PX4 image that shows, at the same time:
 
 - four PWM outputs on a logic analyzer;
 - ICM-45686 accel/gyro (SPI0, polled, CS P93) and BMP280 baro (SCI7 I2C, 0x76);
+- ADS1115 ADC (SCI0 I2C, PX4 bus 0, 0x48);
 - TFmini Plus range on SCI4;
 - QGroundControl over a USB-UART on SCI5.
 
@@ -84,7 +85,8 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
 
 ## Checks
 
-1. Boot log: `ICM45686 started on SPI0 CS pin 3` and `BMP280 started on SCI7 I2C bus 7`, no `ERROR [init]`.
+1. Boot log: `ICM45686 started on SPI0 CS pin 3`, `BMP280 started on SCI7 I2C bus 7` and
+   `ADS1115 started on SCI0 I2C bus 0`, no `ERROR [init]`.
 2. Sensors over RTT (`nsh_console_exec.py --marker ...`):
    `listener sensor_accel`, `listener sensor_gyro`, `listener sensor_baro`, `listener distance_sensor`.
 3. Stop the RTT bridge before watching live data:
@@ -94,6 +96,13 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
    and check the fields above update. Tilt the IMU and move a flat target in
    front of the LiDAR. Attitude/altitude estimates depend on estimator health;
    inspect the sensor messages directly if those displays do not update.
+   Judge sensor health from counters across a detached window, not from log
+   lines printed while attached: read `sensors status`, `bmp280 status`,
+   `icm45686 status` and `ads1115 status`, stop the bridge for at least 60 s,
+   reattach and read them again. Each attach adds a fixed cost (one
+   `Accel #0`/`BARO #0` TIMEOUT, several validator failsafe events, a few
+   `vehicle_imu` gaps, about 35 ADS1115 comms errors); a detached window must
+   add no more than one attach does, and bus error counters must stay at 0.
 4. PWM: capture all four channels. Expected disarmed output is 400 Hz at 1000 µs
    (`PWM_MAIN_DIS`). Drive one channel with `actuator_test set -m 1 -v 0.5 -t 2`
    or the QGC Actuators tab (`COM_MOT_TEST_EN`, default 1) and capture the pulse width change
@@ -271,3 +280,20 @@ free-running `rzv_hrt.c`, build variant `demo`), single-core load.
 - `reboot` stopped the console. A follow-up read-only connect reported CR8-0
   `DBGEN is not asserted`, so the SoC reset happened.
 
+### 2026-11-09 — sensor TIMEOUTs are attach-only; ADS1115 auto-start
+
+ELF sha256 `054989d2…` (build variant `demo`, ADS1115 started by
+`init/demo/rc.board_sensors`), single-core load.
+[Diagnosis report](../../../plans/reports/debugger-261109-1509-demo-sensor-timeouts-rtt-attach.md).
+
+- Cold load then 60–90 s with no probe: the buffered boot log has no TIMEOUT;
+  the `Accel #0`/`BARO #0` TIMEOUT lines appear only at attach. This settles
+  the open question of the 2026-11-08 BMP280 run.
+- Detach windows of 5 s and 120 s added the same counts (validator failsafe
+  +6 to +8, `vehicle_imu` gaps +5 to +10). `bmp280 comms errors` and
+  `icm45686` bad register/transfer stayed 0, so no bus speed change is needed.
+- ADS1115: boot shows `ADS1115 started on SCI0 I2C bus 0`; `adc_report` from
+  `I2C:0 (0x48)` with 4 channels. 60 s detached added 5554 cycles (80 Hz) and
+  34 comms errors, the same as one attach; a first read after a 60 s detached
+  boot showed 18. The driver also counts "conversion not ready" as a comms
+  error. `adc_report.timestamp` stays 0 (stock driver).

@@ -51,42 +51,67 @@ extern "C" {
 /* Validate I2C configuration against available NuttX buses */
 constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX_BUS_ITEMS])
 {
+#if defined(CONFIG_RZV_I2C0) && defined(CONFIG_RZV_SCI0_I2C)
+	constexpr_assert(false, "RIIC0 and SCI0 claim the same PX4 I2C bus");
+#endif
+#if defined(CONFIG_RZV_I2C1) && defined(CONFIG_RZV_SCI1_I2C)
+	constexpr_assert(false, "RIIC1 and SCI1 claim the same PX4 I2C bus");
+#endif
+#if defined(CONFIG_RZV_I2C2) && defined(CONFIG_RZV_SCI2_I2C)
+	constexpr_assert(false, "RIIC2 and SCI2 claim the same PX4 I2C bus");
+#endif
+#if defined(CONFIG_RZV_I2C3) && defined(CONFIG_RZV_SCI3_I2C)
+	constexpr_assert(false, "RIIC3 and SCI3 claim the same PX4 I2C bus");
+#endif
+#if defined(CONFIG_RZV_I2C4) && defined(CONFIG_RZV_SCI4_I2C)
+	constexpr_assert(false, "RIIC4 and SCI4 claim the same PX4 I2C bus");
+#endif
+#if defined(CONFIG_RZV_I2C5) && defined(CONFIG_RZV_SCI5_I2C)
+	constexpr_assert(false, "RIIC5 and SCI5 claim the same PX4 I2C bus");
+#endif
+#if defined(CONFIG_RZV_I2C6) && defined(CONFIG_RZV_SCI6_I2C)
+	constexpr_assert(false, "RIIC6 and SCI6 claim the same PX4 I2C bus");
+#endif
 #if defined(CONFIG_RZV_I2C7) && defined(CONFIG_RZV_SCI7_I2C)
 	constexpr_assert(false, "RIIC7 and SCI7 claim the same PX4 I2C bus");
 #endif
+#if defined(CONFIG_RZV_I2C8) && defined(CONFIG_RZV_SCI8_I2C)
+	constexpr_assert(false, "RIIC8 and SCI8 claim the same PX4 I2C bus");
+#endif
 
+	/* PX4 bus n is owned by either RIICn or SCIn (simple I2C), never both. */
 	const bool nuttx_enabled_i2c_buses[] = {
-#ifdef CONFIG_RZV_I2C0
+#if defined(CONFIG_RZV_I2C0) || defined(CONFIG_RZV_SCI0_I2C)
 		true,
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C1
+#if defined(CONFIG_RZV_I2C1) || defined(CONFIG_RZV_SCI1_I2C)
 		true,
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C2
+#if defined(CONFIG_RZV_I2C2) || defined(CONFIG_RZV_SCI2_I2C)
 		true,
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C3
+#if defined(CONFIG_RZV_I2C3) || defined(CONFIG_RZV_SCI3_I2C)
 		true,
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C4
+#if defined(CONFIG_RZV_I2C4) || defined(CONFIG_RZV_SCI4_I2C)
 		true,
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C5
+#if defined(CONFIG_RZV_I2C5) || defined(CONFIG_RZV_SCI5_I2C)
 		true,
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C6
+#if defined(CONFIG_RZV_I2C6) || defined(CONFIG_RZV_SCI6_I2C)
 		true,
 #else
 		false,
@@ -96,7 +121,7 @@ constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX
 #else
 		false,
 #endif
-#ifdef CONFIG_RZV_I2C8
+#if defined(CONFIG_RZV_I2C8) || defined(CONFIG_RZV_SCI8_I2C)
 		true,
 #else
 		false,
@@ -105,15 +130,15 @@ constexpr bool validateI2CConfig(const px4_i2c_bus_t i2c_busses_conf[I2C_BUS_MAX
 
 	for (int j = 0; j < I2C_BUS_MAX_BUS_ITEMS; ++j) {
 		constexpr_assert(i2c_busses_conf[j].bus < (int)(sizeof(nuttx_enabled_i2c_buses) /
-				 sizeof(nuttx_enabled_i2c_buses[0])), "I2C bus outside native/SCI7 domain");
+				 sizeof(nuttx_enabled_i2c_buses[0])), "I2C bus outside RIIC/SCI 0-8 domain");
 	}
 
 	for (unsigned i = 0; i < sizeof(nuttx_enabled_i2c_buses) / sizeof(nuttx_enabled_i2c_buses[0]); ++i) {
 		bool found_bus = false;
 
 		for (int j = 0; j < I2C_BUS_MAX_BUS_ITEMS; ++j) {
-			// RZV2H I2C bus numbering: CONFIG_RZV_I2Cx corresponds to PX4 I2C bus x
-			// CONFIG_RZV_I2C0 -> PX4 I2C bus 0, CONFIG_RZV_I2C1 -> PX4 I2C bus 1
+			// RZV2H I2C bus numbering: CONFIG_RZV_I2Cx or CONFIG_RZV_SCIx_I2C
+			// corresponds to PX4 I2C bus x (e.g. SCI0 simple I2C -> PX4 bus 0)
 			if (i2c_busses_conf[j].bus == (int)i) {
 				found_bus = true;
 			}

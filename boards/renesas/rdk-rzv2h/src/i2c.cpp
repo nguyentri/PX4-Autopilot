@@ -37,9 +37,11 @@
  * RDK-RZV2H I2C bus configuration for PX4 sensor drivers
  *
  * Sensor Configuration:
- * - I2C7: BMP280 barometer at address 0x76.
+ * - I2C - SCI7: BMP280 barometer at address 0x76.
  *   Hardware wiring is P76/P77 through RSCI7 Simple-I2C. The lower-half is
  *   build-proven; target transaction and recovery evidence remains required.
+ * - I2C - SCI0 (bus 0, external, only when CONFIG_RZV_SCI0_I2C): ADC-I2C on
+ *   P50 SDA / P51 SCL, e.g. ADS1115 at 0x48 (demo profile).
  */
 
 #include <px4_platform_common/px4_config.h>
@@ -56,6 +58,10 @@
 
 constexpr px4_i2c_bus_t px4_i2c_buses[I2C_BUS_MAX_BUS_ITEMS] = {
 	initI2CBusInternal(I2C::Bus{PX4_I2C_BUS_EXPANSION}),
+#if defined(CONFIG_RZV_SCI0_I2C)
+	/* External so drivers start with -X -b 0 (e.g. ads1115). */
+	initI2CBusExternal(I2C::Bus{PX4_I2C_BUS_ADC_EXTERNAL}),
+#endif
 };
 
 static_assert(validateI2CConfig(px4_i2c_buses), "I2C bus config mismatch");

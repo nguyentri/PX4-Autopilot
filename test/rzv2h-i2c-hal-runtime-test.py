@@ -125,6 +125,16 @@ assert(px4_i2cbus_initialize(-1)==nullptr && px4_i2cbus_initialize(10)==nullptr)
         validate((), (), (8,), False)
         validate((), (), (9,), False)
 
+    def test_constant_validation_accepts_sci_buses_and_rejects_shared_owners(self):
+        for i in range(9):
+            with self.subTest(sci=i):
+                validate((), (i,), (i,), True)
+                validate((), (i,), (), False)
+                validate((i,), (i,), (i,), False)
+        # Demo profile shape: SCI0 (ADC) beside SCI7 (barometer).
+        validate((), (0, 7), (7, 0), True)
+        validate((), (0, 7), (7,), False)
+
 
 if __name__ == "__main__":
     unittest.main()

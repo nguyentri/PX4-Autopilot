@@ -137,17 +137,25 @@
  *
  * Secondary / ADC-I2C Bus (RSCI0):
  * SCI0: RXD0=P51(Mode1) -> SCL (40-pin Pin 36), TXD0=P50(Mode1) -> SDA (40-pin Pin 22)
- * Driver: rzv_sci_i2c.c (/dev/i2c10). Used for ADC-I2C (e.g. ADS1115 via standalone
- * ads1115 config), candidate dedicated interface for BMS monitor (battery management).
+ * Driver: rzv_sci_i2c.c (/dev/i2c10, PX4 bus 0 when CONFIG_RZV_SCI0_I2C). Used for ADC-I2C
+ * (ADS1115: standalone ads1115 config, PX4 demo profile), candidate dedicated interface for BMS monitor (battery management).
  * External pull-ups to 3.3V are required (RDK has no on-board pull-ups on P50/P51).
  */
+#if defined(CONFIG_RZV_SCI0_I2C)
+/* Order matches px4_i2c_buses[] in i2c.cpp: SCI7 (bus 7), then SCI0 (bus 0). */
+#define PX4_NUMBER_I2C_BUSES            2
+#define BOARD_NUMBER_I2C_BUSES          2
+#define BOARD_I2C_BUS_CLOCK_INIT        {100000, 100000}  /* 100kHz for I2C7 and SCI0 */
+#else
 #define PX4_NUMBER_I2C_BUSES            1
 #define BOARD_NUMBER_I2C_BUSES          1
 #define BOARD_I2C_BUS_CLOCK_INIT        {100000}  /* 100kHz for I2C7 */
+#endif
 #define I2C_BUS_MAX_BUS_ITEMS           PX4_NUMBER_I2C_BUSES
 
 /* I2C Bus Assignment */
 #define PX4_I2C_BUS_EXPANSION           7  /* I2C7 for external devices (barometer) */
+#define PX4_I2C_BUS_ADC_EXTERNAL        0  /* SCI0 simple-I2C, opt-in per profile (ADS1115) */
 /* Parameters are intended for CR8-owned XSPI + LittleFS. Do not map MTD to
  * the sensor I2C bus; add a real XSPI MTD manifest before enabling PX4 MTD
  * persistence on this board.
