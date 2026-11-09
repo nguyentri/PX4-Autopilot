@@ -2075,6 +2075,38 @@
       "note": "Production v3 wire codec, causal lease and coherent snapshot tests; no hardware acceptance."
     },
     {
+      "id": "rzv2h-ipc-heartbeat-test",
+      "path": "test/rzv2h-ipc-heartbeat-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ipc-heartbeat-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "g++",
+          "cc"
+        ]
+      },
+      "note": "rzv2h_heartbeat liveness state with the production v3 codec: both roles, 500 ms loss, epoch reset, stale/restart, initiator-only recovery rate limit; no hardware acceptance."
+    },
+    {
+      "id": "rzv2h-ipc-heartbeat-host-fixture",
+      "path": "test/rzv2h-ipc-heartbeat-host-fixture.cpp",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "rzv2h_heartbeat liveness state fixture compiled by the heartbeat host test."
+    },
+    {
       "id": "rzv2h-lab-pivot-allocation-test",
       "path": "test/rzv2h-lab-pivot-allocation-test.py",
       "kind": "test",
@@ -2977,6 +3009,92 @@
         "test/rzv2h-canfd-error-interrupt-runtime-test.py"
       ],
       "note": "Run CAN-FD channel setup, RX drain and channel/global error handlers against a write-0-clear level-interrupt model."
+    },
+    {
+      "id": "rzv2h-mavlink-shell-exec-test",
+      "path": "test/rzv2h-mavlink-shell-exec-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "autonomy-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-mavlink-shell-exec-test.py"
+      ],
+      "note": "MAVLink shell runner against a fake SERIAL_CONTROL shell: marker framing, prompt/ANSI stripping, 70-byte chunking, single retry, timeout; no hardware acceptance."
+    },
+    {
+      "id": "rzv2h-mavlink-shell-exec",
+      "path": "platforms/nuttx/Debug/rzv2h-mavlink-shell-exec.py",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "console",
+      "command": [
+        "{python}",
+        "platforms/nuttx/Debug/rzv2h-mavlink-shell-exec.py",
+        "--port",
+        "/dev/ttyUSB0",
+        "ver all"
+      ],
+      "note": "PX4 shell over MAVLink on SCI5; arbitrary commands can mutate the board, so command and loaded image must be approved for HIL."
+    },
+    {
+      "id": "rzv2h-core-halt-resume",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-core-halt-resume.sh",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "command": [
+        "sh",
+        "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-core-halt-resume.sh",
+        "cr8_1",
+        "hold",
+        "15"
+      ],
+      "note": "Holds one CR8 core halted for N seconds in one JLinkExe session, then resumes it (no reset, no load; a halt does not persist after JLinkExe exits); refuses CM33 and a busy probe; exit 3 on connect/reset markers, never blind-retry.",
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL"
+        ]
+      }
+    },
+    {
+      "id": "rzv2h-px4-demo-heartbeat-check",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-demo-heartbeat-check.sh",
+      "kind": "tool",
+      "groups": [
+        "hardware-tools"
+      ],
+      "target_access": "mutates",
+      "command": [
+        "sh",
+        "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-demo-heartbeat-check.sh",
+        "<cr8_0-elf>",
+        "<cr8_1-elf>"
+      ],
+      "note": "PX4 demo heartbeat pair: CR8-0 via MAVLink shell on SCI5, CR8-1 via RTT, then hold CR8-1 halted 15 s (loss and recovery); optional --load; optional LOG_DIR (new or empty). One probe owner; exit 3 means diagnose before reload.",
+      "requires": {
+        "environment": [
+          "JLINK_SERIAL"
+        ]
+      }
+    },
+    {
+      "id": "rzv2h-px4-demo-heartbeat-health",
+      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-demo-heartbeat-health.gdb",
+      "kind": "support",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "command": [],
+      "note": "Read-only GDB snippet for rzv2h_heartbeat state on either demo core, used with jlink-gdb-oneshot.py."
     }
   ]
 }
