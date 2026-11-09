@@ -131,18 +131,29 @@ mavlink() {
     echo "CALL $*"
     [ "$5" != "$failed_stream" ]
 }
+rzv2h_heartbeat() {
+    echo "HEARTBEAT $*"
+    [ "$failed_stream" != heartbeat ]
+}
 '''
-        for failed in ("none", *(name for name, _ in STREAMS)):
+        for failed in ("none", "heartbeat", *(name for name, _ in STREAMS)):
             with self.subTest(failed=failed):
                 output = self.run_hook("rc.board_extras", harness, [failed])
-                calls = [line for line in output.splitlines() if line.startswith("CALL ")]
+                lines = output.splitlines()
+                # The optional CR8-1 heartbeat starts once, before the streams,
+                # and its failure never blocks them.
+                self.assertEqual([line for line in lines if line.startswith("HEARTBEAT ")],
+                                 ["HEARTBEAT start"])
+                self.assertLess(lines.index("HEARTBEAT start"),
+                                next(i for i, line in enumerate(lines) if line.startswith("CALL ")))
+                calls = [line for line in lines if line.startswith("CALL ")]
                 self.assertEqual(calls, [
                     f"CALL stream -d /dev/ttyS5 -s {name} -r {rate}"
                     for name, rate in STREAMS])
                 errors = [line for line in output.splitlines() if "ERROR [init]" in line]
                 self.assertEqual(len(errors), 0 if failed == "none" else 1)
                 if errors:
-                    self.assertIn(failed, errors[0])
+                    self.assertIn("CR8-1 heartbeat" if failed == "heartbeat" else failed, errors[0])
 
     def test_defaults_enable_qgc_tests_without_overwriting_user_choice(self):
         harness = '''
