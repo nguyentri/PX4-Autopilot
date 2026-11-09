@@ -43,9 +43,9 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
             Draft7Validator.check_schema(schema)
 
     def test_02_catalog_counts(self):
-        """Verify authoritative discovery counts: 16 PX4, 130 RZ NuttX, 30 RA8P1 NuttX."""
+        """Verify authoritative discovery counts: 18 PX4, 130 RZ NuttX, 30 RA8P1 NuttX."""
         px4_targets = discover_px4_targets()
-        self.assertEqual(len(px4_targets), 16)
+        self.assertEqual(len(px4_targets), 18)
 
         rzv_configs = discover_nuttx_configs("rdk-rzv2h")
         self.assertEqual(len(rzv_configs), 130)
@@ -174,7 +174,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
 
     def test_10_multicore_groups(self):
         """Verify multi-core PX4 and NuttX group profiles resolve cleanly."""
-        for gid, fam in [("rzv-px4-dualcr8", "px4"), ("rzv-native-ipc-rtt", "nuttx"),
+        for gid, fam in [("rzv-px4-dualcr8", "px4"), ("rzv-px4-demo", "px4"), ("rzv-native-ipc-rtt", "nuttx"),
                          ("rzv-native-ipc-demo-serial", "nuttx")]:
             sel = {
                 "schemaVersion": 1,

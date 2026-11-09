@@ -25,6 +25,30 @@
         "cr8_1": "rtt"
       }
     },
+    "rzv-px4-demo": {
+      "id": "rzv-px4-demo",
+      "name": "RZ/V2H PX4 Demo (CR8-0 + CR8-1 heartbeat)",
+      "board": "rdk-rzv2h",
+      "loadRecipe": "rzv-dual-cr8-ram",
+      "family": "px4",
+      "description": "PX4 demo on CR8-0 (MAVLink shell on SCI5, RTT log) paired with a heartbeat-only CR8-1 peer (RTT NSH); the cores exchange rzv2h_heartbeat frames over raw /dev/ipcc1 only.",
+      "members": [
+        {
+          "core": "cr8_0",
+          "family": "px4",
+          "target": "renesas_rdk-rzv2h_demo"
+        },
+        {
+          "core": "cr8_1",
+          "family": "px4",
+          "target": "renesas_rdk-rzv2h-io-cr8_1_demo"
+        }
+      ],
+      "console": {
+        "cr8_0": "rtt",
+        "cr8_1": "rtt"
+      }
+    },
     "rzv-native-ipc-rtt": {
       "id": "rzv-native-ipc-rtt",
       "name": "RZ/V2H Native Dual-CR8 IPC (RTT Console)",
