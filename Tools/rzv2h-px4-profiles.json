@@ -955,7 +955,8 @@
     "rzv2h-i2c-hal-runtime-test",
     "rzv2h-sci-i2c-mode-runtime-test",
     "rzv2h-ether-two-port-runtime-test",
-    "rzv2h-indexed-sdhi-wdt-runtime-test"
+    "rzv2h-indexed-sdhi-wdt-runtime-test",
+    "rzv2h-ether-gbeth-cmsis-register-definitions-test"
   ],
   "repositories": {
     "src/modules/mavlink/mavlink": {

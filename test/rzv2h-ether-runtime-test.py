@@ -26,6 +26,13 @@ def without_includes(path):
     return re.sub(r'^\s*#\s*include[^\n]*$', '', path.read_text(), flags=re.M)
 
 
+def dma_macros(source):
+    """Driver-private DMA interrupt/stop macros used by extracted helpers."""
+    return "\n".join(re.findall(
+        r'^#define RZV_ETHER_DMA_(?:INT_EN|STOP_POLLS)\b(?:[^\n]*\\\n)*[^\n]*$',
+        source, flags=re.M)) + "\n"
+
+
 class EthernetSampleSelection(unittest.TestCase):
     def test_disabled_interface_selection_does_not_alias_or_publish(self):
         b = boundary_module()
@@ -182,9 +189,11 @@ static void rzv_invalidate_dcache_region(void *pointer, unsigned int size) {
   assert(pointer && size == RZV_ETHER_BUFSIZE);
 }
 '''
+        code += dma_macros(source)
         for signature in (
                 "static void rzv_free_buffers(", "static int rzv_alloc_buffers(",
-                "int rzv_ether_initialize(", "static int rzv_ifdown(",
+                "int rzv_ether_initialize(", "static void rzv_mac_dma_start(",
+                "static void rzv_mac_dma_stop(", "static int rzv_ifdown(",
                 "static int rzv_ifup(", "static int rzv_ether_sample_select(",
                 "int rzv2h_ether_sample_state_at(", "int rzv2h_ether_sample_state(",
                 "static bool rzv_sample_frame_matches(",
@@ -424,7 +433,9 @@ static void work_queue(int queue,int *work,void(*fn)(void*),void *arg,int delay)
 {(void)queue;(void)fn;(void)arg;(void)delay;*work=1;}
 static void rzv_ether_board_set_speed(int intf,int speed) {(void)intf;(void)speed;}
 '''
-        for signature in ('static int rzv_ifdown(', 'static int rzv_ifup(', 'static int rzv_txavail('):
+        code += dma_macros(source)
+        for signature in ('static void rzv_mac_dma_start(', 'static void rzv_mac_dma_stop(',
+                          'static int rzv_ifdown(', 'static int rzv_ifup(', 'static int rzv_txavail('):
             code += boundary.EXTRACT.definition(source, signature)
         code += r'''
 int main(void)

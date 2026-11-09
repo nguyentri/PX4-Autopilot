@@ -151,7 +151,7 @@ class EthernetContracts(unittest.TestCase):
         timeout = function_body(self.driver, "rzv_txtimeout_work")
         self.assertIn("priv->bifup = false", ifdown)
         self.assertIn("work_cancel(HPWORK, &priv->irqwork)", ifdown)
-        self.assertIn("work_cancel(HPWORK, &priv->txtimeout_work)", ifdown)
+        self.assertIn("work_cancel(LPWORK, &priv->txtimeout_work)", ifdown)
         self.assertIn("work_cancel(LPWORK, &priv->txavail_work)", ifdown)
         self.assertRegex(irqwork, r"(?s)if \(!priv->bifup\).*?return;")
         self.assertRegex(timeout, r"(?s)if \(!priv->bifup\).*?return;")

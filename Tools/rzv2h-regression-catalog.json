@@ -2843,6 +2843,20 @@
       "note": "Admit all seven SDHI/WDT ELFs; reject rehashed selector, ownership, automatic-operation, provider and case-table mutants."
     },
     {
+      "id": "rzv2h-ether-gbeth-cmsis-register-definitions-test",
+      "path": "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py"
+      ],
+      "note": "Compare GbEther register offsets and MAC/MTL/DMA bit fields in hardware/rzv_ether.h against CMSIS."
+    },
+    {
       "id": "rzv2h-svd-generator-test",
       "path": "test/rzv2h-svd-generator-test.py",
       "kind": "test",
