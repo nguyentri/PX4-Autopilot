@@ -786,7 +786,7 @@
   "contract_owners": {
     "boards/renesas/rdk-rzv2h-io-cm33/default.px4board": "2d5799986c71a22645d05de00e334e182de439411e4674032c85ef36ca22c661",
     "boards/renesas/rdk-rzv2h-io-cm33/firmware.prototype": "6446fcf7718c05592007ea69bff280a619ebadd50f2d7e6da438ec287c972e0c",
-    "boards/renesas/rdk-rzv2h-io-cm33/nuttx-config/nsh/defconfig": "c07ae177d849acd593d8e067ae823e43747c756879d72c5f6408959ce7ada916",
+    "boards/renesas/rdk-rzv2h-io-cm33/nuttx-config/nsh/defconfig": "d8c15bf8fdba4ea64ac9a793864594a327e13e4afa2756e73c1ca69fa0c55da7",
     "boards/renesas/rdk-rzv2h-io-cr8_1/default.px4board": "6b490e0f18aeead606fa465812dfb8c242bb4686ddefef6e5288a618ce448741",
     "boards/renesas/rdk-rzv2h-io-cr8_1/firmware.prototype": "352d2c28ab8b651cec25127ec5be7bc8ce101daa86e84a6f09fb01b982129af1",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/nsh/defconfig": "40bf9883f37f90348b095351d815c40773278edfc621d0ee3ab078ab09173245",
