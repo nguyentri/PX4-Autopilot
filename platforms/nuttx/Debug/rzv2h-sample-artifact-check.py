@@ -188,12 +188,22 @@ def verify(profile, directory, source_state_path):
         definitions = subprocess.check_output(['arm-none-eabi-nm', str(obj)], text=True)
         providers = subprocess.check_output(['arm-none-eabi-nm', '-A', '--defined-only',
                                              str(directory/'libarch.a')], text=True)
-        for name in ('arm_serialinit', 'up_putc'):
+        # rzv_serial.c is the single arm_serialinit()/up_putc() provider for
+        # SCI-B and SCIF; it forwards SCIF registration and output to the
+        # rzv_scif.c entry points, which must be unique and in rzv_scif.o.
+        owners_by_name = {'arm_serialinit': 'rzv_serial.o', 'up_putc': 'rzv_serial.o',
+                          'rzv_scif_serialinit': 'rzv_scif.o', 'rzv_scif_putc': 'rzv_scif.o'}
+        for name, owner in owners_by_name.items():
             owners = re.findall(r'(?m)^(.+):\w+\s+[Tt]\s+' + name + '$', providers)
-            if len(owners) != 1 or not owners[0].endswith(':rzv_scif.o'):
+            if len(owners) != 1 or not owners[0].endswith(':' + owner):
                 raise ValueError('multiple/wrong serial providers: ' + name)
-            if len(re.findall(r'(?m)^\w+\s+T\s+' + name + '$', definitions)) != 1:
+            if owner == 'rzv_scif.o' and len(re.findall(r'(?m)^\w+\s+T\s+' + name + '$', definitions)) != 1:
                 raise ValueError('SCIF provider missing/ambiguous: ' + name)
+        dispatcher = subprocess.check_output(['arm-none-eabi-nm', '--undefined-only', str(directory/'libarch.a')],
+                                             text=True).split('rzv_serial.o:', 1)[-1].split('\n\n', 1)[0]
+        # up_putc() may route to RTT instead, so only registration must forward.
+        if not re.search(r'(?m)^\s+U rzv_scif_serialinit$', dispatcher):
+            raise ValueError('serial dispatcher does not forward to SCIF: rzv_scif_serialinit')
     if profile['mode'] == 'xspi-authority-guard':
         validator = symbol('board_xspi_paramfs_validate', 'Ww')
         if len(validator) != 1:
