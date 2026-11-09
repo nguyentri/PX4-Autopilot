@@ -743,7 +743,7 @@ class BoardResetSafetyContracts(unittest.TestCase):
         self.assertIn("RZV_WDT_CHANNEL_2", system_reset)
         self.assertIn("RZV_WDT_CHANNEL_3", system_reset)
         self.assertIn("RZV_CPG_ERRORRST_SEL2_BIT", body)
-        self.assertIn("WDT_WDTRCR_RSTIRQS_RESET_REQ", body)
+        self.assertIn("WDT_WDTRCR_RSTIRQS_ERROR_NOTIFY", body)
         self.assertRegex(body, r"for\s*\(\s*;\s*;\s*\)")
 
 

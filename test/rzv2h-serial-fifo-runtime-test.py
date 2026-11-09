@@ -390,6 +390,35 @@ int main(void)
             self.assertIn(f'default {default}', block)
             self.assertRegex(block, r'range [01] 15\b')
 
+    def test_early_console_ccr2_runs_at_115200_from_p5clk(self):
+        # rzv_lowsetup() programs a fixed CCR2 before rzv_setup() computes
+        # the baud.  If that constant uses the wrong divisor, the first boot
+        # byte leaves at a different rate and reaches the host corrupted.
+        lowputc = (ARCH / 'rzv_lowputc.c').read_text()
+        expr = re.search(r'#define LOWPUTC_CCR2_115200\s*\\?\s*\n?\s*\((.*?)\)\n',
+                         lowputc, re.S).group(1)
+        ccr2 = eval(expr.replace('u', ''), {})
+        p5clk = int(re.search(r'#define RZV_CLOCK_P5CLK_HZ\s+\((\d+)\)',
+                              (ARCH / 'rzv_clock.h').read_text()).group(1))
+        serial = SOURCE.read_text()
+        modes = re.findall(r'\{\s*([01]), ([01]), ([01]), ([0-3])\s*\}',
+                           re.search(r'g_async_baud\[13\] =\n\{(.*?)\n\};',
+                                     serial, re.S).group(1))
+        coeffs = [int(v) for v in re.search(
+            r'g_div_coefficient\[13\] =\n\{\s*([\d, ]+)\s*\}', serial).group(1).split(',')]
+        self.assertEqual(len(modes), 13)
+
+        bcp, bgdm, abcs = ccr2 & 7, (ccr2 >> 4) & 1, (ccr2 >> 5) & 1
+        brr, brme = (ccr2 >> 8) & 0xFF, (ccr2 >> 16) & 1
+        cks, mddr = (ccr2 >> 20) & 3, (ccr2 >> 24) & 0xFF
+        self.assertEqual(bcp, 0)
+        divisor = coeffs[modes.index((str(bgdm), str(abcs), '0', str(cks)))]
+        baud = p5clk / (divisor * (brr + 1))
+        if brme:
+            self.assertGreaterEqual(mddr, 128)
+            baud *= mddr / 256
+        self.assertLess(abs(baud / 115200 - 1), 0.005, f'CCR2 0x{ccr2:08x} gives {baud:.0f} baud')
+
 
 if __name__ == '__main__':
     unittest.main()

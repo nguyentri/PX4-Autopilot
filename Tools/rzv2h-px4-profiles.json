@@ -798,7 +798,7 @@
     "boards/renesas/rdk-rzv2h/nuttx-config/drone/defconfig": "9e80782756e6a081ae987c199475b7b60a3ccf718f51c3a14f79532da82fd9a3",
     "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "c697fdcc94ac584e70ba1c756023d7d1fc682905e8e0ac2a92f84d0389fb79fc",
     "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig": "10e4f5fc98005e48c5c5c423e310fbb08aefbfb537223b160eb12667313add60",
-    "boards/renesas/rdk-rzv2h/nuttx-config/sih/defconfig": "1d76769b9064eac0343b8ff6f1db6499a57511887b63e60992b11c2bbc200759",
+    "boards/renesas/rdk-rzv2h/nuttx-config/sih/defconfig": "98a04ba809d02c5f0a35d5e15e72d4a324af3df8d0fafea25d85aa1705c96cf1",
     "boards/renesas/rdk-rzv2h/nuttx-config/simple/defconfig": "582afae91cea0e7e743decf4ee355494a2104f760e76111035bd2cf0ff4f120f",
     "boards/renesas/rdk-rzv2h/sih.px4board": "ff4bc98360e39d798e642a3391962c84634cb49e59878883cf9e3327b844614f",
     "boards/renesas/rdk-rzv2h/simple.px4board": "bf03410d0d46dc47149ffd7bd4f615bb0e0d400bfe0f0279040397fc634da3d1",
@@ -808,7 +808,7 @@
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_1.ld": "8461a3f5deba69c6eb01a007271f6c590da574f3ce81227ec450af990eb6ce75",
     "ROMFS/CMakeLists.txt": "262fd7da52552615ad2032b95b927b248135a884d602aca7efe48930bb353776",
     "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_sensors": "ac5557cd955f2688be8d0223bfdd7770a3c2df4555492fc748454d0b83595c1a",
-    "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_defaults.cmds": "c74b4d9b59b064a0e5931fd3aa6ad2adec8120336753e78888a9ebf6f33f0f10",
+    "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_defaults.cmds": "12f93a822df0dad4dfc25fd4dfdd8d42742d0f2f38877eaa5bb8038b25faec30",
     "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_extras": "f1794d05ad5fe43935160b9a5662eb748dd37f3f3a076b37b971a8751c54c4fb",
     "ROMFS/px4fmu_common/init.d/rcS": "3d0684003600ec0b01a1749fd44796ff6d16ed843df325541cb834521cbfaac8",
     "boards/renesas/rdk-rzv2h-io-cr8_1/pwm.px4board": "5028519672e7017a5114f99d216bba767f01fe8b8b1102b039a5e89b05e6f521",
@@ -820,13 +820,13 @@
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/module.yaml": "b46ea1aa91d9e3a657026e1dacf78caabeacde40c077e9783822f94a77f1efc1",
     "src/apps/Kconfig": "241a0650de88da9779c27f5a1080dfbd732018e34d33ec37974579e74f207eb2",
     "src/apps/CMakeLists.txt": "4d7387feb8b8fcd5a035f56c3d4a946253d02301941665e0007c8d534d36bdba",
-    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "4fa89fc3dacd93197d040dd5ff00a1489db2deae560b3611ec44f879ce762f58",
+    "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "26d383d941a35fd662b2de31caad047f2ad32be916e94e763030c5541ee7a876",
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
     "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b",
     "boards/renesas/rdk-rzv2h/demo.px4board": "b0eb9a200b9397c19f3aa3e8337f06460553cf87e512a6fd1eb8db627acc4686",
     "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "e63a9def5737d6fa0f54f46febd77ac0d89927c374fb07eba2c0edc24caa10e1",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "d21f39f7d7faa985c6a627d8eb886d249629e72ab09d89105c41a744d71cf499",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "429d98b592053dee839988693cddd5e16dd51d478dd155486d749d6a59fe0fda"
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "56a7272fa657bd921822d1a167ec8da5d23d0b662de31e5bb170fa42fe3bb11b"
   },
   "abi_sources": [
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h",
@@ -956,7 +956,13 @@
     "rzv2h-sci-i2c-mode-runtime-test",
     "rzv2h-ether-two-port-runtime-test",
     "rzv2h-indexed-sdhi-wdt-runtime-test",
-    "rzv2h-ether-gbeth-cmsis-register-definitions-test"
+    "rzv2h-intc-register-offset-parity-test",
+    "rzv2h-hrt-free-running-runtime-test",
+    "rzv2h-ether-gbeth-cmsis-register-definitions-test",
+    "rzv2h-cpg-sysc-register-offset-parity-test",
+    "rzv2h-mhu-crc-rtc-offset-parity-test",
+    "rzv2h-riic-master-sequence-runtime-test",
+    "rzv2h-canfd-error-interrupt-runtime-test"
   ],
   "repositories": {
     "src/modules/mavlink/mavlink": {

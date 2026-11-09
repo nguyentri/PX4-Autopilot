@@ -35,6 +35,12 @@ class DmacRuntimeTests(unittest.TestCase):
             "void putreg32(uint32_t value, uintptr_t address);\n"
             "void modifyreg32(uintptr_t address, uint32_t clear, uint32_t set);\n",
             "barriers.h": "void host_dsb(void);\n#define ARM_DSB() host_dsb()\n",
+            "nuttx/mutex.h": "typedef int mutex_t;\n"
+            "#define NXMUTEX_INITIALIZER 0\n"
+            "static inline int nxmutex_lock(mutex_t *m)\n"
+            "{ if (*m) return -1; *m = 1; return 0; }\n"
+            "static inline int nxmutex_unlock(mutex_t *m)\n"
+            "{ if (!*m) return -1; *m = 0; return 0; }\n",
         }
         for name, text in headers.items():
             path = directory / name

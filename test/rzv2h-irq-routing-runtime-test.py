@@ -249,6 +249,7 @@ int main(void) {
         code = PRE + r'''
 #define RZV_INTC_SEL_SPI_BASE 385
 #define RZV_INTC_SEL_SLOT_COUNT 1
+#define RZV_INTC_IRQSEL_MAX 0x241
 #define RZV_INTC_GIC_GICD_ICDICPR(n) (n)
 static struct { xcpt_t handler; void *arg; } g_icu_handlers[1];
 static int g_icu_slot, depth;
@@ -274,6 +275,7 @@ static void up_enable_irq(int irq) { assert(irq == 385 && !edge); enabled = true
 int main(void) {
   assert(rzv_icu_attach(422, rzv_icu_interrupt, NULL, true) == 385);
   assert(installed && enabled && !edge && !depth);
+  assert(rzv_icu_attach(0x242, rzv_icu_interrupt, NULL, true) == -EINVAL);
 }
 '''
         run(code)
@@ -284,6 +286,7 @@ int main(void) {
 #define CONFIG_RZV_WDT_INTERRUPT_MODE 1
 #define CONFIG_ARCH_IRQPRIO 1
 #define RZV_WDT_MAX_CHANNELS 4
+#define WDT_MAXTIMEOUT 174
 struct watchdog_ops_s { int unused; };
 struct watchdog_lowerhalf_s { const struct watchdog_ops_s *ops; };
 struct rzv_wdt_priv_s { const struct watchdog_ops_s *ops; uintptr_t base;
@@ -291,7 +294,7 @@ struct rzv_wdt_priv_s { const struct watchdog_ops_s *ops; uintptr_t base;
 static struct rzv_wdt_priv_s g_wdt_priv[4];
 static struct watchdog_lowerhalf_s g_wdt_dev[4];
 static const struct watchdog_ops_s g_wdt_ops = {0};
-struct rzv_wdt_clock_state_s {uint32_t clkp,loco,reset;};
+struct rzv_wdt_clock_state_s {uint32_t clkp,loco,mstop,reset;};
 static int clocks, registrations, fail_register, fail_priority;
 static int rzv_wdt_calculate_timeout(struct rzv_wdt_priv_s *p, int ms) { return 0; }
 static int rzv_wdt_clock_enable(int channel,struct rzv_wdt_clock_state_s *before) { ++clocks; return 0; }

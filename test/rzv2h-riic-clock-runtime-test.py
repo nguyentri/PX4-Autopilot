@@ -100,12 +100,15 @@ class ClockLifecycle(unittest.TestCase):
       uint32_t old0=mstop[0], old1=mstop[1]; writes=0;
       fail=0; assert(rzv_i2c_module_start(channel)==0 && enabled);
       assert(!(mstop[index] & (1u<<bit)));
-      assert(writes==1 && addresses[0]==RZV_CPG_RST(channel==8?10:9));
+      /* FSP RIIC start order: assert the module reset, then release it. */
+      assert(writes==2 && addresses[0]==RZV_CPG_RST(channel==8?10:9));
+      assert(addresses[1]==addresses[0]);
       uint32_t reset=1u<<(channel==8?0:channel+8);
-      assert(values[0]==((reset<<16)|reset));
+      assert(values[0]==(reset<<16));
+      assert(values[1]==((reset<<16)|reset));
       assert(rzv_i2c_module_stop(channel)==0 && !enabled);
       assert(mstop[0]==old0 && mstop[1]==old1);
-      assert(writes==2 && values[1]==(reset<<16));
+      assert(writes==3 && values[2]==(reset<<16));
     }
   }
   int oldcalls=calls; unsigned oldwrites=writes;

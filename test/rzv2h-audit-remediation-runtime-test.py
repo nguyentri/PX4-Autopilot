@@ -234,152 +234,64 @@ int main(void) {
         run(code)
 
     def test_riic_short_reads_and_continuations_program_nack_before_data(self):
-        source = (ARCH / 'rzv_i2c.c').read_text()
-        code = '#define _POSIX_C_SOURCE 200809L\n' + PRE
-        code += header(NUTTX / 'include/nuttx/nuttx.h')
-        code += header(ARCH / 'hardware/rzv_i2c.h') + r'''
-#include <time.h>
-#define RIIC_TIMEOUT_MS 1000
-#define i2cerr(...) ((void)0)
-typedef unsigned irqstate_t;
-static irqstate_t enter_critical_section(void) { return 0; }
-static void leave_critical_section(irqstate_t flags) {}
-struct i2c_master_s { int unused; };
-#define I2C_M_READ 1
-#define I2C_M_NOSTART 0x0080
-struct i2c_msg_s { uint16_t addr, flags; uint8_t *buffer; int length; };
-''' + re.search(r'enum rzv_i2c_state_e\n\{.*?\n\};', source, re.S).group() + '\n' + re.search(r'struct rzv_i2c_priv_s\n\{.*?\n\};', source, re.S).group().replace('sem_t ', 'int ') + '\n'
-        code += r'''
-static uint8_t regs[256];
-static int reads, target, stop_requested, posts, restarts, resets, unlocks, wait_mode;
-static int chain_scans, dummy_pending;
-static struct rzv_i2c_priv_s *active;
-static void rzv_icu_clear_irq(int irq) {}
-static int nxsem_post(int *sem) {
-  if (active && sem == &active->sem_excl) {
-    assert(active->state == RIIC_STATE_IDLE && !regs[RZV_RIIC_ICIER_OFFSET]); ++unlocks;
-  } else ++posts;
-  return 0;
+        # The bus model checks ACKBT/WAIT at the moment each byte is clocked
+        # in, so a late NACK or a STOP after the final read fails here.
+        spec = importlib.util.spec_from_file_location(
+            'riic_sequence', ROOT / 'test/rzv2h-riic-master-sequence-runtime-test.py')
+        sequence = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sequence)
+        sequence.run(sequence.build(r'''
+static void check(int length, int split, bool restart)
+{
+  struct rzv_i2c_priv_s p;
+  uint8_t data[6] = {0}, tail = 0;
+  model_reset(&p);
+  struct i2c_msg_s msgs[3] = {
+    {.addr = 0x10, .flags = I2C_M_READ, .buffer = data, .length = split ? split : length},
+    {.addr = 0x10, .flags = I2C_M_READ | I2C_M_NOSTART, .buffer = data + split,
+     .length = length - split},
+    {.addr = 0x11, .buffer = &tail, .length = 1}};
+  struct i2c_msg_s chain[3];
+  int count = 0;
+  chain[count++] = msgs[0];
+  if (split) chain[count++] = msgs[1];
+  if (restart) chain[count++] = msgs[2];
+  assert(xfer(&p, chain, count) == 0 && !resets);
+  for (int i = 0; i < length; i++)
+    {
+      assert(tokens[2 + i] == ((i == length - 1 ? T_RN : T_RA) | (i + 1)));
+      assert(data[i] == i + 1);
+    }
+
+  /* The final read byte is followed directly by STOP or the restart. */
+  assert(tokens[2 + length] == (restart ? T_SR : T_P));
+  if (restart) assert(tokens[3 + length] == 0x22 && tokens[5 + length] == T_P);
 }
-static int nxsem_wait_uninterruptible(int *sem) { return 0; }
-static int rzv_i2c_acquire(struct rzv_i2c_priv_s *p)
-{ return nxsem_wait_uninterruptible(&p->sem_excl); }
-static int nxsem_reset(int *sem, int value) { return 0; }
-static int nxsem_timedwait_uninterruptible(int *sem, struct timespec *ts);
-static uint8_t rzv_i2c_getreg(struct rzv_i2c_priv_s *p, unsigned off) {
-  if (off == RZV_RIIC_ICDRR_OFFSET) {
-    if (dummy_pending) {dummy_pending=0;assert(p->read_remaining==(uint64_t)target);return 0;}
-    if (target - reads <= 2 && !restarts) assert(regs[RZV_RIIC_ICMR3_OFFSET] & RIIC_ICMR3_ACKBT);
-    if (target - reads == 1) assert(stop_requested || restarts);
-    return (uint8_t)++reads;
-  }
-  return regs[off];
-}
-static void rzv_i2c_putreg(struct rzv_i2c_priv_s *p, unsigned off, uint8_t val) {
-  if (off == RZV_RIIC_ICMR3_OFFSET && ((val ^ regs[off]) & RIIC_ICMR3_ACKBT))
-    assert(regs[off] & RIIC_ICMR3_ACKWP);
-  if (off == RZV_RIIC_ICCR2_OFFSET && (val & RIIC_ICCR2_RS)) {
-    assert(!(regs[RZV_RIIC_ICMR3_OFFSET] & RIIC_ICMR3_ACKBT)); ++restarts;
-  }
-  if (off == RZV_RIIC_ICCR1_OFFSET && (val & RIIC_ICCR1_IICRST) &&
-      !(regs[off] & RIIC_ICCR1_IICRST)) {
-    assert(!regs[RZV_RIIC_ICIER_OFFSET]); ++resets; memset(regs, 0, sizeof(regs));
-  }
-  regs[off] = val;
-}
-static void rzv_i2c_sendstop(struct rzv_i2c_priv_s *p) { ++stop_requested; }
-'''
-        for signature in ('static void rzv_i2c_set_nack(', 'static void rzv_i2c_abort(',
-                          'static void rzv_i2c_sendstart(', 'static void rzv_i2c_sendaddr(',
-                          'static void rzv_i2c_irq_nextmsg(',
-                          'static uint64_t rzv_i2c_read_remaining(', 'static int rzv_i2c_rxi_interrupt(',
-                          'static int rzv_i2c_txi_interrupt(',
-                          'static int rzv_i2c_err_interrupt(', 'static int rzv_i2c_stp_interrupt(',
-                          'static int rzv_i2c_transfer(struct i2c_master_s *dev,\n'):
-            definition = extract(source, signature)
-            if signature == 'static uint64_t rzv_i2c_read_remaining(':
-                definition = definition.replace('\n{', '\n{\n  ++chain_scans;', 1)
-            code += definition
-        code += r'''
-static void check(int length, bool split) {
-  uint8_t data[5] = {0};
-  struct i2c_msg_s msgs[2] = {{.flags = I2C_M_READ, .buffer = data, .length = split ? 1 : length},
-    {.flags = I2C_M_READ | I2C_M_NOSTART, .buffer = data + 1, .length = length - 1}};
-  struct rzv_i2c_priv_s p = {.msgs = msgs, .msgc = split ? 2 : 1,
-    .ptr = data, .dcnt = msgs[0].length, .state = RIIC_STATE_DATA_READ};
-  memset(regs, 0, sizeof(regs)); reads = stop_requested = posts = restarts = 0; target = length;
-  regs[RZV_RIIC_ICMR3_OFFSET] = RIIC_ICMR3_WAIT;
-  chain_scans = 0;
-  p.state = RIIC_STATE_ADDR_READ;dummy_pending=1;
-  rzv_i2c_txi_interrupt(1,NULL,&p);
-  for (int i = 0; i < length; ++i) rzv_i2c_rxi_interrupt(1, NULL, &p);
-  assert(chain_scans == 1 && p.read_remaining == 0);
-  assert(reads == length && stop_requested == 1 && p.state == RIIC_STATE_STOP);
-  assert(!(regs[RZV_RIIC_ICMR3_OFFSET] & RIIC_ICMR3_WAIT));
-  for (int i = 0; i < length; ++i) assert(data[i] == i + 1);
-  rzv_i2c_stp_interrupt(1, NULL, &p); assert(!posts);
-  regs[RZV_RIIC_ICSR2_OFFSET] = RIIC_ICSR2_STOP;
-  rzv_i2c_stp_interrupt(1, NULL, &p); assert(posts == 1 && p.state == RIIC_STATE_IDLE);
-  rzv_i2c_stp_interrupt(1, NULL, &p); assert(posts == 1);
-  rzv_i2c_set_nack(&p, false); assert(!(regs[RZV_RIIC_ICMR3_OFFSET] & RIIC_ICMR3_ACKBT));
-}
-static void check_restart(void) {
-  uint8_t data[2] = {0};
-  struct i2c_msg_s msgs[2] = {{.flags = I2C_M_READ, .buffer = data, .length = 2},
-    {.buffer = data, .length = 1}};
-  struct rzv_i2c_priv_s p = {.msgs = msgs, .msgc = 2,
-    .ptr = data, .dcnt = 2, .state = RIIC_STATE_DATA_READ};
-  memset(regs, 0, sizeof(regs)); reads = stop_requested = posts = restarts = 0; target = 2;
-  p.state = RIIC_STATE_ADDR_READ;dummy_pending=1;
-  rzv_i2c_txi_interrupt(1,NULL,&p);
-  regs[RZV_RIIC_ICMR3_OFFSET] = RIIC_ICMR3_WAIT;
-  rzv_i2c_rxi_interrupt(1, NULL, &p);
-  assert(regs[RZV_RIIC_ICMR3_OFFSET] & RIIC_ICMR3_ACKBT);
-  rzv_i2c_rxi_interrupt(1, NULL, &p);
-  assert(restarts == 1 && reads == 2 && !stop_requested && !posts);
-  assert(p.state == RIIC_STATE_RESTART && (regs[RZV_RIIC_ICIER_OFFSET] & RIIC_ICIER_TIE));
-}
-static int nxsem_timedwait_uninterruptible(int *sem, struct timespec *ts) {
-  regs[RZV_RIIC_ICSR2_OFFSET] = RIIC_ICSR2_NACKF;
-  rzv_i2c_err_interrupt(1, NULL, active);
-  assert(!posts && active->state == RIIC_STATE_STOP && active->result == -ENXIO);
-  assert(regs[RZV_RIIC_ICIER_OFFSET] == RIIC_ICIER_SPIE);
-  assert(regs[RZV_RIIC_ICSR2_OFFSET] & RIIC_ICSR2_NACKF);
-  if (wait_mode) return -ETIMEDOUT;
-  regs[RZV_RIIC_ICSR2_OFFSET] |= RIIC_ICSR2_STOP;
-  rzv_i2c_stp_interrupt(1, NULL, active);
-  rzv_i2c_stp_interrupt(1, NULL, active);
-  assert(posts == 1 && active->result == -ENXIO);
-  return 0;
-}
-static void check_errors(void) {
-  struct rzv_i2c_priv_s p = {0}; active = &p;
-  uint8_t data = 0; struct i2c_msg_s msg = {.buffer = &data, .length = 1};
-  for (int mode = 0; mode < 2; ++mode) {
-    memset(regs, 0, sizeof(regs)); posts = resets = unlocks = 0; wait_mode = mode;
-    regs[RZV_RIIC_ICBRH_OFFSET] = 7; regs[RZV_RIIC_ICBRL_OFFSET] = 9;
-    assert(rzv_i2c_transfer(&p.dev, &msg, 1) == -ENXIO);
-    assert(unlocks == 1 && resets == mode && posts == (mode ? 0 : 1));
-    assert(regs[RZV_RIIC_ICBRH_OFFSET] == 7 && regs[RZV_RIIC_ICBRL_OFFSET] == 9);
-    assert(!regs[RZV_RIIC_ICSR2_OFFSET]);
-  }
-  const unsigned errors[] = {RIIC_ICSR2_AL, RIIC_ICSR2_TMOF, RIIC_ICSR2_NACKF};
+
+int main(void)
+{
+  for (int length = 1; length <= 5; length++)
+    {
+      check(length, 0, false); check(length, 0, true);
+    }
+
+  check(2, 1, false); check(5, 1, false); check(5, 4, true);
+
+  /* Errors reset the controller while keeping the programmed timing. */
+  const int *at[] = {&al_at, &tmo_at, &nack_at};
   const int results[] = {-EAGAIN, -ETIMEDOUT, -ENXIO};
-  for (unsigned i = 0; i < 3; ++i) {
-    p.state = RIIC_STATE_DATA_WRITE; posts = resets = 0;
-    regs[RZV_RIIC_ICCR2_OFFSET] = 0; regs[RZV_RIIC_ICSR2_OFFSET] = errors[i];
-    rzv_i2c_err_interrupt(1, NULL, &p);
-    assert(posts == 1 && resets == 1 && p.state == RIIC_STATE_IDLE && p.result == results[i]);
-    rzv_i2c_err_interrupt(1, NULL, &p); assert(posts == 1);
-  }
-  active = NULL;
+  for (int i = 0; i < 3; i++)
+    {
+      struct rzv_i2c_priv_s p;
+      uint8_t data = 0;
+      struct i2c_msg_s msg = {.addr = 0x10, .buffer = &data, .length = 1};
+      model_reset(&p); *(int *)at[i] = 1;
+      assert(xfer(&p, &msg, 1) == results[i]);
+      assert(resets == (i < 2) && p.cks == 2 && p.brh == 24 && p.brl == 27);
+      assert(regs[RZV_RIIC_ICBRL_OFFSET] == (RIIC_ICBR_RESERVED | 27));
+    }
 }
-int main(void) {
-  check(1, false); check(2, false); check(5, false); check(2, true); check(5, true);
-  check_restart(); check_errors();
-}
-'''
-        run(code)
+'''))
 
     def test_riic_routes_attach_and_unwind_fixed_stop(self):
         source = (ARCH / 'rzv_i2c.c').read_text()
@@ -402,14 +314,16 @@ static bool installed[512], enabled[512], typed[512], edge[512];
 static int failure_at, attempts, port;
 static int rzv_i2c_module_start(unsigned p) { assert(p == (unsigned)port); return 0; }
 static int rzv_i2c_module_stop(unsigned p) { assert(p == (unsigned)port); return 0; }
-static void up_udelay(int delay) {}
-static void rzv_i2c_set_frequency(struct rzv_i2c_priv_s *p, uint32_t f) {}
+#define I2C_SPEED_FAST 400000
+#define RIIC_DEFAULT_FREQUENCY I2C_SPEED_FAST
+static int rzv_i2c_set_frequency(struct rzv_i2c_priv_s *p, uint32_t f) { return 0; }
 static void rzv_i2c_putreg(struct rzv_i2c_priv_s *p, unsigned off, uint8_t val) {}
 static int rzv_i2c_rxi_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_txi_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_tei_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_err_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_i2c_stp_interrupt(int irq, void *ctx, void *arg) { return 0; }
+static int rzv_i2c_sti_interrupt(int irq, void *ctx, void *arg) { return 0; }
 static int rzv_icu_attach(int event, xcpt_t handler, void *arg, bool enable) {
   assert(!enable);
   assert((event == 84 + 2 * port && handler == rzv_i2c_rxi_interrupt) ||
@@ -426,6 +340,7 @@ static int irq_attach(int irq, xcpt_t handler, void *arg) {
   int base = 206 + 6 * port;
   assert((irq == base && handler == rzv_i2c_tei_interrupt) ||
          (irq == base + 2 && handler == rzv_i2c_stp_interrupt) ||
+         (irq == base + 3 && handler == rzv_i2c_sti_interrupt) ||
          ((irq == base + 1 || irq == base + 4 || irq == base + 5) && handler == rzv_i2c_err_interrupt));
   if (++attempts == failure_at) return -EIO;
   assert(!installed[irq]); installed[irq] = true; return 0;
@@ -444,16 +359,17 @@ static void irq_detach(int irq) {
         code += extract(source, 'static int rzv_i2c_init(') + extract(source, 'static int rzv_i2c_deinit(')
         code += r'''
 int main(void) {
-  for (port = 0; port < 9; ++port) for (failure_at = 0; failure_at <= 7; ++failure_at) {
+  for (port = 0; port < 9; ++port) for (failure_at = 0; failure_at <= 8; ++failure_at) {
     attempts = 0; memset(typed, 0, sizeof(typed));
     struct rzv_i2c_priv_s p = {.port = port,
 ''' + ', '.join(f'.{field} = -1' for field in fields) + r'''};
     int ret = rzv_i2c_init(&p);
     if (failure_at) assert(ret == (failure_at <= 2 ? -ENOMEM : -EIO));
     else {
-      assert(ret == 0 && attempts == 7 && edge[385] && edge[386]);
+      assert(ret == 0 && attempts == 8 && edge[385] && edge[386]);
       int expected[] = {385, 386, 206 + 6 * port, 207 + 6 * port,
-                        208 + 6 * port, 210 + 6 * port, 211 + 6 * port};
+                        208 + 6 * port, 209 + 6 * port, 210 + 6 * port,
+                        211 + 6 * port};
       for (unsigned i = 0; i < sizeof(expected) / sizeof(expected[0]); ++i)
         assert(installed[expected[i]] && enabled[expected[i]]);
       rzv_i2c_deinit(&p);

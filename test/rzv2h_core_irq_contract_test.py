@@ -77,9 +77,7 @@ class Rzv2hCoreIrqContractTest(unittest.TestCase):
             " bool irq_enable)",
         )
         self.assertIn("if (handler == NULL)", body)
-        self.assertIn(
-            "if (event < 0 || event > RZV_INTC_INTM33SEL_MASK)", body
-        )
+        self.assertIn("if (event < 0 || event > RZV_INTC_IRQSEL_MAX)", body)
 
         reservation = body.index("slot = g_icu_m33_slot++")
         publication = body.index("ret = irq_attach", reservation)
@@ -102,7 +100,9 @@ class Rzv2hCoreIrqContractTest(unittest.TestCase):
             self.icu, "static int rzv_icu_m33_set_event(int slot, int event)"
         )
         self.assertIn(
-            "if (event < 0 || event > RZV_INTC_INTM33SEL_MASK)", body
+            "if (event != RZV_INTC_IRQSEL_NONE &&\n"
+            "      (event < 0 || event > RZV_INTC_IRQSEL_MAX))",
+            body,
         )
 
     def test_cm33_icu_detach_is_one_atomic_transaction(self) -> None:
@@ -115,7 +115,9 @@ class Rzv2hCoreIrqContractTest(unittest.TestCase):
         )
         disable = body.index("up_disable_irq(icu_irq)")
         detach = body.index("irq_detach(icu_irq)")
-        route_clear = body.index("rzv_icu_m33_set_event(slot, 0)")
+        route_clear = body.index(
+            "rzv_icu_m33_set_event(slot, RZV_INTC_IRQSEL_NONE)"
+        )
         table_clear = body.index("g_icu_m33_handlers[slot].handler = NULL")
         allocator_update = body.index("g_icu_m33_slot = highest_used + 1")
         unlock = body.rindex("leave_critical_section(flags)")

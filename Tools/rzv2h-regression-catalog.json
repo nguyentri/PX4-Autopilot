@@ -2843,6 +2843,34 @@
       "note": "Admit all seven SDHI/WDT ELFs; reject rehashed selector, ownership, automatic-operation, provider and case-table mutants."
     },
     {
+      "id": "rzv2h-intc-register-offset-parity-test",
+      "path": "test/rzv2h-intc-register-offset-parity-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-intc-register-offset-parity-test.py"
+      ],
+      "note": "Compare every rzv_intc.h INTC register offset and the 0x3FF no-source selector encoding against rzv2h.svd."
+    },
+    {
+      "id": "rzv2h-hrt-free-running-runtime-test",
+      "path": "test/rzv2h-hrt-free-running-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-hrt-free-running-runtime-test.py"
+      ],
+      "note": "Exercise the free-running GTM HRT compare scheduling, guard retries and -EIO bound with a host register model."
+    },
+    {
       "id": "rzv2h-ether-gbeth-cmsis-register-definitions-test",
       "path": "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py",
       "kind": "test",
@@ -2855,6 +2883,34 @@
         "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py"
       ],
       "note": "Compare GbEther register offsets and MAC/MTL/DMA bit fields in hardware/rzv_ether.h against CMSIS."
+    },
+    {
+      "id": "rzv2h-cpg-sysc-register-offset-parity-test",
+      "path": "test/rzv2h-cpg-sysc-register-offset-parity-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-cpg-sysc-register-offset-parity-test.py"
+      ],
+      "note": "Compare CPG and SYSC register offsets and the CR8 system-reset route against rzv2h.svd."
+    },
+    {
+      "id": "rzv2h-mhu-crc-rtc-offset-parity-test",
+      "path": "test/rzv2h-mhu-crc-rtc-offset-parity-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-mhu-crc-rtc-offset-parity-test.py"
+      ],
+      "note": "Compare MHU, CRC and RTC register macros against rzv2h.svd and the IPC routes against the FSP r_mhu_b_ns pairing."
     },
     {
       "id": "rzv2h-svd-generator-test",
@@ -2893,6 +2949,34 @@
         ]
       },
       "note": "Evaluate the NuttX rzv hardware header base, offset, shift, mask and bit macros with the host compiler and compare them with rzv2h.svd (CM33 bases with the FSP cm headers); documented deviations are listed in the test."
+    },
+    {
+      "id": "rzv2h-riic-master-sequence-runtime-test",
+      "path": "test/rzv2h-riic-master-sequence-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-riic-master-sequence-runtime-test.py"
+      ],
+      "note": "Run the RIIC master driver against a bus model: bit rate, reset-time setup, 7/10-bit transfers, NOSTART splits, busy bus, NACK, arbitration loss, timeout and unexpected STOP."
+    },
+    {
+      "id": "rzv2h-canfd-error-interrupt-runtime-test",
+      "path": "test/rzv2h-canfd-error-interrupt-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-canfd-error-interrupt-runtime-test.py"
+      ],
+      "note": "Run CAN-FD channel setup, RX drain and channel/global error handlers against a write-0-clear level-interrupt model."
     }
   ]
 }

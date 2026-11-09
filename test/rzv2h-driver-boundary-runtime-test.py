@@ -185,6 +185,7 @@ int main(void) {
         code = PRELUDE + r'''
 #define RZV_INTC_SEL_SPI_BASE 100
 #define RZV_INTC_SEL_SLOT_COUNT 4
+#define RZV_INTC_IRQSEL_NONE 0x3ff
 typedef unsigned irqstate_t;
 static struct { void *handler, *arg; } g_icu_handlers[4];
 static int g_icu_slot, critical, disabled, detached, routed;
@@ -192,7 +193,7 @@ static irqstate_t enter_critical_section(void) { assert(!critical); critical = 1
 static void leave_critical_section(irqstate_t flags) { (void)flags; assert(critical); critical = 0; }
 static void up_disable_irq(int irq) { (void)irq; assert(critical); ++disabled; }
 static void irq_detach(int irq) { (void)irq; assert(critical); ++detached; }
-static int rzv_icu_set_event(int slot, int event) { (void)slot; (void)event; assert(critical); ++routed; return 0; }
+static int rzv_icu_set_event(int slot, int event) { (void)slot; assert(critical && event == RZV_INTC_IRQSEL_NONE); ++routed; return 0; }
 ''' + EXTRACT.definition(source, 'int rzv_icu_detach(')
         code += r'''
 int main(void) {
