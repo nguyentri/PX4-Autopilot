@@ -37,6 +37,11 @@ validates against the CMSIS-SVD 1.3 schema.
 - Some instance pointers use a *_BASE macro with a different name
   (R_POEGA → R_POEG0A_BASE). The test therefore compares bases at run time
   through the pointer, not by building the macro name.
+- FSP 4.2.0 and 3.0.0 `gpio_iodefine.h` put IEN2B_L and IEN2B_H in one union
+  at 0x1878. The per-port address pattern and `rzv_gpio.h` give 0x1938/0x193C,
+  and a second guarded erratum emits those offsets. It was found by
+  `test/rzv2h-nuttx-hardware-svd-parity-test.py`, which evaluates the NuttX
+  header macros with the compiler and compares them with the SVD.
 - The remaining FSP quirks are reported as warnings: the CANFD size comment
   is 80 KiB but the layout is 112 KiB, CFDTMIEC[12] has only a 4-element _b
   view, and the iobitmask for SCI RDR_BY_RDAT is wrong.

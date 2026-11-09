@@ -70,6 +70,11 @@ TOKEN_RE = re.compile(r"""
 # rzv2h.svd and arch/arm/src/rzv/hardware/rzv_i3c.h all place the I3C device address
 # table at DATBASn = 0x224 + 4 * n and EXDATBAS at 0x310; FSP 4.2.0 inserts 4-byte
 # reserved gaps (8-byte stride) and moves EXDATBAS to 0x2A0.
+# FSP 4.2.0 (and 3.0.0) gpio_iodefine.h puts IEN2B_L and IEN2B_H in one union right after
+# IEN12_H, so both land at 0x1878 and H overlaps L.  Every other per-port GPIO family
+# (P, PM, PMC, PFC, PIN, IOLH, SR, PUPD, FILxxx, ISEL, NOD, SMT) places port 2B at the
+# same index, family base + 0x138 for the 8-byte L/H families, and
+# arch/arm/src/rzv/hardware/rzv_gpio.h uses 0x1938/0x193C.
 #   {typedef: {register: (offset in the FSP 4.2.0 header, emitted offset)}}
 # An entry is applied only while the header still has the listed offset; a header that
 # already has the emitted offset (FSP 3.0.0) is a no-op warning, and any other header
@@ -78,6 +83,10 @@ ERRATA = {
     "R_I3C_B0_Type": {
         **{"DATBAS%d" % n: (0x224 + 8 * n, 0x224 + 4 * n) for n in range(1, 8)},
         "EXDATBAS": (0x2A0, 0x310),
+    },
+    "R_GPIO_Type": {
+        "IEN2B_L": (0x1878, 0x1938),
+        "IEN2B_H": (0x1878, 0x193C),
     },
 }
 

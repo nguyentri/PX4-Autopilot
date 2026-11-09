@@ -118,6 +118,10 @@ Known FSP 4.2.0 header issues the generator reports:
   `EXDATBAS` at `0x2A0`. The hardware manual, the FSP 3.0.0 EVK headers and
   `rzv_i3c.h` use `0x224 + 4 * n` and `0x310`, so the generator's `ERRATA`
   table emits those offsets (`--no-errata` emits the header layout).
+- GPIO `IEN2B_L`/`IEN2B_H`: the header puts both in one union at `0x1878`, so
+  H overlaps L. Every other per-port GPIO family places port 2B at family base
+  + `0x138`, and `rzv_gpio.h` uses `0x1938`/`0x193C`, so `ERRATA` emits those
+  offsets. The hardware-manual register table has not been checked yet.
 - `R_CANFD_Type` is laid out as `0x1C000` bytes (`CFDTM[384]` of `0x80`) while
   its `Size =` comment says `0x14000`; the SVD follows the layout.
 - `R_SCI_B0_RDR_BY_RDAT_Pos/_Msk` (28 / `0x10000000`) contradict the
