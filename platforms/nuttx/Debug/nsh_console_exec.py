@@ -144,17 +144,31 @@ def read_until_match(io, pattern, buf, deadline):
     return buf, False
 
 
-def read_until_marker(io, marker, timeout):
+def read_until_marker(io, marker, timeout, buf=b""):
     """Read until a complete line equals `marker` (the output of `echo marker`,
     not its echo, which carries the `echo ` prefix)."""
     want = marker.encode()
-    buf, deadline = b"", time.monotonic() + timeout
+    deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         lines = ANSI_CSI.sub(b"", buf).replace(b"\r", b"").split(b"\n")
         if any(ln.strip() == want for ln in lines[:-1]):
             return buf, True
         buf += io.read()
     return buf, False
+
+
+def sync_marker(io, marker, eol, timeout, resend=2.0):
+    """Send `echo marker` until its output line arrives. A freshly started
+    JLinkExe bridge drops the first ~10-30 bytes its first client sends, so
+    NSH sees a truncated line ("...9_0: command not found"); resending is
+    harmless because only this echo can be hit, not a user command."""
+    buf, deadline = b"", time.monotonic() + timeout
+    while True:
+        io.write(f"echo {marker}".encode() + eol.encode())
+        left = deadline - time.monotonic()
+        buf, ok = read_until_marker(io, marker, min(resend, max(left, 0)), buf)
+        if ok or time.monotonic() >= deadline:
+            return buf, ok
 
 
 def clean_marker(raw, cmd, marker):
@@ -250,8 +264,7 @@ def main():
     try:
         if a.marker:
             # Sync on a marker too: stale up-buffer output is read and dropped.
-            io.write(f"echo {tag}_0".encode() + a.eol.encode())
-            raw, ok = read_until_marker(io, f"{tag}_0", a.timeout)
+            raw, ok = sync_marker(io, f"{tag}_0", a.eol, a.timeout)
         else:
             io.write(a.eol.encode())  # sync: get a fresh prompt, flush stale output
             raw, ok = read_until_prompt(io, a.timeout)
