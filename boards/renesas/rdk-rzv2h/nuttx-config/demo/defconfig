@@ -188,11 +188,18 @@ CONFIG_RZV_SCI0_I2C=y
 CONFIG_ARCH_DMA=y
 CONFIG_RZV_DMAC=y
 
-# Optional remote cores and transports are final-milestone features. The
-# default CR8-0 PX4 image must start without CA55, CR8-1, CM33 or OpenAMP.
+# CR8-0 owns the raw /dev/ipcc1 epoch as initiator for the heartbeat-only
+# CR8-1 peer (rzv2h_heartbeat). The image still starts without CR8-1: the
+# heartbeat reports the peer lost and nothing else waits on the link.
 # CONFIG_OPENAMP is not set
 # CONFIG_RZV_OPENAMP is not set
-# CONFIG_RZV_IPC_RAW is not set
+CONFIG_RZV_IPC_RAW=y
+CONFIG_RZV_IPC_TX_TIMEOUT_MS=100
+CONFIG_RZV_IPC_RECOVERY_WAIT_MS=100
+CONFIG_RZV_IPC_CR8_CR8=y
+CONFIG_RZV_IPC_ROLE_INITIATOR=y
+# CONFIG_RZV_IPC_CR8_CR8_LOOPBACK is not set
+# CONFIG_RZV_IPC_CR8_CM33 is not set
 
 # Standalone board examples are excluded from the integrated PX4 image.
 # CONFIG_RZV2H_EXAMPLE_SUPPORT is not set

@@ -1,6 +1,8 @@
 # Bench demo: 4x CR8-0 PWM, one polled ICM45686 on SPI0/P93, BMP280 on SCI7,
 # TFmini on SCI4, MAVLink on SCI5 and ADS1115 on SCI0 (PX4 I2C bus 0).
 # No GPS, RC or magnetometer.
+# Optional CR8-1 peer: heartbeat-only over raw IPC (rzv2h_heartbeat); no
+# px4io bridge, no remote outputs.
 CONFIG_BOARD_INIT_SUBDIR="demo"
 # Embed parameter, event and actuator metadata for QGC on this custom target.
 CONFIG_BOARD_CONSTRAINED_FLASH=n

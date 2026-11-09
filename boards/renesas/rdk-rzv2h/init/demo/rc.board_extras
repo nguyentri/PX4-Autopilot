@@ -2,6 +2,13 @@
 # Apply demo streams after rc.serial has started MAVLink on SCI5.
 # rc.board_mavlink runs before rc.serial and cannot configure this instance.
 
+# Heartbeat-only CR8-1 liveness. CR8-1 is optional: the module reports the
+# peer lost and boot continues either way.
+if ! rzv2h_heartbeat start
+then
+	echo "ERROR [init] Demo CR8-1 heartbeat failed to start"
+fi
+
 if ! mavlink stream -d /dev/ttyS5 -s HIGHRES_IMU -r 10
 then
 	echo "ERROR [init] Demo HIGHRES_IMU stream failed on SCI5"

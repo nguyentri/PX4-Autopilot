@@ -1,0 +1,3 @@
+# Heartbeat-only CR8-1 peer for the CR8-0 demo image: rzv2h_heartbeat as raw
+# IPC responder, NSH over SEGGER RTT, no PWM, no actuator supervisor.
+CONFIG_BOARD_ROMFSROOT="rdk-rzv2h-io-cr8_1-demo"

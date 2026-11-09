@@ -36,6 +36,7 @@ renesas_fpb-ra8e1_dshot
 renesas_fpb-ra8e1_test
 renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
+renesas_rdk-rzv2h-io-cr8_1_demo
 renesas_rdk-rzv2h-io-cr8_1_pwm
 renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_demo

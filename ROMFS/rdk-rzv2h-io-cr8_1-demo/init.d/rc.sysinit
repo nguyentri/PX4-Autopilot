@@ -1,0 +1,2 @@
+# The heartbeat-only peer owns no parameter or log filesystem.
+true

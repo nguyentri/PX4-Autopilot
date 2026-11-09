@@ -1,0 +1,7 @@
+#!/bin/sh
+# Heartbeat-only CR8-1 demo peer: no actuator, sensor or supervisor module.
+set +e
+if ! rzv2h_heartbeat start
+then
+	echo "ERROR [init] CR8-1 heartbeat start failed"
+fi

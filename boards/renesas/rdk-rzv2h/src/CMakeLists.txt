@@ -299,6 +299,8 @@ if(PX4_BOARD_LABEL STREQUAL "demo" AND NOT NUTTX_CONFIG STREQUAL "demo")
 endif()
 
 if(PX4_BOARD_LABEL STREQUAL "demo")
+	# Heartbeat-only liveness with the optional CR8-1 demo peer.
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../ipc_heartbeat ipc_heartbeat)
 	add_custom_target(rzv2h_demo_startup_test
 		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-demo-startup-test.py
 		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
