@@ -268,6 +268,16 @@ To inspect an SVD register definition on the host:
 platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd info R_SCI4
 ```
 
+`rzv2h.svd` is generated from the CR8 view of the FSP 4.2.0 CMSIS headers in
+`refs/rz-fsp-4.2.0/` (local only). Regenerate it after an FSP update, or check
+that it is current, with:
+
+```bash
+./generate-rzv2h-svd.py           # rewrite rzv2h.svd; -v lists header warnings
+./generate-rzv2h-svd.py --check   # exit 1 when rzv2h.svd is stale
+python3 test/rzv2h-svd-generator-test.py
+```
+
 ## 7. Storage and Logs
 
 During bring-up, `/fs/params` is volatile TMPFS state and resets on reboot.

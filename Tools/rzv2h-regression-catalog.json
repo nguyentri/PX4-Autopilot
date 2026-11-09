@@ -2841,6 +2841,25 @@
         ]
       },
       "note": "Admit all seven SDHI/WDT ELFs; reject rehashed selector, ownership, automatic-operation, provider and case-table mutants."
+    },
+    {
+      "id": "rzv2h-svd-generator-test",
+      "path": "test/rzv2h-svd-generator-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-svd-generator-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Check that rzv2h.svd is current with generate-rzv2h-svd.py and matches the compiled FSP 4.2.0 CMSIS register layout, bit fields, CR8 IRQn_Type interrupts and core macros."
     }
   ]
 }
