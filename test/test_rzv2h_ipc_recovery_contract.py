@@ -47,11 +47,18 @@ static int g_write_error;
 static int g_write_calls;
 static int g_recover_calls;
 static int g_stats_calls;
+static bool g_poll_eintr;
 
 int mock_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
   (void)nfds;
   (void)timeout;
+  if (g_poll_eintr)
+    {
+      errno = EINTR;
+      return -1;
+    }
+
   fds[0].revents = POLLIN;
   return 1;
 }
@@ -68,7 +75,7 @@ ssize_t mock_write(int fd, const void *buffer, size_t size)
   (void)fd;
   (void)buffer;
   g_write_calls++;
-  if (g_write_calls == 1)
+  if (g_write_error != 0 && g_write_calls == 1)
     {
       errno = g_write_error;
       return -1;
@@ -141,10 +148,17 @@ static void reset_scenario(enum test_scenario_e scenario)
   g_write_calls = 0;
   g_recover_calls = 0;
   g_stats_calls = 0;
+  g_poll_eintr = false;
 }
 
-static int check_echo_write_termination(int error, int expected_ret,
-                                        const char *expected_status)
+/* Run run_echo with captured stdout and require its exit code, write count
+ * and exact IPCTEST_RESULT tail.  bounded selects --auto-echo -n count;
+ * write_error fails the first write; poll_eintr makes poll report a signal.
+ */
+
+static int check_echo(bool bounded, int count, int write_error,
+                      bool poll_eintr, int expected_ret, int expected_writes,
+                      const char *expected_result)
 {
   struct ipctest_args_s args;
   FILE *capture;
@@ -156,11 +170,11 @@ static int check_echo_write_termination(int error, int expected_ret,
 
   memset(&args, 0, sizeof(args));
   args.dev = "/dev/ipcc-test";
-  args.count = 1;
+  args.count = count;
   args.msgsize = RZV_IPC_RAW_PAYLOAD_SIZE;
   args.timeout_ms = 1;
   args.echo_mode = true;
-  args.bounded_echo = true;
+  args.bounded_echo = bounded;
 
   capture = tmpfile();
   if (capture == NULL)
@@ -177,7 +191,8 @@ static int check_echo_write_termination(int error, int expected_ret,
     }
 
   reset_scenario(TEST_READY_CLEAN);
-  g_write_error = error;
+  g_write_error = write_error;
+  g_poll_eintr = poll_eintr;
   ret = run_echo(3, &args);
   fflush(stdout);
   dup2(saved_stdout, STDOUT_FILENO);
@@ -188,10 +203,11 @@ static int check_echo_write_termination(int error, int expected_ret,
   fclose(capture);
 
   snprintf(result, sizeof(result),
-           "IPCTEST_RESULT core=TEST mode=auto-echo dev=/dev/ipcc-test "
-           "status=%s echoed=0 expected=1", expected_status);
+           "IPCTEST_RESULT core=TEST mode=%s dev=/dev/ipcc-test %s\n",
+           bounded ? "auto-echo" : "echo", expected_result);
   return ret == expected_ret && g_recover_calls == 0 &&
-         g_write_calls == 1 && strstr(output, result) != NULL ? 0 : 1;
+         g_write_calls == expected_writes &&
+         strstr(output, result) != NULL ? 0 : 1;
 }
 
 int main(void)
@@ -202,11 +218,28 @@ int main(void)
   args.dev = "/dev/ipcc-test";
   args.msgsize = RZV_IPC_RAW_PAYLOAD_SIZE;
 
-  if (check_echo_write_termination(ETIMEDOUT, 2, "timeout") != 0 ||
-      check_echo_write_termination(EPROTO, 1, "error") != 0 ||
-      check_echo_write_termination(ENOLINK, 1, "error") != 0)
+  if (check_echo(true, 1, ETIMEDOUT, false, 2, 1,
+                 "status=timeout echoed=0 expected=1") != 0 ||
+      check_echo(true, 1, EPROTO, false, 1, 1,
+                 "status=error echoed=0 expected=1") != 0 ||
+      check_echo(true, 1, ENOLINK, false, 1, 1,
+                 "status=error echoed=0 expected=1") != 0)
     {
       return 1;
+    }
+
+  /* A bounded auto-echo passes only after its full count; one stopped by
+   * a signal first is an error.  Unbounded echo stopped by a signal passes.
+   */
+
+  if (check_echo(true, 3, 0, false, 0, 3,
+                 "status=pass echoed=3 expected=3") != 0 ||
+      check_echo(true, 100, 0, true, 1, 0,
+                 "status=error echoed=0 expected=100") != 0 ||
+      check_echo(false, 0, 0, true, 0, 0,
+                 "status=pass echoed=0 expected=0") != 0)
+    {
+      return 7;
     }
 
   reset_scenario(TEST_READY_CLEAN);
@@ -401,7 +434,10 @@ int main(void)
         echo = source[echo_start:echo_end]
 
         self.assertNotIn("RZV_IPC_RAWIOC_RECOVER", echo)
-        runtime = source.split("#ifdef CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_PEER", 1)[0]
+        # Boot code (auto-echo, then peer/showcase) starts at the first boot
+        # guard; only the CLI code before it must stay recover-free apart
+        # from the explicit --recover mode.
+        runtime = source.split("#ifdef CONFIG_EXAMPLES_RZV_IPC_DEMO_BOOT_AUTOECHO", 1)[0]
         self.assertEqual(runtime.count("RZV_IPC_RAWIOC_RECOVER"), 1)
         recover_start = source.index("static int run_recover")
         recover_end = source.index("#endif", recover_start)

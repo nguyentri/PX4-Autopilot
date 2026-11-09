@@ -315,7 +315,10 @@ console; `--help` prints the options and manual console commands.
 
 On **CR8-0 serial**, run `ps`. Both configurations start an `ipc-auto-echo` task;
 stop only that task on CR8-0 with `kill <pid>` using its actual numeric PID,
-and confirm it disappears before sending test traffic. Leave CR8-1's boot
+and confirm it disappears before sending test traffic. The killed task prints
+`mode=auto-echo status=error echoed=0 expected=100`: a bounded auto-echo
+stopped before its count is never reported as a pass, so this line is expected
+here and is not a demo failure. Leave CR8-1's boot
 auto-echo running. Run these commands sequentially on CR8-0, waiting up to
 35 seconds for recovery to finish before ping:
 
