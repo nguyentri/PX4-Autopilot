@@ -73,8 +73,9 @@ TOKEN_RE = re.compile(r"""
 # FSP 4.2.0 (and 3.0.0) gpio_iodefine.h puts IEN2B_L and IEN2B_H in one union right after
 # IEN12_H, so both land at 0x1878 and H overlaps L.  Every other per-port GPIO family
 # (P, PM, PMC, PFC, PIN, IOLH, SR, PUPD, FILxxx, ISEL, NOD, SMT) places port 2B at the
-# same index, family base + 0x138 for the 8-byte L/H families, and
-# arch/arm/src/rzv/hardware/rzv_gpio.h uses 0x1938/0x193C.
+# same index, family base + 0x138 for the 8-byte L/H families.  The hardware manual
+# Table 4.2-16 lists PFC_IEN_2B at 1958h/195Ch from the 0x10410000 PFC base
+# (0x1938/0x193C from the FSP 0x10410020 base), as arch/arm/src/rzv/hardware/rzv_gpio.h uses.
 #   {typedef: {register: (offset in the FSP 4.2.0 header, emitted offset)}}
 # An entry is applied only while the header still has the listed offset; a header that
 # already has the emitted offset (FSP 3.0.0) is a no-op warning, and any other header

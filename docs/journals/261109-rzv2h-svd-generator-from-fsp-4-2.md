@@ -38,8 +38,9 @@ validates against the CMSIS-SVD 1.3 schema.
   (R_POEGA → R_POEG0A_BASE). The test therefore compares bases at run time
   through the pointer, not by building the macro name.
 - FSP 4.2.0 and 3.0.0 `gpio_iodefine.h` put IEN2B_L and IEN2B_H in one union
-  at 0x1878. The per-port address pattern and `rzv_gpio.h` give 0x1938/0x193C,
-  and a second guarded erratum emits those offsets. It was found by
+  at 0x1878. The per-port address pattern, `rzv_gpio.h` and the hardware manual
+  (Table 4.2-16: PFC_IEN_2B at 1958h/195Ch from the 0x10410000 PFC base) give
+  0x1938/0x193C, and a second guarded erratum emits those offsets. It was found by
   `test/rzv2h-nuttx-hardware-svd-parity-test.py`, which evaluates the NuttX
   header macros with the compiler and compares them with the SVD.
 - The remaining FSP quirks are reported as warnings: the CANFD size comment
