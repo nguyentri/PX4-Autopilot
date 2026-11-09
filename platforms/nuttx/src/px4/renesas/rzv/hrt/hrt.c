@@ -68,7 +68,7 @@
 #endif
 
 /* Minimum re-arm delay in microseconds. rzv_hrt applies its own tick-level
- * floor (HRT_MIN_TICKS = 10 ticks ≈ 100 ns at P1CLK 100 MHz); the µs-level
+ * floor (HRT_MIN_TICKS = 50 ticks = 500 ns at P1CLK 100 MHz); the µs-level
  * floor here just avoids scheduling storms when many callouts land in the
  * same tick.
  */
@@ -140,17 +140,18 @@ static void hrt_call_insert(struct hrt_call *entry)
 }
 
 /* Program the arch HRT to fire when the next queued callout is due.
- * Caller holds the critical section. Cancels any previous one-shot
- * before scheduling so the dispatch fires against the current head.
+ * Caller holds the critical section. rzv_hrt_call_after() replaces any
+ * armed one-shot, so the arch timer is cancelled only when the queue is
+ * empty; every arm or cancel moves only the compare of the free-running
+ * counter.
  */
 static void hrt_schedule_locked(void)
 {
 	struct hrt_call *next = entry_to_call(g_callout_queue.head);
 	uint32_t max_delay_us = rzv_hrt_max_delay_us();
 
-	rzv_hrt_cancel();
-
 	if (!next || next->deadline == 0) {
+		rzv_hrt_cancel();
 		return;
 	}
 
