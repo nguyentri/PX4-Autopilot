@@ -126,7 +126,7 @@
       "console": "rtt",
       "entrypoint": "nsh_main",
       "profile": "bmp280",
-      "defconfig_sha256": "f5cb47c572b5a31ff1a7ef29ec6e2b793c3d4262a1f580bfacad65e8ec6618d3",
+      "defconfig_sha256": "665b35834947a68f0e666e0ab52354c87a30ee6298c0088ca604c949dcf08060",
       "mode": "native",
       "oracle": "bmp280",
       "commands": [
