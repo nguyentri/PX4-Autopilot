@@ -375,6 +375,13 @@ int main() {
         entry = kconfig[kconfig.index('config BOARD_RDK_RZV2H_PX4IO_BRIDGE'):]
         entry = entry[:entry.index('\nconfig ') if '\nconfig ' in entry else len(entry)]
         self.assertRegex(entry, r'default n\b')
+        # Heartbeat-only profiles own the CR8 link for rzv2h_heartbeat liveness
+        # and ping/say text; they must carry no output producer of any kind.
+        board_cmake = (board / 'src/CMakeLists.txt').read_text()
+        heartbeat_only = set(re.findall(
+            r'if\(PX4_BOARD_LABEL STREQUAL "(\w+)"\)(?:(?!\nendif\(\)).)*?add_subdirectory\([^)]*ipc_heartbeat',
+            board_cmake, re.S))
+        self.assertEqual(heartbeat_only, {'demo', 'demosih'})
         bridged = []
         for profile in sorted(board.glob('*.px4board')):
             label = profile.stem
@@ -383,7 +390,11 @@ int main() {
             has_bridge = re.search(r'(?m)^CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=y', profile.read_text()) is not None
             has_link = re.search(r'(?m)^CONFIG_RZV_IPC_CR8_CR8=y', nuttx) is not None
             remote = 'CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS=y' in profile.read_text()
-            self.assertEqual(remote, has_link, label)
+            if label in heartbeat_only:
+                self.assertTrue(has_link, label)
+                self.assertFalse(remote, label)
+            else:
+                self.assertEqual(remote, has_link, label)
             self.assertFalse(has_bridge, label)
             if has_bridge:
                 bridged.append(label)
