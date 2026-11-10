@@ -46,7 +46,13 @@ class DualCr8Artifacts(unittest.TestCase):
                 for load in view['loads']:
                     self.assertTrue(CHECK.in_regions(load['address'], load['memory'], core['regions']))
                 rtt.append(symbols['_SEGGER_RTT'])
-        self.assertEqual(rtt, [0x081a2400, 0x081e2400])
+        # Each control block sits in its own core's non-cacheable SRAM window
+        # (SRAM_UNCACHE in script.ld), so a host reads it without a cache
+        # flush.  The exact offset follows the RTT buffer sizes.
+        windows = [(0x081a0000, 0x081bfffc), (0x081e0000, 0x081ffffc)]
+        self.assertEqual(len(rtt), len(windows))
+        for address, (start, end) in zip(rtt, windows):
+            self.assertTrue(start <= address < end, hex(address))
 
     def test_linked_modules_have_one_producer_and_one_supervisor(self):
         for directory, profile, _, symbols in self.images:

@@ -61,7 +61,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 - Read-only GDB snapshot: `platforms/nuttx/Debug/jlink-gdb-oneshot.py <cr8_0|cr8_1> <elf> -ex 'bt'` (`-noreset -noir -singlerun`,
   refuses mutating commands, exit 5 on reset, exit 6 when gdb reported errors). PX4 health snippets: `platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_{0-bridge,1-io}-health.gdb`.
   Loads: `rzv2h-ipc/rzv2h-load-one-core.sh <core> <elf>` (one core) or `rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>`.
-- Discover `_SEGGER_RTT` from the exact loaded ELF (PX4 CR8-0 images use `0x081a2400`); the NuttX demo defaults are CR8-0 `0x081A0000`, CR8-1 `0x081E0000`. J-Link devices: `R9A09G057H44_R8_0`, `_R8_1`.
+- Discover `_SEGGER_RTT` from the exact loaded ELF (PX4 CR8-0 images with the 32 KiB up buffer use `0x081a8404`; older evidence shows `0x081a2400`); the NuttX demo defaults are CR8-0 `0x081A0000`, CR8-1 `0x081E0000`. J-Link devices: `R9A09G057H44_R8_0`, `_R8_1`.
 - Register decode: `platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd ...`.
 - Skills: `gdb-jlink-debug` (J-Link/GDB/RTT/SVD workflows), `audit-rzv2h-px4-nuttx-port` (cross-layer audit), `audit-ra8p1-px4-nuttx-port` (RA8P1 audit), `fw-audit`.
 - Standing board authorization (local RDK board): agents need no approval for any board debugging action the task
