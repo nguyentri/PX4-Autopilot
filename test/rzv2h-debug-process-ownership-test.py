@@ -281,6 +281,31 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])))
                                         capture_output=True, text=True, timeout=30)
                 self.assertEqual(result.returncode, status, pc + result.stdout + result.stderr)
 
+    def test_loader_fails_when_jlink_monitor_reports_error(self):
+        # gdb exits 0 even when a J-Link monitor command (cp15, go) fails.
+        for monitor_line, expected in (
+                ('Writing CP15 register (1,0,0,0 = 0x00C50078)', 0),
+                ('ERROR: CPU is not halted', 1),
+                ('ERROR: Could not write CP15 register.', 1)):
+            with self.subTest(monitor_line=monitor_line), tempfile.TemporaryDirectory() as directory:
+                tmp = Path(directory)
+                executable(tmp / 'server', '''#!/usr/bin/env python3
+import socket,sys,time
+s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('-port')+1])));s.listen();print('Waiting for GDB connection...',flush=True);time.sleep(60)
+''')
+                executable(tmp / 'gdb', '#!/bin/sh\necho "ENTRY=0x40800000 SET_PC=0x40800000 CPSR=0x1d3"\n'
+                           'echo "$MONITOR_LINE"\n')
+                env = dict(os.environ, JLINK_GDB=str(tmp / 'server'), GDB=str(tmp / 'gdb'),
+                           JLINK_SERIAL='fixture', GDB_PORT=str(free_port()), LOG_DIR=directory,
+                           LOADSTART='fixture', MONITOR_LINE=monitor_line)
+                shell = '. "$1"; trap _stop_server EXIT; resolve_tools; load_core fixture fixture.elf test'
+                result = subprocess.run(['sh', '-c', shell, 'fixture', str(LIB)], env=env,
+                                        capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                if expected:
+                    self.assertIn(monitor_line, result.stderr)
+                    self.assertNotIn('loaded, probe released', result.stdout)
+
     def test_single_attempt_loader_stops_on_failure_or_reset(self):
         # A core that stays held in reset gets exactly one plain start connect.
         for gdb_result, marker, expected in (

@@ -217,6 +217,14 @@ _load_core_once() {
 		echo "!! ${label}: guarded load failed; no automatic retry (see ${log})" >&2
 		return 1
 	fi
+	# J-Link answers a failed monitor command (cp15, go) with "ERROR: ...",
+	# yet gdb still exits 0. A clean load prints none; "CPU is not halted" at
+	# go means the core never started the new image.
+	if echo "${out}" | grep -Eq '(^|[[:space:]])ERROR:'; then
+		echo "!! ${label}: J-Link reported an error during load; no automatic retry (see ${log})" >&2
+		echo "${out}" | grep -E '(^|[[:space:]])ERROR:' | head -n 3 >&2
+		return 1
+	fi
 	if [ "${gdb_ret}" -eq 0 ] && echo "${out}" | grep -Eq '(^|[[:space:]])SET_PC=0x[0-9a-fA-F]+'; then
 		echo "== ${label}: loaded, probe released =="
 		return 0
