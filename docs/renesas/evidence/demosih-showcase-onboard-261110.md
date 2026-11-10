@@ -146,6 +146,33 @@ the longest pause from 121–162 ms to 81 ms but did not remove the overruns
 The board has no RTS/CTS on SCI5, so the adapter cannot hold the board off.
 The capture summaries are at the end of the transcript.
 
+## Fourth run: pair load with `flash_dual.sh`
+
+`./flash_dual.sh demosih` loads CR8-0 `renesas_rdk-rzv2h_demosih` and its
+default partner, CR8-1 `renesas_rdk-rzv2h-io-cr8_1_demo` (the IPC heartbeat
+responder). The image was built from HEAD `07b3b3ab7f5`. Checks ran over
+the MAVLink shell at 115200 with the probe detached.
+
+| Check | Result |
+|-------|--------|
+| Single loads after a board reset | CR8-0 started from held-in-reset, then VERIFY PASS. CR8-1 VERIFY PASS. CR8-0 telemetry kept streaming through the CR8-1 load. |
+| Pair load on the same boot (run twice) | Both cores VERIFY PASS, exit 0, no `ERROR:` in either load log |
+| `ver all` | variant `demosih`, git `07b3b3ab7f5`, NuttX 12.0.0 |
+| `rzv2h_heartbeat status` | Link online and peer alive. tx/rx 160/160 at about 20 s, `bad_hdr` 0. The 3 timeouts happened while both cores booted and did not grow. |
+| ADS1115 `adc_report` | A0 17569 counts ≈ 3.29 V, A1/A3 0, A2 12 counts. Timestamp is non-zero. |
+| Mission (single-core load) | Accepted, armed on the first attempt, items 0–3 reached, max relative altitude 30 m, battery 100 → 87 %, disarmed at 158.8 s |
+| Link | 3.3–3.6 kB/s, `txerr` 0 |
+
+The first two pair loads, made right after the USB adapters were
+re-attached, failed. CR8-0's `go` returned `ERROR: CPU is not halted`
+before CR8-1 was touched. CR8-1 then rejected the CP15 write and its RAM
+could not be read, and afterwards both cores read PC 0 and CPSR 0. A board
+reset cleared this. The guarded loader used to report "loaded" despite the
+J-Link error, so the failure only showed at verify. It now fails the load on
+any `ERROR:` reply and does not attempt the CR8-1 load. A load straight
+after a cold power-on has passed only for single cores so far; a pair load
+from cold power-on is not yet checked.
+
 ## Open items
 
 - Corrupted telemetry frames on the WSL host are a host-side artefact (see
