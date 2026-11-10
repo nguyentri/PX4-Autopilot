@@ -31,6 +31,8 @@
 # Env: JLINK_SERIAL (required for start), RTT_PORT (19021), RTT_ADDR,
 #      JLINK_IF (SWD), JLINK_SPEED (auto), STATE_DIR (${TMPDIR:-/tmp}/nuttx-rtt-bridge),
 #      CONNECT_TIMEOUT (90 s, longer than the J-Link R8 script's 60 s InitTarget).
+#      RTT_PORT must not be 19022, 19030, 19080 or 19081: JLinkExe and its GUI
+#      server already listen there.
 # Exit: 0 up, 1 failed (probe busy, port in use, connect timeout), 2 usage,
 #       3 the J-Link log shows a target reset or failed connect (bridge stopped).
 
@@ -40,6 +42,10 @@ RTT_PORT="${RTT_PORT:-19021}"
 STATE_DIR="${STATE_DIR:-${TMPDIR:-/tmp}/nuttx-rtt-bridge}"
 PIDFILE="${STATE_DIR}/bridge.pid"
 CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-90}"
+case "${RTT_PORT}" in
+''|*[!0-9]*) echo "RTT_PORT must be a TCP port number" >&2; exit 2 ;;
+19022|19030|19080|19081) echo "RTT_PORT ${RTT_PORT} is used by JLinkExe itself; pick another port" >&2; exit 2 ;;
+esac
 LOG="${STATE_DIR}/jlinkexe.log"
 JLINKEXE=$(command -v JLinkExe || echo /opt/SEGGER/JLink/JLinkExe)
 
@@ -129,23 +135,27 @@ start)
 		echo "exec InhibitConnectRetries = 1"
 		# No address -> J-Link scans RAM for the "SEGGER RTT" control block.
 		[ -z "${addr}" ] || echo "exec SetRTTAddr ${addr}"
-		# 19021 is JLinkExe's default; only override when asked.
-		[ "${RTT_PORT}" = 19021 ] || echo "exec SetRTTTelnetPort ${RTT_PORT}"
 		# Device, interface and speed come from the command line, so connect
 		# does not prompt. It runs after the settings above, never before.
 		echo "connect"
 	} >"${cmdfile}"
 	# A never-ending stdin keeps JLinkExe at its prompt so the port stays served.
 	# JLinkExe selects the probe with -USB <sn> (it rejects GDB server's -select).
+	# 19021 is JLinkExe's default. Another port only takes effect on the
+	# command line: "exec SetRTTTelnetPort" in the command file never opens it.
+	port_args=""
+	[ "${RTT_PORT}" = 19021 ] || port_args="-RTTTelnetPort ${RTT_PORT}"
+	# shellcheck disable=SC2086 # port_args is empty or two words
 	setsid sh -c 'sleep 2147483647 | "$@"' nuttx-rtt-bridge \
 		"${JLINKEXE}" -USB "${JLINK_SERIAL}" -device "${dev}" \
-		-if "${JLINK_IF:-SWD}" -speed "${JLINK_SPEED:-auto}" \
+		-if "${JLINK_IF:-SWD}" -speed "${JLINK_SPEED:-auto}" ${port_args} \
 		-CommandFile "${cmdfile}" >"${LOG}" 2>&1 &
 	sid=$!
 	echo "${sid}" >"${PIDFILE}"
 	bridge_start=$(awk '{sub(/^.*\) /, ""); print $20}' "/proc/${sid}/stat")
 	printf '%s\n' "${bridge_start}" "${cmdfile}" "${JLINK_SERIAL}" "${dev}" >"${PIDFILE}.identity"
-	fail() { echo "$1" >&2; stop_owned || true; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"; exit 1; }
+	echo "${RTT_PORT}" >"${PIDFILE}.port"
+	fail() { echo "$1" >&2; stop_owned || true; tail -20 "${LOG}" >&2; rm -f "${PIDFILE}" "${PIDFILE}.identity" "${PIDFILE}.port" "${cmdfile}"; exit 1; }
 	# JLinkExe serves the RTT port before its connect has finished, so an
 	# open port proves nothing: wait for the command file to finish too.
 	i=0
@@ -169,7 +179,7 @@ start)
 			echo "!! J-Link could not attach to ${target}; no reset was logged. Check the core is powered and running, then retry once." >&2
 		fi
 		stop_owned || true
-		rm -f "${PIDFILE}" "${PIDFILE}.identity" "${cmdfile}"
+		rm -f "${PIDFILE}" "${PIDFILE}.identity" "${PIDFILE}.port" "${cmdfile}"
 		exit 3
 	fi
 	echo "RTT bridge up: ${target} (${dev}) _SEGGER_RTT=${addr:-auto-search} -> 127.0.0.1:${RTT_PORT}"
@@ -177,18 +187,22 @@ start)
 	;;
 stop)
 	if running; then
+		# Wait on the port this bridge was started with, not the caller's.
+		RTT_PORT=$(cat "${PIDFILE}.port" 2>/dev/null || echo "${RTT_PORT}")
 		stop_owned
 		rm -f "${bridge_cmd}"
 		echo "RTT bridge stopped, probe released"
 	else
 		echo "no bridge running"
 	fi
-	rm -f "${PIDFILE}" "${PIDFILE}.identity"
+	rm -f "${PIDFILE}" "${PIDFILE}.identity" "${PIDFILE}.port"
 	;;
 status)
-	if running; then echo "running pid $(cat "${PIDFILE}"), port ${RTT_PORT} $(port_up && echo up || echo DOWN)"
+	if running; then
+		RTT_PORT=$(cat "${PIDFILE}.port" 2>/dev/null || echo "${RTT_PORT}")
+		echo "running pid $(cat "${PIDFILE}"), core ${bridge_core}, port ${RTT_PORT} $(port_up && echo up || echo DOWN)"
 	else echo "not running"; fi
 	;;
 *)
-	sed -n '2,36p' "$0"; exit 2 ;;
+	sed -n '2,38p' "$0"; exit 2 ;;
 esac

@@ -158,9 +158,16 @@ rule that applies to `--ping`/`--echo` is not needed for them.
 ### Two-console run (relay + ack)
 
 Bring up both cores per the [Procedure](#procedure) above (CR8-0 first, CR8-1
-last). For simultaneous consoles with one probe, use the serial + RTT split
-below. For RTT-only operation, switch the single bridge between cores as the
-autotest does; do not start competing probe owners.
+last). For simultaneous consoles with one probe, use the dual RTT bridge
+(`platforms/nuttx/Debug/rzv2h-dual-rtt-bridge.py start`, or `console --action
+start --dual` / the VS Code RTT Monitor): one J-Link session reads both control
+blocks over the AXI-AP and serves CR8-0 on 19021 and CR8-1 on 19031 without
+halting either core (board gate:
+`docs/renesas/evidence/dual-rtt-single-probe-axi-ap-gate-261110.md`). Do not
+start two JLinkExe RTT bridges on one probe: on 2026-11-09 both attached
+without a reset, but input typed in the second session reached the first core.
+The serial + RTT split below and switching one bridge between cores remain
+fallbacks.
 
 1. On the **CR8-0** NSH (the peer that displays):
 
