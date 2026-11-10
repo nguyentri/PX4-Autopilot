@@ -5,7 +5,7 @@
 [![Branding](https://img.shields.io/badge/Style-OneKiwi%20(%2316163F%20%7C%20%23ED6C00)-orange.svg)](https://onekiwi.com.vn/)
 [![Hardware](https://img.shields.io/badge/Renesas-RZ%2FV2H%20%7C%20RA8P1%20%7C%20RA8E1-orange.svg)](profiles/devices.json)
 
-VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware with official [OneKiwi](https://onekiwi.com.vn/) design system styling. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. Serial UART consoles are opened outside the extension; an RTT console bridge can be started from Firmware Setup for any terminal to connect to.
+VS Code extension integrating PX4 Autopilot and NuttX RTOS development for Renesas **RZ/V2H**, **RA8P1**, and **RA8E1** hardware with official [OneKiwi](https://onekiwi.com.vn/) design system styling. Provides unified target discovery, host prerequisite diagnostics, guarded volatile RAM loading and Cortex-Debug attach routing. An RTT Monitor panel traces both CR8 consoles (RTT, or a host UART relay for serial-console cores) next to the editor.
 
 ---
 
@@ -78,7 +78,7 @@ The extension contributes two official color themes that can be selected in VS C
 - **Readiness & Doctor Diagnostics**: Host-only prerequisite checking for ARM GCC toolchain, CMake (>= 3.20), Ninja, Make, Python dependencies (`kconfiglib`, `jsonschema`), NuttX submodule state, and connected SEGGER J-Link probes.
 - **Guarded Target Loading**: Safe volatile RAM loading for Renesas RZ/V2H Cortex-R8 cores (`cr8_0` at `0x081A0000`, `cr8_1` at `0x081E0000`) with ELF address allowlist checking and host journal recovery tracking. Direct attach to RZ/V2H CM33 (which triggers SoC cold reset) and unverified flash routes are strictly gated.
 - **Cortex-Debug Integration**: Dynamically generates in-memory debug attach configurations with halt-only commands and SVD symbol mappings. Existing user `launch.json` files are never overwritten.
-- **Consoles**: The extension opens no terminal. A UART console row is read-only (`Manual · SCI5 115200 8N1`). An RTT console row (`RTT · Start bridge on 127.0.0.1:19021`) starts the guarded RTT bridge for that core, and **Stop RTT Bridge** frees the probe; see [Consoles](#consoles).
+- **Consoles**: **Trace in RTT Monitor** opens the bottom-panel RTT Monitor. Two RTT cores trace side by side from one probe session; a UART-console core shows as a serial pane. **Build, Load & Trace** builds both cores, loads the pair and starts the trace in one action, and **Stop RTT Bridge** frees the probe; see [Consoles](#consoles).
 - **Firmware Setup Variants**: Manage named setups of fixed RDK-RZ/V2H CR8 groups, allowing independent image preparation, per-core builds, atomic SHA-256 pair validation, and explicit Build & Load workflows.
 - **Shared Build Mutex**: Cooperative file locking across VS Code editor tasks, root `./build.sh`, and `make` preventing concurrent modification of the NuttX source tree.
 
@@ -153,14 +153,17 @@ When working with Renesas multicore targets (especially RZ/V2H), observe these h
 
 ### Consoles
 
-The extension opens no terminal of its own. Connect your own terminal:
+The **RTT Monitor** (bottom panel, **Show RTT Monitor**) is the console. After a verified **Load Both**, run **Trace in RTT Monitor** (or click a **Console R8-0/R8-1** row), or use **Build, Load & Trace** to do all three steps.
 
-- **Serial (R8-0 in the serial groups)**: any serial terminal (for example μScope or picocom) on the board serial UART (SCI5, P72/P73) at 115200 8N1. The serial console does not use the J-Link, so it may stay open during load and debug.
-- **RTT**: after a verified **Load Both**, click the **Console R8-0** or **Console R8-1** row (`RTT · Start bridge on 127.0.0.1:19021`), then connect a terminal to `127.0.0.1:19021` (μScope can send input). The backend bridge holds the probe while it runs, so click **Stop RTT Bridge** before **Load**, **Recover** or **Debug**, and start it again afterwards. One bridge per probe: start R8-1 or R8-0, not both. A manual bridge (`platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <cr8_0|cr8_1> <elf>`) also works; stop it with `nuttx-rtt-bridge.sh stop`, because **Stop RTT Bridge** stops only the bridge the extension started.
-
+- **Both cores on RTT** (`px4Nuttx.rtt.mode` = `dual`, the default): one backend bridge reads both CR8 RTT control blocks through the system bus (AXI-AP) of one J-Link session and serves CR8-0 on `127.0.0.1:19021` and CR8-1 on `127.0.0.1:19031`. The monitor shows the two cores in split panes, each with its own input line, Clear, Copy and Save Log. No core is halted. Builds started while the dual bridge runs use `nice -n 19`, because host load slows the raw bus reads. When the firmware's RTT up buffer overflows, the pane badge shows `output dropped: N B` (bytes lost since attach).
+- **One core at a time** (`px4Nuttx.rtt.mode` = `switch`): the classic JLinkExe bridge traces one core; the R8-0/R8-1 switch in the monitor stops it and starts it on the other core.
+- **Serial + RTT split groups**: the RTT core gets an RTT pane and the UART core (for example R8-0 on SCI5) gets a serial pane fed by a host relay on `127.0.0.1:19041` (R8-0) or `19042` (R8-1). The first start asks for the host device (`/dev/serial/by-id/...`) and the setup keeps it. The relay holds the same device lease as other serial clients, so a UART already open in another tool is refused. It does not use the J-Link and keeps streaming through Load, Recover and Debug.
+- **Probe hand-off**: **Load**, **Recover** and **Debug** pause the RTT panes, stop the bridge, run, then start the bridge again on the same target. A debug session resumes the trace when it ends. A failed job or a changed setup does not resume. A bridge that fails to start (a failed J-Link connect can reset the board) is never retried; the error offers **Recover Both**.
+- **Save Log** writes `logs/rtt/<setup>-<core>-<yymmdd-hhmmss>.log` without a dialog.
+- External terminals still work: connect μScope or a telnet client to `127.0.0.1:19021`/`19031` while the monitor is closed (each port takes one client). A manual bridge (`platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <cr8_0|cr8_1> <elf>`) also works; stop it with `nuttx-rtt-bridge.sh stop`, because **Stop RTT Bridge** stops only the bridge the extension started.
 - **PX4 demo heartbeat pair (`rzv-px4-demo`)**: Build All builds `renesas_rdk-rzv2h_demo` (CR8-0) and `renesas_rdk-rzv2h-io-cr8_1_demo` (CR8-1); Load Both RAM-loads them. The cores exchange only `rzv2h_heartbeat` frames over raw `/dev/ipcc1`. Check CR8-0 through the MAVLink shell on SCI5 (`/dev/ttyUSB0` at 57600; SCI5 is MAVLink, not NSH, in PX4 images) and CR8-1 through the RTT console, with `rzv2h_heartbeat status` on each. `platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-demo-heartbeat-check.sh` runs both checks plus a loss and recovery test that holds CR8-1 halted for 15 s.
 
-**Stop Sessions** stops this extension's debugger session and the RTT bridge the extension started; it never touches a serial console or a manually started bridge.
+**Stop Sessions** stops this extension's debugger session, the RTT bridge and the serial relay the extension started; it never touches a serial terminal of another tool or a manually started bridge.
 
 ---
 

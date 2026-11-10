@@ -3,14 +3,21 @@ import * as vscode from 'vscode';
 import { SelectionStore } from '../selection-store';
 import { R8Core } from '../types';
 import { WorkspaceTreeItem } from '../tree-item';
+import { SetupRow, SetupRowFactory, coreLabel } from './firmware-setup-rows';
 
+/**
+ * Firmware Setup: collapsible Setup, R8-0, R8-1, Actions and Load history
+ * groups. Rows stay in place while a job runs; their actions turn inert.
+ */
 export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<WorkspaceTreeItem>, vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<WorkspaceTreeItem | undefined | void>();
   public readonly onDidChangeTreeData = this.changed.event;
   private readonly subscription: vscode.Disposable;
+  private readonly rows: SetupRowFactory;
 
   constructor(private readonly store: SelectionStore) {
     this.subscription = store.onDidChangeSelection(() => this.refresh());
+    this.rows = new SetupRowFactory(store);
   }
 
   public refresh(): void {
@@ -21,156 +28,19 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
     return item;
   }
 
-  private themeColor(id: string): vscode.ThemeColor | undefined {
-    return typeof vscode.ThemeColor === 'function' ? new vscode.ThemeColor(id) : undefined;
+  private row(label: string, description: string, command?: string, core?: R8Core,
+    tooltip?: string | vscode.MarkdownString, disabledReason?: string): SetupRow {
+    return this.rows.row(label, description, command, core, tooltip, disabledReason);
   }
 
-  private getSemanticIcon(label: string, command?: string, status?: string): vscode.ThemeIcon {
-    if (label.endsWith(' ELF')) {
-      return new vscode.ThemeIcon('file-binary');
+  public async getChildren(element?: WorkspaceTreeItem): Promise<WorkspaceTreeItem[]> {
+    if (element) {
+      return (element as SetupRow).children || [];
     }
-    if (label.startsWith('Build R8-')) {
-      return new vscode.ThemeIcon('play');
-    }
-    if (label.startsWith('Console R8-')) {
-      return new vscode.ThemeIcon('terminal');
-    }
-    if (label.startsWith('Keep Captured')) {
-      return new vscode.ThemeIcon('check');
-    }
-    if (label.startsWith('Import Updated')) {
-      return new vscode.ThemeIcon('refresh');
-    }
-    if (label === 'R8-0' || label === 'R8-1') {
-      return new vscode.ThemeIcon('chip');
-    }
-    if (label === 'R8-0 profile' || label === 'R8-1 profile') {
-      return new vscode.ThemeIcon('symbol-misc');
-    }
-    switch (label) {
-      case 'Setup':
-        return new vscode.ThemeIcon('layers');
-      case 'Save As':
-        return new vscode.ThemeIcon('save-as');
-      case 'Rename':
-        return new vscode.ThemeIcon('edit');
-      case 'Board':
-        return new vscode.ThemeIcon('circuit-board');
-      case 'Probe':
-        return new vscode.ThemeIcon('plug');
-      case 'Build mode':
-        return new vscode.ThemeIcon('settings-gear');
-      case 'Sessions':
-        return new vscode.ThemeIcon('pulse');
-      case 'Build readiness':
-        return new vscode.ThemeIcon('tools');
-      case 'RAM load readiness':
-        return new vscode.ThemeIcon('cloud-upload');
-      case 'Debug readiness':
-        return new vscode.ThemeIcon('debug-alt');
-      case 'Pair': {
-        if (this.store.getTargetTransition() || this.store.hasWorkflow() || this.store.isPreparingImages()) {
-          return new vscode.ThemeIcon('sync~spin');
-        }
-        if (status === 'Ready') {
-          return new vscode.ThemeIcon('pass-filled', this.themeColor('testing.iconPassed'));
-        }
-        if (status === 'Preparation pending') {
-          return new vscode.ThemeIcon('debug-pause', this.themeColor('problemsWarningIcon.foreground'));
-        }
-        if (status?.includes('validation') || status?.includes('warning') || status?.includes('Recovery') || status?.includes('changed')) {
-          return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
-        }
-        return new vscode.ThemeIcon('symbol-property');
-      }
-      case 'State needs attention':
-        return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
-      case 'Serial device':
-        return new vscode.ThemeIcon('plug');
-      case 'Load history':
-        return new vscode.ThemeIcon('history');
-      case 'Browse ELF':
-        return new vscode.ThemeIcon('file-binary');
-      case 'Choose Build Folder':
-        return new vscode.ThemeIcon('folder');
-      case 'Use Build Receipt':
-        return new vscode.ThemeIcon('tag');
-      case 'Build All':
-        return new vscode.ThemeIcon('play');
-      case 'Build & Load':
-        return new vscode.ThemeIcon('rocket');
-      case 'Stop Sessions':
-        return new vscode.ThemeIcon('stop-circle');
-      case 'Stop RTT Bridge':
-        return new vscode.ThemeIcon('debug-disconnect');
-      case 'Validate Images':
-        return new vscode.ThemeIcon('checklist');
-      case 'Resume Preparation':
-        return new vscode.ThemeIcon('debug-continue');
-      case 'Load Both to RAM':
-        return new vscode.ThemeIcon('cloud-upload');
-      case 'Recover Both':
-        return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
-      case 'Debug R8-0':
-      case 'Debug R8-1':
-        return new vscode.ThemeIcon('debug-alt');
-      case 'Workspace trust required':
-        return new vscode.ThemeIcon('lock');
-      case 'Select a dual-CR8 group':
-        return new vscode.ThemeIcon('target');
-      case 'Backend update required':
-        return new vscode.ThemeIcon('warning', this.themeColor('problemsWarningIcon.foreground'));
-      default:
-        return new vscode.ThemeIcon(command ? 'tools' : 'info');
-    }
+    return this.rootRows();
   }
 
-  private row(
-    label: string,
-    description: string,
-    command?: string,
-    core?: R8Core,
-    tooltip?: string | vscode.MarkdownString
-  ): WorkspaceTreeItem {
-    const item = new WorkspaceTreeItem(label, vscode.TreeItemCollapsibleState.None, {
-      description,
-      tooltip: tooltip || description,
-      iconPath: this.getSemanticIcon(label, command, description),
-      command: command && this.store.isSetupOperationsReady() ? {
-        command: `px4Nuttx.setup.${command}`,
-        title: label,
-        arguments: [{ setupId: this.store.getActiveSetup()?.id, core, token: this.store.captureSetupToken(core, true) }],
-      } : undefined,
-    });
-    item.id = `setup:${this.store.getActiveSetup()?.id || ''}:${core || ''}:${command || label}`;
-    item.contextValue = core ? 'dualCoreImage' : 'dualCoreAction';
-    Object.assign(item, { core, setupId: this.store.getActiveSetup()?.id, token: this.store.captureSetupToken(core, true) });
-    return item;
-  }
-
-  /**
-   * The extension never opens a console terminal. A UART row is read-only; an
-   * RTT row starts the backend-owned bridge, and the user connects any terminal
-   * to its TCP port.
-   */
-  private consoleRow(core: R8Core, elf?: string): WorkspaceTreeItem {
-    const transport = this.store.getConsoleTransport(core);
-    const label = `Console ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`;
-    if (transport.startsWith('sci')) {
-      const uart = transport.toUpperCase();
-      return this.row(label, `Manual · ${uart} 115200 8N1`, undefined, undefined,
-        `Open the board ${uart} UART in your own serial terminal (115200 8N1).`);
-    }
-    if (transport === 'rtt') {
-      return this.row(label, 'RTT · Start bridge on 127.0.0.1:19021', 'startRtt', core,
-        'Starts the RTT bridge for this core after a verified Load Both. It reserves the probe, so use ' +
-        'Stop RTT Bridge before Load, Recover or Debug.\nThen connect a terminal (for example μScope) to 127.0.0.1:19021.\n' +
-        `Manual alternative: platforms/nuttx/Debug/nuttx-rtt-bridge.sh start ${core} ${elf || '<elf>'}`);
-    }
-    return this.row(label, `Manual · ${transport.toUpperCase()}`);
-  }
-
-  public async getChildren(): Promise<WorkspaceTreeItem[]> {
+  private async rootRows(): Promise<SetupRow[]> {
     if (vscode.workspace.isTrusted === false) {
       return [this.row('Workspace trust required', 'Trust this workspace to prepare, load and debug images.')];
     }
@@ -212,13 +82,13 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
     }
     const setup = this.store.getActiveSetup();
     const complete = state?.prepared?.artifacts.length === 2 && !state.pending && !state.validationError && !changes.length;
-    const items = [
-      this.row('Setup', setup?.name || group.name || this.store.getSelection().group || 'Unavailable', 'select'),
-      this.row('Save As', 'Keep another independent image variant', 'saveAs'),
-      this.row('Rename', 'Change this setup name', 'rename'),
+    const busyReason = busy || undefined;
+    const setupRows = [
+      this.row('Save As', 'Keep another independent image variant', 'saveAs', undefined, undefined, busyReason),
+      this.row('Rename', 'Change this setup name', 'rename', undefined, undefined, busyReason),
       this.row('Board', this.store.getSelection().board),
-      this.row('Probe', this.store.getSelectedProbe() || 'Select J-Link', 'probe'),
-      this.row('Build mode', this.store.getSelection().build.mode || 'incremental', 'mode'),
+      this.row('Probe', this.store.getSelectedProbe() || 'Select J-Link', 'probe', undefined, undefined, busyReason),
+      this.row('Build mode', this.store.getSelection().build.mode || 'incremental', 'mode', undefined, undefined, busyReason),
       this.row('Sessions', this.store.hasOwnedSessions() ? 'Active · use Stop Sessions before switching' : 'Stopped'),
       this.row('Build readiness', 'Fixed group builder · prerequisite details in Readiness'),
       this.row('RAM load readiness', !complete ? 'Prepare and validate both images' : !this.store.getSelectedProbe() ? 'Select J-Link' : state?.history?.message === 'Recover Both required' ? 'Recovery required' : 'Captured pair ready'),
@@ -226,54 +96,44 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       this.row('Pair', status, undefined, undefined, state?.validationError || status),
     ];
     const warning = this.store.getStateError() || this.store.getCompatibilityWarning();
-    if (warning) { items.push(this.row('State needs attention', warning)); }
-
+    if (warning) { setupRows.push(this.row('State needs attention', warning)); }
+    const setupName = setup?.name || group.name || this.store.getSelection().group || 'Unavailable';
+    const probe = this.store.getSelectedProbe();
+    const items: SetupRow[] = [this.rows.group(
+      this.row('Setup', probe ? `${setupName} · probe ${probe}` : setupName, 'select', undefined, undefined, busyReason),
+      setupRows, true, 'setupGroup')];
 
     for (const core of ['cr8_0', 'cr8_1'] as R8Core[]) {
+      const label = coreLabel(core);
       const member = group.members.find((value) => value.core === core)!;
       const image = state?.prepared?.artifacts.find((value) => value.core === core);
       const source = state?.sources[core];
       const sourcePath = source && ('path' in source ? source.path : source.receiptPath);
       const notice = state?.sourceChanges?.[core] ? 'Source changed' : state?.acknowledged?.[core] ? 'Original source outdated' : '';
-
-      items.push(this.row(
-        core === 'cr8_0' ? 'R8-0' : 'R8-1',
-        image ? `${path.basename(image.path)} · ${notice || 'Captured'}` : `Waiting for ${core}`,
-        busy ? undefined : 'browse',
-        core,
-        `${member.target || member.config}\nSource: ${source?.kind || 'none'} ${sourcePath || ''}\nCaptured: ${image?.path || 'none'}\nSHA-256: ${image?.sha256 || 'none'}\nEvidence: ${image?.provenance?.evidence || 'unknown'}\nAddress: ${image?.checks?.address || 'unchecked'}\nHardware qualified: no\n${notice}`
-      ));
-
+      const coreRows: SetupRow[] = [];
       if (image) {
-        items.push(this.row(`${core === 'cr8_0' ? 'R8-0' : 'R8-1'} ELF`, this.store.resolveReceiptPath(image.path)));
+        coreRows.push(this.row(`${label} ELF`, this.store.resolveReceiptPath(image.path)));
       }
-
-      items.push(this.row(`${core === 'cr8_0' ? 'R8-0' : 'R8-1'} profile`, member.target || member.config || 'Unavailable'));
-      if (!busy) {
-        items.push(this.row(`Build ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}`, 'Build and capture this member only', 'buildCore', core));
-        items.push(this.consoleRow(core, image?.path));
-      }
-
+      coreRows.push(this.row(`${label} profile`, member.target || member.config || 'Unavailable'));
+      coreRows.push(this.row(`Build ${label}`, 'Build and capture this member only', 'buildCore', core, undefined, busyReason));
+      coreRows.push(this.rows.consoleRow(core, image?.path, busyReason));
       if (!busy && state?.sourceChanges?.[core]) {
-        items.push(
+        coreRows.push(
           this.row(`Keep Captured ${core}`, 'Use captured bytes; retain outdated-source notice', 'keepCaptured', core),
           this.row(`Import Updated ${core}`, 'Capture the current original again', 'importUpdated', core)
         );
       }
-    }
-
-    if (state?.history) {
-      items.push(this.row(
-        'Load history',
-        state.history.message,
-        undefined,
-        undefined,
-        `${state.history.message}\n${state.history.timestamp || ''}\nHistorical evidence; no live target polling.`
-      ));
-    }
-
-    if (busy) {
-      return items;
+      const coreRow = this.row(
+        label,
+        image ? `${path.basename(image.path)} · ${notice || 'Captured'}` : `Waiting for ${core}`,
+        'browse',
+        core,
+        `${member.target || member.config}\nSource: ${source?.kind || 'none'} ${sourcePath || ''}\nCaptured: ${image?.path || 'none'}\nSHA-256: ${image?.sha256 || 'none'}\nEvidence: ${image?.provenance?.evidence || 'unknown'}\nAddress: ${image?.checks?.address || 'unchecked'}\nHardware qualified: no\n${notice}`,
+        busyReason
+      );
+      // Busy keeps the label and file name readable rather than the reason.
+      if (busy) { coreRow.description = image ? `${path.basename(image.path)} · ${busy}` : `Waiting for ${core}`; }
+      items.push(this.rows.group(coreRow, coreRows, true, `setupCore.${core === 'cr8_0' ? 'r8_0' : 'r8_1'}`));
     }
 
     const actions: Array<[string, string, string]> = [
@@ -285,7 +145,9 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
       ['Stop Sessions', 'Stop this extension’s debugger session and RTT bridge', 'stopSessions'],
       ['Validate Images', 'Check source changes and captured hashes without hardware', 'validate'],
     ];
-    if ((['cr8_0', 'cr8_1'] as R8Core[]).some((core) => this.store.getConsoleTransport(core) === 'rtt')) {
+    const anyRtt = (['cr8_0', 'cr8_1'] as R8Core[]).some((core) => this.store.getConsoleTransport(core) === 'rtt');
+    if (anyRtt) {
+      actions.splice(5, 0, ['Build, Load & Trace', 'Build both, load both, then trace in the RTT Monitor', 'buildLoadTrace']);
       actions.push(['Stop RTT Bridge', 'Free the probe before Load, Recover or Debug', 'stopRtt']);
     }
 
@@ -311,8 +173,20 @@ export class FirmwareSetupViewProvider implements vscode.TreeDataProvider<Worksp
         );
       }
     }
+    const actionRows = actions.map(([label, description, command]) =>
+      this.row(label, description, command, undefined, undefined, busyReason));
+    items.push(this.rows.group(this.row('Actions', busy || `${actionRows.length} actions`), actionRows, true, 'setupActions'));
 
-    return items.concat(actions.map(([label, description, command]) => this.row(label, description, command)));
+    if (state?.history) {
+      items.push(this.row(
+        'Load history',
+        state.history.message,
+        undefined,
+        undefined,
+        `${state.history.message}\n${state.history.timestamp || ''}\nHistorical evidence; no live target polling.`
+      ));
+    }
+    return items;
   }
 
   public dispose(): void {

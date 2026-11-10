@@ -6,6 +6,15 @@ const Module = require('module');
 const crypto = require('crypto');
 const esbuild = require('../node_modules/esbuild');
 
+// Firmware Setup is a tree of groups; most checks look at every row.
+async function allRows(view) {
+  const rows = [];
+  for (const root of await view.getChildren()) {
+    rows.push(root, ...await view.getChildren(root));
+  }
+  return rows;
+}
+
 async function runDualCoreTests() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual core ui '));
   const registered = new Map();
@@ -18,11 +27,12 @@ async function runDualCoreTests() {
     fire(value) { for (const fn of this.listeners) { fn(value); } }
     dispose() {}
   }
+  const settings = new Map();
   const vscode = {
     EventEmitter, TreeItem: class { constructor(label) { this.label = label; } },
     ThemeIcon: class { constructor(id, color) { this.id = id; this.color = color; } },
-    TreeItemCollapsibleState: { None: 0 }, ProgressLocation: { Notification: 1 }, Uri: { file: (file) => ({ fsPath: file, scheme: 'file' }) },
-    workspace: { isTrusted: true, getConfiguration: () => ({ get: (_, fallback) => fallback }) },
+    TreeItemCollapsibleState: { None: 0, Collapsed: 1, Expanded: 2 }, ProgressLocation: { Notification: 1 }, Uri: { file: (file) => ({ fsPath: file, scheme: 'file' }) },
+    workspace: { isTrusted: true, getConfiguration: () => ({ get: (key, fallback) => (settings.has(key) ? settings.get(key) : fallback) }) },
     window: { onDidCloseTerminal: () => ({ dispose() {} }), showErrorMessage: async (text) => errors.push(text), showWarningMessage: async () => 'Use Declared Image',
       showInformationMessage: async () => {}, showOpenDialog: async () => undefined,
       showQuickPick: async (items) => picker?.(items), withProgress: async (_, fn) => fn({ report() {} }, { isCancellationRequested: false }) },
@@ -62,7 +72,7 @@ async function runDualCoreTests() {
     const backend = { importImages: async (file) => {
       imports++;
       assert.equal(store.isPreparingImages(), true, 'import execution must publish live activity');
-      const pair = (await preparationView.getChildren()).find((row) => row.label === 'Pair');
+      const pair = (await allRows(preparationView)).find((row) => row.label === 'Pair');
       assert.equal(pair.description, store.hasWorkflow() ? 'Firmware workflow in progress' : 'Preparing images');
       assert.equal(pair.iconPath.id, 'sync~spin');
       const request = JSON.parse(fs.readFileSync(file));
@@ -262,7 +272,7 @@ async function runDualCoreTests() {
     const interruptedStore = new SelectionStore(context, root); interruptedStore.setCatalog(catalog);
     assert.equal(interruptedStore.getPreparedPair().pending.request.requestId, pendingAfterDelivery);
     const interruptedView = new DualCoreLoaderViewProvider(interruptedStore);
-    const interruptedRows = await interruptedView.getChildren();
+    const interruptedRows = await allRows(interruptedView);
     assert.equal(interruptedRows.find((row) => row.label === 'Pair').description, 'Preparation pending');
     assert.equal(interruptedRows.find((row) => row.label === 'Pair').iconPath.id, 'debug-pause', 'restored preparation must wait without spinning');
     assert.ok(interruptedRows.some((row) => row.label === 'Resume Preparation'));
@@ -277,7 +287,7 @@ async function runDualCoreTests() {
     store.beginTargetTransition('Loading'); await assert.rejects(controller.assign('cr8_0', file('cr8_0', one)), /wait/);
     await assert.rejects(store.setSelectedProbe('other'), /wait/); store.endTargetTransition();
     const view = new DualCoreLoaderViewProvider(store);
-    const rows = await view.getChildren(); assert.ok(rows.some((item) => item.label === 'R8-0')); assert.ok(rows.some((item) => item.label === 'R8-1'));
+    const rows = await allRows(view); assert.ok(rows.some((item) => item.label === 'R8-0')); assert.ok(rows.some((item) => item.label === 'R8-1'));
     for (const core of ['cr8_0', 'cr8_1']) {
       const label = core === 'cr8_0' ? 'R8-0' : 'R8-1';
       const image = store.getPreparedPair().prepared.artifacts.find((item) => item.core === core);
@@ -287,7 +297,7 @@ async function runDualCoreTests() {
         'the core row must show the ELF filename, not a receipt filename');
     }
     store.setSetupOperationsReady(true);
-    const consoleRows = await view.getChildren();
+    const consoleRows = await allRows(view);
     for (const label of ['Console R8-0', 'Console R8-1']) {
       const consoleRow = consoleRows.find((row) => row.label === label);
       assert.ok(consoleRow && /^RTT · /.test(consoleRow.description), `${label} must offer the RTT bridge`);
@@ -297,36 +307,56 @@ async function runDualCoreTests() {
     assert.equal(consoleRows.find((row) => row.label === 'Stop RTT Bridge').command.command, 'px4Nuttx.setup.stopRtt');
     const consoleCalls = [];
     backend.consoleAction = async (action, selectionPath, receiptPath, serial, options) => {
-      consoleCalls.push({ action, selectionPath, receiptPath, serial, core: options?.core });
+      consoleCalls.push({ action, selectionPath, receiptPath, serial, core: options?.core, dual: options?.dual });
       return action === 'start' ? { status: 'ok', diagnostics: [], data: { endpoint: '127.0.0.1:19021' } } : { status: 'ok', diagnostics: [], data: { stopped: true } };
     };
     assert.equal(await controller.startRtt('cr8_1'), true);
-    assert.deepEqual({ ...consoleCalls[0], selectionPath: undefined }, { action: 'start', selectionPath: undefined, receiptPath: store.getPreparedPair().prepared.receiptPath, serial: 'fixture', core: 'cr8_1' });
+    assert.equal(consoleCalls[0].dual, true, 'two RTT consoles trace together on one probe by default');
+    assert.equal(consoleCalls[0].core, undefined);
+    assert.equal(await controller.stopRtt(), true); consoleCalls.length = 0;
+    settings.set('mode', 'switch');
+    assert.equal(await controller.startRtt('cr8_1'), true);
+    assert.deepEqual({ ...consoleCalls[0], selectionPath: undefined }, { action: 'start', selectionPath: undefined, receiptPath: store.getPreparedPair().prepared.receiptPath, serial: 'fixture', core: 'cr8_1', dual: undefined });
     assert.equal(await controller.stopRtt(), true); assert.equal(consoleCalls[1].action, 'stop'); assert.equal(consoleCalls[1].serial, 'fixture');
     assert.equal(await controller.stopRtt(true), true, 'Stop Sessions must reach the backend bridge stop');
     assert.equal(consoleCalls[2].action, 'stop'); consoleCalls.pop();
     store.getConsoleTransport = () => 'sci5';
-    await assert.rejects(controller.startRtt('cr8_0'), /SCI5, not RTT/, 'a UART console must not start an RTT bridge');
+    await assert.rejects(controller.startRtt('cr8_0'), /RTT Monitor to trace a serial console/, 'a UART console must not start an RTT bridge');
     delete store.getConsoleTransport;
     backend.consoleAction = async () => ({ status: 'error', diagnostics: [{ message: 'probe busy' }] });
     await assert.rejects(controller.startRtt('cr8_1'), /probe busy/, 'a refused bridge must surface the backend diagnostic');
     assert.equal(consoleCalls.length, 2, 'a UART console must not reach the backend');
-    delete backend.consoleAction; store.setSetupOperationsReady(false);
+    delete backend.consoleAction; settings.delete('mode'); store.setSetupOperationsReady(false);
     assert.equal(rows.find((row) => row.label === 'Pair').iconPath.id, 'pass-filled');
     for (const transition of ['Loading captured pair', 'Recovering captured pair', 'Attaching R8-0']) {
       store.beginTargetTransition(transition);
       try {
-        assert.equal((await view.getChildren()).find((row) => row.label === 'Pair').iconPath.id, 'sync~spin');
+        assert.equal((await allRows(view)).find((row) => row.label === 'Pair').iconPath.id, 'sync~spin');
       } finally { store.endTargetTransition(); }
     }
     await store.withSetupMutationGuard(async () => {
-      assert.equal((await view.getChildren()).find((row) => row.label === 'Pair').iconPath.id, 'sync~spin');
+      assert.equal((await allRows(view)).find((row) => row.label === 'Pair').iconPath.id, 'sync~spin');
     });
-    assert.equal((await view.getChildren()).find((row) => row.label === 'Pair').iconPath.id, 'pass-filled', 'workflow completion must stop animation');
+    assert.equal((await allRows(view)).find((row) => row.label === 'Pair').iconPath.id, 'pass-filled', 'workflow completion must stop animation');
+    const roots = await view.getChildren();
+    assert.deepEqual(roots.slice(0, 4).map((row) => row.label), ['Setup', 'R8-0', 'R8-1', 'Actions'], 'Firmware Setup groups');
+    assert.ok(roots.slice(0, 4).every((row) => row.collapsibleState === 2), 'groups start expanded');
+    assert.deepEqual(roots.slice(1, 3).map((row) => row.contextValue), ['setupCore.r8_0', 'setupCore.r8_1']);
+    assert.ok((await view.getChildren(roots[1])).some((row) => row.label === 'Console R8-0'), 'console row sits under its core');
+    assert.ok((await view.getChildren(roots[0])).some((row) => row.label === 'Pair'), 'status rows sit under Setup');
+    const idleActions = (await view.getChildren(roots[3])).map((row) => row.label);
+    store.beginTargetTransition('Loading captured pair');
+    try {
+      const busyRoots = await view.getChildren();
+      const busyActions = await view.getChildren(busyRoots[3]);
+      assert.deepEqual(busyActions.map((row) => row.label), idleActions, 'action rows stay in place while a job runs');
+      assert.ok(busyActions.every((row) => !row.command && /^Unavailable · /.test(row.description)), 'busy actions are inert');
+      assert.ok((await view.getChildren(busyRoots[1])).some((row) => row.label === 'Build R8-0' && !row.command));
+    } finally { store.endTargetTransition(); }
     assert.equal(rows.find((item) => item.label === 'R8-0').core, 'cr8_0', 'native context-menu arguments must retain the row core');
     assert.equal(new Set(rows.map((item) => item.id)).size, rows.length, 'native row identities must be unique');
     vscode.workspace.isTrusted = false;
-    await assert.rejects(controller.assign('cr8_0', file('cr8_0', one)), /Trust/); assert.equal((await view.getChildren()).length, 1);
+    await assert.rejects(controller.assign('cr8_0', file('cr8_0', one)), /Trust/); assert.equal((await allRows(view)).length, 1);
     vscode.workspace.isTrusted = true;
     const candidates = await scanElfCandidates(root, { isCancellationRequested: false }); assert.ok(candidates.includes('nuttx')); assert.ok(candidates.includes('other.elf'));
     await assert.rejects(scanElfCandidates(root, { isCancellationRequested: false }, 1), /narrower/);
@@ -443,7 +473,7 @@ async function runDualCoreTests() {
     await controller.buildCore('cr8_0');
     assert.equal(target, targetBeforeBuild, 'Build Core must not load firmware');
     assert.equal(debugCalls, debugBeforeBuild, 'Build Core must not attach a debugger');
-    const builtRows = await view.getChildren();
+    const builtRows = await allRows(view);
     assert.ok(builtRows.find((item) => item.label === 'R8-0').description.startsWith('cr8_0.elf'),
       'build-receipt sources must display the captured ELF name instead of receipt.json');
     assert.equal(buildCalls[1].building.group, undefined); assert.equal(buildCalls[1].building.core, 'cr8_0');
@@ -454,6 +484,53 @@ async function runDualCoreTests() {
     assert.notEqual(target.request.receiptId, oldPairId);
     assert.equal(target.request.receiptId, store.getPreparedPair().prepared.receiptId);
     assert.ok(target.request.workflowOwner); assert.ok(target.request.setupToken.setupId);
+    // With the RTT Monitor, Build, Load & Trace ends tracing the default RTT
+    // core, and a later Load stops the bridge first and resumes it afterwards.
+    const traceLog = [];
+    const sink = { cores: new Map(), layout: undefined,
+      attach(core, endpoint, source = 'rtt') { this.cores.set(core, source); traceLog.push(`attach ${core} ${endpoint}`); },
+      detach(state, _detail, source = 'rtt') {
+        if (state !== 'paused') { for (const [core, from] of this.cores) { if (source === 'all' || from === source) { this.cores.delete(core); } } }
+        traceLog.push(`detach ${state}`);
+      },
+      fail(core, detail) { this.cores.delete(core); traceLog.push(`fail ${detail}`); },
+      attachedCores(source) { return [...this.cores].filter(([, from]) => !source || from === source).map(([core]) => core); },
+      attachedCore() { return this.attachedCores('rtt')[0]; }, setLayout(layout) { this.layout = layout; }, reveal: async () => {} };
+    backend.setLowPriorityBuilds = (active) => { backend.lowPriority = active; };
+    backend.consoleAction = async (action, _selection, _receipt, _serial, options) => {
+      traceLog.push(`${action}${options?.core ? ` ${options.core}` : ''}${options?.dual ? ' dual' : ''}`);
+      const endpoints = options?.dual ? { cr8_0: '127.0.0.1:19021', cr8_1: '127.0.0.1:19031' } : undefined;
+      return action === 'start' ? { status: 'ok', diagnostics: [], data: { endpoint: '127.0.0.1:19021', endpoints } } : { status: 'ok', diagnostics: [], data: { stopped: true } };
+    };
+    const loadPrepared = execution.loadPrepared;
+    execution.loadPrepared = async (request, options) => { traceLog.push('load'); return loadPrepared(request, options); };
+    settings.set('mode', 'switch');
+    const traced = new DualCoreLoaderController(backend, store, execution, sink);
+    assert.equal(await traced.buildLoadTrace(), true);
+    assert.deepEqual(traceLog, ['load', 'start cr8_0', 'attach cr8_0 127.0.0.1:19021'], 'Build, Load & Trace traces after a verified load');
+    assert.equal(sink.layout, 'single');
+    traceLog.length = 0;
+    assert.equal(await traced.targetAction('load'), true);
+    assert.deepEqual(traceLog, ['detach paused', 'stop', 'load', 'start cr8_0', 'attach cr8_0 127.0.0.1:19021'], 'Load pauses and resumes the traced bridge');
+    traceLog.length = 0;
+    await traced.stopRtt(true);
+    assert.deepEqual(traceLog, ['detach stopped', 'stop'], 'Stop Sessions ends tracing');
+    traceLog.length = 0; settings.delete('mode');
+    assert.equal(await traced.startRtt(), true);
+    assert.deepEqual(traceLog, ['start dual', 'attach cr8_0 127.0.0.1:19021', 'attach cr8_1 127.0.0.1:19031'], 'two RTT consoles share one dual bridge');
+    assert.equal(sink.layout, 'split');
+    assert.equal(backend.lowPriority(), true, 'builds run at low priority while the dual bridge reads the target');
+    traceLog.length = 0;
+    assert.equal(await traced.targetAction('load'), true);
+    assert.deepEqual(traceLog, ['detach paused', 'stop', 'load', 'start dual', 'attach cr8_0 127.0.0.1:19021', 'attach cr8_1 127.0.0.1:19031'],
+      'Load pauses both RTT panes and resumes the dual bridge');
+    traceLog.length = 0;
+    assert.equal(await traced.buildLoadTrace(), true);
+    assert.deepEqual(traceLog, ['detach paused', 'stop', 'load', 'start dual', 'attach cr8_0 127.0.0.1:19021', 'attach cr8_1 127.0.0.1:19031'],
+      'Build, Load & Trace keeps the resumed dual trace instead of restarting it');
+    await traced.stopRtt(true);
+    assert.equal(backend.lowPriority(), false);
+    execution.loadPrepared = loadPrepared; delete backend.consoleAction; traced.dispose();
     const compositeLease = { lease: { serial: 'fixture', leaseToken: 'same-owner' }, release: async () => {} };
     backend.probeLeases = { acquire: async (serial) => { assert.equal(serial, target.request.serial); return compositeLease; } };
     execution.debugPrepared = async (request, key, options) => {
@@ -489,9 +566,9 @@ async function runDualCoreTests() {
     const beforeDisabled = imports;
     assert.equal(await registered.get('px4Nuttx.dual.loadBoth')(), false);
     assert.equal(imports, beforeDisabled);
-    assert.ok((await view.getChildren()).every((row) => !row.command), 'preview rows must be read-only before readiness');
+    assert.ok((await allRows(view)).every((row) => !row.command), 'preview rows must be read-only before readiness');
     store.setSetupOperationsReady(true);
-    const staleRow = (await view.getChildren()).find((row) => row.label === 'R8-0');
+    const staleRow = (await allRows(view)).find((row) => row.label === 'R8-0');
     assert.equal(staleRow.command.arguments[0].setupId, store.getActiveSetup().id);
     await store.activateSetup(variantId); await store.activateSetup(originalSetup.id);
     assert.equal(await registered.get('px4Nuttx.dual.browse')(staleRow), false, 'stale context-menu item is invalid after ABA');

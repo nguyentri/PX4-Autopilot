@@ -4,6 +4,7 @@ import { Px4NuttxDebugProvider } from './debug-provider';
 import { SelectionStore } from './selection-store';
 import { FirmwareSelection, OperationResult, PreparedExecutionRequest, R8Core } from './types';
 import { ArtifactsViewProvider } from './workspace-view';
+import { FirmwareOutput } from './firmware-output';
 
 interface OperationSnapshot {
   selection: FirmwareSelection;
@@ -46,7 +47,8 @@ export function registerExecutionCommands(
   client: BackendClient,
   store: SelectionStore,
   debugProvider: Px4NuttxDebugProvider,
-  artifactsView: ArtifactsViewProvider
+  artifactsView: ArtifactsViewProvider,
+  output?: FirmwareOutput
 ): ExecutionController {
   let setupRouter: ((name: string) => Promise<unknown>) | undefined;
   const routes: Record<string, string> = { 'px4Nuttx.build': 'buildBoth', 'px4Nuttx.cleanRebuild': 'cleanRebuild', 'px4Nuttx.load': 'loadBoth',
@@ -102,6 +104,16 @@ export function registerExecutionCommands(
       showTrustError('build firmware'); return null;
     }
     const operation = snapshot(selection);
+    const label = `${clean ? 'Clean rebuild' : 'Build'} ${operation.selection.id}`;
+    output?.beginBuild(label);
+    // The full log goes to the Output channel; a failure offers its Problems.
+    const offerLog = async (message: string): Promise<void> => {
+      output?.finishBuild(false, label);
+      const actions = output ? (output.problemCount() ? ['Show Problems', 'Show Log'] : ['Show Log']) : [];
+      const choice = await vscode.window.showErrorMessage(message, ...actions);
+      if (choice === 'Show Problems') { await vscode.commands.executeCommand('workbench.actions.view.problems'); }
+      if (choice === 'Show Log') { output?.show(); }
+    };
     return vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
@@ -114,6 +126,7 @@ export function registerExecutionCommands(
             clean,
             cancellationToken: cancellationToken || token,
             onOutput: (chunk) => {
+              output?.appendBuild(chunk);
               const message = chunk.trim().split(/\r?\n/).filter(Boolean).pop();
               if (message) {
                 progress.report({ message: message.slice(-240) });
@@ -121,15 +134,21 @@ export function registerExecutionCommands(
             },
           });
           if (!operationResultOk(result) || !result.receiptPath) {
-            showResultError(clean ? 'Clean rebuild failed' : 'Build failed', result); return result;
+            if (output) {
+              const logs = result.data?.logPath ? ` Logs: ${result.data.logPath}` : '';
+              void offerLog(`${clean ? 'Clean rebuild failed' : 'Build failed'}: ${diagnostics(result)}${logs}`);
+            } else { showResultError(clean ? 'Clean rebuild failed' : 'Build failed', result); }
+            return result;
           }
+          output?.finishBuild(true, label);
           if (bind) { await bindReceipt(result.receiptPath, operation.selection); }
           artifactsView.refresh();
           vscode.window.showInformationMessage(`${clean ? 'Clean rebuild' : 'Build'} completed for ${operation.selection.id}.`);
           return result;
         } catch (error) {
           const message = error instanceof WorkspaceTrustError ? error.message : (error as Error).message;
-          vscode.window.showErrorMessage(`${clean ? 'Clean rebuild' : 'Build'} failed: ${message}`);
+          if (output) { void offerLog(`${clean ? 'Clean rebuild' : 'Build'} failed: ${message}`); }
+          else { vscode.window.showErrorMessage(`${clean ? 'Clean rebuild' : 'Build'} failed: ${message}`); }
           return null;
         }
       }

@@ -59,6 +59,13 @@
           "title": "1KW-Px4-Nuttx",
           "icon": "media/activity-icon.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "px4-nuttx-rtt",
+          "title": "RTT Monitor",
+          "icon": "$(terminal)"
+        }
       ]
     },
     "views": {
@@ -84,6 +91,14 @@
         {
           "id": "px4-nuttx.dualCoreLoader",
           "name": "Firmware Setup"
+        }
+      ],
+      "px4-nuttx-rtt": [
+        {
+          "type": "webview",
+          "id": "px4-nuttx.rttMonitor",
+          "name": "RTT Monitor",
+          "when": "px4Nuttx.workspaceReady"
         }
       ]
     },
@@ -323,6 +338,13 @@
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
       },
       {
+        "command": "px4Nuttx.setup.buildLoadTrace",
+        "title": "Build, Load & Trace",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-console)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
         "command": "px4Nuttx.setup.validate",
         "title": "Check Images",
         "category": "PX4/NuttX Firmware Setup",
@@ -387,7 +409,7 @@
       },
       {
         "command": "px4Nuttx.setup.startRtt",
-        "title": "Start RTT Bridge",
+        "title": "Trace in RTT Monitor",
         "category": "PX4/NuttX Firmware Setup",
         "icon": "$(terminal)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
@@ -405,6 +427,36 @@
         "category": "PX4/NuttX Firmware Setup",
         "icon": "$(stop-circle)",
         "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.rtt.show",
+        "title": "Show RTT Monitor",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "px4Nuttx.rtt.clear",
+        "title": "Clear Trace",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "px4Nuttx.rtt.copy",
+        "title": "Copy Trace",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "px4Nuttx.rtt.saveLog",
+        "title": "Save Trace Log",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(save)"
+      },
+      {
+        "command": "px4Nuttx.rtt.toggleTimestamps",
+        "title": "Toggle Timestamps",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(clock)"
       }
     ],
     "menus": {
@@ -435,17 +487,17 @@
           "group": "navigation@1"
         },
         {
-          "command": "px4Nuttx.setup.refresh",
+          "command": "px4Nuttx.setup.buildLoadTrace",
           "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
-          "group": "navigation"
+          "group": "navigation@0"
         },
         {
-          "command": "px4Nuttx.setup.select",
+          "command": "px4Nuttx.setup.buildAndLoad",
           "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
           "group": "navigation@1"
         },
         {
-          "command": "px4Nuttx.setup.saveAs",
+          "command": "px4Nuttx.setup.loadBoth",
           "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
           "group": "navigation@2"
         },
@@ -453,24 +505,93 @@
           "command": "px4Nuttx.setup.stopSessions",
           "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
           "group": "navigation@3"
+        },
+        {
+          "command": "px4Nuttx.setup.refresh",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "navigation@4"
+        },
+        {
+          "command": "px4Nuttx.setup.select",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@1"
+        },
+        {
+          "command": "px4Nuttx.setup.saveAs",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@2"
+        },
+        {
+          "command": "px4Nuttx.rtt.clear",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.rtt.saveLog",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@2"
+        },
+        {
+          "command": "px4Nuttx.rtt.copy",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@3"
+        },
+        {
+          "command": "px4Nuttx.rtt.toggleTimestamps",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
         {
           "command": "px4Nuttx.setup.browse",
-          "when": "view == px4-nuttx.dualCoreLoader && viewItem == dualCoreImage && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@1"
         },
         {
           "command": "px4Nuttx.setup.folder",
-          "when": "view == px4-nuttx.dualCoreLoader && viewItem == dualCoreImage && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@2"
         },
         {
           "command": "px4Nuttx.setup.useBuild",
-          "when": "view == px4-nuttx.dualCoreLoader && viewItem == dualCoreImage && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@3"
         },
         {
           "command": "px4Nuttx.setup.buildCore",
-          "when": "view == px4-nuttx.dualCoreLoader && viewItem == dualCoreImage && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@4"
+        },
+        {
+          "command": "px4Nuttx.setup.buildCore",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_0 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@1"
+        },
+        {
+          "command": "px4Nuttx.setup.debugR80",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_0 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@2"
+        },
+        {
+          "command": "px4Nuttx.setup.startRtt",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_0 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@3"
+        },
+        {
+          "command": "px4Nuttx.setup.buildCore",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_1 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@1"
+        },
+        {
+          "command": "px4Nuttx.setup.debugR81",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_1 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@2"
+        },
+        {
+          "command": "px4Nuttx.setup.startRtt",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_1 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@3"
         }
       ],
       "commandPalette": [
@@ -564,6 +685,10 @@
         },
         {
           "command": "px4Nuttx.setup.buildAndLoad",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.buildLoadTrace",
           "when": "px4Nuttx.savedSetupActive"
         },
         {
@@ -709,6 +834,42 @@
           "type": "string",
           "default": "gdb-multiarch",
           "description": "Path to GDB executable for target debug sessions."
+        },
+        "px4Nuttx.rtt.mode": {
+          "type": "string",
+          "enum": [
+            "dual",
+            "switch"
+          ],
+          "enumDescriptions": [
+            "Trace both CR8 RTT consoles side by side from one J-Link session (no core is halted).",
+            "Trace one CR8 RTT console at a time; the RTT Monitor core switch moves the bridge."
+          ],
+          "default": "dual",
+          "description": "How Start RTT traces a setup whose two CR8 cores both use an RTT console."
+        },
+        "px4Nuttx.rtt.lineEnding": {
+          "type": "string",
+          "enum": [
+            "crlf",
+            "lf",
+            "cr",
+            "none"
+          ],
+          "default": "crlf",
+          "description": "Line ending the RTT Monitor appends to each sent line."
+        },
+        "px4Nuttx.rtt.timestamps": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefix each RTT Monitor line with the host time it arrived."
+        },
+        "px4Nuttx.rtt.scrollback": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 100,
+          "maximum": 100000,
+          "description": "Lines of RTT trace kept per core."
         }
       }
     },
@@ -806,7 +967,7 @@
   "scripts": {
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/rtt-monitor/webview",
     "test": "node tests/run-tests.js",
     "package": "vsce package --no-dependencies"
   },
@@ -814,6 +975,8 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.0.0",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/xterm": "5.5.0",
     "esbuild": "^0.24.0",
     "typescript": "^5.5.0"
   }

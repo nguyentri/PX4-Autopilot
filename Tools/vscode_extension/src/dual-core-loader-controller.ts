@@ -5,9 +5,13 @@ import * as vscode from 'vscode';
 import { BackendClient } from './backend-client';
 import { ExecutionController } from './commands-execution';
 import { SelectionStore } from './selection-store';
+import { RttTraceSink } from './rtt-monitor/rtt-monitor-view-provider';
+import { BridgeStart, RttTraceSession, SerialStart, TracePlan, TraceTarget } from './rtt-monitor/rtt-trace-session';
+import { consoleDeviceFor, resolveTracePlan, rttMode, SERIAL_RELAY_PORTS } from './rtt-monitor/trace-plan-resolver';
 import { FirmwareImport, FirmwareSelection, ImageSource, PreparedExecutionRequest, PreparedPairState, R8Core, SourceObservation, SetupOperationToken } from './types';
 
 const CORES: R8Core[] = ['cr8_0', 'cr8_1'];
+const coreName = (core: R8Core): string => (core === 'cr8_0' ? 'R8-0' : 'R8-1');
 const hash = (value: string | Buffer): string => crypto.createHash('sha256').update(value).digest('hex');
 
 export async function fileDigest(file: string): Promise<string> {
@@ -69,8 +73,25 @@ export class DualCoreLoaderController implements vscode.Disposable {
   private historyContext = '';
   private readonly registrations: vscode.Disposable[] = [];
 
+  /** Present when the RTT Monitor is registered; it owns the wish to trace. */
+  private readonly trace?: RttTraceSession;
+
   constructor(private readonly client: BackendClient, private readonly store: SelectionStore,
-    private readonly execution: ExecutionController) {
+    private readonly execution: ExecutionController, monitor?: RttTraceSink) {
+    if (monitor) {
+      this.trace = new RttTraceSession({
+        startBridge: (target, owner) => this.startBridge(target, owner),
+        stopBridge: () => this.stopBridge(),
+        startSerial: (core) => this.startSerial(core),
+        setupId: () => this.store.getActiveSetup()?.id,
+        debugActive: () => this.store.hasOwnedSessions(),
+        onSessionChange: (listener) => this.store.onDidChangeSelection(() => listener()),
+        recoverBoth: () => this.targetAction('recover').catch((error: Error) => vscode.window.showErrorMessage(error.message)),
+      }, monitor);
+      this.registrations.push(this.trace);
+      // Raw AXI-AP reads of the dual bridge slow about tenfold under a normal-priority build.
+      client.setLowPriorityBuilds(() => !!this.trace?.dualActive());
+    }
     const actions: Record<string, (core?: R8Core) => Promise<unknown>> = {
       browse: (core) => this.pickSource(core, false), folder: (core) => this.pickSource(core, true),
       useBuild: (core) => this.useBuild(core), buildBoth: () => this.buildBoth(),
@@ -119,35 +140,79 @@ export class DualCoreLoaderController implements vscode.Disposable {
   }
 
   /**
-   * Starts the backend-owned RTT bridge for one loaded core of the captured pair.
-   * The backend reserves the probe for the bridge's lifetime, refuses a core the
-   * last verified load did not leave ready, and marks the target for recovery when
-   * the J-Link connect fails (a failed CR8 connect can reset the SoC). The bridge
-   * serves 127.0.0.1:19021 for any terminal; the extension opens none itself.
+   * Traces one loaded core of the captured pair. The backend reserves the probe
+   * for the bridge's lifetime, refuses a core the last verified load did not
+   * leave ready, and marks the target for recovery when the J-Link connect
+   * fails (a failed CR8 connect can reset the SoC).
    */
   public async startRtt(core?: R8Core): Promise<boolean> {
-    const selection = this.requireReady(['importImages', 'preparedIdentity']);
+    this.requireReady(['importImages', 'preparedIdentity']);
     const token = this.store.captureSetupToken(undefined, true);
-    core = await this.chooseCore(core, 'Choose the core whose RTT console to bridge');
+    const plan = await this.tracePlan(core);
     this.assertContext(token);
-    if (!core) { return false; }
-    const name = core === 'cr8_0' ? 'R8-0' : 'R8-1';
-    const transport = this.store.getConsoleTransport(core);
-    if (transport !== 'rtt') { throw new Error(`${name} uses ${transport.toUpperCase()}, not RTT. Open that UART in your own serial terminal.`); }
+    if (!plan) { return false; }
+    if (this.trace) { return this.trace.start(plan); }
+    if (!plan.rtt) { throw new Error('Open the RTT Monitor to trace a serial console.'); }
+    const result = await this.startBridge(plan.rtt);
+    if (!result.ok) { throw new Error(result.message); }
+    void vscode.window.showInformationMessage(`RTT bridge is up on ${Object.values(result.endpoints).join(', ')}. ` +
+      'Connect a terminal such as μScope to it. Use Stop RTT Bridge before Load, Recover or Debug.');
+    return true;
+  }
+
+  /** What Start RTT traces: the dual bridge, one chosen RTT core, and/or a serial pane. */
+  private async tracePlan(core?: R8Core): Promise<TracePlan | undefined> {
+    const transport = (key: R8Core) => this.store.getConsoleTransport(key);
+    const mode = rttMode();
+    const rttCores = CORES.filter((key) => transport(key) === 'rtt');
+    if (rttCores.length === 2 && mode === 'switch') { core = await this.chooseCore(core, 'Choose the core to trace'); if (!core) { return undefined; } }
+    const plan = resolveTracePlan(transport, mode, core);
+    if (!plan) { throw new Error('No core of this setup has an RTT or host serial console.'); }
+    return plan;
+  }
+
+  /** Moves the trace to the other core (RTT Monitor core switch). */
+  public async switchRtt(core: R8Core): Promise<boolean> {
+    if (!this.trace) { return this.startRtt(core); }
+    this.requireReady(['importImages', 'preparedIdentity']);
+    return this.trace.switchTo(core);
+  }
+
+  private async startBridge(target: TraceTarget, owner?: symbol): Promise<BridgeStart> {
+    const selection = this.requireReady(['importImages', 'preparedIdentity'], owner);
+    const token = this.store.captureSetupToken();
+    const cores: R8Core[] = target === 'dual' ? [...CORES] : [target];
+    const name = target === 'dual' ? 'Dual' : coreName(target);
+    for (const core of cores) {
+      const transport = this.store.getConsoleTransport(core);
+      if (transport !== 'rtt') { throw new Error(`${coreName(core)} uses ${transport.toUpperCase()}, not RTT.`); }
+    }
     const serial = this.store.getSelectedProbe();
     if (!serial) { throw new Error('Select a J-Link probe before starting the RTT bridge.'); }
     if (this.store.hasOwnedSessions()) { throw new Error('Stop the debug session first: the RTT bridge needs the probe.'); }
-    if (!await this.validate()) { throw new Error('Images need attention. Validate and load this exact pair before starting the RTT bridge.'); }
+    if (!await this.validate(owner)) { throw new Error('Images need attention. Validate and load this exact pair before starting the RTT bridge.'); }
     this.assertContext(token);
     const receiptPath = this.store.getPreparedPair()!.prepared!.receiptPath;
     const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Starting ${name} RTT bridge` },
-      () => this.client.consoleAction('start', this.store.writeSelectionSnapshot(selection), receiptPath, serial, { core }));
+      () => this.client.consoleAction('start', this.store.writeSelectionSnapshot(selection), receiptPath, serial,
+        target === 'dual' ? { dual: true } : { core: target }));
     if (result.status !== 'ok') {
-      throw new Error(result.diagnostics.map((item) => item.message).join('; ') || `${name} RTT bridge did not start.`);
+      return { ok: false, message: result.diagnostics.map((item) => item.message).join('; ') || `${name} RTT bridge did not start.` };
     }
-    void vscode.window.showInformationMessage(`${name} RTT bridge is up on ${result.data?.endpoint || '127.0.0.1:19021'}. ` +
-      'Connect a terminal such as μScope to it. Use Stop RTT Bridge before Load, Recover or Debug.');
-    return true;
+    const endpoints: Partial<Record<R8Core, string>> = result.data?.endpoints
+      || (target !== 'dual' ? { [target]: result.data?.endpoint || '127.0.0.1:19021' } : {});
+    return { ok: true, endpoints };
+  }
+
+  /** Relays the core's host UART (no probe involved); the device is kept per setup. */
+  private async startSerial(core: R8Core): Promise<SerialStart> {
+    try {
+      const device = await consoleDeviceFor(this.store.getConsoleDevice(core),
+        (picked) => this.store.setConsoleDevice(core, picked), coreName(core));
+      if (!device) { return { ok: false, message: `no host UART chosen for ${coreName(core)}` }; }
+      const relay = await this.client.startSerialRelay(device, SERIAL_RELAY_PORTS[core]);
+      return { ok: true, endpoint: relay.endpoint, stop: relay.stop, onExit: relay.onExit };
+    } catch (error) { return { ok: false, message: (error as Error).message }; }
   }
 
   /**
@@ -155,6 +220,16 @@ export class DualCoreLoaderController implements vscode.Disposable {
    * `quiet` (used by Stop Sessions) reports only a bridge that was actually stopped.
    */
   public async stopRtt(quiet = false): Promise<boolean> {
+    const stopped = this.trace ? await this.trace.stop() : await this.stopBridge();
+    if (stopped) {
+      void vscode.window.showInformationMessage('RTT bridge stopped; the probe is free.');
+    } else if (!quiet) {
+      void vscode.window.showInformationMessage('No extension-started RTT bridge was running. Stop a manual one with platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop.');
+    }
+    return true;
+  }
+
+  private async stopBridge(): Promise<boolean> {
     if (vscode.workspace.isTrusted === false) { throw new Error('Trust this workspace before stopping the RTT bridge.'); }
     const serial = this.store.getSelectedProbe();
     if (!serial) { throw new Error('Select the J-Link probe whose RTT bridge to stop.'); }
@@ -164,12 +239,7 @@ export class DualCoreLoaderController implements vscode.Disposable {
     if (result.status !== 'ok') {
       throw new Error(result.diagnostics.map((item) => item.message).join('; ') || 'RTT bridge did not stop.');
     }
-    if (result.data?.stopped) {
-      void vscode.window.showInformationMessage('RTT bridge stopped; the probe is free.');
-    } else if (!quiet) {
-      void vscode.window.showInformationMessage('No extension-started RTT bridge was running. Stop a manual one with platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop.');
-    }
-    return true;
+    return !!result.data?.stopped;
   }
 
   public async pickSource(core?: R8Core, folder = false): Promise<void> {
@@ -392,10 +462,27 @@ export class DualCoreLoaderController implements vscode.Disposable {
   public async buildBoth(clean = false): Promise<void> { await this.buildWorkflow(undefined, false, clean); }
   public async buildAndLoad(): Promise<void> { await this.buildWorkflow(undefined, true); }
 
-  private async buildWorkflow(core: R8Core | undefined, load: boolean, clean = false): Promise<void> {
+  /** Build both, load the pair, then keep (or start) the trace plan. */
+  public async buildLoadTrace(): Promise<boolean> {
+    const plan = this.trace?.tracedPlan() || resolveTracePlan((key) => this.store.getConsoleTransport(key), rttMode());
+    if (!plan) { throw new Error('No core of this setup has an RTT or host serial console.'); }
+    if (!await this.buildWorkflow(undefined, true)) { return false; }
+    if (!this.trace) { return plan.rtt && plan.rtt !== 'dual' ? this.startRtt(plan.rtt) : this.startRtt(); }
+    // A trace that survived the load (paused and resumed) is already attached.
+    const current = this.trace.tracedPlan();
+    if (current && current.rtt === plan.rtt && current.serial === plan.serial && this.trace.attachedAll()) { return true; }
+    return this.trace.start(plan);
+  }
+
+  /** Returns true when the requested load (if any) completed. */
+  private async buildWorkflow(core: R8Core | undefined, load: boolean, clean = false): Promise<boolean> {
     this.requireReady();
+    let loaded = false;
     const starting = this.store.captureSetupToken(undefined, true);
-    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: load ? 'Build, capture and load firmware' : 'Build and capture firmware', cancellable: true }, async (_, cancellationToken) => {
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: load ? 'Build, capture and load firmware' : 'Build and capture firmware', cancellable: true }, async (progress, cancellationToken) => {
+      // Numbered steps say how far a long build-and-load has come.
+      const total = load ? 3 : 2;
+      const step = (index: number, text: string) => progress.report({ message: `Step ${index}/${total} · ${text}` });
       await this.store.withSetupMutationGuard(async (owner) => {
         this.assertContext(starting);
         const selection = this.requireReady(['importImages'], owner);
@@ -404,6 +491,7 @@ export class DualCoreLoaderController implements vscode.Disposable {
         const member = core && this.store.getGroupMembers().find((m) => m.core === core);
         const building: FirmwareSelection = member ? { schemaVersion: 1, id: `${selection.group}-${core}`, board: selection.board, core: member.core as R8Core,
           build: { family: member.family, mode: selection.build.mode, ...(member.target ? { target: member.target } : { config: member.config }) } } : selection;
+        step(1, core ? `Build ${core === 'cr8_0' ? 'R8-0' : 'R8-1'}` : 'Build R8-0 and R8-1');
         const result = this.execution.buildExact
           ? await this.execution.buildExact(building, clean, cancellationToken)
           : await this.execution.buildSelectedGroup(building);
@@ -432,12 +520,17 @@ export class DualCoreLoaderController implements vscode.Disposable {
             sources[key] = { kind: 'prepared-receipt', receiptPath: before.prepared.receiptPath, artifactCore: key };
           }
         }
+        step(2, 'Capture and check images');
         await this.prepare(selection, { generation: before.generation, sources: records }, sources, core ? [core] : CORES, owner, cancellationToken);
         this.assertContext(context);
-        if (load && !cancellationToken.isCancellationRequested) { await this.targetAction('load', undefined, owner, cancellationToken); }
+        if (load && !cancellationToken.isCancellationRequested) {
+          step(3, 'Load both to RAM and verify the pair');
+          loaded = await this.targetAction('load', undefined, owner, cancellationToken);
+        }
       });
     });
     await this.refreshHistory();
+    return loaded;
   }
 
   public async loadAndDebug(): Promise<boolean> {
@@ -447,7 +540,15 @@ export class DualCoreLoaderController implements vscode.Disposable {
     await this.refreshHistory(); return result;
   }
 
+  /** Probe jobs pause the traced bridge and resume it afterwards. */
   public async targetAction(action: 'load' | 'recover' | 'debug' | 'loadAndDebug', core?: R8Core, owner?: symbol, cancellationToken?: vscode.CancellationToken): Promise<boolean> {
+    const run = () => this.runTargetAction(action, core, owner, cancellationToken);
+    if (!this.trace) { return run(); }
+    const label = { load: 'Load', recover: 'Recover', debug: 'Debug', loadAndDebug: 'Load & Debug' }[action];
+    return this.trace.pauseFor(label, run, (ok) => ok === true, action === 'debug' || action === 'loadAndDebug', owner);
+  }
+
+  private async runTargetAction(action: 'load' | 'recover' | 'debug' | 'loadAndDebug', core?: R8Core, owner?: symbol, cancellationToken?: vscode.CancellationToken): Promise<boolean> {
     const selection = this.requireReady(['debug', 'loadAndDebug'].includes(action) ? ['importImages', 'preparedIdentity', 'strictLoadedIdentity'] : ['importImages', 'preparedIdentity'], owner);
     const context = this.store.captureSetupToken();
     if (!await this.validate(owner)) { throw new Error('Images need attention. Resolve source changes or validation errors before loading/debugging.'); }

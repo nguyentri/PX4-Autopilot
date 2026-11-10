@@ -1,0 +1,51 @@
+/* RTT Monitor panel. Colours come from the active VS Code theme only. */
+html, body { height: 100%; margin: 0; padding: 0; }
+body {
+  background: var(--vscode-panel-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+#root { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; padding: 4px 8px; gap: 4px; }
+.bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cores { display: flex; gap: 2px; }
+.spacer { flex: 1 1 auto; }
+[hidden] { display: none !important; }
+/* Split layout: the two cores side by side, stacked when the panel is narrow. */
+.panes { flex: 1 1 auto; display: flex; gap: 8px; min-height: 0; flex-wrap: wrap; }
+.pane { flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 120px; }
+.panes[data-layout="split"] .pane { border: 1px solid var(--vscode-panel-border); padding: 4px; }
+.pane-title { font-weight: 600; }
+.screen { flex: 1 1 auto; min-height: 60px; overflow: hidden; background: var(--vscode-terminal-background, var(--vscode-panel-background)); }
+button {
+  font: inherit;
+  padding: 2px 8px;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  border: 1px solid var(--vscode-contrastBorder, transparent);
+  border-radius: 2px;
+  cursor: pointer;
+}
+button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+button[type="submit"], button[aria-checked="true"], button[aria-pressed="true"] {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+button:focus-visible, input:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+input {
+  flex: 1 1 200px;
+  font-family: var(--vscode-editor-font-family);
+  padding: 3px 6px;
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+}
+/* The badge always states its text; colour is a second cue only. */
+.badge { margin-left: auto; overflow-wrap: anywhere; padding: 1px 6px; border: 1px solid var(--vscode-panel-border); border-radius: 2px; }
+.badge[data-state="connected"] { border-color: var(--vscode-testing-iconPassed); }
+.badge[data-state="failed"] { border-color: var(--vscode-errorForeground); color: var(--vscode-errorForeground); }
+.badge[data-state="paused"], .badge[data-state="switching"] { border-color: var(--vscode-editorWarning-foreground); }
+.note { margin: 0; font-size: 0.9em; color: var(--vscode-descriptionForeground); }

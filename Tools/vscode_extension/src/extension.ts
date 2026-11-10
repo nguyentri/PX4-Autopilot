@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { FirmwareOutput } from './firmware-output';
+import { RTT_MONITOR_VIEW, RttMonitorViewProvider } from './rtt-monitor/rtt-monitor-view-provider';
 import { BackendClient } from './backend-client';
 import { registerCommands } from './commands';
 import { Px4NuttxDebugProvider } from './debug-provider';
@@ -74,18 +76,27 @@ async function initialize(context: vscode.ExtensionContext, epoch: number, token
   const debugProvider = new Px4NuttxDebugProvider(client, store);
   debugProvider.registerLifecycle(context);
   const taskProvider = new Px4NuttxTaskProvider(rootPath, store, folder);
+  const firmwareOutput = new FirmwareOutput(rootPath);
+  const rttMonitor = new RttMonitorViewProvider(context.extensionUri, rootPath,
+    () => store.getActiveSetup()?.name || store.getSelection().id);
 
   activeClients.push(client);
   activeStores.push(store);
   activeDebugProviders.push(debugProvider);
-  context.subscriptions.push(statusBar, debugProvider, store, client, dualCoreView);
+  context.subscriptions.push(statusBar, debugProvider, store, client, dualCoreView, firmwareOutput, rttMonitor);
 
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('px4-nuttx.selection', selectionView),
     vscode.window.registerTreeDataProvider('px4-nuttx.readiness', readinessView),
     vscode.window.registerTreeDataProvider('px4-nuttx.artifacts', artifactsView),
     vscode.window.registerTreeDataProvider('px4-nuttx.operations', operationsView),
-    vscode.window.registerTreeDataProvider('px4-nuttx.dualCoreLoader', dualCoreView)
+    vscode.window.registerTreeDataProvider('px4-nuttx.dualCoreLoader', dualCoreView),
+    vscode.window.registerWebviewViewProvider(RTT_MONITOR_VIEW, rttMonitor, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.commands.registerCommand('px4Nuttx.rtt.show', () => rttMonitor.reveal()),
+    vscode.commands.registerCommand('px4Nuttx.rtt.clear', () => rttMonitor.clear()),
+    vscode.commands.registerCommand('px4Nuttx.rtt.copy', () => rttMonitor.copy()),
+    vscode.commands.registerCommand('px4Nuttx.rtt.saveLog', () => rttMonitor.saveLog()),
+    vscode.commands.registerCommand('px4Nuttx.rtt.toggleTimestamps', () => rttMonitor.toggleTimestamps())
   );
   context.subscriptions.push(
     vscode.debug.registerDebugConfigurationProvider('cortex-debug', debugProvider),
@@ -100,7 +111,9 @@ async function initialize(context: vscode.ExtensionContext, epoch: number, token
     readinessView,
     debugProvider,
     artifactsView,
-    operationsView
+    operationsView,
+    firmwareOutput,
+    rttMonitor
   );
   activeExecutionControllers.push(executionController);
   void vscode.commands.executeCommand('setContext', 'px4Nuttx.workspaceReady', true);

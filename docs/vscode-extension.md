@@ -79,14 +79,22 @@ Load and Debug waits for the exact operation's successful verified load before a
 
 ## Consoles and Cortex-Debug
 
-The extension opens no terminal. Each **Console R8-0/R8-1** row in Firmware Setup names the transport. A UART row is read-only (`Manual · SCI5 115200 8N1`). An RTT row (`RTT · Start bridge on 127.0.0.1:19021`) runs **Start RTT Bridge** for that core: it requires a validated pair, a selected probe and no extension debug session, then calls `console --action start --core <core>`. The backend supervisor holds the probe lease, runs `nuttx-rtt-bridge.sh` against the receipt's ELF and serves `127.0.0.1:19021` for any terminal (for example μScope). **Stop RTT Bridge** calls `console --action stop` and frees the probe; it does not stop a manually started bridge.
+The RTT Monitor (bottom panel) is the console. **Trace in RTT Monitor** (`px4Nuttx.setup.startRtt`, also on each **Console R8-0/R8-1** row) requires a validated pair, a selected probe and no extension debug session, then chooses a trace plan from each core's console transport:
 
-- SCI5: open the board UART yourself (μScope, picocom, ...) at 115200 8N1. It does not use J-Link and may stay open during load/debug.
-- RTT: use the console row, or run `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <core> <elf>` manually; either way, connect a terminal to `127.0.0.1:19021`. Stop the bridge before Load, Recover, Debug or Load Both. A running bridge makes the probe busy; the `PROBE_BUSY` refusal names **Stop RTT Bridge** when the extension's bridge owns the probe.
+- Both cores RTT, `px4Nuttx.rtt.mode` = `dual` (default): `console --action start --dual`. The backend runs `platforms/nuttx/Debug/rzv2h-dual-rtt-bridge.py`, one J-Link session that reads both control blocks over the AXI-AP and serves CR8-0 on `127.0.0.1:19021` and CR8-1 on `127.0.0.1:19031`; the result's `data.endpoints` maps each core to its port. The monitor shows split panes, input goes only to the addressed core, and builds run under `nice -n 19` while it runs (`build --low-priority`).
+- Both cores RTT, `px4Nuttx.rtt.mode` = `switch`: `console --action start --core <core>` with the JLinkExe bridge (`nuttx-rtt-bridge.sh`); the monitor's core switch restarts it on the other core.
+- One RTT core and one UART core: the RTT core as above, plus `python3 -m firmware_workspace.serial_console --device <dev> --tcp <port>` for the UART core (`19041` for CR8-0, `19042` for CR8-1). The device comes from the setup's `consoleDevices`, or a picker over `/dev/serial/by-id` saves it there. The relay holds the serial device lease (exit 4 when another client holds the UART).
 
-A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops this extension's debugger session and the RTT bridge the extension started, so the probe is free; it never touches a serial console or a bridge started manually with `nuttx-rtt-bridge.sh`.
+**Build, Load & Trace** (`px4Nuttx.setup.buildLoadTrace`) builds both cores, loads the pair, and keeps the resumed trace or starts the plan above. **Stop RTT Bridge** calls `console --action stop`, stops the serial relay and frees the probe; it does not stop a manually started bridge.
 
-The extension calls the backend `console` CLI only for the RTT bridge. The `firmware_workspace.serial_console` UART supervisor remains available for scripted use; the extension UI does not call it.
+Load, Recover and Debug pause the RTT panes around the probe job and resume on the same target when the job succeeded and the setup is unchanged; a debug session resumes the trace when it ends. The serial pane keeps streaming. A failed bridge start is reported with the backend text and a **Recover Both** action and is never retried.
+
+- Serial outside the monitor: any terminal on the board UART (SCI5 at 115200 8N1). Stop the monitor's serial pane first, since the relay holds the device lease.
+- RTT outside the monitor: run `platforms/nuttx/Debug/nuttx-rtt-bridge.sh start <core> <elf>` manually and connect a terminal to `127.0.0.1:19021`. Stop it before Load, Recover, Debug or Load Both. A running bridge makes the probe busy; the `PROBE_BUSY` refusal names **Stop RTT Bridge** when the extension's bridge owns the probe.
+
+A probe supervisor holds the reservation for each load/debug lifetime; a composite Load and Debug keeps one reservation across both steps, so another window cannot take the probe in between. **Stop Sessions** stops this extension's debugger session, its RTT bridge and its serial relay, so the probe is free; it never touches another tool's serial terminal or a bridge started manually with `nuttx-rtt-bridge.sh`.
+
+The extension calls the backend `console` CLI for the RTT bridge and `firmware_workspace.serial_console --tcp` for serial panes.
 
 Cortex-Debug configurations are generated in memory with exact core/device, retained immutable symbols, selected probe, configured GDB and RZ/V2H SVD. Attach/reset/restart overrides request halt without an intentional reset/load. These commands can halt firmware, and a failed J-Link connection may still reset hardware; no claim of reset immunity is made. Confirm safe actuator outputs before halting an image. A startup failure marks RAM state uncertain before the lease ends.
 

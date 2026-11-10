@@ -44,6 +44,12 @@ Icons must be semantically accurate and consistent across Tree Views, QuickPicks
 - Debug Probe (J-Link): `$(plug)`
 - Serial UART / RTT Console: `$(terminal)`
 
+### RTT Monitor
+- Panel view `px4-nuttx.rttMonitor` in the bottom panel; xterm colours follow the VS Code terminal theme (including high contrast).
+- Each core pane has a text status badge (`role="status"`, polite live region) whose `data-state` picks the border colour: `connected` (`--vscode-testing-iconPassed`), `paused` and `switching` (`--vscode-editorWarning-foreground`; paused names the probe job), `failed` (`--vscode-errorForeground` border and text, with the reason), `connecting` and `stopped` (default border). The badge text always states the state, so colour is never the only cue. A growing firmware drop counter appends `· output dropped: N B`.
+- `single` layout: one pane plus an R8-0/R8-1 radio group (core switch). `split` layout (dual RTT, or serial + RTT): both panes side by side, wrapping below 640 px; the core switch is hidden.
+- Every control is a labelled button or input with an `aria-label`; the per-pane input keeps a command history on Up/Down.
+
 ### Operational Actions
 - Build (Incremental): `$(play)`
 - Clean Rebuild: `$(trash)`

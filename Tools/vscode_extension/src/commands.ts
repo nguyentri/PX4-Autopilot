@@ -6,6 +6,8 @@ import { Px4NuttxDebugProvider } from './debug-provider';
 import { SetupOperationToken } from './types';
 import { SelectionStore } from './selection-store';
 import { DualCoreLoaderController } from './dual-core-loader-controller';
+import { FirmwareOutput } from './firmware-output';
+import { RttMonitorViewProvider } from './rtt-monitor/rtt-monitor-view-provider';
 import {
   ArtifactsViewProvider,
   OperationsViewProvider,
@@ -21,11 +23,16 @@ export function registerCommands(
   readinessView: ReadinessViewProvider,
   debugProvider: Px4NuttxDebugProvider,
   artifactsView: ArtifactsViewProvider,
-  operationsView?: OperationsViewProvider
+  operationsView?: OperationsViewProvider,
+  output?: FirmwareOutput,
+  monitor?: RttMonitorViewProvider
 ): ExecutionController {
   registerSelectionCommands(context, client, store, selectionView, readinessView, artifactsView, operationsView);
-  const execution = registerExecutionCommands(context, client, store, debugProvider, artifactsView);
-  const dual = new DualCoreLoaderController(client, store, execution);
+  const execution = registerExecutionCommands(context, client, store, debugProvider, artifactsView, output);
+  const dual = new DualCoreLoaderController(client, store, execution, monitor);
+  monitor?.setSwitchHandler(async (core) => {
+    try { await dual.switchRtt(core); } catch (error) { void vscode.window.showErrorMessage((error as Error).message); }
+  });
   const actions: Record<string, (core?: 'cr8_0' | 'cr8_1') => Promise<unknown>> = {
     select: async () => {
       const token = store.captureSetupToken(undefined, true);
@@ -42,6 +49,7 @@ export function registerCommands(
     browse: (core) => dual.pickSource(core), folder: (core) => dual.pickSource(core, true), useBuild: (core) => dual.useBuild(core),
     cleanRebuild: () => dual.buildBoth(true),
     buildCore: (core) => dual.buildCore(core), buildBoth: () => dual.buildBoth(), buildAndLoad: () => dual.buildAndLoad(),
+    buildLoadTrace: () => dual.buildLoadTrace(),
     validate: () => dual.validate(), refresh: () => dual.validate(), resume: () => dual.resume(),
     keepCaptured: (core) => dual.keepCaptured(core), importUpdated: (core) => dual.importUpdated(core),
     loadBoth: () => dual.targetAction('load'), recoverBoth: () => dual.targetAction('recover'),

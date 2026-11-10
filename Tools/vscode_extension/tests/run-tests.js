@@ -132,6 +132,8 @@ async function runBehavioralTests() {
     workspaceFolders: [{ uri: { fsPath: REPO_ROOT }, name: 'PX4-Autopilot' }],
     getConfiguration: () => ({ get: (_, fallback) => fallback }),
   };
+  const outputChannels = [];
+  const diagnosticCollections = [];
   const debugStarted = new EventEmitter();
   const debugTerminated = new EventEmitter();
   const contexts = new Map();
@@ -152,8 +154,25 @@ async function runBehavioralTests() {
     TaskScope: { Workspace: 2 },
     TaskGroup: { Build: {} },
     ProgressLocation: { Notification: 1 },
+    Position: class { constructor(line, character) { Object.assign(this, { line, character }); } },
+    Range: class { constructor(start, end) { Object.assign(this, { start, end }); } },
+    Diagnostic: class { constructor(range, message, severity) { Object.assign(this, { range, message, severity }); } },
+    DiagnosticSeverity: { Error: 0, Warning: 1 },
+    languages: {
+      createDiagnosticCollection: (name) => {
+        const entries = new Map();
+        const collection = { name, entries, set: (uri, list) => entries.set(uri.fsPath, list), clear: () => entries.clear(), dispose() {} };
+        diagnosticCollections.push(collection);
+        return collection;
+      },
+    },
     workspace,
     window: {
+      createOutputChannel: (name) => {
+        const channel = { name, lines: [], shown: 0, appendLine(line) { this.lines.push(line); }, show() { this.shown += 1; }, dispose() {} };
+        outputChannels.push(channel);
+        return channel;
+      },
       onDidCloseTerminal: () => ({ dispose() {} }),
       createTerminal: () => ({ show() {}, dispose() {} }),
       showInformationMessage: async () => undefined,
@@ -219,6 +238,30 @@ async function runBehavioralTests() {
     }
     assert.strictEqual(trustRejected, true, 'untrusted backend execution must be rejected before spawning');
     console.log('  ✓ workspace trust blocks backend process execution');
+
+    const { FirmwareOutput, parseGccLine } = sourceModule('firmware-output');
+    const inside = path.join(REPO_ROOT, 'src/modules/commander/Commander.cpp');
+    const exists = (file) => file === inside;
+    assert.deepStrictEqual(parseGccLine(`${inside}:12:7: error: 'x' was not declared`, REPO_ROOT, [REPO_ROOT], exists),
+      { file: inside, line: 12, column: 7, severity: 'error', message: "'x' was not declared" });
+    assert.equal(parseGccLine('../../../src/modules/commander/Commander.cpp:3: warning: unused', REPO_ROOT,
+      [path.join(REPO_ROOT, 'build/x/y')], exists).column, 1, 'relative paths resolve against the build directory');
+    assert.equal(parseGccLine('/usr/include/stdio.h:1:1: error: outside', REPO_ROOT, [REPO_ROOT], () => true), undefined,
+      'toolchain headers stay out of Problems');
+    assert.equal(parseGccLine('[12/400] Building CXX object foo.o', REPO_ROOT), undefined);
+    const firmwareOutput = new FirmwareOutput(REPO_ROOT);
+    const realFile = path.join(REPO_ROOT, 'Tools/vscode_extension/src/firmware-output.ts');
+    firmwareOutput.beginBuild('Build demo');
+    firmwareOutput.appendBuild(`${realFile}:4:2: warning: first\n${realFile}:4:`);
+    firmwareOutput.appendBuild(`2: warning: first\n${realFile}:9:1: error: second\n`);
+    assert.equal(firmwareOutput.problemCount(), 2, 'chunk boundaries and repeated lines yield one diagnostic each');
+    firmwareOutput.finishBuild(false, 'Build demo');
+    assert.equal(outputChannels[0].name, '1KW Firmware');
+    assert.equal(outputChannels[0].shown, 1, 'a failed build reveals the log');
+    assert.equal(diagnosticCollections[0].entries.get(realFile).length, 2);
+    firmwareOutput.beginBuild('Build again');
+    assert.equal(diagnosticCollections[0].entries.size, 0, 'a new build clears old Problems');
+    console.log('  ✓ build log reaches the Output channel and gcc diagnostics reach Problems');
 
     const { OperationsViewProvider } = sourceModule('views/operations-view');
     const { ReadinessViewProvider } = sourceModule('views/readiness-view');
@@ -656,6 +699,7 @@ async function runBehavioralTests() {
     vscode.MarkdownString = class { constructor(value) { this.value = value; } };
     vscode.window.createStatusBarItem = () => ({ show: () => { shownStatus = true; }, dispose: () => {} });
     vscode.window.registerTreeDataProvider = () => ({ dispose: () => {} });
+    vscode.window.registerWebviewViewProvider = () => ({ dispose: () => {} });
     vscode.debug.registerDebugConfigurationProvider = () => ({ dispose: () => {} });
     vscode.tasks = { registerTaskProvider: (_type, provider) => { capturedTaskProvider = provider; return { dispose: () => {} }; } };
     vscode.window.showQuickPick = async (items) => {
@@ -705,7 +749,7 @@ async function runBehavioralTests() {
   }
 }
 
-runBehavioralTests().then(() => require('./dual-core-loader-tests')()).then(() => {
+runBehavioralTests().then(() => require('./dual-core-loader-tests')()).then(() => require('./rtt-monitor-tests')()).then(() => {
   console.log('== All Extension Tests Passed ==\n');
 }).catch((error) => {
   console.error(error.stack || error.message);

@@ -232,6 +232,18 @@ export class SelectionStore implements vscode.Disposable {
     const label = this.setupName(name, this.state.activeSetupId);
     await this.transact((next) => { if (!next.activeSetupId) { throw new Error('Select a saved setup.'); } this.setupName(label, next.activeSetupId); next.setups[next.activeSetupId].name = label; });
   }
+  /** The host UART (e.g. /dev/serial/by-id/...) that carries a serial-console core of the active setup. */
+  public getConsoleDevice(core: string): string | undefined { return this.getActiveSetup()?.consoleDevices?.[core]; }
+  public async setConsoleDevice(core: string, device: string): Promise<void> {
+    if (!['cr8_0', 'cr8_1'].includes(core) || !device.startsWith('/dev/') || /[\x00-\x1f\x7f]/.test(device)) {
+      throw new Error('Choose a host serial device under /dev/.');
+    }
+    await this.transact((next) => {
+      const setup = next.activeSetupId && next.setups[next.activeSetupId];
+      if (!setup) { throw new Error('Select a saved setup first.'); }
+      setup.consoleDevices = { ...(setup.consoleDevices || {}), [core]: device };
+    });
+  }
   public async setBuildMode(mode: 'clean' | 'incremental'): Promise<void> {
     this.assertSessionMutable();
     await this.transact((next) => {

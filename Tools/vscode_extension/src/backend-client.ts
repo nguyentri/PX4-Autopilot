@@ -1,4 +1,5 @@
 import * as cp from 'child_process';
+import * as crypto from 'crypto';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
@@ -257,6 +258,13 @@ export class ProbeLeaseManager implements vscode.Disposable {
   }
 }
 
+/** A running host serial relay (see `startSerialRelay`). */
+export interface SerialRelay {
+  endpoint: string;
+  stop(): void;
+  onExit(listener: () => void): void;
+}
+
 export interface BuildOptions extends OperationOptions {
   clean?: boolean;
 }
@@ -278,12 +286,18 @@ export interface DoctorOptions extends OperationOptions { serial?: string }
 
 export interface ConsoleOptions extends OperationOptions {
   core?: string;
+  /** Serve both CR8 consoles from one bridge (one probe session over the AXI-AP). */
+  dual?: boolean;
 }
 
 export class BackendClient {
   public readonly probeLeases: ProbeLeaseManager;
   private readonly ownedChildren = new Set<cp.ChildProcess>();
+  /** Serial relays live until stopped or disposed; cancelling a build never stops them. */
+  private readonly serialRelays = new Set<cp.ChildProcess>();
   private disposed = false;
+  /** True while a bridge reads target memory; builds then run under nice -n 19. */
+  private lowPriorityBuilds: () => boolean = () => false;
 
   constructor(private readonly workspaceRoot: string) {
     this.probeLeases = new ProbeLeaseManager(this);
@@ -571,6 +585,9 @@ export class BackendClient {
     if (options.clean) {
       args.push('--clean');
     }
+    if (this.lowPriorityBuilds()) {
+      args.push('--low-priority');
+    }
     return this.executeCommand('build', args, options);
   }
 
@@ -634,8 +651,46 @@ export class BackendClient {
     if (options.core) {
       args.push('--core', options.core);
     }
+    if (options.dual) {
+      args.push('--dual');
+    }
     return this.executeCommand('console', args, options);
   }
+
+  /**
+   * Serves a host UART raw on 127.0.0.1:`port` (one client) while holding the
+   * same kernel device lease as the interactive serial client. Resolves once
+   * the relay listens; the probe is not involved.
+   */
+  public startSerialRelay(device: string, port: number, timeoutMs = 5000): Promise<SerialRelay> {
+    this.assertTrusted('serial relay');
+    const child = cp.spawn(this.getPythonPath(), ['-m', 'firmware_workspace.serial_console', '--device', device,
+      '--baud', '115200', '--session-id', crypto.randomUUID(), '--tcp', String(port)], {
+      cwd: this.workspaceRoot, env: pythonEnvironment(this.workspaceRoot), stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    this.serialRelays.add(child);
+    const stop = (): void => { if (this.serialRelays.delete(child)) { terminateChildWithEscalation(child); } };
+    return new Promise((resolve, reject) => {
+      let output = '';
+      const timer = setTimeout(() => { stop(); reject(new Error(`serial relay did not start on ${device}`)); }, timeoutMs);
+      const collect = (data: Buffer) => {
+        output += data.toString();
+        if (output.includes('serial relay up:')) { clearTimeout(timer); resolve({ endpoint: `127.0.0.1:${port}`, stop, onExit: (listener) => child.once('close', listener) }); }
+      };
+      child.stdout?.on('data', collect);
+      child.stderr?.on('data', (data: Buffer) => { output += data.toString(); });
+      child.once('error', (error) => { clearTimeout(timer); stop(); reject(error); });
+      child.once('close', (code) => {
+        this.serialRelays.delete(child);
+        clearTimeout(timer);
+        const reason = code === 4 ? 'the UART is held by another console' : output.trim().split(/\r?\n/).pop() || `exit ${code}`;
+        reject(new Error(`serial relay stopped: ${reason}`));
+      });
+    });
+  }
+
+  /** Raw AXI-AP reads slow about tenfold under a normal-priority build. */
+  public setLowPriorityBuilds(active: () => boolean): void { this.lowPriorityBuilds = active; }
 
   public cancelOperations(): void {
     for (const child of this.ownedChildren) { terminateChildWithEscalation(child); }
@@ -643,6 +698,8 @@ export class BackendClient {
 
   public dispose(): void {
     this.disposed = true;
+    for (const child of this.serialRelays) { terminateChildWithEscalation(child); }
+    this.serialRelays.clear();
     for (const child of this.ownedChildren) {
       terminateChildWithEscalation(child);
     }
