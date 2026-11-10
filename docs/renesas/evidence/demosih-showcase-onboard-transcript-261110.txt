@@ -679,3 +679,89 @@ INFO  [rzv2h_adc_telemetry] published 597, skipped stale 0
 nsh> echo END3
 END3
 nsh> 
+
+=== Garbled telemetry frames: raw capture summaries (corr.py, TIOCGICOUNT), probe detached ===
+== cap1: 57600 baud, 30 s, load ['3.10', '3.99']
+   bytes 80136 (2671 B/s), good frames 1900, kernel overrun 5, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 5 (inserted NULs)
+   garbage runs 4: 3 repaired by deleting NUL only (3 NULs), 1 with real byte loss
+   read gaps ms: p50 20 p99 101 max 121; >60ms 111, >100ms 16
+   read gaps >100 ms: 16, of which followed by a corruption event: 3
+== cap2: 57600 baud, 60 s, load ['2.26', '2.14']
+   bytes 160302 (2672 B/s), good frames 3813, kernel overrun 0, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 0 (inserted NULs)
+   garbage runs 0: 0 repaired by deleting NUL only (0 NULs), 0 with real byte loss
+   read gaps ms: p50 20 p99 81 max 141; >60ms 173, >100ms 12
+   read gaps >100 ms: 12, of which followed by a corruption event: 0
+== cap3: 57600 baud, 60 s, load ['2.14', '3.75']
+   bytes 160525 (2675 B/s), good frames 3817, kernel overrun 0, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 0 (inserted NULs)
+   garbage runs 0: 0 repaired by deleting NUL only (0 NULs), 0 with real byte loss
+   read gaps ms: p50 20 p99 101 max 141; >60ms 153, >100ms 22
+   read gaps >100 ms: 22, of which followed by a corruption event: 0
+== cap4: 57600 baud, 60 s, load ['3.75', '3.64']
+   bytes 160788 (2680 B/s), good frames 3825, kernel overrun 0, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 0 (inserted NULs)
+   garbage runs 0: 0 repaired by deleting NUL only (0 NULs), 0 with real byte loss
+   read gaps ms: p50 20 p99 81 max 142; >60ms 159, >100ms 9
+   read gaps >100 ms: 9, of which followed by a corruption event: 0
+== load16: 57600 baud, 60 s, load ['3.77', '16.74']
+   bytes 158929 (2649 B/s), good frames 3739, kernel overrun 44, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 44 (inserted NULs)
+   garbage runs 40: 19 repaired by deleting NUL only (30 NULs), 21 with real byte loss
+   read gaps ms: p50 28 p99 145 max 254; >60ms 240, >100ms 68
+   read gaps >100 ms: 68, of which followed by a corruption event: 24
+== sih-idle1: 115200 baud, 60 s, load ['6.11', '4.88']
+   bytes 203991 (3400 B/s), good frames 4785, kernel overrun 6, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 6 (inserted NULs)
+   garbage runs 6: 3 repaired by deleting NUL only (5 NULs), 3 with real byte loss
+   read gaps ms: p50 20 p99 81 max 121; >60ms 260, >100ms 12
+   read gaps >100 ms: 12, of which followed by a corruption event: 3
+== sih-idle2: 115200 baud, 60 s, load ['4.88', '4.44']
+   bytes 201634 (3361 B/s), good frames 4600, kernel overrun 146, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 146 (inserted NULs)
+   garbage runs 102: 45 repaired by deleting NUL only (96 NULs), 57 with real byte loss
+   read gaps ms: p50 40 p99 101 max 141; >60ms 380, >100ms 50
+   read gaps >100 ms: 50, of which followed by a corruption event: 30
+== sih-load16: 115200 baud, 60 s, load ['4.44', '18.51']
+   bytes 184863 (3081 B/s), good frames 3745, kernel overrun 654, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 654 (inserted NULs)
+   garbage runs 481: 217 repaired by deleting NUL only (396 NULs), 264 with real byte loss
+   read gaps ms: p50 56 p99 195 max 377; >60ms 416, >100ms 150
+   read gaps >100 ms: 150, of which followed by a corruption event: 75
+== ab-base1: 115200 baud, 40 s, load ['11.04', '6.91']
+   bytes 135035 (3376 B/s), good frames 3128, kernel overrun 47, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 47 (inserted NULs)
+   garbage runs 35: 15 repaired by deleting NUL only (28 NULs), 20 with real byte loss
+   read gaps ms: p50 20 p99 101 max 141; >60ms 185, >100ms 14
+   read gaps >100 ms: 14, of which followed by a corruption event: 7
+== ab-low1: 115200 baud, 40 s, load ['6.91', '4.63']
+   bytes 136456 (3411 B/s), good frames 3201, kernel overrun 2, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 2 (inserted NULs)
+   garbage runs 3: 2 repaired by deleting NUL only (2 NULs), 1 with real byte loss
+   read gaps ms: p50 20 p99 60 max 81; >60ms 42, >100ms 0
+   read gaps >100 ms: 0, of which followed by a corruption event: 0
+== ab-base2: 115200 baud, 40 s, load ['4.63', '3.02']
+   bytes 135918 (3398 B/s), good frames 3192, kernel overrun 0, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 0 (inserted NULs)
+   garbage runs 0: 0 repaired by deleting NUL only (0 NULs), 0 with real byte loss
+   read gaps ms: p50 20 p99 81 max 121; >60ms 156, >100ms 11
+   read gaps >100 ms: 11, of which followed by a corruption event: 0
+== ab-low2: 115200 baud, 40 s, load ['3.02', '2.33']
+   bytes 135953 (3399 B/s), good frames 3187, kernel overrun 5, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 5 (inserted NULs)
+   garbage runs 2: 1 repaired by deleting NUL only (3 NULs), 1 with real byte loss
+   read gaps ms: p50 20 p99 60 max 81; >60ms 41, >100ms 0
+   read gaps >100 ms: 0, of which followed by a corruption event: 0
+== ab-base3: 115200 baud, 40 s, load ['2.33', '2.01']
+   bytes 135747 (3394 B/s), good frames 3183, kernel overrun 4, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 4 (inserted NULs)
+   garbage runs 3: 1 repaired by deleting NUL only (2 NULs), 2 with real byte loss
+   read gaps ms: p50 20 p99 81 max 162; >60ms 152, >100ms 8
+   read gaps >100 ms: 8, of which followed by a corruption event: 1
+== ab-low3: 115200 baud, 40 s, load ['2.01', '2.11']
+   bytes 135945 (3399 B/s), good frames 3191, kernel overrun 0, frame 0, parity 0, buf_overrun 0
+   capture bytes - kernel rx = 0 (inserted NULs)
+   garbage runs 0: 0 repaired by deleting NUL only (0 NULs), 0 with real byte loss
+   read gaps ms: p50 20 p99 60 max 81; >60ms 46, >100ms 0
+   read gaps >100 ms: 0, of which followed by a corruption event: 0

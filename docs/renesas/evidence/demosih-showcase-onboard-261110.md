@@ -104,13 +104,54 @@ checked with the probe detached:
 
 Neither log had a TIMEOUT or `unstable` message.
 
+## Garbled telemetry frames: host-side FT232R overrun
+
+The 0 to 21 BAD_DATA packets per 30 s seen by pymavlink in the third run do
+not come from the board. The FT232R adapter on the PC overruns its 256-byte
+receive buffer whenever the USB/IP path (usbipd-win 5.3.0 into WSL2) stops
+polling it for longer than the buffer lasts: about 95 ms at the `demo` rate
+(2.7 kB/s) and 75 ms at the `demosih` rate (3.4 kB/s). The chip then drops
+bytes and sets its overrun status bit, and the Linux `ftdi_sio` driver
+inserts one NUL byte into the stream for every packet that carries the bit.
+One stall therefore damages several consecutive frames.
+
+Evidence, from 14 raw captures of `/dev/ttyUSB0` with the kernel tty
+counters (`TIOCGICOUNT`), probe detached:
+
+| Image, host state | Window | Kernel overruns | Corrupted runs |
+|-------------------|--------|-----------------|----------------|
+| demo 57600, host load 2–4 | 30 s | 5 | 4 (one event) |
+| demo 57600, host load 2–4 | 3 × 60 s | 0 | 0 |
+| demo 57600, 16 busy loops | 60 s | 44 | 40 (11 events) |
+| demosih 115200, host load 5–6 | 60 s | 6 | 6 |
+| demosih 115200, host load 4–5 | 60 s | 146 | 102 |
+| demosih 115200, 16 busy loops | 60 s | 654 | 481, about 9 % of bytes lost |
+
+- Framing errors, parity errors and tty buffer overruns were 0 in every
+  capture, which rules out a baud-rate or wiring fault.
+- In every capture the number of extra bytes (captured bytes minus the
+  kernel receive count) equals the overrun count exactly.
+- About half of the corrupted runs become CRC-valid frames again when the
+  NUL bytes alone are removed; the rest also lost bytes.
+- Every corruption event follows a pause of at least 78 ms in which the
+  host received nothing. The board keeps sending: `mavlink status` reported
+  `txerr` 0 in steady state in the third run.
+- The host load in the "busy loops" rows was generated on purpose. The
+  other rows had only the load of unrelated builds on the same PC.
+
+The FTDI low-latency mode (latency timer 1 ms instead of 16 ms) shortened
+the longest pause from 121–162 ms to 81 ms but did not remove the overruns
+(2, 5 and 0 in three 40 s windows, against 47, 0 and 4 without it).
+
+The board has no RTS/CTS on SCI5, so the adapter cannot hold the board off.
+The capture summaries are at the end of the transcript.
+
 ## Open items
 
-- The host counted 0 to 21 BAD_DATA packets per 30 s window in this run, on
-  both images (0 in the second run). The board reported `txerr` 0, the count
-  did not follow the ADC stream (8 with it switched off, 0 in two of three
-  windows with it on), and the WSL host was busy with other builds. The
-  cause is not proven; recheck on an idle host or with QGC on Windows.
+- Corrupted telemetry frames on the WSL host are a host-side artefact (see
+  "Garbled telemetry frames" above). The showcase runs QGC on Windows with
+  the native FTDI driver, which has no USB/IP hop; that path is not yet
+  checked.
 - pymavlink occasionally raises a `TypeError` in `add_message` when it
   connects mid-stream. This is a host tool issue; retrying works.
 - Boot noise:
