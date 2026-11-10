@@ -198,7 +198,72 @@ class OperationFixtures(unittest.TestCase):
                 self.assertEqual(call.kwargs['env']['JLINK_SERIAL'], self.args.serial)
                 self.assertNotIn(self.args.serial, call.args[0])
                 self.assertTrue(data['running'])
+                self.assertEqual(call.kwargs['env']['RTT_PORT'], '19021')
+                self.assertEqual(data['endpoint'], '127.0.0.1:19021')
                 console.stop_owned_console(self.args.serial, lease.token)
+
+    def test_console_endpoint_follows_configured_port_and_status_reports_it(self):
+        self.args.core = 'cr8_0'
+        with patch.dict(os.environ, {'FIRMWARE_RTT_PORT': '19031'}), patch.object(console, 'require_probe_available'), \
+                patch.object(console, 'debug_snapshot', return_value=self.image), patch.object(console, 'ManagedProcess') as child:
+            child.return_value.run.return_value = (0, '', '')
+            with ProbeLease(self.args.serial) as lease:
+                data = console.start_owned_console(self.args, self.args.serial, lease.token)
+                self.assertEqual(child.call_args.kwargs['env']['RTT_PORT'], '19031')
+                self.assertEqual(data['endpoint'], '127.0.0.1:19031')
+                status_args = SimpleNamespace(action='status', serial=self.args.serial)
+                with patch.object(console, 'bridge_running', return_value=True), patch('builtins.print') as shown:
+                    self.assertEqual(console.cmd_console(status_args), 0)
+                status = json.loads(shown.call_args.args[0])['data']
+                self.assertEqual((status['core'], status['endpoint']), ('cr8_0', '127.0.0.1:19031'))
+                console.stop_owned_console(self.args.serial, lease.token)
+        with patch.dict(os.environ, {'FIRMWARE_RTT_PORT': 'x'}):
+            with self.assertRaises(OperationError):
+                console.rtt_port()
+
+    def dual_inputs(self, console_map):
+        selection = dict(self.selection, core='multicore', group='rzv-px4-demo')
+        resolved = {'groupMeta': {'console': console_map}}
+        artifacts = {core: {'path': str(self.image), 'core': core} for core in ('cr8_0', 'cr8_1')}
+        return selection, resolved, {'receiptId': 'receipt'}, artifacts
+
+    def test_dual_console_serves_both_cores_from_one_bridge(self):
+        self.args.dual = True
+        with patch.object(console, 'admitted_inputs', return_value=self.dual_inputs({'cr8_0': 'rtt', 'cr8_1': 'rtt'})), \
+                patch.object(console, 'require_probe_available'), patch.object(console, 'debug_snapshot', return_value=self.image), \
+                patch.object(console, 'ManagedProcess') as child:
+            child.return_value.run.return_value = (0, '', '')
+            with ProbeLease(self.args.serial) as lease:
+                data = console.start_owned_console(self.args, self.args.serial, lease.token)
+                argv, env = child.call_args.args[0], child.call_args.kwargs['env']
+                self.assertEqual(Path(argv[1]), ROOT / 'platforms/nuttx/Debug/rzv2h-dual-rtt-bridge.py')
+                self.assertEqual(argv[2:], ['start', str(self.image), str(self.image)])
+                self.assertEqual((env['RTT_PORT_CR8_0'], env['RTT_PORT_CR8_1']), ('19021', '19031'))
+                self.assertEqual(data['endpoints'], {'cr8_0': '127.0.0.1:19021', 'cr8_1': '127.0.0.1:19031'})
+                self.assertEqual(data['mode'], 'dual')
+                status_args = SimpleNamespace(action='status', serial=self.args.serial)
+                with patch.object(console, 'bridge_running', return_value=True), patch('builtins.print') as shown:
+                    self.assertEqual(console.cmd_console(status_args), 0)
+                status = json.loads(shown.call_args.args[0])['data']
+                self.assertEqual((status['mode'], status['endpoints']['cr8_1']), ('dual', '127.0.0.1:19031'))
+                child.reset_mock()
+                console.stop_owned_console(self.args.serial, lease.token)
+                self.assertEqual(child.call_args.args[0][1:], [str(ROOT / 'platforms/nuttx/Debug/rzv2h-dual-rtt-bridge.py'), 'stop'])
+
+    def test_dual_console_requires_rtt_on_both_cores(self):
+        self.args.dual = True
+        with patch.object(console, 'admitted_inputs', return_value=self.dual_inputs({'cr8_0': 'rtt', 'cr8_1': 'serial'})), \
+                patch.object(console, 'ManagedProcess') as child, ProbeLease(self.args.serial) as lease:
+            with self.assertRaisesRegex(OperationError, 'UART'):
+                console.start_owned_console(self.args, self.args.serial, lease.token)
+            child.assert_not_called()
+        with patch.dict(os.environ, {'FIRMWARE_RTT_PORT_CR8_1': '19021'}), \
+                patch.object(console, 'admitted_inputs', return_value=self.dual_inputs({'cr8_0': 'rtt', 'cr8_1': 'rtt'})), \
+                patch.object(console, 'require_probe_available'), patch.object(console, 'ManagedProcess') as child, \
+                ProbeLease(self.args.serial) as lease:
+            with self.assertRaisesRegex(OperationError, 'differ'):
+                console.start_owned_console(self.args, self.args.serial, lease.token)
+            child.assert_not_called()
 
     def test_uart_console_reports_unsupported_without_starting_rtt(self):
         self.selection['build'] = {'family': 'nuttx', 'config': 'nsh-scif', 'mode': 'incremental'}
@@ -305,6 +370,22 @@ class OperationFixtures(unittest.TestCase):
              patch.object(build, 'create_receipt') as publish:
             self.assertEqual(self.invoke(build.cmd_build)[0], 1)
         publish.assert_not_called()
+
+    def test_low_priority_build_runs_under_nice(self):
+        commands = []
+
+        class Recorder:
+            def __init__(self, cmd, cwd=None):
+                commands.append(cmd)
+
+            def run(self, stream_stderr=False):
+                return 1, '', 'stop here'
+
+        with patch.object(build, 'ManagedProcess', Recorder):
+            build.build_single_target('px4', 'rdk-rzv2h', 'cr8_0', 'renesas_rdk-rzv2h_default', 'incremental', 'run', low_priority=True)
+            build.build_single_target('px4', 'rdk-rzv2h', 'cr8_0', 'renesas_rdk-rzv2h_default', 'incremental', 'run')
+        self.assertEqual(commands[0][:3], ['nice', '-n', '19'])
+        self.assertEqual(commands[0][3:], commands[1])
 
 
 class OwnershipTests(unittest.TestCase):

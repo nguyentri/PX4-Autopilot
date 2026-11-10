@@ -87,7 +87,12 @@ def check_probe_availability(authorized_serial=None):
     probes = enumerate_jlink_probes()
     if not any(item["serial"] == authorized_serial for item in probes):
         errors.append("The selected J-Link probe is not connected on this workspace host")
-    for port, description in CRITICAL_PORTS.items():
+    ports = dict(CRITICAL_PORTS)
+    # A console moved with FIRMWARE_RTT_PORT owns the probe on that port too.
+    moved = os.environ.get("FIRMWARE_RTT_PORT", "")
+    if moved.isdigit():
+        ports.setdefault(int(moved), "RTT console bridge")
+    for port, description in ports.items():
         if is_port_listening(port):
             errors.append(f"{description} port {port} is occupied")
     for item in get_active_probe_processes():

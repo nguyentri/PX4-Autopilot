@@ -39,7 +39,8 @@ def cmd_probe_session(args):
                             if not bridge_running(serial):
                                 owner = console_owner(serial)
                                 TargetState(probe_directory(serial) / "target-state.json").record(
-                                    [owner["core"]], "indeterminate/recovery-required", owner["receiptId"])
+                                    owner.get("cores") or [owner["core"]], "indeterminate/recovery-required",
+                                    owner["receiptId"])
                                 break
                             time.sleep(0.5)
                     else:
@@ -70,6 +71,8 @@ def launch_console_supervisor(args, serial):
                "--receipt", str(Path(args.receipt).resolve()), "--json"]
     if getattr(args, "core", None):
         command += ["--core", args.core]
+    if getattr(args, "dual", False):
+        command += ["--dual"]
     log_dir = REPO_ROOT / "build/workspace-artifacts/.console"
     log_dir.mkdir(parents=True, exist_ok=True)
     acknowledged = False

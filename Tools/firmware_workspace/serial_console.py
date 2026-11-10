@@ -100,12 +100,28 @@ def run(device, session_id):
         os.close(fd)
 
 
+def run_tcp(device, session_id, port):
+    """Holds the same device lease as the picocom client while the TCP relay runs."""
+    from .serial_tcp_relay import relay
+    canonical, identity = canonical_device(device)
+    fd = device_lock(identity)
+    try:
+        atomic_json(runtime_root() / "uart" / f"{identity}.json",
+                    {"sessionId": session_id, "pid": os.getpid(), "start": process_start(os.getpid()),
+                     "device": str(canonical), "identity": identity, "root": str(REPO_ROOT), "tcpPort": port})
+        return relay(canonical, port, lambda line: print(line, flush=True))
+    finally:
+        os.close(fd)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--device", required=True)
     parser.add_argument("--baud", choices=["115200"], required=True)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--check", action="store_true", help="Check kernel lease availability without launching a client")
+    parser.add_argument("--tcp", type=int, metavar="PORT",
+                        help="Serve the UART raw on 127.0.0.1:PORT (one client) instead of launching picocom")
     args = parser.parse_args(argv)
     try:
         uuid.UUID(args.session_id)
@@ -113,6 +129,10 @@ def main(argv=None):
             _, identity = canonical_device(args.device)
             os.close(device_lock(identity))
             return 0
+        if args.tcp is not None:
+            if not 1024 <= args.tcp <= 65535:
+                raise ValueError("--tcp must be a TCP port number")
+            return run_tcp(args.device, args.session_id, args.tcp)
         return run(args.device, args.session_id)
     except BlockingIOError:
         print("UART_BUSY: stop the existing console owner before reopening this UART", file=sys.stderr)

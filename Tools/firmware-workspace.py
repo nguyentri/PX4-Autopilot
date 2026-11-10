@@ -153,6 +153,7 @@ def main() -> int:
     p_bld.add_argument("--selection", required=True, help="Path to selection JSON file")
     p_bld.add_argument("--receipt", help="Output receipt path")
     p_bld.add_argument("--clean", action="store_true", help="Clean rebuild without changing the saved selection")
+    p_bld.add_argument("--low-priority", action="store_true", help="Run the build under nice -n 19 (an RTT bridge is reading the target)")
     p_bld.add_argument("--json", action="store_true", help="Output JSON result")
 
     # load
@@ -184,6 +185,8 @@ def main() -> int:
     p_con.add_argument("--action", choices=["start", "stop", "status"], default="status")
     p_con.add_argument("--serial", help="Authorized J-Link probe serial")
     p_con.add_argument("--core", help="Concrete console core for an image group")
+    p_con.add_argument("--dual", action="store_true",
+                       help="Serve both CR8 consoles from one probe (CR8-0 19021, CR8-1 19031)")
     p_con.add_argument("--json", action="store_true", help="Output JSON result")
 
     p_session = subparsers.add_parser("probe-session", help="Reserve a probe until stdin closes")
@@ -193,6 +196,7 @@ def main() -> int:
     p_session.add_argument("--selection", help=argparse.SUPPRESS)
     p_session.add_argument("--receipt", help=argparse.SUPPRESS)
     p_session.add_argument("--core", help=argparse.SUPPRESS)
+    p_session.add_argument("--dual", action="store_true", help=argparse.SUPPRESS)
 
     args = parser.parse_args()
 

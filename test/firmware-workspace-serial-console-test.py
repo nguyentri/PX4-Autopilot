@@ -60,9 +60,11 @@ while True:
         os.close(self.slave)
         self.temp.cleanup()
 
-    def launch(self, device=None, **kwargs):
+    def launch(self, device=None, tcp=None, check=False, **kwargs):
         args = [sys.executable, "-m", "firmware_workspace.serial_console", "--device", str(device or self.alias),
                 "--baud", "115200", "--session-id", str(uuid.uuid4())]
+        args += ["--tcp", str(tcp)] if tcp else []
+        args += ["--check"] if check else []
         process = subprocess.Popen(args, cwd=ROOT, env=self.process_environment, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
         self.children.append(process)
@@ -158,6 +160,41 @@ while True:
         checked = subprocess.run(args, cwd=ROOT, env=self.process_environment, capture_output=True, timeout=5)
         self.assertEqual(checked.returncode, 2)
         self.assertNotIn(b"Traceback", checked.stderr)
+
+    def test_tcp_relay_holds_lease_replays_backlog_and_refuses_second_client(self):
+        import socket
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+        relay = self.launch(tcp=port)
+        deadline, line = time.monotonic() + 5, b""
+        while b"serial relay up" not in line and time.monotonic() < deadline:
+            if select.select([relay.stdout], [], [], 0.1)[0]:
+                line += os.read(relay.stdout.fileno(), 4096)
+        self.assertIn(b"serial relay up", line)
+        os.write(self.master, b"boot banner\r\n")  # no client yet: kept for the first one
+        time.sleep(0.3)
+        contender = self.launch(self.device)
+        contender.communicate(timeout=5)
+        self.assertEqual(contender.returncode, 4, "the relay holds the device lease")
+        client = socket.create_connection(("127.0.0.1", port), timeout=3)
+        try:
+            received = b""
+            while b"boot banner" not in received:
+                received += client.recv(4096)
+            client.sendall(b"ps\r")
+            self.assertTrue(select.select([self.master], [], [], 3)[0])
+            self.assertEqual(os.read(self.master, 4096), b"ps\r")
+            second = socket.create_connection(("127.0.0.1", port), timeout=3)
+            self.assertIn(b"already has a client", second.recv(4096))
+            second.close()
+        finally:
+            client.close()
+        relay.terminate()
+        self.assertEqual(relay.wait(timeout=5), 130)
+        reopened = self.launch(self.device, check=True)
+        reopened.communicate(timeout=5)
+        self.assertEqual(reopened.returncode, 0, "the lease is released when the relay stops")
 
     def test_real_terminal_stdin_is_retained(self):
         terminal_master, terminal_slave = pty.openpty()

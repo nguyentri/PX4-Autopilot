@@ -76,6 +76,7 @@ def build_single_target(
     mode: str,
     run_id: str,
     dest_prefix: str = "firmware",
+    low_priority: bool = False,
 ) -> Tuple[int, List[Dict[str, Any]], str]:
     """Execute single build adapter, stage artifacts, and return (returncode, artifacts, error_msg)."""
     if family == "px4":
@@ -89,6 +90,10 @@ def build_single_target(
         cmd = nuttx_build_command(board, target_or_config, mode, tree)
         expected_elf = tree / "nuttx"
 
+    if low_priority:
+        # A running dual RTT bridge reads target memory one word per USB round
+        # trip; a normal-priority build slows those reads about tenfold.
+        cmd = ["nice", "-n", "19"] + cmd
     proc = ManagedProcess(cmd, cwd=str(REPO_ROOT))
     rc, _, err = proc.run(stream_stderr=True)
     if rc != 0:
@@ -133,6 +138,7 @@ def cmd_build(args: Any) -> int:
     core_id = raw_sel["core"]
     build_info = raw_sel["build"]
     mode = "clean" if getattr(args, "clean", False) else build_info["mode"]
+    low_priority = bool(getattr(args, "low_priority", False))
 
     try:
         with BuildLock(timeout=10.0):
@@ -141,7 +147,8 @@ def cmd_build(args: Any) -> int:
                 # Single target build
                 name = build_info.get("target") or build_info.get("config")
                 rc, artifacts, err_msg = build_single_target(
-                    build_info["family"], board_id, core_id, name, mode, run_id
+                    build_info["family"], board_id, core_id, name, mode, run_id,
+                    low_priority=low_priority
                 )
                 if rc != 0:
                     d = make_diagnostic("error", "BUILD_FAILED", err_msg)
@@ -166,7 +173,7 @@ def cmd_build(args: Any) -> int:
                     m_fam = m["family"]
                     rc, artifacts, err_msg = build_single_target(
                         m_fam, board_id, m_core, m_cfg, mode, run_id,
-                        dest_prefix=f"{group_id}-{m_core}"
+                        dest_prefix=f"{group_id}-{m_core}", low_priority=low_priority
                     )
                     if rc != 0:
                         # Member failed: cannot publish group success
