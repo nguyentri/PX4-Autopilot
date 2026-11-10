@@ -73,6 +73,12 @@ then
 	echo "ERROR [init] Showcase DISTANCE_SENSOR stream failed on SCI5"
 fi
 
+# CR8-0 <-> CR8-1 link as seen by CR8-0 (CR80-CR81: x age ms, y peer seq, z alive).
+if ! mavlink stream -d /dev/ttyS5 -s DEBUG_VECT -r 2
+then
+	echo "ERROR [init] Showcase DEBUG_VECT stream failed on SCI5"
+fi
+
 # ADS1115 voltages: one channel per message, 10 Hz covers the 8 Hz rotation.
 if ! mavlink stream -d /dev/ttyS5 -s NAMED_VALUE_FLOAT -r 10
 then

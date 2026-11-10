@@ -133,6 +133,27 @@ int main(int argc, char **argv)
 	finish(frame);
 	assert(validate(frame.bytes, 64, 1, 7) == Error::Semantic);
 
+	// Text frames: either source, printable ASCII then NUL padding, nonzero id.
+	frame = encode_text(context, TextKind::Request, 3, "hello\tCR8-1, this text is too long");
+	assert(validate(frame.bytes, 64, 1, 7) == Error::None && validate(frame.bytes, 64, 0, 7) == Error::Source);
+	assert(text_message(frame).kind == TextKind::Request && text_message(frame).id == 3);
+	assert(!strcmp(text_message(frame).text, "hello?CR8-1, this text i"));
+	frame = encode_text(context, TextKind::Reply, 3, "ok");
+	assert(validate(frame.bytes, 64, 1, 7) == Error::None && text_message(frame).kind == TextKind::Reply);
+	frame.bytes[43] = 'x';
+	finish(frame);
+	assert(validate(frame.bytes, 64, 1, 7) == Error::Semantic);
+	frame = encode_text(context, TextKind::Reply, 0, "ok");
+	assert(validate(frame.bytes, 64, 1, 7) == Error::Semantic);
+	frame = encode_text(context, TextKind::Reply, 3, "ok");
+	frame.bytes[32] = 2;
+	finish(frame);
+	assert(validate(frame.bytes, 64, 1, 7) == Error::Semantic);
+	frame = encode_text(context, TextKind::Reply, 3, "ok");
+	frame.bytes[40] = 0x7f;
+	finish(frame);
+	assert(validate(frame.bytes, 64, 1, 7) == Error::Semantic);
+
 	const Type battery_types[] {Type::Battery, Type::BatteryDetail};
 
 	for (Type type : battery_types) {

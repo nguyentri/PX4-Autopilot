@@ -173,6 +173,49 @@ any `ERROR:` reply and does not attempt the CR8-1 load. A load straight
 after a cold power-on has passed only for single cores so far; a pair load
 from cold power-on is not yet checked.
 
+## Heartbeat in QGC
+
+`rzv2h_heartbeat` now also publishes the display-only `debug_vect`
+`CR80-CR81` (first named `IPC_HB`) every 500 ms, and both demo images stream `DEBUG_VECT` at 2 Hz on SCI5.
+Values: `x` ms since the last CR8-1 beat, `y` CR8-1 sequence, `z` 1 alive /
+0 lost. A pair load from power-on (CR8-0 started from held-in-reset) passed
+verify on both cores. Over the dual RTT bridge:
+
+| Check | Result |
+|-------|--------|
+| CR8-0 `listener debug_vect` | `IPC_HB` x 66, y 94, z 1 |
+| CR8-0 `rzv2h_heartbeat status` | initiator, peer alive, age 22 ms, tx/rx 102/102, `bad_hdr` 0 |
+| CR8-1 `rzv2h_heartbeat status` | responder, peer alive, age 30 ms, tx/rx 189/191, `bad_hdr` 2, timeouts 2 (boot) |
+| CR8-0 `mavlink status streams` | `DEBUG_VECT` 2.00 Hz configured, 1.7 Hz measured, 42 B |
+
+The QGC view itself and the `z` 0 transition during a CR8-1 hold are not yet
+checked on this image (the serial adapter was in use on Windows).
+
+## Ping and say between the cores
+
+`rzv2h_heartbeat ping` and `rzv2h_heartbeat say <text>` send one text frame
+(new v3 type `Text`, 64 bytes, up to 24 printable characters) to the other
+core. The frame replaces one heartbeat in the existing write slot, so the two
+cores still never write at the same time. The receiver prints
+`<peer> says: "<text>"` (CR8-0 also as a `mavlink_log` notification) and
+replies `hello from <core>`. A demosih pair load from power-on (CR8-0 started
+from held-in-reset) passed verify on both cores; results over the dual RTT
+bridge:
+
+| Command | Sender output | Receiver console |
+|---------|---------------|------------------|
+| CR8-0 `rzv2h_heartbeat ping` | reply `hello from CR8-1`, round trip 22.0 ms | — |
+| CR8-0 `rzv2h_heartbeat say hello CR8-1 from QGC` | reply `hello from CR8-1`, round trip 22.1 ms | — |
+| CR8-0 `rzv2h_heartbeat say hi CR8-1` | round trip 23.7 ms | CR8-1 RTT: `CR8-0 says: "hi CR8-1" (#3)` |
+| CR8-1 `rzv2h_heartbeat ping` | reply `hello from CR8-0`, round trip 109.0 ms | CR8-0 RTT: `CR8-1 says: "ping from CR8-1" (#1)` |
+| CR8-1 `rzv2h_heartbeat say hello CR8-0` | — (shell capture clipped) | CR8-0 RTT: `CR8-1 says: "hello CR8-0" (#2)` |
+
+Afterwards both cores reported `text: sent 5 received 5`, and the link
+counters were unchanged from boot (CR8-0 `timeouts 2`, `bad_hdr 0`; CR8-1
+`timeouts 2`, `bad_hdr 2`). `listener debug_vect` showed `CR80-CR81` x 76,
+y 700, z 1. The QGC notification for `CR8-1 says` and the MAVLink Console run
+are not yet checked; the serial adapter was in use on Windows.
+
 ## Open items
 
 - Corrupted telemetry frames on the WSL host are a host-side artefact (see

@@ -186,6 +186,64 @@ static void counter_limit_stops_sending()
 	assert(strcmp(error_name(Error::Crc), "crc") == 0 && strcmp(error_name(Error::Semantic), "semantic") == 0);
 }
 
+static void ping_and_say_ride_the_existing_slots()
+{
+	HeartbeatMonitor cr8_0(true), cr8_1(false);
+	cr8_0.session(true, 7);
+	cr8_1.session(true, 7);
+	assert(!cr8_0.queue_text(0, "x"));
+	uint64_t now = 1000000;
+	TextMessage message{};
+	uint64_t rtt = 0;
+
+	// CR8-0 pings: the request replaces its next beat; CR8-1 replies at once.
+	assert(cr8_0.queue_text(1, "ping from CR8-0") && cr8_0.send_due(now));
+	Frame a = cr8_0.next_frame(now, 1, 1);
+	assert(a.bytes[6] == uint8_t(Type::Text) && validate(a.bytes, EntrySize, 0, 7) == Error::None);
+	assert(cr8_1.receive(a.bytes, EntrySize, now + 3000) == Error::None);
+	assert(cr8_1.take_request(message) && message.kind == TextKind::Request && message.id == 1);
+	assert(!strcmp(message.text, "ping from CR8-0") && !cr8_1.take_request(message));
+	assert(cr8_1.send_due(now + 3000));
+	Frame b = cr8_1.next_frame(now + 3000, 1, 1);
+	assert(b.bytes[6] == uint8_t(Type::Text) && validate(b.bytes, EntrySize, 1, 7) == Error::None);
+	assert(cr8_0.receive(b.bytes, EntrySize, now + 4500) == Error::None);
+	assert(cr8_0.take_reply(message, rtt) && message.kind == TextKind::Reply && message.id == 1);
+	assert(!strcmp(message.text, "hello from CR8-1") && rtt == 4500 && !cr8_0.take_reply(message, rtt));
+	// A late duplicate reply no longer matches.
+	assert(cr8_0.receive(b.bytes, EntrySize, now + 5000) == Error::Sequence);
+	// Heartbeats resume; the responder still only replies.
+	now += HeartbeatMonitor::TxPeriodUs;
+	a = cr8_0.next_frame(now, 2, 2);
+	assert(a.bytes[6] == uint8_t(Type::Heartbeat) && !cr8_1.send_due(now));
+
+	// CR8-1 says hello: its request waits for its reply slot, never a timer.
+	assert(cr8_1.queue_text(5, "hello CR8-0") && !cr8_1.send_due(now + 50000));
+	assert(cr8_1.receive(a.bytes, EntrySize, now) == Error::None && cr8_1.send_due(now));
+	b = cr8_1.next_frame(now + 1000, 2, 2);
+	assert(b.bytes[6] == uint8_t(Type::Text));
+	assert(cr8_0.receive(b.bytes, EntrySize, now + 2000) == Error::None);
+	assert(cr8_0.take_request(message) && message.id == 5 && !strcmp(message.text, "hello CR8-0"));
+	// CR8-0 answers in its next timer slot, not immediately.
+	assert(!cr8_0.send_due(now + 50000) && cr8_0.send_due(now + HeartbeatMonitor::TxPeriodUs));
+	now += HeartbeatMonitor::TxPeriodUs;
+	a = cr8_0.next_frame(now, 3, 3);
+	assert(a.bytes[6] == uint8_t(Type::Text));
+	assert(cr8_1.receive(a.bytes, EntrySize, now + 500) == Error::None);
+	assert(cr8_1.take_reply(message, rtt) && message.id == 5 && !strcmp(message.text, "hello from CR8-0"));
+	assert(rtt == now + 500 - (now - HeartbeatMonitor::TxPeriodUs + 1000));
+	// The responder replies to the initiator's text frame with a heartbeat.
+	assert(cr8_1.send_due(now + 500));
+	b = cr8_1.next_frame(now + 500, 3, 3);
+	assert(b.bytes[6] == uint8_t(Type::Heartbeat));
+	assert(cr8_0.counters().tx_text == 2 && cr8_0.counters().rx_text == 2);
+	assert(cr8_1.counters().tx_text == 2 && cr8_1.counters().rx_text == 2);
+
+	// A queued request is dropped with the session; its late reply is stale.
+	assert(cr8_0.queue_text(9, "lost"));
+	cr8_0.session(true, 8);
+	assert(cr8_0.next_frame(now, 0, 0).bytes[6] == uint8_t(Type::Heartbeat));
+}
+
 int main()
 {
 	roles();
@@ -196,6 +254,7 @@ int main()
 	recovery_rate_limit();
 	responder_replies_once_and_resets_with_session();
 	counter_limit_stops_sending();
+	ping_and_say_ride_the_existing_slots();
 	puts("ipc heartbeat monitor: ok");
 	return 0;
 }

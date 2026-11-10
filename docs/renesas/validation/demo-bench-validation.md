@@ -35,6 +35,8 @@ these streams on SCI5; no manual RTT stream commands are needed:
 | `SCALED_PRESSURE` | 2 Hz | `press_abs` (hPa), `temperature` (centidegrees C) |
 | `DISTANCE_SENSOR` | 2 Hz | `current_distance` (cm) |
 | `SERVO_OUTPUT_RAW` (port 0) | 2 Hz | `servo1_raw` through `servo4_raw` (µs) |
+| `DEBUG_VECT` | 2 Hz | `CR80-CR81` (CR8-0 ↔ CR8-1 link): `x` ms since the last CR8-1 beat (-1 before the first), `y` CR8-1 sequence, `z` 1 alive / 0 lost |
+| `NAMED_VALUE_FLOAT` | 10 Hz | `ADS_A0` through `ADS_A3` (V), each at 2 Hz |
 
 Rates depend on available samples and link bandwidth. In particular, the
 recorded TFmini unit produces only 1 Hz. These settings do not change its
@@ -103,7 +105,23 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
    `Accel #0`/`BARO #0` TIMEOUT, several validator failsafe events, a few
    `vehicle_imu` gaps, about 35 ADS1115 comms errors); a detached window must
    add no more than one attach does, and bus error counters must stay at 0.
-4. PWM: capture all four channels. Expected disarmed output is 400 Hz at 1000 µs
+4. CR8-0 ↔ CR8-1 heartbeat (pair loaded with `./flash_dual.sh demo`): in
+   QGC's MAVLink Inspector, `DEBUG_VECT` `CR80-CR81` shows `z` 1, `x` below 500
+   and `y` rising about 10 per second. In Analyze Tools → MAVLink Console,
+   `rzv2h_heartbeat status` gives the full view (`peer: alive`, `tx`/`rx`
+   counts rising, `timeouts` and `bad_hdr` steady). CR8-1 has no MAVLink link;
+   its own view (`role: responder`) is on its RTT console, read with
+   `rzv2h-dual-rtt-bridge.py` on port 19031, which never halts a core.
+   Holding CR8-1 with `rzv2h-ipc/rzv2h-core-halt-resume.sh cr8_1 hold 5`
+   turns `z` to 0 and `x` past 500 until it resumes.
+   To show a message crossing the link, run `rzv2h_heartbeat ping` or
+   `rzv2h_heartbeat say <text>` (up to 24 characters) in the MAVLink Console.
+   The shell prints CR8-1's reply `hello from CR8-1` and the round trip
+   (about 22 ms), and CR8-1's RTT console prints `CR8-0 says: "<text>"`. The
+   same commands on CR8-1's RTT console reach CR8-0, which prints
+   `CR8-1 says: ...` and sends it to QGC as a notification. A CR8-1 ping
+   takes about 110 ms, because CR8-0 answers in its next 100 ms beat slot.
+5. PWM: capture all four channels. Expected disarmed output is 400 Hz at 1000 µs
    (`PWM_MAIN_DIS`). Drive one channel with `actuator_test set -m 1 -v 0.5 -t 2`
    or the QGC Actuators tab (`COM_MOT_TEST_EN`, default 1) and capture the pulse width change
    (1100–1900 µs range).

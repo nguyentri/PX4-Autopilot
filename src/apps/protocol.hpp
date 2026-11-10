@@ -26,7 +26,10 @@ enum CapabilityBits : uint16_t {
 static constexpr uint16_t RequiredActuatorCapabilities = PwmBackend | CoherentValues | StopInhibit | TokenLease |
 		AppliedFeedback;
 
-enum class Type : uint8_t { Heartbeat = 0, Command = 1, Status = 4, Hello = 5, Battery = 0x12, BatteryDetail = 0x14 };
+enum class Type : uint8_t { Heartbeat = 0, Command = 1, Status = 4, Hello = 5, Text = 6, Battery = 0x12, BatteryDetail = 0x14 };
+// Text frame: a display-only ping/say message between the cores, either direction.
+static constexpr size_t TextMax = 24;
+enum class TextKind : uint8_t { Request = 0, Reply = 1 };
 enum StateBits : uint16_t {
 	Armed = 1 << 0,
 	SafetyOff = 1 << 1,
@@ -71,6 +74,12 @@ struct Hello {
 
 	bool configured() const { return roles == 1 && board && resources && profile && output_config; }
 	bool matches(const Hello &other) const;
+};
+// Decoded text frame; text is NUL-terminated, printable ASCII only.
+struct TextMessage {
+	TextKind kind{TextKind::Request};
+	uint32_t id{0};
+	char text[TextMax + 1] {};
 };
 struct Status {
 	uint32_t accepted_sequence{0};
@@ -120,6 +129,12 @@ struct __attribute__((packed)) WireHello {
 	uint16_t roles, board;
 	uint32_t resources, profile, output_config;
 };
+struct __attribute__((packed)) WireText {
+	WireHeader header;
+	uint8_t kind, reserved[3];
+	uint32_t id;
+	char text[TextMax];
+};
 struct __attribute__((packed)) WireBattery {
 	WireHeader header;
 	uint16_t source_id, valid;
@@ -155,6 +170,8 @@ static_assert(sizeof(WireStatus) == 64 && offsetof(WireStatus, accepted_sequence
 static_assert(sizeof(WireHeartbeat) == 44 && offsetof(WireHeartbeat, uptime_ms) == 36
 	      &&offsetof(WireHeartbeat, loop_count) == 40 && sizeof(WireHello) == 48
 	      &&offsetof(WireHello, output_config) == 44, "heartbeat/hello wire layout");
+static_assert(sizeof(WireText) == 64 && offsetof(WireText, id) == 36 && offsetof(WireText, text) == 40,
+	      "text wire layout");
 static_assert(sizeof(WireBattery) == 64 && offsetof(WireBattery, current_ma) == 48
 	      &&offsetof(WireBattery, reserved) == 58 && sizeof(WireBatteryDetail) == 64
 	      &&offsetof(WireBatteryDetail, reserved) == 50, "battery wire layout");
@@ -176,9 +193,12 @@ Frame encode(const Command &command, const Context &context);
 Frame encode(const Hello &hello, const Context &context);
 Frame encode(const Status &status, const Context &context);
 Frame encode_heartbeat(const Context &context, uint8_t state, uint32_t uptime_ms, uint32_t loop_count);
+// Text longer than TextMax is truncated; non-printable bytes become '?'.
+Frame encode_text(const Context &context, TextKind kind, uint32_t id, const char *text);
 Command command(const Frame &frame);
 Hello hello(const Frame &frame);
 Status status(const Frame &frame);
+TextMessage text_message(const Frame &frame);
 
 } // namespace demo
 } // namespace rzv2h

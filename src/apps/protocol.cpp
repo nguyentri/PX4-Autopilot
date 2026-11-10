@@ -29,6 +29,7 @@ uint8_t encoded_size(Type type)
 	case Type::Hello: return 48;
 
 	case Type::Command:
+	case Type::Text:
 	case Type::Status:
 	case Type::Battery:
 	case Type::BatteryDetail: return 64;
@@ -132,6 +133,19 @@ Error validate(const uint8_t *p, size_t size, uint8_t expected_source, uint32_t 
 		return Error::Semantic;
 	}
 
+	if (type == Type::Text) {
+		if (p[32] > uint8_t(TextKind::Reply) || p[33] || p[34] || p[35] || !read32(p + 36)) { return Error::Semantic; }
+
+		// Printable ASCII, then NUL padding only.
+		bool ended = false;
+
+		for (size_t i = 40; i < 40 + TextMax; ++i) {
+			if (!p[i]) { ended = true; continue; }
+
+			if (ended || p[i] < 0x20 || p[i] > 0x7e) { return Error::Semantic; }
+		}
+	}
+
 	if (type == Type::Status) {
 		const uint8_t backend = p[59];
 
@@ -155,6 +169,21 @@ Frame encode_heartbeat(const Context &context, uint8_t state, uint32_t uptime_ms
 	frame.bytes[34] = PercentUnavailable;
 	write32(frame.bytes + 36, uptime_ms);
 	write32(frame.bytes + 40, loop_count);
+	finish(frame);
+	return frame;
+}
+
+Frame encode_text(const Context &context, TextKind kind, uint32_t id, const char *text)
+{
+	Frame frame = begin(Type::Text, context);
+	frame.bytes[32] = uint8_t(kind);
+	write32(frame.bytes + 36, id);
+
+	for (size_t i = 0; text && i < TextMax && text[i]; ++i) {
+		const uint8_t c = uint8_t(text[i]);
+		frame.bytes[40 + i] = c < 0x20 || c > 0x7e ? '?' : c;
+	}
+
 	finish(frame);
 	return frame;
 }
@@ -245,6 +274,17 @@ Status status(const Frame &frame)
 	value.lease_state = frame.bytes[58];
 	value.backend = frame.bytes[59];
 	value.loop_count = read32(frame.bytes + 60);
+	return value;
+}
+
+TextMessage text_message(const Frame &frame)
+{
+	TextMessage value{};
+	value.kind = TextKind(frame.bytes[32]);
+	value.id = read32(frame.bytes + 36);
+
+	for (size_t i = 0; i < TextMax; ++i) { value.text[i] = char(frame.bytes[40 + i]); }
+
 	return value;
 }
 

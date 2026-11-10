@@ -19,7 +19,7 @@ INIT = ROOT / "boards/renesas/rdk-rzv2h/init/demo"
 BUILD_DIR = None
 STREAMS = (("HIGHRES_IMU", 10), ("SCALED_PRESSURE", 2),
            ("DISTANCE_SENSOR", 2), ("SERVO_OUTPUT_RAW_0", 2),
-           ("NAMED_VALUE_FLOAT", 10))
+           ("DEBUG_VECT", 2), ("NAMED_VALUE_FLOAT", 10))
 
 
 class DemoStartup(unittest.TestCase):

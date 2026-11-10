@@ -13,10 +13,19 @@
 // the other's read and both time out (the driver then degrades the link). The
 // reply arrives within one loop of the initiator's write, long before its next
 // beat, so the two cores never write at the same time in normal operation.
+//
+// Ping/say text rides the same slots: a queued request or an owed reply
+// replaces the next heartbeat (initiator timer slot, or responder reply
+// slot), so text never adds a second writer. The responder also replies to
+// an initiator text frame. Text frames do not refresh liveness; one replaced
+// beat is far inside PeerTimeoutUs.
 
 #pragma once
 
 #include <apps/protocol.hpp>
+
+#include <stdio.h>
+#include <string.h>
 
 namespace rzv2h
 {
@@ -32,6 +41,8 @@ struct HeartbeatCounters {
 	uint32_t rx_stale{0};          // valid heartbeat with a non-increasing sequence
 	uint32_t peer_restarts{0};     // sequence restarted near 1 with lower uptime in one epoch
 	uint32_t recover_requests{0};
+	uint32_t tx_text{0};           // text requests and replies built
+	uint32_t rx_text{0};           // accepted text requests and matched replies
 	uint32_t rejects[uint8_t(Error::Semantic) + 1] {};
 };
 
@@ -51,12 +62,16 @@ public:
 	static constexpr uint8_t StateRunning = 1;
 	static constexpr uint32_t RestartWindow = 3;        // a reloaded peer restarts at sequence 1
 
+	static constexpr uint64_t TextTimeoutUs = 1000000;  // shell gives up on a reply
+
 	explicit HeartbeatMonitor(bool initiator) : _initiator(initiator), _local(initiator ? 0 : 1),
 		_peer_source(initiator ? 1 : 0) {}
 
 	bool initiator() const { return _initiator; }
 	uint8_t local_source() const { return _local; }
 	uint8_t peer_source() const { return _peer_source; }
+	const char *local_name() const { return _initiator ? "CR8-0" : "CR8-1"; }
+	const char *peer_name() const { return _initiator ? "CR8-1" : "CR8-0"; }
 
 	// Report the current link state. Offline or a new epoch drops liveness and
 	// restarts the local sequence. Returns true when the session changed.
@@ -73,6 +88,12 @@ public:
 		_have_peer = false;
 		_reply_pending = false;
 		_peer = HeartbeatPeer{};
+		_request_pending = false;
+		_request_id = 0;
+		_request_sent_us = 0;
+		_reply_owed = false;
+		_have_request = false;
+		_have_reply = false;
 
 		if (current) { ++_counters.sessions; }
 
@@ -89,6 +110,8 @@ public:
 			++_counters.rejects[uint8_t(error)];
 			return error;
 		}
+
+		if (Type(bytes[6]) == Type::Text) { return receive_text(bytes, now); }
 
 		if (Type(bytes[6]) != Type::Heartbeat) { ++_counters.rx_ignored; return Error::None; }
 
@@ -130,7 +153,8 @@ public:
 		return _initiator ? !_last_tx_us || now - _last_tx_us >= TxPeriodUs : _reply_pending;
 	}
 
-	// Build the next heartbeat. The caller sends it and reports the result.
+	// Build the next frame: an owed text reply, else a queued text request,
+	// else a heartbeat. The caller sends it and reports the result.
 	Frame next_frame(uint64_t now, uint32_t uptime_ms, uint32_t loop_count)
 	{
 		Context context{};
@@ -140,7 +164,57 @@ public:
 		context.publication_us = now;
 		_last_tx_us = now;
 		_reply_pending = false;
+
+		if (_reply_owed) {
+			_reply_owed = false;
+			++_counters.tx_text;
+			char greeting[TextMax + 1] {};
+			snprintf(greeting, sizeof(greeting), "hello from %s", local_name());
+			return encode_text(context, TextKind::Reply, _owed_id, greeting);
+		}
+
+		if (_request_pending) {
+			_request_pending = false;
+			_request_sent_us = now;
+			++_counters.tx_text;
+			return encode_text(context, TextKind::Request, _request_id, _request_text);
+		}
+
 		return encode_heartbeat(context, StateRunning, uptime_ms, loop_count);
+	}
+
+	// Queue one ping/say request with a caller-chosen nonzero id; it replaces
+	// any unanswered request. False while offline.
+	bool queue_text(uint32_t id, const char *text)
+	{
+		if (!_epoch || !id) { return false; }
+
+		_request_id = id;
+		_request_sent_us = 0;
+		_request_pending = true;
+		snprintf(_request_text, sizeof(_request_text), "%s", text ? text : "");
+		return true;
+	}
+
+	// The last accepted peer request, once (the caller prints it).
+	bool take_request(TextMessage &out)
+	{
+		if (!_have_request) { return false; }
+
+		_have_request = false;
+		out = _request_in;
+		return true;
+	}
+
+	// The reply to our request, once, with the round trip from our send.
+	bool take_reply(TextMessage &out, uint64_t &rtt_us)
+	{
+		if (!_have_reply) { return false; }
+
+		_have_reply = false;
+		out = _reply_in;
+		rtt_us = _reply_rtt_us;
+		return true;
 	}
 
 	void sent(bool ok) { ok ? ++_counters.tx_sent : ++_counters.tx_failed; }
@@ -164,6 +238,33 @@ public:
 	const HeartbeatCounters &counters() const { return _counters; }
 
 private:
+	Error receive_text(const uint8_t *bytes, uint64_t now)
+	{
+		Frame frame{};
+		memcpy(frame.bytes, bytes, EntrySize);
+		const TextMessage message = text_message(frame);
+
+		if (message.kind == TextKind::Request) {
+			// Every request is answered once; a newer one replaces an unsent reply.
+			_owed_id = message.id;
+			_reply_owed = true;
+			_request_in = message;
+			_have_request = true;
+
+		} else {
+			if (!_request_id || message.id != _request_id || !_request_sent_us) { ++_counters.rx_stale; return Error::Sequence; }
+
+			_reply_in = message;
+			_reply_rtt_us = now >= _request_sent_us ? now - _request_sent_us : 0;
+			_have_reply = true;
+			_request_id = 0;
+		}
+
+		++_counters.rx_text;
+		_reply_pending = !_initiator;
+		return Error::None;
+	}
+
 	bool _initiator;
 	uint8_t _local;
 	uint8_t _peer_source;
@@ -177,6 +278,19 @@ private:
 	bool _reply_pending{false};
 	HeartbeatPeer _peer{};
 	HeartbeatCounters _counters{};
+
+	// Outgoing request (ours) and incoming request/reply events.
+	bool _request_pending{false};
+	uint32_t _request_id{0};
+	uint64_t _request_sent_us{0};
+	char _request_text[TextMax + 1] {};
+	bool _reply_owed{false};
+	uint32_t _owed_id{0};
+	bool _have_request{false};
+	TextMessage _request_in{};
+	bool _have_reply{false};
+	TextMessage _reply_in{};
+	uint64_t _reply_rtt_us{0};
 };
 
 inline const char *error_name(Error error)

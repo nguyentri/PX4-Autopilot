@@ -2,6 +2,7 @@
 """Compile the rzv2h_heartbeat liveness state with the production v3 codec and run its host fixture."""
 
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -32,13 +33,20 @@ class IpcHeartbeat(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("ipc heartbeat monitor: ok", result.stdout)
 
-    def test_module_never_publishes_or_commands(self):
+    def test_module_publishes_display_only_and_never_commands(self):
         source = (MODULE / "ipc-heartbeat.cpp").read_text()
         monitor = (MODULE / "ipc-heartbeat-monitor.hpp").read_text()
+        # The monitor stays pure state; the module's only uORB outputs are the
+        # display-only debug_vect link view and mavlink_log text.
+        for forbidden in ("<uORB/", "uORB::", "mavlink_log"):
+            self.assertNotIn(forbidden, monitor)
         for text in (source, monitor):
-            for forbidden in ("<uORB/", "uORB::", "orb_advertise", "orb_publish", "px4io_status_s"):
+            for forbidden in ("orb_advertise", "orb_publish", "px4io_status", "actuator_", "vehicle_command"):
                 self.assertNotIn(forbidden, text)
-            self.assertNotIn("encode(", text.replace("encode_heartbeat(", ""))
+            self.assertNotIn("encode(", text)
+        self.assertEqual(sorted(set(re.findall(r"<uORB/topics/(\w+)\.h>", source))), ["debug_vect"])
+        self.assertEqual(source.count("uORB::Publication<"), 1)
+        self.assertIn('"CR80-CR81"', source)
         self.assertIn("CONFIG_RZV_IPC_ROLE_INITIATOR", source)
         self.assertIn('MAIN rzv2h_heartbeat', (MODULE / "CMakeLists.txt").read_text())
 
