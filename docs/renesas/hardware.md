@@ -108,7 +108,10 @@ for 20 ms and sets the tick reload, `up_timer_getfreq()` and the perf-counter
 rate from it (load `0x30475` on the local RDK). On CM33 the same option
 measures the SysTick clock I7CLK (PLLCM33 / 4, no SSC control register)
 against GTM5. Do not time the target with
-WSL `CLOCK_MONOTONIC`; it ran 9–11 % slow on this host.
+WSL `CLOCK_MONOTONIC`; it ran 9–11 % slow on this host. Do not time the tick
+while an RTT bridge runs either: stop-mode RTT halts the core on every poll and
+the private timer stops while the core is halted (a PX4 run read 0.747).
+Sample `/proc/uptime` over the SCI5 MAVLink shell with the probe free instead.
 
 Audit clock setup against selected XML and core-matched FSP/BSP sources.
 Corroborate with generated output and live measurements for target timing
