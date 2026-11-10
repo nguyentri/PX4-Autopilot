@@ -135,6 +135,15 @@ bare `./flash.sh` prints help and the built targets):
 ./flash.sh renesas_evk-ra8p1_default                      # RA8: flash, reset, run
 ```
 
+`./flash_dual.sh` loads a dual-core profile in one step: name the CR8-0 target
+and it adds the CR8-1 partner (`./flash_dual.sh --list` shows the pairs):
+
+```bash
+./flash_dual.sh demosih                                   # + rdk-rzv2h-io-cr8_1_demo
+./flash_dual.sh dualcr8                                   # + rdk-rzv2h-io-cr8_1_pwm
+./flash_dual.sh dualcr8 rdk-rzv2h-io-cr8_1_demo           # explicit CR8-1 target
+```
+
 RZ/V2H CR8 images are volatile RAM loads started at `__start` (no SoC reset);
 the RZ/V2H CM33 target is refused because connecting to it resets the SoC.
 

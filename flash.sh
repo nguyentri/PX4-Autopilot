@@ -39,6 +39,8 @@ start it. Build it first with ./build.sh <target>.
 
 Options:
   --list         Print targets that have a built ELF and exit.
+  --resolve      Print the built target each name resolves to and exit
+                 (no probe access; used by ./flash_dual.sh).
   -v, --verbose  Show J-Link / GDB output.
   -h, --help     Show this help.
 
@@ -157,9 +159,11 @@ flash_ra8()
 
 TARGET_ARGS=()
 LIST_ONLY=0
+RESOLVE_ONLY=0
 while [ "$#" -gt 0 ]; do
 	case "$1" in
 		--list) LIST_ONLY=1 ;;
+		--resolve) RESOLVE_ONLY=1 ;;
 		-v|--verbose) VERBOSE_ARG=(--verbose) ;;
 		-h|--help) print_usage; exit 0 ;;
 		-*) echo "Unknown option: $1" >&2; print_usage >&2; exit 2 ;;
@@ -188,6 +192,11 @@ for want in "${TARGET_ARGS[@]}"; do
 	t=$(resolve_target "$want") || exit 2
 	TARGETS+=("$t")
 done
+
+if [ "$RESOLVE_ONLY" -eq 1 ]; then
+	printf '%s\n' "${TARGETS[@]}"
+	exit 0
+fi
 
 KINDS=()
 for t in "${TARGETS[@]}"; do
@@ -219,7 +228,7 @@ case "${KINDS[0]}" in
 		echo "Loading ${target} into ${KINDS[0]} RAM and starting it..."
 		"${IPC_DIR}/rzv2h-load-one-core.sh" "${VERBOSE_ARG[@]}" "${KINDS[0]}" "$elf" || exit 1
 		if [ "${KINDS[0]}" = cr8_0 ]; then
-			echo "Note: a dual-core profile (e.g. dualcr8) also needs its CR8-1 image; pass both targets."
+			echo "Note: a dual-core profile (e.g. dualcr8) also needs its CR8-1 image; ./flash_dual.sh loads the pair."
 		fi
 		echo "Console: platforms/nuttx/Debug/nuttx-rtt-bridge.sh start ${KINDS[0]} ${elf}"
 		;;

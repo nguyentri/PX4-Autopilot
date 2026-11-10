@@ -164,6 +164,24 @@ auto-detects `JLINK_SERIAL` when one probe is attached and refuses
 `renesas_rdk-rzv2h-io-cm33_*`. Loading a pair is mechanical only; it does not
 qualify an actuator pair.
 
+`./flash_dual.sh <cr8_0-target> [<cr8_1-target>]` is the dual-core shortcut. It
+resolves both names through `./flash.sh --resolve` (a bare config name such as
+`demosih` or `pwm` is tried on that core's board first), then runs the same
+pair load. With only the CR8-0 target it adds the default CR8-1 partner:
+
+| CR8-0 target | Default CR8-1 partner |
+|--------------|-----------------------|
+| `renesas_rdk-rzv2h_demo`, `renesas_rdk-rzv2h_demosih` | `renesas_rdk-rzv2h-io-cr8_1_demo` (heartbeat responder) |
+| `renesas_rdk-rzv2h_dualcr8` | `renesas_rdk-rzv2h-io-cr8_1_pwm` (supervisor candidate) |
+
+Any other CR8-0 target needs the CR8-1 target named explicitly.
+`./flash_dual.sh --list` prints the pairs and whether both ELFs are built. Exit
+codes match `./flash.sh`: 0 both cores verified running, 1 load failed, 2 usage
+or target refused. A load also fails when J-Link answers a monitor command
+with `ERROR:` (for example `CPU is not halted` at `go`, seen on a board that had
+not settled after a USB re-attach). It is not retried, and the CR8-1 load is
+skipped; reset the board and load again.
+
 `platforms/nuttx/NuttX/flash.sh [<elf> [<cr8_1-elf>]]` does the same for NuttX
 samples. With no argument it loads the last build, `nuttx/nuttx`, on the core
 its `nuttx/.config` names (RZ/V2H CR8-0/CR8-1, EVK-RA8P1, FPB-RA8E1), and
