@@ -98,6 +98,18 @@ from the SoC integration, not the Cortex-R8 core: assuming CPU / 2 ran the
 tick at half rate. On 2026-10-13 the corrected tick (load `0x30d3f` for
 1 kHz) matched the GTM-based HRT on both CR8 cores.
 
+PERIPHCLK and the CR8 CPU clock come from PLLDTY. The MD_CLKS strap turns its
+spread-spectrum generator on (`CPG_PLLDTY_STBY.SSC_EN = 1`), which lowers the
+mean rate by about 1.1 % (PERIPHCLK about 197.75 MHz on the local RDK). GTM
+runs from P1CLK on PLLCLN, where spread spectrum is fixed off. With
+`CONFIG_RZV_TICK_CALIBRATE` (default y) `up_timer_initialize()` measures
+PERIPHCLK against the core's HRT GTM channel (GTM7 on CR8-0, GTM6 on CR8-1)
+for 20 ms and sets the tick reload, `up_timer_getfreq()` and the perf-counter
+rate from it (load `0x30475` on the local RDK). On CM33 the same option
+measures the SysTick clock I7CLK (PLLCM33 / 4, no SSC control register)
+against GTM5. Do not time the target with
+WSL `CLOCK_MONOTONIC`; it ran 9–11 % slow on this host.
+
 Audit clock setup against selected XML and core-matched FSP/BSP sources.
 Corroborate with generated output and live measurements for target timing
 acceptance. Validate clocks before investigating baud, bus-rate, PWM or HRT
