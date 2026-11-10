@@ -111,6 +111,8 @@ void ADS1115::RunImpl()
 
 		if (_channel_cycle_mask == 0b1111) {
 			_channel_cycle_mask = 0;
+			// Stamp each completed four-channel set; consumers reject zero timestamps as stale.
+			_adc_report.timestamp = hrt_absolute_time();
 			_to_adc_report.publish(_adc_report);
 		}
 
