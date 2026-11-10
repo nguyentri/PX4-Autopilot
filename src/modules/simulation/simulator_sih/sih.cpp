@@ -757,7 +757,9 @@ int Sih::task_spawn(int argc, char *argv[])
 	_task_id = px4_task_spawn_cmd("sih",
 				      SCHED_DEFAULT,
 				      SCHED_PRIORITY_MAX,
-				      1560,
+				      // NuttX targets without a dedicated interrupt stack nest ISRs on
+				      // the task stack; 1560 left under 100 bytes free on RZ/V2H CR8-0.
+				      2048,
 				      (px4_main_t)&run_trampoline,
 				      (char *const *)argv);
 

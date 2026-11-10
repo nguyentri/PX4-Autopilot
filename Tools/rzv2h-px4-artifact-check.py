@@ -116,7 +116,7 @@ def policy(source=None):
     names = [p['target'] for p in profiles]
     require(result['schema_version'] == 1 and result['policy_version'] == 3,
             'unsupported policy version')
-    require(len(names) == 11 and len(set(names)) == 11, 'policy must classify eleven unique targets')
+    require(len(names) == 12 and len(set(names)) == 12, 'policy must classify twelve unique targets')
     if source:
         available = sorted('renesas_' + p.parent.name + '_' + p.stem
                            for p in (source/'boards/renesas').glob('rdk-rzv2h*/*.px4board')

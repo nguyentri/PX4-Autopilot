@@ -299,8 +299,10 @@ if(PX4_BOARD_LABEL STREQUAL "demo" AND NOT NUTTX_CONFIG STREQUAL "demo")
 endif()
 
 if(PX4_BOARD_LABEL STREQUAL "demo")
-	# Heartbeat-only liveness with the optional CR8-1 demo peer.
+	# Heartbeat-only liveness with the optional CR8-1 demo peer and the
+	# ADS1115 voltages forwarded to QGC.
 	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../ipc_heartbeat ipc_heartbeat)
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../adc_telemetry adc_telemetry)
 	add_custom_target(rzv2h_demo_startup_test
 		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-demo-startup-test.py
 		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
@@ -308,4 +310,13 @@ if(PX4_BOARD_LABEL STREQUAL "demo")
 		VERBATIM
 	)
 	add_dependencies(rzv2h_source_contract_tests rzv2h_demo_startup_test)
+endif()
+
+if(PX4_BOARD_LABEL STREQUAL "demosih")
+	# The showcase reuses the bench demo NuttX image and CR8-1 heartbeat peer.
+	if(NOT NUTTX_CONFIG STREQUAL "demosih")
+		message(FATAL_ERROR "The RZ/V2H SIH showcase target requires NUTTX_CONFIG=demosih")
+	endif()
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../ipc_heartbeat ipc_heartbeat)
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../adc_telemetry adc_telemetry)
 endif()

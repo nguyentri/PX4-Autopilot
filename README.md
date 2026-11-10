@@ -40,6 +40,7 @@ renesas_rdk-rzv2h-io-cr8_1_demo
 renesas_rdk-rzv2h-io-cr8_1_pwm
 renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_demo
+renesas_rdk-rzv2h_demosih
 renesas_rdk-rzv2h_drone
 renesas_rdk-rzv2h_dshot
 renesas_rdk-rzv2h_dualcr8

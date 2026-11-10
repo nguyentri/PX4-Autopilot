@@ -1,5 +1,7 @@
 #
-# RDK-RZV2H bench demo configuration for PX4 (PWM, one SPI0 IMU, SCI7 baro)
+# RDK-RZV2H bench demo configuration for PX4 (PWM, one SPI0 IMU, SCI7 baro),
+# shared by the demosih showcase. The dedicated interrupt stack stops IRQ
+# handlers from running on, and eating into, the interrupted task stack.
 # Cortex-R8 Core 0 configuration
 #
 # CONFIG_DISABLE_ENVIRON is not set
@@ -23,6 +25,7 @@ CONFIG_ARCH_BOARD_RDK_RZV2H=y
 CONFIG_ARCH_CHIP="rzv"
 CONFIG_ARCH_CHIP_RZV=y
 CONFIG_ARCH_CHIP_R9A09G057=y
+CONFIG_ARCH_INTERRUPTSTACK=2048
 CONFIG_ARCH_STACKDUMP=y
 CONFIG_BOARDCTL_RESET=y
 CONFIG_BOARD_LOOPSPERMSEC=200000

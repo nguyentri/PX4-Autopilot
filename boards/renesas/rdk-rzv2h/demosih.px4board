@@ -1,0 +1,35 @@
+# Customer showcase: the bench demo sensors stay live while PX4 SIH flies a
+# simulated S500-class quad around OneKiwi (HCMC) for QGroundControl.
+#
+# Simulated and used by EKF2: IMU, barometer, magnetometer (stands in for the
+# unfitted BMM150), GPS and battery. Real and shown only: ICM45686 on SPI0/P93,
+# BMP280 on SCI7, TFmini on SCI4 and ADS1115 on SCI0. MAVLink on SCI5.
+# Physical motor outputs are compiled out; pwm_out_sim feeds SIH instead.
+# Optional CR8-1 peer: heartbeat-only over raw IPC, as in the demo profile.
+CONFIG_BOARD_INIT_SUBDIR="demosih"
+# Embed parameter, event and actuator metadata for QGC on this custom target.
+CONFIG_BOARD_CONSTRAINED_FLASH=n
+CONFIG_BOARD_SERIAL_GPS1=""
+CONFIG_BOARD_SERIAL_RC=""
+CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"
+CONFIG_BOARD_PARAM_FILE_ATOMIC=y
+CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=n
+
+# Real bench sensors (same set as the demo profile).
+CONFIG_DRIVERS_GPS=n
+CONFIG_DRIVERS_RC_INPUT=n
+CONFIG_DRIVERS_MAGNETOMETER=n
+CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=n
+CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948=n
+CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686=y
+CONFIG_DRIVERS_ADC_ADS1115=y
+
+# Safety: a simulated flight must never drive a physical motor output.
+CONFIG_DRIVERS_PWM_OUT=n
+CONFIG_DRIVERS_DSHOT=n
+
+# Simulation-In-Hardware. simulator_sih selects pwm_out_sim and the baro, GPS
+# and mag simulators; the auxiliary global position simulator is not needed.
+CONFIG_MODULES_SIMULATION_SIMULATOR_SIH=y
+CONFIG_MODULES_SIMULATION_BATTERY_SIMULATOR=y
+CONFIG_MODULES_SIMULATION_SENSOR_AGP_SIM=n

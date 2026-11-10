@@ -18,7 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 INIT = ROOT / "boards/renesas/rdk-rzv2h/init/demo"
 BUILD_DIR = None
 STREAMS = (("HIGHRES_IMU", 10), ("SCALED_PRESSURE", 2),
-           ("DISTANCE_SENSOR", 2), ("SERVO_OUTPUT_RAW_0", 2))
+           ("DISTANCE_SENSOR", 2), ("SERVO_OUTPUT_RAW_0", 2),
+           ("NAMED_VALUE_FLOAT", 10))
 
 
 class DemoStartup(unittest.TestCase):
@@ -135,8 +136,12 @@ rzv2h_heartbeat() {
     echo "HEARTBEAT $*"
     [ "$failed_stream" != heartbeat ]
 }
+rzv2h_adc_telemetry() {
+    echo "ADC $*"
+    [ "$failed_stream" != adc ]
+}
 '''
-        for failed in ("none", "heartbeat", *(name for name, _ in STREAMS)):
+        for failed in ("none", "heartbeat", "adc", *(name for name, _ in STREAMS)):
             with self.subTest(failed=failed):
                 output = self.run_hook("rc.board_extras", harness, [failed])
                 lines = output.splitlines()
@@ -146,6 +151,12 @@ rzv2h_heartbeat() {
                                  ["HEARTBEAT start"])
                 self.assertLess(lines.index("HEARTBEAT start"),
                                 next(i for i, line in enumerate(lines) if line.startswith("CALL ")))
+                # ADC forwarding starts once, before the streams, and its
+                # failure never blocks them.
+                self.assertEqual([line for line in lines if line.startswith("ADC ")],
+                                 ["ADC start"])
+                self.assertLess(lines.index("ADC start"),
+                                next(i for i, line in enumerate(lines) if line.startswith("CALL ")))
                 calls = [line for line in lines if line.startswith("CALL ")]
                 self.assertEqual(calls, [
                     f"CALL stream -d /dev/ttyS5 -s {name} -r {rate}"
@@ -153,7 +164,8 @@ rzv2h_heartbeat() {
                 errors = [line for line in output.splitlines() if "ERROR [init]" in line]
                 self.assertEqual(len(errors), 0 if failed == "none" else 1)
                 if errors:
-                    self.assertIn("CR8-1 heartbeat" if failed == "heartbeat" else failed, errors[0])
+                    expected = {"heartbeat": "CR8-1 heartbeat", "adc": "ADS1115 telemetry"}
+                    self.assertIn(expected.get(failed, failed), errors[0])
 
     def test_defaults_enable_qgc_tests_without_overwriting_user_choice(self):
         harness = '''

@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# RDK-RZ/V2H customer showcase defaults: PX4 SIH flight with the bench demo
+# sensors streamed alongside. All flight data is simulated.
+#------------------------------------------------------------------------------
+
+# SIH Quadcopter X. The airframe sets SYS_HITL 2, so the common rcS starts
+# simulator_sih, the baro/mag/GPS simulators, commander -h and
+# pwm_out_sim -m hil instead of rc.board_sensors and the physical outputs.
+param set-default SYS_AUTOSTART 1100
+
+# Pre-G9 storage is deliberately volatile; do not select an unavailable
+# persistent dataman backend.
+param set-default SYS_DM_BACKEND 1
+
+# No buzzer driver in this image (see the demo profile).
+set TONE_ALARM_START no
+set DSHOT_START no
+
+# Simulated vehicle origin: OneKiwi area, Ho Chi Minh City, ~5 m MSL ground.
+param set-default SIH_LOC_LAT0 10.8056
+param set-default SIH_LOC_LON0 106.6785
+param set-default SIH_LOC_H0 5.0
+param set-default SIM_GPS_USED 12
+
+# The real TFmini is the only rangefinder; SIH's own is disabled and EKF2 must
+# not fuse the bench TFmini while the simulated vehicle flies.
+param set-default SIH_DISTSNSR_OVR 10000
+param set-default EKF2_RNG_CTRL 0
+
+# The simulated battery drains slowly enough for a full mission demo.
+param set-default SIM_BAT_DRAIN 600
+param set-default SIM_BAT_MIN_PCT 30
+# 4S pack as in PX4 SITL; with 0 cells the battery reports no voltage or level.
+param set-default BAT1_N_CELLS 4
+
+# Simulated sensors take calibration slot 0 with the highest priority, so the
+# voter always selects them for EKF2. The real ICM45686 and BMP280 keep the
+# default priority: still published and streamed, never selected.
+param set-default CAL_ACC0_ID 1310988
+param set-default CAL_ACC0_PRIO 100
+param set-default CAL_GYRO0_ID 1310988
+param set-default CAL_GYRO0_PRIO 100
+param set-default CAL_MAG0_ID 197388
+param set-default CAL_MAG0_PRIO 100
+param set-default CAL_BARO0_ID 6620172
+param set-default CAL_BARO0_PRIO 100
+
+# The pre-arm IMU consistency check compares the level simulated IMU with the
+# real ICM45686, which only feeds the display. On the bench the ICM reads
+# gravity on its X axis, about 14 m/s^2 away from the simulated -Z, so no
+# documented threshold (max 1.0) can pass. 30 m/s^2 exceeds any 1 g pair
+# difference and disables the accel comparison for this image only. The check
+# runs only while disarmed and never affects the simulated flight.
+param set-default COM_ARM_IMU_ACC 30.0
+param set-default COM_ARM_IMU_GYR 0.3
+
+# SIH loop rate; also bounds the real ICM45686 gyro processing load.
+param set-default IMU_GYRO_RATEMAX 250
+
+# QGC on SCI5 (TEL1) at 115200 and TFmini on SCI4 (EXT2). No GPS or RC port.
+param set-default SER_TEL1_BAUD 115200
+param set-default SER_EXT2_BAUD 115200
+param set-default SENS_TFMINI_CFG 401
+param set-default MAV_0_CONFIG 101
+param set-default MAV_0_MODE 0
+param set-default MAV_0_FLOW_CTRL 0
+# Stay at or below 5000 B/s: above it PX4 enables HIL_ACTUATOR_CONTROLS
+# (200 Hz) and HIL_STATE_QUATERNION, which QGC does not need and which
+# saturate 115200 baud, starving telemetry and the MAVLink shell.
+param set-default MAV_0_RATE 4800
+param set-default MAV_PROTO_VER 2
+
+# Probe only the explicitly configured on-board sensors.
+param set-default SENS_EXT_I2C_PRB 0
+param set-default SYS_HAS_BARO 1
+param set-default SYS_HAS_GPS 1
+param set-default SYS_HAS_MAG 1
+
+# No RC receiver: QGC commands and missions only.
+param set-default COM_RC_IN_MODE 4

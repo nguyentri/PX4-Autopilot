@@ -1,0 +1,681 @@
+# demosih on CR8-0, RDK-RZ/V2H, 2026-11-10. RAM load via rzv2h-load-one-core.sh; no probe attached during the runs below.
+# ELF sha256: ab7f2da432715d812638660e995eea51defb0c4af04c73a2c5461204a8c37edf
+## MAVLink mission run (/dev/ttyUSB0 @115200, host script: takeoff 20 m, 3 waypoints 80 m square, RTL)
+[   0.4s] heartbeat sys 1 comp 0 type 2 autopilot 12
+[  10.5s] rx rate 3328 B/s {'ATTITUDE': 148, 'ATTITUDE_QUATERNION': 98, 'HIGHRES_IMU': 98, 'GLOBAL_POSITION_INT': 49, 'GPS_RAW_INT': 49, 'SCALED_IMU2': 49, 'VFR_HUD': 40, 'ATTITUDE_TARGET': 20, 'SCALED_PRESSURE': 19, 'SCALED_PRESSURE2': 19, 'POSITION_TARGET_LOCAL_NED': 14, 'MISSION_CURRENT': 11, 'DISTANCE_SENSOR': 11, 'LOCAL_POSITION_NED': 10, 'ALTITUDE': 10, 'EXTENDED_SYS_STATE': 10, 'OPEN_DRONE_ID_LOCATION': 10, 'OPEN_DRONE_ID_SYSTEM': 10, 'SERVO_OUTPUT_RAW': 10, 'SYS_STATUS': 10, 'UNKNOWN_8': 10, 'HEARTBEAT': 10, 'UNKNOWN_380': 5, 'BATTERY_STATUS': 5, 'UNKNOWN_436': 5, 'HOME_POSITION': 5, 'UNKNOWN_411': 4, 'ESTIMATOR_STATUS': 4, 'VIBRATION': 1, 'PING': 1}
+[  10.5s] position 10.8055923 106.6784973 amsl 5.0 m, 0.9 m from origin
+[  10.6s] mission ack type 0
+[  10.6s] arm attempt 0 result 0
+[  10.6s] mission start result 0
+[  10.7s] pos 10.805592 106.678498 rel_alt 0.0 m vx 0.0 vy 0.0
+[  20.7s] pos 10.805597 106.678492 rel_alt 1.9 m vx -0.3 vy 0.3
+[  21.2s] battery 99%
+[  30.9s] pos 10.805593 106.678495 rel_alt 11.0 m vx -0.2 vy 0.5
+[  31.3s] battery 97%
+[  38.2s] reached item 0
+[  41.0s] pos 10.805665 106.678499 rel_alt 19.5 m vx 3.9 vy 0.1
+[  41.4s] battery 95%
+[  53.9s] pos 10.806107 106.678499 rel_alt 20.0 m vx 4.8 vy 0.0
+[  58.5s] reached item 1
+[  64.0s] pos 10.806325 106.678634 rel_alt 20.0 m vx -0.6 vy 3.8
+[  74.2s] pos 10.806318 106.679081 rel_alt 19.9 m vx 0.1 vy 4.8
+[  77.5s] reached item 2
+[  84.3s] pos 10.806138 106.679234 rel_alt 19.9 m vx -4.1 vy -0.3
+[  94.3s] pos 10.805825 106.679228 rel_alt 19.8 m vx -4.8 vy 0.1
+[  99.3s] reached item 3
+[ 104.5s] pos 10.805606 106.679231 rel_alt 26.1 m vx 0.3 vy 0.1
+[ 114.7s] pos 10.805612 106.679080 rel_alt 29.5 m vx -0.1 vy -4.3
+[ 124.8s] pos 10.805601 106.678753 rel_alt 29.8 m vx -0.2 vy -4.7
+[ 135.0s] pos 10.805589 106.678487 rel_alt 23.7 m vx 0.1 vy 0.2
+[ 135.4s] battery 80%
+[ 145.1s] pos 10.805592 106.678499 rel_alt 7.1 m vx 0.0 vy -0.0
+[ 145.6s] battery 78%
+[ 152.4s] DISARMED (landed)
+[ 152.4s] done: max rel alt 30.0 m, items reached [0, 1, 2, 3], armed=True
+## MAVLink shell, same boot: adc_report and dmesg
+Connecting to MAVLINK...
+
+NuttShell (NSH)
+nsh> 
+nsh> listener adc_report -n 1listener adc_report -n 1
+
+TOPIC: adc_report
+ adc_report
+    timestamp: 225728722 (0.002875 seconds ago)
+    device_id: 9455617 (Type: 0x90, I2C:0 (0x48))
+    raw_data: [17570, -1, 34, -1, 0, 0, 0, 0, 0, 0, 0, 0]
+    resolution: 32768
+    v_ref: 6.14400
+    channel_id: [0, 1, 2, 3, -1, -1, -1, -1, -1, -1, -1, -1]
+
+nsh> dmesgdmesg
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: b66539324809c004cbe2bbf33730f9a5e93aa752
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 7e4be6e98901c7f95136d1b1af7eb7e2ab94937a
+Build datetime: Nov 10 2026 15:15:27
+Build uri: localhost
+Build variant: demosih
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/1100_rc_quad_x_sih.hil
+ERROR [param] Parameter GPS_UBX_DYNMODEL not found.
+ERROR [param] Parameter UAVCAN_ENABLE not found.
+  SYS_HITL: curr: 0 -> new: 2
+INFO  [dataman] data manager RAM size is 68528 bytes
+ERROR [param] Parameter GPS_1_CONFIG not found.
+ekf2 [492:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+Starting Benewake TFmini Rangefinder on /dev/ttyS4
+Starting MAVLink on /dev/ttyS5
+INFO  [mavlink] mode: Normal, data rate: 4800 B/s on /dev/ttyS5 @ 115200B
+ERROR [parameters] get: param 65535 invalid
+Board extras: /etc/init.d/rc.board_extras
+icm45686 #0 on SPI bus 0
+ICM45686 started on SPI0 CS pin 3
+bmp280 #0 on I2C bus 7 address 0x76
+BMP280 started on SCI7 I2C bus 7
+ads1115 #0 on I2C bus 0 (external) address 0x48
+ADS1115 started on SCI0 I2C bus 0
+
+NuttShell (NSH)
+nsh> WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+INFO  [vehicle_air_data] BARO switch from #0 -> #1
+INFO  [gyro_calibration] gyro 1 (3407874) updating offsets [0.000, 0.000, 0.000]->[0.007, 0.010, -0.001] 32.6 degC
+WARN  [load_mon] wq:SPI0 low on stack! (268 bytes left)
+INFO  [commander] Armed by external command	
+INFO  [navigator] Executing Mission	
+INFO  [navigator] Climb to 20.0 meters above home	
+INFO  [commander] Takeoff detected	
+WARN  [load_mon] navigator low on stack! (188 bytes left)
+WARN  [load_mon] wq:SPI0 low on stack! (268 bytes left)
+WARN  [load_mon] navigator low on stack! (188 bytes left)
+WARN  [load_mon] wq:SPI0 low on stack! (268 bytes left)
+INFO  [commander] Returning to launch	
+INFO  [navigator] RTL: start return at 36 m (30 m above destination)	
+INFO  [navigator] RTL: land at destination	
+WARN  [load_mon] navigator low on stack! (188 bytes left)
+WARN  [load_mon] wq:SPI0 low on stack! (268 bytes left)
+INFO  [commander] Landing detected	
+INFO  [commander] Disarmed by landing	
+INFO  [vehicle_imu] ACC 0 (1310988) offset committed: [0.000 0.000 0.000]->[-0.092 0.102 -0.113])
+INFO  [mavlink] Starting mavlink shell
+nsh> exitexit
+## MAVLink shell, previous boot (same firmware minus ADS1115 timestamp fix): adc_report, battery_status, top
+Connecting to MAVLINK...
+
+NuttShell (NSH)
+nsh> 
+nsh> listener adc_report -n 3_report
+    timestamp: 0
+    device_id: 9455617 (Type: 0x90, I2C:0 (0x48))
+    raw_data: [17568, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    resolution: 32768
+    v_ref: 6.14400
+    channel_id: [0, 1, 2, 3, -1, -1, -1, -1, -1, -1, -1, -1]
+
+
+
+TOPIC: adc_report instance 0 #2
+ adc_report
+    timestamp: 0
+    device_id: 9455617 (Type: 0x90, I2C:0 (0x48))
+    raw_data: [17571, -1, 35, -1, 0, 0, 0, 0, 0, 0, 0, 0]
+    resolution: 32768
+    v_ref: 6.14400
+    channel_id: [0, 1, 2, 3, -1, -1, -1, -1, -1, -1, -1, -1]
+
+
+
+TOPIC: adc_report instance 0 #3
+ adc_report
+    timestamp: 0
+    device_id: 9455617 (Type: 0x90, I2C:0 (0x48))
+    raw_data: [17569, -1, 37, -1, 0, 0, 0, 0, 0, 0, 0, 0]
+    resolution: 32768
+    v_ref: 6.14400
+    channel_id: [0, 1, 2, 3, -1, -1, -1, -1, -1, -1, -1, -1]
+
+nsh> ads1115 statusads1115 status
+INFO  [SPI_I2C] Running on I2C Bus 0, Address 0x48
+ads1115: single-sample: 6082 events, 14203429us elapsed, 2335.32us avg, min 942us max 558131us 7134.169us rms
+ads1115: comms errors: 2 events
+nsh> listener battery_statusrrent_a: -1.00000
+    current_average_a: 15.00000
+    discharged_mah: number: 0
+    manufacture_date: 0
+    state_of_health: 0
+    max_error: 0
+    interface_error: 0
+    faults: 0
+    over_discharge_count: 0
+    connected: True
+    cell_count: 4
+    source: 0
+    priority: 0
+    id: 1
+    is_powering_off: False
+    is_required: False
+    warning: 0
+nsh> top oncetop once
+
+ PID COMMAND                   CPU(ms) CPU(%)  USED/STACK PRIO(BASE) STATE FD
+   0 Idle Task                   48402 52.607   676/ 2024   0 (  0)  READY  3
+   1 hpwork                          0  0.000   268/ 1744 224 (224)  w:sem  3
+   2 lpwork                          0  0.000   268/ 1976 100 (100)  w:sem  3
+   3 nsh_main                        4  0.413  2244/ 2896 100 (100)  READY  3
+   4 wq:manager                      0  0.000   388/ 1232 255 (255)  w:sem  4
+   5 wq:lp_default                   3  0.284  1720/ 3472 205 (205)  w:sem  4
+ 777 mavlink_shell                   0  0.000  1192/ 2000 100 (100)  w:sem  3
+ 446 dataman                         0  0.001   920/ 1376  90 ( 90)  w:sem  4
+ 472 wq:nav_and_controllers         65  5.433  1708/ 2216 242 (242)  w:sem  4
+ 473 wq:rate_ctrl                   44  3.671  2572/ 3120 255 (255)  w:sem  4
+ 477 sih                            31  2.589  1420/ 2000 255 (255)  w:sem  3
+ 486 wq:hp_default                   9  0.783  1248/ 2776 237 (237)  w:sem  4
+ 495 wq:INS0                        98  8.236  4180/ 5976 241 (241)  w:sem  4
+ 551 commander                      14  1.169  1836/ 3184 140 (140)  w:sig  4
+ 619 wq:ttyS4                        3  0.292   964/ 1704 230 (230)  w:sem  4
+ 684 mavlink_if0                    53  4.491  2112/ 2704 100 (100)  READY  7
+ 685 mavlink_rcv_if0                 4  0.403  1812/ 4720 175 (175)  w:sem  7
+ 695 navigator                       2  0.208  1760/ 2144 105 (105)  w:sem 11
+ 731 wq:SPI0                       198 16.499  1892/ 2368 254 (254)  w:sem  4
+ 744 wq:I2C0                        19  1.657  1068/ 2312 247 (247)  w:sem  4
+ 750 rzv2h_heartbeat                 3  0.294   948/ 1984 100 (100)  w:sig  4
+ 786 top                             0  0.002  3468/ 4048 237 (237)  RUN    3
+
+Processes: 22 total, 4 running, 18 sleeping
+CPU usage: 46.43% tasks, 0.96% sched, 52.61% idle
+Uptime: 90.458s total, 48.403s idle
+nsh> exitexit
+
+## Second run: demosih with CONFIG_ARCH_INTERRUPTSTACK=2048, ELF sha256 3fd3db798b0957b6e74c2922b6bf39959412f5f939fb1352d12b05002ac01776
+## Probe detached: mission run
+[   0.2s] heartbeat sys 1 comp 0 type 2 autopilot 12
+[  10.2s] rx rate 3356 B/s {'ATTITUDE': 146, 'ATTITUDE_QUATERNION': 98, 'HIGHRES_IMU': 98, 'SCALED_IMU2': 49, 'GPS_RAW_INT': 47, 'GLOBAL_POSITION_INT': 46, 'VFR_HUD': 40, 'SCALED_PRESSURE': 19, 'SCALED_PRESSURE2': 19, 'ATTITUDE_TARGET': 19, 'BAD_DATA': 19, 'POSITION_TARGET_LOCAL_NED': 15, 'DISTANCE_SENSOR': 11, 'LOCAL_POSITION_NED': 10, 'MISSION_CURRENT': 10, 'ALTITUDE': 10, 'EXTENDED_SYS_STATE': 10, 'OPEN_DRONE_ID_LOCATION': 10, 'OPEN_DRONE_ID_SYSTEM': 10, 'SERVO_OUTPUT_RAW': 10, 'SYS_STATUS': 10, 'HEARTBEAT': 10, 'UNKNOWN_8': 9, 'UNKNOWN_410': 6, 'ESTIMATOR_STATUS': 5, 'UNKNOWN_380': 5, 'BATTERY_STATUS': 5, 'UNKNOWN_436': 5, 'HOME_POSITION': 5, 'UNKNOWN_411': 3, 'UNKNOWN_10753': 1, 'UNKNOWN_15419': 1, 'PING': 1, 'VIBRATION': 1}
+[  10.2s] position 10.8055921 106.6784975 amsl 5.0 m, 0.9 m from origin
+[  10.3s] mission ack type 0
+[  10.4s] arm attempt 0 result 0
+[  10.5s] mission start result 0
+[  10.5s] pos 10.805592 106.678498 rel_alt 0.0 m vx 0.0 vy 0.1
+[  20.7s] pos 10.805595 106.678491 rel_alt 4.9 m vx -0.3 vy 0.5
+[  30.7s] pos 10.805592 106.678496 rel_alt 13.0 m vx -0.2 vy 0.3
+[  36.1s] reached item 0
+[  40.8s] pos 10.805730 106.678500 rel_alt 19.8 m vx 4.2 vy 0.1
+[  51.0s] pos 10.806189 106.678500 rel_alt 20.1 m vx 4.8 vy -0.0
+[  53.9s] reached item 1
+[  61.1s] pos 10.806319 106.678698 rel_alt 19.9 m vx -0.2 vy 4.1
+[  71.3s] pos 10.806319 106.679029 rel_alt 19.9 m vx -0.0 vy 4.8
+[  75.7s] reached item 2
+[  81.5s] pos 10.806175 106.679236 rel_alt 19.9 m vx -4.0 vy -0.3
+[  91.6s] pos 10.805724 106.679230 rel_alt 19.9 m vx -4.8 vy 0.1
+[  94.5s] reached item 3
+[ 101.6s] pos 10.805604 106.679232 rel_alt 25.2 m vx 0.3 vy 0.0
+[ 102.0s] battery 85%
+[ 111.8s] pos 10.805611 106.679111 rel_alt 29.7 m vx -0.2 vy -4.1
+[ 112.2s] battery 83%
+[ 121.9s] pos 10.805595 106.678654 rel_alt 30.0 m vx -0.1 vy -4.8
+[ 122.3s] battery 81%
+[ 132.1s] pos 10.805592 106.678491 rel_alt 20.3 m vx 0.0 vy 0.2
+[ 142.1s] pos 10.805591 106.678498 rel_alt 8.5 m vx 0.0 vy 0.0
+[ 151.3s] DISARMED (landed)
+[ 151.3s] done: max rel alt 30.0 m, items reached [0, 1, 2, 3], armed=True
+## Probe detached: 30 s link count
+rate 3371 B/s BAD_DATA 0 HEARTBEAT 32 ATTITUDE 444
+## Probe detached: four back-to-back shell sessions (1 s gaps); SCI5 rx_count 4021 -> 4517 (4 x 124 bytes), overrun 4 -> 4
+## Post-mission MAVLink shell (top once, mavlink status, dmesg)
+### top once
+top once
+
+ PID COMMAND                   CPU(ms) CPU(%)  USED/STACK PRIO(BASE) STATE FD
+   0 Idle Task                  135549 52.368   260/ 2048   0 (  0)  READY  3
+   1 hpwork                          0  0.000   268/ 1744 224 (224)  w:sem  3
+   2 lpwork                          0  0.000   268/ 1976 100 (100)  w:sem  3
+   3 nsh_main                        4  0.409  2104/ 2896 100 (100)  READY  3
+   4 wq:manager                      0  0.000   388/ 1232 255 (255)  w:sem  4
+   5 wq:lp_default                   3  0.263  1368/ 3472 205 (205)  w:sem  4
+ 777 mavlink_shell                   0  0.000   888/ 2000 100 (100)  w:sem  3
+ 446 dataman                         0  0.003   716/ 1376  90 ( 90)  w:sem  4
+ 472 wq:nav_and_controllers         66  5.500  1368/ 2216 242 (242)  w:sem  4
+ 473 wq:rate_ctrl                   45  3.751  2240/ 3120 255 (255)  w:sem  4
+ 477 sih                            31  2.591  1040/ 2000 255 (255)  w:sem  3
+ 486 wq:hp_default                   9  0.787  1116/ 2776 237 (237)  w:sem  4
+ 495 wq:INS0                        99  8.315  3728/ 5976 241 (241)  w:sem  4
+ 551 commander                      14  1.195  1528/ 3184 140 (140)  w:sig  4
+ 619 wq:ttyS4                        3  0.280   756/ 1704 230 (230)  w:sem  4
+ 684 mavlink_if0                    54  4.530  1856/ 2704 100 (100)  READY  7
+ 685 mavlink_rcv_if0                 4  0.386  1528/ 4720 175 (175)  w:sem  7
+ 695 navigator                       2  0.211  1708/ 2144 105 (105)  w:sem 11
+ 731 wq:SPI0                       198 16.524  1716/ 2368 254 (254)  w:sem  4
+ 744 wq:I2C0                        19  1.633   676/ 2312 247 (247)  w:sem  4
+ 750 rzv2h_heartbeat                 3  0.275   564/ 1984 100 (100)  w:sig  4
+ 778 top                             0  0.002  3036/ 4048 237 (237)  RUN    3
+
+Processes: 22 total, 4 running, 18 sleeping
+CPU usage: 46.66% tasks, 0.97% sched, 52.37% idle
+Uptime: 250.326s total, 135.549s idle
+nsh> echo END0
+END0
+nsh> 
+### mavlink status
+mavlink status
+
+instance #0:
+	mavlink chan: #0
+	type:		GENERIC LINK OR RADIO
+	flow control: OFF
+	rates:
+	  tx: 3389.3 B/s
+	  txerr: 0.0 B/s
+	  tx rate mult: 0.904
+	  tx rate max: 4800 B/s
+	  rx: 82.8 B/s
+	  rx loss: 53.9%
+	Received Messages:
+	  sysid:255, compid:  0, Total: 14 (lost: 755)
+	FTP enabled: YES, TX enabled: YES
+	mode: Normal
+	Forwarding: On
+	MAVLink version: 2
+	transport protocol: serial (/dev/ttyS5 @115200)
+nsh> echo END1
+END1
+nsh> 
+### dmesg
+dmesg
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: b66539324809c004cbe2bbf33730f9a5e93aa752
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 7e4be6e98901c7f95136d1b1af7eb7e2ab94937a
+Build datetime: Nov 10 2026 16:16:03
+Build uri: localhost
+Build variant: demosih
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/1100_rc_quad_x_sih.hil
+ERROR [param] Parameter GPS_UBX_DYNMODEL not found.
+ERROR [param] Parameter UAVCAN_ENABLE not found.
+  SYS_HITL: curr: 0 -> new: 2
+INFO  [dataman] data manager RAM size is 68528 bytes
+ERROR [param] Parameter GPS_1_CONFIG not found.
+ekf2 [492:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+Starting Benewake TFmini Rangefinder on /dev/ttyS4
+Starting MAVLink on /dev/ttyS5
+INFO  [mavlink] mode: Normal, data rate: 4800 B/s on /dev/ttyS5 @ 115200B
+ERROR [parameters] get: param 65535 invalid
+Board extras: /etc/init.d/rc.board_extras
+icm45686 #0 on SPI bus 0
+ICM45686 started on SPI0 CS pin 3
+bmp280 #0 on I2C bus 7 address 0x76
+BMP280 started on SCI7 I2C bus 7
+ads1115 #0 on I2C bus 0 (external) address 0x48
+ADS1115 started on SCI0 I2C bus 0
+
+NuttShell (NSH)
+nsh> INFO  [vehicle_air_data] BARO switch from #0 -> #1
+WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+INFO  [gyro_calibration] gyro 1 (3407874) updating offsets [0.000, 0.000, 0.000]->[0.008, 0.010, -0.001] 32.1 degC
+INFO  [commander] Armed by external command	
+INFO  [navigator] Executing Mission	
+INFO  [navigator] Climb to 20.0 meters above home	
+INFO  [commander] Takeoff detected	
+INFO  [commander] Returning to launch	
+INFO  [navigator] RTL: start return at 36 m (30 m above destination)	
+INFO  [navigator] RTL: land at destination	
+INFO  [commander] Landing detected	
+INFO  [commander] Disarmed by landing	
+INFO  [vehicle_imu] ACC 0 (1310988) offset committed: [0.000 0.000 0.000]->[-0.038 0.107 -0.145])
+INFO  [mavlink] Starting mavlink shell
+nsh> echo END2
+END2
+
+## GDB snapshot after the run: SCI5 {rx_count, frame, overrun, buf_overrun} = {607, 0, 0, 0}; interrupt stack 260/2048 bytes used (coloration)
+## Earlier, with the JLinkExe RTT bridge attached: shell sessions lost packets; SCI5 overrun_count 4, BARO #0 TIMEOUT
+[  3.0s] send TOKEN0
+[  3.1s] got TOKEN0
+[  9.9s] send TOKEN1
+[  9.9s] got TOKEN1
+[ 13.9s] send TOKEN2
+[ 13.9s] got TOKEN2
+'\nNuttShell (NSH)\nnsh> \x1b[K\nnsh> \x1b[Kecho TOKEN0\nTOKEN0\nnsh> \x1b[Kecho TOKEN1\nTOKEN1\nnsh> \x1b[Kecho TOKEN2\nTOKEN2\nnsh> \x1b[K'
+[  3.0s] send TOKEN0
+[  7.0s] send TOKEN1
+[  7.1s] got TOKEN1
+[ 11.0s] send TOKEN2
+[ 11.1s] got TOKEN2
+'echo TOKEN1\nTOKEN1\nnsh> \x1b[Kecho TOKEN2\nTOKEN2\nnsh> \x1b[K'
+[  3.0s] send TOKEN0
+[  3.1s] got TOKEN0
+[  8.2s] send TOKEN1
+[  8.2s] got TOKEN1
+[ 12.2s] send TOKEN2
+[ 12.2s] got TOKEN2
+'\nNuttShell (NSH)\nnsh> \x1b[K\nnsh> \x1b[Kecho TOKEN0\nTOKEN0\nnsh> \x1b[Kecho TOKEN1\nTOKEN1\nnsh> \x1b[Kecho TOKEN2\nTOKEN2\nnsh> \x1b[K'
+
+==== Third run: ADS1115 NAMED_VALUE_FLOAT + demo target (2026-11-10) ====
+--- demosih adc_check 115200 20 s ---
+rate 3130 B/s BAD_DATA 13
+ADS_A0 n=41 (2.05 Hz) min 3.2927 max 3.2936 last 3.2934 V
+ADS_A1 n=41 (2.05 Hz) min -0.0004 max 0.0000 last 0.0000 V
+ADS_A2 n=39 (1.95 Hz) min 0.0028 max 0.0034 last 0.0030 V
+ADS_A3 n=39 (1.95 Hz) min -0.0004 max 0.0000 last -0.0002 V
+{'ATTITUDE': 257, 'ATTITUDE_QUATERNION': 172, 'HIGHRES_IMU': 170, 'NAMED_VALUE_FLOAT': 160, 'GLOBAL_POSITION_INT': 87, 'SCALED_IMU2': 86, 'GPS_RAW_INT': 85, 'VFR_HUD': 69, 'ATTITUDE_TARGET': 35, 'SCALED_PRESSURE': 34, 'SCALED_PRESSURE2': 34, 'POSITION_TARGET_LOCAL_NED': 26, 'DISTANCE_SENSOR': 21, 'MISSION_CURRENT': 20, 'HEARTBEAT': 19, 'ALTITUDE': 17, 'EXTENDED_SYS_STATE': 17, 'OPEN_DRONE_ID_LOCATION': 17, 'OPEN_DRONE_ID_SYSTEM': 17, 'SERVO_OUTPUT_RAW': 17, 'SYS_STATUS': 17, 'UNKNOWN_8': 17, 'LOCAL_POSITION_NED': 17, 'BAD_DATA': 13, 'UNKNOWN_380': 9, 'BATTERY_STATUS': 8, 'UNKNOWN_436': 8, 'HOME_POSITION': 8, 'ESTIMATOR_STATUS': 8, 'UNKNOWN_411': 7, 'PING': 2, 'UNKNOWN_7937': 1, 'VIBRATION': 1}
+--- demosih mission ---
+[   0.7s] heartbeat sys 1 comp 0 type 2 autopilot 12
+[  10.8s] rx rate 3430 B/s {'ATTITUDE': 139, 'HIGHRES_IMU': 93, 'ATTITUDE_QUATERNION': 93, 'NAMED_VALUE_FLOAT': 88, 'SCALED_IMU2': 47, 'GPS_RAW_INT': 46, 'GLOBAL_POSITION_INT': 46, 'VFR_HUD': 36, 'SCALED_PRESSURE': 19, 'SCALED_PRESSURE2': 19, 'ATTITUDE_TARGET': 18, 'POSITION_TARGET_LOCAL_NED': 14, 'DISTANCE_SENSOR': 11, 'MISSION_CURRENT': 11, 'ALTITUDE': 10, 'EXTENDED_SYS_STATE': 10, 'OPEN_DRONE_ID_LOCATION': 10, 'OPEN_DRONE_ID_SYSTEM': 10, 'SERVO_OUTPUT_RAW': 10, 'SYS_STATUS': 10, 'UNKNOWN_8': 10, 'LOCAL_POSITION_NED': 10, 'HEARTBEAT': 9, 'BAD_DATA': 9, 'UNKNOWN_380': 6, 'BATTERY_STATUS': 5, 'UNKNOWN_436': 5, 'HOME_POSITION': 5, 'ESTIMATOR_STATUS': 5, 'UNKNOWN_411': 4, 'PING': 1}
+[  10.8s] position 10.8055922 106.6784975 amsl 4.9 m, 0.9 m from origin
+[  11.0s] mission ack type 0
+[  11.1s] arm attempt 0 result 0
+[  11.1s] mission start result 0
+[  11.2s] pos 10.805592 106.678498 rel_alt -0.0 m vx 0.0 vy 0.1
+[  11.7s] battery 100%
+[  21.3s] pos 10.805596 106.678489 rel_alt 4.7 m vx -0.3 vy 0.7
+[  31.5s] pos 10.805593 106.678494 rel_alt 10.1 m vx -0.2 vy 0.5
+[  31.8s] battery 97%
+[  39.6s] reached item 0
+[  41.5s] pos 10.805625 106.678500 rel_alt 19.4 m vx 3.5 vy 0.0
+[  51.6s] pos 10.806073 106.678500 rel_alt 20.0 m vx 4.8 vy 0.1
+[  57.0s] reached item 1
+[  63.1s] pos 10.806328 106.678558 rel_alt 20.1 m vx -0.5 vy 3.8
+[  73.2s] pos 10.806315 106.678965 rel_alt 19.7 m vx 0.1 vy 4.8
+[  73.3s] battery 90%
+[  78.9s] reached item 2
+[  83.3s] pos 10.806230 106.679239 rel_alt 19.9 m vx -3.7 vy -0.4
+[  93.3s] pos 10.805807 106.679228 rel_alt 19.8 m vx -4.8 vy 0.2
+[ 100.9s] reached item 3
+[ 103.3s] pos 10.805600 106.679235 rel_alt 23.4 m vx 0.1 vy -0.0
+[ 113.4s] pos 10.805616 106.679216 rel_alt 29.4 m vx 0.1 vy -2.6
+[ 123.5s] pos 10.805603 106.678795 rel_alt 29.8 m vx -0.2 vy -4.7
+[ 133.7s] pos 10.805592 106.678502 rel_alt 29.5 m vx 0.0 vy -1.2
+[ 143.8s] pos 10.805592 106.678498 rel_alt 12.7 m vx 0.1 vy 0.1
+[ 153.6s] DISARMED (landed)
+[ 153.6s] done: max rel alt 30.0 m, items reached [0, 1, 2, 3], armed=True
+--- demosih post-mission shell ---
+### top once
+top once
+
+ PID COMMAND                   CPU(ms) CPU(%)  USED/STACK PRIO(BASE) STATE FD
+   0 Idle Task                  256077 51.794   260/ 2048   0 (  0)  READY  3
+   1 hpwork                          0  0.000   268/ 1744 224 (224)  w:sem  3
+   2 lpwork                          0  0.000   268/ 1976 100 (100)  w:sem  3
+   3 nsh_main                        4  0.372  2104/ 2896 100 (100)  READY  3
+   4 wq:manager                      0  0.000   388/ 1232 255 (255)  w:sem  4
+   5 wq:lp_default                   3  0.307  1368/ 3472 205 (205)  w:sem  4
+ 794 mavlink_shell                   0  0.000   888/ 2000 100 (100)  w:sem  3
+ 446 dataman                         0  0.001   716/ 1376  90 ( 90)  w:sem  4
+ 472 wq:nav_and_controllers         67  5.639  1368/ 2216 242 (242)  w:sem  4
+ 473 wq:rate_ctrl                   46  3.891  2240/ 3120 255 (255)  w:sem  4
+ 477 sih                            31  2.610  1040/ 2000 255 (255)  w:sem  3
+ 486 wq:hp_default                   9  0.818  1116/ 2776 237 (237)  w:sem  4
+ 495 wq:INS0                       103  8.631  3728/ 5976 241 (241)  w:sem  4
+ 551 commander                      14  1.211  1492/ 3184 140 (140)  w:sig  4
+ 619 wq:ttyS4                        3  0.295   756/ 1704 230 (230)  w:sem  4
+ 684 mavlink_if0                    54  4.523  1856/ 2704 100 (100)  READY  7
+ 685 mavlink_rcv_if0                 4  0.398  1528/ 4720 175 (175)  w:sem  7
+ 695 navigator                       2  0.234  1708/ 2144 105 (105)  w:sem 11
+ 731 wq:SPI0                       198 16.501  1716/ 2368 254 (254)  w:sem  4
+ 744 wq:I2C0                        19  1.615   676/ 2312 247 (247)  w:sem  4
+ 750 rzv2h_heartbeat                 1  0.148   572/ 1984 100 (100)  w:sig  4
+ 796 top                             0  0.001  3036/ 4048 237 (237)  RUN    3
+Processes: 22 total, 4 running, 18 sleeping
+CPU usage: 47.20% tasks, 1.01% sched, 51.79% idle
+Uptime: 477.325s total, 256.077s idle
+nsh> echo END0
+END0
+nsh> 
+### dmesg
+dmesg
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: b66539324809c004cbe2bbf33730f9a5e93aa752
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 7e4be6e98901c7f95136d1b1af7eb7e2ab94937a
+Build datetime: Nov 10 2026 17:04:45
+Build uri: localhost
+Build variant: demosih
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/1100_rc_quad_x_sih.hil
+ERROR [param] Parameter GPS_UBX_DYNMODEL not found.
+ERROR [param] Parameter UAVCAN_ENABLE not found.
+  SYS_HITL: curr: 0 -> new: 2
+INFO  [dataman] data manager RAM size is 68528 bytes
+ERROR [param] Parameter GPS_1_CONFIG not found.
+ekf2 [492:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+Starting Benewake TFmini Rangefinder on /dev/ttyS4
+Starting MAVLink on /dev/ttyS5
+INFO  [mavlink] mode: Normal, data rate: 4800 B/s on /dev/ttyS5 @ 115200B
+ERROR [parameters] get: param 65535 invalid
+Board extras: /etc/init.d/rc.board_extras
+icm45686 #0 on SPI bus 0
+ICM45686 started on SPI0 CS pin 3
+bmp280 #0 on I2C bus 7 address 0x76
+BMP280 started on SCI7 I2C bus 7
+ads1115 #0 on I2C bus 0 (external) address 0x48
+ADS1115 started on SCI0 I2C bus 0
+NuttShell (NSH)
+nsh> WARN  [health_and_arming_checks] Preflight Fail: No valid data from Baro 0
+WARN  [health_and_arming_checks] Preflight Fail: ekf2 missing data
+INFO  [vehicle_air_data] BARO switch from #0 -> #1
+INFO  [gyro_calibration] gyro 1 (3407874) updating offsets [0.000, 0.000, 0.000]->[0.008, 0.010, -0.001] 31.9 degC
+INFO  [mavlink] Starting mavlink shell
+INFO  [mavlink] Stopping mavlink shell
+INFO  [mavlink] Starting mavlink shell
+INFO  [mavlink] Stopping mavlink shell
+INFO  [mavlink] Starting mavlink shell
+INFO  [mavlink] Stopping mavlink shell
+INFO  [commander] Armed by external command	
+INFO  [navigator] Executing Mission	
+INFO  [navigator] Climb to 20.0 meters above home	
+INFO  [commander] Takeoff detected	
+INFO  [commander] Returning to launch	
+INFO  [navigator] RTL: start return at 36 m (30 m above destination)	
+INFO  [navigator] RTL: land at destination	
+INFO  [commander] Landing detected	
+INFO  [commander] Disarmed by landing	
+INFO  [vehicle_imu] ACC 0 (1310988) offset committed: [0.000 0.000 0.000]->[-0.149 0.105 -0.083])
+INFO  [mavlink] Starting mavlink shell
+nsh> echo END1
+END1
+nsh> 
+### mavlink status
+mavlink status
+instance #0:
+	mavlink chan: #0
+	type:		GENERIC LINK OR RADIO
+	flow control: OFF
+	rates:
+	  tx: 6147.8 B/s
+	  txerr: 283.2 B/s
+	  tx rate mult: 0.855
+	  tx rate max: 4800 B/s
+	  rx: 57.8 B/s
+	  rx loss: 62.9%
+	Received Messages:
+	  sysid:255, compid:  0, Total: 32 (lost: 2014)
+	    msgid:    0, Rate:  0.0 Hz, last 2.95s ago
+	    msgid:  126, Rate:120.9 Hz, last 0.01s ago
+	FTP enabled: YES, TX enabled: YES
+	mode: Normal
+	Forwarding: On
+	MAVLink version: 2
+	transport protocol: serial (/dev/ttyS5 @115200)
+nsh> echo END2
+END2
+nsh> 
+--- demo adc_check 57600 30 s ---
+rate 2547 B/s BAD_DATA 8
+ADS_A0 n=63 (2.10 Hz) min 3.2925 max 3.2936 last 3.2931 V
+ADS_A1 n=62 (2.07 Hz) min -0.0004 max 0.0000 last -0.0004 V
+ADS_A2 n=62 (2.07 Hz) min 0.0026 max 0.0034 last 0.0030 V
+ADS_A3 n=62 (2.07 Hz) min -0.0004 max 0.0000 last -0.0004 V
+{'ATTITUDE': 407, 'HIGHRES_IMU': 271, 'ATTITUDE_QUATERNION': 270, 'NAMED_VALUE_FLOAT': 249, 'VFR_HUD': 108, 'ATTITUDE_TARGET': 54, 'SCALED_PRESSURE': 54, 'SERVO_OUTPUT_RAW': 54, 'POSITION_TARGET_LOCAL_NED': 40, 'MISSION_CURRENT': 32, 'DISTANCE_SENSOR': 30, 'HEARTBEAT': 30, 'ALTITUDE': 26, 'EXTENDED_SYS_STATE': 26, 'LOCAL_POSITION_NED': 26, 'OPEN_DRONE_ID_LOCATION': 26, 'SYS_STATUS': 26, 'UNKNOWN_8': 26, 'UNKNOWN_380': 16, 'UNKNOWN_436': 13, 'ESTIMATOR_STATUS': 13, 'UNKNOWN_411': 9, 'BAD_DATA': 8, 'VIBRATION': 3, 'PING': 3}
+--- demo shell ---
+### top once
+top once
+
+ PID COMMAND                   CPU(ms) CPU(%)  USED/STACK PRIO(BASE) STATE FD
+   0 Idle Task                   35766 45.844   260/ 2048   0 (  0)  READY  3
+   1 hpwork                          0  0.000   268/ 1744 224 (224)  w:sem  3
+   2 lpwork                          0  0.000   268/ 1976 100 (100)  w:sem  3
+   3 nsh_main                        5  0.418  2104/ 2896 100 (100)  READY  3
+   4 wq:manager                      0  0.000   388/ 1232 255 (255)  w:sem  4
+   5 wq:lp_default                   3  0.259  1336/ 3472 205 (205)  w:sem  4
+ 966 mavlink_shell                   0  0.000   888/ 2000 100 (100)  w:sem  3
+ 438 dataman                         0  0.003   736/ 1376  90 ( 90)  w:sem  4
+ 471 wq:SPI0                       241 20.097  1716/ 2368 254 (254)  w:sem  4
+ 473 wq:hp_default                   2  0.194   796/ 2776 237 (237)  w:sem  4
+ 475 wq:I2C0                        19  1.627   676/ 2312 247 (247)  w:sem  4
+ 573 wq:nav_and_controllers         83  6.938  1184/ 2216 242 (242)  w:sem  4
+ 574 wq:rate_ctrl                  122 10.202  2240/ 3120 255 (255)  w:sem  4
+ 575 wq:INS0                        76  6.401  3728/ 5976 241 (241)  w:sem  4
+ 650 commander                      14  1.229  1492/ 3192 140 (140)  w:sig  4
+ 760 wq:ttyS4                        3  0.277   756/ 1704 230 (230)  w:sem  4
+ 877 mavlink_if0                    55  4.617  1840/ 2704 100 (100)  READY  7
+ 878 mavlink_rcv_if0                 4  0.385  1404/ 4720 175 (175)  w:sem  7
+ 892 navigator                       2  0.235  1532/ 2144 105 (105)  w:sem 11
+ 936 rzv2h_heartbeat                 1  0.164   564/ 1984 100 (100)  w:sig  4
+ 967 top                             0  0.002  3036/ 4048 237 (237)  RUN    3
+Processes: 21 total, 4 running, 17 sleeping
+CPU usage: 53.05% tasks, 1.10% sched, 45.84% idle
+Uptime: 74.387s total, 35.766s idle
+nsh> echo END0
+END0
+nsh> 
+### dmesg
+dmesg
+HW arch: RENESAS_RDK_RZV2H
+PX4 git-hash: b66539324809c004cbe2bbf33730f9a5e93aa752
+PX4 version: 1.16.0 c0 (17825984)
+PX4 git-branch: main
+OS: NuttX
+OS version: Release 12.0.0 (201326847)
+OS git-hash: 7e4be6e98901c7f95136d1b1af7eb7e2ab94937a
+Build datetime: Nov 10 2026 17:03:00
+Build uri: localhost
+Build variant: demo
+Toolchain: GNU GCC, 13.2.1 20231009
+PX4GUID: ffff32565a52303030483030303030303030
+MCU: R9A09G057, rev. A
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+New /fs/mtd_caldata size is:
+ERROR [bsondump] open '/fs/mtd_caldata' failed (2)
+INFO  [param] selected parameter default file /fs/params
+ERROR [param] open '/fs/params' failed (2)
+ERROR [init] param import failed
+ERROR [bsondump] open '/fs/params' failed (2)
+Board defaults: /etc/init.d/rc.board_defaults
+Loading airframe: /etc/init.d/airframes/4014_s500
+ERROR [param] Parameter GPS_UBX_DYNMODEL not found.
+INFO  [dataman] data manager RAM size is 68528 bytes
+Board sensors: /etc/init.d/rc.board_sensors
+icm45686 #0 on SPI bus 0
+ICM45686 started on SPI0 CS pin 3
+bmp280 #0 on I2C bus 7 address 0x76
+BMP280 started on SCI7 I2C bus 7
+ads1115 #0 on I2C bus 0 (external) address 0x48
+ADS1115 started on SCI0 I2C bus 0
+ekf2 [586:237]
+ERROR [parameters] get: param 65535 invalid
+INFO  [commander] LED: open /dev/led0 failed (2)
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+ERROR [parameters] get: param 65535 invalid
+Starting Benewake TFmini Rangefinder on /dev/ttyS4
+Starting MAVLink on /dev/ttyS5
+INFO  [mavlink] mode: Normal, data rate: 4000 B/s on /dev/ttyS5 @ 57600B
+ERROR [parameters] get: param 65535 invalid
+Board extras: /etc/init.d/rc.board_extras
+NuttShell (NSH)
+nsh> WARN  [health_and_arming_checks] Preflight Fail: Accel 0 uncalibrated
+WARN  [health_and_arming_checks] Preflight Fail: Gyro 0 uncalibrated
+WARN  [health_and_arming_checks] Preflight Fail: system power unavailable
+WARN  [health_and_arming_checks] Preflight Fail: Accel 0 uncalibrated
+WARN  [health_and_arming_checks] Preflight Fail: Attitude failure (roll)
+WARN  [health_and_arming_checks] Preflight Fail: Gyro 0 uncalibrated
+WARN  [health_and_arming_checks] Preflight Fail: system power unavailable
+INFO  [gyro_calibration] gyro 0 (3407874) updating offsets [0.000, 0.000, 0.000]->[0.008, 0.010, -0.001] 32.1 degC
+WARN  [health_and_arming_checks] Preflight Fail: Accel 0 uncalibrated
+WARN  [health_and_arming_checks] Preflight Fail: Attitude failure (roll)
+WARN  [health_and_arming_checks] Preflight Fail: system power unavailable
+INFO  [mavlink] Starting mavlink shell
+nsh> echo END1
+END1
+nsh> 
+### mavlink status
+mavlink status
+instance #0:
+	mavlink chan: #0
+	type:		GENERIC LINK OR RADIO
+	flow control: OFF
+	rates:
+	  tx: 6125.0 B/s
+	  txerr: 1427.4 B/s
+	  tx rate mult: 0.811
+	  tx rate max: 4000 B/s
+	  rx: 57.8 B/s
+	  rx loss: 36.3%
+	Received Messages:
+	  sysid:255, compid:  0, Total: 7 (lost: 254)
+	FTP enabled: YES, TX enabled: YES
+	mode: Normal
+	Forwarding: On
+	MAVLink version: 2
+	transport protocol: serial (/dev/ttyS5 @57600)
+nsh> echo END2
+END2
+nsh> 
+### rzv2h_adc_telemetry status
+rzv2h_adc_telemetry status
+INFO  [rzv2h_adc_telemetry] published 597, skipped stale 0
+nsh> echo END3
+END3
+nsh> 

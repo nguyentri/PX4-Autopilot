@@ -1,0 +1,80 @@
+#!/bin/sh
+# Start the real bench sensors and the showcase streams after the common rcS
+# has started SIH and its simulated sensors. SYS_HITL skips rc.board_sensors,
+# so the real drivers start here and take uORB instance 1 behind the
+# simulated sensors. The TFmini is started by rc.serial (SENS_TFMINI_CFG).
+# Rotation 0 is the driver frame, not fitted-board proof.
+
+if icm45686 -s -b 0 -c 3 -R 0 start
+then
+	echo "ICM45686 started on SPI0 CS pin 3"
+else
+	echo "ERROR [init] ICM45686 failed on SPI0 CS pin 3"
+fi
+
+if bmp280 -I -b 7 -a 0x76 start
+then
+	echo "BMP280 started on SCI7 I2C bus 7"
+else
+	echo "ERROR [init] BMP280 failed on SCI7 I2C bus 7"
+fi
+
+if ads1115 -X -b 0 start
+then
+	echo "ADS1115 started on SCI0 I2C bus 0"
+else
+	echo "ERROR [init] ADS1115 failed on SCI0 I2C bus 0"
+fi
+
+if ! battery_simulator start
+then
+	echo "ERROR [init] Simulated battery failed to start"
+fi
+
+# Heartbeat-only CR8-1 liveness. CR8-1 is optional: the module reports the
+# peer lost and boot continues either way.
+if ! rzv2h_heartbeat start
+then
+	echo "ERROR [init] Showcase CR8-1 heartbeat failed to start"
+fi
+
+# ADS1115 channel voltages for QGC (ADS_A0..ADS_A3 in the MAVLink Inspector).
+if ! rzv2h_adc_telemetry start
+then
+	echo "ERROR [init] Showcase ADS1115 telemetry failed to start"
+fi
+
+# HIGHRES_IMU carries the selected (simulated) IMU and magnetometer.
+if ! mavlink stream -d /dev/ttyS5 -s HIGHRES_IMU -r 10
+then
+	echo "ERROR [init] Showcase HIGHRES_IMU stream failed on SCI5"
+fi
+
+# Real ICM45686 (vehicle_imu instance 1).
+if ! mavlink stream -d /dev/ttyS5 -s SCALED_IMU2 -r 5
+then
+	echo "ERROR [init] Showcase SCALED_IMU2 stream failed on SCI5"
+fi
+
+# Simulated barometer (instance 0) and real BMP280 (instance 1).
+if ! mavlink stream -d /dev/ttyS5 -s SCALED_PRESSURE -r 2
+then
+	echo "ERROR [init] Showcase SCALED_PRESSURE stream failed on SCI5"
+fi
+
+if ! mavlink stream -d /dev/ttyS5 -s SCALED_PRESSURE2 -r 2
+then
+	echo "ERROR [init] Showcase SCALED_PRESSURE2 stream failed on SCI5"
+fi
+
+# Real TFmini.
+if ! mavlink stream -d /dev/ttyS5 -s DISTANCE_SENSOR -r 5
+then
+	echo "ERROR [init] Showcase DISTANCE_SENSOR stream failed on SCI5"
+fi
+
+# ADS1115 voltages: one channel per message, 10 Hz covers the 8 Hz rotation.
+if ! mavlink stream -d /dev/ttyS5 -s NAMED_VALUE_FLOAT -r 10
+then
+	echo "ERROR [init] Showcase NAMED_VALUE_FLOAT stream failed on SCI5"
+fi

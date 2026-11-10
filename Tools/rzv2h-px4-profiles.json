@@ -488,7 +488,8 @@
         "commander",
         "sensors",
         "ekf2",
-        "rzv2h_heartbeat"
+        "rzv2h_heartbeat",
+        "rzv2h_adc_telemetry"
       ],
       "forbidden_builtins": [
         "mpu9250",
@@ -536,11 +537,98 @@
         "board_reset",
         "up_systemreset",
         "rzv_ipc_raw_chardev_register",
-        "rzv2h_heartbeat_main"
+        "rzv2h_heartbeat_main",
+        "rzv2h_adc_telemetry_main"
       ],
       "startup_sources": {
         "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "etc/init.d/rc.board_sensors",
         "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "etc/init.d/rc.board_defaults.cmds",
+        "ROMFS/px4fmu_common/init.d/rcS": "etc/init.d/rcS"
+      }
+    },
+    {
+      "target": "renesas_rdk-rzv2h_demosih",
+      "board": "rdk-rzv2h",
+      "label": "demosih",
+      "nuttx_config": "demosih",
+      "core": "CR8-0",
+      "px4board": "boards/renesas/rdk-rzv2h/demosih.px4board",
+      "defconfig": "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig",
+      "prototype": "boards/renesas/rdk-rzv2h/firmware.prototype",
+      "board_id": 89,
+      "magic": "PX4FWv1",
+      "image_maxsize": 2097152,
+      "required_builtins": [
+        "simulator_sih",
+        "pwm_out_sim",
+        "battery_simulator",
+        "sensor_baro_sim",
+        "sensor_mag_sim",
+        "sensor_gps_sim",
+        "icm45686",
+        "bmp280",
+        "ads1115",
+        "tfmini",
+        "mavlink",
+        "commander",
+        "sensors",
+        "ekf2",
+        "rzv2h_heartbeat",
+        "rzv2h_adc_telemetry"
+      ],
+      "forbidden_builtins": [
+        "pwm_out",
+        "dshot",
+        "mpu9250",
+        "icm20948",
+        "bmp388",
+        "bmm150",
+        "ina228",
+        "gps",
+        "rc_input",
+        "sensor_agp_sim",
+        "px4io_bridge"
+      ],
+      "peer": null,
+      "hex": true,
+      "package": true,
+      "focused_tests": [
+        "test/rzv2h-boot-package-test.py",
+        "test/rzv2h-ipc-heartbeat-test.py"
+      ],
+      "required_config": {
+        "CONFIG_FS_ROMFS": "y",
+        "CONFIG_NSH_BUILTIN_APPS": "y",
+        "CONFIG_RZV_HRT": "y",
+        "CONFIG_ARCH_ARMV7R": "y",
+        "CONFIG_ARCH_CORTEXR8": "y",
+        "CONFIG_BOARDCTL_RESET": "y",
+        "CONFIG_RZV_IPC_RAW": "y",
+        "CONFIG_RZV_IPC_CR8_CR8": "y",
+        "CONFIG_RZV_IPC_ROLE_INITIATOR": "y",
+        "CONFIG_RDK_RZV2H_VOLATILE_PARAMFS": "y",
+        "CONFIG_NSH_ARCHROMFS": "y",
+        "CONFIG_RZV2H_SPI0_SINGLE_IMU": "y"
+      },
+      "forbidden_config": [
+        "CONFIG_RZV_OPENAMP",
+        "CONFIG_RDK_RZV2H_XSPI_PARAMFS",
+        "CONFIG_RZV_IPC_IPCC",
+        "CONFIG_RZV2H_DRONE_SENSOR_EXTENSION"
+      ],
+      "required_symbols": [
+        "hrt_init",
+        "romfs_img",
+        "board_on_reset",
+        "board_reset",
+        "up_systemreset",
+        "rzv_ipc_raw_chardev_register",
+        "rzv2h_heartbeat_main",
+        "rzv2h_adc_telemetry_main"
+      ],
+      "startup_sources": {
+        "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "etc/init.d/rc.board_defaults.cmds",
+        "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "etc/init.d/rc.board_extras",
         "ROMFS/px4fmu_common/init.d/rcS": "etc/init.d/rcS"
       }
     },
@@ -895,10 +983,14 @@
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
     "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b",
     "boards/renesas/rdk-rzv2h/demo.px4board": "f5d71e7e66f2ee187febcc436e7aece2e9227ad3d9e5774862f710ce19c9c65d",
-    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "d1d851ab9dfa3df1013bc5c4551b6f7cb039aae5e8450656490d89f78c566cc5",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "d21f39f7d7faa985c6a627d8eb886d249629e72ab09d89105c41a744d71cf499",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "56a7272fa657bd921822d1a167ec8da5d23d0b662de31e5bb170fa42fe3bb11b",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "858c27ed0682a2d9bc2258e1a250b80e4dde0924dd43d7aa798c128d9c7bcc4e",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "7048edbefb3de9db9cc4204cf34745a8fe7f96edd552bb25ae02323446299166",
+    "boards/renesas/rdk-rzv2h/demosih.px4board": "8a0121bb9d4ac465319acfb3a24044a808a533cf5aca46d12565fea9560975de",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
+    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "ef97b1226b2947d1cc2da981a989d7ab700ea905fd662334a0b6ca892ca11b42",
+    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "d6a637468bcbe9b61e94a4fa915cae67384666f6aab38e6ac26ae289e9ffb238",
     "boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board": "2246497faf27b76730823fb25f598e8a868a6dfa3d9aa2764c086551eda9437e",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/demo/defconfig": "47eea6b0604a2f2b3eff8744b00ebe1eb3baf8c31bc60431f11a6988d2f78fca",
     "ROMFS/rdk-rzv2h-io-cr8_1-demo/init.d/rcS": "05a8beefac218b1665d66bf9a42146539e28417a0be5d2bb19d033ab0bd7379b"
