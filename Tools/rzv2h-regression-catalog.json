@@ -3026,6 +3026,20 @@
       "note": "MAVLink shell runner against a fake SERIAL_CONTROL shell: marker framing, prompt/ANSI stripping, 70-byte chunking, single retry, timeout; no hardware acceptance."
     },
     {
+      "id": "rzv2h-flash-dual-pair-selection-test",
+      "path": "test/rzv2h-flash-dual-pair-selection-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-flash-dual-pair-selection-test.py"
+      ],
+      "note": "flash_dual.sh CR8-0 + CR8-1 pair selection run in an isolated tree with empty ELFs and a stub pair loader; no probe access."
+    },
+    {
       "id": "rzv2h-mavlink-shell-exec",
       "path": "platforms/nuttx/Debug/rzv2h-mavlink-shell-exec.py",
       "kind": "tool",

@@ -986,11 +986,11 @@
     "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "d21f39f7d7faa985c6a627d8eb886d249629e72ab09d89105c41a744d71cf499",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "56a7272fa657bd921822d1a167ec8da5d23d0b662de31e5bb170fa42fe3bb11b",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "7048edbefb3de9db9cc4204cf34745a8fe7f96edd552bb25ae02323446299166",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "6c6e017b586e8bbe08196ae60fff38b2e6ace1198d297b86a891a64d1947f30f",
     "boards/renesas/rdk-rzv2h/demosih.px4board": "8a0121bb9d4ac465319acfb3a24044a808a533cf5aca46d12565fea9560975de",
     "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
     "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "ef97b1226b2947d1cc2da981a989d7ab700ea905fd662334a0b6ca892ca11b42",
-    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "d6a637468bcbe9b61e94a4fa915cae67384666f6aab38e6ac26ae289e9ffb238",
+    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "5b11cbc5812eca7110804f44deb801515f4b2a015af2870f7ab72e913a158a74",
     "boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board": "2246497faf27b76730823fb25f598e8a868a6dfa3d9aa2764c086551eda9437e",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/demo/defconfig": "47eea6b0604a2f2b3eff8744b00ebe1eb3baf8c31bc60431f11a6988d2f78fca",
     "ROMFS/rdk-rzv2h-io-cr8_1-demo/init.d/rcS": "05a8beefac218b1665d66bf9a42146539e28417a0be5d2bb19d033ab0bd7379b"
@@ -1100,6 +1100,7 @@
     "tfmini-serial-config-test",
     "rzv2h-demo-runtime-boundary-test",
     "rzv2h-demo-protocol-test",
+    "rzv2h-ipc-heartbeat-test",
     "rzv2h-lab-pivot-allocation-test",
     "rzv2h-autonomy-evidence-test",
     "rzv2h-gateway-validator-contract-test",
@@ -1128,8 +1129,12 @@
     "rzv2h-ether-gbeth-cmsis-register-definitions-test",
     "rzv2h-cpg-sysc-register-offset-parity-test",
     "rzv2h-mhu-crc-rtc-offset-parity-test",
+    "rzv2h-svd-generator-test",
+    "rzv2h-nuttx-hardware-svd-parity-test",
     "rzv2h-riic-master-sequence-runtime-test",
-    "rzv2h-canfd-error-interrupt-runtime-test"
+    "rzv2h-canfd-error-interrupt-runtime-test",
+    "rzv2h-mavlink-shell-exec-test",
+    "rzv2h-flash-dual-pair-selection-test"
   ],
   "repositories": {
     "src/modules/mavlink/mavlink": {
