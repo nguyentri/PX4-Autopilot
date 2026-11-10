@@ -328,6 +328,7 @@ static uint32_t getreg32(unsigned address) { (void)address; return values[sequen
 static clock_t clock_systime_ticks(void) { return tick_value; }
 static irqstate_t spin_lock_irqsave(void *lock) { (void)lock; return 0; }
 static void spin_unlock_irqrestore(void *lock, irqstate_t flags) { (void)lock; (void)flags; }
+static uint32_t up_timer_getfreq(void) { return TIMER_PERIPHCLK_RUNTIME() / (TIMER_PRESCALER + 1); }
 ''' + EXTRACT.definition(source, 'int up_timer_gettime(')
         code += r'''
 int main(void) {
