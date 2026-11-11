@@ -18,7 +18,7 @@ EKF2. This record covers the showcase only, not flight readiness.
 | Origin | 10.8056 N, 106.6785 E, 5.0 m AMSL. Position 0.9 m from origin at rest. |
 | Link | 2.4–3.3 kB/s at `MAV_0_RATE 4800`. No BAD_DATA, no HIL_* streams. |
 | Mission | Takeoff to 20 m, 3 waypoints (80 m square), RTL. Accepted, armed on the first attempt, items 0–3 reached, landed and disarmed after 143–152 s. Passed twice. |
-| Battery | Simulated 4S. Went from 95 % to 80 % during one mission. |
+| Battery | Simulated 4S. Went from 95 % to 80 % during one mission with `SIM_BAT_DRAIN 600`. The default is now 300 s (1 % every 3 s while armed, floor 30 %); the simulator holds 100 % while disarmed, so a bench idle reading of 100 % is expected. |
 | ADS1115 | A0 17570 counts ≈ 3.294 V, A1 ≈ 0, A2 ≈ 35 counts ≈ 6.9 mV, A3 ≈ 0. Matches bench wiring (A0 at 3.3 V, others near GND). `adc_report.timestamp` is now non-zero. |
 | Load | CPU idle ≈ 52 %. SIH stack 1420/2000 used. |
 

@@ -989,7 +989,7 @@
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "6c6e017b586e8bbe08196ae60fff38b2e6ace1198d297b86a891a64d1947f30f",
     "boards/renesas/rdk-rzv2h/demosih.px4board": "8a0121bb9d4ac465319acfb3a24044a808a533cf5aca46d12565fea9560975de",
     "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
-    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "ef97b1226b2947d1cc2da981a989d7ab700ea905fd662334a0b6ca892ca11b42",
+    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "b227c7dbd55dfb22345e92bbdfe25bf9d663987ee42d16b1615b200f15a4b35a",
     "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "5b11cbc5812eca7110804f44deb801515f4b2a015af2870f7ab72e913a158a74",
     "boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board": "2246497faf27b76730823fb25f598e8a868a6dfa3d9aa2764c086551eda9437e",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/demo/defconfig": "47eea6b0604a2f2b3eff8744b00ebe1eb3baf8c31bc60431f11a6988d2f78fca",

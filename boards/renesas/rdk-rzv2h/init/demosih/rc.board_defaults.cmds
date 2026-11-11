@@ -28,8 +28,9 @@ param set-default SIM_GPS_USED 12
 param set-default SIH_DISTSNSR_OVR 10000
 param set-default EKF2_RNG_CTRL 0
 
-# The simulated battery drains slowly enough for a full mission demo.
-param set-default SIM_BAT_DRAIN 600
+# The simulated battery drains only while armed: 1% every 3 s, so the level
+# visibly falls during a short demo flight and stops at SIM_BAT_MIN_PCT.
+param set-default SIM_BAT_DRAIN 300
 param set-default SIM_BAT_MIN_PCT 30
 # 4S pack as in PX4 SITL; with 0 cells the battery reports no voltage or level.
 param set-default BAT1_N_CELLS 4
