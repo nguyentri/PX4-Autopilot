@@ -35,7 +35,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
         self.assertTrue(HAS_JSONSCHEMA, "jsonschema module must be installed")
 
     def test_01_all_schemas_are_valid_draft7(self):
-        """Verify all schemas under Tools/vscode_extension/schemas are valid Draft 7."""
+        """Verify all schemas under Tools/vscode_extension/1kw-px4-nuttx/schemas are valid Draft 7."""
         schema_files = list(SCHEMAS_DIR.glob("*.schema.json"))
         self.assertGreaterEqual(len(schema_files), 4)
         for sf in schema_files:
@@ -43,12 +43,12 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
             Draft7Validator.check_schema(schema)
 
     def test_02_catalog_counts(self):
-        """Verify authoritative discovery counts: 18 PX4, 130 RZ NuttX, 30 RA8P1 NuttX."""
+        """Verify authoritative discovery counts: 19 PX4, 134 RZ NuttX, 30 RA8P1 NuttX."""
         px4_targets = discover_px4_targets()
-        self.assertEqual(len(px4_targets), 18)
+        self.assertEqual(len(px4_targets), 19)
 
         rzv_configs = discover_nuttx_configs("rdk-rzv2h")
-        self.assertEqual(len(rzv_configs), 130)
+        self.assertEqual(len(rzv_configs), 134)
 
         ra8_configs = discover_nuttx_configs("evk-ra8p1")
         self.assertEqual(len(ra8_configs), 30)

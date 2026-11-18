@@ -7,7 +7,7 @@ const os = require('os');
 const esbuild = require(path.join(__dirname, '..', 'node_modules', 'esbuild'));
 
 const EXT_DIR = path.resolve(__dirname, '..');
-const REPO_ROOT = path.resolve(EXT_DIR, '../..');
+const REPO_ROOT = path.resolve(EXT_DIR, '../../..');
 
 console.log('== Running VS Code Extension Unit Tests ==');
 
@@ -250,7 +250,7 @@ async function runBehavioralTests() {
       'toolchain headers stay out of Problems');
     assert.equal(parseGccLine('[12/400] Building CXX object foo.o', REPO_ROOT), undefined);
     const firmwareOutput = new FirmwareOutput(REPO_ROOT);
-    const realFile = path.join(REPO_ROOT, 'Tools/vscode_extension/src/firmware-output.ts');
+    const realFile = path.join(REPO_ROOT, 'Tools/vscode_extension/1kw-px4-nuttx/src/firmware-output.ts');
     firmwareOutput.beginBuild('Build demo');
     firmwareOutput.appendBuild(`${realFile}:4:2: warning: first\n${realFile}:4:`);
     firmwareOutput.appendBuild(`2: warning: first\n${realFile}:9:1: error: second\n`);

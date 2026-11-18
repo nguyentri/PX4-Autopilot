@@ -21,8 +21,8 @@ EXIT_BLOCKED_RECOVERY = 3
 EXIT_CANCELLED = 130
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-SCHEMAS_DIR = REPO_ROOT / "Tools" / "vscode_extension" / "schemas"
-PROFILES_DIR = REPO_ROOT / "Tools" / "vscode_extension" / "profiles"
+SCHEMAS_DIR = REPO_ROOT / "Tools" / "vscode_extension" / "1kw-px4-nuttx" / "schemas"
+PROFILES_DIR = REPO_ROOT / "Tools" / "vscode_extension" / "1kw-px4-nuttx" / "profiles"
 
 _SCHEMA_CACHE: Dict[str, Dict[str, Any]] = {}
 

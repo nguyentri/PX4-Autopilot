@@ -6,7 +6,7 @@
 
 ## 1. System Overview & Architecture
 
-The 1KW-Px4-Nuttx extension (`Tools/vscode_extension/`) provides native VS Code integration with OneKiwi Technology design styling for developing, building, loading, and debugging PX4 Autopilot and NuttX RTOS on Renesas embedded targets.
+The 1KW-Px4-Nuttx extension (`Tools/vscode_extension/1kw-px4-nuttx/`) provides native VS Code integration with OneKiwi Technology design styling for developing, building, loading, and debugging PX4 Autopilot and NuttX RTOS on Renesas embedded targets.
 
 ```
 +-------------------------------------------------------------------------------+
@@ -139,7 +139,7 @@ python3 Tools/firmware-workspace.py probe-session --serial <serial> --json
 
 ## 3. Schemas & Data Contracts
 
-All schemas are located under `Tools/vscode_extension/schemas/` and adhere to JSON
+All schemas are located under `Tools/vscode_extension/1kw-px4-nuttx/schemas/` and adhere to JSON
 Schema Draft 7. The linked schema definitions are authoritative; these field lists
 are summaries, not replacement validation contracts.
 

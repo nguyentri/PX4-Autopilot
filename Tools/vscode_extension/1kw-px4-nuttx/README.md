@@ -182,13 +182,13 @@ The extension provides structured schemas and machine-readable contracts for AI 
 Run from the repository root. For Remote WSL, use the WSL terminal in the VS Code workspace so installation targets the WSL extension host. The build script type-checks, bundles, packages and tests the extension:
 
 ```bash
-Tools/vscode_extension/build.sh
-code --install-extension Tools/vscode_extension/1kw-px4-nuttx-0.1.0.vsix --force
+Tools/vscode_extension/1kw-px4-nuttx/build.sh
+code --install-extension Tools/vscode_extension/1kw-px4-nuttx/1kw-px4-nuttx-0.1.0.vsix --force
 ```
 
 `--force` replaces an installed copy with the same version. Run **Developer: Reload Window** afterwards to load it.
 
-If the VSIX has already been rebuilt, run only the `code --install-extension` command above. You can also open the Extensions view, choose **… → Install from VSIX…**, and select `Tools/vscode_extension/1kw-px4-nuttx-0.1.0.vsix` (or `px4-nuttx-dashboard-0.1.0.vsix`), then reload the window.
+If the VSIX has already been rebuilt, run only the `code --install-extension` command above. You can also open the Extensions view, choose **… → Install from VSIX…**, and select `Tools/vscode_extension/1kw-px4-nuttx/1kw-px4-nuttx-0.1.0.vsix` (or `px4-nuttx-dashboard-0.1.0.vsix`), then reload the window.
 
 ---
 

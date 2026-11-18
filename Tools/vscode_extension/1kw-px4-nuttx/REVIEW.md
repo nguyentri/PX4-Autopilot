@@ -1,8 +1,8 @@
 # UX/AX Review: 1KW-Px4-Nuttx Extension
 
 > Review Date: 2026-10-28\
-> Subject: `Tools/vscode_extension/` (VS Code Extension & Workspace Integration)\
-> Invocation: `/ak:enhance-ux-ax /ak:ui-ux-pro-max review an enhance VS code extension Tools/vscode_extension`
+> Subject: `Tools/vscode_extension/1kw-px4-nuttx/` (VS Code Extension & Workspace Integration)\
+> Invocation: `/ak:enhance-ux-ax /ak:ui-ux-pro-max review an enhance VS code extension Tools/vscode_extension/1kw-px4-nuttx`
 
 ---
 
@@ -20,7 +20,7 @@ declarations alone do not establish visual or keyboard usability.
 ## Scope & Environment
 
 - **Mode**: Review, Analyze, Propose, Implement, and Verify (`--auto` / enhancement pass).
-- **Target Surface**: VS Code Extension (`Tools/vscode_extension/`) and Python workspace backend (`Tools/firmware-workspace.py`).
+- **Target Surface**: VS Code Extension (`Tools/vscode_extension/1kw-px4-nuttx/`) and Python workspace backend (`Tools/firmware-workspace.py`).
 - **Stack**: TypeScript 5.5, VS Code Extension API (`^1.85.0`), esbuild, JSON Schema Draft 7, Python 3.9+ backend.
 - **Hardware Coverage**: Renesas RDK-RZ/V2H (CR8-0, CR8-1, CM33), EVK-RA8P1 (CM85, CM33), FPB-RA8E1 (CM85).
 - **Verification Commands**: `npm run typecheck`, `npm run build`, `npm test` (`tests/run-tests.js`, `tests/dual-core-loader-tests.js`).
@@ -64,7 +64,7 @@ No numerical UX scores are assigned without native workbench evidence.
 ### P1 — Semantic Tree Icons & Theme Colors (Must)
 - **Evidence**: `firmware-setup-view.ts:28` previously hardcoded `new vscode.ThemeIcon(command ? 'tools' : 'info')`.
 - **Change**: Added `getSemanticIcon()` assigning dedicated Codicons (`layers`, `circuit-board`, `chip`, `plug`, `play`, `rocket`, `cloud-upload`, `debug-alt`, `terminal`, `history`, `checklist`) and dynamic status icons with theme colors (`testing.iconPassed`, `problemsWarningIcon.foreground`).
-- **Files**: `Tools/vscode_extension/src/views/firmware-setup-view.ts`
+- **Files**: `Tools/vscode_extension/1kw-px4-nuttx/src/views/firmware-setup-view.ts`
 - **Acceptance Check**: `getChildren()` emits distinct Codicons for each row type; `npm test` passes without errors.
 
 ### P2 — Rich Markdown Tooltips Across All Views (Must)
@@ -76,19 +76,19 @@ No numerical UX scores are assigned without native workbench evidence.
 ### P3 — Command Palette Iconography & Ergonomic Keybindings (Must)
 - **Evidence**: 23 commands lacked `icon` in `package.json`; no keybindings existed for common developer actions.
 - **Change**: Contributed Codicons to all commands in `package.json`; contributed `Ctrl+Alt+K` keybinding chord series (`Ctrl+Alt+K B` build, `Ctrl+Alt+K C` clean, `Ctrl+Alt+K D` doctor, `Ctrl+Alt+K P` profile, `Ctrl+Alt+K R` refresh, `Ctrl+Alt+K L` load, `Ctrl+Alt+K A` attach debug, `Ctrl+Alt+K T` console).
-- **Files**: `Tools/vscode_extension/package.json`
+- **Files**: `Tools/vscode_extension/1kw-px4-nuttx/package.json`
 - **Acceptance Check**: Manifest contributions and boolean guard cases are checked on the host. Native command presentation and chord dispatch remain pending.
 
 ### P4 — AI Agent Experience: `llms.txt` and `llms-full.txt` (Must)
 - **Evidence**: `llms-full.txt` was missing; `llms.txt` had naming typo and lacked links to full reference docs.
 - **Change**: Created `llms-full.txt` with complete CLI reference, JSON schema models, IPC protocols, and error exit code matrix; updated `llms.txt` with standard format and doc links.
-- **Files**: `Tools/vscode_extension/llms.txt`, `Tools/vscode_extension/llms-full.txt`.
+- **Files**: `Tools/vscode_extension/1kw-px4-nuttx/llms.txt`, `Tools/vscode_extension/1kw-px4-nuttx/llms-full.txt`.
 - **Acceptance Check**: Both files exist, are valid Markdown/text, and accurately reflect backend CLI contracts.
 
 ### P5 — Publication-Grade Documentation: `README.md` & `DESIGN.md` (Should)
 - **Evidence**: `README.md` was only 34 lines lacking workflow diagrams, command tables, settings, and safety rules; `DESIGN.md` was absent.
 - **Change**: Rewrote `README.md` with ASCII architecture diagram, quick start, view breakdown, command/keybinding tables, settings guide, and safety rules; created `DESIGN.md` specifying color tokens, Codicon taxonomy, and accessibility standards.
-- **Files**: `Tools/vscode_extension/README.md`, `Tools/vscode_extension/DESIGN.md`.
+- **Files**: `Tools/vscode_extension/1kw-px4-nuttx/README.md`, `Tools/vscode_extension/1kw-px4-nuttx/DESIGN.md`.
 - **Acceptance Check**: Files exist, are hyperlinked, and match project standards.
 
 ---

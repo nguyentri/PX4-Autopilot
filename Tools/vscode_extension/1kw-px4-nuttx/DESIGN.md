@@ -1,6 +1,6 @@
 # Design System & UX/AX Guidelines: 1KW-Px4-Nuttx
 
-> Unified design system, visual taxonomy, and user/agent experience guidelines for the 1KW-Px4-Nuttx VS Code extension (`Tools/vscode_extension/`), styled after [OneKiwi Technology](https://onekiwi.com.vn/).
+> Unified design system, visual taxonomy, and user/agent experience guidelines for the 1KW-Px4-Nuttx VS Code extension (`Tools/vscode_extension/1kw-px4-nuttx/`), styled after [OneKiwi Technology](https://onekiwi.com.vn/).
 
 ---
 

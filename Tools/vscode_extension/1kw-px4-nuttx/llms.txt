@@ -3,7 +3,7 @@
 > VS Code extension and workspace tooling for PX4 Autopilot and NuttX RTOS development on Renesas RZ/V2H, RA8P1, and RA8E1 hardware, styled after OneKiwi Technology.
 
 Repository backend: `Tools/firmware-workspace.py`.
-Extension workspace: `Tools/vscode_extension/`.
+Extension workspace: `Tools/vscode_extension/1kw-px4-nuttx/`.
 Detailed documentation: [Full Technical Reference](llms-full.txt) | [VS Code Extension Guide](../../docs/vscode-extension.md).
 Contracts: JSON Schema Draft-07 in `schemas/`. Do not invent target catalogs or loader recipes.
 

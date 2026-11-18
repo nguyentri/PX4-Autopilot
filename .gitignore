@@ -304,14 +304,28 @@ __pycache__/
 .vscode/.cortex-debug.*
 
 # VS Code extension dependencies and build artifacts
-Tools/vscode_extension/node_modules/
-Tools/vscode_extension/dist/
-Tools/vscode_extension/out/
-Tools/vscode_extension/*.vsix
-Tools/vscode_extension/.vscode/
-Tools/vscode_extension/.vsce/
-Tools/vscode_extension/coverage/
-Tools/vscode_extension/esbuild.js
+Tools/vscode_extension/*/node_modules/
+Tools/vscode_extension/*/dist/
+Tools/vscode_extension/*/out/
+Tools/vscode_extension/*/*.vsix
+Tools/vscode_extension/*/.vscode/
+Tools/vscode_extension/*/.vsce/
+Tools/vscode_extension/*/coverage/
+# Extension sources are never hidden by the global *.py and *log* rules.
+!Tools/vscode_extension/*/**/*.py
+!Tools/vscode_extension/*/**/*log*
+# Generated output never committed: recordings, downloaded logs, session
+# reports (they contain positions), packaged builds, test and compiler caches.
+Tools/vscode_extension/*/**/*.tlog
+Tools/vscode_extension/*/**/*.ulg
+Tools/vscode_extension/*/**/*.log
+Tools/vscode_extension/*/**/px4-gcs-report-*.html
+Tools/vscode_extension/*/**/*.vsix
+Tools/vscode_extension/*/**/__pycache__/
+Tools/vscode_extension/*/.vscode-test/
+Tools/vscode_extension/*/*.tsbuildinfo
+*.tlog
+px4-gcs-report-*.html
 
 !test/firmware-workspace-serial-console-test.py
 **/*firmware-import.json
