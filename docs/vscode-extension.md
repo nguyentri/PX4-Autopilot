@@ -1,10 +1,12 @@
 # 1KW-Px4-Nuttx Extension Guide
 
-The native VS Code extension in `Tools/vscode_extension/` delegates discovery, checks, builds, RAM loading and configuration resolution to `Tools/firmware-workspace.py`. Existing CLI entry points and manually maintained `.vscode/launch.json` remain available.
+The native VS Code extension in `Tools/vscode_extension/1kw-px4-nuttx/` delegates discovery, checks, builds, RAM loading and configuration resolution to `Tools/firmware-workspace.py`. Existing CLI entry points and manually maintained `.vscode/launch.json` remain available.
+
+The companion ground station for running firmware, `Tools/vscode_extension/1kw-px4-gcs/` (MAVLink over serial or UDP: telemetry, parameters, guarded control, NSH console, logs and session report), is described in the [1KW-Px4-GCS guide](vscode-gcs-extension.md). Both extensions install side by side.
 
 ## Installation and host
 
-From the repository root, run `./Tools/vscode_extension/build.sh`. The script installs locked dependencies with `npm ci` when `node_modules` is absent, then typechecks, builds and packages `Tools/vscode_extension/1kw-px4-nuttx-<version>.vsix` (also mirrored to `px4-nuttx-dashboard-<version>.vsix`) using the version in `package.json`. It runs the tests against that package and also works from another directory. Install the resulting local VSIX with VS Code. The VSIX contains the extension, profiles, themes and schemas; the backend stays in the compatible repository checkout. Marketplace publication is separate.
+From the repository root, run `./Tools/vscode_extension/1kw-px4-nuttx/build.sh`. The script installs locked dependencies with `npm ci` when `node_modules` is absent, then typechecks, builds and packages `Tools/vscode_extension/1kw-px4-nuttx/1kw-px4-nuttx-<version>.vsix` (also mirrored to `px4-nuttx-dashboard-<version>.vsix`) using the version in `package.json`. It runs the tests against that package and also works from another directory. Install the resulting local VSIX with VS Code. The VSIX contains the extension, profiles, themes and schemas; the backend stays in the compatible repository checkout. Marketplace publication is separate.
 
 The extension runs on the workspace extension host. Linux and Remote WSL are the intended initial hosts; Python, compiler, J-Link, GDB and USB-forwarded probes must be visible there. Native Windows and macOS hardware workflows have not been validated. Use the current usbipd-win instructions when forwarding a Windows USB probe into WSL; Doctor enumerates SEGGER USB devices through sysfs without connecting to a core.
 
@@ -104,7 +106,7 @@ The extension does not edit `.vscode/launch.json` or its JSONC customizations. T
 
 ## Configuration ownership and CLI
 
-Tracked schemas and capabilities live under `Tools/vscode_extension/{schemas,profiles}/`. The selection has `schemaVersion`, `id`, `board`, `core`, `build.{family,target|config,mode}`, optional `group`, `load.{recipe}` and `debug.{mode}`. Probe/tool paths belong to folder-scoped `px4Nuttx` settings or saved local state. The backend schema validates syntax; resolution and operation admission validate compatibility.
+Tracked schemas and capabilities live under `Tools/vscode_extension/1kw-px4-nuttx/{schemas,profiles}/`. The selection has `schemaVersion`, `id`, `board`, `core`, `build.{family,target|config,mode}`, optional `group`, `load.{recipe}` and `debug.{mode}`. Probe/tool paths belong to folder-scoped `px4Nuttx` settings or saved local state. The backend schema validates syntax; resolution and operation admission validate compatibility.
 
 `.vscode/active-selection.json` is the extension's local projection, written only at a trusted operation/selection boundary. Content-addressed `.vscode/firmware-selection-*.json` freezes operation input so a later selection change cannot retarget an in-progress command. Preserve developer-owned `firmware-workspace.json`; generated projections and build artifacts can be regenerated. Receipts are under `build/workspace-artifacts/<run-id>/`; debug symbols retain a private snapshot there for the session. The runtime directory is private to the current host/user, keyed by probe serial hash; SCI4 uses a separate `uart/` device-identity namespace.
 
@@ -122,7 +124,7 @@ python3 Tools/firmware-workspace.py debug-config --selection .vscode/active-sele
 python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <jlink-serial> --action start --json
 ```
 
-Use `load --recover` only after diagnosis to request recovery. `debug-config --gdb <executable>` accepts an explicit tool override. All commands support `--help`; `--serial` is the probe flag. Result fields and exit/status meanings are documented in the [agent guide](../Tools/vscode_extension/llms.txt), with offline schemas as the source of truth.
+Use `load --recover` only after diagnosis to request recovery. `debug-config --gdb <executable>` accepts an explicit tool override. All commands support `--help`; `--serial` is the probe flag. Result fields and exit/status meanings are documented in the [agent guide](../Tools/vscode_extension/1kw-px4-nuttx/llms.txt), with offline schemas as the source of truth.
 
 The new view passes `--expect-receipt-id` and `--expect-pair-sha256` to load/debug admission, plus `debug-config --require-loaded`. These options reject mismatched prepared/loaded identities. Legacy calls omitting them retain their defaults. `doctor --serial` reads the existing per-probe journal without creating a runtime directory or connecting to hardware. `import-images` accepts the offline import schema, validates the embedded selection through the existing resolver, and writes private snapshots under `build/workspace-artifacts/import-<requestId>/`.
 
