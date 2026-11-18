@@ -1,0 +1,10 @@
+src/**
+tests/**
+tsconfig.json
+esbuild.js
+build.sh
+*.vsix
+.vscode/**
+**/__pycache__/**
+**/*.pyc
+**/*.map

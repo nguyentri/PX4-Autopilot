@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://px4-nuttx.local/1kw-px4-gcs/bridge-protocol.schema.json",
+  "title": "1KW-Px4-GCS sidecar protocol (version 1)",
+  "description": "One JSON object per line. Host to sidecar: command. Sidecar to host: reply or event. Text fields that come from the vehicle are untrusted and must be rendered as text only.",
+  "protocolVersion": 1,
+  "definitions": {
+    "commandName": {
+      "enum": ["hello", "doctor", "list_ports", "connect", "disconnect", "cancel",
+               "param_list", "param_read", "param_set",
+               "arm", "disarm", "set_mode", "reboot",
+               "stream_request", "stream_release",
+               "shell_open", "shell_write", "shell_close",
+               "inspector_subscribe", "inspector_unsubscribe",
+               "log_list", "log_download", "record_start", "record_stop"]
+    },
+    "errorCode": {
+      "enum": ["PORT_BUSY", "PORT_NOT_FOUND", "PERMISSION_DENIED", "NO_HEARTBEAT", "NOT_CONNECTED",
+               "TIMEOUT", "CANCELLED", "DENIED", "BAD_ARGUMENT", "MISSING_MODULE", "NOT_IMPLEMENTED",
+               "INTERNAL"]
+    },
+    "num": { "type": ["number", "null"] },
+    "int": { "type": "integer" },
+    "command": {
+      "type": "object",
+      "required": ["id", "cmd"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "integer" },
+        "cmd": { "$ref": "#/definitions/commandName" },
+        "args": { "type": "object" }
+      }
+    },
+    "reply": {
+      "type": "object",
+      "required": ["type", "id", "ok"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "reply" },
+        "id": { "type": ["integer", "null"] },
+        "ok": { "type": "boolean" },
+        "data": { "type": "object" },
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "additionalProperties": false,
+          "properties": {
+            "code": { "$ref": "#/definitions/errorCode" },
+            "message": { "type": "string" },
+            "details": { "type": "object" }
+          }
+        }
+      },
+      "if": { "properties": { "ok": { "const": true } } },
+      "then": { "required": ["data"], "not": { "required": ["error"] } },
+      "else": { "required": ["error"], "not": { "required": ["data"] } }
+    },
+    "event": {
+      "type": "object",
+      "required": ["type", "name", "ts", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "event" },
+        "name": {
+          "enum": ["link", "heartbeat", "modes", "attitude", "position", "local_position", "gps", "battery",
+                   "vfr", "statustext", "sensors", "named_value", "param_progress", "shell_data",
+                   "inspector", "log_progress", "recording"]
+        },
+        "ts": { "type": "number" },
+        "data": { "type": "object" }
+      },
+      "allOf": [
+        { "if": { "properties": { "name": { "const": "link" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/linkData" } } } },
+        { "if": { "properties": { "name": { "const": "heartbeat" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/heartbeatData" } } } },
+        { "if": { "properties": { "name": { "const": "modes" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/modesData" } } } },
+        { "if": { "properties": { "name": { "const": "statustext" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/statustextData" } } } },
+        { "if": { "properties": { "name": { "const": "sensors" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/sensorsData" } } } },
+        { "if": { "properties": { "name": { "const": "named_value" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/namedValueData" } } } },
+        { "if": { "properties": { "name": { "const": "param_progress" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/progressData" } } } },
+        { "if": { "properties": { "name": { "const": "log_progress" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/progressData" } } } },
+        { "if": { "properties": { "name": { "const": "recording" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/recordingData" } } } },
+        { "if": { "properties": { "name": { "const": "shell_data" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/shellData" } } } },
+        { "if": { "properties": { "name": { "const": "inspector" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/inspectorData" } } } },
+        { "if": { "properties": { "name": { "const": "attitude" } } },
+          "then": { "properties": { "data": { "$ref": "#/definitions/attitudeData" } } } },
+        { "if": { "properties": { "name": { "const": "position" } } },
+          "then": { "properties": { "data": { "type": "object", "required": ["lat", "lon", "alt", "relativeAlt"] } } } },
+        { "if": { "properties": { "name": { "const": "local_position" } } },
+          "then": { "properties": { "data": { "type": "object", "required": ["x", "y", "z"] } } } },
+        { "if": { "properties": { "name": { "const": "gps" } } },
+          "then": { "properties": { "data": { "type": "object", "required": ["fixType", "satellites", "lat", "lon"] } } } },
+        { "if": { "properties": { "name": { "const": "battery" } } },
+          "then": { "properties": { "data": { "type": "object", "required": ["voltage", "current", "remaining"] } } } },
+        { "if": { "properties": { "name": { "const": "vfr" } } },
+          "then": { "properties": { "data": { "type": "object", "required": ["groundspeed", "heading", "alt", "climb"] } } } }
+      ]
+    },
+    "linkData": {
+      "type": "object",
+      "required": ["state", "droppedEvents"],
+      "properties": {
+        "state": { "enum": ["connecting", "connected", "lost", "disconnected"] },
+        "transport": { "enum": ["serial", "udp"] },
+        "port": { "type": "string" },
+        "baud": { "type": ["integer", "null"] },
+        "host": { "type": "string" },
+        "udpPort": { "type": "integer" },
+        "systemId": { "type": "integer" },
+        "componentId": { "type": "integer" },
+        "autopilot": { "type": "integer" },
+        "vehicleType": { "type": "integer" },
+        "foreignFrames": { "type": "integer" },
+        "badFrames": { "type": "integer" },
+        "ignoredAcks": { "type": "integer" },
+        "droppedStatusText": { "type": "integer" },
+        "droppedNamedValues": { "type": "integer" },
+        "droppedEvents": { "type": "integer" }
+      }
+    },
+    "heartbeatData": {
+      "type": "object",
+      "required": ["armed", "mode", "modeKey", "mainMode", "subMode", "customMode", "systemStatus"],
+      "properties": {
+        "armed": { "type": "boolean" },
+        "mode": { "type": "string" },
+        "modeKey": { "type": ["string", "null"] },
+        "mainMode": { "type": "integer" },
+        "subMode": { "type": "integer" },
+        "customMode": { "type": "integer" },
+        "baseMode": { "type": "integer" },
+        "systemStatus": { "type": "integer" },
+        "vehicleType": { "type": "integer" }
+      }
+    },
+    "modesData": {
+      "type": "object",
+      "required": ["reported", "available"],
+      "properties": {
+        "reported": { "type": "boolean" },
+        "available": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "statustextData": {
+      "type": "object",
+      "required": ["severity", "text", "id", "partial"],
+      "properties": {
+        "severity": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "text": { "type": "string" },
+        "id": { "type": "integer" },
+        "partial": { "type": "boolean" }
+      }
+    },
+    "sensorsData": {
+      "type": "object",
+      "required": ["kind", "source"],
+      "properties": {
+        "kind": { "enum": ["imu", "baro", "distance"] },
+        "source": { "type": "string" },
+        "accel": { "type": "array", "items": { "$ref": "#/definitions/num" }, "minItems": 3, "maxItems": 3 },
+        "gyro": { "type": "array", "items": { "$ref": "#/definitions/num" }, "minItems": 3, "maxItems": 3 },
+        "mag": { "type": "array", "items": { "$ref": "#/definitions/num" }, "minItems": 3, "maxItems": 3 },
+        "raw": { "type": "boolean" }
+      }
+    },
+    "namedValueData": {
+      "type": "object",
+      "required": ["name", "value"],
+      "properties": { "name": { "type": "string" }, "value": { "$ref": "#/definitions/num" } }
+    },
+    "progressData": {
+      "type": "object",
+      "required": ["id", "received"],
+      "properties": {
+        "id": { "type": "integer" },
+        "received": { "type": "integer" },
+        "total": { "type": ["integer", "null"] }
+      }
+    },
+    "recordingData": {
+      "type": "object",
+      "required": ["state", "path"],
+      "properties": {
+        "state": { "enum": ["started", "stopped"] },
+        "path": { "type": "string" },
+        "reason": { "enum": ["operator", "disconnect"] },
+        "frames": { "type": "integer" },
+        "bytes": { "type": "integer" },
+        "seconds": { "type": "number" }
+      }
+    },
+    "shellData": {
+      "type": "object",
+      "required": ["text"],
+      "properties": { "text": { "type": "string" } }
+    },
+    "inspectorData": {
+      "type": "object",
+      "required": ["messages", "unknown"],
+      "properties": {
+        "unknown": { "type": "integer" },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "id", "component", "count", "rateHz"],
+            "properties": {
+              "name": { "type": "string" },
+              "id": { "type": "integer" },
+              "component": { "type": "integer" },
+              "count": { "type": "integer" },
+              "rateHz": { "type": "number" },
+              "last": { "type": ["object", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "attitudeData": {
+      "type": "object",
+      "required": ["roll", "pitch", "yaw"],
+      "properties": {
+        "roll": { "$ref": "#/definitions/num" },
+        "pitch": { "$ref": "#/definitions/num" },
+        "yaw": { "$ref": "#/definitions/num" }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/definitions/reply" },
+    { "$ref": "#/definitions/event" }
+  ]
+}

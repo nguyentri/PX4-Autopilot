@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "translation": {},
+  "parameters": [
+    { "name": "MAV_0_RATE", "type": "Int32", "default": 1200, "min": -1, "max": 1000000, "units": "B/s",
+      "group": "MAVLink", "category": "Standard", "shortDesc": "Maximum MAVLink sending rate for instance 0",
+      "rebootRequired": true, "volatile": false },
+    { "name": "MPC_XY_VEL_MAX", "type": "Float", "default": 12.0, "min": 0, "max": 20, "decimalPlaces": 1,
+      "increment": 1, "units": "m/s", "group": "Multicopter Position Control",
+      "shortDesc": "Maximum horizontal velocity", "longDesc": "Absolute maximum for all velocity controlled modes.",
+      "volatile": false },
+    { "name": "MPC_LAND_SPEED", "type": "Float", "default": 0.7, "min": 0.6, "decimalPlaces": 1, "units": "m/s",
+      "group": "Multicopter Position Control", "shortDesc": "Landing descend rate", "volatile": false },
+    { "name": "SYS_AUTOSTART", "type": "Int32", "default": 0, "group": "System", "shortDesc": "Auto-start script index",
+      "rebootRequired": true, "volatile": false },
+    { "name": "COM_RC_IN_MODE", "type": "Int32", "default": 3, "group": "Commander", "shortDesc": "RC control input mode",
+      "values": [ { "value": 0, "description": "RC only" }, { "value": 1, "description": "MAVLink only" },
+        { "value": 4, "description": "Disable manual control" } ], "volatile": false },
+    { "name": "BAT1_N_CELLS", "type": "Int32", "default": 0, "group": "Battery Calibration",
+      "shortDesc": "Number of cells for battery 1", "volatile": false },
+    { "name": "TEST_I03", "type": "Int32", "default": 0, "group": "Test", "shortDesc": "Bitmask test",
+      "bitmask": [ { "index": 0, "description": "bit zero" }, { "index": 1, "description": "bit one" } ],
+      "volatile": false },
+    { "name": "TEST_F02", "type": "Float", "default": 1.0, "decimalPlaces": 2, "group": "Test", "volatile": false },
+    { "name": "TEST_I14", "type": "Int32", "default": 0, "group": "Test", "shortDesc": "Volatile counter",
+      "volatile": true },
+    { "name": "TEST_I13", "type": "Float", "default": 0, "group": "Test", "shortDesc": "Type differs from the vehicle",
+      "volatile": false }
+  ]
+}
