@@ -1,5 +1,10 @@
 # Simple PWM and ICM20948 Bench Validation
 
+> **Retired 2026-11-18, historical.** The `renesas_rdk-rzv2h_simple` target,
+> its NuttX config and ROMFS were removed by the RZ/V2H configuration
+> consolidation. This record is kept unchanged as evidence; the active CR8-0
+> targets are `default`, `demo`, `demosih` and `dualcr8`.
+
 **Date:** 2026-10-11  
 **Board/core:** RDK-RZ/V2H, CR8-0  
 **Target:** `renesas_rdk-rzv2h_simple`  
@@ -20,7 +25,7 @@ level adaptation from its schematic before powering it. A GY-912 label or the
 board GPIO voltage does not prove module tolerance. See the
 [standalone module constraints](gy912-icm20948-validation.md#scope-and-wiring).
 Disconnect P94 button wiring and other SPI0/P94 users. The
-[sensor wiring profiles](../pinmap.md#sensor-wiring-profiles) define native and
+[sensor wiring profiles](../pinmap.md#px4-configuration-profiles) define native and
 opt-in extension ownership for P90–P95. In this legacy image one sensor owns
 P93 and P94 callback ownership is exclusive; extension CS1 on P94 is therefore
 incompatible with this image's interrupt contract. Do not run standalone

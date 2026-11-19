@@ -150,7 +150,7 @@ class RttProfileSelection(unittest.TestCase):
     def test_every_px4_rtt_profile_drops_output_instead_of_blocking(self):
         profiles = [path for path in sorted(PROFILES.glob('*/defconfig'))
                     if re.search(r'^CONFIG_SEGGER_RTT=y$', path.read_text(), re.M)]
-        self.assertGreaterEqual(len(profiles), 5)
+        self.assertGreaterEqual({p.parent.name for p in profiles}, {'nsh', 'demo', 'dualcr8'})
         for path in profiles:
             with self.subTest(profile=path.parent.name):
                 text = path.read_text()

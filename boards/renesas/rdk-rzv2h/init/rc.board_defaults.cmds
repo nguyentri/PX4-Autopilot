@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# RDK-RZ/V2H safe board parameter defaults.
+# RDK-RZ/V2H reference drone defaults; physical qualification pending.
 # Module ownership remains with the common PX4 rcS and rc.board_sensors.
 #------------------------------------------------------------------------------
 
@@ -12,8 +12,8 @@ param set-default SYS_AUTOSTART 4014
 # persistent dataman backend.
 param set-default SYS_DM_BACKEND 1
 
-# The checked-in drone reference has no active battery ADC path.
-param set-default BAT1_SOURCE -1
+# The extension uses the INA228 digital battery publisher; ADC stays disabled.
+param set-default BAT1_SOURCE 0
 
 # The board has no validated buzzer output and both payload images omit the
 # tone_alarm driver. Prevent the common startup script from invoking an absent
@@ -38,22 +38,24 @@ param set-default SYS_HAS_BARO 1
 param set-default SYS_HAS_GPS 1
 param set-default SYS_HAS_MAG 1
 
-# Four motor outputs. The silent DSHOT_MIN default also detects whether this
-# image includes DShot. DShot selects DShot600; the default image selects
-# standard 400 Hz PWM. Both drivers share PWM_MAIN parameters.
-if param set-default -s DSHOT_MIN 0.055
+# Four motor outputs. Both pwm_out and dshot are linked, but only one may own
+# the GPT6/7/9/10 units: pwm_out re-initializes every board timer and the DShot
+# HAL programs the same GPT registers directly. PWM_MAIN_TIM0 selects the driver
+# at boot: 400 (default) or -1 starts pwm_out (PWM/OneShot); -3, -4 or -5 starts
+# dshot (DShot600/300/150). Set all four PWM_MAIN_TIMx to the same value, save
+# and reboot to switch.
+param set-default DSHOT_MIN 0.055
+param set-default PWM_MAIN_TIM0 400
+param set-default PWM_MAIN_TIM1 400
+param set-default PWM_MAIN_TIM2 400
+param set-default PWM_MAIN_TIM3 400
+if param greater PWM_MAIN_TIM0 -2
 then
-	set DSHOT_START yes
-	param set-default PWM_MAIN_TIM0 -3
-	param set-default PWM_MAIN_TIM1 -3
-	param set-default PWM_MAIN_TIM2 -3
-	param set-default PWM_MAIN_TIM3 -3
-else
 	set DSHOT_START no
-	param set-default PWM_MAIN_TIM0 400
-	param set-default PWM_MAIN_TIM1 400
-	param set-default PWM_MAIN_TIM2 400
-	param set-default PWM_MAIN_TIM3 400
+	set PWM_OUT_START yes
+else
+	set DSHOT_START yes
+	set PWM_OUT_START no
 fi
 param set-default PWM_MAIN_FUNC1 101
 param set-default PWM_MAIN_FUNC2 102

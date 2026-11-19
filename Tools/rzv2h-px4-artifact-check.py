@@ -116,7 +116,7 @@ def policy(source=None):
     names = [p['target'] for p in profiles]
     require(result['schema_version'] == 1 and result['policy_version'] == 3,
             'unsupported policy version')
-    require(len(names) == 12 and len(set(names)) == 12, 'policy must classify twelve unique targets')
+    require(len(names) == 7 and len(set(names)) == 7, 'policy must classify seven unique targets')
     if source:
         available = sorted('renesas_' + p.parent.name + '_' + p.stem
                            for p in (source/'boards/renesas').glob('rdk-rzv2h*/*.px4board')
@@ -494,9 +494,9 @@ def check_profile(directory, profile, contract, state_hash):
     require(virtual_bytes(view, symbols['romfs_img'], len(romfs)) == romfs, 'ROMFS/ELF image mismatch')
     check_romfs(directory, romfs)
     check_archived_sources(directory, profile)
-    if profile['label'] in ('drone','dualcr8','demo'):
+    if (profile['core'], profile['label']) in (('CR8-0','default'),('CR8-0','dualcr8'),('CR8-0','demo')):
         descriptors = virtual_bytes(view,symbols['px4_spi_buses'],48)
-        check_sensor_descriptors(descriptors, 3 if profile['label']=='drone' else 1)
+        check_sensor_descriptors(descriptors, 3 if profile['label']=='default' else 1)
     focused = load_json(directory/'focused-results.json')
     require(len(focused) == len(profile['focused_tests']), 'focused checks incomplete')
     python = load_json(directory.parents[1]/'source-state.json')['python']['path']

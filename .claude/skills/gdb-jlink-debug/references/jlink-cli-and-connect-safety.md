@@ -49,7 +49,7 @@ example; take yours from the ELF with `nm <elf> | grep _SEGGER_RTT`):
 
 ```text
 exec InhibitConnectRetries = 1
-exec SetRTTAddr 0x081a2400
+exec SetRTTAddr 0x081a8404
 exec SetRTTTelnetPort 19021
 connect
 ```

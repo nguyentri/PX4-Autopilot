@@ -36,7 +36,7 @@ class OperationFixtures(unittest.TestCase):
         self.environment.start()
         self.addCleanup(self.environment.stop)
         self.selection = {'schemaVersion': 1, 'id': 'simple', 'board': 'rdk-rzv2h', 'core': 'cr8_0',
-                          'build': {'family': 'px4', 'target': 'renesas_rdk-rzv2h_simple', 'mode': 'incremental'},
+                          'build': {'family': 'px4', 'target': 'renesas_rdk-rzv2h_default', 'mode': 'incremental'},
                           'load': {'recipe': 'rzv-cr8-ram'}, 'debug': {'mode': 'attach'}}
         self.image = self.root / 'firmware image.elf'
         self.image.write_bytes(b'fixture deliberately not an ARM ELF')

@@ -24,7 +24,7 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 | [output-configuration.hpp](../../../src/apps/output-configuration.hpp) | product-owned | CR8-1 sole physical output owner | Channel rates, pulse constraints, and output profile definitions |
 | [io-supervisor.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/io-supervisor.cpp) | product-owned | CR8-1 sole physical output owner | CR8-1 output supervisor integrating worker and lease manager |
 | [output-lease.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.cpp) | legacy/reference | CR8-1 sole physical output owner | Legacy bridge lease state and expiry authority |
-| [px4io_cr8.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/px4io_cr8.cpp) | legacy/reference | CR8-1 sole physical output owner | Legacy backend worker/relay reference |
+| `px4io_cr8.cpp` (removed 2026-11-18; git history) | retired reference | CR8-1 sole physical output owner | Legacy backend worker/relay reference |
 | [timer_config.cpp](../../../boards/renesas/rdk-rzv2h/src/timer_config.cpp) | legacy/reference | CR8-1 sole physical output owner | Four-channel mapping migration evidence |
 | [pwm_servo.c](../../../platforms/nuttx/src/px4/renesas/rzv/io_pins/pwm_servo.c) | product-owned | CR8-1 sole physical output owner | Selected backend physical submission/disable HAL |
 

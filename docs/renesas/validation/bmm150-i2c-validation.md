@@ -25,7 +25,7 @@ straps select 0x10–0x13). Run `bmm150 -s` when the strap is unknown.
 
 This standalone sample owns the BMM150 transaction on SCI7/P76/P77 at the
 selected address. Native and opt-in extension ownership for that shared bus is
-defined in the [sensor wiring profiles](../pinmap.md#sensor-wiring-profiles); the
+defined in the [sensor wiring profiles](../pinmap.md#px4-configuration-profiles); the
 standalone gate remains independently useful. Physical pull-up, module, and
 shared-bus qualification remain hardware gates.
 

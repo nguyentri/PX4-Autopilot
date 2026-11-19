@@ -5,6 +5,12 @@ CR8-1 `renesas_rdk-rzv2h-io-cr8_1_pwm` supervisor candidate
 **Date:** 2026-10-21
 **Evidence tier:** build-clean and host-checked; no hardware tier promotion
 
+> **Target names (2026-11-18):** the CR8-1 `renesas_rdk-rzv2h-io-cr8_1_pwm`
+> target was renamed to `renesas_rdk-rzv2h-io-cr8_1_default`, with the same
+> supervisor content. Other retired targets named below (such as the legacy
+> bridge) no longer build. The hashes identify only the images built on
+> 2026-10-21. They were not recomputed for current builds.
+
 This receipt records the durable facts from the final review-fix verification
 run. Detailed logs and machine JSON remain local evidence under
 `plans/reports/261021-1422-review-fixes-evidence/` and

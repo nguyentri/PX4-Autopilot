@@ -86,9 +86,8 @@ target_link_libraries(drivers_board
 		rzv2h_micro_hal
 )
 
-# DShot output variant (renesas_rdk-rzv2h_dshot) links the RZ/V2H DShot HAL.
-# Only built/linked when CONFIG_DRIVERS_DSHOT is set, so the default PWM build
-# is unaffected.
+# Images with CONFIG_DRIVERS_DSHOT (the default target) link the RZ/V2H DShot
+# HAL. The board init script starts either dshot or pwm_out, never both.
 if(CONFIG_DRIVERS_DSHOT)
 	target_link_libraries(drivers_board PRIVATE arch_dshot)
 endif()
@@ -110,15 +109,6 @@ add_custom_target(rzv2h_board_gpio_contract_test
 		${PX4_SOURCE_DIR}/test/rzv2h_board_gpio_contract_test.py
 	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 	COMMENT "Running RZ/V2H board GPIO ownership contracts"
-	VERBATIM
-)
-
-add_custom_target(rzv2h_sih_demo_contract_test
-	COMMAND
-		${PYTHON_EXECUTABLE}
-		${PX4_SOURCE_DIR}/test/rzv2h_sih_demo_contract_test.py
-	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-	COMMENT "Running RZ/V2H SIH configuration and startup contracts"
 	VERBATIM
 )
 
@@ -164,13 +154,6 @@ add_custom_target(rzv2h_dshot_runtime_test
 	VERBATIM
 )
 
-add_custom_target(rzv2h_simple_profile_contract_test
-	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-simple-profile-contract-test.py
-	WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-	COMMENT "Running RZ/V2H simple profile and SPI descriptor contracts"
-	VERBATIM
-)
-
 add_custom_target(rzv2h_drone_profile_contract_test
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-drone-profile-contract-test.py
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-bmp388-reset-contract-test.py
@@ -201,91 +184,30 @@ add_custom_target(rzv2h_source_contract_tests ALL
 		rzv2h_gtm_contract_test
 		rzv2h_pwm_oneshot_dshot_contract_test
 		rzv2h_sci_spi_contract_test
-		rzv2h_sih_demo_contract_test
 		rzv2h_dmac_runtime_test
 		rzv2h_dshot_runtime_test
-		rzv2h_simple_profile_contract_test
 		rzv2h_drone_profile_contract_test
 		rzv2h_dualcr8_profile_contract_test
 )
 
-if(PX4_BOARD_LABEL STREQUAL "simple" AND NOT NUTTX_CONFIG STREQUAL "simple")
-	message(FATAL_ERROR "The RZ/V2H simple target requires NUTTX_CONFIG=simple")
-endif()
-
-if(PX4_BOARD_LABEL STREQUAL "simple")
-	add_custom_target(rzv2h_simple_artifact_contract_test ALL
-		COMMAND
-			${PYTHON_EXECUTABLE}
-			${PX4_SOURCE_DIR}/test/rzv2h-simple-artifact-contract-test.py
-			--build-dir
-			${PX4_BINARY_DIR}
-			--board-label
-			${PX4_BOARD_LABEL}
-		DEPENDS
-			${PX4_BINARY_DIR}/${PX4_CONFIG}.px4
-			rzv2h_simple_profile_contract_test
-		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-		COMMENT "Auditing resolved RZ/V2H simple firmware artifacts"
-		VERBATIM
-	)
-endif()
-
-if(PX4_BOARD_LABEL STREQUAL "default" OR PX4_BOARD_LABEL STREQUAL "dshot")
-	add_custom_target(rzv2h_payload_artifact_contract_test ALL
-		COMMAND
-			${PYTHON_EXECUTABLE}
-			${PX4_SOURCE_DIR}/test/rzv2h_payload_artifact_contract_test.py
-			--build-dir
-			${PX4_BINARY_DIR}
-			--config-name
-			${PX4_CONFIG}
-			--board-label
-			${PX4_BOARD_LABEL}
-		DEPENDS
-			${PX4_BINARY_DIR}/${PX4_CONFIG}.px4
-		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-		COMMENT "Auditing resolved RZ/V2H payload firmware artifacts"
-		VERBATIM
-	)
-endif()
-
-if(PX4_BOARD_LABEL STREQUAL "sih" AND NOT NUTTX_CONFIG STREQUAL "sih")
-	message(FATAL_ERROR "The RZ/V2H SIH target requires NUTTX_CONFIG=sih")
-endif()
-
-if(PX4_BOARD_LABEL STREQUAL "sih")
-	add_custom_target(rzv2h_sih_artifact_contract_test ALL
-		COMMAND
-			${PYTHON_EXECUTABLE}
-			${PX4_SOURCE_DIR}/test/rzv2h_sih_artifact_contract_test.py
-			--build-dir
-			${PX4_BINARY_DIR}
-		DEPENDS
-			${PX4_BINARY_DIR}/${PX4_CONFIG}.px4
-			rzv2h_sih_demo_contract_test
-		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-		COMMENT "Auditing resolved RZ/V2H SIH firmware artifacts"
-		VERBATIM
-	)
-endif()
-
-# The CR8-1 bridge is a final-milestone feature. Independent CR8-0 images must
-# not carry a dormant /dev/ipcc1 consumer.
-if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE OR CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
+# Only the dualcr8 remote-output producer consumes /dev/ipcc1 for outputs;
+# independent CR8-0 images must not carry a dormant link consumer.
+if(CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
 	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
 endif()
 
-if(PX4_BOARD_LABEL STREQUAL "drone")
-	if(NOT NUTTX_CONFIG STREQUAL "drone")
-		message(FATAL_ERROR "The RZ/V2H drone target requires NUTTX_CONFIG=drone")
+# The reference drone artifact audit inherits every generic payload artifact
+# contract (test/rzv2h_payload_artifact_contract_test.py).
+if(PX4_BOARD_LABEL STREQUAL "default")
+	if(NOT NUTTX_CONFIG STREQUAL "nsh")
+		message(FATAL_ERROR "The RZ/V2H default target requires NUTTX_CONFIG=nsh")
 	endif()
 	add_custom_target(rzv2h_drone_artifact_contract_test ALL
 		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-drone-artifact-contract-test.py
 			--build-dir ${PX4_BINARY_DIR}
 		DEPENDS ${PX4_BINARY_DIR}/${PX4_CONFIG}.px4 rzv2h_drone_profile_contract_test
 		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
-		COMMENT "Auditing resolved RZ/V2H drone firmware artifacts"
+		COMMENT "Auditing resolved RZ/V2H reference drone firmware artifacts"
 		VERBATIM
 	)
 endif()

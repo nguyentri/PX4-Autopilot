@@ -218,7 +218,7 @@ class RealArchives(unittest.TestCase):
         self.mutant(split,'ELF/split')
 
     def test_rehashed_romfs_and_missing_package_fail(self):
-        name = 'renesas_rdk-rzv2h_simple'
+        name = 'renesas_rdk-rzv2h_default'
         def romfs(a):
             p = a/'builds'/name/'etc/init.d/rcS'; p.write_text(p.read_text()+'\ncommander start\n')
         self.mutant(romfs,'ROMFS')

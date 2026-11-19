@@ -70,7 +70,7 @@ Do not substitute EVK pins or apply the extension mapping globally.
 The XML's only active/selected pin set is `RDK`, selecting P93/P94/P95 as
 SSLA0/1/2. P36 SSLA2 belongs to inactive `RZV2H-IMDT.pincfg`; it is not the active
 RDK alternative. This resolves the software mapping; it does not prove physical
-extension routing. See [pin ownership](./pinmap.md#sensor-wiring-profiles) for
+extension routing. See [pin ownership](./pinmap.md#px4-configuration-profiles) for
 the current native and planned extension profiles.
 
 The reference hardware guide names ICM-45686, while comments in its SPI table

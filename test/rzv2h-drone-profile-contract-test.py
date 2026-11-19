@@ -12,7 +12,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 BOARD = ROOT / "boards/renesas/rdk-rzv2h/src"
-SUPPORT = runpy.run_path(str(ROOT / "test/rzv2h-simple-test-support.py"))
+SUPPORT = runpy.run_path(str(ROOT / "test/rzv2h-board-test-support.py"))
 NUTTX_BOARD = ROOT / "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h"
 
 
@@ -114,7 +114,7 @@ class CompiledSensorSelection(unittest.TestCase):
         subprocess.run([str(binary), "selection"], check=True)
 
     def test_startup_chip_selects_resolve_through_the_bus_iterator(self):
-        script = (BOARD.parent / "init/drone/rc.board_sensors").read_text()
+        script = (BOARD.parent / "init/rc.board_sensors").read_text()
         pins = re.findall(r"^\s*if icm45686 -s -b 0 -c (\d+) -R 0 start", script, flags=re.M)
         self.assertEqual(pins, ["3", "4", "5"])
         binary, result = self.compile("iterate")
@@ -184,9 +184,9 @@ class ProfileStartup(unittest.TestCase):
         self.assertEqual(path, str(BOARD.parent / "init"))
 
     def test_extension_profile_selects_its_own_hooks(self):
-        result, path = self.init_directory("drone")
+        result, path = self.init_directory("dualcr8")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(path, str(BOARD.parent / "init/drone"))
+        self.assertEqual(path, str(BOARD.parent / "init/dualcr8"))
 
     def test_bad_or_missing_hook_directory_is_rejected(self):
         for name in ("../other", "/tmp", "missing-extension"):
@@ -195,7 +195,7 @@ class ProfileStartup(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
 
     def test_startup_attempts_each_sensor_and_reports_individual_failures(self):
-        script = BOARD.parent / "init/drone/rc.board_sensors"
+        script = BOARD.parent / "init/rc.board_sensors"
         host = '''
 icm45686() { echo "CALL icm45686 $*"; [ "$5" != 4 ]; }
 bmm150() { echo "CALL bmm150 $*"; return 1; }
@@ -214,7 +214,7 @@ ina228() { echo "CALL ina228 $*"; return 0; }
         self.assertNotIn(" -P", result.stdout)
 
     def test_sensor_startup_uses_supported_nsh_control_syntax(self):
-        script = (BOARD.parent / "init/drone/rc.board_sensors").read_text()
+        script = (BOARD.parent / "init/rc.board_sensors").read_text()
         # Native NSH supports if/while/until; it has no POSIX for-loop parser
         # or builtin. Bash execution alone cannot establish NSH compatibility.
         parser = (ROOT / "platforms/nuttx/NuttX/apps/nshlib/nsh_parse.c").read_text()
@@ -250,7 +250,7 @@ ina228() { echo "CALL ina228 $*"; return 0; }
                                                  max(width, inner[2]))
             return deepest, words, width
 
-        for label, init_subdir in (("nsh", ""), ("drone", "drone"), ("dualcr8", "dualcr8"), ("demo", "demo")):
+        for label, init_subdir in (("nsh", ""), ("dualcr8", "dualcr8"), ("demo", "demo")):
             roots = (BOARD.parent / "init" / init_subdir,
                      ROOT / "ROMFS/px4fmu_common/init.d")
             deepest, words, width = needs(roots[1] / "rcS", 0, frozenset())
@@ -269,16 +269,93 @@ ina228() { echo "CALL ina228 $*"; return 0; }
                 self.assertGreaterEqual(value("SYSTEM_NSH_STACKSIZE"), 3072)
 
     def test_extension_config_is_separate_from_working_samples(self):
-        profile = (BOARD.parent / "drone.px4board").read_text()
-        config = (BOARD.parent / "nuttx-config/drone/defconfig").read_text()
-        self.assertIn('CONFIG_BOARD_INIT_SUBDIR="drone"', profile)
+        # The reference drone is the CR8-0 default: top-level init hooks and the
+        # nsh defconfig. Bench variants never enable the three-IMU extension.
+        profile = (BOARD.parent / "default.px4board").read_text()
+        config = (BOARD.parent / "nuttx-config/nsh/defconfig").read_text()
+        self.assertNotIn("CONFIG_BOARD_INIT_SUBDIR", profile)
         self.assertIn('CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"', profile)
         self.assertIn("CONFIG_RZV2H_DRONE_SENSOR_EXTENSION=y", config)
         self.assertNotIn("CONFIG_RZV_SPI0_DMA=y", config)
         self.assertNotIn("CONFIG_RZV_OPENAMP=y", config)
-        for name in ("default", "simple", "sih", "dshot"):
-            self.assertNotIn('CONFIG_BOARD_INIT_SUBDIR="drone"',
-                             (BOARD.parent / (name + ".px4board")).read_text())
+        for name in ("demo", "demosih", "dualcr8"):
+            self.assertNotIn("CONFIG_RZV2H_DRONE_SENSOR_EXTENSION=y",
+                             (BOARD.parent / "nuttx-config" / name / "defconfig").read_text())
+
+class CompiledDescriptorContracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory(prefix="rzv2h-spi0-descriptor-")
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.directory = Path(cls.temp.name)
+        SUPPORT["host_headers"](cls.directory)
+
+    def test_real_single_legacy_imu_tables(self):
+        # spi.cpp keeps the single-IMU MPU9250/ICM20948 P93 tables; no shipped
+        # profile selects them, but the source must stay compilable and exclusive.
+        for label, driver in (("icm20948", "ICM20948"), ("mpu9250", "MPU9250"),
+                              ("mpu9250-dshot", "MPU9250")):
+            with self.subTest(label=label):
+                defines = ["CONFIG_DRIVERS_IMU_INVENSENSE_" + driver]
+                if label.endswith("dshot"):
+                    defines.append("CONFIG_DRIVERS_DSHOT")
+                binary, result = SUPPORT["compile_descriptor"](self.directory, label, defines)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                subprocess.run([str(binary)], check=True)
+
+    def test_both_physical_imu_choices_are_rejected(self):
+        _, result = SUPPORT["compile_descriptor"](self.directory, "both", [
+            "CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948", "CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SPI0/P93 supports one IMU", result.stderr)
+
+    def test_table_without_a_sensor_choice_is_rejected(self):
+        _, result = SUPPORT["compile_descriptor"](self.directory, "neither", [])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("The sensor SPI table requires an enabled IMU driver", result.stderr)
+
+    def test_actual_guard_preserves_live_irq_owner_on_repeated_initialization(self):
+        binary = SUPPORT["compile_irq"](self.directory)
+        subprocess.run([str(binary)], check=True)
+
+
+class SharedBoardSourceContracts(unittest.TestCase):
+    def test_discovered_targets_match_readme(self):
+        targets = subprocess.check_output(
+            ["bash", str(ROOT / "build.sh"), "--list"], cwd=ROOT, text=True
+        ).splitlines()
+        rzv2h = [name for name in targets if name.startswith("renesas_rdk-rzv2h")]
+        for retired in ("core_only", "simple", "sih", "drone", "dshot"):
+            self.assertNotIn("renesas_rdk-rzv2h_" + retired, rzv2h)
+        documented = re.search(
+            r"### Build Targets\s+[\s\S]*?```text\s+([\s\S]*?)```", SUPPORT["read"]("README.md")
+        )
+        self.assertIsNotNone(documented)
+        self.assertEqual(targets, documented.group(1).strip().splitlines())
+
+    def test_gpio_irq_guard_precedes_all_pin_and_spi_setup(self):
+        source = SUPPORT["read"]("boards/renesas/rdk-rzv2h/src/init.c")
+        initialize = SUPPORT["body"](source, "board_app_initialize")
+        call = initialize.index("rdk_rzv2h_gpio_irq_initialize_once()")
+        self.assertLess(initialize.index("px4_platform_init()"), call)
+        self.assertLess(call, initialize.index("rdk_rzv2h_gpio_initialize()"))
+        self.assertLess(call, initialize.index("board_spi_initialize()"))
+        self.assertIn("CONFIG_RZV_GPIO_IRQ", source)
+        pins = SUPPORT["body"](source, "rdk_rzv2h_gpio_initialize")
+        self.assertIn("px4_arch_configgpio(BOARD_ICM20948_DRDY_GPIO | RZV_GPIO_PULLUP)", pins)
+
+    def test_board_init_keeps_physical_timer_setup_driver_gated(self):
+        source = SUPPORT["read"]("boards/renesas/rdk-rzv2h/src/init.c")
+        self.assertRegex(source, re.compile(
+            r"#if defined\(CONFIG_DRIVERS_PWM_OUT\) \|\| defined\(CONFIG_DRIVERS_DSHOT\).*?"
+            r"rdk_rzv2h_timer_initialize\(\);.*?#endif", re.DOTALL))
+
+    def test_sih_modules_declare_their_direct_library_dependencies(self):
+        # demosih links simulator_sih and sensor_mag_sim.
+        self.assertIn("world_magnetic_model",
+                      SUPPORT["read"]("src/modules/simulation/sensor_mag_sim/CMakeLists.txt"))
+        self.assertIn("lat_lon_alt",
+                      SUPPORT["read"]("src/modules/simulation/simulator_sih/CMakeLists.txt"))
 
 
 if __name__ == "__main__":

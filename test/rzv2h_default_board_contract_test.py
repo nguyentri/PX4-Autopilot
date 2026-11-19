@@ -25,7 +25,8 @@ class Rzv2hDefaultBoardContractTest(unittest.TestCase):
         # SCI5 carries MAVLink telemetry here, so it must never be the shell.
         self.assertNotIn("\nCONFIG_SCI5_SERIAL_CONSOLE=y", config)
         self.assertIn("CONFIG_RZV_SCI4=y", config)
-        self.assertIn('#CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"', self.source)
+        # SCI4 is the TFmini payload UART (EXT2), never the console.
+        self.assertRegex(self.source, r'(?m)^CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"$')
 
 
 if __name__ == "__main__":

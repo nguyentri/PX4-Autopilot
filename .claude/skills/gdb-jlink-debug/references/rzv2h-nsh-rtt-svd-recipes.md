@@ -23,8 +23,8 @@ from an admin PowerShell (see comment in `.vscode/launch.json`). Do not guess.
 
 | Image | Core | NSH console | `_SEGGER_RTT` |
 |---|---|---|---|
-| PX4 `build/renesas_rdk-rzv2h_*/…elf` | CR8-0 | RTT ch0 | `0x081a2400` |
-| PX4 `build/renesas_rdk-rzv2h-io-cr8_1_default/…elf` | CR8-1 | none (log in `g_sci1port.xmit`) | none |
+| PX4 `build/renesas_rdk-rzv2h_*/…elf` | CR8-0 | RTT ch0 | `0x081a8404` (read from the ELF) |
+| PX4 `build/renesas_rdk-rzv2h-io-cr8_1_{default,demo}/…elf` | CR8-1 | RTT ch0 | `0x081e2404` (read from the ELF) |
 | NuttX `nuttx-ipcc-raw-cr8_0-sci4.elf` | CR8-0 | SCI4 → `/dev/ttyUSB0` | none |
 | NuttX `nuttx-ipcc-raw-cr8_0.elf` | CR8-0 | RTT ch0 | `0x081A0000` |
 | NuttX `nuttx-ipcc-raw-cr8_1.elf` | CR8-1 | RTT ch0 | `0x081E0000` |
@@ -153,7 +153,7 @@ rerun = reload). CR8-0 image needs `CONFIG_NSH_MAXARGUMENTS=16` (ping = 8 tokens
 ## Gotchas
 
 - NSH `CONFIG_NSH_MAXARGUMENTS` is 16 on the NuttX IPC demos, 15 on PX4
-  drone/dualcr8, 7 elsewhere; long commands get "too many arguments".
+  CR8-0 images, 7 elsewhere; long commands get "too many arguments".
 - RTT input is polled every 1 ms; `nsh_console_exec.py` paces bytes 2 ms apart.
 - `nsh_console_exec.py` exit 1 = timeout without prompt; raise `--timeout` for
   long commands (e.g. `ipctest --ping -n 1000`). On PX4 images a log line

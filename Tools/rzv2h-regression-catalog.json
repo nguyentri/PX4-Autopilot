@@ -125,7 +125,7 @@
           "arm-none-eabi-nm"
         ],
         "paths": [
-          "build/renesas_rdk-rzv2h_drone"
+          "build/renesas_rdk-rzv2h_default"
         ]
       },
       "note": "Exercise the boot packager against actual linked CR8 firmware artifacts."
@@ -235,10 +235,10 @@
           "arm-none-eabi-nm"
         ],
         "paths": [
-          "build/renesas_rdk-rzv2h_drone"
+          "build/renesas_rdk-rzv2h_default"
         ]
       },
-      "note": "Audit the resolved opt-in drone firmware and execute its serial startup."
+      "note": "Audit the resolved reference drone (CR8-0 default) firmware and execute its serial startup."
     },
     {
       "id": "rzv2h-drone-profile-contract-test",
@@ -343,7 +343,7 @@
           "cc"
         ]
       },
-      "note": "Exercise deferred TX progress, callback publication, shared-GIC routing, IO startup, relay and reporting."
+      "note": "Exercise deferred TX progress, callback publication, shared-GIC routing, IO startup and reporting."
     },
     {
       "id": "rzv2h-gtm-status-runtime-test",
@@ -401,7 +401,7 @@
           "cc"
         ]
       },
-      "note": "IO-core health reaches commander: the CR8-0 bridge maps CR8-1 link,"
+      "note": "IO-core health reaches commander: commander blocks arming on a silent, FMU-starved or failsafe I/O processor reported through px4io_status."
     },
     {
       "id": "rzv2h-io-serial-adc-runtime-test",
@@ -804,52 +804,8 @@
       "note": "Exercise route rejection, isolation and pin-error propagation."
     },
     {
-      "id": "rzv2h-simple-artifact-contract-test",
-      "path": "test/rzv2h-simple-artifact-contract-test.py",
-      "kind": "test",
-      "groups": [
-        "px4-artifacts"
-      ],
-      "target_access": "none",
-      "command": [
-        "{python}",
-        "test/rzv2h-simple-artifact-contract-test.py"
-      ],
-      "requires": {
-        "tools": [
-          "arm-none-eabi-nm"
-        ],
-        "paths": [
-          "build/renesas_rdk-rzv2h_simple"
-        ]
-      },
-      "note": "Audit resolved simple firmware, installed ROMFS and packaged image."
-    },
-    {
-      "id": "rzv2h-simple-profile-contract-test",
-      "path": "test/rzv2h-simple-profile-contract-test.py",
-      "kind": "test",
-      "groups": [
-        "port-host"
-      ],
-      "target_access": "none",
-      "command": [
-        "{python}",
-        "test/rzv2h-simple-profile-contract-test.py"
-      ],
-      "requires": {
-        "tools": [
-          "bash",
-          "c++",
-          "cc",
-          "cmake"
-        ]
-      },
-      "note": "Compile real descriptors/IRQ guard and check isolated simple startup."
-    },
-    {
       "id": "rzv2h-simple-test-support",
-      "path": "test/rzv2h-simple-test-support.py",
+      "path": "test/rzv2h-board-test-support.py",
       "kind": "helper",
       "groups": [
         "support"
@@ -1104,42 +1060,6 @@
       "note": "Portable SCI0..9 setup, CPG, board, integer clock and production transfer/ISR contracts; imports the mode runtime cases. CMSIS authority is a separate required-reference stage."
     },
     {
-      "id": "rzv2h_sih_artifact_contract_test",
-      "path": "test/rzv2h_sih_artifact_contract_test.py",
-      "kind": "test",
-      "groups": [
-        "px4-artifacts"
-      ],
-      "target_access": "none",
-      "command": [
-        "{python}",
-        "test/rzv2h_sih_artifact_contract_test.py"
-      ],
-      "requires": {
-        "tools": [
-          "arm-none-eabi-nm"
-        ],
-        "paths": [
-          "build/renesas_rdk-rzv2h_sih"
-        ]
-      },
-      "note": "Post-build contracts for the RZ/V2H FC-SIH firmware artifacts."
-    },
-    {
-      "id": "rzv2h_sih_demo_contract_test",
-      "path": "test/rzv2h_sih_demo_contract_test.py",
-      "kind": "test",
-      "groups": [
-        "port-host"
-      ],
-      "target_access": "none",
-      "command": [
-        "{python}",
-        "test/rzv2h_sih_demo_contract_test.py"
-      ],
-      "note": "Source contracts for the RZ/V2H flight-controller SIH demonstration."
-    },
-    {
       "id": "test_rzv2h_ipc_recovery_contract",
       "path": "test/test_rzv2h_ipc_recovery_contract.py",
       "kind": "test",
@@ -1290,7 +1210,7 @@
     },
     {
       "id": "rzv2h-simple-spi-descriptor-test",
-      "path": "test/rzv2h-simple-spi-descriptor-test.cpp",
+      "path": "test/rzv2h-spi0-descriptor-test.cpp",
       "kind": "fixture",
       "groups": [
         "support"
@@ -1726,16 +1646,6 @@
           "JLINK_SERIAL"
         ]
       }
-    },
-    {
-      "id": "rzv2h-px4-cr8_0-bridge-health",
-      "path": "platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_0-bridge-health.gdb",
-      "kind": "snippet",
-      "groups": [
-        "hardware-tools"
-      ],
-      "target_access": "halt-read",
-      "note": "Print-only health fragment for matching ELF through guarded one-shot wrapper; not a standalone command."
     },
     {
       "id": "rzv2h-px4-cr8_1-io-health",
@@ -2216,7 +2126,7 @@
         ],
         "paths": [
           "build/renesas_rdk-rzv2h_dualcr8",
-          "build/renesas_rdk-rzv2h-io-cr8_1_pwm"
+          "build/renesas_rdk-rzv2h-io-cr8_1_default"
         ]
       },
       "note": "Inspect actual v3 candidate ELF/ROMFS/package and negative pair admission; no hardware qualification."

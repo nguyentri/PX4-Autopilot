@@ -2,8 +2,8 @@
 #
 # Volatile RAM load of ONE RZ/V2H Cortex-R8 core, then a non-destructive
 # verify (halt, PC check, resume). The single-core counterpart of
-# rzv2h-ipc-demo-load-both-auto.sh, for CR8-0-only bring-up (PX4 default,
-# drone, simple, sih, dshot) or for replacing one image of a running pair.
+# rzv2h-ipc-demo-load-both-auto.sh, for CR8-0-only bring-up (PX4 default, demo,
+# demosih) or for replacing one image of a running pair.
 #
 # MUTATING: halts the core, overwrites its image in RAM and starts it at
 # __start with the reset CPSR. Needs the user's approval. No monitor reset is

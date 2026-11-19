@@ -38,10 +38,10 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 | Full PX4 firmware | `./build.sh renesas_rdk-rzv2h_default` (`--list` for all targets, `--no-clean` to iterate) | `build/<target>/<target>.elf` |
 | NuttX only (driver bring-up, NSH samples) | `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `.bin`, `.hex` |
 | NuttX only, RA8P1 `evk-ra8p1` (EK-RA8P1) | `platforms/nuttx/NuttX/build_ra8p1.sh <config>` (same flags/exit codes; `NUTTX_DOWNLOAD_CACHE=<dir>` reseeds `RTT.zip` offline) | same as above |
-- PX4 targets: `renesas_rdk-rzv2h_{default,simple,sih,dshot,drone,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_{default,pwm}`, `renesas_rdk-rzv2h-io-cm33_default`.
-- `dualcr8` is the canonical exact-BOM sensor bring-up profile: one polled ICM-45686/P93, BMM150, BMP390, M10 and TFmini. CR8-0 motor outputs and the legacy bridge are disabled; commander requires first I/O status. No CR8-1 actuator pair is qualified yet. The former separate demo target was merged here; old staging evidence remains historical.
-- `pwm` on CR8-1 is the build-clean v3 supervisor candidate for `dualcr8`; zero hardware identities prevent physical resource claim. Current software evidence and open service/qualification gates: `docs/renesas/evidence/dualcr8-software-validation-261021.md`. Shared demo helpers live directly in `src/apps/` (CMake target `rzv2h_demo`).
-- `simple` is the isolated RTT PWM + ICM20948 accel/gyro bench profile; see `docs/renesas/validation/simple-pwm-icm20948-validation.md`. Retired core-only resources/evidence remain historical.
+- PX4 targets: `renesas_rdk-rzv2h_{default,demo,demosih,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_{default,demo}`, `renesas_rdk-rzv2h-io-cm33_default`. `drone`, `dshot`, `simple`, `sih`, core-only, the CR8-1 PX4IO relay and the CR8-0 `px4io_bridge` were retired 2026-11-18 (docs/evidence stay historical).
+- `dualcr8` is the canonical exact-BOM sensor bring-up profile: one polled ICM-45686/P93, BMM150, BMP390, M10 and TFmini. CR8-0 motor outputs are disabled; commander requires first I/O status. No CR8-1 actuator pair is qualified yet. The former separate demo target was merged here; old staging evidence remains historical.
+- CR8-1 `default` is the build-clean v3 supervisor candidate for `dualcr8`; zero hardware identities prevent physical resource claim. Current software evidence and open service/qualification gates: `docs/renesas/evidence/dualcr8-software-validation-261021.md`. Shared demo helpers live directly in `src/apps/` (CMake target `rzv2h_demo`).
+- CR8-0 `default` is the reference drone (RDK sensor extension). It links `pwm_out` and `dshot`; `PWM_MAIN_TIM0..3` picks one at boot (default 400 Hz PWM; all four `-3/-4/-5` = DShot600/300/150). `demo`/`demosih` are the bench demo and its SIH variant; CR8-1 `demo` is their heartbeat peer.
 - NuttX configs: `platforms/nuttx/NuttX/build.sh --list` (e.g. `nsh-rtt`, `nsh-scif`, `ipcc`, `adc`, `canfd`, `hil-full`). `--no-clean <config>` rebuilds the same config incrementally. Exit codes: 0 ok, 1 build failed, 2 bad usage.
 - Never hand-run `tools/configure.sh` + `make`; the scripts handle distclean and stale arch symlinks.
 - First-time setup: `source ./build_setup.sh` (checks deps, scrubs e2studio `CMAKE_*` env vars, inits submodules).
@@ -60,7 +60,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
   Exit 3 with "held in reset or was never started" (DBGEN) means no image runs on that core; no reset was logged.
   Never connect to the CM33 (its connect resets the SoC).
 - Read-only GDB snapshot: `platforms/nuttx/Debug/jlink-gdb-oneshot.py <cr8_0|cr8_1> <elf> -ex 'bt'` (`-noreset -noir -singlerun`,
-  refuses mutating commands, exit 5 on reset, exit 6 when gdb reported errors). PX4 health snippets: `platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_{0-bridge,1-io}-health.gdb`.
+  refuses mutating commands, exit 5 on reset, exit 6 when gdb reported errors). PX4 health snippets: `platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-cr8_1-io-health.gdb`.
   Loads: `rzv2h-ipc/rzv2h-load-one-core.sh <core> <elf>` (one core) or `rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>`.
 - Discover `_SEGGER_RTT` from the exact loaded ELF (PX4 CR8-0 images with the 32 KiB up buffer use `0x081a8404`; older evidence shows `0x081a2400`); the NuttX demo defaults are CR8-0 `0x081A0000`, CR8-1 `0x081E0000`. J-Link devices: `R9A09G057H44_R8_0`, `_R8_1`.
 - Register decode: `platforms/nuttx/Debug/svd_register_tool.py --svd rzv2h.svd ...`.
@@ -82,8 +82,8 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 | `refs/rzv2h_scripts/` | Pinmap / ELC / CMSIS-header generators, `rzv2h_pin_mapping.csv` |
 
 Evidence precedence and per-driver source picks: `docs/renesas/reference-source-map.md`.
-Keep the new extension opt-in and default-off; preserve GY912/simple P94 DRDY
-while extension P94 serves CS1. Missing generated artifacts or schematic data
+The sensor extension is the CR8-0 `default` image (P94 serves CS1 there; the
+legacy GY912 P94 DRDY wiring is historical). Missing generated artifacts or schematic data
 do not block source/host/build work; record remaining physical qualification.
 
 ## 5. Evidence rules
@@ -104,7 +104,7 @@ do not block source/host/build work; record remaining physical qualification.
 | Hardware, clocks, memory, pins | `docs/renesas/hardware.md`, `docs/renesas/pinmap.md`, `docs/renesas/multicore-memory-map.md` |
 | Multi-core IPC | `docs/renesas/ipc-architecture.md`, `docs/renesas/validation/rzv2h-ipc-hil-test-guide.md` |
 | Validation checklist | `docs/renesas/validation/validation-checklist.md` |
-| Simple PWM + ICM bench | `docs/renesas/validation/simple-pwm-icm20948-validation.md` |
+| Demo bench | `docs/renesas/validation/demo-bench-validation.md` |
 | Driver design / coding rules | `docs/renesas/porting-playbook.md`, `docs/code-standards.md` |
 | Architecture, build/flash/debug | `docs/system-architecture.md`, `docs/deployment-guide.md` |
 | VS Code firmware workspace / GCS extensions | `docs/vscode-extension.md`, `docs/vscode-gcs-extension.md` |

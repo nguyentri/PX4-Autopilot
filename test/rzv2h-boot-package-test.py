@@ -12,8 +12,8 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-BUILD = ROOT / 'build/renesas_rdk-rzv2h_drone'
-STEM = 'renesas_rdk-rzv2h_drone'
+BUILD = ROOT / 'build/renesas_rdk-rzv2h_default'
+STEM = 'renesas_rdk-rzv2h_default'
 TOOL = ROOT / 'platforms/nuttx/Debug/rzv2h-boot-package.py'
 spec = importlib.util.spec_from_file_location('boot_package', TOOL)
 boot = importlib.util.module_from_spec(spec)

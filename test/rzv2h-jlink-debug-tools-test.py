@@ -70,7 +70,7 @@ class OneShotReadOnlyFilter(unittest.TestCase):
 
     def test_inspection_commands_pass(self):
         for line in ('bt', 'p g_hrt', 'p/x $cpsr', 'x/4wx 0x10000000', 'info registers pc',
-                     'p ((Px4IoCr8*)ModuleBase<Px4IoCr8>::_object._value)->_loop_count',
+                     'p ModuleBase<IoSupervisor>::_object._value->_worker_status._record',
                      'printf "a=%d\\n", g_x', 'p a == b', 'p a <= b', 'p sizeof(struct s)',
                      'set pagination off', 'set print pretty on', 'set $i = 0',
                      'dump binary memory /tmp/x.bin buf buf+16', '# comment', '',
@@ -89,9 +89,6 @@ class OneShotReadOnlyFilter(unittest.TestCase):
         elfs = {'cr8_0': ROOT / 'build/renesas_rdk-rzv2h_dualcr8/renesas_rdk-rzv2h_dualcr8.elf',
                 'cr8_1': ROOT / 'build/renesas_rdk-rzv2h-io-cr8_1_default/'
                 'renesas_rdk-rzv2h-io-cr8_1_default.elf'}
-        config = elfs['cr8_0'].parent/'boardconfig'
-        if config.is_file() and 'CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE=y' not in config.read_text():
-            self.skipTest('legacy bridge snippets require an image with the bridge selected')
         if not gdb or not all(elf.is_file() for elf in elfs.values()):
             self.skipTest('needs gdb-multiarch and the dualcr8 + io-cr8_1 builds')
         for snippet in sorted((DEBUG / 'rzv2h-ipc').glob('rzv2h-px4-cr8_*.gdb')):

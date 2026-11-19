@@ -27,7 +27,7 @@ VERBOSE_ARG=()
 DEFAULT_PAIRS=(
 	"renesas_rdk-rzv2h_demo renesas_rdk-rzv2h-io-cr8_1_demo"
 	"renesas_rdk-rzv2h_demosih renesas_rdk-rzv2h-io-cr8_1_demo"
-	"renesas_rdk-rzv2h_dualcr8 renesas_rdk-rzv2h-io-cr8_1_pwm"
+	"renesas_rdk-rzv2h_dualcr8 renesas_rdk-rzv2h-io-cr8_1_default"
 )
 
 print_usage()
@@ -40,7 +40,7 @@ cores. Build both targets first with ./build.sh <target>.
 
 With only the CR8-0 target, its default CR8-1 partner is used (see --list).
 Target names are those of ./build.sh and ./flash.sh, including its shortcuts;
-a bare config name is also accepted for each core (demosih, pwm).
+a bare config name is also accepted for each core (demosih, demo).
 
 Options:
   --list         Print the default pairs, the built CR8-1 targets and exit.
@@ -52,7 +52,7 @@ Env:
 
 Examples:
   ./flash_dual.sh demosih                                 # + io-cr8_1_demo
-  ./flash_dual.sh renesas_rdk-rzv2h_dualcr8               # + io-cr8_1_pwm
+  ./flash_dual.sh renesas_rdk-rzv2h_dualcr8               # + io-cr8_1_default
   ./flash_dual.sh rdk-rzv2h_dualcr8 rdk-rzv2h-io-cr8_1_demo
 USAGE
 }
@@ -126,7 +126,7 @@ fi
 
 # flash.sh owns target-name resolution, so both scripts accept the same
 # shortcuts. Each argument position names one core here, so a bare config
-# name (demo, pwm) is tried on that core's board first; without that, "demo"
+# name (demo, default) is tried on that core's board first; without that, "demo"
 # would be ambiguous between the CR8-0 and CR8-1 demo targets.
 resolve_on_board()
 {

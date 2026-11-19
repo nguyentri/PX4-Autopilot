@@ -18,12 +18,12 @@ import { FolderState, decodeFolderState, validSelection } from './setup-state';
 const SELECTION_STATE_KEY = 'px4Nuttx.folderState';
 const DEFAULT_SELECTION: FirmwareSelection = {
   schemaVersion: 1,
-  id: 'rzv2h-simple',
+  id: 'rzv2h-default',
   board: 'rdk-rzv2h',
   core: 'cr8_0',
   build: {
     family: 'px4',
-    target: 'renesas_rdk-rzv2h_simple',
+    target: 'renesas_rdk-rzv2h_default',
     mode: 'incremental',
   },
 };

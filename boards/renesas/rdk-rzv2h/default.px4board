@@ -1,7 +1,12 @@
 # Renesas RDK-RZV2H Board Configuration for PX4
 # Cortex-R8 based multicore processor (uses CR8 core 0)
 #
-# Reference: PX4 FreeRTOS+FSP implementation for RZV2H
+# Reference single-core drone (refs/rzv2h_drone_px4-dev/docs/HARDWARE.md):
+# 3x ICM-45686 on SPI0 (P93/P94/P95 CS), BMM150 + BMP390 + INA228 on SCI7,
+# TFmini on SCI4, SiK on SCI5, SBUS on SCI6, M10 GPS on SCI9 and four ESCs on
+# GPT6/7/9/10. pwm_out and dshot are both linked; init/rc.board_defaults.cmds
+# starts exactly one of them from PWM_MAIN_TIM0.
+# demo, demosih and dualcr8 inherit this file and override what differs.
 
 CONFIG_BOARD_TOOLCHAIN="arm-none-eabi"
 CONFIG_BOARD_ARCHITECTURE="cortex-r8"
@@ -18,7 +23,7 @@ CONFIG_BOARD_NO_HELP=y
 CONFIG_BOARD_SERIAL_GPS1="/dev/ttyS9"
 CONFIG_BOARD_SERIAL_TEL1="/dev/ttyS5"
 CONFIG_BOARD_SERIAL_RC="/dev/ttyS6"
-#CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"
+CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"
 CONFIG_COMMON_SERIAL_PORT_MAPPING=y
 
 # Console and UART lower-half selectors are owned by nuttx-config/nsh/defconfig.
@@ -36,6 +41,7 @@ CONFIG_ARCH_BOARD_CUSTOM_NAME="rdk-rzv2h"
 # remains disabled until its controller, partition, and power-loss gates pass.
 CONFIG_BOARD_ROOT_PATH="/fs"
 CONFIG_BOARD_PARAM_FILE="/fs/params"
+CONFIG_BOARD_PARAM_FILE_ATOMIC=y
 
 # Interface configuration
 CONFIG_I2C=y
@@ -44,14 +50,17 @@ CONFIG_UART=y
 
 # Driver configurations - Sensors
 CONFIG_DRIVERS_BAROMETER=y
-CONFIG_DRIVERS_BAROMETER_BMP280=y
+CONFIG_DRIVERS_BAROMETER_BMP388=y
 CONFIG_DRIVERS_GPS=y
 CONFIG_DRIVERS_IMU=y
-CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=y
-# ICM20948 disabled: not present on RDK-RZV2H drone BOM (single-IMU per RDK-RZ/V2H pinout).
+CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686=y
 CONFIG_DRIVERS_MAGNETOMETER=y
+CONFIG_DRIVERS_MAGNETOMETER_BOSCH_BMM150=y
+CONFIG_DRIVERS_POWER_MONITOR_INA228=y
 
-# Driver configurations - Outputs
+# Driver configurations - Outputs. Both drivers are linked, but only one may own
+# GPT6/7/9/10: PWM_MAIN_TIM0 400 (default) starts pwm_out, -3/-4/-5 starts dshot.
+CONFIG_DRIVERS_DSHOT=y
 CONFIG_DRIVERS_PWM_OUT=y
 CONFIG_DRIVERS_RC_INPUT=y
 CONFIG_DRIVERS_TONE_ALARM=n
@@ -126,7 +135,7 @@ CONFIG_EXAMPLES_ROVER_STEERING_CONTROL=n
 CONFIG_EXAMPLES_UUV_EXAMPLE_APP=n
 CONFIG_EXAMPLES_WORK_ITEM=n
 
-# Board specific PWM configuration
+# Board specific PWM/DShot configuration
 CONFIG_BOARD_HAS_PWM=DEFINE_FROM_BOARDCONFIG
 CONFIG_BOARD_PWM_SIM_DISABLED=DEFINE_FROM_BOARDCONFIG
 CONFIG_BOARD_PWM_DRIVE_ACTIVE_LOW=DEFINE_FROM_BOARDCONFIG

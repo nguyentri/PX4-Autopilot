@@ -175,13 +175,13 @@
     },
     {
       "id": "case-8",
-      "prompt": "The single-core PX4 drone image is running on CR8-0. Run 'ps' and 'uorb top -1' over RTT and show me the output.",
+      "prompt": "The single-core PX4 default (drone) image is running on CR8-0. Run 'ps' and 'uorb top -1' over RTT and show me the output.",
       "expected_output": "Uses the exact PX4 ELF and marker-mode NSH, then cleans up. A bridge failure ends that invocation; distinguish reset from DBGEN or plain failed connect, inspect logs and perform needed guarded recovery under the project's standing authorization without asking again.",
       "files": [],
       "assertions": [
         {
           "id": "elf-rtt",
-          "text": "Passes the PX4 ELF to the bridge (or the address 0x081a2400), not the bare cr8_0 alias default."
+          "text": "Passes the PX4 ELF to the bridge (or the address read from that ELF, 0x081a8404 on current images), not the bare cr8_0 alias default."
         },
         {
           "id": "marker",
@@ -196,8 +196,8 @@
     },
     {
       "id": "case-9",
-      "prompt": "Dual CR8 is running (dualcr8 on CR8-0, io-cr8_1 on CR8-1). Tell me the CR8-1 IO loop count, lease state and its boot log. The drone is disarmed.",
-      "expected_output": "Uses jlink-gdb-oneshot.py cr8_1 <io elf> -x rzv2h-px4-cr8_1-io-health.gdb plus a dump of g_sci1port.xmit to the scratch dir; states the 1-3 s halt; no RTT bridge on CR8-1 (no RTT block); no load or reset.",
+      "prompt": "Dual CR8 is running (dualcr8 on CR8-0, io-cr8_1 default supervisor on CR8-1). Tell me the CR8-1 worker loop count and status records. The drone is disarmed.",
+      "expected_output": "Uses jlink-gdb-oneshot.py cr8_1 <io elf> -x rzv2h-px4-cr8_1-io-health.gdb; states the 1-3 s halt; for the log, uses the CR8-1 RTT bridge with the exact ELF, never both bridge and GDB at once; no load or reset.",
       "files": [],
       "assertions": [
         {
@@ -205,8 +205,8 @@
           "text": "Reads CR8-1 through jlink-gdb-oneshot.py (read-only) with the io-cr8_1 ELF."
         },
         {
-          "id": "no-rtt",
-          "text": "Does not expect an RTT console on the PX4 io-cr8_1 image; uses g_sci1port.xmit for the log."
+          "id": "rtt-log",
+          "text": "Does not dump g_sci1port (retired relay); reads the CR8-1 log over RTT with the exact ELF, one probe owner at a time."
         },
         {
           "id": "halt-note",

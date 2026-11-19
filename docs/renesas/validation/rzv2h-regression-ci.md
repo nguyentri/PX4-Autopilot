@@ -294,8 +294,8 @@ and per-region bounds still apply. This software-format envelope does not
 establish a physical flash partition or a loader/deployment capacity. Board ID
 14 and `PX4FWv2` remain unchanged.
 
-Console evidence follows the selected sources: CR8-1 uses SCI1 without a selected
-RTT provider; CM33's current defconfig leaves RTT in ordinary SRAM rather than
+Console evidence follows the selected sources: CR8-1 uses an RTT console (`CONFIG_SYSLOG_RTT`, no SCI console);
+CM33's current defconfig leaves RTT in ordinary SRAM rather than
 selecting the dedicated linker RTT section. Private CR8 TCM addresses may match
 between cores. Pair checks distinguish these local aliases from private SRAM/DDR
 and intentional shared-memory windows.

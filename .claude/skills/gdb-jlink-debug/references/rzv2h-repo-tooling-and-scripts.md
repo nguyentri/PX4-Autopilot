@@ -49,7 +49,7 @@ All probe-touching commands need `JLINK_SERIAL`. Other env: `JLINK_SPEED`
 ## RZ/V2H workflow details
 
 - **NSH over RTT.** Start the bridge with the ELF so it reads `_SEGGER_RTT`
-  (PX4 CR8-0 is `0x081a2400`, not the NuttX `0x081a0000` alias default). Use
+  (current PX4 CR8-0 images use `0x081a8404`; read it from the ELF, not the NuttX `0x081a0000` alias default). Use
   `--marker` on PX4 or any image whose tasks log while the shell idles; plain
   prompt mode times out there. On images without `CONFIG_SCHED_WAITPID` (the
   NuttX IPC demos) builtins print after the prompt: wait with

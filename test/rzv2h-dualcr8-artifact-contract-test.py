@@ -18,7 +18,7 @@ class DualCr8Artifacts(unittest.TestCase):
     def setUpClass(cls):
         cls.contract = CHECK.policy(ROOT)
         cls.images = []
-        for directory, target in zip(BUILD_DIRS, ('renesas_rdk-rzv2h_dualcr8', 'renesas_rdk-rzv2h-io-cr8_1_pwm')):
+        for directory, target in zip(BUILD_DIRS, ('renesas_rdk-rzv2h_dualcr8', 'renesas_rdk-rzv2h-io-cr8_1_default')):
             profile = next(p for p in cls.contract['profiles'] if p['target'] == target)
             data = (directory / (target + '.elf')).read_bytes()
             nm = CHECK.tool(['arm-none-eabi-nm', '--defined-only', str(directory / (target + '.elf'))])
@@ -101,7 +101,7 @@ class DualCr8Artifacts(unittest.TestCase):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cr8-0-build-dir', type=Path, default=ROOT / 'build/renesas_rdk-rzv2h_dualcr8')
-    parser.add_argument('--cr8-1-build-dir', type=Path, default=ROOT / 'build/renesas_rdk-rzv2h-io-cr8_1_pwm')
+    parser.add_argument('--cr8-1-build-dir', type=Path, default=ROOT / 'build/renesas_rdk-rzv2h-io-cr8_1_default')
     args, remaining = parser.parse_known_args()
     BUILD_DIRS[:] = [args.cr8_0_build_dir, args.cr8_1_build_dir]
     unittest.main(argv=[__file__] + remaining)

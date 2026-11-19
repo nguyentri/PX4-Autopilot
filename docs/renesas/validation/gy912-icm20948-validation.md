@@ -34,7 +34,7 @@ use P93. Verify the actual module revision, power input,
 regulator and logic level adaptation against its schematic before connecting
 power. Board GPIO voltage alone does not establish that a module tolerates it.
 
-The [sensor wiring profiles](../pinmap.md#sensor-wiring-profiles) define the
+The [sensor wiring profiles](../pinmap.md#px4-configuration-profiles) define the
 native and opt-in extension ownership for P90–P95. In this legacy sample P94 is
 the ICM20948 interrupt and P93 is its single CS; P94 cannot also be extension
 CS1, and the `nsh-leds` button image cannot run with extension wiring. Preserve

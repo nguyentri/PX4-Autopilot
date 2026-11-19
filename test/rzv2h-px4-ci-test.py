@@ -129,11 +129,14 @@ class ProfileContracts(unittest.TestCase):
             self.assertEqual(model.syms['IPCC'].str_value,'n')
             self.assertEqual(model.syms['IPCC_BUFFERED'].str_value,'n')
             self.assertEqual(model.syms['RZV_IPC_RAW'].str_value,'y')
-        profile = next(p for p in CHECK.policy()['profiles'] if p['core']=='CR8-1')
+        profile = next(p for p in CHECK.policy()['profiles']
+                       if p['core']=='CR8-1' and p['label']=='default')
         self.assertNotIn('CONFIG_IPCC',profile['required_config'])
         self.assertNotIn('CONFIG_IPCC_BUFFERED',profile['required_config'])
-        for name in ('CONFIG_RZV_IPC_RAW','CONFIG_RZV_IPC_CR8_CR8','CONFIG_RZV_IPC_CR8_1_CM33'):
+        for name in ('CONFIG_RZV_IPC_RAW','CONFIG_RZV_IPC_CR8_CR8'):
             self.assertEqual(profile['required_config'][name],'y')
+        # The CR8-1 output supervisor talks only to CR8-0; it owns no CM33 link.
+        self.assertIn('CONFIG_RZV_IPC_CR8_1_CM33',profile['forbidden_config'])
         self.assertIn('rzv_ipc_raw_chardev_register',profile['required_symbols'])
 
     def test_archive_wrapper_output_cannot_modify_inputs(self):

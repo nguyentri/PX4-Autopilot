@@ -1,3 +1,0 @@
-# Software supervisor candidate. Hardware contract is unconfigured/inhibited;
-# this image is not an accepted actuator peer until physical qualification.
-CONFIG_BOARD_ROMFSROOT="rdk-rzv2h-io-cr8_1-pwm"

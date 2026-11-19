@@ -13,13 +13,11 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 - ⏸ **Renesas FPB-RA8E1 PX4 CM85** — Basic Test (BSP, Shell, and SPI)
 - ⏸ **Renesas EVK-RA8P1 PX4 CM85** — Basic Test (BSP, Shell, SPI, and PWM)
 - ⏸ **Renesas EVK-RA8P1 IO CM33** — Build Only
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 (Default)** — Build-Clean; RTT0 console, volatile `/fs/params`, WDT-backed reset chain linked, SPI0/SCI7/PWM/serial adapters wired; on-target hardware validation pending
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DShot** — Bounded on-target motor-stop TX (opt-in DShot600 via GPT+DMAC); electrical waveform, ESC, and nonzero-throttle proof pending ([latest evidence](./docs/renesas/evidence/px4-hardware-tests-cr8-0-261021.md))
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Simple** — Build-Clean bench profile: RTT, four-channel PWMOut and SPI0 ICM20948 raw accel/gyro; fresh four-profile software checks passed; hardware untested
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 (Default)** — Build-Clean reference drone: RDK sensor extension (ICM-45686, BMM150, BMP390, M10, TFmini), RTT0 console, volatile `/fs/params`; four outputs as PWM (default) or DShot600/300/150 via `PWM_MAIN_TIM0..3=-3/-4/-5`; DShot motor-stop TX was bounded on target in the retired `dshot` image ([evidence](./docs/renesas/evidence/px4-hardware-tests-cr8-0-261021.md)); merged image not target-proven
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Demo / DemoSIH** — Bench demo (PWM, ICM-45686, BMP280, TFmini, QGC) and its SIH variant
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DualCR8** — Build-Clean exact-BOM sensor profile with a supervised remote-output producer; hardware identity unconfigured, no admitted actuator pair
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 SIH** — On-Target Bounded Demo; simulated sensors (accel/gyro/baro/mag/GPS), HIL sensors, `pwm_out_sim`; GTM7 HRT callback pass; cold-cycle, pin-safety, and soak gates pending
-- ⏸ **Renesas RDK-RZV2H IO CR8_1** — Build Only (raw IPC / IPCC build-clean with distinct RTT console and ABI-v2 sequence recovery; NuttX-only raw IPC demo passes 100/100 on target; this PX4 image is not target-proven)
-- ⏸ **Renesas RDK-RZV2H IO CR8_1 PWM** — Build-Clean ABI-v3 supervisor candidate; physical resources remain unclaimed until a selected hardware contract is admitted
+- ⏸ **Renesas RDK-RZV2H IO CR8_1 (Default)** — Build-Clean ABI-v3 output supervisor candidate for `dualcr8`; physical resources remain unclaimed until a selected hardware contract is admitted
+- ⏸ **Renesas RDK-RZV2H IO CR8_1 Demo** — IPC heartbeat demo peer
 - ⏸ **Renesas RDK-RZV2H IO CM33** — Build Only (raw IPC / IPCC build-clean with secure SRAM `0x08002800` vectors, non-secure MHU `0x50480000`; target boot/IPC proof pending)
 
 ### Build Targets
@@ -37,15 +35,10 @@ renesas_fpb-ra8e1_test
 renesas_rdk-rzv2h-io-cm33_default
 renesas_rdk-rzv2h-io-cr8_1_default
 renesas_rdk-rzv2h-io-cr8_1_demo
-renesas_rdk-rzv2h-io-cr8_1_pwm
 renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_demo
 renesas_rdk-rzv2h_demosih
-renesas_rdk-rzv2h_drone
-renesas_rdk-rzv2h_dshot
 renesas_rdk-rzv2h_dualcr8
-renesas_rdk-rzv2h_sih
-renesas_rdk-rzv2h_simple
 ```
 
 ## RZ/V2H Porting Status Summary
@@ -75,13 +68,11 @@ See [docs/](./docs/) and [docs/renesas/](./docs/renesas/) for comprehensive guid
 ### Renesas RZ/V2H Port Documentation
 
 Start at [docs/renesas/README.md](./docs/renesas/README.md) (hardware, pinmap, status, playbook, IPC, validation).
-For the compact PWM + ICM20948 bench target, use the
-[simple validation guide](./docs/renesas/validation/simple-pwm-icm20948-validation.md).
-The opt-in sensor-extension profile is tracked through
-the [reference-port plan](./plans/261011-2017-rzv2h-drone-reference-port/plan.md).
-Its profile wiring preserves existing native samples; source/host/build
-work proceeds independently of later physical qualification.
-The retired core-only target is historical; its NuttX/ROMFS resources and evidence remain archived.
+The `default` target is the reference drone (sensor extension tracked through the
+[reference-port plan](./plans/261011-2017-rzv2h-drone-reference-port/plan.md)).
+It links both `pwm_out` and `dshot`; `PWM_MAIN_TIM0..3` selects which one starts.
+The `drone`, `dshot`, `simple`, `sih` and core-only targets and the CR8-1 PX4IO relay
+were retired on 2026-11-18; their validation docs and evidence remain as history.
 
 The `demo` target is a CR8-0 bench image: four 400 Hz PWM outputs, one polled
 ICM-45686 on SPI0/P93, BMP280 on SCI7, TFmini on SCI4 and QGroundControl on
@@ -90,14 +81,13 @@ SCI5. See the [demo bench validation guide](./docs/renesas/validation/demo-bench
 The `dualcr8` target is build-clean for the exact-BOM sensor bring-up in the
 [dual-CR8 demo plan](./plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md).
 It leaves CR8-0 motor outputs unclaimed and requires I/O status before arming.
-The v3 producer and `renesas_rdk-rzv2h-io-cr8_1_pwm` supervisor candidate have
+The v3 producer and `renesas_rdk-rzv2h-io-cr8_1_default` supervisor candidate have
 host/build checks and a [validation procedure](./docs/renesas/validation/dualcr8-sensor-actuator-demo.md).
 The [software validation record](./docs/renesas/evidence/dualcr8-software-validation-261021.md)
 records the current checks and remaining application gaps.
 Their hardware identity remains unconfigured and
 physical outputs stay unclaimed. Selected ESC/power/storage contracts and
 physical qualification are still pending; this is not an accepted actuator pair.
-The CR8-1 `default` image retains its legacy relay role and is not its peer.
 
 ### AI Agents
 
@@ -131,7 +121,7 @@ bare `./flash.sh` prints help and the built targets):
 
 ```bash
 ./flash.sh renesas_rdk-rzv2h_default                      # CR8-0 RAM load + start
-./flash.sh rdk-rzv2h_dualcr8 rdk-rzv2h-io-cr8_1_pwm       # CR8-0 + CR8-1 pair
+./flash.sh rdk-rzv2h_dualcr8 rdk-rzv2h-io-cr8_1_default   # CR8-0 + CR8-1 pair
 ./flash.sh renesas_evk-ra8p1_default                      # RA8: flash, reset, run
 ```
 
@@ -140,7 +130,7 @@ and it adds the CR8-1 partner (`./flash_dual.sh --list` shows the pairs):
 
 ```bash
 ./flash_dual.sh demosih                                   # + rdk-rzv2h-io-cr8_1_demo
-./flash_dual.sh dualcr8                                   # + rdk-rzv2h-io-cr8_1_pwm
+./flash_dual.sh dualcr8                                   # + rdk-rzv2h-io-cr8_1_default
 ./flash_dual.sh dualcr8 rdk-rzv2h-io-cr8_1_demo           # explicit CR8-1 target
 ```
 

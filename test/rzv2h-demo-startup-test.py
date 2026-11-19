@@ -26,7 +26,7 @@ class DemoStartup(unittest.TestCase):
     def test_telemetry_ring_can_send_mavlink_ftp(self):
         if BUILD_DIR is None:
             self.skipTest("pass --build-dir to exercise MAVLink serialization")
-        body = runpy.run_path(str(ROOT / "test/rzv2h-simple-test-support.py"))["body"]
+        body = runpy.run_path(str(ROOT / "test/rzv2h-board-test-support.py"))["body"]
         source = (ROOT / "src/modules/mavlink/mavlink_main.cpp").read_text()
         ftp_source = (ROOT / "src/modules/mavlink/mavlink_ftp.cpp").read_text()
         config = (INIT.parent.parent / "nuttx-config/demo/defconfig").read_text()

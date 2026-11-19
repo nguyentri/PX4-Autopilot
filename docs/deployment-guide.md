@@ -81,12 +81,13 @@ FIQ and asynchronous aborts masked), so the new image never starts in the
 halted image's mode or with its interrupts enabled.
 
 The current `renesas_rdk-rzv2h_dualcr8` image is exact-BOM sensor bring-up
-with CR8-0 motor outputs and the legacy bridge disabled. It is not qualified
-with `renesas_rdk-rzv2h-io-cr8_1_default`. The older dual-CR8 bridge captures
-apply only to their recorded image hashes. Follow the
+with CR8-0 motor outputs disabled. Its partner is the CR8-1
+`renesas_rdk-rzv2h-io-cr8_1_default` output supervisor (formerly `pwm`); the pair
+is not a qualified actuator pair. The older dual-CR8 bridge captures (retired
+PX4IO relay) apply only to their recorded image hashes. Follow the
 [active plan](../plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md) for the
-pending compatible actuator pair; no current two-image deployment command is
-provided before that gate closes.
+pending compatible actuator pair. `./flash_dual.sh dualcr8` (below) loads this
+pair for bench work; loading it does not qualify the pair for actuator output.
 
 J-Link reset, image load, and target memory writes require explicit user
 authorization. No raw `.bin` or xSPI flashing command is approved. The boot
@@ -95,14 +96,14 @@ change that boundary.
 
 ### Host validation of a boot candidate
 
-The opt-in `renesas_rdk-rzv2h_drone` profile can be checked on the host:
+The CR8-0 `renesas_rdk-rzv2h_default` (reference drone) image can be checked on the host:
 
 ```bash
-./build.sh renesas_rdk-rzv2h_drone
+./build.sh renesas_rdk-rzv2h_default
 python3 test/rzv2h-boot-package-test.py
 python3 platforms/nuttx/Debug/rzv2h-boot-package.py \
-  --elf build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.elf \
-  --image build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.bin \
+  --elf build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf \
+  --image build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.bin \
   --layout boards/renesas/rdk-rzv2h/boot-layout.json \
   --output /tmp/rzv2h-boot-candidate
 ```
@@ -146,7 +147,7 @@ For a bounded command-line backtrace, bind the probe serial explicitly:
 
 ```bash
 JLINK_SERIAL=<probe-serial> \
-  cmake --build build/renesas_rdk-rzv2h_simple \
+  cmake --build build/renesas_rdk-rzv2h_default \
   --target jlink_gdb_backtrace
 ```
 
@@ -166,13 +167,13 @@ qualify an actuator pair.
 
 `./flash_dual.sh <cr8_0-target> [<cr8_1-target>]` is the dual-core shortcut. It
 resolves both names through `./flash.sh --resolve` (a bare config name such as
-`demosih` or `pwm` is tried on that core's board first), then runs the same
+`demosih` or `dualcr8` is tried on that core's board first), then runs the same
 pair load. With only the CR8-0 target it adds the default CR8-1 partner:
 
 | CR8-0 target | Default CR8-1 partner |
 |--------------|-----------------------|
 | `renesas_rdk-rzv2h_demo`, `renesas_rdk-rzv2h_demosih` | `renesas_rdk-rzv2h-io-cr8_1_demo` (heartbeat responder) |
-| `renesas_rdk-rzv2h_dualcr8` | `renesas_rdk-rzv2h-io-cr8_1_pwm` (supervisor candidate) |
+| `renesas_rdk-rzv2h_dualcr8` | `renesas_rdk-rzv2h-io-cr8_1_default` (supervisor candidate) |
 
 Any other CR8-0 target needs the CR8-1 target named explicitly.
 `./flash_dual.sh --list` prints the pairs and whether both ELFs are built. Exit
@@ -352,7 +353,7 @@ current terminal. Re-run the serial-bound helper after the server exits:
 ```bash
 lsusb | grep Segger
 JLINK_SERIAL=<probe-serial> \
-  cmake --build build/renesas_rdk-rzv2h_simple \
+  cmake --build build/renesas_rdk-rzv2h_default \
   --target jlink_gdb_backtrace
 ```
 

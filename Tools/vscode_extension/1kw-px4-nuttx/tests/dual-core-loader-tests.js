@@ -550,7 +550,7 @@ async function runDualCoreTests() {
     const px4Selection = { ...selection, id: 'rzv-px4-dualcr8', group: 'rzv-px4-dualcr8', build: { family: 'px4', mode: 'incremental' } };
     await store.setSelection(px4Selection); beforeBuildSelection = store.getSelection();
     await controller.buildCore('cr8_1');
-    assert.equal(buildCalls.at(-1).building.build.target, 'renesas_rdk-rzv2h-io-cr8_1_pwm');
+    assert.equal(buildCalls.at(-1).building.build.target, 'renesas_rdk-rzv2h-io-cr8_1_default');
     assert.equal(buildCalls.at(-1).building.build.family, 'px4');
     assert.equal(store.getPreparedPair().prepared.artifacts.length, 1, 'first per-core build remains partial');
     assert.equal(await controller.validate(), false);

@@ -332,7 +332,7 @@ brown out flight compute.
 - SPI is the normal choice for high-rate board-local IMUs.
 - I2C/I3C fits short, lower-rate local sensors; UART or CAN fits GNSS, LiDAR,
   air-data, and remote avionics.
-- The production target selects CR8-1 **DShot** primary and PWM400 backup, both requiring qualification under a CR8-0 output lease. Current `pwm` source is an inhibited PWM candidate; the DShot backend and protocol-specific adaptation remain pending.
+- The production target selects CR8-1 **DShot** primary and PWM400 backup, both requiring qualification under a CR8-0 output lease. Current CR8-1 `default` (former `pwm`) source is an inhibited PWM candidate; the DShot backend and protocol-specific adaptation remain pending.
 - Each ESC needs a defined local command-timeout safe state; feedback may return
   RPM, voltage, current, temperature, and faults.
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""IO-core health reaches commander: the CR8-0 bridge maps CR8-1 link,
-heartbeat and SafeFault state onto px4io_status, and commander blocks arming
-on a silent, FMU-starved or failsafe I/O processor."""
+"""IO-core health reaches commander: commander blocks arming on a silent,
+FMU-starved or failsafe I/O processor reported through px4io_status."""
 
 import importlib.util
 import re
@@ -31,80 +30,6 @@ def px4io_status_struct():
 
 
 class IoCoreHealth(unittest.TestCase):
-    def test_cr8_0_bridge_reports_cr8_1_state_as_px4io_status(self):
-        owner = BOARDS / 'rdk-rzv2h/px4io_cr8_0'
-        source = (owner / 'uorb_bridge.cpp').read_text()
-        code = EXPANDED.io_prelude(owner) + '#include <vector>\n' + px4io_status_struct() + r'''
-static std::vector<px4io_status_s> published;
-struct StatusPub { bool publish(const px4io_status_s &s) { published.push_back(s); return true; } };
-class UorbBridgeCR8 {public:
-  bool _io_alive{false}; bool _link_down{false};
-  uint32_t _io_fault_flags{0}; uint8_t _io_armed_state{0};
-  StatusPub _px4io_status_pub; px4io_status_s _px4io_status{};
-  void publish_io_status(uint64_t now);};
-'''
-        code += extract(source, 'void UorbBridgeCR8::publish_io_status(')
-        code += r'''
-static const px4io_status_s &last() { assert(!published.empty()); return published.back(); }
-int main() {
-  UorbBridgeCR8 b;
-
-  // Before the first CR8-1 heartbeat: published, and not OK to arm.
-  b.publish_io_status(1000);
-  assert(published.size() == 1 && last().timestamp == 1000);
-  assert(!last().status_init_ok && !last().status_fmu_ok && !last().arming_io_arm_ok);
-
-  // Unchanged state republishes at 1 Hz only.
-  b.publish_io_status(1000 + 999999);
-  assert(published.size() == 1);
-  b.publish_io_status(1000 + 1000000);
-  assert(published.size() == 2);
-
-  // Alive with a fresh lease and heartbeat: OK, at once.
-  b._io_alive = true; b.publish_io_status(1001000 + 10);
-  assert(published.size() == 3 && last().status_init_ok && last().status_fmu_ok && last().arming_io_arm_ok);
-  assert(!last().status_failsafe && !last().status_outputs_armed);
-  b._io_armed_state = 1; b.publish_io_status(1001000 + 20);
-  assert(published.size() == 4 && last().status_outputs_armed);
-  b._io_armed_state = 0;
-
-  // A stale CR8-1 lease or CR8-0 heartbeat is not FMU OK.
-  const uint32_t stale[] = {FAULT_FLAG_CR8_TIMEOUT, FAULT_FLAG_FMU_HEARTBEAT};
-  for (uint32_t flag : stale) {
-    b._io_fault_flags = flag; b.publish_io_status(2000000);
-    assert(!last().status_fmu_ok && !last().arming_io_arm_ok && !last().status_failsafe);
-    b._io_fault_flags = 0; b.publish_io_status(2000000);
-    assert(last().status_fmu_ok);
-  }
-
-  // A latched SafeFault is failsafe and never OK to arm.
-  b._io_fault_flags = FAULT_FLAG_OUTPUT_SAFE_FAULT; b.publish_io_status(3000000);
-  assert(last().status_failsafe && last().status_fmu_ok && !last().arming_io_arm_ok);
-  b._io_fault_flags = FAULT_FLAG_PWM_FAULT; b.publish_io_status(3000001);
-  assert(!last().status_failsafe && last().alarm_pwm_error && last().arming_io_arm_ok);
-
-  // A quarantined link is not FMU OK even with a recent CR8-1 heartbeat.
-  b._io_fault_flags = 0; b._link_down = true; b.publish_io_status(4000000);
-  assert(!last().status_fmu_ok && last().status_init_ok);
-  b._link_down = false;
-
-  // A silent CR8-1: its last flags are not trusted, outputs not reported armed.
-  b._io_fault_flags = FAULT_FLAG_OUTPUT_SAFE_FAULT; b._io_armed_state = 1; b._io_alive = false;
-  b.publish_io_status(5000000);
-  assert(!last().status_init_ok && !last().status_fmu_ok && !last().status_failsafe);
-  assert(!last().status_outputs_armed && !last().arming_io_arm_ok);
-}
-'''
-        REPAIR.run(code, cpp=True)
-
-    def test_cr8_0_bridge_publishes_status_on_every_update_path(self):
-        source = (BOARDS / 'rdk-rzv2h/px4io_cr8_0/uorb_bridge.cpp').read_text()
-        update = extract(source, 'void UorbBridgeCR8::update(')
-        self.assertEqual(update.count('publish_io_status(hrt_absolute_time());'), 2)
-        down = update[update.index('if (_link_down) {\n\t\t\tupdate_io_liveness'):update.index('return;')]
-        self.assertIn('publish_io_status', down)
-        self.assertLess(update.index('process_rx();'), update.rindex('publish_io_status'))
-
     def test_commander_blocks_arming_on_an_unhealthy_io_processor(self):
         code = REPAIR.PRE + r'''
 #include <string>

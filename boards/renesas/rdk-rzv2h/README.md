@@ -6,28 +6,22 @@ This document describes the PX4 Board Support Package (BSP) created for the Rene
 
 The RDK-RZV2H BSP enables PX4 flight controller functionality on the Renesas
 RZV2H MPU using the Cortex-R8 (CR8_0) core for real-time flight control. The
-default image is independent of CA55, CR8_1, CM33, OpenAMP, and IPCC.
+`default` image is independent of CA55, CR8_1, CM33, OpenAMP, and IPCC.
 Multicore transports remain opt-in final-milestone features.
 
-The compact `renesas_rdk-rzv2h_simple` bench image uses `simple.px4board`,
-`nuttx-config/simple/defconfig` and `ROMFS/rdk-rzv2h-simple`. It retains
-RTT/HRT/work queues/volatile parameters/uORB, starts PWMOut and SPI0 ICM20948
-accel/gyro independently, and excludes flight modules, payload UARTs, RC,
-barometer, automatic magnetometer, MAVLink, IPC and DShot. Control allocator
-is linked for mixer metadata only. Outputs remain inactive until an explicit
-finite actuator test. Fresh simple/default/DShot/SIH builds and artifact audits
-pass; the bench remains hardware untested.
-The retired core-only target's NuttX/ROMFS resources and evidence are historical.
-See the [simple bench validation guide](../../../docs/renesas/validation/simple-pwm-icm20948-validation.md).
+The board ships four CR8-0 targets:
 
-The board also ships `renesas_rdk-rzv2h_sih`, a CR8-0 FC-SIH demo with a
-bounded on-target transcript. It is built from `sih.px4board`,
-`nuttx-config/sih/defconfig`, and the compact
-`ROMFS/rdk-rzv2h-sih` startup tree. It starts simulated accel/gyro/baro/mag/GPS
-paths through HIL sensors and `pwm_out_sim`, but it does not start physical
-payload/sensor buses, GPT/PWM output, or `control_allocator`. Because this image has no
-MAVLink telemetry, the SCI5 telemetry UART carries the interactive shell. Cold-cycle provenance, physical pin-safety measurement,
-and soak validation remain open.
+| Target | Purpose |
+|--------|---------|
+| `renesas_rdk-rzv2h_default` | Reference drone on the RDK sensor extension (3× ICM-45686, BMM150, BMP390L, INA228, M10, TFmini, SBUS). Links `pwm_out` and `dshot`; `PWM_MAIN_TIM0..3` selects which one starts. |
+| `renesas_rdk-rzv2h_demo` | Bench demo: one ICM-45686, BMP280, ADS1115, TFmini, 400 Hz PWM, QGC. |
+| `renesas_rdk-rzv2h_demosih` | SIH showcase of the demo wiring; no output driver. |
+| `renesas_rdk-rzv2h_dualcr8` | Sensor flight core for the dual-CR8 pair; outputs go to the CR8-1 `default` supervisor over IPC. |
+
+The `drone`, `dshot`, `simple`, `sih` and core-only targets were retired on
+2026-11-18 (`drone` + `dshot` became `default`). Their validation guides and
+evidence remain under `docs/renesas/` as history. Pin ownership per target:
+[pinmap profiles](../../../docs/renesas/pinmap.md#px4-configuration-profiles).
 
 ## Hardware Configuration
 
@@ -45,7 +39,7 @@ and soak validation remain open.
 | Primary PX4 | CR8_0 | `renesas_rdk-rzv2h_default` | Independent local PX4; optional future OpenAMP/RPMsg |
 | Linux/OpenAMP host | CA55 | External Linux image | MHU channel 3 + resource table at `0x42f00000` |
 | Optional PX4IO | CM33 | `renesas_rdk-rzv2h-io-cm33_default` | Standalone shared-memory PX4IO image |
-| Optional PX4IO | CR8_1 | `renesas_rdk-rzv2h-io-cr8_1_default` | Standalone shared-memory PX4IO image |
+| Output supervisor | CR8_1 | `renesas_rdk-rzv2h-io-cr8_1_default` | `rzv2h_io` over raw IPC, paired with `dualcr8` only (`demo`: heartbeat peer) |
 
 The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
 
@@ -57,11 +51,13 @@ The OpenAMP layout follows the Renesas FreeRTOS/FSP reference:
 | Vring0 / Vring1 | `0x43000000` / `0x43050000` |
 | RPC endpoint | `rpmsg-service-0`, CR8 local address `0x0` |
 
-### Sensors
+### Sensors (`default`)
 | Sensor | Interface | Configuration |
 |--------|-----------|---------------|
-| MPU9250 (IMU) | RSPI0 | CS=P93, INT=P94 |
-| BMP280 (Baro) | SCI-mode I2C7 | Address 0x76, P76/P77 (GPIO02/03) |
+| 3× ICM-45686 (IMU) | RSPI0 | GPIO CS P93/P94/P95 (`-c 3/4/5`), polled |
+| BMM150 (Mag) | SCI-mode I2C7 | Address 0x10, P76/P77 |
+| BMP390L (Baro, `bmp388`) | SCI-mode I2C7 | Address 0x76, P76/P77 |
+| INA228 (Power) | SCI-mode I2C7 | Address 0x45, `BAT1_SOURCE 0` |
 
 ### Serial Ports
 | Port | SCI | Pins        | Device      | Function |
@@ -82,14 +78,13 @@ assign `SENS_TFMINI_CFG=401`, so common `rc.serial` starts TFmini on
 ### I2C Buses
 | Bus | SCI | Pins     | Device      |
 |-----|-----|----------|-------------|
-| I2C7 | SCI-I2C7 | P76/P77 | BMP280 Barometer (0x76) |
+| I2C7 | SCI-I2C7 | P76/P77 | BMM150 0x10, BMP390L 0x76, INA228 0x45 |
 
 ### SPI Buses
 | Bus  | Pins              | Device        |
 |------|-------------------|---------------|
-| RSPI0 | P90/P91/P92      | MPU9250 IMU   |
-|       | P93 (GPIO CS)    | MPU9250 NCS   |
-| INT  | P94               | MPU9250 INT   |
+| RSPI0 | P90/P91/P92      | 3× ICM-45686  |
+|       | P93/P94/P95 (GPIO CS) | IMU #1/#2/#3 CS |
 
 ### PWM Outputs (4 ESC channels)
 
@@ -111,11 +106,20 @@ PWM outputs use the RZV2H GPT (General Purpose Timer) peripheral for ESC control
 - The default PX4 board path exposes 50-500 Hz analog PWM only and rejects
   `PWM_MAIN_TIMx=-1`. OneShot ownership plumbing is internal and has no board
   trigger path; standalone NuttX finite pulse-count PWM is separate.
+- Bench check (props off, disarmed): defaults are minimum 1100 µs, maximum
+  1900 µs and disarmed 1000 µs. The finite command
+  `actuator_test set -m 1 -v 0 -t 5` requests motor 1 at its 1100 µs minimum
+  for five seconds, then leaves it inactive. Measure each pin; the other
+  channels output DIS1000 pulses during the test window.
 
-**DShot Support:**
-- Disabled by default and experimental only.
-- Do not use for ESC testing until GPT compare timing, DMAC trigger routing,
-  cache coherency, and logic-analyzer waveform validation are complete.
+**DShot Support (`default`):**
+- `pwm_out` and `dshot` are both linked but drive the same GPT units, so
+  `rc.board_defaults.cmds` starts exactly one: `pwm_out` while `PWM_MAIN_TIM0 > -2`,
+  otherwise `dshot`. Set all four `PWM_MAIN_TIMx` to `-3` (DShot600), `-4`
+  (DShot300) or `-5` (DShot150), save and reboot.
+- Motor-stop DShot TX was bounded on target in the retired `dshot` image;
+  waveform, ESC and nonzero-throttle proof are pending. The merged image is
+  build-clean only.
 
 ### LEDs
 | LED | Port | Pin | Function |
@@ -130,20 +134,23 @@ PWM outputs use the RZV2H GPT (General Purpose Timer) peripheral for ESC control
 ### Board Configuration (`boards/renesas/rdk-rzv2h/`)
 ```
 boards/renesas/rdk-rzv2h/
-├── default.px4board          # Main board configuration
+├── default.px4board          # Reference drone (PWM or DShot)
+├── demo.px4board             # Bench demo
+├── demosih.px4board          # SIH showcase of the demo wiring
+├── dualcr8.px4board          # Dual-CR8 sensor flight core
 ├── firmware.prototype        # Firmware metadata
 ├── Kconfig                   # Board Kconfig options
-├── sih.px4board              # FC-SIH board configuration
 ├── init/
 │   ├── rc.board_defaults     # Boot defaults script
-│   ├── rc.board_defaults.cmds # Safe parameter defaults
-│   ├── rc.board_sensors      # Board-specific sensor probes
-│   └── rc.offline_sensor_check
+│   ├── rc.board_defaults.cmds # Defaults + pwm_out/dshot selection
+│   ├── rc.board_sensors      # Extension sensor probes
+│   ├── rc.offline_sensor_check
+│   └── demo/ demosih/ dualcr8/ # Per-variant hooks (CONFIG_BOARD_INIT_SUBDIR)
 ├── nuttx-config/
-│   ├── nsh/
-│   │   └── defconfig         # NuttX kernel configuration
-│   └── sih/
-│       └── defconfig         # FC-SIH NuttX kernel configuration
+│   ├── nsh/defconfig         # default
+│   ├── demo/defconfig
+│   ├── demosih/defconfig     # symlink to ../demo/defconfig
+│   └── dualcr8/defconfig
 └── src/
     ├── CMakeLists.txt
     ├── board_config.h        # Hardware definitions
@@ -184,66 +191,27 @@ platforms/nuttx/src/px4/renesas/rzv2h/
 - NuttX RTOS with RZV2H support
 - PX4 build environment
 
-### Build Command
+### Build Commands
 ```bash
-make renesas_rdk-rzv2h_default
+./build.sh renesas_rdk-rzv2h_default
+./build.sh renesas_rdk-rzv2h_demo
+./build.sh renesas_rdk-rzv2h_demosih
+./build.sh renesas_rdk-rzv2h_dualcr8
 ```
 
-### Simple PWM and ICM20948 Bench Build
-
-```bash
-./build.sh renesas_rdk-rzv2h_simple
-./build.sh --no-clean renesas_rdk-rzv2h_simple
-```
-
-Artifacts: `build/renesas_rdk-rzv2h_simple/renesas_rdk-rzv2h_simple.{elf,px4}`.
-Use `--no-clean` only for the same profile. Raw topics, FIFO processing, P94
-callbacks and PWM electrical behavior require separate runtime checks.
-
-### SIH Sensor Demo Build
-
-```bash
-make renesas_rdk-rzv2h_sih
-```
-
-The SIH image is the CR8-0 software demo path only. It links simulated
-accel/gyro/baro/mag/GPS, HIL sensors, and `pwm_out_sim`; it does not start any
-physical payload/sensor bus, GPT, or PWM driver. The current board transcript
-proves boot, interactive shell, one bounded HRT callback, work queues,
-simulated topics, and the HIL endpoint. Use it from a cold power-cycle; the
-four-pin static-level measurement and 10-minute resource/rate soak remain
-pending.
+Artifacts: `build/<target>/<target>.{elf,px4}`. Use `--no-clean` only to
+rebuild the same target.
 
 Build RZ/V2H NuttX targets sequentially. Their separate top-level build
 directories still regenerate shared files under `platforms/nuttx/NuttX`, so
 parallel or interleaved target builds can create stale cross-target state.
 
-### SIH Demo Shell Checks
-
-```bash
-ver all
-ps
-top once
-work_queue status
-system_time hrt-test
-listener sensor_accel -n 5
-listener sensor_gyro -n 5
-listener sensor_baro -n 5
-listener sensor_mag -n 5
-listener sensor_gps -n 5
-pwm_out_sim status
-free
-perf
-```
-
-Queue count is timing-dependent on this image, so use `work_queue status`
-alongside `ps` and `top` rather than expecting a fixed thread count.
-
 ### Clean Build
 ```bash
-make clean
-make renesas_rdk-rzv2h_default
+./build.sh renesas_rdk-rzv2h_default
 ```
+
+`build.sh` cleans by default; pass `--no-clean` to iterate.
 
 ## Configuration Options
 
@@ -256,8 +224,8 @@ make renesas_rdk-rzv2h_default
 
 ### Key PX4board Options
 - Flight modules: EKF2, Commander, Navigator, MC attitude/position control
-- Sensors: MPU9250, BMP280
-- Outputs: PWM (4 channels), RC input (SBUS)
+- Sensors: 3× ICM-45686, BMM150, BMP390L (`bmp388`), INA228
+- Outputs: PWM or DShot (4 channels), RC input (SBUS)
 - Interfaces: MAVLink, GPS
 
 ### OpenAMP / IPCC Options
@@ -299,12 +267,11 @@ param set-default SYS_AUTOSTART 4014
 # Volatile pre-G9 dataman backend
 param set-default SYS_DM_BACKEND 1
 
-# PWM configuration
-# Default target: 400 Hz PWM. DShot target: -3 (DShot600).
-param set-default PWM_MAIN_TIM0 400  # or -3
-param set-default PWM_MAIN_TIM1 400  # or -3
-param set-default PWM_MAIN_TIM2 400  # or -3
-param set-default PWM_MAIN_TIM3 400  # or -3
+# PWM configuration: 400 Hz PWM; set all four to -3/-4/-5 for DShot
+param set-default PWM_MAIN_TIM0 400
+param set-default PWM_MAIN_TIM1 400
+param set-default PWM_MAIN_TIM2 400
+param set-default PWM_MAIN_TIM3 400
 param set-default PWM_MAIN_FUNC1 101
 param set-default PWM_MAIN_FUNC2 102
 param set-default PWM_MAIN_FUNC3 103
@@ -314,7 +281,9 @@ param set-default PWM_MAIN_FUNC4 104
 The defaults script does not start core PX4 modules, install placeholder
 calibration IDs, or relax arming/circuit-breaker checks. Common `rcS` owns
 dataman, RC, estimator, control, output, GPS, and MAVLink startup. The board
-sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
+sensor hook starts three ICM-45686 on SPI0 and BMM150, BMP390L and INA228 on
+SCI7 bus 7. After the defaults, the script starts `pwm_out` or `dshot` from
+`PWM_MAIN_TIM0`.
 
 ## Integration Notes
 
@@ -322,7 +291,6 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
 
 | Mode | Console / Debug | Serial Policy | Validation State |
 |------|-----------------|---------------|------------------|
-| Simple PWM + ICM20948 bench | RTT0 console/debug only | HRT, lazy work queues, volatile params, raw accel/gyro, PWMOut and diagnostics; no flight/payload startup | build-clean; fresh four-profile software checks passed; hardware untested |
 | Standalone CR8-0 NuttX | Serial shell (SCI5) + RTT diagnostics | SCI5 is the interactive shell when no telemetry runs; RTT carries boot, syslog, and debug output | Earlier `nsh-rtt` pass was on SCI4; SCI5 shell needs on-target validation |
 | Standalone CR8-1 target | SCI5 shell + RTT diagnostics | SCI5 is the intended shell path for the CR8-1 IO target; not yet hardware validated | Target policy only |
 | Standalone CM33 target | SCI9 shell + RTT diagnostics | SCI9 is the intended shell path for the CM33 IO target; not yet hardware validated | Target policy only |
@@ -351,35 +319,6 @@ sensor hook starts only MPU9250 on SPI0 and BMP280 on SCI7 bus 7.
   handling, erase/program/readback, reboot persistence, and power-loss
   recovery must pass before it can replace TMPFS.
 
-## Simple PWM and ICM20948 Bench
-
-The dedicated compact rcS sources its PWM defaults and sensor hook explicitly.
-`pwm_out start` and `icm20948 -s -b 0 -R 0 start` are checked independently;
-accepted asynchronous requests are not sample or hardware readiness proof.
-Rotation 0 is an unverified bench mounting placeholder. Automatic mag is off;
-manual `-M` is a flag, not `-M 1`. The driver publishes raw topics directly,
-without starting `sensors` or `control_allocator`.
-
-Four channels use `PWM_MAIN_TIM0..3=400`, functions 101..104, minimum 1100 µs,
-maximum 1900 µs and disarmed/failsafe parameters 1000 µs. The explicit finite
-command `actuator_test set -m 1 -v 0 -t 5` requests the nonreversed motor's
-1100 µs minimum for five seconds, then leaves that motor output inactive.
-Verify actual parameters and measure each pin. PWMOut enables all configured
-channels during an active test; unrequested channels use DIS1000 pulses during
-that window. All motor channels must become inactive after timeout or stop;
-disarmed values do not prove continuing pulses on disabled outputs. PWMOut
-queues are lazy and startup is asynchronous.
-
-Use the [validation guide](../../../docs/renesas/validation/simple-pwm-icm20948-validation.md)
-for exact wiring, FIFO/callback checks and measurements. Stop PWMOut and verify
-inactive pins before halting the core for debugger callback observation.
-
-### DShot Mode
-
-DShot is not enabled for `renesas_rdk-rzv2h_default`. Treat the RZ/V2H
-DShot source as experimental reference code only until hardware waveform
-validation proves the GPT/DMAC timing path.
-
 ## Troubleshooting
 
 ### PWM Not Working
@@ -407,11 +346,10 @@ validation proves the GPT/DMAC timing path.
 
 ## References
 
-- [PX4 FreeRTOS+FSP Reference](.refs/rzv2h_px4_freertos_fsp/)
-- [NuttX RZV2H Board](platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/)
-- [RA8P1 Board](boards/renesas/evk-ra8p1/) - Reference implementation
-- [RZV2H Technical Manual](https://www.renesas.com/rzv2h)
+- PX4 FreeRTOS RDK reference: `refs/rzv2h_drone_px4-dev/` (local only, gitignored)
+- [NuttX RZV2H Board](../../../platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/)
+- [RZV2H Technical Manual](../../../docs/renesas/r01uh1032ej0130-rzv2h.pdf) (local only, gitignored)
 
 ## Authors
 
-PX4 Development Team - 2025
+PX4 Kiwi Team - 2026

@@ -5,7 +5,7 @@ import runpy
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-SUPPORT = runpy.run_path(str(ROOT / 'test/rzv2h-simple-test-support.py'))
+SUPPORT = runpy.run_path(str(ROOT / 'test/rzv2h-board-test-support.py'))
 REPAIR = runpy.run_path(str(ROOT / 'test/rzv2h-audit-remediation-runtime-test.py'))
 
 

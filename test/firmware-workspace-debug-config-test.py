@@ -45,10 +45,10 @@ class TestFirmwareWorkspaceDebugConfig(unittest.TestCase):
         sel_file = FIXTURE_DIR / "cr8_0.selection.json"
         sel = {
             "schemaVersion": 1,
-            "id": "rzv2h-simple",
+            "id": "rzv2h-default",
             "board": "rdk-rzv2h",
             "core": "cr8_0",
-            "build": {"family": "px4", "target": "renesas_rdk-rzv2h_simple", "mode": "incremental"},
+            "build": {"family": "px4", "target": "renesas_rdk-rzv2h_default", "mode": "incremental"},
             "debug": {"mode": "attach"}
         }
         sel_file.write_text(json.dumps(sel))
@@ -59,7 +59,7 @@ class TestFirmwareWorkspaceDebugConfig(unittest.TestCase):
 
         rec_file = create_receipt(
             run_id="run-dbg-001", family="px4", board="rdk-rzv2h", core="cr8_0",
-            selection_id="rzv2h-simple",
+            selection_id="rzv2h-default",
             artifacts=[{"path": str(dummy_art.relative_to(REPO_ROOT)), "sha256": sha, "size": 44}],
             status="committed", target=sel["build"]["target"]
         )

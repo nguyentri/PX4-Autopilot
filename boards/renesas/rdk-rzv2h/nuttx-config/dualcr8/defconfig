@@ -179,7 +179,7 @@ CONFIG_ARCH_DMA=y
 CONFIG_RZV_DMAC=y
 
 # Dual-CR8: CR8-0 owns the raw /dev/ipcc1 epoch as initiator. Recovery waits
-# stay short because the px4io bridge retries RECOVER from the flight loop.
+# stay short because the rzv2h_outputs producer retries RECOVER from its loop.
 # CONFIG_OPENAMP is not set
 # CONFIG_RZV_OPENAMP is not set
 CONFIG_RZV_IPC_RAW=y

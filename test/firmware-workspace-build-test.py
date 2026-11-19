@@ -101,7 +101,7 @@ class TestFirmwareWorkspaceBuild(unittest.TestCase):
                 selection_id="test-sel",
                 artifacts=artifacts,
                 status="committed",
-                target="renesas_rdk-rzv2h_simple"
+                target="renesas_rdk-rzv2h_default"
             )
             self.assertTrue(receipt_path.is_file())
             receipt_data = json.loads(receipt_path.read_text(encoding="utf-8"))

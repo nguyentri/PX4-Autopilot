@@ -51,7 +51,7 @@ DMAC runtime 19, drone profile 19. `checkpatch.sh` passed on the new sources.
 |---|---|
 | `icm45686-dma-ssl-rtt` (tested image) | `a9d6bf0527b386b356aa26915ec492630cf1ec78e1d1ced833a5fb06472f2ecf` |
 | `gy912-dma-ssl-rtt` (compatibility) | `3a3a3fc9b763e7559d7e3fc6e001e6296fa873294416511746e69234510effdd` |
-| `renesas_rdk-rzv2h_simple` (compatibility) | `72830de0d776d923e970d5f9ed84d9e8ed7a03987e63250b72f49f219c7e5a79` |
+| `renesas_rdk-rzv2h_simple` (compatibility, target retired 2026-11-18) | `72830de0d776d923e970d5f9ed84d9e8ed7a03987e63250b72f49f219c7e5a79` |
 | `renesas_rdk-rzv2h_dualcr8` (compatibility) | `46ae2910d9e78fc50e49fe95fb894dc78cf7b45b539e06168b6ae061a3513c85` |
 
 Build-clean compatibility images are software evidence only.

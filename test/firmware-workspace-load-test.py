@@ -103,10 +103,10 @@ class TestFirmwareWorkspaceLoad(unittest.TestCase):
         sel_file = FIXTURE_DIR / "rzv2h.selection.json"
         sel = {
             "schemaVersion": 1,
-            "id": "rzv2h-simple",
+            "id": "rzv2h-default",
             "board": "rdk-rzv2h",
             "core": "cr8_0",
-            "build": {"family": "px4", "target": "renesas_rdk-rzv2h_simple", "mode": "incremental"},
+            "build": {"family": "px4", "target": "renesas_rdk-rzv2h_default", "mode": "incremental"},
             "load": {"recipe": "rzv-cr8-ram"}
         }
         sel_file.write_text(json.dumps(sel))
@@ -117,7 +117,7 @@ class TestFirmwareWorkspaceLoad(unittest.TestCase):
 
         rec_file = create_receipt(
             run_id="run-rzv-mod", family="px4", board="rdk-rzv2h", core="cr8_0",
-            selection_id="rzv2h-simple",
+            selection_id="rzv2h-default",
             artifacts=[{"path": str(dummy_art.relative_to(REPO_ROOT)), "sha256": orig_sha, "size": 34}],
             status="committed", target=sel["build"]["target"]
         )

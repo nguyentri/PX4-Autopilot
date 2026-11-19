@@ -209,11 +209,11 @@ Review each verification-row boundary against the actual selected profile and so
 | Claim / requirement | Evidence location | Confidence | Status / gap |
 |---|---|---|---|
 | Approved module requirements | [Engineering design](./rzv2h-dualcr8-demo-design.md) | verified | Target design authority only |
-| Current migration and implementation boundaries | [rc.board_sensors](../../../boards/renesas/rdk-rzv2h/init/drone/rc.board_sensors) | verified | Source location exists; no integrated new-pair result |
+| Current migration and implementation boundaries | [rc.board_sensors](../../../boards/renesas/rdk-rzv2h/init/rc.board_sensors) | verified | Source location exists; no integrated new-pair result |
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 
-The [software validation receipt](../evidence/dualcr8-software-validation-261021.md) records current exact-BOM profile/artifact and TFmini serial checks. The [drone profile fixture](../../../test/rzv2h-drone-profile-contract-test.py) separately preserves legacy selection. Fitted sensors, navigation and integrated physical freshness remain unqualified.
+The [software validation receipt](../evidence/dualcr8-software-validation-261021.md) records current exact-BOM profile/artifact and TFmini serial checks. The [`default` profile fixture](../../../test/rzv2h-drone-profile-contract-test.py) separately covers the extension sensor selection. Fitted sensors, navigation and integrated physical freshness remain unqualified.
 
 ## Open inputs and acceptance gaps
 

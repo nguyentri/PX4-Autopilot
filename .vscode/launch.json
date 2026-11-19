@@ -204,7 +204,6 @@
         {
             "cwd": "${workspaceRoot}",
             "name": "Debug RZV2H CR8 (Core0)",
-            //"executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_sih/renesas_rdk-rzv2h_sih.elf",
             "executable": "${workspaceRoot}/build/renesas_rdk-rzv2h_demo/renesas_rdk-rzv2h_demo.elf",
             "armToolchainPath": "/opt/arm-gnu-toolchain-13.2.Rel1/bin",
             "request": "launch",

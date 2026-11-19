@@ -717,7 +717,7 @@ class BoardResetSafetyContracts(unittest.TestCase):
                 )
 
     def test_all_px4_profiles_enable_boardctl_reset(self) -> None:
-        for profile in ("nsh", "sih", "core_only", "simple"):
+        for profile in ("nsh", "demo", "dualcr8"):
             with self.subTest(profile=profile):
                 defconfig = read(
                     f"boards/renesas/rdk-rzv2h/nuttx-config/{profile}/defconfig"
@@ -747,117 +747,47 @@ class BoardResetSafetyContracts(unittest.TestCase):
         self.assertRegex(body, r"for\s*\(\s*;\s*;\s*\)")
 
 
-class SimpleDemoContracts(unittest.TestCase):
+class DefaultPwmContracts(unittest.TestCase):
+    """The reference default links pwm_out and dshot on GPT6/7/9/10."""
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.simple_defconfig = read(
-            "boards/renesas/rdk-rzv2h/nuttx-config/simple/defconfig"
-        )
-        cls.full_defconfig = read(
-            "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig"
-        )
-        cls.simple_board = read("boards/renesas/rdk-rzv2h/simple.px4board")
-        cls.simple_init_cmake = read(
-            "ROMFS/rdk-rzv2h-simple/init.d/CMakeLists.txt"
-        )
-        cls.simple_rcs = read("ROMFS/rdk-rzv2h-simple/init.d/rcS")
-        cls.simple_defaults = read("ROMFS/rdk-rzv2h-simple/init.d/rc.board_defaults")
-        cls.simple_sensors = read("ROMFS/rdk-rzv2h-simple/init.d/rc.board_sensors")
+        cls.defconfig = read("boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig")
+        cls.board = read("boards/renesas/rdk-rzv2h/default.px4board")
+        cls.defaults = read("boards/renesas/rdk-rzv2h/init/rc.board_defaults.cmds")
         cls.mixer_module = read("src/lib/mixer_module/mixer_module.cpp")
 
-    def test_simple_selects_the_generated_px4_romfs(self) -> None:
-        self.assertIn("CONFIG_NSH_ARCHROMFS=y", self.simple_defconfig)
-        self.assertIn("CONFIG_NSH_ROMFSETC=y", self.simple_defconfig)
-        self.assertIn("rc.sysinit", self.simple_init_cmake)
-        self.assertTrue(
-            (ROOT / "ROMFS/rdk-rzv2h-simple/init.d/rc.sysinit").is_file()
-        )
-
-    def test_simple_selects_volatile_params_and_fits_nsh_buffer(self) -> None:
-        self.assertIn(". /etc/init.d/rc.filepaths", self.simple_rcs)
-        self.assertIn("param select $PARAM_FILE", self.simple_rcs)
-        self.assertLess(
-            self.simple_rcs.index("param select $PARAM_FILE"),
-            self.simple_rcs.index(". /etc/init.d/rc.board_defaults"),
-        )
-
-        line_length = re.search(
-            r"^CONFIG_NSH_LINELEN=(\d+)$",
-            self.simple_defconfig,
-            re.MULTILINE,
-        )
-        self.assertIsNotNone(line_length)
-
-        for line_number, line in enumerate((self.simple_rcs + self.simple_defaults + self.simple_sensors).splitlines(), 1):
-            with self.subTest(line_number=line_number):
-                self.assertLess(
-                    len(line) + 1,
-                    int(line_length.group(1)),
-                    "NSH fgets would split this script line",
-                )
-
-    def test_simple_matches_the_full_rzv2h_pwm_timer_configuration(
-        self,
-    ) -> None:
-        required = (
-            "CONFIG_PWM=y",
-            "CONFIG_RZV_GPT=y",
-            "CONFIG_RZV_GPT6=y",
-            "CONFIG_RZV_GPT7=y",
-            "CONFIG_RZV_GPT9=y",
-            "CONFIG_RZV_GPT10=y",
-        )
-
-        for symbol in required:
+    def test_default_enables_the_rzv2h_pwm_timers_and_dshot_dma(self) -> None:
+        for symbol in ("CONFIG_PWM=y", "CONFIG_RZV_GPT=y", "CONFIG_RZV_GPT6=y",
+                       "CONFIG_RZV_GPT7=y", "CONFIG_RZV_GPT9=y", "CONFIG_RZV_GPT10=y"):
             with self.subTest(symbol=symbol):
-                self.assertIn(symbol, self.full_defconfig)
-                self.assertIn(symbol, self.simple_defconfig)
+                self.assertIn(symbol, self.defconfig)
+        for unit, channel in ((6, 56), (7, 57), (9, 58), (10, 59)):
+            with self.subTest(unit=unit):
+                self.assertIn(f"CONFIG_RZV_DMAC_GPT{unit}_CHANNEL={channel}", self.defconfig)
 
-    def test_simple_links_the_px4_pwm_driver_and_test_command(self) -> None:
-        self.assertIn("CONFIG_DRIVERS_PWM_OUT=y", self.simple_board)
-        self.assertIn("CONFIG_SYSTEMCMDS_ACTUATOR_TEST=y", self.simple_board)
-        self.assertIn("CONFIG_MODULES_CONTROL_ALLOCATOR=y", self.simple_board)
-        self.assertIn(
-            "CONFIG_BOARD_HAS_PWM=DEFINE_FROM_BOARDCONFIG", self.simple_board
-        )
+    def test_default_links_both_output_drivers_and_the_test_command(self) -> None:
+        for symbol in ("CONFIG_DRIVERS_PWM_OUT=y", "CONFIG_DRIVERS_DSHOT=y",
+                       "CONFIG_SYSTEMCMDS_ACTUATOR_TEST=y",
+                       "CONFIG_MODULES_CONTROL_ALLOCATOR=y",
+                       "CONFIG_BOARD_HAS_PWM=DEFINE_FROM_BOARDCONFIG"):
+            with self.subTest(symbol=symbol):
+                self.assertIn(symbol, self.board)
 
-    def test_simple_starts_four_safe_400_hz_pwm_outputs(self) -> None:
+    def test_default_starts_four_safe_400_hz_pwm_outputs(self) -> None:
         for timer in range(4):
             with self.subTest(timer=timer):
-                self.assertIn(
-                    f"param set-default PWM_MAIN_TIM{timer} 400",
-                    self.simple_defaults,
-                )
-
+                self.assertIn(f"param set-default PWM_MAIN_TIM{timer} 400", self.defaults)
         for channel in range(1, 5):
             with self.subTest(channel=channel):
-                self.assertIn(
-                    f"param set-default PWM_MAIN_FUNC{channel} {100 + channel}",
-                    self.simple_defaults,
-                )
-                self.assertIn(
-                    f"param set-default PWM_MAIN_DIS{channel} 1000",
-                    self.simple_defaults,
-                )
-
-        self.assertIn("pwm_out start", self.simple_rcs)
-        self.assertIn("work_queue status", self.simple_rcs)
-        self.assertIn(". /etc/init.d/rc.board_sensors", self.simple_rcs)
-        self.assertIn("if icm20948 -s -b 0 -R 0 start", self.simple_sensors)
+                self.assertIn(f"param set-default PWM_MAIN_FUNC{channel} {100 + channel}",
+                              self.defaults)
+                self.assertIn(f"param set-default PWM_MAIN_DIS{channel} 1000", self.defaults)
         self.assertIn(
             "ChangeWorkQueue(px4::wq_configurations::rate_ctrl)",
             self.mixer_module,
         )
-        self.assertNotIn("actuator_test set", self.simple_rcs)
-
-    def test_archived_core_only_resources_remain_available(self) -> None:
-        for path in (
-            "boards/renesas/rdk-rzv2h/nuttx-config/core_only/defconfig",
-            "ROMFS/rdk-rzv2h-core-only/init.d/rcS",
-            "ROMFS/rdk-rzv2h-core-only/init.d/rc.sysinit",
-        ):
-            with self.subTest(path=path):
-                self.assertTrue((ROOT / path).is_file())
+        self.assertNotIn("actuator_test set", self.defaults)
 
 
 class DocumentationContracts(unittest.TestCase):

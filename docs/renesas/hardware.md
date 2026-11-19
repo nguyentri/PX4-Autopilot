@@ -8,12 +8,13 @@
 
 This document consolidates the hardware notes for the RZ/V2H RDK board into a single PX4/NuttX-focused reference. It is intended for board bring-up, driver development, boot/debug configuration, and hardware-software validation.
 
-For sensor assignments use [profile-specific pin ownership](./pinmap.md#sensor-wiring-profiles).
+For sensor assignments use [profile-specific pin ownership](./pinmap.md#px4-configuration-profiles).
 The current FreeRTOS reference is `refs/rzv2h_drone_px4-dev/`: its selected
 `RDK` XML and `docs/HARDWARE.md` describe three ICM-45686 IMUs on SPI0,
 BMM150/BMP390L/INA228 on SCI7 I2C, and the existing serial/PWM connections.
-The native extension profile is opt-in and configurable; existing native
-MPU9250/BMP280, ICM20948/GY912 and SIH profiles retain their own contracts.
+The native extension profile is the CR8-0 `default` target (formerly the
+opt-in `drone`). The native MPU9250/BMP280, ICM20948/GY912 and SIH profiles
+were retired on 2026-11-18.
 [Native board pinout](../../boards/renesas/rdk-rzv2h/src/pinout.md) describes
 legacy bench wiring; it is not the new extension BOM.
 
@@ -439,7 +440,7 @@ CPG clock when baud is wrong and retain the board's physical SCI numbering.
 
 ## 11. SPI and I2C
 
-Use [sensor wiring profiles](pinmap.md#sensor-wiring-profiles) for buses,
+Use [sensor wiring profiles](pinmap.md#px4-configuration-profiles) for buses,
 addresses and chip selects. RSPI is distinct from the EVK SPI-B controller;
 SCI7 simple-I2C is distinct from native RIIC. The
 [reference map](reference-source-map.md#known-reference-gaps) records which

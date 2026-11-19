@@ -46,9 +46,8 @@ if(DEFINED CONFIG_ADC)
 	add_subdirectory(adc)
 endif()
 
-# DShot for RZ/V2H is opt-in via the dedicated board target
-# (renesas_rdk-rzv2h_dshot), which sets CONFIG_DRIVERS_DSHOT. The default board
-# continues to use the PWM output driver.
+# The RZ/V2H DShot HAL is built only for images that set CONFIG_DRIVERS_DSHOT
+# (the CR8-0 default target, which also links pwm_out).
 if(CONFIG_DRIVERS_DSHOT)
 	add_subdirectory(dshot)
 endif()

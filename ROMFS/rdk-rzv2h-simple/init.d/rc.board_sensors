@@ -1,9 +1,0 @@
-# SPI0 ICM20948 accel/gyro only. Rotation 0 is an unverified bench placeholder.
-# Driver start schedules asynchronous configuration; it does not prove samples
-# or P94 callbacks. Magnetometer support is optional manual -M, absent at boot.
-if icm20948 -s -b 0 -R 0 start
-then
-	echo "ICM20948 start requested; verify raw topics and P94 callbacks separately."
-else
-	echo "ERROR [init] icm20948 SPI0 start failed"
-fi

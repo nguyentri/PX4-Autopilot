@@ -11,8 +11,8 @@ true on 2026-10-13. Always re-read them from the ELF you load.
 
 | ELF | Core / J-Link device | Entry | `_SEGGER_RTT` | Console |
 |---|---|---|---|---|
-| `build/renesas_rdk-rzv2h_{default,drone,simple,sih,dshot,dualcr8}/*.elf` | CR8-0 `R9A09G057H44_R8_0` | `0x40800000` | `0x081a2400` | NSH on RTT ch0 |
-| `build/renesas_rdk-rzv2h-io-cr8_1_default/*.elf` | CR8-1 `R9A09G057H44_R8_1` | `0x41800000` | none | none (SCI1 is not wired); log in `g_sci1port.xmit` |
+| `build/renesas_rdk-rzv2h_{default,demo,demosih,dualcr8}/*.elf` | CR8-0 `R9A09G057H44_R8_0` | `0x40800000` | `0x081a8404` (read it from the ELF) | NSH on RTT ch0 |
+| `build/renesas_rdk-rzv2h-io-cr8_1_{default,demo}/*.elf` | CR8-1 `R9A09G057H44_R8_1` | `0x41800000` | `0x081e2404` (read it from the ELF) | NSH on RTT ch0 |
 | `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0.elf` | CR8-0 | `0x40800000` | `0x081a0000` | NSH on RTT |
 | `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf` | CR8-0 | `0x40800000` | none | NSH on SCI4 `/dev/ttyUSB0` 115200 |
 | `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf` | CR8-1 | `0x41800000` | `0x081e0000` | NSH on RTT |
@@ -29,7 +29,7 @@ image is running?" has no on-board answer. Use the last load log
 
 ```bash
 export JLINK_SERIAL=$($D/jlink-debug-preflight.py --print-serial)
-ELF=build/renesas_rdk-rzv2h_drone/renesas_rdk-rzv2h_drone.elf
+ELF=build/renesas_rdk-rzv2h_default/renesas_rdk-rzv2h_default.elf
 $D/rzv2h-ipc/rzv2h-load-one-core.sh cr8_0 "$ELF"        # project standing authorization
 $D/nuttx-rtt-bridge.sh start cr8_0 "$ELF"
 $D/nsh_console_exec.py --marker 'ver all' 'ps' 'free' 'uorb top -1'
@@ -38,42 +38,40 @@ $D/nuttx-rtt-bridge.sh stop
 $D/jlink-gdb-oneshot.py cr8_0 "$ELF" --attempts 1 -ex 'bt' -ex 'info registers pc cpsr'
 ```
 
-The `simple` profile is the PWM + ICM20948 bench image
-(`docs/renesas/validation/simple-pwm-icm20948-validation.md`).
+`default` is the reference drone (formerly `drone`); `pwm_out` or `dshot`
+starts from `PWM_MAIN_TIM0..3` (`-3/-4/-5` = DShot600/300/150). `demo` is the
+bench image (`docs/renesas/validation/demo-bench-validation.md`). The
+`simple`, `sih`, `dshot` and `drone` targets were retired on 2026-11-18.
 
-## Dual CR8 (dualcr8 + io-cr8_1)
+## Dual CR8 (dualcr8 + io-cr8_1 `default` supervisor)
 
 ```bash
 C0=build/renesas_rdk-rzv2h_dualcr8/renesas_rdk-rzv2h_dualcr8.elf
 C1=build/renesas_rdk-rzv2h-io-cr8_1_default/renesas_rdk-rzv2h-io-cr8_1_default.elf
 $D/rzv2h-ipc/rzv2h-ipc-demo-load-both-auto.sh "$C0" "$C1"  # CR8-0 first, then CR8-1
 $D/nuttx-rtt-bridge.sh start cr8_0 "$C0"
-$D/nsh_console_exec.py --marker 'px4io_bridge status' 'commander status'
+$D/nsh_console_exec.py --marker 'rzv2h_outputs status' 'commander status'
 $D/nuttx-rtt-bridge.sh stop
-$D/jlink-gdb-oneshot.py cr8_0 "$C0" --attempts 1 -x $D/rzv2h-ipc/rzv2h-px4-cr8_0-bridge-health.gdb
 $D/jlink-gdb-oneshot.py cr8_1 "$C1" --attempts 1 -x $D/rzv2h-ipc/rzv2h-px4-cr8_1-io-health.gdb
 ```
 
 - Load order is CR8-0, then CR8-1: the CR8-1 responder adopts the
   recovery epoch of the CR8-0 initiator. To replace only one image, use
   `rzv2h-load-one-core.sh`. After a CR8-0 reload, reload CR8-1 too.
-- Commander blocks arming until CR8-1 reports a fresh lease and heartbeat.
-- CR8-1's boot log: `-ex 'dump binary memory <scratch>/sci1.bin
-  g_sci1port.xmit.buffer g_sci1port.xmit.buffer+g_sci1port.xmit.size'`, then
-  `strings` the file. Keep it in the scratch dir; it is target data.
+- Commander blocks arming until CR8-1 reports fresh I/O status. The pair is
+  a software candidate: hardware identity is unconfigured, so the supervisor
+  claims no physical outputs.
+- CR8-1 `default` logs to its own RTT block (start the bridge on `cr8_1`
+  with its ELF); it has no SCI console.
 - To get rates, sample the health snippet twice a known time apart and diff
-  the counters. Every sample halts that core for 1-3 s. On a CR8-0 sample
-  that shows up afterwards in `px4io_bridge status` as a fault-flag blip
-  (e.g. `0x804`, then `0x0`) and extra `faults=`/`recoveries=` counts on the
-  link. These are probe artefacts, not firmware faults; the link recovers
-  by itself.
-- What the snippets print (board run 2026-10-13, dualcr8 + io-cr8_1):
-  CR8-0: ring `tx_hdr->state` / `rx_hdr->state` (`0x1` = up), bridge
-  `_stats`, `_link_down`, `_io_alive`. CR8-1: loop counters, the output lease
-  state (`OutputLease::State::Safe` while disarmed), raw link stats and the
-  `g_sci1port` log head/size. A snippet that does not match the ELF makes
-  oneshot exit 6; `test/rzv2h-jlink-debug-tools-test.py` resolves both
-  snippets against the built ELFs.
+  the `_worker_status` loops word. Every sample halts that core for 1-3 s and
+  can show up as a stale-status or link-recovery blip on the peer. These are
+  probe artefacts, not firmware faults.
+- `rzv2h-px4-cr8_1-io-health.gdb` prints the supervisor pointer, its worker
+  report and control status records, and raw link stats. A snippet that does
+  not match the ELF makes oneshot exit 6; `test/rzv2h-jlink-debug-tools-test.py`
+  resolves it against the built ELF. The 2026-10-13 board run used the retired
+  relay image and its CR8-0 bridge snippet; that evidence is historical.
 
 ## RTT perturbs what you measure
 
@@ -127,4 +125,4 @@ Check a profile before relying on a limit:
 | `--marker` also times out | core halted or crashed, or stale RTT address → oneshot `bt` + `info registers pc cpsr` |
 | Oneshot exit 3 | owner on the probe or port (preflight). On WSL, check `usbipd` |
 | PC parked at `0x0` / `0xffffffff` on verify | the image did not start. Read the load log; check the ELF/core pairing (entry address) |
-| CR8-1 counters frozen | CR8-1 halted or crashed: oneshot `bt` on CR8-1, then dump the `g_sci1port` log |
+| CR8-1 counters frozen | CR8-1 halted or crashed: oneshot `bt` on CR8-1, then read its RTT log |

@@ -25,7 +25,7 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 | [control_allocator](../../../src/modules/control_allocator/) | product-owned | CR8-0 flight authority | Valid advancing actuator generation |
 | [commander](../../../src/modules/commander/) | product-owned | CR8-0 flight authority | Arm/mode and command-loss policy |
 | [px4io.cpp](../../../src/drivers/px4io/px4io.cpp) | legacy/reference | CR8-0 flight authority | Remote OutputModuleInterface and PWM_MAIN construction pattern |
-| [uorb_bridge.cpp](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/uorb_bridge.cpp) | legacy/reference | CR8-0 flight authority | Legacy bridge producer integration reference |
+| `uorb_bridge.cpp` (removed 2026-11-18; git history) | retired reference | CR8-0 flight authority | Legacy bridge producer integration reference |
 
 Behavioral slices in a shared bridge file do not grant simultaneous write ownership. IPC owns codec/epoch handling, flight control owns producer/readiness consumption, battery owns sample semantics, and actuator safety owns lease/worker inhibition. Integrate those edits sequentially; mirrors have no independent schema authority.
 

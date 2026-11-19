@@ -24,9 +24,11 @@ OpenAMP, and IPCC.
 The project outcome is a source-backed PX4 flight path on CR8-0 under NuttX,
 with the board pinmap, HAL, sensors, actuators, telemetry, parameters, and
 logs qualified in the evidence tiers used by the port status documents. The
-opt-in `renesas_rdk-rzv2h_drone` profile carries the recovered RDK sensor
-extension; default, simple, SIH, DShot, and standalone NuttX profiles remain
-separate compatibility surfaces.
+CR8-0 `renesas_rdk-rzv2h_default` image carries the recovered RDK sensor
+extension and selects PWM or DShot at boot from `PWM_MAIN_TIM0..3`. `demo`,
+`demosih` and `dualcr8` (with the CR8-1 `default` supervisor) are the other PX4
+profiles; standalone NuttX profiles remain separate. The `drone`, `dshot`,
+`simple`, `sih` and core-only targets were retired on 2026-11-18.
 
 CA55/Linux integration, RPMsg/OpenAMP as a default dependency, wireless and
 video features, and production flash/cold-boot claims are outside the current
@@ -58,7 +60,7 @@ details are not duplicated here.
 
 ## 4. IPC and Multicore Contract
 
-IPC is opt-in. The default PX4, simple, SIH, and drone images keep OpenAMP and
+IPC is opt-in. The CR8-0 `default` image keeps OpenAMP and
 IPCC disabled; standalone CR8-1/CM33 images and NuttX IPC configurations are
 separate validation surfaces. A raw NuttX IPC transcript therefore does not
 promote PX4 multicore integration.
@@ -72,8 +74,8 @@ establish an enabled runtime link.
 The [board root](../boards/renesas/rdk-rzv2h/) owns named `.px4board`
 manifests, NuttX configurations and startup selection. Use the
 [codebase map](codebase-summary.md) for implementation boundaries and
-`./build.sh --list` for active targets. Retired core-only resources are
-historical; `simple` is the compact PWM/ICM20948 bench profile.
+`./build.sh --list` for active targets. Retired `drone`/`dshot`/`simple`/`sih`/core-only
+resources are historical.
 
 ## 6. Build Flow
 

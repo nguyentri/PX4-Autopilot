@@ -14,7 +14,7 @@ production readiness or end-to-end target validation.
 | Core | Intended software | Role | Private DDR (CR8/CM33 view) |
 |---|---|---|---|
 | CR8-0 | NuttX/PX4 | Flight stack | `0x40800000`–`0x417fffff` |
-| CR8-1 | NuttX/PX4IO | I/O relay | `0x41800000`–`0x427fffff` |
+| CR8-1 | NuttX/PX4 | `rzv2h_io` output supervisor (`default`) or heartbeat responder (`demo`) | `0x41800000`–`0x427fffff` |
 | CM33 | NuttX raw sample / PX4IO output peer (no PWM backend) | optional safety or ESC peer | Secure SRAM image; secure-DDR shared rings |
 
 See [multicore-memory-map.md](./multicore-memory-map.md) for the authoritative
@@ -108,6 +108,12 @@ CR8-1 relay/worker, CM33) zero-pads each frame to one 64-byte entry (`RZV_IPC_RA
 the CRC over the message length only. Its application CRC is distinct from the transport ABI;
 OpenAMP/RPMsg does not acquire that framing merely by using the same MHU. Transport abstraction over `/dev/ipcc1` is wrapped by [`src/apps/raw-link.hpp`](../../src/apps/raw-link.hpp).
 
+> **Historical (retired 2026-11-18):** the v2 CR8-0 `px4io_bridge`
+> (`uorb_bridge.cpp`) and the CR8-1 PX4IO relay (`px4io_cr8.cpp`) described in
+> this section and in the relay notes below were removed. The active pair is
+> `dualcr8` `rzv2h_outputs` (v3) with the CR8-1 `default` `rzv2h_io` supervisor.
+> The text remains as the record of their design and board evidence.
+
 The CR8-0 uORB bridge:
 
 - transmits actuator outputs, selected vehicle commands, vehicle status, and a
@@ -140,15 +146,14 @@ on the flight core. These are `#error` guards in `uorb_bridge.cpp`.
 | Target/profile | IPC state | Evidence |
 |---|---|---|
 | PX4 default (`renesas_rdk-rzv2h_default`) | disabled | PX4/NuttX configuration |
-| PX4 single-core CR8-0 profiles (`default`, `drone`, `simple`, `sih`, `dshot`) | PX4IO bridge off (`CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE` defaults to `n`; `drone`/`simple` set it explicitly) | host contract test over every `rdk-rzv2h/*.px4board` |
 | PX4 dual-CR8 CR8-0 (`renesas_rdk-rzv2h_dualcr8`) | Exact-BOM sensor profile and coherent v3 `rzv2h_outputs` producer; no local motor outputs or legacy bridge; no qualified peer | [Candidate source/host/build procedure](validation/dualcr8-sensor-actuator-demo.md); earlier bridge captures remain historical |
-| PX4 CR8-1 `pwm` | V3 `rzv2h_io` controller, independent output worker and reporter; hardware identity unconfigured, resources unclaimed | Candidate build/host evidence only; default retains its legacy relay |
-| PX4 SIH (`renesas_rdk-rzv2h_sih`) | disabled | source and post-build contracts |
+| PX4 CR8-1 `default` (`renesas_rdk-rzv2h-io-cr8_1_default`) | V3 `rzv2h_io` controller, independent output worker and reporter; hardware identity unconfigured, resources unclaimed | Candidate build/host evidence only |
+| PX4 demo/demosih (`renesas_rdk-rzv2h_demo`, `_demosih`) | `rzv2h_heartbeat` raw IPC initiator; CR8-1 `demo` optional | demo bench guide |
 | NuttX `:nsh` | disabled | defconfig |
 | NuttX `:ipcc` | CA55/OpenAMP smoke profile | build/source only |
 | NuttX `:ipcc-multi` | OpenAMP plus raw-link initiator profiles | build/source only |
 | NuttX `:nsh-cr8_1` | standalone shell; raw links disabled | defconfig |
-| PX4 CR8-1 IO (`renesas_rdk-rzv2h-io-cr8_1_default`) | `/dev/ipcc1` responder, `/dev/ipcc3` initiator; `px4io_cr8` autostarts from ROMFS | bounded on-target heartbeat/fault capture (below) |
+| Retired PX4 CR8-1 relay (old `io-cr8_1_default`, removed 2026-11-18) | `/dev/ipcc1` responder, `/dev/ipcc3` initiator; `px4io_cr8` autostarted from ROMFS | historical bounded on-target heartbeat/fault capture (below) |
 | PX4 CM33 IO (`renesas_rdk-rzv2h-io-cm33_default`) | `/dev/ipcc3` responder | build only; low priority |
 
 The raw drivers, shared-memory ABI, bridge, and example profiles are not the
@@ -157,8 +162,8 @@ default runtime path. In particular:
 - The NuttX raw CR8-0/CR8-1 link has bounded `ipctest` recover/ping/echo
   100/100 evidence in the [HIL guide](./validation/rzv2h-ipc-hil-test-guide.md). That
   sample result does not qualify the PX4 uORB bridge or CM33 exchange.
-- The [CR8-1 PX4IO relay](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/px4io_cr8.cpp)
-  responds on `/dev/ipcc1` to the CR8-0 uORB bridge. Its threads:
+- The retired CR8-1 PX4IO relay (`px4io_cr8.cpp`, historical)
+  responded on `/dev/ipcc1` to the CR8-0 uORB bridge. Its threads:
   - The control loop waits on `poll()` for `/dev/ipcc1` data, bounded at
     2 ms, so CR8-0 writes are consumed and acknowledged promptly. It feeds
     each valid frame and CR8-0 heartbeat to the output lease described below.
@@ -188,7 +193,7 @@ default runtime path. In particular:
     CRC is valid, padding is zero, and fault flags are `0x4` (no FMU
     commands).
 - Board evidence for the PX4 bridge (2026-10-13, `renesas_rdk-rzv2h_dualcr8`
-  on CR8-0 with `renesas_rdk-rzv2h-io-cr8_1_default` on CR8-1, both loaded
+  on CR8-0 with the then-relay `renesas_rdk-rzv2h-io-cr8_1_default` on CR8-1, both loaded
   by `rzv2h-ipc-demo-load-both-auto.sh`; disarmed bench, no sensors, no
   motors driven):
   - the bridge starts from the drone hooks, acquires the CR8-1 heartbeat

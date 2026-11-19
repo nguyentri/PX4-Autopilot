@@ -3,11 +3,11 @@
   "groups": {
     "rzv-px4-dualcr8": {
       "id": "rzv-px4-dualcr8",
-      "name": "RZ/V2H PX4 Dual-Core (dualcr8 + io-cr8_1_pwm)",
+      "name": "RZ/V2H PX4 Dual-Core (dualcr8 + io-cr8_1_default)",
       "board": "rdk-rzv2h",
       "loadRecipe": "rzv-dual-cr8-ram",
       "family": "px4",
-      "description": "Full PX4 sensor & flight core on CR8-0 (dualcr8) paired with PWM actuator supervisor on CR8-1 (io-cr8_1_pwm).",
+      "description": "Full PX4 sensor & flight core on CR8-0 (dualcr8) paired with PWM actuator supervisor on CR8-1 (io-cr8_1_default).",
       "members": [
         {
           "core": "cr8_0",
@@ -17,7 +17,7 @@
         {
           "core": "cr8_1",
           "family": "px4",
-          "target": "renesas_rdk-rzv2h-io-cr8_1_pwm"
+          "target": "renesas_rdk-rzv2h-io-cr8_1_default"
         }
       ],
       "console": {

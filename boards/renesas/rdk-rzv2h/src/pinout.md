@@ -1,14 +1,13 @@
 # Native Legacy Sensor Wiring
 
-This guide describes the existing native single-MPU9250/BMP280 board profile;
-the simple/GY912 bench substitutes ICM20948 on the same P93 CS/P94 INT pads.
-Its assembly photos and wiring diagrams do not describe the new extension
-board. For the current reference's three ICM-45686 devices, BMM150, BMP390L
-and INA228, use [sensor wiring profiles](../../../../docs/renesas/pinmap.md#sensor-wiring-profiles)
+This guide is historical: it describes the native single-MPU9250/BMP280
+profile (the pre-2026-11-18 `default`) and the retired simple/GY912 bench, which
+substituted ICM20948 on the same P93 CS/P94 INT pads. Its assembly photos and
+wiring diagrams do not describe the extension board. For the current reference's three ICM-45686 devices, BMM150, BMP390L
+and INA228, use [sensor wiring profiles](../../../../docs/renesas/pinmap.md#px4-configuration-profiles)
 and the [reference-source map](../../../../docs/renesas/reference-source-map.md).
-The native extension is the opt-in `renesas_rdk-rzv2h_drone` target (default
-off); it reuses P94 as CS1 and therefore must stay separate from this
-profile's INT wiring.
+The extension board is now the CR8-0 `renesas_rdk-rzv2h_default` target; it
+reuses P94 as CS1, so do not apply this guide's INT wiring to it.
 
 ---
 

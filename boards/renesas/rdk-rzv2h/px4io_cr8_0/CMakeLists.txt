@@ -31,19 +31,6 @@
 #
 ############################################################################
 
-if(CONFIG_BOARD_RDK_RZV2H_PX4IO_BRIDGE)
-px4_add_module(
-	MODULE drivers__px4io_bridge
-	MAIN px4io_bridge
-	COMPILE_FLAGS
-	SRCS
-		px4io_bridge.cpp
-		uorb_bridge.cpp
-	DEPENDS
-		px4_work_queue
-	)
-endif()
-
 if(CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
 px4_add_module(
 	MODULE drivers__rzv2h_outputs

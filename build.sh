@@ -73,8 +73,8 @@ Target selection:
 
     ./build.sh renesas_rdk-rzv2h_default   # full make target
     ./build.sh rdk-rzv2h                    # board name -> _default config
-    ./build.sh rdk-rzv2h_dshot              # board + config
-    ./build.sh dshot                        # unambiguous shortcut (if unique)
+    ./build.sh rdk-rzv2h_dualcr8            # board + config
+    ./build.sh dualcr8                      # unambiguous shortcut (if unique)
 
   Run './build.sh --list' to see the exact target names. If a shortcut
   matches more than one target, the script lists the candidates and exits.
@@ -100,7 +100,7 @@ resolve_target()
 		[ "$t" = "$input" ] && { printf '%s\n' "$t"; return 0; }
 	done
 
-	# 2. Missing the renesas_ vendor prefix (e.g. rdk-rzv2h_dshot).
+	# 2. Missing the renesas_ vendor prefix (e.g. rdk-rzv2h_dualcr8).
 	for t in "${AVAILABLE[@]}"; do
 		[ "$t" = "renesas_$input" ] && { printf '%s\n' "$t"; return 0; }
 	done

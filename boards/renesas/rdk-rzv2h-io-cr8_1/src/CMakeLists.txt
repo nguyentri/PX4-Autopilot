@@ -46,9 +46,8 @@ target_link_libraries(drivers_board
 		rzv2h_micro_hal
 )
 
-# Build the board-local px4io_cr8 module (I/O processor) so it is compiled into
-# the firmware. It was previously present but wired into no build.
-if(PX4_BOARD_LABEL STREQUAL "pwm")
+# default: rzv2h_io output supervisor (v3 lease). demo: heartbeat responder.
+if(PX4_BOARD_LABEL STREQUAL "default")
 	target_sources(drivers_board PRIVATE timer_config.cpp)
 	target_link_libraries(drivers_board PRIVATE arch_io_pins)
 	# This minimal image has no early uORB publisher or filesystem client to
@@ -67,12 +66,12 @@ elseif(PX4_BOARD_LABEL STREQUAL "demo")
 	if(NOT NUTTX_CONFIG STREQUAL "demo")
 		message(FATAL_ERROR "The CR8-1 heartbeat demo target requires NUTTX_CONFIG=demo")
 	endif()
-	# Heartbeat-only responder. Like pwm, this minimal image has no early uORB
+	# Heartbeat-only responder. Like default, this minimal image has no early uORB
 	# publisher or filesystem client, so declare those link dependencies.
 	cmake_policy(SET CMP0079 NEW)
 	target_link_libraries(px4_layer PRIVATE uORB)
 	target_link_libraries(tinybson PRIVATE nuttx_fs)
 	add_subdirectory(${PX4_SOURCE_DIR}/boards/renesas/rdk-rzv2h/ipc_heartbeat ipc_heartbeat)
 else()
-	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_1 px4io_cr8_1)
+	message(FATAL_ERROR "Unsupported RZ/V2H CR8-1 label: ${PX4_BOARD_LABEL}")
 endif()

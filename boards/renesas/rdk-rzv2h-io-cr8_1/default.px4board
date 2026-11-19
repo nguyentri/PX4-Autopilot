@@ -3,6 +3,9 @@ CONFIG_BOARD_ARCHITECTURE="cortex-r8"
 CONFIG_BOARD_CONSTRAINED_FLASH=y
 CONFIG_BOARD_CONSTRAINED_MEMORY=y
 CONFIG_BOARD_NO_HELP=y
+# Software supervisor candidate (rzv2h_io, v3 output lease). The hardware
+# contract is unconfigured/inhibited; this image is not an accepted actuator
+# peer until physical qualification.
 CONFIG_BOARD_ROMFSROOT="rdk-rzv2h-io-cr8_1"
 
 # NuttX specific config

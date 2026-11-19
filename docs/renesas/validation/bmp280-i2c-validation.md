@@ -37,7 +37,7 @@ places them in parallel. The sample accepts a BMP280 (ID 0x58) or a BME280
 (ID 0x60, temperature and pressure only; humidity is not read). Any other ID,
 such as a BMP388/BMP390, fails the run.
 
-The [sensor wiring profiles](../pinmap.md#sensor-wiring-profiles) define who
+The [sensor wiring profiles](../pinmap.md#px4-configuration-profiles) define who
 owns the shared SCI7 bus. The standalone sample owns only the selected address
 for the duration of one run. BMM150 on the same bus is **not validated**
 ([BMM150 guide](bmm150-i2c-validation.md)) and is not evidence for SCI7

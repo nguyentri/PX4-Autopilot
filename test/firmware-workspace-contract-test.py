@@ -43,9 +43,9 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
             Draft7Validator.check_schema(schema)
 
     def test_02_catalog_counts(self):
-        """Verify authoritative discovery counts: 19 PX4, 134 RZ NuttX, 30 RA8P1 NuttX."""
+        """Verify authoritative discovery counts: 14 PX4, 134 RZ NuttX, 30 RA8P1 NuttX."""
         px4_targets = discover_px4_targets()
-        self.assertEqual(len(px4_targets), 19)
+        self.assertEqual(len(px4_targets), 14)
 
         rzv_configs = discover_nuttx_configs("rdk-rzv2h")
         self.assertEqual(len(rzv_configs), 134)
@@ -69,12 +69,12 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
         """Verify valid PX4 selection resolves cleanly."""
         sel = {
             "schemaVersion": 1,
-            "id": "rzv2h-simple",
+            "id": "rzv2h-default",
             "board": "rdk-rzv2h",
             "core": "cr8_0",
             "build": {
                 "family": "px4",
-                "target": "renesas_rdk-rzv2h_simple",
+                "target": "renesas_rdk-rzv2h_default",
                 "mode": "incremental"
             },
             "load": {"recipe": "rzv-cr8-ram"},
@@ -111,7 +111,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
             "core": "cr8_0",
             "build": {
                 "family": "px4",
-                "target": "renesas_rdk-rzv2h_simple",
+                "target": "renesas_rdk-rzv2h_default",
                 "mode": "incremental"
             }
         }
@@ -128,7 +128,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
             "core": "cr8_0",
             "build": {
                 "family": "px4",
-                "target": "renesas_rdk-rzv2h_simple",
+                "target": "renesas_rdk-rzv2h_default",
                 "mode": "incremental"
             },
             "command": "malicious_script.sh"
@@ -146,7 +146,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
             "core": "cr8_1",
             "build": {
                 "family": "px4",
-                "target": "renesas_rdk-rzv2h_simple",
+                "target": "renesas_rdk-rzv2h_default",
                 "mode": "incremental"
             }
         }

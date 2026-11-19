@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit the resolved opt-in drone firmware and execute its serial startup."""
+"""Audit the resolved reference drone (CR8-0 default) firmware and execute its serial startup."""
 import argparse
 import importlib.util
 from pathlib import Path
@@ -19,8 +19,8 @@ spec.loader.exec_module(payload)
 
 class DroneArtifacts(payload.PayloadArtifactContracts):
     def test_build_resolved_payload_nsh_cr8_0_contract(self):
-        self.assertIn("PX4_BOARD_LABEL:STRING=drone", self.cache)
-        self.assertIn("NUTTX_CONFIG:INTERNAL=drone", self.cache)
+        self.assertIn("PX4_BOARD_LABEL:STRING=default", self.cache)
+        self.assertIn("NUTTX_CONFIG:INTERNAL=nsh", self.cache)
         self.assertIn("#define CONFIG_BOARD_PARAM_FILE_ATOMIC 1", self.board_config)
         self.assertEqual(self.nuttx.get("CONFIG_RZV2H_BUILD_CR8_0"), "y")
         self.assertIn("rdk-rzv2h_cr8_0.ld", self.link_map)
@@ -33,10 +33,10 @@ class DroneArtifacts(payload.PayloadArtifactContracts):
 
     def test_selected_sensor_commands_are_linked_and_legacy_commands_absent(self):
         for command in ("icm45686", "bmm150", "bmp388", "ina228", "tfmini",
-                        "gps", "mavlink", "rc_input", "pwm_out", "commander", "sensors", "ekf2"):
+                        "gps", "mavlink", "rc_input", "pwm_out", "dshot", "commander", "sensors", "ekf2"):
             self.assertIn(command, self.builtins)
             self.assertIn(command + "_main", self.symbols)
-        for command in ("mpu9250", "icm20948", "bmp280", "dshot"):
+        for command in ("mpu9250", "icm20948", "bmp280", "simulator_sih", "px4io_bridge"):
             self.assertNotIn(command, self.builtins)
         for symbol in ("px4_spi_buses", "px4_i2c_buses", "board_spi_configure_device_ids",
                        "rdk_rzv2h_configure_sensor_cs", "rzv_spi_select"):
@@ -81,7 +81,7 @@ class DroneArtifacts(payload.PayloadArtifactContracts):
         generated = payload.BUILD_DIR / "etc/init.d"
         for name in ("rc.board_sensors", "rc.board_defaults.cmds"):
             # ROMFS strips comments/blank lines, so compare executable lines.
-            source = (ROOT / "boards/renesas/rdk-rzv2h/init/drone" / name).read_text()
+            source = (ROOT / "boards/renesas/rdk-rzv2h/init" / name).read_text()
             commands = [line.strip() for line in source.splitlines() if line.strip() and not line.lstrip().startswith("#")]
             self.assertEqual([line.strip() for line in (generated / name).read_text().splitlines() if line.strip()], commands)
         self.assertIn(". $RZV_DEFAULTS", self.defaults)
@@ -107,9 +107,9 @@ tfmini() { echo "TFMINI $*"; }
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--build-dir", default=str(ROOT / "build/renesas_rdk-rzv2h_drone"))
+    parser.add_argument("--build-dir", default=str(ROOT / "build/renesas_rdk-rzv2h_default"))
     args, remaining = parser.parse_known_args()
     payload.BUILD_DIR = Path(args.build_dir).resolve()
-    payload.CONFIG_NAME = "renesas_rdk-rzv2h_drone"
-    payload.BOARD_LABEL = "drone"
+    payload.CONFIG_NAME = "renesas_rdk-rzv2h_default"
+    payload.BOARD_LABEL = "default"
     unittest.main(argv=[sys.argv[0]] + remaining)

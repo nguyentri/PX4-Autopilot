@@ -85,7 +85,7 @@ waveforms, persistent storage, cold-cycle/soak behavior, other profiles, or IO
 cores.
 
 The current PX4 software receipt records the canonical `dualcr8` CR8-0 sensor
-profile and the compiled CR8-1 `pwm` supervisor candidate:
+profile and the compiled CR8-1 `default` supervisor candidate (formerly `pwm`):
 [dual-CR8 software validation](evidence/dualcr8-software-validation-261021.md).
 Those checks are host/build evidence only and add no lower-half hardware tier;
 the receipt preserves the existing named NuttX board evidence and its physical
@@ -124,7 +124,7 @@ CR8 bases are `0x15c30000/0x15c40000`; explicit CM33 non-secure aliases are
 CM33 runtime is unqualified. The driver supports MII/RGMII selection and
 10/100/1000 link modes; the SoC's TSN/PTP hardware capabilities do not establish
 NuttX implementations of those features. This repair adds software evidence
-only. See the [register-coordinate explanation](reference-source-map.md#ethernet-and-phy-gap)
+only. See the [register-coordinate explanation](reference-source-map.md#ethernet-and-phy-authority)
 when comparing CSDIV offsets with the supplied CMSIS header.
 
 The [indexed-provider regression](../../test/rzv2h-indexed-sdhi-wdt-runtime-test.py)
@@ -175,9 +175,9 @@ measurement. This policy does not claim FSP timing parity.
 
 ### Reference extension boundary
 
-The opt-in `drone` profile has host/build evidence and no extension target
+The CR8-0 `default` profile (formerly the opt-in `drone`) has host/build evidence and no extension target
 qualification. Keep its P94 chip-select role separate from the legacy
-button/DRDY images. Wiring belongs in [sensor profiles](pinmap.md#sensor-wiring-profiles);
+button/DRDY images. Wiring belongs in [sensor profiles](pinmap.md#px4-configuration-profiles);
 software checkpoint details belong in
 [execution progress](../../plans/261011-2017-rzv2h-drone-reference-port/reports/goal-progress.md).
 

@@ -38,15 +38,6 @@ config BOARD_RDK_RZV2H_HAS_MAG
 
 endif # BOARD_RDK_RZV2H
 
-config BOARD_RDK_RZV2H_PX4IO_BRIDGE
-	bool "Enable the CR8-1 PX4IO bridge"
-	default n
-	---help---
-		Build the CR8-0 uORB bridge for a separately loaded CR8-1 PX4IO
-		image over the raw CR8-0 initiator link /dev/ipcc1. The current
-		dualcr8 sensor profile keeps this disabled until its remote producer
-		and compatible actuator image are qualified.
-
 config BOARD_RDK_RZV2H_REMOTE_OUTPUTS
 	bool "CR8-1 owns the physical motor outputs"
 	default n

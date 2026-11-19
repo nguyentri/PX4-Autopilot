@@ -47,7 +47,7 @@ Options:
 Targets (same names as ./build.sh; a build/ prefix is also accepted):
   renesas_rdk-rzv2h_<cfg>            CR8-0 RAM load + start
   renesas_rdk-rzv2h-io-cr8_1_<cfg>   CR8-1 RAM load + start
-  <CR8-0 target> <CR8-1 target>      load both cores (e.g. dualcr8 + io-cr8_1_pwm)
+  <CR8-0 target> <CR8-1 target>      load both cores (e.g. dualcr8 + io-cr8_1_default)
   renesas_evk-ra8p1*, fpb-ra8e1*     flash program, reset, run
   renesas_rdk-rzv2h-io-cm33_*        refused (connecting the CM33 resets the SoC)
 
@@ -56,7 +56,7 @@ Env:
 
 Examples:
   ./flash.sh renesas_rdk-rzv2h_default
-  ./flash.sh rdk-rzv2h_dualcr8 rdk-rzv2h-io-cr8_1_pwm
+  ./flash.sh rdk-rzv2h_dualcr8 rdk-rzv2h-io-cr8_1_default
   ./flash.sh build/renesas_evk-ra8p1_default
 EOF
 }

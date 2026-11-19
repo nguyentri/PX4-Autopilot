@@ -15,8 +15,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CR8_0 = 'renesas_rdk-rzv2h_'
 CR8_1 = 'renesas_rdk-rzv2h-io-cr8_1_'
-BUILT = [CR8_0 + c for c in ('default', 'demo', 'demosih', 'dualcr8', 'sih')] + \
-        [CR8_1 + c for c in ('default', 'demo', 'pwm')] + ['renesas_rdk-rzv2h-io-cm33_default']
+BUILT = [CR8_0 + c for c in ('default', 'demo', 'demosih', 'dualcr8')] + \
+        [CR8_1 + c for c in ('default', 'demo')] + ['renesas_rdk-rzv2h-io-cm33_default']
 
 
 def executable(path, text):
@@ -59,7 +59,7 @@ class FlashDualPairSelection(unittest.TestCase):
         return [('--verbose ' if verbose else '') + elfs]
 
     def test_cr8_0_target_alone_gets_its_default_partner(self):
-        for name, partner in (('demo', 'demo'), ('demosih', 'demo'), ('dualcr8', 'pwm')):
+        for name, partner in (('demo', 'demo'), ('demosih', 'demo'), ('dualcr8', 'default')):
             for spelling in (name, f'rdk-rzv2h_{name}', f'{CR8_0}{name}', f'build/{CR8_0}{name}/'):
                 with self.subTest(target=spelling):
                     self.log.unlink(missing_ok=True)
@@ -73,16 +73,16 @@ class FlashDualPairSelection(unittest.TestCase):
         self.assertEqual(self.loads(), self.pair('dualcr8', 'demo', verbose=True))
 
     def test_cr8_0_target_without_a_partner_is_refused(self):
-        result = self.run_dual('sih')
+        result = self.run_dual('default')
         self.assertEqual(result.returncode, 2)
         self.assertIn('no default CR8-1 partner', result.stderr)
         self.assertEqual(self.loads(), [])
 
     def test_unbuilt_default_partner_is_refused(self):
-        shutil.rmtree(self.tmp / 'build' / f'{CR8_1}pwm')
+        shutil.rmtree(self.tmp / 'build' / f'{CR8_1}default')
         result = self.run_dual('dualcr8')
         self.assertEqual(result.returncode, 2)
-        self.assertIn(f'./build.sh {CR8_1}pwm', result.stderr)
+        self.assertIn(f'./build.sh {CR8_1}default', result.stderr)
         self.assertEqual(self.loads(), [])
 
     def test_wrong_core_in_either_position_is_refused(self):
@@ -101,7 +101,7 @@ class FlashDualPairSelection(unittest.TestCase):
     def test_list_names_every_default_pair_without_loading(self):
         result = self.run_dual('--list')
         self.assertEqual(result.returncode, 0, result.stderr)
-        for cr8_0, cr8_1 in (('demo', 'demo'), ('demosih', 'demo'), ('dualcr8', 'pwm')):
+        for cr8_0, cr8_1 in (('demo', 'demo'), ('demosih', 'demo'), ('dualcr8', 'default')):
             self.assertRegex(result.stdout, rf'{CR8_0}{cr8_0}\s+\+ {CR8_1}{cr8_1}\s+\[built\]')
         self.assertEqual(self.loads(), [])
 

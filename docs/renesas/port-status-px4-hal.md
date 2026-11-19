@@ -13,14 +13,14 @@ does not qualify an integrated physical HAL.
 - **deferred**: HAL adapter present but the feature is intentionally disabled in the default build pending hardware enablement (documented in board defconfig).
 - **validated**: On-target integration tests pass; used in application code.
 
-No physical PX4 HAL surface is claimed validated. SIH has bounded evidence for
+No physical PX4 HAL surface is claimed validated. The retired SIH target had bounded evidence for
 simulation and HRT only; its [transcript](evidence/px4-nuttx-rzv2h-sih-transcript.txt)
 does not validate physical payload buses or motor outputs. Historical build
 hashes, reset-symbol checks, SIH provenance limits and DShot host results are
 kept in [software checkpoints](evidence/px4-hal-software-checkpoints.md).
 
-The legacy v2 CR8-0 `px4io_bridge`/`uorb_bridge` path has a real PX4 uORB to
-raw-IPC transport and publishes `px4io_status` for Commander's I/O-processor
+Historical (retired 2026-11-18): the legacy v2 CR8-0 `px4io_bridge`/`uorb_bridge` path had a real PX4 uORB to
+raw-IPC transport and published `px4io_status` for Commander's I/O-processor
 arming check. Its source loop sleeps 2.5 ms (400 Hz); the named 2026-10-13
 disarmed bench observation measured the historical CR8-1 relay worker at about
 404 Hz and its control loop at about 370 Hz. That observation also recorded the
@@ -33,7 +33,7 @@ priority.
 The current v3 path is separate. Canonical `dualcr8` links the
 `rzv2h_outputs` producer with PX4 mixer/uORB and the Commander I/O-status gate,
 but deliberately has no local PWM/DShot driver or legacy bridge. The CR8-1
-`pwm` image is a compiled v3 supervisor candidate with a 400 Hz worker and a
+`default` image (formerly `pwm`) is a compiled v3 supervisor candidate with a 400 Hz worker and a
 separate status reporter. The worker uses a 50 ms logical lease and inhibits
 stale output; its hardware identity, output rate, output mask and hardware
 contract are all zero, so it remains unconfigured/inhibited. The current
@@ -59,7 +59,7 @@ The [dual-CR8 software validation receipt](evidence/dualcr8-software-validation-
 records the current build hashes, host checks and evidence boundary. Earlier
 execution and consolidation records contain historical pre-merge hashes and
 remain stateful records rather than current release proof.
-The v3 `rzv2h_outputs` producer and CR8-1 `pwm` supervisor now have source,
+The v3 `rzv2h_outputs` producer and CR8-1 `default` supervisor (formerly `pwm`) now have source,
 host and build evidence. CR8-1 separates controller, worker and reporter;
 worker faults and stale control/status cannot remain arm-ready. Default-off
 delayed bench hooks and candidate ELF/ROMFS/package checks are described in
@@ -71,12 +71,12 @@ physical qualification remain open.
 
 ### Reference extension boundary
 
-The opt-in `renesas_rdk-rzv2h_drone` profile is build-clean with host/artifact
-checks. [Pin ownership](pinmap.md#sensor-wiring-profiles) owns the sensor
+The CR8-0 `renesas_rdk-rzv2h_default` profile (formerly `drone`) is build-clean with host/artifact
+checks. [Pin ownership](pinmap.md#px4-configuration-profiles) owns the sensor
 layout; [execution progress](../../plans/261011-2017-rzv2h-drone-reference-port/reports/goal-progress.md)
 owns the implementation checkpoint. The profile uses polled GPIO chip selects
-and PIO; legacy default/simple/SIH/DShot and NuttX samples retain their own
-contracts. Physical sensor rates, wiring and recovery remain unqualified.
+and PIO; NuttX samples retain their own contracts. The legacy
+MPU9250 default, simple, SIH and standalone DShot targets were retired on 2026-11-18. Physical sensor rates, wiring and recovery remain unqualified.
 
 Parameters remain volatile. Atomic export/recovery software checks do not
 prove persistence or power-loss tolerance; the experimental xSPI backend
@@ -84,9 +84,8 @@ requires explicit board authority and qualified partition/geometry ownership.
 It must not automatically format corrupt media. Prototype identity is not a
 per-unit identity source.
 
-The [simple bench procedure](validation/simple-pwm-icm20948-validation.md) owns the
-compact PWM/ICM20948 profile, which replaces active core-only use. Fresh P93,
-FIFO/P94 and PWM physical measurements remain separate target gates.
+The [simple bench procedure](validation/simple-pwm-icm20948-validation.md) is
+historical: the `simple` target was retired on 2026-11-18.
 
 The latest [CR8-0 PX4 hardware campaign](evidence/px4-hardware-tests-cr8-0-261021.md)
 records 21/32 native test entries passed and 11 blocked. It adds bounded
@@ -106,12 +105,12 @@ headers take precedence where present.
 
 | # | Peripheral | PX4 HAL File | NuttX Driver Dep | PX4 Board Dir | Status | Migration Notes |
 |---|------------|--------------|------------------|---------------|--------|-----------------|
-| 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | `rzv_spi.c` + board IOPORT/PFC mux + GPIO CS | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean; target pending | `CONFIG_RZV_SPI=y`. `board_app_initialize()` now calls `board_spi_initialize()` before sensor startup, which muxes P90/P91/P92 and configures P93 as active-low GPIO CS. The board select hook keys on the SPI0 lower-half instance, so PX4 sensor IDs and standalone NuttX test IDs share the same CS path. Initialization and standalone registration retry state are serialized/published safely. [Software checkpoint](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/pm-260727-0701-rzv2h-integrated-spi-closure.md). The native simple profile selects one ICM20948 with P94 DRDY; default/DShot retain MPU9250. On-target identity/data/FIFO/DRDY proof pending. The opt-in drone profile uses three strict descriptor IDs and polled GPIO CS; its host/build checks pass, with target qualification open. The latest CR8-0 campaign records `i2c_spi_cli` passing while MPU9250 instances and accel/gyro topics remained absent; see [hardware evidence](evidence/px4-hardware-tests-cr8-0-261021.md). |
-| 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | `rzv_sci_i2c.c`; opt-in native `rzv_i2c.c` through board admission | boards/renesas/rdk-rzv2h/src/i2c.cpp | build-clean | Native BMP280 baro on SCI7 simple-I2C P76/P77. The compile-time validator covers RIIC0–8 plus the existing SCI7 bus7 owner, rejecting overlapping bus7 claims. Opt-in native buses use `board_i2c_initialize()` and its pin admission/cache; PX4 borrows board-lifetime native/SCI owners, so teardown does not invalidate the cache. Expanded routes have host checks and no physical qualification; the board bus list is unchanged. `CONFIG_RZV_SCI7_I2C=y`; bus 7 dispatches explicitly to `rzv_sci_i2c_initialize(7)`, never RIIC, and maps safely to its dense PX4 clock slot. Fresh standalone HIL and integrated PX4 builds pass; BMP280 probe/read/recovery remains unvalidated on target. The drone profile links and starts BMM150 0x10, BMP390L/bmp388 0x76 (SDO to GND) and INA228 0x45; its host/build integration passes, with target identity/data/recovery proof open. The latest CR8-0 campaign found no BMP280 instance and no barometer publication; see [hardware evidence](evidence/px4-hardware-tests-cr8-0-261021.md). |
+| 1 | SPI | `micro_hal/micro_hal.cpp` (`px4_spibus_initialize`) | `rzv_spi.c` + board IOPORT/PFC mux + GPIO CS | boards/renesas/rdk-rzv2h/src/spi.cpp | build-clean; target pending | `CONFIG_RZV_SPI=y`. `board_app_initialize()` now calls `board_spi_initialize()` before sensor startup, which muxes P90/P91/P92 and configures P93 as active-low GPIO CS. The board select hook keys on the SPI0 lower-half instance, so PX4 sensor IDs and standalone NuttX test IDs share the same CS path. Initialization and standalone registration retry state are serialized/published safely. [Software checkpoint](../../plans/260726-2218-rzv2h-px4-nuttx-goal-plan/reports/pm-260727-0701-rzv2h-integrated-spi-closure.md). The retired simple profile selected one ICM20948 with P94 DRDY and the retired MPU9250 default/DShot images used one MPU9250 (historical). The CR8-0 `default` (former drone) profile uses three strict descriptor IDs and polled GPIO CS; its host/build checks pass, with target qualification open. The latest CR8-0 campaign records `i2c_spi_cli` passing while MPU9250 instances and accel/gyro topics remained absent; see [hardware evidence](evidence/px4-hardware-tests-cr8-0-261021.md). |
+| 2 | I2C | `micro_hal/micro_hal.cpp` (`px4_i2cbus_initialize`) | `rzv_sci_i2c.c`; opt-in native `rzv_i2c.c` through board admission | boards/renesas/rdk-rzv2h/src/i2c.cpp | build-clean | Native BMP280 baro on SCI7 simple-I2C P76/P77. The compile-time validator covers RIIC0–8 plus the existing SCI7 bus7 owner, rejecting overlapping bus7 claims. Opt-in native buses use `board_i2c_initialize()` and its pin admission/cache; PX4 borrows board-lifetime native/SCI owners, so teardown does not invalidate the cache. Expanded routes have host checks and no physical qualification; the board bus list is unchanged. `CONFIG_RZV_SCI7_I2C=y`; bus 7 dispatches explicitly to `rzv_sci_i2c_initialize(7)`, never RIIC, and maps safely to its dense PX4 clock slot. Fresh standalone HIL and integrated PX4 builds pass; BMP280 probe/read/recovery remains unvalidated on target. The `default` (former drone) profile links and starts BMM150 0x10, BMP390L/bmp388 0x76 (SDO to GND) and INA228 0x45; its host/build integration passes, with target identity/data/recovery proof open. The latest CR8-0 campaign found no BMP280 instance and no barometer publication; see [hardware evidence](evidence/px4-hardware-tests-cr8-0-261021.md). |
 | 3 | UART/Serial | NuttX serial (native) | `rzv_serial.c` SCI-B lower halves; SCIF is separate sample-only path | boards/renesas/rdk-rzv2h/ | in-progress | Core-matched `rzv2h_evk/sci_b_uart` projects are the SCI-B reference. Explicit policy: standalone CR8-0 NuttX = SCI5 serial shell + RTT diagnostics (SCI5 doubles as PX4 telemetry); target CR8-1 = SCI5 shell + RTT diagnostics; target CM33 = SCI9 shell + RTT diagnostics. Integrated PX4 RTT0 `/dev/console` is build-clean and bypasses SCI low-setup. SCI4/5/6/9 retain payload ownership in the full image. SCIF/SCIFA has no EVK application example and remains outside the PX4 payload path. Its native internal loopback/reopen now has bounded evidence in the [sensor-free campaign](evidence/sensor-free-rtt-validation-261024.md); external pinmux and peer traffic remain unqualified. The latest CR8-0 campaign saw TX progress but zero RX on the four inspected serial ports, with no GPS fix, RC frame, or payload response; see [hardware evidence](evidence/px4-hardware-tests-cr8-0-261021.md). |
 | 4 | GPIO | `include/px4_arch/micro_hal.h` (macros → `rzv_gpio*`) | rzv_gpio.c | boards/renesas/rdk-rzv2h/src/ | build-clean | Port I/O + IRQ/edge via rzv_gpiosetevent. On-target IRQ latency pending |
 | 5 | PWM/ESC | `io_pins/io_timer.c` + `pwm_servo.c` | direct GPT MMIO; standalone `rzv_gpt.c` lower-half is mutually exclusive | boards/renesas/rdk-rzv2h/src/timer_config.cpp | build-clean | FSP logical mapping: GPT6A/7B/9A/10B on PA4/PA7/P96/P53; logical 9/10 resolve to physical R_GPT11/R_GPT12. Live rate/duty changes use GPT buffers, stopped/disabled paths clear the counter, first setup performs the GTUDDTYC UDF latch, compare values use counts−1, and partial timer/GPIO initialization unwinds. The board-scoped PX4 path disables motor GTIOC on `stop_motors`, validates allocation ownership, and safely reallocates after module restart without stealing DShot ownership. Before a normal reset, `board_on_reset()` unconfigures PA4/PA7/P96/P53 and waits 6 ms; the WDT-backed reset chain is build-verified in all four historical August 2 board ELFs. The default PX4 board path exposes analog PWM only and rejects `PWM_MAIN_TIMx=-1`; internal OneShot ownership plumbing has no board trigger path. Standalone NuttX finite pulse-count PWM is separate. The historical core-only demo auto-started `pwm_out`, prints `work_queue status`, and uses `actuator_test set -m 1 -v 0 -t 5` for a bounded 1100 µs Motor 1 bench waveform. Integrated and standalone PWM builds plus source-contract regressions pass. Waveform, inactive-level, transition, reset, and failsafe scope proof pending. |
-| 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | direct GPT MMIO + `rzv_dmac.c` (HW compare-trigger) | boards/renesas/rdk-rzv2h/dshot.px4board | bounded on-target (motor-stop TX) | TX-only target `renesas_rdk-rzv2h_dshot`; default remains PWM and excludes DShot. The DShot image includes `pwm_out` for shared `PWM_MAIN` parameters, while `PWM_MAIN_TIM0..3=-3` leaves every group to DShot. `DSHOT_START` selects the opt-in startup. The 2026-10-02 remediation replaces overflow/buffered pacing with selected active GPT compare events, absolute edge timestamps, and bounded fail cleanup. [Runtime model regressions](../../plans/261002-2129-rzv2h-dshot-runtime-remediation/reports/dshot-runtime-after.log) pass 23/23; the [2026-10-12 software checkpoint](../../plans/261012-1525-renesas-coding-standards/reports/implementation-progress.md) records successful DShot/default builds. The [2026-10-20 CR8-0 run](evidence/dshot-dmac-cr8-0-validation-261020.md) verifies repaired NSH startup, automatic DShot600 mask `0xf`, disarmed state, HRT and register-level stop cleanup; its DMAC0 frame fails with `-EIO`. The [resumed CR8-0 repair](evidence/dshot-dmac-cr8-0-validation-261020.md) uses explicit DMAC3 channels 56–59 and repaired route/state handling: four DShot600 motor-stop transfers reach TC, consume 128 bytes each, and pass a second module start/stop cycle; final GPT gates are disabled and commander is disarmed. Nonzero throttle and electrical/ESC qualification remain open. BDShot capture/telemetry returns `-ENOTSUP`. Physical edge latency, four-pin waveforms, and ESC response remain unvalidated. The [2026-10-21 CR8-0 campaign](evidence/px4-hardware-tests-cr8-0-261021.md) repeats explicit four-channel zero-throttle completion on boot and restart, 128 bytes each, with register and host cleanup. |
+| 5b | DShot (GPT+DMA) | `dshot/dshot.c` + `dshot/dshot_telemetry.c` | direct GPT MMIO + `rzv_dmac.c` (HW compare-trigger) | boards/renesas/rdk-rzv2h/default.px4board | bounded on-target (motor-stop TX, retired `dshot` image) | Since 2026-11-18 `renesas_rdk-rzv2h_default` links `dshot` and `pwm_out`; `rc.board_defaults.cmds` starts `pwm_out` while `PWM_MAIN_TIM0 > -2`, otherwise `dshot` (`-3/-4/-5` = DShot600/300/150). The merged image is build-clean only; PWM/DShot boot selection on target is a pending bench item. The evidence below was taken with the retired TX-only `renesas_rdk-rzv2h_dshot` target. The 2026-10-02 remediation replaces overflow/buffered pacing with selected active GPT compare events, absolute edge timestamps, and bounded fail cleanup. [Runtime model regressions](../../plans/261002-2129-rzv2h-dshot-runtime-remediation/reports/dshot-runtime-after.log) pass 23/23; the [2026-10-12 software checkpoint](../../plans/261012-1525-renesas-coding-standards/reports/implementation-progress.md) records successful DShot/default builds. The [2026-10-20 CR8-0 run](evidence/dshot-dmac-cr8-0-validation-261020.md) verifies repaired NSH startup, automatic DShot600 mask `0xf`, disarmed state, HRT and register-level stop cleanup; its DMAC0 frame fails with `-EIO`. The [resumed CR8-0 repair](evidence/dshot-dmac-cr8-0-validation-261020.md) uses explicit DMAC3 channels 56–59 and repaired route/state handling: four DShot600 motor-stop transfers reach TC, consume 128 bytes each, and pass a second module start/stop cycle; final GPT gates are disabled and commander is disarmed. Nonzero throttle and electrical/ESC qualification remain open. BDShot capture/telemetry returns `-ENOTSUP`. Physical edge latency, four-pin waveforms, and ESC response remain unvalidated. The [2026-10-21 CR8-0 campaign](evidence/px4-hardware-tests-cr8-0-261021.md) repeats explicit four-channel zero-throttle completion on boot and restart, 128 bytes each, with register and host cleanup. |
 | 6 | ADC | `adc/adc.cpp` | rzv_adc.c | boards/renesas/rdk-rzv2h/src/ | deferred/non-gating | Core-matched `rzv2h_evk/adc_e` projects provide FSP driver/config evidence, but the integrated drone reference still has no active ADC consumer. The native NuttX ADELCCR byte-width defect is fixed in source. The optional PX4 adapter matches the public two-argument sample API and supplies the architecture ADC header. Each sample request discards old results, triggers a native single scan and polls completion with a 1 ms delay budget; failure returns `UINT32_MAX`. The actual adapter and board ADC consumer compile and resolve their ADC symbols; [software remediation](../../plans/261013-0002-rzv2h-audit-remediation/plan.md) retains target conversion/pin and work-queue timing proof as open; post-G9. |
 | 7 | Timer/HRT | `hrt/hrt.c` (queue mgr) → `rzv_hrt_*` | rzv_hrt.c (selected GTM free-run) | boards/renesas/rdk-rzv2h/src/ | bounded on-target (CR8-0 detached check) | `CONFIG_RZV_HRT=y`; CR8-0 selects GTM7, CR8-1 IO selects GTM6, and CM33 IO reserves GTM5 with its core-matched register alias and fixed NVIC input (IO images build-clean, target pending). GTM7 ownership is clean and stale GTM0/120 MHz declarations are removed. A bounded free-run compare maintains the 64-bit epoch; cancel/rearm preserves elapsed ticks; long deadlines use intermediate wakeups; mandatory initialization/arm failures fail visibly; periodic self-delay/self-cancel matches the PX4 contract. Integrated build and source review pass. Runtime P1CLK, wrap monotonicity, jitter, and soak proof remain target gates. The [2026-10-21 CR8-0 check](evidence/px4-hardware-tests-cr8-0-261021.md) measured 11,041 us sleep and 4 us callback latency with the probe detached. The RTT-attached comparison failed at 133,603 us; this bounded result does not promote CR8-1/CM33 or qualify long-run timing. Since 2026-11-09 the arch shim keeps the GTM free-running and moves only its compare; the [2026-11-09 demo run](evidence/rtt-hil-demo-hardware-run-261109.md) ran sensors and `pwm_out` on it with gaps only around RTT reconnects, and `reboot` reset the SoC. |
 | 8 | CAN | `src/drivers/can/` | rzv_canfd.c | boards/renesas/rdk-rzv2h/src/ | planned | CAN0/CAN1; baud rate; SLCAN over UART alt |
@@ -133,11 +132,9 @@ headers take precedence where present.
   CA55 endpoint is absent.
 - The integrated image uses RTT0 for text console/debug and SCI5 for binary
   MAVLink/QGroundControl traffic.
-- `renesas_rdk-rzv2h_simple` is the compact legacy PWM + one-device ICM20948
-  bench image; raw topics, FIFO, P94 callbacks and PWM measurements are
-  separate hardware gates. The three-ICM45686/polled extension is the
-  separate build-clean drone profile, with physical qualification pending. Retired core-only artifacts remain historical
-  evidence.
+- The three-ICM45686/polled extension is the build-clean CR8-0 `default`
+  profile, with physical qualification pending. The retired `simple`, `sih`,
+  `dshot`, `drone` and core-only artifacts remain historical evidence.
 - The fixed board UUID/GUID prevents multi-device deployment until a
   provisioned per-device identity source and persistent storage contract are
   approved. Do not infer uniqueness from the current values.
@@ -172,10 +169,8 @@ Dual-CR8 questions live in
    in scope for the demo.
 4. **NSH startup budgets (repaired 2026-10-20).** Default/DShot use the
    shared [nsh config](../../boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig),
-   which now reserves the same full-startup parser/stack budgets as drone and
-   dualcr8. The [startup regression](../../test/rzv2h-drone-profile-contract-test.py)
-   covers the shared config; specialized simple/SIH profiles retain their own
-   configuration. The named DShot run above verifies parser errors are gone.
+   which now reserves the same full-startup parser/stack budgets as dualcr8. The [startup regression](../../test/rzv2h-drone-profile-contract-test.py)
+   covers the shared config (the former drone file is now `default`). The named DShot run above verifies parser errors are gone.
 5. **`boards/renesas/evk-ra8p1/Kconfig`** writes its prompts with escaped
    quotes (`bool \"...\"`), which Kconfig rejects if that file is ever
    sourced. The RZ/V2H build sources only its own board Kconfig, so this RA8

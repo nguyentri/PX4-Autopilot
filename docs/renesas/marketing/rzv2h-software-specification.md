@@ -208,11 +208,10 @@ git rev-parse HEAD
 git submodule status platforms/nuttx/NuttX/nuttx platforms/nuttx/NuttX/apps
 source ./build_setup.sh
 ./build.sh --list
-./build.sh renesas_rdk-rzv2h_simple
+./build.sh renesas_rdk-rzv2h_demo
 ```
-The simple image is a PWM + ICM20948 bench profile without flight/autonomy startup. Use its [validation
-guide](../validation/simple-pwm-icm20948-validation.md); it is not a drone image. For later integration build
-`./build.sh renesas_rdk-rzv2h_default`. The expected ELF pattern is `build/<target>/<target>.elf`; archive the actual
+The demo image is the bench profile; see the [demo bench guide](../validation/demo-bench-validation.md).
+For the reference drone build `./build.sh renesas_rdk-rzv2h_default` (PWM or DShot from `PWM_MAIN_TIM0..3`). The expected ELF pattern is `build/<target>/<target>.elf`; archive the actual
 artifact hash, toolchain, configuration and log. Use `--no-clean` only for a compatible incremental build.
 
 Standalone NuttX driver work uses `platforms/nuttx/NuttX/build.sh --list`, then a listed configuration with that script.

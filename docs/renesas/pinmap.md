@@ -1,6 +1,6 @@
 # RZ/V2H Pin Ownership Matrix
 
-**Date:** 2026-10-21
+**Date:** 2026-11-18
 **Status:** Profile-specific software mapping; extension target validation pending
 **Reference software source:** [selected RDK configuration](../../refs/rzv2h_drone_px4-dev/configuration.xml), [reference hardware guide](../../refs/rzv2h_drone_px4-dev/docs/HARDWARE.md)
 
@@ -9,31 +9,109 @@ Software changes, host checks and builds can proceed from the reference XML and
 board sources. Generated FSP output, fitted-board identification and electrical
 measurements remain target-validation tasks; see [reference sources](./reference-source-map.md).
 
-## Sensor Wiring Profiles
+## PX4 Configuration Profiles
 
-| Connection | Existing native bench/default | Opt-in `drone` extension | Canonical `dualcr8` sensor profile |
+Three PX4 configuration families share the RDK 40-pin header. Each row below
+is derived from the `.px4board` file, the profile's `init/<profile>/` scripts
+and its NuttX defconfig; none of them is on-target proof.
+
+| Family | CR8-0 target | CR8-1 target | Who drives the four ESC pads |
 |---|---|---|---|
-| SPI0 P90/P91/P92 | MOSI/MISO/SCK, single MPU9250 or ICM20948 | Shared MOSI/MISO/SCK, three ICM-45686 | MOSI/MISO/SCK, one ICM-45686 |
-| P93 | Single sensor CS; GPIO or hardware SSLA0 by configuration | IMU #1 CS (reference SSLA0) | Single GPIO CS, polled sensor |
-| P94 | DRDY/TINT for MPU9250/GY912/simple, or exclusive button demo | IMU #2 CS (reference SSLA1); no DRDY | No sensor ownership |
-| P95 | No sensor ownership in existing bench profile | IMU #3 CS (reference SSLA2); no DRDY | No sensor ownership |
-| SCI7 P76/P77 | BMP280 at 0x76 or standalone BMM150 at configured address | BMM150 0x10, BMP390L via `bmp388` 0x76, INA228 0x45 | BMM150 0x10, BMP390 via `bmp388` 0x76; battery hardware unselected |
+| Bench demo | `renesas_rdk-rzv2h_demo` ([demo.px4board](../../boards/renesas/rdk-rzv2h/demo.px4board)) or SIH showcase `renesas_rdk-rzv2h_demosih` ([demosih.px4board](../../boards/renesas/rdk-rzv2h/demosih.px4board)) | Optional `renesas_rdk-rzv2h-io-cr8_1_demo` ([demo.px4board](../../boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board)): heartbeat responder, RTT console, no GPT, no SCI | `demo`: CR8-0 `pwm_out`, 400 Hz. `demosih`: nobody (`pwm_out`/`dshot` compiled out, `pwm_out_sim` feeds SIH) |
+| Single-core drone | `renesas_rdk-rzv2h_default` ([default.px4board](../../boards/renesas/rdk-rzv2h/default.px4board)) | None | CR8-0 `pwm_out` 400 Hz by default, or `dshot` when all four `PWM_MAIN_TIMx` are `-3/-4/-5` (only one starts) |
+| Dual CR8 | `renesas_rdk-rzv2h_dualcr8` ([dualcr8.px4board](../../boards/renesas/rdk-rzv2h/dualcr8.px4board)) | `renesas_rdk-rzv2h-io-cr8_1_default` ([default.px4board](../../boards/renesas/rdk-rzv2h-io-cr8_1/default.px4board)): `rzv2h_io` supervisor | CR8-1 GPT6/7/9/10 (CR8-0 defconfig has no `RZV_GPT`); output contract still **unconfigured/inhibited** |
 
-The `dualcr8` and `demo` profiles select `CONFIG_RZV2H_SPI0_SINGLE_IMU`
-exclusively with the other SPI sensor layouts. `demo` uses the same SPI0/P93
-wiring as `dualcr8` and the default BMP280 at 0x76 on SCI7. Its source/host contracts and firmware build
-pass; fitted wiring, orientation and electrical behavior remain unqualified.
+### Pin ownership by profile
 
-The `drone` profile selects default-off
-`CONFIG_RZV2H_DRONE_SENSOR_EXTENSION`. Its native GPIO CS dispatch uses the
-three actual PX4 descriptor IDs; unknown IDs deassert all CS lines, and startup
-does not configure P94 as DRDY. Host routing/startup tests and the firmware
-build pass; physical qualification remains open. Legacy profiles retain their
-existing pin policies. Reference
-`-c 1/2/3` values are logical SSL indices, not native GPIO pin selectors;
-use native SPI descriptors/CLI semantics. Native polling does not require the
-reference's `-P` option. Keep P94 DRDY/button images exclusive with extension
-CS1 wiring.
+Header pins follow the [RDK connector drawing](#physical-header-drawing); `—` means the profile assigns no owner.
+
+| Pads (header pin) | Function | `demo` / `demosih` | `default` (single CR8-0) | `dualcr8` + CR8-1 `default` |
+|---|---|---|---|---|
+| P90/P91/P92 (19/21/23) | RSPI0 MOSI/MISO/SCK | CR8-0, one ICM-45686 | CR8-0, three ICM-45686 | CR8-0, one ICM-45686 |
+| P93 (24) | SPI0 CS | ICM-45686, GPIO CS, polled (`-c 3`) | IMU #1 CS (`-c 3`) | ICM-45686, GPIO CS, polled (`-c 3`) |
+| P94 (26) | SPI0 CS / DRDY | — | IMU #2 CS (`-c 4`), no DRDY | — |
+| P95 (12) | SPI0 CS | — | IMU #3 CS (`-c 5`), no DRDY | — |
+| P76/P77 (3/5) | RSCI7 I2C, PX4 bus 7 | BMP280 0x76 | BMM150 0x10, BMP390L (`bmp388`) 0x76, INA228 0x45 | BMM150 0x10, BMP390 (`bmp388`) 0x76; no INA228 |
+| P50/P51 (22/36) | RSCI0 I2C, PX4 bus 0 | ADS1115 0x48 (`ads1115 -X -b 0`) | — (SCI0 not selected) | — (SCI0 not selected) |
+| P70/P71 | RSCI4 `/dev/ttyS4` (EXT2) | TFmini 115200 | TFmini 115200 | TFmini 115200 |
+| P72/P73 | RSCI5 `/dev/ttyS5` (TEL1) | MAVLink: `demo` 57600, `demosih` 115200 | MAVLink 57600 | MAVLink (common defaults, defconfig 57600) |
+| P75 | RSCI6 `/dev/ttyS6` RX | — (SCI6 compiled, `rc_input` off) | RC SBUS (`RC_INPUT_PROTO 2`), external inverter | RC (`rc_input` inherited from default) |
+| P82/P83 | RSCI9 `/dev/ttyS9` | — (SCI9 compiled, GPS off) | u-blox M10 115200 | u-blox M10 115200 |
+| PA4 (32) | GPT6A, ESC1 | CR8-0 PWM (`demo`); unused (`demosih`) | CR8-0 PWM | CR8-1 GPT6A |
+| PA7 (33) | GPT7B, ESC2 | CR8-0 PWM (`demo`); unused (`demosih`) | CR8-0 PWM | CR8-1 GPT7B |
+| P96 (35) | GPT9A, ESC3 | CR8-0 PWM (`demo`); unused (`demosih`) | CR8-0 PWM | CR8-1 GPT9A |
+| P53 (31) | GPT10B, ESC4 | CR8-0 PWM (`demo`); unused (`demosih`) | CR8-0 PWM or DShot | CR8-1 GPT10B |
+| — | IPC | CR8-0 `rzv2h_heartbeat` (raw IPC), CR8-1 optional | None | `rzv2h_outputs` ↔ `rzv2h_io` over `/dev/ipcc1` |
+| — | Battery | None (`BAT1_SOURCE -1`); `demosih` simulates a 4S pack | INA228 (`BAT1_SOURCE 0`) | `BAT1_SOURCE 0` but no battery driver selected |
+
+The legacy MPU9250 `default` and ICM20948 `simple` profiles (P94 as
+DRDY/TINT) were retired on 2026-11-18. NuttX-only samples may still use P94 as
+DRDY or a button; do not load them onto the drone extension board, where P94 is
+a chip select.
+
+### Bench demo (`demo`, `demosih`, CR8-1 `demo`)
+
+- `demo` and `demosih` share one physical wiring: `CONFIG_RZV2H_SPI0_SINGLE_IMU`
+  (P93 only), BMP280 on SCI7, TFmini on SCI4, ADS1115 on SCI0 and MAVLink on
+  SCI5. There is no GPS, RC or magnetometer.
+- `demosih` keeps the real sensors as uORB instance 1 for display only. EKF2
+  uses the simulated IMU, barometer, magnetometer, GPS and battery. Its NuttX
+  defconfig still compiles GPT6/7/9/10, but with no PX4 output driver no ESC pad
+  is driven.
+- The CR8-1 `demo` image claims no pad: no GPT, no SCI, console on RTT. CR8-0
+  boots whether or not it runs.
+- P50 (header pin 22) is ADS1115 SDA here. On the reference extension board the
+  same pin carries ICM-45686 #1 INT1, so do not run a demo image on that board
+  with SCI0 enabled.
+
+### Single-core drone (`default`) against the reference HARDWARE.md
+
+The CR8-0 `default` profile (formerly `drone`, merged with `dshot` on 2026-11-18) selects `CONFIG_RZV2H_DRONE_SENSOR_EXTENSION` and matches
+the [reference BOM and 40-pin wiring](../../refs/rzv2h_drone_px4-dev/docs/HARDWARE.md)
+pad for pad: 3× ICM-45686 on SPI0 (P93/P94/P95), BMM150 + BMP390L + INA228 on
+SCI7, TFmini on SCI4, SiK on SCI5 at 57600, fs-a8s SBUS on SCI6 RX, M10 on SCI9
+and ESC1-4 on PA4/PA7/P96/P53. The native image differs from the reference in
+these deliberate places:
+
+| Item | Reference HARDWARE.md | Native `default` | Reason |
+|---|---|---|---|
+| IMU CS selector | `icm45686 -c 1/2/3` (logical SSL index) | `-c 3/4/5` (P9 pin number of the GPIO CS) | Native SPI descriptors select the physical pin; unknown IDs deassert every CS |
+| IMU polling | `-P` | none | Native driver polls without the flag; P94 is never configured as DRDY |
+| IMU #1 INT1 | Pin 22, wired but unused | not used | Same behavior |
+| BMP390L address | 0x77 | 0x76 | Fitted modules tie SDO low; confirm on the extension board before flight |
+| GPS baud | 9600 default, 115200 configured | `SER_GPS1_BAUD 115200` | Matches the reference start command |
+| Power monitor | INA228 0x45 | INA228 0x45, `BAT1_SOURCE 0` | Same |
+| CR8-1 | not used | not used; no IPC transport is linked | Single-core flight |
+| ESC protocol | DShot | PWM 400 Hz by default; DShot600/300/150 when all four `PWM_MAIN_TIMx` are `-3/-4/-5` | `pwm_out` and `dshot` both drive GPT6/7/9/10, so `rc.board_defaults.cmds` starts exactly one |
+
+Physical qualification remains open: host routing/startup tests and the
+firmware build pass, but no fitted-board transcript exists.
+
+### Dual CR8 (`dualcr8` + CR8-1 `default`)
+
+- CR8-0 keeps every sensor and serial owner of the exact BOM, but with **one**
+  ICM-45686 on P93 (`CONFIG_RZV2H_SPI0_SINGLE_IMU`); P94/P95 stay unowned. It
+  has no INA228 and no SCI0.
+- CR8-0 compiles neither `pwm_out` nor `dshot`, and its NuttX defconfig omits
+  `RZV_GPT`, so the four ESC pads belong to CR8-1. `rzv2h_outputs` on CR8-0
+  sends the four-motor mixer functions (`PWM_MAIN_FUNC1-4` = 101-104) over IPC.
+- CR8-1 `default` compiles GPT6/7/9/10 and maps them in
+  [timer_config.cpp](../../boards/renesas/rdk-rzv2h-io-cr8_1/src/timer_config.cpp)
+  to PA4, PA7, P96 and P53, the same pads and order as CR8-0. Its console is
+  RTT; it claims no SCI.
+- **DShot on CR8-1 is not available.** The timer table carries DShot channel
+  metadata, but `rzv2h_io` accepts only PWM between 50 and 500 Hz
+  ([output-configuration.hpp](../../src/apps/output-configuration.hpp)) and no
+  DShot driver is linked. Until a DShot backend exists, an ESC on this pair must
+  be driven by PWM.
+- The hardware contract in
+  [hardware-contract.hpp](../../src/apps/hardware-contract.hpp) still returns
+  zero output profiles, rate and mask. The supervisor therefore reports
+  UNCONFIGURED and drives no pad until a measured ESC/pin/power contract is
+  committed. See the
+  [dual-CR8 software validation receipt](./evidence/dualcr8-software-validation-261021.md).
+- Never run CR8-0 `demo`/`default` together with CR8-1 `default`: both
+  cores would claim GPT6/7/9/10.
 
 ### Physical Header Drawing
 
@@ -54,7 +132,9 @@ serial roles are split by mode:
 - Standalone CR8-0 NuttX: SCI5 serial shell + RTT diagnostics (SCI5 is the telemetry UART; the shell uses it only when telemetry is absent).
 - Standalone CR8-1 target: SCI5 shell + RTT diagnostics, not yet hardware validated.
 - Standalone CM33 target: SCI9 shell + RTT diagnostics, not yet hardware validated.
-- Integrated PX4 CR8-0: RTT0 console/debug, SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC, SCI9 GPS.
+- Integrated PX4 CR8-0: RTT0 console/debug, SCI4 LiDAR, SCI5 MAVLink/QGroundControl, SCI6 RC, SCI9 GPS
+  (the `demo`/`demosih` profiles leave SCI6 and SCI9 without a PX4 owner; see the profile matrix).
+- PX4 CR8-1 `demo` and `default`: RTT console only, no SCI.
 
 ---
 
@@ -82,8 +162,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P43** | 4.3 | AF=5 | CANFD CRX4 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW4 |
 | **P46** | 4.6 | AF=5 | CANFD CTX5 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW5, `/dev/can5`, external transceiver required |
 | **P47** | 4.7 | AF=5 | CANFD CRX5 | Peripheral | None | B01 | board.h / rzv2h_canfd.c | Optional HW5 |
-| **P50** | 5.0 | AF=1 | RSCI0 TXD / SDA (I2C) | Bidirectional | External pull-up required | B01 | board.h / rzv_sci_i2c.c | Header Pin 22; ADC-I2C (SDA), potential dedicated for BMS monitor |
-| **P51** | 5.1 | AF=1 | RSCI0 RXD / SCL (I2C) | Bidirectional | External pull-up required | B01 | board.h / rzv_sci_i2c.c | Header Pin 36; ADC-I2C (SCL), potential dedicated for BMS monitor |
+| **P50** | 5.0 | AF=1 | RSCI0 TXD / SDA (I2C) | Bidirectional | External pull-up required | B01 | board.h / rzv_sci_i2c.c | Header Pin 22; ADS1115 SDA in `demo`/`demosih` (`CONFIG_RZV_SCI0_I2C`); unowned in `default`/`dualcr8` (SCI0 not selected; on the extension board this pin carries ICM-45686 #1 INT1, wired but unused). Not a chip select in any profile |
+| **P51** | 5.1 | AF=1 | RSCI0 RXD / SCL (I2C) | Bidirectional | External pull-up required | B01 | board.h / rzv_sci_i2c.c | Header Pin 36; ADS1115 SCL in `demo`/`demosih` (`CONFIG_RZV_SCI0_I2C`); unowned in `default`/`dualcr8` |
 | **P52** | 5.2 | Profile-dependent | Safety candidate not established | — | — | — | board safety (planned) | Selected reference XML uses RSCI1 TX; do not infer safety input from old labels |
 | **P53** | 5.3 | AF=11 | GPT10B (PWM4) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P70** | 7.0 | AF=1 | RSCI4 TXD | Output | None | B01 | rzv_serial.c | TFmini TX |
@@ -105,8 +185,8 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | **P91** | 9.1 | AF=1 | RSPI0 MISO | Input | None | B11 | rzv_spi.c | Shared sensor bus |
 | **P92** | 9.2 | AF=1 | RSPI0 SCK | Output | None | B11 | rzv_spi.c | Shared sensor bus |
 | **P93** | 9.3 | GPIO or SSLA0 mode 1 | SPI0 CS | Output, initially high | None | B11 | rzv2h_spi.c / PX4 SPI table | `CONFIG_RZV2H_SPI0_HARDWARE_SSL` selects hardware SSL in compatible samples |
-| **P94** | 9.4 | Profile-dependent | DRDY/button or extension CS1 | Input or output by profile | Profile-dependent | B11 | board GPIO/SPI table | Mutually exclusive roles; selected reference XML uses SSLA1 |
-| **P95** | 9.5 | Profile-dependent | Extension CS2 | Output in extension profile | None | B11 | opt-in board SPI table | Selected reference XML uses SSLA2; inactive IMDT P36 does not apply |
+| **P94** | 9.4 | Profile-dependent | SPI0 CS1 (`default`) | Output in `default`; unowned in `demo`/`demosih`/`dualcr8` | None | B11 | PX4 SPI table (`spi.cpp`) | IMU #2 CS (`-c 4`), no DRDY; NuttX-only samples may use it as DRDY or a button; selected reference XML uses SSLA1 |
+| **P95** | 9.5 | Profile-dependent | SPI0 CS2 (`default`) | Output in `default`; unowned in `demo`/`demosih`/`dualcr8` | None | B11 | PX4 SPI table (`spi.cpp`) | Selected reference XML uses SSLA2; inactive IMDT P36 does not apply |
 | **P96** | 9.6 | AF=9 | GPT9A (PWM3) | Output | None | B01 | rzv_gpt.c | PWM |
 | **P97** | 9.7 | GPIO | GPS buzzer | Output low | None | B01 | board GPIO (planned) | GPS buzzer |
 | **PA2** | A.2 | GPIO | CAN1 STB1 | Output, initially high | None | B01 | board.h / rzv2h_canfd.c | High isolates, low normal |
@@ -161,12 +241,15 @@ BMP280 modules tie SDO to GND, so every profile starts the barometer at 0x76
 and [bmm150-i2c-validation.md](./validation/bmm150-i2c-validation.md).
 **DMA:** Disabled (PIO mode).
 
-#### ADC-I2C / BMS Monitor Bus (RSCI0 SCI-mode I2C)
+#### ADC-I2C Bus (RSCI0 SCI-mode I2C, ADS1115)
 
 **Pins:** P50 (TXD0 Mode 1 -> SDA) / P51 (RXD0 Mode 1 -> SCL) on 40-pin Header Pins 22 / 36.
 **Pull-ups:** **No** onboard pull-up resistors on RDK; external module or carrier must supply pull-ups to 3.3V.
-**Device path:** Registered as `/dev/i2c10` (SCI bus offset 10).
-**Role:** Used for external ADC-I2C (e.g. ADS1115 via standalone `ads1115` defconfig) and potential dedicated interface for BMS monitor (Battery Management System / battery voltage & current sensing).
+**Device path:** Registered as `/dev/i2c10` (SCI bus offset 10), PX4 I2C bus 0 (`PX4_I2C_BUS_ADC_EXTERNAL`).
+**Role:** ADS1115 ADC at 0x48 in the PX4 `demo` and `demosih` images, the only PX4 profiles that select `CONFIG_RZV_SCI0_I2C`.
+`demo` starts it from `init/demo/rc.board_sensors` and `demosih` from `init/demosih/rc.board_extras`, both with `ads1115 -X -b 0`.
+The standalone NuttX `ads1115` defconfig uses the same bus.
+`default` and `dualcr8` leave SCI0 unselected: on the extension board P50 carries ICM-45686 #1 INT1.
 **DMA:** Disabled (PIO mode).
 
 ### PWM / GPT Outputs (ESC Control)
@@ -178,7 +261,9 @@ and [bmm150-i2c-validation.md](./validation/bmm150-i2c-validation.md).
 | PWM2 (CH2) | P96 / P9_06  | GPT9A  | GTIOC9A  | Motor 3 / ESC3 (front-left)  | Pin 35 (GPIO19)      |
 | PWM3 (CH3) | P53 / P5_03  | GPT10B | GTIOC10B | Motor 4 / ESC4 (rear-right)  | Pin 31 (GPIO06)      |
 
-**Frequency:** Configurable (typically 400 Hz for ESC).
+**Owner:** CR8-0 in `default` and `demo`; CR8-1 `default` in the dual-CR8 pair; nobody in `demosih`.
+See [PX4 configuration profiles](#px4-configuration-profiles).
+**Frequency:** Configurable (typically 400 Hz for ESC; DShot600/300/150 on CR8-0 `default` when all four `PWM_MAIN_TIMx` are `-3/-4/-5`).
 **Duty Cycle:** 1000–2000 µs (1–2 ms pulse width).
 **Source:** [rzv_gpt.c](../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_gpt.c), [timer_config.cpp](../../boards/renesas/rdk-rzv2h/src/timer_config.cpp)
 
@@ -218,8 +303,8 @@ python3 test/rzv2h_board_gpio_contract_test.py
 rg -n 'pincfg|active="true"|selected="true"' \
   refs/rzv2h_drone_px4-dev/configuration.xml
 
-rg -n "P42|P43|P46|P47|P50|P51|P52|P53|P70|P71|P72|P73|P75|P76|P77|P80|P81|P82|P83|P84|P85|P86|P87|P90|P91|P92|P93|P94|P96|P97|PA2|PA3|PA4|PA6|PA7|PB4|PB5" \
-  boards/renesas/rdk-rzv2h \
+rg -n "P42|P43|P46|P47|P50|P51|P52|P53|P70|P71|P72|P73|P75|P76|P77|P80|P81|P82|P83|P84|P85|P86|P87|P90|P91|P92|P93|P94|P95|P96|P97|PA2|PA3|PA4|PA6|PA7|PB4|PB5" \
+  boards/renesas/rdk-rzv2h boards/renesas/rdk-rzv2h-io-cr8_1 \
   platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h
 ```
 
@@ -255,7 +340,7 @@ population.
 1. No internal pull-up/pull-down contract is established in `rzv_gpio.c`; SCI7 I2C requires board-level external pull-ups.
 2. SPI0 DMA is opt-in; fitted-sensor transfers and electrical timing require exact-image evidence.
 3. UART flow control (RTS/CTS) not wired.
-4. Secondary SPI/I2C buses not active; only RSPI0, RSCI7 in use.
+4. Only RSPI0, RSCI7 and (in `demo`/`demosih`) RSCI0 I2C are in use; no secondary SPI bus.
 5. Multiplexed pins (e.g., P50 as GPIO vs. TINT) require Kconfig guards; conflicts possible in dynamic reconfiguration.
 6. Safety/button, P97 buzzer and PA6 LED ownership need generated-symbol and
    electrical confirmation. Active XML does not establish P52 as a safety input.

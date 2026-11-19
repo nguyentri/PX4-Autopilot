@@ -1,7 +1,7 @@
 # Dual-CR8 candidate validation
 
 This procedure covers canonical `renesas_rdk-rzv2h_dualcr8` and the
-`renesas_rdk-rzv2h-io-cr8_1_pwm` supervisor candidate. Both are software
+`renesas_rdk-rzv2h-io-cr8_1_default` supervisor candidate. Both are software
 candidates with no qualified actuator-pair identity. Unknown ESC, power,
 storage and local-kill contracts prevent resource claim and readiness.
 The [implementation plan](../../../plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md)
@@ -19,7 +19,7 @@ python3 test/rzv2h-io-core-health-runtime-test.py
 python3 test/rzv2h-px4-artifact-test.py
 python3 test/rzv2h-px4-ci-test.py
 ./build.sh renesas_rdk-rzv2h_dualcr8
-./build.sh renesas_rdk-rzv2h-io-cr8_1_pwm
+./build.sh renesas_rdk-rzv2h-io-cr8_1_default
 python3 test/rzv2h-dualcr8-artifact-contract-test.py
 ```
 
@@ -54,7 +54,7 @@ they do not implement acquisition from an unidentified physical device.
   worker reports and preserves worker faults. Reporting never renews a lease.
 - The compiled [hardware contract](../../../src/apps/hardware-contract.hpp)
   remains unconfigured. Neither startup nor cleanup claims output resources
-  in this condition. CR8-1 `default` remains the separate legacy relay.
+  in this condition. The legacy CR8-1 PX4IO relay was retired on 2026-11-18.
 
 ## Delayed bench hooks
 

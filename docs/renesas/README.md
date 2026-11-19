@@ -27,7 +27,7 @@ validation result.
 | FreeRTOS/POSIX migration semantics | [NuttX API mapping](freertos-to-nuttx-mapping.md) |
 | Optional peripheral bring-up | [CAN-FD](peripherals/canfd.md), [ADC](peripherals/adc.md), [SDHI](peripherals/sdhi.md) |
 
-The [sensor profile table](pinmap.md#sensor-wiring-profiles) distinguishes the
+The [sensor profile table](pinmap.md#px4-configuration-profiles) distinguishes the
 opt-in drone extension from default, simple and standalone bench wiring. P94
 DRDY/button ownership cannot coexist with extension CS1. Missing generated pin
 output or schematics are physical-qualification gaps; the

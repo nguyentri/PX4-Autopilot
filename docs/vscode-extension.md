@@ -56,7 +56,7 @@ Each variant retains independent sources, exact captured bytes/receipts, pending
 5. **Build & Load** explicitly builds and captures a new pair, then loads only that pair. It holds no probe lease during building. Failed/cancelled builds never load a previous pair; once preparation is pending, use its exact **Resume Preparation** before loading. **Load Both to RAM** never builds implicitly.
 6. Choose **Debug R8-0** or **Debug R8-1**. These actions require verified load history matching both image hashes and the current group definition. A new receipt containing identical bytes can reuse that history. Switching cores stops the exact owned debugger first; only one managed session uses the probe.
 
-**Last load verified** describes recorded history, not live execution. A new debug attach halts the chosen core. The PX4 `dualcr8` + `io-cr8_1_pwm` group remains a build-clean software candidate without an admitted actuator pair.
+**Last load verified** describes recorded history, not live execution. A new debug attach halts the chosen core. The PX4 `dualcr8` + `io-cr8_1_default` group remains a build-clean software candidate without an admitted actuator pair.
 
 Preparation persists the exact pending request before starting the backend. After an interruption or a failed workspace-state write, **Resume Preparation** uses that request ID and completed captures; it never searches for the newest receipt. Incomplete copies remain unready. Successful assignments survive extension reload and are scoped by workspace folder and saved setup. Profile/probe/image mutations are blocked during target transitions. Refresh never replaces an explicitly captured pair with a newer build.
 
