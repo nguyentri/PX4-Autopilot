@@ -76,13 +76,18 @@ config ARCH_IRQPRIO
             self.assertIsNotNone(match, name)
             blocks.append(match.group())
         dependencies = set()
+        negated = set()
         for block in blocks:
             for line in block.splitlines():
                 if line.strip().startswith(('depends on ', 'select ')):
                     dependencies.update(re.findall(r'\b[A-Z][A-Z_0-9]*\b', line))
+                    negated.update(re.findall(r'!([A-Z][A-Z_0-9]*)\b', line))
         external = dependencies - set(GATED) - {'RZV2H_BUILD_CM33'}
+        # Satisfy every external dependency so only the CM33 gate decides; a symbol
+        # referenced as "!X" (e.g. SCIF0 excludes SCI0 on /dev/ttyS0) must stay off.
         text = 'config RZV2H_BUILD_CM33\n bool "CM33"\n\n'
-        text += ''.join(f'config {name}\n bool\n default y\n\n' for name in sorted(external))
+        text += ''.join(f'config {name}\n bool\n default {"n" if name in negated else "y"}\n\n'
+                        for name in sorted(external))
         text += '\n'.join(blocks)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'Kconfig'

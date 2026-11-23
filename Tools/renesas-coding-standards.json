@@ -18,12 +18,6 @@
       "owner": "boards/renesas/rdk-rzv2h-io-cm33/nuttx-config/nsh installed .config plus NuttX Kconfig defaults",
       "regenerate": "Configure the matching PX4 board target, run menuconfig, then run make savedefconfig as directed by this file\u2019s header; copy only the resulting reviewed defconfig"
     },
-    "boards/renesas/rdk-rzv2h-io-cm33/nuttx-config/scripts/script.ld": {
-      "classification": "configuration",
-      "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
-      "owner": "PX4 Renesas board maintainers",
-      "regenerate": "Not generated; maintain this source directly"
-    },
     "boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/CMakeLists.txt": {
       "classification": "configuration",
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
@@ -84,11 +78,17 @@
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
+    "boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board": {
+      "classification": "configuration"
+    },
     "boards/renesas/rdk-rzv2h-io-cr8_1/firmware.prototype": {
       "classification": "configuration",
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found; reviewed file role is ROMFS script or structured board/configuration input",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source/configuration directly"
+    },
+    "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/demo/defconfig": {
+      "classification": "configuration"
     },
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/nsh/defconfig": {
       "classification": "generated",
@@ -162,6 +162,12 @@
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Retain the original artifact; no formatter applies"
     },
+    "boards/renesas/rdk-rzv2h/adc_telemetry/CMakeLists.txt": {
+      "classification": "handwritten"
+    },
+    "boards/renesas/rdk-rzv2h/adc_telemetry/adc-telemetry.cpp": {
+      "classification": "handwritten"
+    },
     "boards/renesas/rdk-rzv2h/boot-layout.json": {
       "classification": "configuration",
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found; reviewed file role is ROMFS script or structured board/configuration input",
@@ -174,6 +180,12 @@
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
+    "boards/renesas/rdk-rzv2h/demo.px4board": {
+      "classification": "configuration"
+    },
+    "boards/renesas/rdk-rzv2h/demosih.px4board": {
+      "classification": "configuration"
+    },
     "boards/renesas/rdk-rzv2h/dualcr8.px4board": {
       "classification": "configuration"
     },
@@ -182,6 +194,21 @@
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found; reviewed file role is ROMFS script or structured board/configuration input",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source/configuration directly"
+    },
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": {
+      "classification": "configuration"
+    },
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": {
+      "classification": "configuration"
+    },
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": {
+      "classification": "configuration"
+    },
+    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": {
+      "classification": "configuration"
+    },
+    "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": {
+      "classification": "configuration"
     },
     "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_defaults.cmds": {
       "classification": "configuration",
@@ -224,6 +251,21 @@
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found; reviewed file role is ROMFS script or structured board/configuration input",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source/configuration directly"
+    },
+    "boards/renesas/rdk-rzv2h/ipc_heartbeat/CMakeLists.txt": {
+      "classification": "handwritten"
+    },
+    "boards/renesas/rdk-rzv2h/ipc_heartbeat/ipc-heartbeat-monitor.hpp": {
+      "classification": "handwritten"
+    },
+    "boards/renesas/rdk-rzv2h/ipc_heartbeat/ipc-heartbeat.cpp": {
+      "classification": "handwritten"
+    },
+    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": {
+      "classification": "configuration"
+    },
+    "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": {
+      "classification": "configuration"
     },
     "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": {
       "classification": "configuration"
@@ -1096,6 +1138,12 @@
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
+    "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_timer_calibrate.c": {
+      "classification": "handwritten"
+    },
+    "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_timer_calibrate.h": {
+      "classification": "handwritten"
+    },
     "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_timerisr.c": {
       "classification": "handwritten",
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
@@ -1116,6 +1164,12 @@
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
+    },
+    "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_xspi.c": {
+      "classification": "handwritten"
+    },
+    "platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_xspi.h": {
+      "classification": "handwritten"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/CMakeLists.txt": {
       "classification": "configuration",
@@ -1138,11 +1192,20 @@
       "owner": "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/adc configuration plus NuttX Kconfig defaults",
       "regenerate": "cd platforms/nuttx/NuttX/nuttx && tools/refresh.sh --silent rdk-rzv2h:adc"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ads1115/defconfig": {
+      "classification": "configuration"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/bmm150/defconfig": {
       "classification": "configuration",
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/bmp280/defconfig": {
+      "classification": "configuration"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/bmp388/defconfig": {
+      "classification": "configuration"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/canfd-dual/defconfig": {
       "classification": "configuration",
@@ -1335,6 +1398,9 @@
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/icm45686-dma-ssl-rtt/defconfig": {
+      "classification": "configuration"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/configs/ipc-local-loopback-rtt/defconfig": {
       "classification": "configuration"
@@ -1678,6 +1744,15 @@
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-bmp388-compensation.c": {
+      "classification": "handwritten"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-bmp388-compensation.h": {
+      "classification": "handwritten"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-bmp388-test.c": {
+      "classification": "handwritten"
+    },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm20948-spi.c": {
       "classification": "handwritten",
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
@@ -1695,6 +1770,15 @@
       "evidence": "Exact tracked path at b881bfbbb15f274ecd3315a02064015fc9f21780; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "NuttX RA8/RZ/V architecture and board maintainers",
       "regenerate": "Not generated; maintain this source directly"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm45686-spi.c": {
+      "classification": "handwritten"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm45686-spi.h": {
+      "classification": "handwritten"
+    },
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h-icm45686-test.c": {
+      "classification": "handwritten"
     },
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/src/rzv2h_adc.c": {
       "classification": "handwritten",
