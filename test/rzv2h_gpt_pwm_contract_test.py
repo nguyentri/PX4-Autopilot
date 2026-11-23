@@ -782,7 +782,8 @@ class DefaultPwmContracts(unittest.TestCase):
             with self.subTest(channel=channel):
                 self.assertIn(f"param set-default PWM_MAIN_FUNC{channel} {100 + channel}",
                               self.defaults)
-                self.assertIn(f"param set-default PWM_MAIN_DIS{channel} 1000", self.defaults)
+                # The FreeRTOS drone reference disarms its ESCs at 800 us.
+                self.assertIn(f"param set-default PWM_MAIN_DIS{channel} 800", self.defaults)
         self.assertIn(
             "ChangeWorkQueue(px4::wq_configurations::rate_ctrl)",
             self.mixer_module,

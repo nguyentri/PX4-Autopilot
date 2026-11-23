@@ -22,7 +22,9 @@ set TONE_ALARM_START no
 
 # Fixed payload serial assignments from the board contract.
 param set-default SER_GPS1_BAUD 115200
-param set-default SER_TEL1_BAUD 57600
+# The reference starts TEL1 MAVLink at 115200 (its FSP 57600 is only the
+# pre-open baud; the TCSETS issued by mavlink start reprograms SCI5).
+param set-default SER_TEL1_BAUD 115200
 param set-default SER_EXT2_BAUD 115200
 param set-default SENS_TFMINI_CFG 401
 param set-default MAV_0_RATE 4000
@@ -61,19 +63,200 @@ param set-default PWM_MAIN_FUNC1 101
 param set-default PWM_MAIN_FUNC2 102
 param set-default PWM_MAIN_FUNC3 103
 param set-default PWM_MAIN_FUNC4 104
-param set-default PWM_MAIN_MIN1 1100
-param set-default PWM_MAIN_MIN2 1100
-param set-default PWM_MAIN_MIN3 1100
-param set-default PWM_MAIN_MIN4 1100
-param set-default PWM_MAIN_MAX1 1900
-param set-default PWM_MAIN_MAX2 1900
-param set-default PWM_MAIN_MAX3 1900
-param set-default PWM_MAIN_MAX4 1900
-param set-default PWM_MAIN_DIS1 1000
-param set-default PWM_MAIN_DIS2 1000
-param set-default PWM_MAIN_DIS3 1000
-param set-default PWM_MAIN_DIS4 1000
-param set-default PWM_MAIN_FAIL1 1000
-param set-default PWM_MAIN_FAIL2 1000
-param set-default PWM_MAIN_FAIL3 1000
-param set-default PWM_MAIN_FAIL4 1000
+param set-default PWM_MAIN_MIN1 1150
+param set-default PWM_MAIN_MIN2 1150
+param set-default PWM_MAIN_MIN3 1150
+param set-default PWM_MAIN_MIN4 1150
+param set-default PWM_MAIN_MAX1 1940
+param set-default PWM_MAIN_MAX2 1940
+param set-default PWM_MAIN_MAX3 1940
+param set-default PWM_MAIN_MAX4 1940
+param set-default PWM_MAIN_DIS1 800
+param set-default PWM_MAIN_DIS2 800
+param set-default PWM_MAIN_DIS3 800
+param set-default PWM_MAIN_DIS4 800
+param set-default PWM_MAIN_FAIL1 800
+param set-default PWM_MAIN_FAIL2 800
+param set-default PWM_MAIN_FAIL3 800
+param set-default PWM_MAIN_FAIL4 800
+
+#------------------------------------------------------------------------------
+# Reference S500 airframe, calibration and tuning, copied from the FreeRTOS
+# drone reference (px4/boards/renesas/rzv/init/rc.board_defaults.cmds).
+# set-default keeps user-saved values authoritative.
+#------------------------------------------------------------------------------
+param set-default SYS_AUTOCONFIG 0
+param set-default MAV_TYPE 2
+param set-default BAT1_N_CELLS 4
+param set-default BAT1_CAPACITY 5300
+param set-default CBRK_SUPPLY_CHK 894281
+param set-default CBRK_FLIGHTTERM 0
+param set-default COM_ARM_WO_GPS 1
+param set-default GPS_1_CONFIG 201
+param set-default GPS_SAT_INFO 1
+
+# Flight modes on CH5: Stabilized / Altitude / Offboard. The reference also
+# sets COM_OBS_AVOID and COM_OF_NOEST, which no longer exist in PX4.
+param set-default COM_FLTMODE1 8
+param set-default COM_FLTMODE4 1
+param set-default COM_FLTMODE6 7
+
+# RC calibration and channel map (FS-A8S SBUS receiver).
+param set-default RC1_MIN 1015
+param set-default RC1_MAX 2007
+param set-default RC1_TRIM 1510
+param set-default RC2_MIN 1012
+param set-default RC2_MAX 2013
+param set-default RC2_TRIM 1505
+param set-default RC3_MIN 1025
+param set-default RC3_MAX 2013
+param set-default RC3_TRIM 1025
+param set-default RC4_MIN 1012
+param set-default RC4_MAX 2013
+param set-default RC4_TRIM 1497
+param set-default RC5_MIN 1012
+param set-default RC5_MAX 2014
+param set-default RC5_TRIM 1513
+param set-default RC6_MIN 1012
+param set-default RC6_MAX 2014
+param set-default RC6_TRIM 1513
+param set-default RC7_MIN 1012
+param set-default RC7_MAX 2014
+param set-default RC7_TRIM 1513
+param set-default RC8_MIN 1012
+param set-default RC8_MAX 2014
+param set-default RC8_TRIM 1513
+param set-default RC_CHAN_CNT 18
+param set-default RC_MAP_ROLL 1
+param set-default RC_MAP_PITCH 2
+param set-default RC_MAP_THROTTLE 3
+param set-default RC_MAP_YAW 4
+param set-default RC_MAP_FLTMODE 5
+param set-default RC_MAP_RETURN_SW 6
+param set-default RC_MAP_ARM_SW 7
+param set-default RC_MAP_KILL_SW 8
+param set-default COM_RC_IN_MODE 2
+
+# Board orientation and level.
+param set-default SENS_BOARD_ROT 4
+param set-default SENS_BOARD_X_OFF 0.489
+param set-default SENS_BOARD_Y_OFF 0.947
+
+# IMU calibration. The reference SPI table numbers the three ICM-45686 chip
+# selects 1..3 (device IDs 3408130/3408386/3408642); this port's SPI table
+# numbers P93/P94/P95 0..2, so the same physical IMUs report 3407874/3408130/
+# 3408386. The IDs below are remapped so PX4 binds each offset to its IMU.
+param set-default CAL_ACC0_ID 3407874
+param set-default CAL_ACC0_PRIO 50
+param set-default CAL_ACC0_XOFF -0.121539
+param set-default CAL_ACC0_YOFF 0.030705
+param set-default CAL_ACC0_ZOFF -0.027164
+param set-default CAL_ACC1_ID 3408130
+param set-default CAL_ACC1_PRIO 50
+param set-default CAL_ACC1_XOFF -0.056376
+param set-default CAL_ACC1_YOFF 0.062929
+param set-default CAL_ACC1_ZOFF 0.012903
+param set-default CAL_ACC2_ID 3408386
+param set-default CAL_ACC2_PRIO 50
+param set-default CAL_ACC2_XOFF -0.074820
+param set-default CAL_ACC2_YOFF 0.046534
+param set-default CAL_ACC2_ZOFF -0.050532
+param set-default CAL_GYRO0_ID 3407874
+param set-default CAL_GYRO0_PRIO 50
+param set-default CAL_GYRO0_XOFF 0.000431
+param set-default CAL_GYRO0_YOFF 0.002384
+param set-default CAL_GYRO0_ZOFF -0.000476
+param set-default CAL_GYRO1_ID 3408130
+param set-default CAL_GYRO1_PRIO 50
+param set-default CAL_GYRO1_XOFF -0.001466
+param set-default CAL_GYRO1_YOFF 0.003652
+param set-default CAL_GYRO1_ZOFF -0.000023
+param set-default CAL_GYRO2_ID 3408386
+param set-default CAL_GYRO2_PRIO 50
+param set-default CAL_GYRO2_XOFF -0.000839
+param set-default CAL_GYRO2_YOFF 0.002959
+param set-default CAL_GYRO2_ZOFF -0.002560
+
+# BMM150 calibration. The reference records ID 271362, which does not decode
+# to a BMM150; here the BMM150 on I2C bus 7 at 0x10 reports 4395065.
+param set-default CAL_MAG0_ID 4395065
+param set-default CAL_MAG0_PRIO 50
+param set-default CAL_MAG0_XOFF 0.471
+param set-default CAL_MAG0_YOFF -0.236
+param set-default CAL_MAG0_ZOFF 0.438
+param set-default CAL_MAG0_XSCALE 0.986
+param set-default CAL_MAG0_YSCALE 0.950
+param set-default CAL_MAG0_ZSCALE 1.030
+param set-default CAL_MAG0_XODIAG -0.013
+param set-default CAL_MAG0_YODIAG 0.010
+param set-default CAL_MAG0_ZODIAG 0.002
+
+# S500 X-quad geometry; rotors 0/1 keep the default KM, 2/3 use -0.05.
+param set-default CA_ROTOR_COUNT 4
+param set-default CA_ROTOR0_PX 0.17
+param set-default CA_ROTOR0_PY 0.17
+param set-default CA_ROTOR1_PX -0.17
+param set-default CA_ROTOR1_PY -0.17
+param set-default CA_ROTOR2_PX 0.17
+param set-default CA_ROTOR2_PY -0.17
+param set-default CA_ROTOR2_KM -0.05
+param set-default CA_ROTOR3_PX -0.17
+param set-default CA_ROTOR3_PY 0.17
+param set-default CA_ROTOR3_KM -0.05
+
+# IMU filtering and multi-EKF (one EKF2 instance per IMU).
+param set-default IMU_GYRO_CUTOFF 40
+param set-default IMU_INTEG_RATE 400
+param set-default EKF2_MULTI_IMU 3
+param set-default SENS_IMU_MODE 0
+param set-default IMU_DGYRO_CUTOFF 30
+param set-default IMU_GYRO_DNF_EN 2
+param set-default IMU_GYRO_FFT_EN 1
+
+# Rate, attitude and position control tuning.
+param set-default MC_ROLLRATE_K 0.5900
+param set-default MC_ROLLRATE_P 0.1430
+param set-default MC_ROLLRATE_I 0.2250
+param set-default MC_ROLLRATE_D 0.0040
+param set-default MC_PITCHRATE_K 0.5600
+param set-default MC_PITCHRATE_P 0.1390
+param set-default MC_PITCHRATE_I 0.3500
+param set-default MC_PITCHRATE_D 0.0036
+param set-default MC_YAWRATE_K 0.6000
+param set-default MC_YAWRATE_P 0.0930
+param set-default MC_YAWRATE_I 0.2400
+param set-default MC_YAWRATE_D 0.0028
+param set-default MC_ROLL_P 6.5
+param set-default MC_PITCH_P 6.5
+param set-default MC_YAW_P 5.0
+param set-default THR_MDL_FAC 0.3
+param set-default MPC_THR_HOVER 0.45
+param set-default MPC_LAND_SPEED 0.5
+param set-default MPC_Z_VEL_MAX_UP 1.5
+param set-default MPC_Z_VEL_MAX_DN 1.0
+param set-default MPC_ACC_UP_MAX 2.0
+param set-default MPC_ACC_DOWN_MAX 2.0
+param set-default MPC_MAN_TILT_MAX 25
+param set-default MPC_ALT_MODE 2
+
+# EKF2 height: range finder reference, baro fusion off.
+param set-default EKF2_HGT_REF 2
+param set-default EKF2_BARO_CTRL 0
+param set-default EKF2_BARO_NOISE 10.0
+param set-default EKF2_RNG_CTRL 2
+param set-default EKF2_RNG_QLTY_T 0.5
+param set-default EKF2_RNG_K_GATE 2.0
+param set-default EKF2_RNG_NOISE 0.05
+param set-default EKF2_ANGERR_INIT 0.2
+param set-default EKF2_GBIAS_INIT 0.15
+param set-default EKF2_ACC_B_NOISE 0.005
+param set-default EKF2_IMU_CTRL 7
+
+# Safety and failsafe behaviour.
+param set-default FD_ACT_EN 1
+param set-default COM_ARM_SDCARD 0
+param set-default GF_ACTION 2
+param set-default COM_ARM_MAG_STR 0
+param set-default COM_DISARM_PRFLT -1
+param set-default COM_DL_LOSS_T 5
+param set-default NAV_RCL_ACT 6
