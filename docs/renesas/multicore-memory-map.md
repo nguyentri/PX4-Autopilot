@@ -76,12 +76,18 @@ AXI/SRAM/DDR/flash aliases. Verified by build + `readelf` on `renesas_rdk-rzv2h_
 | ITCM AXI alias (loader) | `0x1204_0000` | `0x1208_0000` | 128 K | OK |
 | SRAM cache | `0x0818_0000` | `0x081C_0000` | 128 K | OK |
 | SRAM uncache (+wait word) | `0x081A_0000` (`…081BFFFC`) | `0x081E_0000` (`…081FFFFC`) | 128 K | OK |
-| DDR cache (kernel text/data) | `0x4080_0000` | `0x4180_0000` | 8 M | OK |
-| DDR uncache | `0x4100_0000` | `0x4200_0000` | 8 M | OK |
+| DDR cache (kernel text/data) | `0x4080_0000` | `0x4400_0000` | 8 M | OK (CR8-1 build-clean at the new base) |
+| DDR uncache | `0x4100_0000` | `0x4480_0000` | 8 M | OK (CR8-1 build-clean at the new base) |
 | xSPI image (flash / srec VMA) | `0x2020_0000` / `0x6020_0000` | `0x2130_0000` / `0x6130_0000` | image | OK |
 
 DTCM enable (both cores, `arm_head.S`): `mcr p15,0,r0,c9,c1,0` with `r0 = 0x00020021` (base `0x00020000`,
 size `0b01000`=128 KB, enable) — byte-identical to FSP CR8 `startup.asm`; DTCM 128 KB confirmed by HWM §2.2.
+
+CR8-1 private DDR sits above the shared OpenAMP/IPC window (MPU regions 6/7 at `0x4400_0000`/`0x4480_0000`).
+`0x4180_0000`–`0x42EF_FFFF` stays reserved for CR8-0, so the CA55-loaded reference CR8-0 layout
+(uncache `0x4180_0000`, boot blobs at `0x4170_0000`) fits beside a running CR8-1. Linux RAM starts at
+`0x4800_0000`; boot firmware and U-Boot do not use `0x4000_0000`–`0x47FF_FFFF`. Linker ASSERTs in both CR8
+scripts reject overlap with CR8-0, the shared window and Linux RAM.
 
 ICU INTR8SEL partition (single shared bank, per FSP): CR8-0 slots `0..84`, CR8-1 slots `85..126`.
 

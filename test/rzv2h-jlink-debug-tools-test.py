@@ -449,7 +449,7 @@ class Preflight(unittest.TestCase):
     def test_elf_entry_maps_to_the_linked_core(self):
         m = load(PREFLIGHT, 'preflight')
         with tempfile.TemporaryDirectory() as directory:
-            for entry, core in ((0x40800000, 'cr8_0'), (0x41800000, 'cr8_1'), (0x08002fc1, 'cm33'), (0x02000000, '?')):
+            for entry, core in ((0x40800000, 'cr8_0'), (0x44000000, 'cr8_1'), (0x08002fc1, 'cm33'), (0x02000000, '?')):
                 path = Path(directory) / f'{entry:x}.elf'
                 path.write_bytes(b'\x7fELF\x01\x01' + bytes(0x12) + struct.pack('<I', entry))
                 self.assertEqual(m.elf_entry(path), entry)

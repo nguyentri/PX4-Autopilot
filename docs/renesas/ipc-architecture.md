@@ -14,7 +14,7 @@ production readiness or end-to-end target validation.
 | Core | Intended software | Role | Private DDR (CR8/CM33 view) |
 |---|---|---|---|
 | CR8-0 | NuttX/PX4 | Flight stack | `0x40800000`–`0x417fffff` |
-| CR8-1 | NuttX/PX4 | `rzv2h_io` output supervisor (`default`) or heartbeat responder (`demo`) | `0x41800000`–`0x427fffff` |
+| CR8-1 | NuttX/PX4 | `rzv2h_io` output supervisor (`default`) or heartbeat responder (`demo`) | `0x44000000`–`0x44ffffff` |
 | CM33 | NuttX raw sample / PX4IO output peer (no PWM backend) | optional safety or ESC peer | Secure SRAM image; secure-DDR shared rings |
 
 See [multicore-memory-map.md](./multicore-memory-map.md) for the authoritative

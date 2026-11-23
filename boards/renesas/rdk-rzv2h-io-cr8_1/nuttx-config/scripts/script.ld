@@ -45,18 +45,22 @@ XSPIFLASH_PRV_LENGTH    = DEFINED(CR8_0) ? XSPIFLASH_CR8_0_LENGTH : XSPIFLASH_CR
  * Each core: 8 MiB cache + 8 MiB uncache, contiguous, non-overlapping.
  *   CR8-0 cache   : 0x40800000..0x41000000
  *   CR8-0 uncache : 0x41000000..0x41800000
- *   CR8-1 cache   : 0x41800000..0x42000000
- *   CR8-1 uncache : 0x42000000..0x42800000
- * OpenAMP/MHU/VRING at 0x42F00000+ stay shared (unchanged).
+ *   CR8-1 cache   : 0x44000000..0x44800000
+ *   CR8-1 uncache : 0x44800000..0x45000000
+ * OpenAMP/MHU/VRING (0x42F00000..0x437FFFFF) and IPC raw SHM (0x43800000..)
+ * stay shared. CR8-1 sits above them so 0x41800000..0x42EFFFFF remains free
+ * for the CA55-loaded CR8-0 layout (reference uncache + boot blobs).
+ * Linux RAM starts at 0x48000000; nothing here may reach it.
  * Keep in lockstep with rdk-rzv2h_cr8_0.ld; the ASSERTs below fail-fast on drift.
  */
-DDR_CACHE_PRV_START     = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x00800000 : DDR0_CR8_1_START + 0x01800000;
+DDR_CACHE_PRV_START     = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x00800000 : DDR0_CR8_1_START + 0x04000000;
 DDR_CACHE_LENGTH        = 0x00800000;
-DDR_UNCACHE_PRV_START   = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x01000000 : DDR0_CR8_1_START + 0x02000000;
+DDR_UNCACHE_PRV_START   = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x01000000 : DDR0_CR8_1_START + 0x04800000;
 DDR_UNCACHE_LENGTH      = 0x00800000;
 
-/* Sibling core private DDR end (must match cr8_0.ld DDR_UNCACHE_PRV_START + LENGTH for CR8-0). */
-DDR_CR8_0_PRIV_END      = 0x41800000;
+/* End of the DDR window reserved for CR8-0 (its private DDR plus the room the
+ * CA55-loaded reference layout uses up to the OpenAMP resource table). */
+DDR_CR8_0_PRIV_END      = 0x42F00000;
 
 /* Memory allocation OpenAMP using ddr. */
 OPENAMP_RSCTBL_START    = DEFINED(CR8_0) ? DDR0_CR8_0_START + 0x02f00000 : DDR0_CR8_1_START + 0x02f00000;
@@ -109,8 +113,11 @@ MEMORY
 
 ASSERT(DDR_UNCACHE_PRV_START >= DDR_CACHE_PRV_START + DDR_CACHE_LENGTH,
        "DDR_UNCACHE region overlaps DDR_CACHE - adjust DDR_CACHE_LENGTH or DDR_UNCACHE_PRV_START");
-ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= OPENAMP_RSCTBL_START,
-       "DDR_UNCACHE overruns OPENAMP_RSCTBL/MHU/VRING - reduce DDR_UNCACHE_LENGTH");
+ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= OPENAMP_RSCTBL_START ||
+       DDR_CACHE_PRV_START >= IPC_RAW_SHM_START + IPC_RAW_SHM_LENGTH,
+       "Private DDR overlaps OPENAMP_RSCTBL/MHU/VRING/IPC_RAW_SHM - repartition");
+ASSERT(DDR_UNCACHE_PRV_START + DDR_UNCACHE_LENGTH <= 0x48000000,
+       "Private DDR reaches Linux RAM at 0x48000000");
 /* HIGH-1 assertion: IPC_RAW_SHM must not overlap OPENAMP_VRING */
 ASSERT(IPC_RAW_SHM_START >= OPENAMP_VRING_START + OPENAMP_VRING_LENGTH,
        "IPC_RAW_SHM overlaps OPENAMP_VRING - check SHM and VRING sizes");
