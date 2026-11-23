@@ -11,10 +11,14 @@ class Operations:
         self._lock = threading.Lock()
         self._running: dict[int, tuple[str, threading.Event]] = {}
 
-    def start(self, command_id: int, kind: str, exclusive: bool = True) -> threading.Event:
+    def start(self, command_id: int, kind: str, excludes=None) -> threading.Event:
+        """Register a long command; refuse it while one of the kinds in `excludes` runs (default: its own)."""
+        blocked = {kind} if excludes is None else set(excludes)
         with self._lock:
-            if exclusive and any(k == kind for k, _ in self._running.values()):
-                raise BridgeError("BAD_ARGUMENT", f"{kind} is already running")
+            running = next((k for k, _ in self._running.values() if k in blocked), None)
+            if running is not None:
+                what = f"{kind} is already running" if running == kind else f"{kind} must wait: {running} is running"
+                raise BridgeError("BAD_ARGUMENT", what)
             event = threading.Event()
             self._running[command_id] = (kind, event)
             return event

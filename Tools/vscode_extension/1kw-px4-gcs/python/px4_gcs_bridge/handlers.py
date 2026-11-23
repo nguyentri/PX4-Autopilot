@@ -9,6 +9,11 @@ from .protocol import COMMANDS, PROTOCOL_VERSION, BridgeError, arg, reply_error,
 # Commands answered inline on the stdin thread (fast, never wait on the vehicle).
 INLINE = {"hello", "doctor", "cancel", "shell_write", "inspector_subscribe", "inspector_unsubscribe"}
 LONG = {"connect", "param_list", "log_list", "log_download"}
+# PX4's log handler serves one request at a time: LOG_REQUEST_LIST switches it
+# from sending data to listing, which ends a running download. So a list and a
+# download never overlap; every other long command excludes only itself.
+LOG_COMMANDS = {"log_list", "log_download"}
+EXCLUDES = {kind: LOG_COMMANDS for kind in LOG_COMMANDS}
 
 
 class Handlers:
@@ -22,8 +27,9 @@ class Handlers:
         threading.Thread(target=self._run, args=(command_id, cmd, args), name=f"cmd-{cmd}", daemon=True).start()
 
     def _run(self, command_id, cmd, args) -> None:
-        cancel = self.operations.start(command_id, cmd, exclusive=cmd in LONG) if cmd in LONG else threading.Event()
         try:
+            # Inside the try: a refused start still gets its one reply.
+            cancel = self.operations.start(command_id, cmd, EXCLUDES.get(cmd)) if cmd in LONG else threading.Event()
             data = getattr(self, "cmd_" + cmd)(args, command_id, cancel)
             self._put(reply_ok(command_id, data))
         except BridgeError as error:

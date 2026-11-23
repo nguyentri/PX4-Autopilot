@@ -1,7 +1,8 @@
 // Link trust (foreign senders change nothing and receive nothing) and sidecar
 // lifecycle (stdin close, SIGTERM, closed stdout, stalled reader).
 const assert = require('assert');
-const { Bridge, Peer, freeUdpPort, killAll, sleep } = require('./bridge-test-harness');
+const { execFileSync } = require('child_process');
+const { Bridge, Peer, PYTHON, PYTHON_DIR, freeUdpPort, killAll, sleep } = require('./bridge-test-harness');
 
 async function connected() {
   const port = await freeUdpPort();
@@ -101,8 +102,47 @@ async function heartbeatWatchdog() {
   console.log(`  ok watchdog: lost after ${lostAfter} ms of silence, connected ${Date.now() - resumed} ms after heartbeats resumed`);
 }
 
+/** A raising message handler or tick hook must not end the I/O loop (heartbeat, watchdog, dispatch). */
+function loopSurvivesHandlerErrors() {
+  const script = [
+    'import json, sys, time',
+    'sys.path.insert(0, sys.argv[1])',
+    'from pymavlink.dialects.v20 import common as m',
+    'from px4_gcs_bridge.link import Link',
+    'from px4_gcs_bridge.vehicle_pin import VehiclePin',
+    'hb = m.MAVLink_heartbeat_message(2, 12, 0x80, 0, 4, 3).pack(m.MAVLink(None, srcSystem=1, srcComponent=1))',
+    'class Transport:',
+    '    writes = 0',
+    '    def read(self):',
+    '        time.sleep(0.02)',
+    '        return [(hb, None)]',
+    '    def write(self, *args): Transport.writes += 1',
+    'seen = []',
+    'def handler(msg):',
+    '    seen.append(msg)',
+    '    raise AttributeError("handler failed")',
+    'def hook(): raise RuntimeError("hook failed")',
+    'link = Link(Transport(), VehiclePin(), lambda state: None, handler)',
+    'assert link.listen_for_pin(1.0)',
+    'link.tick_hooks = [hook]',
+    'link.start(); time.sleep(2.5)',
+    'print(json.dumps({"alive": link._thread.is_alive(), "seen": len(seen), "writes": Transport.writes,',
+    '                  "errors": link.loop_errors, "state": link.state}))',
+    'link.stop()',
+  ].join('\n');
+  const out = execFileSync(PYTHON, ['-c', script, PYTHON_DIR], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  const result = JSON.parse(out.trim().split('\n').at(-1));
+  assert.ok(result.alive, `the I/O thread survived: ${JSON.stringify(result)}`);
+  assert.ok(result.seen > 20, `messages kept being dispatched: ${result.seen}`);
+  assert.ok(result.writes >= 2, `GCS heartbeats kept being sent: ${result.writes}`);
+  assert.ok(result.errors > result.seen, 'handler and hook errors were counted');
+  assert.equal(result.state, 'connected');
+  console.log(`  ok I/O loop survives raising handlers: ${result.seen} frames dispatched, ${result.writes} heartbeats sent`);
+}
+
 async function run() {
   try {
+    loopSurvivesHandlerErrors();
     await heartbeatWatchdog();
     await foreignSenders();
     await lifecycle();

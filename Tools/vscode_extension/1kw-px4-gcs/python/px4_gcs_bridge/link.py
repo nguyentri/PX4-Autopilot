@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import queue
+import sys
 import threading
 import time
+import traceback
 
 from .mavlink_codec import new_parser, parse, require_dialect
 
@@ -28,6 +30,8 @@ class Link:
         self.bad_frames = 0
         self.tick_hooks = []
         self.recorder = None                 # recorder.Recorder while a .tlog is being written
+        self.loop_errors = 0
+        self._reported_errors = set()
 
     # --- outgoing -----------------------------------------------------------
     def send(self, msg) -> None:
@@ -115,7 +119,7 @@ class Link:
                 time.sleep(0.05)
             for data, source in chunks:
                 for msg in parse(self._rx, data):
-                    self._accept(msg, source)
+                    self._guarded("message handler", self._accept, msg, source)
             now = time.monotonic()
             if now >= next_heartbeat:
                 self.send(heartbeat)
@@ -124,7 +128,25 @@ class Link:
                 self.state = "lost"
                 self._emit_link("lost")
             for hook in self.tick_hooks:
-                hook()
+                self._guarded("tick hook", hook)
+
+    def _guarded(self, where, fn, *args) -> None:
+        """Run one handler or hook; an exception is logged, never allowed to end the loop.
+
+        The loop also runs the watchdog and the GCS heartbeat, so if it died the
+        host would keep seeing `connected` with frozen telemetry. Each distinct
+        error is printed once to stderr (the host's Output channel); repeats are
+        only counted.
+        """
+        try:
+            fn(*args)
+        except Exception as error:  # noqa: BLE001 - see docstring
+            self.loop_errors += 1
+            key = (where, type(error).__name__, str(error))
+            if key not in self._reported_errors and len(self._reported_errors) < 32:
+                self._reported_errors.add(key)
+                print(f"px4_gcs_bridge: {where} failed (I/O loop continues):", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
 
     def _accept(self, msg, source) -> None:
         if msg.get_type() == "BAD_DATA":

@@ -2,8 +2,11 @@
 
 `stream_request` first reads the current interval (GET_MESSAGE_INTERVAL ->
 MESSAGE_INTERVAL), stores it, then sets the new one. `stream_release` restores
-exactly the stored value. Interval 0 (unlimited on PX4) is never sent; when the
-vehicle reports no current interval (0) the request is refused.
+exactly the stored value, so only a positive current interval can be saved.
+PX4 reports 0 when the stream is not configured and a negative value when it
+runs unlimited; sending either back (0 = default rate, negative = stop) would
+not restore it, so the request is refused and the stream left alone. A SET
+interval of 0 is never sent.
 """
 from __future__ import annotations
 

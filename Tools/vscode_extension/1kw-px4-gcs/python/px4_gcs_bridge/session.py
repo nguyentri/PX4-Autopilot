@@ -98,7 +98,9 @@ class Session:
         pin = VehiclePin()
         self.telemetry = Telemetry(self.emit)
         self.inspector = Inspector(self.emit)
-        link = Link(self.transport, pin, self._emit_link, self._dispatch)
+        # The dispatcher keeps this connection's pin: `self.link` is cleared during
+        # teardown while the I/O thread may still deliver a frame.
+        link = Link(self.transport, pin, self._emit_link, lambda msg: self._dispatch(msg, pin))
         self.commands = CommandSender(link)
         self.emit("link", {"state": "connecting", **self.transport.describe(), "droppedEvents": 0})
         tried = []
@@ -132,9 +134,9 @@ class Session:
             if self.link is not None:
                 self._emit_link(self.link.state)
 
-    def _dispatch(self, msg) -> None:
+    def _dispatch(self, msg, pin) -> None:
         self.inspector.observe(msg)
-        if not self.link.pin.is_autopilot(msg):
+        if not pin.is_autopilot(msg):
             return
         kind = msg.get_type()
         if kind == "HEARTBEAT":

@@ -56,6 +56,11 @@ async function cancelledDownload() {
   const dest = path.join(dir, 'log-1.ulg');
   const op = bridge.start('log_download', { id: 1, size: 400000, path: dest });
   await bridge.waitEvent('log_progress', (d) => d.id === op.id && d.received > 0, 5000);
+  // PX4 ends a running transfer when it gets LOG_REQUEST_LIST: no list during a download, and a refusal is answered.
+  const listRequests = peer.received('LOG_REQUEST_LIST').length;
+  await bridge.fail('log_list', undefined, 'BAD_ARGUMENT', 3000);
+  await bridge.fail('log_download', { id: 1, size: 400000, path: dest }, 'BAD_ARGUMENT', 3000);
+  assert.equal(peer.received('LOG_REQUEST_LIST').length, listRequests, 'no LOG_REQUEST_LIST sent during the download');
   assert.equal((await bridge.ok('cancel', { target: op.id })).cancelled, true);
   const reply = await op.reply;
   assert.equal(reply.error.code, 'CANCELLED');
@@ -64,7 +69,8 @@ async function cancelledDownload() {
   await bridge.fail('log_download', { id: 1, size: 10, path: 'relative.ulg' }, 'BAD_ARGUMENT');
   await bridge.close();
   await peer.stop();
-  console.log('  ok cancel: CANCELLED, no partial file, LOG_REQUEST_END sent; relative path refused');
+  console.log('  ok cancel: CANCELLED, no partial file, LOG_REQUEST_END sent; relative path refused; '
+    + 'list and second download refused during a download');
 }
 
 /** Read a .tlog with pymavlink: [type, timestamp] per record. */

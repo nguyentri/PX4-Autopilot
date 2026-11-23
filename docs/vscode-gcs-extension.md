@@ -265,7 +265,9 @@ every sidecar line against it with `ajv`.
 - The session journal (`src/session/session-journal.ts`) is the only audit
   sink. The report is built from it.
 - Stream rates are raised per tab while visible and restored to the
-  vehicle's previous interval. Interval 0 (PX4: unlimited) is never sent.
+  vehicle's previous interval. A stream PX4 reports as not configured (0)
+  or unlimited (negative) is refused and left alone, because sending that
+  value back would not restore it.
 - Tests run the real sidecar against a Python vehicle peer over real UDP and
   pseudo-terminals. They cover the probe, lease, guards, parameters, console,
   log download with 5 % loss, recording and report escaping.

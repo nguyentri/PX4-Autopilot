@@ -46,7 +46,8 @@ export class LogsTab implements TabView {
     this.banner.update(state.connected ? 'live' : 'disconnected', this.content);
     const logs = state.logs;
     const running = state.transfer?.state === 'running';
-    this.refresh.disabled = logs.state === 'loading' || state.connection !== 'connected';
+    // A list request ends PX4's running log transfer, so Refresh waits for the download.
+    this.refresh.disabled = running || logs.state === 'loading' || state.connection !== 'connected';
     setText(this.listStatus, logs.state === 'idle' ? 'Press Refresh to ask the vehicle for its log list.'
       : logs.state === 'loading' ? 'Asking the vehicle for its log list…'
         : logs.state === 'error' ? logs.message
