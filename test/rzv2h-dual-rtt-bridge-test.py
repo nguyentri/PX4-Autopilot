@@ -243,8 +243,9 @@ def test_cli_usage():
 
 
 if __name__ == "__main__":
-    for test in (test_tar_chunks, test_ring_wrap_and_down_space, test_serve_loop,
-                 test_dap_error_stops_without_retry, test_ports_bound_before_the_probe_opens, test_cli_usage):
-        test()
-        print(f"ok {test.__name__}")
-    print("dual RTT bridge tests passed")
+    import unittest
+    # unittest gives the regression runner its "Ran N tests" summary.
+    suite = unittest.TestSuite(unittest.FunctionTestCase(test) for test in (
+        test_tar_chunks, test_ring_wrap_and_down_space, test_serve_loop,
+        test_dap_error_stops_without_retry, test_ports_bound_before_the_probe_opens, test_cli_usage))
+    sys.exit(not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful())

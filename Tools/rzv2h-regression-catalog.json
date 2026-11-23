@@ -472,7 +472,7 @@
         "RttBridgeConnectGuard.test_connect_timeout_kills_a_stuck_jlinkexe_and_cleans_up",
         "RttBridgeConnectGuard.test_failed_connect_fails_fast_without_claiming_a_reset",
         "LoaderVerifyGuard.test_verify_attaches_without_reset_and_fails_on_a_logged_reset",
-        "LoaderVerifyGuard.test_load_failure_stops_before_gdb_and_never_retries",
+        "LoaderVerifyGuard.test_load_starts_a_held_core_once_then_loads",
         "LoaderVerifyGuard.test_one_core_loader_loads_then_verifies",
         "Preflight.test_elf_entry_maps_to_the_linked_core",
         "Preflight.test_report_runs_without_touching_a_probe"
@@ -3019,6 +3019,280 @@
       "target_access": "none",
       "command": [],
       "note": "Read-only GDB snippet for rzv2h_heartbeat state on either demo core, used with jlink-gdb-oneshot.py."
+    },
+    {
+      "id": "rzv2h-bmp280-sample-test",
+      "path": "test/rzv2h-bmp280-sample-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-bmp280-sample-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Host checks of the standalone BMP280 SCI7 I2C sample; compiles the production compensation helper."
+    },
+    {
+      "id": "rzv2h-demo-startup-test",
+      "path": "test/rzv2h-demo-startup-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-demo-startup-test.py",
+        "DemoStartup.test_reconfiguration_clears_the_constrained_flash_cache",
+        "DemoStartup.test_cr8_1_link_is_disabled_for_the_single_core_drone",
+        "DemoStartup.test_stream_requests_are_independent_and_report_failures",
+        "DemoStartup.test_defaults_enable_qgc_tests_without_overwriting_user_choice",
+        "DemoStartup.test_all_bus_sensors_are_attempted_even_if_one_fails",
+        "DemoStartup.test_hook_runs_after_serial_and_before_boot_complete",
+        "DemoStartup.test_hooks_use_nsh_syntax_and_never_drive_motors_at_boot"
+      ],
+      "requires": {
+        "tools": [
+          "bash",
+          "cmake"
+        ]
+      },
+      "note": "Demo startup hook ordering and single-core CR8-1 contracts; build-dependent cases are the demo-startup-artifacts entry."
+    },
+    {
+      "id": "rzv2h-demo-startup-artifacts",
+      "path": "test/rzv2h-demo-startup-test.py",
+      "kind": "test",
+      "groups": [
+        "px4-artifacts"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-demo-startup-test.py",
+        "--build-dir",
+        "build/renesas_rdk-rzv2h_demo"
+      ],
+      "requires": {
+        "tools": [
+          "bash",
+          "c++",
+          "cmake"
+        ],
+        "paths": [
+          "build/renesas_rdk-rzv2h_demo"
+        ]
+      },
+      "note": "Full demo startup suite against a built demo tree: MAVLink FTP ring, generated ROMFS and embedded QGC metadata."
+    },
+    {
+      "id": "rzv2h-dual-rtt-bridge-test",
+      "path": "test/rzv2h-dual-rtt-bridge-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "debug-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-dual-rtt-bridge-test.py"
+      ],
+      "note": "Dual RTT bridge ring arithmetic, TAR chunking and serve loop on fake memory; never opens a probe."
+    },
+    {
+      "id": "rzv2h-icm45686-contract-test",
+      "path": "test/rzv2h-icm45686-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-icm45686-contract-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the real ICM-45686 SPI helpers and NSH command on the host fixture."
+    },
+    {
+      "id": "rzv2h-icm45686-host-fixture",
+      "path": "test/rzv2h-icm45686-host-fixture.c",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-icm45686-host-stubs",
+      "path": "test/rzv2h-icm45686-host-stubs.h",
+      "kind": "fixture",
+      "groups": [
+        "support"
+      ],
+      "target_access": "none",
+      "note": "Compiled by the owning Python host suite."
+    },
+    {
+      "id": "rzv2h-rtt-bridge-port-test",
+      "path": "test/rzv2h-rtt-bridge-port-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host",
+        "debug-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-rtt-bridge-port-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "sh"
+        ]
+      },
+      "note": "nuttx-rtt-bridge.sh serves RTT on the requested TCP port; uses a fake JLinkExe on PATH."
+    },
+    {
+      "id": "rzv2h-scif-baud-and-console-runtime-test",
+      "path": "test/rzv2h-scif-baud-and-console-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-scif-baud-and-console-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Run the production SCIF baud search and console registration on a register model."
+    },
+    {
+      "id": "rzv2h-sdhi-command-data-runtime-test",
+      "path": "test/rzv2h-sdhi-command-data-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-sdhi-command-data-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Execute the SDHI lower half command, data, reset, clock and interrupt paths on a controller model."
+    },
+    {
+      "id": "rzv2h-serial-fifo-runtime-test",
+      "path": "test/rzv2h-serial-fifo-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-serial-fifo-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Run the production SCI-B FIFO receive/transmit paths against a register model."
+    },
+    {
+      "id": "rzv2h-serial-tcsets-runtime-test",
+      "path": "test/rzv2h-serial-tcsets-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-serial-tcsets-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Run the production SCI-B TCSETS path against a CCR0 model."
+    },
+    {
+      "id": "rzv2h-spi-recovery-and-bitrate-runtime-test",
+      "path": "test/rzv2h-spi-recovery-and-bitrate-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-spi-recovery-and-bitrate-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Run the production native RSPI polled path and bit-rate search on a model."
+    },
+    {
+      "id": "rzv2h-tick-calibration-runtime-test",
+      "path": "test/rzv2h-tick-calibration-runtime-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-tick-calibration-runtime-test.py"
+      ],
+      "requires": {
+        "tools": [
+          "cc"
+        ]
+      },
+      "note": "Run the boot-time tick calibration against simulated GTM and tick counters."
+    },
+    {
+      "id": "rzv2h_ads1115_sample_contract_test",
+      "path": "test/rzv2h_ads1115_sample_contract_test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h_ads1115_sample_contract_test.py"
+      ],
+      "note": "Host contract checks for the standalone ADS1115 SCI0 I2C sample."
     }
   ]
 }

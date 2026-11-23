@@ -826,7 +826,19 @@
     "rzv2h-riic-master-sequence-runtime-test",
     "rzv2h-canfd-error-interrupt-runtime-test",
     "rzv2h-mavlink-shell-exec-test",
-    "rzv2h-flash-dual-pair-selection-test"
+    "rzv2h-flash-dual-pair-selection-test",
+    "rzv2h-bmp280-sample-test",
+    "rzv2h-demo-startup-test",
+    "rzv2h-dual-rtt-bridge-test",
+    "rzv2h-icm45686-contract-test",
+    "rzv2h-rtt-bridge-port-test",
+    "rzv2h-scif-baud-and-console-runtime-test",
+    "rzv2h-sdhi-command-data-runtime-test",
+    "rzv2h-serial-fifo-runtime-test",
+    "rzv2h-serial-tcsets-runtime-test",
+    "rzv2h-spi-recovery-and-bitrate-runtime-test",
+    "rzv2h-tick-calibration-runtime-test",
+    "rzv2h_ads1115_sample_contract_test"
   ],
   "repositories": {
     "src/modules/mavlink/mavlink": {
