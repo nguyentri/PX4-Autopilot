@@ -1,14 +1,23 @@
 #!/bin/sh
-# Bench demo sensors: one polled ICM45686 on SPI0 P93, a BMP280 on SCI7 and an
-# ADS1115 ADC on SCI0 (PX4 bus 0, 0x48).
+# Bench drone demo sensors: one polled ICM45686 on SPI0 P93 and a BMM150
+# magnetometer plus BMP280 barometer sharing SCI7 (PX4 bus 7).
 # Rotation 0 is the driver frame, not fitted-board proof. The BMP280 module
-# needs CSB high (I2C) and SDO low (0x76).
+# needs CSB high (I2C) and SDO low (0x76); the BMM150 module needs PS high
+# (I2C) with CSB and SDO low (0x10). Stack wiring:
+# docs/renesas/rzv2h-rdk-drone-demo-board.md
 
 if icm45686 -s -b 0 -c 3 -R 0 start
 then
 	echo "ICM45686 started on SPI0 CS pin 3"
 else
 	echo "ERROR [init] ICM45686 failed on SPI0 CS pin 3"
+fi
+
+if bmm150 -I -b 7 -a 0x10 start
+then
+	echo "BMM150 started on SCI7 I2C bus 7"
+else
+	echo "ERROR [init] BMM150 failed on SCI7 I2C bus 7"
 fi
 
 if bmp280 -I -b 7 -a 0x76 start
@@ -18,6 +27,8 @@ else
 	echo "ERROR [init] BMP280 failed on SCI7 I2C bus 7"
 fi
 
+# ADS1115 on SCI0 (PX4 bus 0, 0x48; P50 SDA, P51 SCL), as in demosih. This is
+# temporary: SCI0 later moves to a battery management IC.
 if ads1115 -X -b 0 start
 then
 	echo "ADS1115 started on SCI0 I2C bus 0"

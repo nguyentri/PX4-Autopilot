@@ -22,6 +22,8 @@ validation result.
 |---|---|
 | Boot switches, clocks and hardware integration constraints | [Hardware guide](hardware.md) |
 | Profile wiring, pin conflicts and physical connector drawing | [Pin ownership](pinmap.md) |
+| `demo` drone 3-layer hardware stack (RDK + sensor board + extension board) | [Drone demo board spec](rzv2h-rdk-drone-demo-board.md) |
+| 3D render block diagrams of that stack and airframe (Mermaid, render briefs) | [Drone demo 3D render diagrams](rzv2h-rdk-drone-demo-3d-render-diagrams.md) |
 | Per-core address views and shared-memory carveouts | [Multicore memory map](multicore-memory-map.md) |
 | RDK versus EVK evidence, source selection and missing references | [Reference source map](reference-source-map.md) |
 | FreeRTOS/POSIX migration semantics | [NuttX API mapping](freertos-to-nuttx-mapping.md) |

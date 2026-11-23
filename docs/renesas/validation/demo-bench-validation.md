@@ -11,19 +11,22 @@ on-target with a host GCS emulator (2026-11-08); QGC GUI and PWM capture **pendi
 One PX4 image that shows, at the same time:
 
 - four PWM outputs on a logic analyzer;
-- ICM-45686 accel/gyro (SPI0, polled, CS P93) and BMP280 baro (SCI7 I2C, 0x76);
-- ADS1115 ADC (SCI0 I2C, PX4 bus 0, 0x48);
+- ICM-45686 accel/gyro (SPI0, polled, CS P93), plus BMM150 mag (0x10) and
+  BMP280 baro (0x76) sharing SCI7 I2C (PX4 bus 7);
 - TFmini Plus range on SCI4;
+- SBUS RC on SCI6 (100000 8E2, inverter on the RDK sensor extension board) and M10 GPS on SCI9 (115200);
 - QGroundControl over a USB-UART on SCI5.
 
-Not in scope: arming or flight, magnetometer, GPS, RC, DShot, CR8-1 outputs.
-The image starts commander, but with no magnetometer, GPS or RC its
-pre-arm checks are not expected to pass.
+Since 2026-11-23 the demo is a single-core CR8-0 drone: CR8-1 is disabled
+(`CONFIG_RZV_IPC_RAW` off, no `rzv2h_heartbeat`), so load only CR8-0. The
+ADS1115 (SCI0, 0x48) starts at boot and its channels stream as
+`NAMED_VALUE_FLOAT`, as in `demosih`; this is temporary until a battery
+management IC takes SCI0. No battery source is configured (`BAT1_SOURCE`
+-1). Parameters live in RAM and are lost on reboot. First flights are
+tethered or props-off. Not in scope: DShot, CR8-1 outputs.
 
-`COM_RC_IN_MODE` remains available to QGC and defaults to 4 (stick input
-disabled). This does not enable an RC receiver or driver. `SYS_AUTOSTART`
-remains 4014. Their presence in the parameter table is independent of whether
-the optional RC hardware is built.
+`COM_RC_IN_MODE` keeps the PX4 default (RC and MAVLink stick input).
+`SYS_AUTOSTART` remains 4014.
 
 The IMU, barometer, TFmini and PWM driver start automatically. The demo's
 `rc.board_extras` hook runs after the generated serial startup and requests
@@ -35,8 +38,6 @@ these streams on SCI5; no manual RTT stream commands are needed:
 | `SCALED_PRESSURE` | 2 Hz | `press_abs` (hPa), `temperature` (centidegrees C) |
 | `DISTANCE_SENSOR` | 2 Hz | `current_distance` (cm) |
 | `SERVO_OUTPUT_RAW` (port 0) | 2 Hz | `servo1_raw` through `servo4_raw` (µs) |
-| `DEBUG_VECT` | 2 Hz | `CR80-CR81` (CR8-0 ↔ CR8-1 link): `x` ms since the last CR8-1 beat (-1 before the first), `y` CR8-1 sequence, `z` 1 alive / 0 lost |
-| `NAMED_VALUE_FLOAT` | 10 Hz | `ADS_A0` through `ADS_A3` (V), each at 2 Hz |
 
 Rates depend on available samples and link bandwidth. In particular, the
 recorded TFmini unit produces only 1 Hz. These settings do not change its
@@ -63,8 +64,14 @@ profiles retain their existing flash-size settings.
 | PWM1–4 | PA4 (GPT6A), PA7 (GPT7B), P96 (GPT9A), P53 (GPT10B) | Logic analyzer channels + common GND |
 | ICM-45686 | P90 MOSI, P91 MISO, P92 SCK, P93 CS | P94/P95 unused; no DRDY |
 | BMP280 | P76 SDA, P77 SCL | CSB high (I2C), SDO low (0x76) |
+| BMM150 | P76 SDA, P77 SCL (shared) | PS high (I2C), CSB low, SDO low (0x10) |
+| SBUS RC (fs-a8s) | P75 RX | Hardware inverter on the extension board, SW1 = inverted |
+| M10 GPS | P82 TX → GPS RX, P83 RX ← GPS TX | 115200 8N1 |
 | TFmini Plus | P70 TX → sensor RX, P71 RX ← sensor TX | 115200 8N1 |
 | QGC USB-UART | P72 TX → adapter RX, P73 RX ← adapter TX | 57600 8N1, 3.3 V logic |
+
+The three-layer stack (RDK, sensor board, extension board) that carries this
+wiring is specified in [rzv2h-rdk-drone-demo-board.md](../rzv2h-rdk-drone-demo-board.md).
 
 Run the standalone samples first to separate wiring faults from PX4:
 [ICM-45686](icm45686-spi-validation.md) and [BMP280](bmp280-i2c-validation.md).
@@ -87,10 +94,11 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
 
 ## Checks
 
-1. Boot log: `ICM45686 started on SPI0 CS pin 3`, `BMP280 started on SCI7 I2C bus 7` and
-   `ADS1115 started on SCI0 I2C bus 0`, no `ERROR [init]`.
+1. Boot log: `ICM45686 started on SPI0 CS pin 3`, `BMM150 started on SCI7 I2C bus 7`
+   and `BMP280 started on SCI7 I2C bus 7`, no `ERROR [init]`.
 2. Sensors over RTT (`nsh_console_exec.py --marker ...`):
-   `listener sensor_accel`, `listener sensor_gyro`, `listener sensor_baro`, `listener distance_sensor`.
+   `listener sensor_accel`, `listener sensor_gyro`, `listener sensor_mag`, `listener sensor_baro`,
+   `listener distance_sensor`, `listener input_rc`, `listener sensor_gps`.
 3. Stop the RTT bridge before watching live data:
    `platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop`. RTT stop-mode access can
    introduce sensor timing gaps. In QGC, add a Serial link for the USB-UART
@@ -105,7 +113,8 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
    `Accel #0`/`BARO #0` TIMEOUT, several validator failsafe events, a few
    `vehicle_imu` gaps, about 35 ADS1115 comms errors); a detached window must
    add no more than one attach does, and bus error counters must stay at 0.
-4. CR8-0 ↔ CR8-1 heartbeat (pair loaded with `./flash_dual.sh demo`): in
+4. CR8-0 ↔ CR8-1 heartbeat (historical; disabled since 2026-11-23, steps kept
+   for re-enabling): with the pair loaded by `./flash_dual.sh demo`, in
    QGC's MAVLink Inspector, `DEBUG_VECT` `CR80-CR81` shows `z` 1, `x` below 500
    and `y` rising about 10 per second. In Analyze Tools → MAVLink Console,
    `rzv2h_heartbeat status` gives the full view (`peer: alive`, `tx`/`rx`

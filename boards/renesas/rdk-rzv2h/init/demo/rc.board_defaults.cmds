@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# RDK-RZ/V2H bench demo defaults; physical qualification pending.
+# RDK-RZ/V2H bench drone demo defaults; physical qualification pending.
 # Module ownership remains with the common PX4 rcS and rc.board_sensors.
 #------------------------------------------------------------------------------
 
@@ -20,7 +20,9 @@ param set-default BAT1_SOURCE -1
 # command while leaving tune_control event publication available.
 set TONE_ALARM_START no
 
-# QGC on SCI5 (TEL1) and TFmini on SCI4 (EXT2). No GPS or RC port.
+# QGC on SCI5 (TEL1), TFmini on SCI4 (EXT2), M10 GPS on SCI9 (GPS1) and
+# SBUS RC on SCI6, matching the reference drone serial contract.
+param set-default SER_GPS1_BAUD 115200
 param set-default SER_TEL1_BAUD 57600
 param set-default SER_EXT2_BAUD 115200
 param set-default SENS_TFMINI_CFG 401
@@ -28,6 +30,7 @@ param set-default MAV_0_CONFIG 101
 param set-default MAV_0_MODE 0
 param set-default MAV_0_FLOW_CTRL 0
 param set-default MAV_0_RATE 4000
+param set-default RC_INPUT_PROTO 2
 
 # Emit MAVLink 2 framing from boot on every instance instead of starting in
 # MAVLink 1 and switching only after the GCS sends a MAVLink 2 packet.
@@ -36,10 +39,8 @@ param set-default MAV_PROTO_VER 2
 # Probe only the explicitly configured on-board sensors.
 param set-default SENS_EXT_I2C_PRB 0
 param set-default SYS_HAS_BARO 1
-param set-default SYS_HAS_GPS 0
-param set-default SYS_HAS_MAG 0
-# This sensor/PWM bench has no RC receiver or stick-control input.
-param set-default COM_RC_IN_MODE 4
+param set-default SYS_HAS_GPS 1
+param set-default SYS_HAS_MAG 1
 
 # Permit explicit QGC actuator tests while disarmed. Commander retains its
 # safety checks and bounded test timeout; boot never requests a motor test.

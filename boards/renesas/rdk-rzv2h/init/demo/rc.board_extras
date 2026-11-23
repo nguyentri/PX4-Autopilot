@@ -2,12 +2,13 @@
 # Apply demo streams after rc.serial has started MAVLink on SCI5.
 # rc.board_mavlink runs before rc.serial and cannot configure this instance.
 
-# Heartbeat-only CR8-1 liveness. CR8-1 is optional: the module reports the
-# peer lost and boot continues either way.
-if ! rzv2h_heartbeat start
-then
-	echo "ERROR [init] Demo CR8-1 heartbeat failed to start"
-fi
+# CR8-1 is disabled for the single-core demo drone (no raw IPC link). To
+# restore the heartbeat-only peer, re-enable CONFIG_RZV_IPC_RAW in the demo
+# defconfig, the ipc_heartbeat module in src/CMakeLists.txt and these lines.
+# if ! rzv2h_heartbeat start
+# then
+# 	echo "ERROR [init] Demo CR8-1 heartbeat failed to start"
+# fi
 
 # ADS1115 channel voltages for QGC (ADS_A0..ADS_A3 in the MAVLink Inspector).
 if ! rzv2h_adc_telemetry start
@@ -35,11 +36,11 @@ then
 	echo "ERROR [init] Demo SERVO_OUTPUT_RAW_0 stream failed on SCI5"
 fi
 
-# CR8-0 <-> CR8-1 link as seen by CR8-0 (CR80-CR81: x age ms, y peer seq, z alive).
-if ! mavlink stream -d /dev/ttyS5 -s DEBUG_VECT -r 2
-then
-	echo "ERROR [init] Demo DEBUG_VECT stream failed on SCI5"
-fi
+# CR8-0 <-> CR8-1 link (disabled with CR8-1): CR80-CR81 x age ms, y peer seq, z alive.
+# if ! mavlink stream -d /dev/ttyS5 -s DEBUG_VECT -r 2
+# then
+# 	echo "ERROR [init] Demo DEBUG_VECT stream failed on SCI5"
+# fi
 
 # ADS1115 voltages: one channel per message, 10 Hz covers the 8 Hz rotation.
 if ! mavlink stream -d /dev/ttyS5 -s NAMED_VALUE_FLOAT -r 10

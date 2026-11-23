@@ -50,11 +50,12 @@ class DualCr8OutputLease(unittest.TestCase):
         self.assertNotIn('PX4IO_BRIDGE', (board / 'Kconfig').read_text())
         # Heartbeat-only profiles own the CR8 link for rzv2h_heartbeat liveness
         # and ping/say text; they must carry no output producer of any kind.
+        # The single-core demo has no CR8 link at all.
         board_cmake = (board / 'src/CMakeLists.txt').read_text()
         heartbeat_only = set(re.findall(
             r'if\(PX4_BOARD_LABEL STREQUAL "(\w+)"\)(?:(?!\nendif\(\)).)*?add_subdirectory\([^)]*ipc_heartbeat',
             board_cmake, re.S))
-        self.assertEqual(heartbeat_only, {'demo', 'demosih'})
+        self.assertEqual(heartbeat_only, {'demosih'})
         for profile in sorted(board.glob('*.px4board')):
             label = profile.stem
             config = board / 'nuttx-config' / label / 'defconfig'

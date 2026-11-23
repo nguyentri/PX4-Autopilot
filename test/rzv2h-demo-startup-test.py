@@ -19,7 +19,7 @@ INIT = ROOT / "boards/renesas/rdk-rzv2h/init/demo"
 BUILD_DIR = None
 STREAMS = (("HIGHRES_IMU", 10), ("SCALED_PRESSURE", 2),
            ("DISTANCE_SENSOR", 2), ("SERVO_OUTPUT_RAW_0", 2),
-           ("DEBUG_VECT", 2), ("NAMED_VALUE_FLOAT", 10))
+           ("NAMED_VALUE_FLOAT", 10))
 
 
 class DemoStartup(unittest.TestCase):
@@ -125,6 +125,20 @@ int main(int argc, char **argv) {
         self.assertEqual(result.returncode, 0, result.stderr)
         return result.stdout
 
+    def test_cr8_1_link_is_disabled_for_the_single_core_drone(self):
+        board = INIT.parent.parent
+        config = (board / "nuttx-config/demo/defconfig").read_text()
+        self.assertIn("# CONFIG_RZV_IPC_RAW is not set", config.splitlines())
+        self.assertNotRegex(config, r"(?m)^CONFIG_RZV_IPC_\w+=")
+        cmake = (board / "src/CMakeLists.txt").read_text()
+        demo = cmake.split('if(PX4_BOARD_LABEL STREQUAL "demo")\n', 1)[1].split("endif()", 1)[0]
+        self.assertNotRegex(demo, r"(?m)^\s*add_subdirectory\([^)]*ipc_heartbeat")
+        self.assertRegex(demo, r"(?m)^\s*add_subdirectory\([^)]*adc_telemetry")
+        if BUILD_DIR is not None:
+            resolved = (BUILD_DIR / "NuttX/nuttx/.config").read_text()
+            self.assertNotRegex(resolved, r"(?m)^CONFIG_RZV_IPC_RAW=y$")
+            self.assertNotRegex(resolved, r"(?m)^CONFIG_RZV_OPENAMP=y$")
+
     def test_stream_requests_are_independent_and_report_failures(self):
         harness = '''
 failed_stream=$2
@@ -138,25 +152,17 @@ rzv2h_heartbeat() {
 }
 rzv2h_adc_telemetry() {
     echo "ADC $*"
-    [ "$failed_stream" != adc ]
+    [ "$failed_stream" != telemetry ]
 }
 '''
-        for failed in ("none", "heartbeat", "adc", *(name for name, _ in STREAMS)):
+        for failed in ("none", "telemetry", *(name for name, _ in STREAMS)):
             with self.subTest(failed=failed):
                 output = self.run_hook("rc.board_extras", harness, [failed])
                 lines = output.splitlines()
-                # The optional CR8-1 heartbeat starts once, before the streams,
-                # and its failure never blocks them.
-                self.assertEqual([line for line in lines if line.startswith("HEARTBEAT ")],
-                                 ["HEARTBEAT start"])
-                self.assertLess(lines.index("HEARTBEAT start"),
-                                next(i for i, line in enumerate(lines) if line.startswith("CALL ")))
-                # ADC forwarding starts once, before the streams, and its
-                # failure never blocks them.
-                self.assertEqual([line for line in lines if line.startswith("ADC ")],
-                                 ["ADC start"])
-                self.assertLess(lines.index("ADC start"),
-                                next(i for i, line in enumerate(lines) if line.startswith("CALL ")))
+                # CR8-1 is disabled: the heartbeat peer is never started.
+                self.assertFalse([line for line in lines if line.startswith("HEARTBEAT ")])
+                # The temporary SCI0 ADS1115 is forwarded as in demosih.
+                self.assertIn("ADC start", lines)
                 calls = [line for line in lines if line.startswith("CALL ")]
                 self.assertEqual(calls, [
                     f"CALL stream -d /dev/ttyS5 -s {name} -r {rate}"
@@ -164,8 +170,7 @@ rzv2h_adc_telemetry() {
                 errors = [line for line in output.splitlines() if "ERROR [init]" in line]
                 self.assertEqual(len(errors), 0 if failed == "none" else 1)
                 if errors:
-                    expected = {"heartbeat": "CR8-1 heartbeat", "adc": "ADS1115 telemetry"}
-                    self.assertIn(expected.get(failed, failed), errors[0])
+                    self.assertIn(failed, errors[0])
 
     def test_defaults_enable_qgc_tests_without_overwriting_user_choice(self):
         harness = '''
@@ -186,6 +191,8 @@ printf 'test=%s link=%s mode=%s flow=%s lidar=%s baud=%s pwm=%s stick=%s\n' \
     "${params[COM_MOT_TEST_EN]}" "${params[MAV_0_CONFIG]}" \
     "${params[MAV_0_MODE]}" "${params[MAV_0_FLOW_CTRL]}" \
     "${params[SENS_TFMINI_CFG]}" "${params[SER_TEL1_BAUD]}" "$DSHOT_START" "${params[COM_RC_IN_MODE]}"
+printf 'gps=%s/%s rc=%s mag=%s\n' "${params[SER_GPS1_BAUD]}" "${params[SYS_HAS_GPS]}" \
+    "${params[RC_INPUT_PROTO]}" "${params[SYS_HAS_MAG]}"
 '''
         for choice, expected in (("", "1"), ("0", "0")):
             with self.subTest(user_motor_test=choice):
@@ -195,23 +202,29 @@ printf 'test=%s link=%s mode=%s flow=%s lidar=%s baud=%s pwm=%s stick=%s\n' \
                     capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn(f"test={expected} link=101 mode=0 flow=0 lidar=401 "
-                              "baud=57600 pwm=no stick=4", result.stdout)
+                              "baud=57600 pwm=no stick=", result.stdout)
+                # RC and GPS follow the reference drone serial contract; the
+                # stick-input mode keeps the PX4 default (RC enabled).
+                self.assertIn("gps=115200/1 rc=2 mag=1", result.stdout)
 
     def test_all_bus_sensors_are_attempted_even_if_one_fails(self):
         # The harness substitutes only driver exits, never sensor data.
-        for imu_exit, baro_exit, adc_exit in itertools.product((0, 1), repeat=3):
+        for imu_exit, mag_exit, baro_exit, adc_exit in itertools.product((0, 1), repeat=4):
             harness = f'''
 icm45686() {{ echo "CALL icm45686 $*"; return {imu_exit}; }}
+bmm150() {{ echo "CALL bmm150 $*"; return {mag_exit}; }}
 bmp280() {{ echo "CALL bmp280 $*"; return {baro_exit}; }}
 ads1115() {{ echo "CALL ads1115 $*"; return {adc_exit}; }}
 '''
-            with self.subTest(imu=imu_exit, baro=baro_exit, adc=adc_exit):
+            with self.subTest(imu=imu_exit, mag=mag_exit, baro=baro_exit, adc=adc_exit):
                 output = self.run_hook("rc.board_sensors", harness)
                 self.assertIn("CALL icm45686 -s -b 0 -c 3 -R 0 start", output)
+                self.assertIn("CALL bmm150 -I -b 7 -a 0x10 start", output)
                 self.assertIn("CALL bmp280 -I -b 7 -a 0x76 start", output)
+                # SCI0 temporarily carries the ADS1115, as in demosih.
                 self.assertIn("CALL ads1115 -X -b 0 start", output)
                 self.assertEqual(output.count("ERROR [init]"),
-                                 imu_exit + baro_exit + adc_exit)
+                                 imu_exit + mag_exit + baro_exit + adc_exit)
 
     def test_hook_runs_after_serial_and_before_boot_complete(self):
         rcs = (ROOT / "ROMFS/px4fmu_common/init.d/rcS").read_text()

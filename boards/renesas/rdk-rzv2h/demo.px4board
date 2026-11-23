@@ -1,24 +1,24 @@
-# Bench demo: 4x CR8-0 PWM, one polled ICM45686 on SPI0/P93, BMP280 on SCI7,
-# TFmini on SCI4, MAVLink on SCI5 and ADS1115 on SCI0 (PX4 I2C bus 0).
-# No GPS, RC or magnetometer.
-# Optional CR8-1 peer: heartbeat-only over raw IPC (rzv2h_heartbeat); no
-# px4io bridge, no remote outputs.
+# Bench drone demo: 4x CR8-0 PWM, one polled ICM45686 on SPI0/P93, BMM150 and
+# BMP280 on SCI7 (PX4 I2C bus 7), TFmini on SCI4, MAVLink on SCI5, SBUS RC on
+# SCI6 and M10 GPS on SCI9. Serial ports for GPS/RC are inherited from
+# default.px4board. SCI0 I2C (PX4 bus 0) temporarily runs the ADS1115 (0x48),
+# as in demosih, until a battery management IC replaces it.
+# Single-core: CR8-1 is disabled (no raw IPC, no heartbeat peer, no px4io
+# bridge, no remote outputs). Load only CR8-0.
 CONFIG_BOARD_INIT_SUBDIR="demo"
 # Embed parameter, event and actuator metadata for QGC on this custom target.
 CONFIG_BOARD_CONSTRAINED_FLASH=n
-CONFIG_BOARD_SERIAL_GPS1=""
-CONFIG_BOARD_SERIAL_RC=""
 CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"
-CONFIG_DRIVERS_GPS=n
-CONFIG_DRIVERS_RC_INPUT=n
-CONFIG_DRIVERS_MAGNETOMETER=n
 CONFIG_DRIVERS_IMU_INVENSENSE_MPU9250=n
 CONFIG_DRIVERS_IMU_INVENSENSE_ICM20948=n
 CONFIG_DRIVERS_IMU_INVENSENSE_ICM45686=y
 CONFIG_DRIVERS_BAROMETER_BMP280=y
 CONFIG_DRIVERS_BAROMETER_BMP388=n
-CONFIG_DRIVERS_MAGNETOMETER_BOSCH_BMM150=n
+CONFIG_DRIVERS_MAGNETOMETER_BOSCH_BMM150=y
 CONFIG_DRIVERS_POWER_MONITOR_INA228=n
 CONFIG_DRIVERS_DSHOT=n
 CONFIG_BOARD_PARAM_FILE_ATOMIC=y
+# rc.board_sensors starts the ADS1115 on SCI0 and rc.board_extras forwards its
+# channels (adc_telemetry, NAMED_VALUE_FLOAT). Temporary: SCI0 later moves to a
+# battery management IC.
 CONFIG_DRIVERS_ADC_ADS1115=y

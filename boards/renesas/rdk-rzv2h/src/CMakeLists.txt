@@ -221,9 +221,9 @@ if(PX4_BOARD_LABEL STREQUAL "demo" AND NOT NUTTX_CONFIG STREQUAL "demo")
 endif()
 
 if(PX4_BOARD_LABEL STREQUAL "demo")
-	# Heartbeat-only liveness with the optional CR8-1 demo peer and the
-	# ADS1115 voltages forwarded to QGC.
-	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../ipc_heartbeat ipc_heartbeat)
+	# CR8-1 is disabled for the single-core demo drone, so the heartbeat peer
+	# module is left out with CONFIG_RZV_IPC_RAW. The ADS1115 on SCI0 is
+	# temporarily started as in demosih, so its telemetry module is linked.
 	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../adc_telemetry adc_telemetry)
 	add_custom_target(rzv2h_demo_startup_test
 		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-demo-startup-test.py

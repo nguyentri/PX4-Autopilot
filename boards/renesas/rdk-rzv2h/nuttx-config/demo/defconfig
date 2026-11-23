@@ -1,5 +1,5 @@
 #
-# RDK-RZV2H bench demo configuration for PX4 (PWM, one SPI0 IMU, SCI7 baro),
+# RDK-RZV2H bench demo configuration for PX4 (PWM, one SPI0 IMU, SCI7 mag/baro),
 # shared by the demosih showcase. The dedicated interrupt stack stops IRQ
 # handlers from running on, and eating into, the interrupted task stack.
 # Cortex-R8 Core 0 configuration
@@ -169,15 +169,16 @@ CONFIG_SPI_EXCHANGE=y
 
 # I2C Configuration
 #
-# The barometer is wired to SCI7 simple-I2C pins P7_6/P7_7. The lower-half
-# maps PX4 logical bus 7 directly to SCI7; on-target BMP280 proof remains a
+# The BMM150 and BMP280 share SCI7 simple-I2C pins P7_6/P7_7. The lower-half
+# maps PX4 logical bus 7 directly to SCI7; on-target proof remains a
 # hardware validation gate.
 CONFIG_I2C=y
 CONFIG_I2C_RESET=y
 CONFIG_RZV_SCI_I2C=y
 CONFIG_RZV_SCI7_I2C=y
 # ADC-I2C: SCI0 simple-I2C on P50 SDA / P51 SCL (40-pin 22/36) is PX4 bus 0
-# for an ADS1115 at 0x48, started by init/demo/rc.board_sensors.
+# for an ADS1115 at 0x48, started by init/demo/rc.board_sensors until a
+# battery management IC replaces it.
 CONFIG_RZV_SCI0_I2C=y
 
 # ADC is intentionally excluded from the integrated image. The checked-in
@@ -191,18 +192,14 @@ CONFIG_RZV_SCI0_I2C=y
 CONFIG_ARCH_DMA=y
 CONFIG_RZV_DMAC=y
 
-# CR8-0 owns the raw /dev/ipcc1 epoch as initiator for the heartbeat-only
-# CR8-1 peer (rzv2h_heartbeat). The image still starts without CR8-1: the
-# heartbeat reports the peer lost and nothing else waits on the link.
+# CR8-1 is disabled for the single-core demo drone: no /dev/ipcc1, no MHU or
+# shared-memory traffic. To restore the heartbeat-only CR8-1 peer, set
+# CONFIG_RZV_IPC_RAW=y, CONFIG_RZV_IPC_TX_TIMEOUT_MS=100,
+# CONFIG_RZV_IPC_RECOVERY_WAIT_MS=100, CONFIG_RZV_IPC_CR8_CR8=y and
+# CONFIG_RZV_IPC_ROLE_INITIATOR=y, then re-enable the ipc_heartbeat module.
 # CONFIG_OPENAMP is not set
 # CONFIG_RZV_OPENAMP is not set
-CONFIG_RZV_IPC_RAW=y
-CONFIG_RZV_IPC_TX_TIMEOUT_MS=100
-CONFIG_RZV_IPC_RECOVERY_WAIT_MS=100
-CONFIG_RZV_IPC_CR8_CR8=y
-CONFIG_RZV_IPC_ROLE_INITIATOR=y
-# CONFIG_RZV_IPC_CR8_CR8_LOOPBACK is not set
-# CONFIG_RZV_IPC_CR8_CM33 is not set
+# CONFIG_RZV_IPC_RAW is not set
 
 # Standalone board examples are excluded from the integrated PX4 image.
 # CONFIG_RZV2H_EXAMPLE_SUPPORT is not set

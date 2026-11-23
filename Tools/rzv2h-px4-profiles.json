@@ -91,11 +91,11 @@
           131068
         ],
         [
-          1098907648,
+          1140850688,
           8388608
         ],
         [
-          1107296256,
+          1149239296,
           8388608
         ],
         [
@@ -650,15 +650,15 @@
     "boards/renesas/rdk-rzv2h-io-cr8_1/default.px4board": "32d4a5d9b4deabca15c4d85c31f7324f228ee91b7d106eb7f8783212687e624f",
     "boards/renesas/rdk-rzv2h-io-cr8_1/firmware.prototype": "352d2c28ab8b651cec25127ec5be7bc8ce101daa86e84a6f09fb01b982129af1",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/nsh/defconfig": "0bab7991dfc1930cdd9bed4fd3f52b88641ed0c5bec4e544bcc45813d05a4864",
-    "boards/renesas/rdk-rzv2h/default.px4board": "573e2c3544e4ce23737f80c80c0617b629541407bed9ba3aa75db4e4125edf47",
+    "boards/renesas/rdk-rzv2h/default.px4board": "e949a5648242c5e47c0ebd53869374ae2bef0188ab023870f9ff2b4e3de960d3",
     "boards/renesas/rdk-rzv2h/dualcr8.px4board": "e990b8f1055c4708296717785370940a12bf2c2a800ba72113c2f6f7eb78a627",
     "boards/renesas/rdk-rzv2h/firmware.prototype": "acb9715393520dcf44788277aaf1ca4a3676299e6f4fbed7ed5a4279c06358c3",
     "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "3986605d3bf647ff25674f426d625af43510018984c1f886005f1735b2ce1549",
     "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig": "5c2751cea6dc204d8d14fc08af5b6432a90ff08963ff452dc96b8cb06153853f",
     "platforms/nuttx/CMakeLists.txt": "8932c8be3a383d4c89417ac678b2c62ddfca301486fec00985865686286c278e",
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cm33.ld": "ea5b9b920e34d6463523b2c1b34d591a2a924761a404c00bf07da9c609db66e3",
-    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld": "bbf795f1fe19cb6aa8cbf5e1b017246806ee985a7364ff7ee4388f227224e1ef",
-    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_1.ld": "8461a3f5deba69c6eb01a007271f6c590da574f3ce81227ec450af990eb6ce75",
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld": "f8c3454c13acecf0c91dd759d4e9af7c747d938c244c3027084a21205baf3170",
+    "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_1.ld": "055e09c8e6a8766845aac471ff47bde74c8021bb064aee8abb9c5c2336b40f32",
     "ROMFS/CMakeLists.txt": "262fd7da52552615ad2032b95b927b248135a884d602aca7efe48930bb353776",
     "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_sensors": "ac5557cd955f2688be8d0223bfdd7770a3c2df4555492fc748454d0b83595c1a",
     "boards/renesas/rdk-rzv2h/init/dualcr8/rc.board_defaults.cmds": "12f93a822df0dad4dfc25fd4dfdd8d42742d0f2f38877eaa5bb8038b25faec30",
@@ -674,20 +674,20 @@
     "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "a7283b54d39526d625b6796ad459c6b666f2a6ae7d699e5fffbe4a6fdaa29e27",
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
     "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b",
-    "boards/renesas/rdk-rzv2h/demo.px4board": "cd257e2f2c4d1666e7cb142522e49abceb936d2e51dd9cdf88fd4729bc5126ef",
-    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "d21f39f7d7faa985c6a627d8eb886d249629e72ab09d89105c41a744d71cf499",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "56a7272fa657bd921822d1a167ec8da5d23d0b662de31e5bb170fa42fe3bb11b",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "6c6e017b586e8bbe08196ae60fff38b2e6ace1198d297b86a891a64d1947f30f",
+    "boards/renesas/rdk-rzv2h/demo.px4board": "30806598077af802ab199f5b9449e82d0ffb3b41c3fadc218a038b1f766c1aba",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "5ad267bf201e92fb7628408b86d86908de97a26dde880b00dcea9779355ad6c6",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "246e65d76599ee3edffe36da0aef15aac229cbed715d535dc888f194fcc3d43e",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "5325b645aa0fcff43a2dce0145478984676c7c204909a4aa6c539db4b1744c22",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "e72bcbea6bcc76591e9c0c17d028b98b4a680acca89ce9dbc9c1a418ec560e1a",
     "boards/renesas/rdk-rzv2h/demosih.px4board": "7986ad4520e3e6e0f4534ce2d96f9ccd02b093ff69376a45226efec0502c701f",
-    "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "9183b39c67ed8be1498e29d1ee74d09b035b74f363b26055793c2257f476713b",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "2e0bb12c5f5e0731a77b4d7ad101405374a978fefe1ae6d956df59c30184333c",
     "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "b227c7dbd55dfb22345e92bbdfe25bf9d663987ee42d16b1615b200f15a4b35a",
     "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "5b11cbc5812eca7110804f44deb801515f4b2a015af2870f7ab72e913a158a74",
     "boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board": "2246497faf27b76730823fb25f598e8a868a6dfa3d9aa2764c086551eda9437e",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/demo/defconfig": "47eea6b0604a2f2b3eff8744b00ebe1eb3baf8c31bc60431f11a6988d2f78fca",
     "ROMFS/rdk-rzv2h-io-cr8_1-demo/init.d/rcS": "05a8beefac218b1665d66bf9a42146539e28417a0be5d2bb19d033ab0bd7379b",
     "boards/renesas/rdk-rzv2h/init/rc.board_sensors": "faa4f5ddf085c925f17877868daeb25caca98b236bf19efa8a28f2a2ec6bd6e0",
-    "boards/renesas/rdk-rzv2h/init/rc.board_defaults.cmds": "c3cd977ba71bc374796530772c0451ee95642b373423074f35fd7c7343deb046"
+    "boards/renesas/rdk-rzv2h/init/rc.board_defaults.cmds": "cb91692188a66be3324aafcaa889bcfc09b901b6d3e10b0db8c91718ebff4bf0"
   },
   "abi_sources": [
     "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h",
