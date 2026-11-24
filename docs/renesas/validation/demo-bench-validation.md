@@ -51,7 +51,7 @@ Rates depend on available samples and link bandwidth. In particular, the
 recorded TFmini unit produces only 1 Hz. These settings do not change its
 stored measurement rate. Parameter defaults preserve explicit user settings;
 if telemetry was disabled, check `MAV_0_CONFIG=101` (TEL1), `MAV_0_MODE=0`
-(Normal), `MAV_0_FLOW_CTRL=0` and `SER_TEL1_BAUD=57600`. Parameters remain
+(Normal), `MAV_0_FLOW_CTRL=0` and `SER_TEL1_BAUD=115200`. Parameters remain
 volatile on this board.
 
 SCI5 RX/TX rings are 512 bytes each. The prior 256-byte ring exposed only
@@ -76,7 +76,7 @@ profiles retain their existing flash-size settings.
 | SBUS RC (fs-a8s) | P75 RX | Hardware inverter on the extension board, SW1 = inverted |
 | M10 GPS | P82 TX → GPS RX, P83 RX ← GPS TX | 115200 8N1 |
 | TFmini Plus | P70 TX → sensor RX, P71 RX ← sensor TX | 115200 8N1 |
-| QGC USB-UART | P72 TX → adapter RX, P73 RX ← adapter TX | 57600 8N1, 3.3 V logic |
+| QGC USB-UART | P72 TX → adapter RX, P73 RX ← adapter TX | 115200 8N1, 3.3 V logic |
 
 The three-layer stack (RDK, sensor board, extension board) that carries this
 wiring is specified in [rzv2h-rdk-drone-demo-board.md](../rzv2h-rdk-drone-demo-board.md).
@@ -110,7 +110,7 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
 3. Stop the RTT bridge before watching live data:
    `platforms/nuttx/Debug/nuttx-rtt-bridge.sh stop`. RTT stop-mode access can
    introduce sensor timing gaps. In QGC, add a Serial link for the USB-UART
-   at 57600 baud with flow control off. Open Analyze Tools → MAVLink Inspector
+   at 115200 baud with flow control off. Open Analyze Tools → MAVLink Inspector
    and check the fields above update. Tilt the IMU and move a flat target in
    front of the LiDAR. Attitude/altitude estimates depend on estimator health;
    inspect the sensor messages directly if those displays do not update.

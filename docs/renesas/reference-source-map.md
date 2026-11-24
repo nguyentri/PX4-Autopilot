@@ -76,8 +76,8 @@ the current native and planned extension profiles.
 The reference hardware guide names ICM-45686, while comments in its SPI table
 name ICM-45688 using the same `icm45686` driver. Keep the driver selection for
 software work and verify fitted part identity at bring-up. Likewise, reference
-`init/rcS` starts SiK telemetry at 115200, whereas its hardware guide and the
-native default use 57600; select baud explicitly for the fitted radio.
+`init/rcS` starts SiK telemetry at 115200, which the native targets match;
+select baud explicitly for the fitted radio.
 
 ## Core path convention
 

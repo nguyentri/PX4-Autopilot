@@ -24,7 +24,7 @@ reuses P94 as CS1, so do not apply this guide's INT wiring to it.
 | **IMU** | MPU9250 | 1 | SPI 9-axis (accel/gyro/mag AK8963) |
 | **Barometer** | BMP280 | 1 | I2C, altitude backup sensor |
 | **LiDAR** | TFmini Plus | 1 | UART, primary altitude (0.1–12 m range) |
-| **Telemetry** | Sik V3 433/915 MHz | 1 | MAVLink @ 57600 baud to QGC |
+| **Telemetry** | Sik V3 433/915 MHz | 1 | MAVLink @ 115200 baud to QGC |
 | **RC Receiver** | FlySky fs-a8s | 1 | SBUS (requires inverter circuit) |
 | **Propeller (Recommended)** | 9450 | 4 | For LX450 frame |
 | **Propeller (Optional)** | 1045 | 4 | For S500 frame |
@@ -178,7 +178,7 @@ mpu9250 -S -R 4 -M  # -M enables internal magnetometer
 bmp280 start -X  # -X for external I2C
 ```
 
-**Sik Telemetry**: MAVLink @ 57600 baud
+**Sik Telemetry**: MAVLink @ 115200 baud
 ```bash
 # GCS connection on /dev/ttyS5
 ```

@@ -258,7 +258,7 @@ flowchart LR
   cn1 --> l3
   jack --> l1
   l3 -->|"CN2 GH 10P, UART9 115200"| gps["GPS M10"]
-  l3 -->|"CN3 GH 6P, UART5 57600"| sik["SiK radio"]
+  l3 -->|"CN3 GH 6P, UART5 115200"| sik["SiK radio"]
   l3 -->|"CN4 4P, UART4 115200"| tf["TFmini Plus"]
   l3 -->|"CN5 3P, SBUS to UART6"| rc["fs-a8s"]
   l3 -->|"H1 PWM 400 Hz, signal + GND only"| esc

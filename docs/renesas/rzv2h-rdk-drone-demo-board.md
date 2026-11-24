@@ -601,7 +601,7 @@ device RX goes to an RDK TXD pin.
 The M10 ships at 9600 baud. The PX4 `gps` driver auto-configures it to
 115200 (`SER_GPS1_BAUD`), as in the reference build.
 
-**CN3 SiK telemetry v3 (GH 6P), 57600 8N1 MAVLink on `/dev/ttyS5`:**
+**CN3 SiK telemetry v3 (GH 6P), 115200 8N1 MAVLink on `/dev/ttyS5`:**
 
 | Pin | Net | Radio signal |
 |---|---|---|
@@ -664,7 +664,7 @@ lidar UART is 3.3 V TTL; its supply is 5 V.
 | 2, 4 | 5V | — | R3 (DNP) | — |
 | 3 / 5 | P76 SDA7 / P77 SCL7 | M2, M3 | CN1-4/3, CN2-5/4 (cable wires cut) | Bus 7: BMM150 0x10, BMP280 0x76 |
 | 7 | P75 RXD6 | — | SW1 common (SBUS) | `rc_input` |
-| 8 / 10 | P72 TXD5 / P73 RXD5 | — | CN3-5 / CN3-4 | MAVLink 57600 |
+| 8 / 10 | P72 TXD5 / P73 RXD5 | — | CN3-5 / CN3-4 | MAVLink 115200 |
 | 11 | P74 | — | not routed | unused |
 | 12 | P95 | — | U7 CS (DNP) | unused |
 | 13 / 15 | P71 RXD4 / P70 TXD4 | — | CN4-2 / CN4-3 | `tfmini` 115200 |
@@ -726,7 +726,7 @@ Run these in order and record the values in a dated transcript under
    - See [demo bench checks](./validation/demo-bench-validation.md).
 8. **Battery power and QGC:**
    - The RDK boots from the PM03D 12 V output with the battery connected.
-   - QGC connects over SiK at 57600.
+   - QGC connects over SiK at 115200.
    - Accelerometer, compass and RC calibration complete.
    - Arm with RC, props off. Motors 1–4 respond on PA4/PA7/P96/P53 in the §6.2 positions.
 

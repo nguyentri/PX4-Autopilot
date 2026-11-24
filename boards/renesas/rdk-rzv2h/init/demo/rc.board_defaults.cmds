@@ -25,7 +25,9 @@ set TONE_ALARM_START no
 # QGC on SCI5 (TEL1), TFmini on SCI4 (EXT2), M10 GPS on SCI9 (GPS1) and
 # SBUS RC on SCI6, matching the reference drone serial contract.
 param set-default SER_GPS1_BAUD 115200
-param set-default SER_TEL1_BAUD 57600
+# The reference starts TEL1 MAVLink at 115200 (its FSP 57600 is only the
+# pre-open baud; the TCSETS issued by mavlink start reprograms SCI5).
+param set-default SER_TEL1_BAUD 115200
 param set-default SER_EXT2_BAUD 115200
 param set-default SENS_TFMINI_CFG 401
 param set-default MAV_0_CONFIG 101

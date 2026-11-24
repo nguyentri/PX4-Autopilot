@@ -222,7 +222,7 @@ printf 'gps=%s/%s rc=%s mag=%s\n' "${params[SER_GPS1_BAUD]}" "${params[SYS_HAS_G
                     capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn(f"test={expected} link=101 mode=0 flow=0 lidar=401 "
-                              "baud=57600 pwm=no stick=", result.stdout)
+                              "baud=115200 pwm=no stick=", result.stdout)
                 # RC and GPS follow the reference drone serial contract; the
                 # stick-input mode keeps the PX4 default (RC enabled).
                 self.assertIn("gps=115200/1 rc=2 mag=1", result.stdout)

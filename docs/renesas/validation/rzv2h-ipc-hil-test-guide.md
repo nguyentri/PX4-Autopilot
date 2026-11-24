@@ -398,9 +398,8 @@ arbitration, and both the flight `default.px4board` (MAVLink telemetry) and the 
 image already assign it to CR8-0. Handing it to CR8-1 means rebuilding the
 CR8-1 image with `CONFIG_RZV_SCI5` **and** taking it out of the CR8-0 image to
 avoid a two-master pin conflict. Not required for the demos above. The
-`115200` setting in the split-console profile is explicit to that test image;
-it does not change native telemetry's 57600 default or silently adopt the
-reference startup's 115200 setting.
+`115200` setting in the split-console profile is explicit to that test image
+and independent of the native telemetry default (also 115200).
 
 ## Interpreting failures
 

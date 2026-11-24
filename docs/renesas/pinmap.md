@@ -34,7 +34,7 @@ Header pins follow the [RDK connector drawing](#physical-header-drawing); `—` 
 | P76/P77 (3/5) | RSCI7 I2C, PX4 bus 7 | `demo`: BMM150 0x10 + BMP280 0x76; `demosih`: BMP280 0x76 | BMM150 0x10, BMP390L (`bmp388`) 0x76, INA228 0x45 | BMM150 0x10, BMP390 (`bmp388`) 0x76; no INA228 |
 | P50/P51 (22/36) | RSCI0 I2C, PX4 bus 0 | `demo` and `demosih`: ADS1115 0x48 (`ads1115 -X -b 0`); in `demo` this is temporary until a battery management IC takes SCI0 | — (SCI0 not selected) | — (SCI0 not selected) |
 | P70/P71 | RSCI4 `/dev/ttyS4` (EXT2) | TFmini 115200 | TFmini 115200 | TFmini 115200 |
-| P72/P73 | RSCI5 `/dev/ttyS5` (TEL1) | MAVLink: `demo` 57600, `demosih` 115200 | MAVLink 57600 | MAVLink (common defaults, defconfig 57600) |
+| P72/P73 | RSCI5 `/dev/ttyS5` (TEL1) | MAVLink: `demo` 115200, `demosih` 115200 | MAVLink 115200 | MAVLink (common defaults, defconfig 57600) |
 | P75 | RSCI6 `/dev/ttyS6` RX | `demo`: RC SBUS (`RC_INPUT_PROTO 2`), inverter on the sensor extension board; `demosih`: — (SCI6 compiled, `rc_input` off) | RC SBUS (`RC_INPUT_PROTO 2`), inverter on the sensor extension board | RC (`rc_input` inherited from default) |
 | P82/P83 | RSCI9 `/dev/ttyS9` | `demo`: u-blox M10 115200; `demosih`: — (SCI9 compiled, GPS off) | u-blox M10 115200 | u-blox M10 115200 |
 | PA4 (32) | GPT6A, ESC1 | CR8-0 PWM (`demo`); unused (`demosih`) | CR8-0 PWM | CR8-1 GPT6A |
@@ -77,7 +77,7 @@ a chip select.
 The CR8-0 `default` profile (formerly `drone`, merged with `dshot` on 2026-11-18) selects `CONFIG_RZV2H_DRONE_SENSOR_EXTENSION` and matches
 the [reference BOM and 40-pin wiring](../../refs/rzv2h_drone_px4-dev/docs/HARDWARE.md)
 pad for pad: 3× ICM-45686 on SPI0 (P93/P94/P95), BMM150 + BMP390L + INA228 on
-SCI7, TFmini on SCI4, SiK on SCI5 at 57600, fs-a8s SBUS on SCI6 RX, M10 on SCI9
+SCI7, TFmini on SCI4, SiK on SCI5 at 115200, fs-a8s SBUS on SCI6 RX, M10 on SCI9
 and ESC1-4 on PA4/PA7/P96/P53. The native image differs from the reference in
 these deliberate places:
 
@@ -219,9 +219,9 @@ Subset of pins actively used by PX4 + NuttX drivers:
 | RSCI9 | P82 | P83 | None | u-blox M10 | GPS (`/dev/ttyS9`, 115200 8N1) |
 
 **Limitations:** No hardware flow control (RTS/CTS) currently implemented.
-Reference startup selects telemetry 115200; native default and reference hardware
-guide use 57600. Configure the fitted radio explicitly without changing working
-profiles. GPS remains 115200 8N1; the sensor extension board inverts SBUS in hardware.
+Reference startup and the native profiles select telemetry 115200 (the reference
+hardware guide still says 57600). Configure the fitted radio explicitly without
+changing working profiles. GPS remains 115200 8N1; the sensor extension board inverts SBUS in hardware.
 
 ### SPI Bus (RSPI0)
 
