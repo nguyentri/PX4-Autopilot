@@ -16,7 +16,8 @@ alongside. Nothing in this port has run on a board yet; see
 | Board glue and configs | `boards/arm/rcar/sparrow_hawk/{src,configs}/` |
 | Build script | `platforms/nuttx/NuttX/build_rcarv4h.sh` |
 | Per-core ELF window allowlist | `platforms/nuttx/Debug/rcarv4h-cr52-elf-allowlists.json` |
-| Host tests | `test/rcarv4h-cr52-elf-window-test.py`, `test/rcarv4h-cr52-pmsav8-mpu-encode-test.py` |
+| CR52 ↔ CR52 OpenAMP, CA76 ICCOM ([ipc.md](ipc.md)) | `arch/arm/src/rcar/rcar_{openamp,rpmsg,ipc_ipcc,iccom*}.c`, `rcar_ipc_shm.h`, `hardware/rcar_mfis.h` |
+| Host tests | `test/rcarv4h-cr52-elf-window-test.py`, `test/rcarv4h-cr52-pmsav8-mpu-encode-test.py`, `test/rcarv4h-cr52-ipc-shm-layout-test.py`, `test/rcarv4h-cr52-iccom-protocol-test.py`, `test/rcarv4h-cr52-gicv3-sgi-encode-test.py` |
 
 ## Build
 
@@ -44,18 +45,27 @@ old `.config`. Do not hand-run `tools/configure.sh` + `make`.
 | `gpio` | CR52-0 | `/dev/gpio0` (CN7 pin 11 out), `/dev/gpio1` (CN7 pin 13, both-edge interrupt) |
 | `i2c` | CR52-0 | `/dev/i2c3`, `/dev/i2c4`, `i2c` tool |
 | `spi-loopback` | CR52-0 | `/dev/spi0`, `spi` tool, MSIOF0 loopback self-test at boot |
+| `openamp` | CR52-0 | RPTUN master, `/dev/ipcc0`, `rptun ping` ([ipc.md](ipc.md)) |
+| `openamp-cr52_1` | CR52-1 | RPTUN remote, `/dev/ipcc0`, `rptun ping`; load with `openamp` |
+| `iccom` | CR52-0 | `/dev/iccom0`, ICCOM channel 0 to a CA76 peer (host-simulated only) |
 
 ## Memory windows
 
 Each image links at its own 3 MiB DRAM window. The EL1 MPU maps only that
-window, the `0xE6000000` peripheral block and the GIC, so an access to
-another core's window faults.
+window, the `0xE6000000` peripheral block, the GIC and the shared IPC
+regions below, so an access to another core's window faults.
 
 | Core | Window | Config |
 |---|---|---|
 | CR52-0 | `0x40100000`–`0x403FFFFF` | `RCARV4H_BUILD_CR52_0` |
 | CR52-1 | `0x40400000`–`0x406FFFFF` | `RCARV4H_BUILD_CR52_1` |
 | CR52-2 | `0x40700000`–`0x409FFFFF` (reserved, no image) | — |
+| OpenAMP shared window | `0x40A00000`–`0x40AFFFFF`, non-cacheable | `RCAR_OPENAMP` (both cores) |
+| ICCOM CTA, channel 0 | `0x47FC7000`–`0x47FCEFFF`, non-cacheable | `RCAR_ICCOM` (CR52-0) |
+
+The two shared regions are mapped only by images that use them, and no
+image segment may land in them. Layout and handshake are in
+[ipc.md](ipc.md).
 
 `RCAR_ZERO_IMAGE_WINDOW` (default y) zeroes the window from `_sbss` to its
 end before the caches are enabled. The SDK lists executable-RAM ECC
@@ -168,6 +178,7 @@ sequences. Some of its data is wrong for V4H:
 
 ## References
 
+- IPC (OpenAMP, ICCOM): [ipc.md](ipc.md); plan [`plans/261124-1353-rcar-v4h-cr52-openamp-iccom-nuttx-ipc/plan.md`](../../../plans/261124-1353-rcar-v4h-cr52-openamp-iccom-nuttx-ipc/plan.md)
 - Delivery contract: [`plans/reports/brainstorm-261124-1321-rcar-v4h-cr52-sparrow-hawk-delivery-contract.md`](../../../plans/reports/brainstorm-261124-1321-rcar-v4h-cr52-sparrow-hawk-delivery-contract.md)
 - Plan: [`plans/261124-0751-rcar-v4h-cr52-sparrow-hawk-nuttx-bsp/plan.md`](../../../plans/261124-0751-rcar-v4h-cr52-sparrow-hawk-nuttx-bsp/plan.md)
 - Platform research: [`plans/reports/research-261124-1254-rcar-v4h-cr52-sparrow-hawk-nuttx-port.md`](../../../plans/reports/research-261124-1254-rcar-v4h-cr52-sparrow-hawk-nuttx-port.md)

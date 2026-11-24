@@ -7,11 +7,15 @@ board transcript, because no board was available for this delivery
 (2026-11-24).
 
 Build evidence (2026-11-24): `build_rcarv4h.sh` exits 0 for `nsh`,
-`nsh-cr52_1`, `gpio`, `i2c` and `spi-loopback` after clean builds, and the
-window check passes for every ELF. The CR52-1 ELF sits at `0x40400000` and
-all the others at `0x40100000`. `test/rcarv4h-cr52-elf-window-test.py` and
-`test/rcarv4h-cr52-pmsav8-mpu-encode-test.py` pass. The RZ/V2H `nsh-rtt`
-regression build passes too.
+`nsh-cr52_1`, `gpio`, `i2c`, `spi-loopback`, `openamp`, `openamp-cr52_1`
+and `iccom` after clean builds, and the window check passes for every ELF.
+The CR52-1 ELFs sit at `0x40400000` and all the others at `0x40100000`.
+`test/rcarv4h-cr52-elf-window-test.py`,
+`test/rcarv4h-cr52-pmsav8-mpu-encode-test.py`,
+`test/rcarv4h-cr52-ipc-shm-layout-test.py`,
+`test/rcarv4h-cr52-iccom-protocol-test.py` and
+`test/rcarv4h-cr52-gicv3-sgi-encode-test.py` pass. The RZ/V2H `nsh-rtt` and
+`ipcc` regression builds pass too. IPC details: [ipc.md](ipc.md).
 
 | Driver | Source | Tier | Config | Transcript | Open on target |
 |---|---|---|---|---|---|
@@ -28,6 +32,11 @@ regression build passes too.
 | I2C3 (CN7 3/5) | `rcar/rcar_i2c.c`, board `rcarv4h_i2c.c` | build-clean | `i2c` | — | `i2c dev` scan, SCL rate, bus recovery |
 | I2C4 (CN7 27/28) | `rcar/rcar_i2c.c` | build-clean | `i2c` | — | As I2C3 |
 | MSIOF0 SPI (CN7 19/21/23/24/7) | `rcar/rcar_spi.c`, board `rcarv4h_spi.c` | build-clean | `spi-loopback` | — | Loopback self-test with jumper 19 → 21, actual SCK rate (MSO parent clock assumed 66.666 MHz), CS timing on a scope |
+| MPU shared regions (IPC window, ICCOM CTA) | `rcar/rcar_mpu_regions.c` | build-clean | `openamp*`, `iccom` | — (host encode test only) | Non-cacheable attribute in effect, no fault on access |
+| SGI doorbell (SGI 8, `rcar_irq_send_sgi`) | `rcar/rcar_irq.c` | build-clean | `openamp*` | — (host encode test only) | Delivery CR52-0 ↔ CR52-1 with runtime MPIDR routing |
+| OpenAMP RPTUN lower half (host `cr52-0`, remote `cr52-1`) | `rcar/rcar_openamp.c`, `rcar_rpmsg.c` | build-clean | `openamp`, `openamp-cr52_1` | — (host layout test only) | Attach in both start orders, `rptun ping`, stale message after a one-core restart |
+| `/dev/ipcc0` | `rcar/rcar_ipc_ipcc.c` | build-clean | `openamp*` | — | Echo both ways, ring-full queueing |
+| ICCOM channel 0 (`/dev/iccom0`) | `rcar/rcar_iccom_proto.c`, `rcar_iccom.c`, `rcar_iccom_chardev.c` | build-clean | `iccom` | — (host protocol test only) | Needs a CA76 Linux peer: MFIS direction, interrupt number, INT clearing |
 
 Board pre-flight (U-Boot `bdinfo`/`rproc` capture, a known-good Renesas
 demo at `0x40100000`, DRAM ECC state) is blocked with no board. Capture it
