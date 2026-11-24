@@ -36,6 +36,7 @@ The first three are in commit `33603a2d847`.
 | `actuator_test iterate-motors` | `8b3bd796` | 800 µs (32 %) on each slot is expected: each slot lasts 400 ms, shorter than the 500 ms output ramp. |
 | All four channels | `778ab9f4` (stop-path fix) | User reported all four outputs working on the analyzer after the stop-path fix. |
 | RTT `pwm_out status` before / during / after `-v 0.15 -t 3` | `778ab9f4` | Channel 0 value 800 → 1306 → 800. |
+| Live switch `pwm_out stop`, `PWM_MAIN_TIM0..3=-5`, `dshot start` (DShot150, disarmed) | `99b9a8d5` (DShot pad fix) | RTT: `DShot TX initialized: 150000 Hz, channels 0xf`, frames complete (128 bytes each), about 19 frames/s, no errors. Analyzer (user): 2.5 µs high pulses with a ~7 µs period, i.e. DShot150 zero bits (3/8 of 6.67 µs). Idle level between frames, stop level and non-zero throttle not yet reported. |
 | Boot with pads driven low from early init | `ed0cc0b7` | No timer initialization error in the boot log; channels 0–3 report 800 µs disarmed and channel 0 reaches 1306 during `-v 0.15`. |
 
 ## Limits
