@@ -162,8 +162,13 @@ console holding the probe (`platforms/nuttx/Debug/rtt-console-stop.sh`: the
 managed bridge, other JLinkExe bridges on port 19021 and SEGGER RTT client,
 logger and viewer tools) and never restarts it; open RTT manually afterwards. It
 auto-detects `JLINK_SERIAL` when one probe is attached and refuses
-`renesas_rdk-rzv2h-io-cm33_*`. Loading a pair is mechanical only; it does not
-qualify an actuator pair.
+`renesas_rdk-rzv2h-io-cm33_*`. Before the probe is touched, every CR8 image is
+copied to a private snapshot and checked with the PT_LOAD address allowlist
+(`platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py`, the check the managed
+loader runs); the loader gets that snapshot. An image it rejects, for example a
+CR8-1 image still linked at the boot firmware's `0x44000000`, is refused with
+exit 2 and its rejected segments are printed. Loading a pair is mechanical
+only; it does not qualify an actuator pair.
 
 `./flash_dual.sh <cr8_0-target> [<cr8_1-target>]` is the dual-core shortcut. It
 resolves both names through `./flash.sh --resolve` (a bare config name such as
@@ -172,10 +177,12 @@ pair load. With only the CR8-0 target it adds the default CR8-1 partner:
 
 | CR8-0 target | Default CR8-1 partner |
 |--------------|-----------------------|
-| `renesas_rdk-rzv2h_demo`, `renesas_rdk-rzv2h_demosih` | `renesas_rdk-rzv2h-io-cr8_1_demo` (heartbeat responder) |
+| `renesas_rdk-rzv2h_demosih` | `renesas_rdk-rzv2h-io-cr8_1_demo` (heartbeat responder) |
 | `renesas_rdk-rzv2h_dualcr8` | `renesas_rdk-rzv2h-io-cr8_1_default` (supervisor candidate) |
 
-Any other CR8-0 target needs the CR8-1 target named explicitly.
+Any other CR8-0 target needs the CR8-1 target named explicitly. The
+single-core `renesas_rdk-rzv2h_demo` drone has no raw IPC link and no
+partner; load it alone with `./flash.sh renesas_rdk-rzv2h_demo`.
 `./flash_dual.sh --list` prints the pairs and whether both ELFs are built. Exit
 codes match `./flash.sh`: 0 both cores verified running, 1 load failed, 2 usage
 or target refused. A load also fails when J-Link answers a monitor command
@@ -187,7 +194,7 @@ skipped; reset the board and load again.
 samples. With no argument it loads the last build, `nuttx/nuttx`, on the core
 its `nuttx/.config` names (RZ/V2H CR8-0/CR8-1, EVK-RA8P1, FPB-RA8E1), and
 refuses when `.config` is newer than the ELF. An explicit ELF is mapped by its
-entry address (CR8-0 `0x408xxxxx`, CR8-1 `0x418xxxxx`) or file name;
+entry address (CR8-0 `0x408xxxxx`, CR8-1 `0x420xxxxx`) or file name;
 `--core cr8_0|cr8_1|ra8p1|ra8e1` overrides. Two ELFs load as a CR8-0 + CR8-1
 pair, e.g. `nuttx/nuttx-ipcc-demo-cr8_0-serial.elf nuttx/nuttx-ipcc-demo-cr8_1.elf`.
 Both scripts share `platforms/nuttx/Debug/jlink-flash-ra8.sh` for RA8 flashing.

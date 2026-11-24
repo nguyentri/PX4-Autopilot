@@ -171,14 +171,6 @@ class PairingAndRoutes(unittest.TestCase):
     def test_pair_table_is_complete(self):
         self.assertEqual(sorted(self.pair), list(range(42)))
 
-    @unittest.skipUnless(FSP_PAIR_H.exists(), 'FSP 4.2.0 reference not present')
-    def test_pair_table_matches_fsp(self):
-        rows = re.findall(r'\{(\d+),\s*R_MHU_NS\d+,\s*(\d+),\s*R_MHU_NS\d+,\s*\},?'
-                          r'\s*/\* MHU NS CH(\d+) \*/', FSP_PAIR_H.read_text())
-        fsp = {int(ch): (int(msg), int(rsp)) for msg, rsp, ch in rows}
-        self.assertEqual(len(fsp), 42)
-        self.assertEqual(self.pair, fsp)
-
     def assert_link(self, init_tx, init_rx, resp_tx, resp_rx):
         msg = lambda ch: self.pair[ch][0]
         rsp = lambda ch: self.pair[ch][1]
@@ -217,6 +209,18 @@ class PairingAndRoutes(unittest.TestCase):
         r = self.routes
         self.assertEqual(r['RZV_IPC_LOOPBACK_TX_CHAN'],
                          r['RZV_IPC_LOOPBACK_RX_CHAN'])
+
+
+@unittest.skipUnless(FSP_PAIR_H.exists(), 'FSP 4.2.0 reference not present')
+class FspPairReference(unittest.TestCase):
+    """Needs the local-only refs/ FSP tree, so the catalog runs it as a reference test."""
+
+    def test_pair_table_matches_fsp(self):
+        rows = re.findall(r'\{(\d+),\s*R_MHU_NS\d+,\s*(\d+),\s*R_MHU_NS\d+,\s*\},?'
+                          r'\s*/\* MHU NS CH(\d+) \*/', FSP_PAIR_H.read_text())
+        fsp = {int(ch): (int(msg), int(rsp)) for msg, rsp, ch in rows}
+        self.assertEqual(len(fsp), 42)
+        self.assertEqual(pair_table(), fsp)
 
 
 if __name__ == '__main__':

@@ -19,9 +19,9 @@
 # Usage:
 #   JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh <cr8_0-elf> <cr8_1-elf>
 #   JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh --verbose <elf0> <elf1>
-#   PX4 demo heartbeat pair (CR8-0 demo + heartbeat-only CR8-1 demo):
+#   PX4 demosih heartbeat pair (CR8-0 demosih + heartbeat-only CR8-1 demo):
 #   JLINK_SERIAL=<probe-sn> ./rzv2h-ipc-demo-load-both-auto.sh \
-#     build/renesas_rdk-rzv2h_demo/renesas_rdk-rzv2h_demo.elf \
+#     build/renesas_rdk-rzv2h_demosih/renesas_rdk-rzv2h_demosih.elf \
 #     build/renesas_rdk-rzv2h-io-cr8_1_demo/renesas_rdk-rzv2h-io-cr8_1_demo.elf
 #
 # Env:

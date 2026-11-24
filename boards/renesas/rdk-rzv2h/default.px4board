@@ -14,6 +14,8 @@ CONFIG_BOARD_HAS_RZV_SERIAL_ICOUNT=y
 CONFIG_BOARD_CONSTRAINED_FLASH=y
 CONFIG_BOARD_CONSTRAINED_MEMORY=y
 CONFIG_BOARD_NO_HELP=y
+# Install airframe 4210 (S500 plus the reference values); SYS_AUTOSTART picks it.
+CONFIG_BOARD_RDK_RZV2H_REFERENCE_AIRFRAME=y
 
 # Serial port configuration
 # SCI4 (ttyS4): TFmini payload UART; RTT0 provides the NSH console

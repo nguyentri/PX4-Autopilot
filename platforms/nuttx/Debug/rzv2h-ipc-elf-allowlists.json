@@ -18,8 +18,8 @@
         {"name": "local-dtcm", "start": "0x00020000", "end": "0x00040000"},
         {"name": "private-sram-cache", "start": "0x081c0000", "end": "0x081e0000"},
         {"name": "private-sram-uncache", "start": "0x081e0000", "end": "0x08200000"},
-        {"name": "private-ddr-cache", "start": "0x44000000", "end": "0x44800000"},
-        {"name": "private-ddr-uncache", "start": "0x44800000", "end": "0x45000000"}
+        {"name": "private-ddr-cache", "start": "0x42000000", "end": "0x42800000"},
+        {"name": "private-ddr-uncache", "start": "0x42800000", "end": "0x42c00000"}
       ]
     },
     "R9A09G057H44_M33_0": {

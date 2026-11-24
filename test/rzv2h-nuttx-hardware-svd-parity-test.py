@@ -62,7 +62,20 @@ MACRO = re.compile(r"^#define (\w+)(\(([\w, ]*)\))? (.*)$")
 
 
 def compile_flags(stub):
-    return DEFINES + ["-I", str(stub), "-I", str(NUTTX / "arch/arm/src/rzv"), "-I", str(NUTTX / "include")]
+    # The host libc serves <stdint.h> and <stdio.h>; the stub supplies nuttx/config.h,
+    # nuttx/irq.h and arch/rzv.  NuttX's own include/ is left out on purpose: its
+    # include/arch link points at whichever board the shared tree was last configured
+    # for, so the result would depend on that board (an RA8 config fails to preprocess).
+    return DEFINES + ["-I", str(stub), "-I", str(NUTTX / "arch/arm/src/rzv")]
+
+
+def write_host_stub(stub):
+    """Create the minimal header tree the rzv hardware headers need on the host."""
+    Path(stub, "nuttx").mkdir()
+    Path(stub, "nuttx", "config.h").write_text("/* host stub for the parity check */\n")
+    Path(stub, "nuttx", "irq.h").write_text("/* host stub: no NuttX IRQ API is needed */\n")
+    Path(stub, "arch").mkdir()
+    Path(stub, "arch", "rzv").symlink_to(NUTTX / "arch/arm/include/rzv", target_is_directory=True)
 
 
 def header_macros(compiler, header, stub):
@@ -212,8 +225,7 @@ class NuttxHardwareSvdParityTest(unittest.TestCase):
         headers = sorted(HARDWARE.glob("rzv_*.h"))
         self.assertGreater(len(headers), 30)
         with tempfile.TemporaryDirectory() as stub:
-            Path(stub, "nuttx").mkdir()
-            Path(stub, "nuttx", "config.h").write_text("/* host stub for the parity check */\n")
+            write_host_stub(stub)
             for header in headers:
                 stem = header.stem[len("rzv_"):]
                 index = register_index(svd, groups.get(GROUP.get(stem), []))

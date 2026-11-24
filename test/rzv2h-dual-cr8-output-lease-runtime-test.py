@@ -17,8 +17,8 @@ SPEC.loader.exec_module(EXPANDED)
 REPAIR = EXPANDED.REPAIR
 extract = REPAIR.extract
 
-PROTOCOLS = (BOARDS / 'rdk-rzv2h/px4io_cr8_0/protocol.h',
-             BOARDS / 'rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h',
+PROTOCOLS = (BOARDS / 'rdk-rzv2h/rzv2h_outputs/protocol.h',
+             BOARDS / 'rdk-rzv2h-io-cr8_1/rzv2h_io/protocol.h',
              BOARDS / 'rdk-rzv2h-io-cm33/px4io_m33/protocol.h')
 
 

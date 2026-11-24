@@ -47,7 +47,7 @@ class DualCr8Artifacts(unittest.TestCase):
                     self.assertTrue(CHECK.in_regions(load['address'], load['memory'], core['regions']))
                 rtt.append(symbols['_SEGGER_RTT'])
         # Each control block sits in its own core's non-cacheable SRAM window
-        # (SRAM_UNCACHE in script.ld), so a host reads it without a cache
+        # (SRAM_UNCACHE in the NuttX board linker script), so a host reads it without a cache
         # flush.  The exact offset follows the RTT buffer sizes.
         windows = [(0x081a0000, 0x081bfffc), (0x081e0000, 0x081ffffc)]
         self.assertEqual(len(rtt), len(windows))

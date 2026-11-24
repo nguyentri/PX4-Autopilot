@@ -261,8 +261,9 @@ services. Transport failure is logged and does not abort local PX4 startup.
 ## Default Parameters (rc.board_defaults.cmds)
 
 ```
-# S500 quad-X configuration (matches the checked-in RZ/V2H reference)
-param set-default SYS_AUTOSTART 4014
+# S500 quad-X: airframe 4210 runs the stock 4014_s500 chain, then restores
+# the reference values that chain replaces
+param set-default SYS_AUTOSTART 4210
 
 # Volatile pre-G9 dataman backend
 param set-default SYS_DM_BACKEND 1
@@ -284,6 +285,26 @@ dataman, RC, estimator, control, output, GPS, and MAVLink startup. The board
 sensor hook starts three ICM-45686 on SPI0 and BMM150, BMP390L and INA228 on
 SCI7 bus 7. After the defaults, the script starts `pwm_out` or `dshot` from
 `PWM_MAIN_TIM0`.
+
+`rcS` runs the selected airframe after this file, and the last `param
+set-default` wins. The stock S500 chain (`rc.mc_defaults`, then `4014_s500`)
+would replace the reference roll/pitch rate gains, the rotor positions,
+`IMU_GYRO_RATEMAX`, `NAV_ACC_RAD`, the RTL altitudes, `GPS_UBX_DYNMODEL` and
+`EKF2_RNG_FOG`. Airframe `4210_rzv2h_rdk_s500`, installed by
+`CONFIG_BOARD_RDK_RZV2H_REFERENCE_AIRFRAME`, sources that chain and then
+restores those values, so `default` and `demo` end at the reference values.
+One value is the port's own: `IMU_GYRO_RATEMAX` is 800 Hz, not the
+reference's 400. The reference caps the ICM-45686 FIFO read at 200 Hz for its
+1 MHz SPI; SPI0 here runs at 20 MHz (200 MHz P4CLK / 10), so each driver reads
+eight 6400 Hz samples per read. At 20-byte FIFO records that is about 5% of
+SPI0 per IMU, independent of the read rate.
+`test/rzv2h-reference-airframe-parity-test.py` checks the result. `/fs` is
+TMPFS, so saved parameters last only until the next reset; a stored
+`SYS_AUTOSTART` other than 4210 can only come from the current boot (or from
+persistent storage once it exists). If `param show SYS_AUTOSTART` is not 4210,
+reload the image; once parameters persist, run `param set SYS_AUTOSTART 4210`
+and `param save` once before the reset. `dualcr8` stays on
+4014 because its CR8-1 output contract keys on that ID.
 
 ## Integration Notes
 

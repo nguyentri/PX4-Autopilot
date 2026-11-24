@@ -96,27 +96,21 @@
       "owner": "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/nsh installed .config plus NuttX Kconfig defaults",
       "regenerate": "Configure the matching PX4 board target, run menuconfig, then run make savedefconfig as directed by this file\u2019s header; copy only the resulting reviewed defconfig"
     },
-    "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/scripts/script.ld": {
-      "classification": "configuration",
-      "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
-      "owner": "PX4 Renesas board maintainers",
-      "regenerate": "Not generated; maintain this source directly"
-    },
-    "boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/io-supervisor.cpp": {
+    "boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/io-supervisor.cpp": {
       "classification": "handwritten",
       "evidence": "Tracked RZ/V2H board implementation with maintained C++ definitions; inspected file has no generated/vendor designation.",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source/configuration directly"
     },
-    "boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.cpp": {
+    "boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/output-lease.cpp": {
       "classification": "handwritten"
     },
-    "boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.h": {
+    "boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/output-lease.h": {
       "classification": "handwritten"
     },
-    "boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h": {
+    "boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/protocol.h": {
       "classification": "handwritten",
-      "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
+      "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found; moved from px4io_cr8_1/ to rzv2h_io/ on 2026-11-24",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
@@ -276,31 +270,25 @@
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
-    "boards/renesas/rdk-rzv2h/nuttx-config/scripts/script.ld": {
+    "boards/renesas/rdk-rzv2h/rzv2h_outputs/CMakeLists.txt": {
       "classification": "configuration",
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
-    "boards/renesas/rdk-rzv2h/px4io_cr8_0/CMakeLists.txt": {
-      "classification": "configuration",
-      "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
-      "owner": "PX4 Renesas board maintainers",
-      "regenerate": "Not generated; maintain this source directly"
-    },
-    "boards/renesas/rdk-rzv2h/px4io_cr8_0/module.yaml": {
+    "boards/renesas/rdk-rzv2h/rzv2h_outputs/module.yaml": {
       "classification": "configuration",
       "evidence": "Tracked RZ/V2H board ROMFS/structured configuration input; inspected file has no generated/vendor designation.",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source/configuration directly"
     },
-    "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h": {
+    "boards/renesas/rdk-rzv2h/rzv2h_outputs/protocol.h": {
       "classification": "handwritten",
       "evidence": "Exact tracked path at c4a230ba8244d68a5b954fdb99c8eed1e0741b1a; ownership reviewed in plans/261012-1525-renesas-coding-standards/reports/ownership-review.md; no generated/vendor evidence found",
       "owner": "PX4 Renesas board maintainers",
       "regenerate": "Not generated; maintain this source directly"
     },
-    "boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp": {
+    "boards/renesas/rdk-rzv2h/rzv2h_outputs/remote-outputs.cpp": {
       "classification": "handwritten",
       "evidence": "Tracked RZ/V2H board implementation with maintained C++ definitions; inspected file has no generated/vendor designation.",
       "owner": "PX4 Renesas board maintainers",

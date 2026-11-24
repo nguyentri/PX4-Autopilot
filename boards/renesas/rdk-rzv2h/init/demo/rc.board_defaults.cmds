@@ -4,9 +4,11 @@
 # Module ownership remains with the common PX4 rcS and rc.board_sensors.
 #------------------------------------------------------------------------------
 
-# The checked-in RZ/V2H reference selects the S500 quad-X airframe. Keep this
-# as a default so persisted user values remain authoritative.
-param set-default SYS_AUTOSTART 4014
+# The RZ/V2H reference flies an S500 quad-X. Airframe 4210 runs the stock
+# S500 chain and then restores the reference values it would replace (rcS runs
+# the airframe after this file). Keep this as a default so persisted user
+# values remain authoritative.
+param set-default SYS_AUTOSTART 4210
 
 # Pre-G9 storage is deliberately volatile; do not select an unavailable
 # persistent dataman backend.
@@ -67,19 +69,114 @@ param set-default PWM_MAIN_FUNC1 101
 param set-default PWM_MAIN_FUNC2 102
 param set-default PWM_MAIN_FUNC3 103
 param set-default PWM_MAIN_FUNC4 104
-param set-default PWM_MAIN_MIN1 1100
-param set-default PWM_MAIN_MIN2 1100
-param set-default PWM_MAIN_MIN3 1100
-param set-default PWM_MAIN_MIN4 1100
-param set-default PWM_MAIN_MAX1 1900
-param set-default PWM_MAIN_MAX2 1900
-param set-default PWM_MAIN_MAX3 1900
-param set-default PWM_MAIN_MAX4 1900
-param set-default PWM_MAIN_DIS1 1000
-param set-default PWM_MAIN_DIS2 1000
-param set-default PWM_MAIN_DIS3 1000
-param set-default PWM_MAIN_DIS4 1000
-param set-default PWM_MAIN_FAIL1 1000
-param set-default PWM_MAIN_FAIL2 1000
-param set-default PWM_MAIN_FAIL3 1000
-param set-default PWM_MAIN_FAIL4 1000
+param set-default PWM_MAIN_MIN1 1150
+param set-default PWM_MAIN_MIN2 1150
+param set-default PWM_MAIN_MIN3 1150
+param set-default PWM_MAIN_MIN4 1150
+param set-default PWM_MAIN_MAX1 1940
+param set-default PWM_MAIN_MAX2 1940
+param set-default PWM_MAIN_MAX3 1940
+param set-default PWM_MAIN_MAX4 1940
+param set-default PWM_MAIN_DIS1 800
+param set-default PWM_MAIN_DIS2 800
+param set-default PWM_MAIN_DIS3 800
+param set-default PWM_MAIN_DIS4 800
+param set-default PWM_MAIN_FAIL1 800
+param set-default PWM_MAIN_FAIL2 800
+param set-default PWM_MAIN_FAIL3 800
+param set-default PWM_MAIN_FAIL4 800
+
+#------------------------------------------------------------------------------
+# Reference drone values, shared with the default target
+# (init/rc.board_defaults.cmds): the PWM limits above, flight modes, RC
+# calibration and channel map, board mount, IMU filtering, failsafes and S500
+# tuning. The reference's sensor
+# calibrations (CAL_*) belong to its own sensors and are not copied.
+#------------------------------------------------------------------------------
+
+# Flight modes on CH5: Stabilized / Altitude / Offboard.
+param set-default COM_FLTMODE1 8
+param set-default COM_FLTMODE4 1
+param set-default COM_FLTMODE6 7
+
+# RC calibration and channel map (FS-A8S SBUS receiver).
+param set-default RC1_MIN 1015
+param set-default RC1_MAX 2007
+param set-default RC1_TRIM 1510
+param set-default RC2_MIN 1012
+param set-default RC2_MAX 2013
+param set-default RC2_TRIM 1505
+param set-default RC3_MIN 1025
+param set-default RC3_MAX 2013
+param set-default RC3_TRIM 1025
+param set-default RC4_MIN 1012
+param set-default RC4_MAX 2013
+param set-default RC4_TRIM 1497
+param set-default RC5_MIN 1012
+param set-default RC5_MAX 2014
+param set-default RC5_TRIM 1513
+param set-default RC6_MIN 1012
+param set-default RC6_MAX 2014
+param set-default RC6_TRIM 1513
+param set-default RC7_MIN 1012
+param set-default RC7_MAX 2014
+param set-default RC7_TRIM 1513
+param set-default RC8_MIN 1012
+param set-default RC8_MAX 2014
+param set-default RC8_TRIM 1513
+param set-default RC_CHAN_CNT 18
+param set-default RC_MAP_ROLL 1
+param set-default RC_MAP_PITCH 2
+param set-default RC_MAP_THROTTLE 3
+param set-default RC_MAP_YAW 4
+param set-default RC_MAP_FLTMODE 5
+param set-default RC_MAP_RETURN_SW 6
+param set-default RC_MAP_ARM_SW 7
+param set-default RC_MAP_KILL_SW 8
+param set-default COM_RC_IN_MODE 2
+
+# Board orientation and level (the reference mount).
+param set-default SENS_BOARD_ROT 4
+param set-default SENS_BOARD_X_OFF 0.489
+param set-default SENS_BOARD_Y_OFF 0.947
+
+# Publish vehicle_imu at the reference 400 Hz (the ICM-45686 FIFO is read at
+# IMU_GYRO_RATEMAX, 800 Hz from airframe 4210, so every second read) and run
+# the ESC-RPM-free dynamic notch from gyro_fft. gyro_fft is built into this
+# image.
+param set-default IMU_INTEG_RATE 400
+param set-default IMU_GYRO_DNF_EN 2
+param set-default IMU_GYRO_FFT_EN 1
+
+# Rate, attitude and position control tuning. 4014_s500 replaces the roll and
+# pitch P and I gains below; airframe 4210 restores the same values after it.
+param set-default MC_ROLLRATE_K 0.5900
+param set-default MC_ROLLRATE_P 0.1430
+param set-default MC_ROLLRATE_I 0.2250
+param set-default MC_ROLLRATE_D 0.0040
+param set-default MC_PITCHRATE_K 0.5600
+param set-default MC_PITCHRATE_P 0.1390
+param set-default MC_PITCHRATE_I 0.3500
+param set-default MC_PITCHRATE_D 0.0036
+param set-default MC_YAWRATE_K 0.6000
+param set-default MC_YAWRATE_P 0.0930
+param set-default MC_YAWRATE_I 0.2400
+param set-default MC_YAWRATE_D 0.0028
+param set-default MC_ROLL_P 6.5
+param set-default MC_PITCH_P 6.5
+param set-default MC_YAW_P 5.0
+param set-default THR_MDL_FAC 0.3
+param set-default MPC_THR_HOVER 0.45
+param set-default MPC_LAND_SPEED 0.5
+param set-default MPC_Z_VEL_MAX_UP 1.5
+param set-default MPC_Z_VEL_MAX_DN 1.0
+param set-default MPC_ACC_UP_MAX 2.0
+param set-default MPC_ACC_DOWN_MAX 2.0
+param set-default MPC_MAN_TILT_MAX 25
+param set-default MPC_ALT_MODE 2
+
+# Failsafes, as on the reference: geofence breach holds, datalink loss after
+# 5 s, and RC loss disarms (in flight, that stops the motors).
+param set-default GF_ACTION 2
+param set-default COM_DL_LOSS_T 5
+param set-default NAV_RCL_ACT 6

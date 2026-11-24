@@ -47,3 +47,12 @@ config BOARD_RDK_RZV2H_REMOTE_OUTPUTS
 		I/O processor status from first boot instead of allowing an absent
 		publisher. Build the v3 PWM_MAIN producer; its unconfigured hardware
 		contract denies readiness. This does not qualify an image pair.
+
+config BOARD_RDK_RZV2H_REFERENCE_AIRFRAME
+	bool "Install the RDK S500 reference airframe (4210)"
+	default n
+	depends on MODULES_MC_RATE_CONTROL
+	---help---
+		Install airframe 4210, which runs the stock S500 chain and then
+		restores the reference flight stack's values that chain replaces.
+		Selected by SYS_AUTOSTART; installing it changes no parameter.

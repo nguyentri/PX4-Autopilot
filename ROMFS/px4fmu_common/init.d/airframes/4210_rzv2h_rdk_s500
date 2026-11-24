@@ -1,0 +1,53 @@
+#!/bin/sh
+#
+# @name RZ/V2H RDK S500 reference
+#
+# @type Quadrotor x
+# @class Copter
+#
+# The S500 quad-X flown by the RZ/V2H FreeRTOS reference flight stack. That
+# stack never runs an airframe script: it applies its board command list with
+# "param set", so every value it carries is final and every other parameter
+# keeps the PX4 compiled default.
+#
+# Here rcS runs rc.board_defaults before the airframe, so the stock S500 chain
+# (rc.mc_defaults, then 4014_s500) would replace part of the board's reference
+# values. This airframe keeps that chain for the multicopter setup and then
+# restores each value it replaces. Board-specific values (sensors, mount,
+# ports) stay in the board command lists.
+#
+# Not a measured airframe; physical flight qualification is pending.
+#
+
+. ${R}etc/init.d/airframes/4014_s500
+
+# Reference rate-controller gains (4014_s500 sets 0.18 and 0.15).
+param set-default MC_ROLLRATE_P 0.1430
+param set-default MC_ROLLRATE_I 0.2250
+param set-default MC_PITCHRATE_P 0.1390
+param set-default MC_PITCHRATE_I 0.3500
+
+# Reference rotor positions in metres (4014_s500 sets a normalized +-1).
+param set-default CA_ROTOR0_PX 0.17
+param set-default CA_ROTOR0_PY 0.17
+param set-default CA_ROTOR1_PX -0.17
+param set-default CA_ROTOR1_PY -0.17
+param set-default CA_ROTOR2_PX 0.17
+param set-default CA_ROTOR2_PY -0.17
+param set-default CA_ROTOR3_PX -0.17
+param set-default CA_ROTOR3_PY 0.17
+
+# Port value, not the reference's: the ICM-45686 FIFO read rate. The reference
+# caps the read at 200 Hz (800 Hz ODR) for its 1 MHz SPI. SPI0 here runs at
+# 20 MHz with the driver's 6400 Hz ODR, so read eight samples at 800 Hz, the
+# PX4 multicopter rate that rc.mc_defaults also sets.
+param set-default IMU_GYRO_RATEMAX 800
+
+# The reference keeps the PX4 compiled defaults for these; rc.mc_defaults
+# changes them (2 m acceptance, 30/10 m RTL, <1 g GPS model, 1.0 range-finder
+# fog).
+param set-default NAV_ACC_RAD 10
+param set-default RTL_RETURN_ALT 60
+param set-default RTL_DESCEND_ALT 30
+param set-default GPS_UBX_DYNMODEL 7
+param set-default EKF2_RNG_FOG 3.0

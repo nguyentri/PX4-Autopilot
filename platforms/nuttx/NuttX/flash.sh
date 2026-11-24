@@ -7,7 +7,7 @@
 # The image defaults to the last build, nuttx/nuttx. Its core comes from
 # nuttx/.config (board + RZV2H_BUILD_* / RA_CPU_CORE_CM33). An explicit ELF
 # (e.g. nuttx/nuttx-ipcc-demo-cr8_1.elf) is mapped by its entry address
-# (CR8-0 DDR 0x408xxxxx, CR8-1 DDR 0x418xxxxx) or by cr8_0/cr8_1/ra8p1/ra8e1
+# (CR8-0 DDR 0x408xxxxx, CR8-1 DDR 0x420xxxxx) or by cr8_0/cr8_1/ra8p1/ra8e1
 # in its file name; --core overrides both.
 #
 #   cr8_0, cr8_1  RZ/V2H volatile RAM load + start through
@@ -82,7 +82,9 @@ core_from_elf()
 	entry=$(readelf -h "${elf}" 2>/dev/null | awk '/Entry point/ {print $NF}')
 	case "${entry}" in
 		0x408?????|0x40[9a-f]?????) echo cr8_0; return 0 ;;
-		0x418?????|0x41[9a-f]?????) echo cr8_1; return 0 ;;
+		# CR8-1 private DDR cache window 0x42000000-0x427FFFFF. 0x418xxxxx was the
+		# CR8-1 entry before the private DDR moved; that range is CR8-0's now.
+		0x42[0-7]?????) echo cr8_1; return 0 ;;
 	esac
 	name=$(basename "${elf}")
 	case "${name}" in

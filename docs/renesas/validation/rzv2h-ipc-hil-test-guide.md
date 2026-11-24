@@ -563,18 +563,19 @@ adds `peer lost (3 heartbeats unacknowledged)` and then `peer back` on CR8-0.
 | VS Code load refused with `PROBE_BUSY` | Your manual bridge holds the probe: `nuttx-rtt-bridge.sh stop`, retry the load, then restart the bridge. |
 | Last resort | Stop the bridge and reload both (`rzv2h-ipc-demo-load-both-auto.sh <cr8_0.elf> <cr8_1.elf>` or VS Code Load Both); restart the bridge. |
 
-## PX4 demo heartbeat pair (`rzv2h_heartbeat`)
+## PX4 demosih heartbeat pair (`rzv2h_heartbeat`)
 
-The PX4 `demo` images use the same raw `/dev/ipcc1` link, but only for
-liveness. CR8-0 `renesas_rdk-rzv2h_demo` is the initiator and CR8-1
-`renesas_rdk-rzv2h-io-cr8_1_demo` is the responder. CR8-0 sends one v3
+The PX4 `demosih` image and its CR8-1 peer use the same raw `/dev/ipcc1`
+link, but only for liveness. CR8-0 `renesas_rdk-rzv2h_demosih` is the
+initiator and CR8-1 `renesas_rdk-rzv2h-io-cr8_1_demo` is the responder. CR8-0 sends one v3
 heartbeat every 100 ms; CR8-1 replies to each one it accepts, because a raw
 write blocks until the peer reads and two timer-driven writers time out. Each
 side reports its peer lost after 500 ms. Neither
-publishes uORB or drives outputs. CR8-0 also boots and flies the demo
-without CR8-1; its heartbeat then stays `lost`.
+publishes uORB or drives outputs. CR8-0 also boots and flies the SIH demo
+without CR8-1; its heartbeat then stays `lost`. The `demo` drone image is
+single-core (no raw IPC, no heartbeat) and is not part of this pair.
 
-Build both (`./build.sh renesas_rdk-rzv2h_demo`,
+Build both (`./build.sh renesas_rdk-rzv2h_demosih`,
 `./build.sh renesas_rdk-rzv2h-io-cr8_1_demo`), or select the `rzv-px4-demo`
 group in the VS Code extension and run Build All and Load Both. Then:
 
@@ -585,7 +586,7 @@ JLINK_SERIAL=<probe-sn> platforms/nuttx/Debug/rzv2h-ipc/rzv2h-px4-demo-heartbeat
 
 The check queries CR8-0 only through the MAVLink shell on SCI5
 (`platforms/nuttx/Debug/rzv2h-mavlink-shell-exec.py`, `/dev/ttyUSB0` at
-57600; PX4 images run MAVLink, not NSH, on SCI5). It queries CR8-1 through
+115200, the demosih `SER_TEL1_BAUD`; PX4 images run MAVLink, not NSH, on SCI5). It queries CR8-1 through
 one RTT bridge. It then holds CR8-1 halted for `HOLD_S` seconds (default 15)
 with `rzv2h-core-halt-resume.sh cr8_1 hold <s>` (no reset), expects CR8-0 to
 report `peer: lost` inside that window while its MAVLink shell still answers,

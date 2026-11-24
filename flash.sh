@@ -12,6 +12,12 @@
 #   CR8-0 + CR8-1 pair     both cores through rzv2h-ipc-demo-load-both-auto.sh
 #                          (CR8-0 first, CR8-1 last, then both verified).
 #   rdk-rzv2h-io-cm33_*    refused: a J-Link connect to the CM33 resets the SoC.
+#
+# Every RZ/V2H CR8 image first passes the PT_LOAD address allowlist
+# (platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py, the same check the managed
+# loader runs); an image it rejects, such as a CR8-1 image linked into the boot
+# firmware window, is refused before the probe is touched. The loader gets a
+# private copy of the checked ELF, so a rebuild during the load cannot swap it.
 #   evk-ra8p1*, fpb-ra8e1* program on-chip flash from the ELF with JLinkExe,
 #                          then reset and run.
 #
@@ -27,6 +33,7 @@ cd "$(dirname "$0")"
 ROOT=$(pwd)
 DEBUG_DIR="${ROOT}/platforms/nuttx/Debug"
 IPC_DIR="${DEBUG_DIR}/rzv2h-ipc"
+ALLOWLIST="${DEBUG_DIR}/rzv2h-ipc-elf-allowlist.py"
 VERBOSE_ARG=()
 
 print_usage()
@@ -151,6 +158,35 @@ stop_rtt_bridge()
 	}
 }
 
+# Copy a CR8 ELF to a private snapshot, run the address allowlist on that copy
+# and print its path. Exits 2 when the checker is missing or rejects the image.
+SNAPSHOT_DIR=""
+admit_rzv_elf()
+{
+	local core="$1" target="$2" device copy digest report
+	case "$core" in
+		cr8_0) device=R9A09G057H44_R8_0 ;;
+		cr8_1) device=R9A09G057H44_R8_1 ;;
+		*) echo "No address allowlist for core ${core}." >&2; exit 2 ;;
+	esac
+	if [ ! -f "${ALLOWLIST}" ]; then
+		echo "Refusing ${target}: the ELF address allowlist ${ALLOWLIST} is missing." >&2
+		exit 2
+	fi
+	copy="${SNAPSHOT_DIR}/${target}/${target}.elf"
+	mkdir -p "${copy%/*}"
+	cp "$(elf_of "$target")" "$copy"
+	digest=$(sha256sum "$copy" | cut -d' ' -f1)
+	if ! report=$(python3 "${ALLOWLIST}" --elf "$copy" --device "$device" \
+			--expect-sha256 "$digest" 2>&1) ||
+		! grep -qx 'RESULT=ADDRESS_CONTRACT_VERIFIED' <<<"$report"; then
+		printf '%s\n' "$report" >&2
+		echo "Refusing ${target}: its load addresses are not allowed on ${core}. Rebuild it with ./build.sh ${target}." >&2
+		exit 2
+	fi
+	printf '%s\n' "$copy"
+}
+
 # RA8: program flash from the ELF, then reset and run (shared helper).
 flash_ra8()
 {
@@ -205,16 +241,25 @@ done
 
 elf_of() { printf '%s/build/%s/%s.elf\n' "$ROOT" "$1" "$1"; }
 
+case "${KINDS[*]}" in
+	*cr8_0*|*cr8_1*)
+		SNAPSHOT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/flash-rzv2h.XXXXXX")
+		trap 'rm -rf "$SNAPSHOT_DIR"' EXIT
+		;;
+esac
+
 if [ "${#TARGETS[@]}" -eq 2 ]; then
 	if [ "${KINDS[0]}" != cr8_0 ] || [ "${KINDS[1]}" != cr8_1 ]; then
 		echo "Two targets are only accepted as a <CR8-0 target> <CR8-1 target> pair." >&2
 		exit 2
 	fi
+	cr8_0_elf=$(admit_rzv_elf cr8_0 "${TARGETS[0]}") || exit 2
+	cr8_1_elf=$(admit_rzv_elf cr8_1 "${TARGETS[1]}") || exit 2
 	ensure_serial
 	stop_rtt_bridge
 	echo "Loading CR8-0 ${TARGETS[0]} and CR8-1 ${TARGETS[1]}..."
 	"${IPC_DIR}/rzv2h-ipc-demo-load-both-auto.sh" "${VERBOSE_ARG[@]}" \
-		"$(elf_of "${TARGETS[0]}")" "$(elf_of "${TARGETS[1]}")" || exit 1
+		"$cr8_0_elf" "$cr8_1_elf" || exit 1
 	echo "Console: platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 $(elf_of "${TARGETS[0]}")"
 	exit 0
 fi
@@ -223,10 +268,11 @@ target="${TARGETS[0]}"
 elf=$(elf_of "$target")
 case "${KINDS[0]}" in
 	cr8_0|cr8_1)
+		admitted=$(admit_rzv_elf "${KINDS[0]}" "$target") || exit 2
 		ensure_serial
 		stop_rtt_bridge
 		echo "Loading ${target} into ${KINDS[0]} RAM and starting it..."
-		"${IPC_DIR}/rzv2h-load-one-core.sh" "${VERBOSE_ARG[@]}" "${KINDS[0]}" "$elf" || exit 1
+		"${IPC_DIR}/rzv2h-load-one-core.sh" "${VERBOSE_ARG[@]}" "${KINDS[0]}" "$admitted" || exit 1
 		if [ "${KINDS[0]}" = cr8_0 ]; then
 			echo "Note: a dual-core profile (e.g. dualcr8) also needs its CR8-1 image; ./flash_dual.sh loads the pair."
 		fi

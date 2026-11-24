@@ -804,7 +804,7 @@
       "note": "Exercise route rejection, isolation and pin-error propagation."
     },
     {
-      "id": "rzv2h-simple-test-support",
+      "id": "rzv2h-board-test-support",
       "path": "test/rzv2h-board-test-support.py",
       "kind": "helper",
       "groups": [
@@ -1209,7 +1209,7 @@
       "note": "Compiled by the owning Python host suite."
     },
     {
-      "id": "rzv2h-simple-spi-descriptor-test",
+      "id": "rzv2h-spi0-descriptor-test",
       "path": "test/rzv2h-spi0-descriptor-test.cpp",
       "kind": "fixture",
       "groups": [
@@ -2813,7 +2813,7 @@
       "note": "Exercise the free-running GTM HRT compare scheduling, guard retries and -EIO bound with a host register model."
     },
     {
-      "id": "rzv2h-ether-gbeth-cmsis-register-definitions-test",
+      "id": "rzv2h-ether-gbeth-driver-source-contract-test",
       "path": "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py",
       "kind": "test",
       "groups": [
@@ -2822,9 +2822,30 @@
       "target_access": "none",
       "command": [
         "{python}",
-        "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py"
+        "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py",
+        "GbethDriverSourceContract"
       ],
-      "note": "Compare GbEther register offsets and MAC/MTL/DMA bit fields in hardware/rzv_ether.h against CMSIS."
+      "note": "Check the GbEther driver sources: fatal bus error recovery, DMA stop order, RX tail and length guards, and the KSZ9131 TX DLL sequence."
+    },
+    {
+      "id": "rzv2h-ether-gbeth-cmsis-register-definitions-test",
+      "path": "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-ether-gbeth-cmsis-register-definitions-test.py",
+        "GbethCmsisRegisterDefinitions"
+      ],
+      "note": "Compare GbEther register offsets and MAC/MTL/DMA bit fields in hardware/rzv_ether.h against CMSIS.",
+      "requires": {
+        "paths": [
+          "refs/rz-fsp-4.2.0/rzv/rz/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H/cm/iodefines/gbeth_iodefine.h"
+        ]
+      }
     },
     {
       "id": "rzv2h-cpg-sysc-register-offset-parity-test",
@@ -2850,16 +2871,39 @@
       "target_access": "none",
       "command": [
         "{python}",
-        "test/rzv2h-mhu-crc-rtc-offset-parity-test.py"
+        "test/rzv2h-mhu-crc-rtc-offset-parity-test.py",
+        "MhuParity",
+        "CrcRtcParity",
+        "PairingAndRoutes"
       ],
-      "note": "Compare MHU, CRC and RTC register macros against rzv2h.svd and the IPC routes against the FSP r_mhu_b_ns pairing."
+      "note": "Compare MHU, CRC and RTC register macros against rzv2h.svd and check the IPC routes against the driver pair table."
+    },
+    {
+      "id": "rzv2h-mhu-fsp-pair-reference-test",
+      "path": "test/rzv2h-mhu-crc-rtc-offset-parity-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-mhu-crc-rtc-offset-parity-test.py",
+        "FspPairReference"
+      ],
+      "note": "Compare the MHU driver pair table with the FSP 4.2.0 r_mhu_b_ns pairing.",
+      "requires": {
+        "paths": [
+          "refs/rz-fsp-4.2.0/rzv/rz/fsp/src/bsp/mcu/rzv2h/bsp_mhu_b.h"
+        ]
+      }
     },
     {
       "id": "rzv2h-svd-generator-test",
       "path": "test/rzv2h-svd-generator-test.py",
       "kind": "test",
       "groups": [
-        "port-host"
+        "reference-host"
       ],
       "target_access": "none",
       "command": [
@@ -2869,6 +2913,9 @@
       "requires": {
         "tools": [
           "cc"
+        ],
+        "paths": [
+          "refs/rz-fsp-4.2.0/rzv/rz/fsp/src/bsp/cmsis/Device/RENESAS/Include/R9A09G057H.h"
         ]
       },
       "note": "Check that rzv2h.svd is current with generate-rzv2h-svd.py and matches the compiled FSP 4.2.0 CMSIS register layout, bit fields, CR8 IRQn_Type interrupts and core macros."
@@ -2947,7 +2994,7 @@
         "{python}",
         "test/rzv2h-flash-dual-pair-selection-test.py"
       ],
-      "note": "flash_dual.sh CR8-0 + CR8-1 pair selection run in an isolated tree with empty ELFs and a stub pair loader; no probe access."
+      "note": "flash.sh/flash_dual.sh pair selection and ELF address-allowlist admission, run in an isolated tree with stand-in ELFs, a stub allowlist and stub loaders; no probe access."
     },
     {
       "id": "rzv2h-mavlink-shell-exec",
@@ -3002,7 +3049,7 @@
         "<cr8_0-elf>",
         "<cr8_1-elf>"
       ],
-      "note": "PX4 demo heartbeat pair: CR8-0 via MAVLink shell on SCI5, CR8-1 via RTT, then hold CR8-1 halted 15 s (loss and recovery); optional --load; optional LOG_DIR (new or empty). One probe owner; exit 3 means diagnose before reload.",
+      "note": "PX4 demosih heartbeat pair: CR8-0 via MAVLink shell on SCI5 (115200), CR8-1 via RTT, then hold CR8-1 halted 15 s (loss and recovery); optional --load; optional LOG_DIR (new or empty). One probe owner; exit 3 means diagnose before reload.",
       "requires": {
         "environment": [
           "JLINK_SERIAL"
@@ -3018,7 +3065,7 @@
       ],
       "target_access": "none",
       "command": [],
-      "note": "Read-only GDB snippet for rzv2h_heartbeat state on either demo core, used with jlink-gdb-oneshot.py."
+      "note": "Read-only GDB snippet for rzv2h_heartbeat state on either core of the demosih pair, used with jlink-gdb-oneshot.py."
     },
     {
       "id": "rzv2h-bmp280-sample-test",
@@ -3091,6 +3138,41 @@
         ]
       },
       "note": "Full demo startup suite against a built demo tree: MAVLink FTP ring, generated ROMFS and embedded QGC metadata."
+    },
+    {
+      "id": "rzv2h-reference-airframe-parity-test",
+      "path": "test/rzv2h-reference-airframe-parity-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-reference-airframe-parity-test.py",
+        "AirframeParity"
+      ],
+      "note": "Evaluate the default and demo board defaults plus their airframe chain in rcS order; every value the chain writes must equal the reference value."
+    },
+    {
+      "id": "rzv2h-reference-airframe-mirror-test",
+      "path": "test/rzv2h-reference-airframe-parity-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-reference-airframe-parity-test.py",
+        "ReferenceMirror.test_default_list_mirrors_the_reference_for_every_airframe_key"
+      ],
+      "requires": {
+        "paths": [
+          "refs/rzv2h_drone_px4-dev/px4/boards/renesas/rzv/init/rc.board_defaults.cmds"
+        ]
+      },
+      "note": "Compare the effective default values for every airframe-chain key with the local reference board command list."
     },
     {
       "id": "rzv2h-dual-rtt-bridge-test",

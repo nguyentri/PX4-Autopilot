@@ -20,7 +20,7 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 |---|---|---|---|
 | [output-producer.hpp](../../../src/apps/output-producer.hpp) | product-owned | CR8-0 flight authority | Remote output producer (`OutputProducer`) advancing generations, state generation and binding causal tokens |
 | [output-snapshot.hpp](../../../src/apps/output-snapshot.hpp) | product-owned | CR8-0 flight authority | Lockless atomic seqlock snapshot (`AtomicRecord`, `OutputSnapshot`) between mixer callback and IPC sender |
-| [remote-outputs.cpp](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp) | product-owned | CR8-0 flight authority | CR8-0 remote outputs flight authority integration and backend status subscriber |
+| [remote-outputs.cpp](../../../boards/renesas/rdk-rzv2h/rzv2h_outputs/remote-outputs.cpp) | product-owned | CR8-0 flight authority | CR8-0 remote outputs flight authority integration and backend status subscriber |
 | [mixer_module.cpp](../../../src/lib/mixer_module/mixer_module.cpp) | product-owned | CR8-0 flight authority | Single standard mapping/limit transaction |
 | [control_allocator](../../../src/modules/control_allocator/) | product-owned | CR8-0 flight authority | Valid advancing actuator generation |
 | [commander](../../../src/modules/commander/) | product-owned | CR8-0 flight authority | Arm/mode and command-loss policy |

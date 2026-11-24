@@ -193,11 +193,11 @@ class RuntimeBoundaries(unittest.TestCase):
                 subprocess.run([str(binary),*args],check=True)
 
     def test_motor_progress_belongs_to_the_values_consumed_by_the_mixer(self):
-        source=(ROOT/'boards/renesas/rdk-rzv2h/px4io_cr8_0/remote-outputs.cpp').read_text()
+        source=(ROOT/'boards/renesas/rdk-rzv2h/rzv2h_outputs/remote-outputs.cpp').read_text()
         self.compile_run(PRODUCER,BOUNDARY.EXTRACT.definition(source,'bool RemoteOutputs::updateOutputs('),PRODUCER_MAIN)
 
     def test_responder_read_adopts_offline_and_live_epochs_before_dispatch(self):
-        source=(ROOT/'boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/io-supervisor.cpp').read_text()
+        source=(ROOT/'boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/io-supervisor.cpp').read_text()
         self.compile_run(SUPERVISOR,BOUNDARY.EXTRACT.definition(source,'void IoSupervisor::run('),
                          SUPERVISOR_MAIN,((),('quarantine',),('live', 'epoch')))
 

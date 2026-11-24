@@ -73,8 +73,8 @@ class DemoProtocol(unittest.TestCase):
 
     def test_legacy_protocol_headers_remain_c_compatible(self):
         headers = (
-            "boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h",
-            "boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h",
+            "boards/renesas/rdk-rzv2h/rzv2h_outputs/protocol.h",
+            "boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/protocol.h",
             "boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/protocol.h",
         )
         for index, header in enumerate(headers):

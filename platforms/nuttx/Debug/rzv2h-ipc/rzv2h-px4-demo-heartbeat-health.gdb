@@ -1,5 +1,5 @@
-# Read-only health sample of the rzv2h_heartbeat module in the PX4 demo pair.
-# Works on either core: CR8-0 renesas_rdk-rzv2h_demo (initiator) or CR8-1
+# Read-only health sample of the rzv2h_heartbeat module in the PX4 demosih pair.
+# Works on either core: CR8-0 renesas_rdk-rzv2h_demosih (initiator) or CR8-1
 # renesas_rdk-rzv2h-io-cr8_1_demo (responder). No target remote here.
 #
 #   JLINK_SERIAL=<probe-sn> ../jlink-gdb-oneshot.py cr8_1 <cr8_1 demo.elf> -x rzv2h-px4-demo-heartbeat-health.gdb

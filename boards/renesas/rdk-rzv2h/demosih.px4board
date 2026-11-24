@@ -5,7 +5,8 @@
 # unfitted BMM150), GPS and battery. Real and shown only: ICM45686 on SPI0/P93,
 # BMP280 on SCI7, TFmini on SCI4 and ADS1115 on SCI0. MAVLink on SCI5.
 # Physical motor outputs are compiled out; pwm_out_sim feeds SIH instead.
-# Optional CR8-1 peer: heartbeat-only over raw IPC, as in the demo profile.
+# Optional CR8-1 peer (io-cr8_1 demo): heartbeat-only over raw IPC. The demo
+# drone is single-core and has no such peer.
 CONFIG_BOARD_INIT_SUBDIR="demosih"
 # Embed parameter, event and actuator metadata for QGC on this custom target.
 CONFIG_BOARD_CONSTRAINED_FLASH=n

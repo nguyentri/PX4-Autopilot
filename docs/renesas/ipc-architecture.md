@@ -14,7 +14,7 @@ production readiness or end-to-end target validation.
 | Core | Intended software | Role | Private DDR (CR8/CM33 view) |
 |---|---|---|---|
 | CR8-0 | NuttX/PX4 | Flight stack | `0x40800000`–`0x417fffff` |
-| CR8-1 | NuttX/PX4 | `rzv2h_io` output supervisor (`default`) or heartbeat responder (`demo`) | `0x44000000`–`0x44ffffff` |
+| CR8-1 | NuttX/PX4 | `rzv2h_io` output supervisor (`default`) or heartbeat responder for `demosih` (`demo`) | `0x42000000`–`0x42bfffff` |
 | CM33 | NuttX raw sample / PX4IO output peer (no PWM backend) | optional safety or ESC peer | Secure SRAM image; secure-DDR shared rings |
 
 See [multicore-memory-map.md](./multicore-memory-map.md) for the authoritative
@@ -102,7 +102,7 @@ Raw-link semantics that callers must design around:
 
 ## 4. PX4IO Message Protocol
 
-The canonical application wire codec is defined in [`src/apps/protocol.hpp`](../../src/apps/protocol.hpp) and [`src/apps/protocol.cpp`](../../src/apps/protocol.cpp) as part of the shared `rzv2h_demo` library, mirrored by the board protocol headers ([CR8-0 protocol.h](../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h), [CR8-1 protocol.h](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h)). It owns message types, sizes, magic/version, sequence, CRC fields and little-endian serialization. Frames must
+The canonical application wire codec is defined in [`src/apps/protocol.hpp`](../../src/apps/protocol.hpp) and [`src/apps/protocol.cpp`](../../src/apps/protocol.cpp) as part of the shared `rzv2h_demo` library, mirrored by the board protocol headers ([CR8-0 protocol.h](../../boards/renesas/rdk-rzv2h/rzv2h_outputs/protocol.h), [CR8-1 protocol.h](../../boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/protocol.h)). It owns message types, sizes, magic/version, sequence, CRC fields and little-endian serialization. Frames must
 fit a raw entry. Messages are 28–52 bytes (v2) or exactly 44–64 bytes (v3), so every sender (CR8-0 bridge/producer,
 CR8-1 relay/worker, CM33) zero-pads each frame to one 64-byte entry (`RZV_IPC_RAW_PAYLOAD_SIZE`). Receivers check
 the CRC over the message length only. Its application CRC is distinct from the transport ABI;
@@ -148,7 +148,8 @@ on the flight core. These are `#error` guards in `uorb_bridge.cpp`.
 | PX4 default (`renesas_rdk-rzv2h_default`) | disabled | PX4/NuttX configuration |
 | PX4 dual-CR8 CR8-0 (`renesas_rdk-rzv2h_dualcr8`) | Exact-BOM sensor profile and coherent v3 `rzv2h_outputs` producer; no local motor outputs or legacy bridge; no qualified peer | [Candidate source/host/build procedure](validation/dualcr8-sensor-actuator-demo.md); earlier bridge captures remain historical |
 | PX4 CR8-1 `default` (`renesas_rdk-rzv2h-io-cr8_1_default`) | V3 `rzv2h_io` controller, independent output worker and reporter; hardware identity unconfigured, resources unclaimed | Candidate build/host evidence only |
-| PX4 demo/demosih (`renesas_rdk-rzv2h_demo`, `_demosih`) | `rzv2h_heartbeat` raw IPC initiator; CR8-1 `demo` optional | demo bench guide |
+| PX4 demo (`renesas_rdk-rzv2h_demo`) | disabled: single-core drone since 2026-11-23 | profile `forbidden_config` (`CONFIG_RZV_IPC_RAW`) |
+| PX4 demosih (`renesas_rdk-rzv2h_demosih`) | `rzv2h_heartbeat` raw IPC initiator; CR8-1 `demo` optional | [IPC HIL guide](validation/rzv2h-ipc-hil-test-guide.md#px4-demosih-heartbeat-pair-rzv2h_heartbeat) |
 | NuttX `:nsh` | disabled | defconfig |
 | NuttX `:ipcc` | CA55/OpenAMP smoke profile | build/source only |
 | NuttX `:ipcc-multi` | OpenAMP plus raw-link initiator profiles | build/source only |
@@ -260,7 +261,7 @@ end-to-end latency is still to be measured.
 
 #### CR8-1 output lease
 
-CR8-1 drives outputs through the output lease tracker (implemented in [`src/apps/actuator-lease.hpp`](../../src/apps/actuator-lease.hpp), [`src/apps/actuator-lease.cpp`](../../src/apps/actuator-lease.cpp), and legacy [output-lease.h](../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.h)),
+CR8-1 drives outputs through the output lease tracker (implemented in [`src/apps/actuator-lease.hpp`](../../src/apps/actuator-lease.hpp), [`src/apps/actuator-lease.cpp`](../../src/apps/actuator-lease.cpp), and legacy [output-lease.h](../../boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/output-lease.h)),
 which implements the software-specification state machine
 (Unclaimed → InitializedSafe → Ready → Armed, any failure or timeout → Inhibited / SafeFault):
 

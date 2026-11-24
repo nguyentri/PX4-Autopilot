@@ -16,23 +16,41 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 INIT = ROOT / "boards/renesas/rdk-rzv2h/init/demo"
+# Build tree for the build-dependent cases when --build-dir is not given. The other
+# focused profile tests default to their build tree the same way, and the sealed
+# builder runs every focused test without arguments right after the build.
+DEMO_BUILD = ROOT / "build/renesas_rdk-rzv2h_demo"
 BUILD_DIR = None
+# Set by --source-only. The demo build itself runs this test early, before the
+# ROMFS and the embedded metadata exist, so it must not read any build tree.
+SOURCE_ONLY = False
 STREAMS = (("HIGHRES_IMU", 10), ("SCALED_PRESSURE", 2),
            ("DISTANCE_SENSOR", 2), ("SERVO_OUTPUT_RAW_0", 2),
            ("NAMED_VALUE_FLOAT", 10))
 
 
 class DemoStartup(unittest.TestCase):
+    def built_tree(self, purpose):
+        # An explicit --build-dir is used as given, and --source-only skips these
+        # cases. Otherwise the default demo build tree is optional: a checkout that
+        # has not built the demo skips them.
+        if BUILD_DIR is not None:
+            return BUILD_DIR
+        if SOURCE_ONLY:
+            self.skipTest("--source-only does not read a build tree to " + purpose)
+        if not DEMO_BUILD.is_dir():
+            self.skipTest("build renesas_rdk-rzv2h_demo or pass --build-dir to " + purpose)
+        return DEMO_BUILD
+
     def test_telemetry_ring_can_send_mavlink_ftp(self):
-        if BUILD_DIR is None:
-            self.skipTest("pass --build-dir to exercise MAVLink serialization")
+        build = self.built_tree("exercise MAVLink serialization")
         body = runpy.run_path(str(ROOT / "test/rzv2h-board-test-support.py"))["body"]
         source = (ROOT / "src/modules/mavlink/mavlink_main.cpp").read_text()
         ftp_source = (ROOT / "src/modules/mavlink/mavlink_ftp.cpp").read_text()
         config = (INIT.parent.parent / "nuttx-config/demo/defconfig").read_text()
         tx_size = int(re.search(r"(?m)^CONFIG_SCI5_TXBUFSIZE=(\d+)$", config)[1])
         rx_size = int(re.search(r"(?m)^CONFIG_SCI5_RXBUFSIZE=(\d+)$", config)[1])
-        resolved = (BUILD_DIR / "NuttX/nuttx/.config").read_text()
+        resolved = (build / "NuttX/nuttx/.config").read_text()
         for direction, expected in (("TX", tx_size), ("RX", rx_size)):
             self.assertEqual(int(re.search(
                 rf"(?m)^CONFIG_SCI5_{direction}BUFSIZE=(\d+)$", resolved)[1]), expected)
@@ -93,7 +111,7 @@ int main(int argc, char **argv) {
             binary = directory / "ftp-ring"
             compile_result = subprocess.run(
                 ["c++", "-std=c++14", "-Wno-address-of-packed-member", "-I",
-                 str(BUILD_DIR / "mavlink"), str(code), "-o", str(binary)],
+                 str(build / "mavlink"), str(code), "-o", str(binary)],
                 capture_output=True, text=True)
             self.assertEqual(compile_result.returncode, 0, compile_result.stderr)
             result = subprocess.run([str(binary), str(tx_size), str(rx_size)],
@@ -134,6 +152,8 @@ int main(int argc, char **argv) {
         demo = cmake.split('if(PX4_BOARD_LABEL STREQUAL "demo")\n', 1)[1].split("endif()", 1)[0]
         self.assertNotRegex(demo, r"(?m)^\s*add_subdirectory\([^)]*ipc_heartbeat")
         self.assertRegex(demo, r"(?m)^\s*add_subdirectory\([^)]*adc_telemetry")
+        # Only an explicit --build-dir: the build-independent port-host group runs
+        # this case too, so it must not read whatever demo tree a checkout holds.
         if BUILD_DIR is not None:
             resolved = (BUILD_DIR / "NuttX/nuttx/.config").read_text()
             self.assertNotRegex(resolved, r"(?m)^CONFIG_RZV_IPC_RAW=y$")
@@ -207,6 +227,24 @@ printf 'gps=%s/%s rc=%s mag=%s\n' "${params[SER_GPS1_BAUD]}" "${params[SYS_HAS_G
                 # stick-input mode keeps the PX4 default (RC enabled).
                 self.assertIn("gps=115200/1 rc=2 mag=1", result.stdout)
 
+    def test_mount_imu_filter_and_failsafes_follow_the_reference_drone(self):
+        # The demo flies the reference board on the same mount and sensors as the
+        # default target, so these defaults must stay equal to the default target's.
+        def defaults(path):
+            found = {}
+            for line in path.read_text().splitlines():
+                words = line.split()
+                if words[:2] == ["param", "set-default"] and len(words) == 4:
+                    found[words[2]] = words[3]
+            return found
+        demo = defaults(INIT / "rc.board_defaults.cmds")
+        reference = defaults(INIT.parent / "rc.board_defaults.cmds")
+        for name in ("SENS_BOARD_ROT", "SENS_BOARD_X_OFF", "SENS_BOARD_Y_OFF",
+                     "IMU_INTEG_RATE", "IMU_GYRO_DNF_EN", "IMU_GYRO_FFT_EN",
+                     "GF_ACTION", "COM_DL_LOSS_T", "NAV_RCL_ACT"):
+            self.assertIn(name, reference)
+            self.assertEqual(demo.get(name), reference[name], name)
+
     def test_all_bus_sensors_are_attempted_even_if_one_fails(self):
         # The harness substitutes only driver exits, never sensor data.
         for imu_exit, mag_exit, baro_exit, adc_exit in itertools.product((0, 1), repeat=4):
@@ -251,9 +289,7 @@ ads1115() {{ echo "CALL ads1115 $*"; return {adc_exit}; }}
                 self.assertLessEqual(len(tokens), 15)
 
     def test_generated_romfs_contains_demo_hooks_and_serial_drivers(self):
-        if BUILD_DIR is None:
-            self.skipTest("pass --build-dir to check generated ROMFS")
-        init = BUILD_DIR / "etc/init.d"
+        init = self.built_tree("check generated ROMFS") / "etc/init.d"
         for name in ("rc.board_defaults.cmds", "rc.board_sensors", "rc.board_extras"):
             source = [line.strip() for line in (INIT / name).read_text().splitlines()
                       if line.strip() and not line.lstrip().startswith("#")]
@@ -273,9 +309,7 @@ ads1115() {{ echo "CALL ads1115 $*"; return {adc_exit}; }}
         self.assertIn("param set-default MAV_0_CONFIG 101", defaults)
 
     def test_qgc_actuator_metadata_is_served_from_the_firmware(self):
-        if BUILD_DIR is None:
-            self.skipTest("pass --build-dir to check embedded metadata")
-        extras = BUILD_DIR / "etc/extras"
+        extras = self.built_tree("check embedded metadata") / "etc/extras"
         general = json.loads(lzma.decompress(
             (extras / "component_general.json.xz").read_bytes()))
         types = {item["type"]: item for item in general["metadataTypes"]}
@@ -291,7 +325,11 @@ ads1115() {{ echo "CALL ads1115 $*"; return {adc_exit}; }}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--build-dir", type=Path)
+    tree = parser.add_mutually_exclusive_group()
+    tree.add_argument("--build-dir", type=Path)
+    tree.add_argument("--source-only", action="store_true",
+                      help="skip the cases that read a demo build tree")
     args, remaining = parser.parse_known_args()
     BUILD_DIR = args.build_dir
+    SOURCE_ONLY = args.source_only
     unittest.main(argv=[__file__, *remaining])

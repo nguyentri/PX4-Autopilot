@@ -186,14 +186,11 @@ refs
 !test/rzv2h_board_gpio_contract_test.py
 !test/rzv2h_gtm_contract_test.py
 !test/rzv2h_gpt_pwm_contract_test.py
-!test/rzv2h_sih_artifact_contract_test.py
-!test/rzv2h_sih_demo_contract_test.py
 !test/rzv2h_sci_spi_contract_test.py
 !test/rzv2h-icm20948-contract-test.py
 !test/rzv2h_payload_artifact_contract_test.py
-!test/rzv2h-simple-profile-contract-test.py
-!test/rzv2h-simple-artifact-contract-test.py
-!test/rzv2h-simple-test-support.py
+!test/rzv2h-board-test-support.py
+!test/rzv2h-reference-airframe-parity-test.py
 !test/rzv2h_bmm150_sample_contract_test.py
 !test/rzv2h-bmp280-sample-test.py
 rzv2h_sd.txt

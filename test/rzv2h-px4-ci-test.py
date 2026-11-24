@@ -194,6 +194,16 @@ class RootScript(unittest.TestCase):
             self.assertEqual(self.calls()[-2][0],['-C','platforms/nuttx/NuttX/nuttx','distclean'])
             self.assertEqual(self.calls()[-1],[['renesas_rdk-rzv2h_default'],None,'1'])
 
+    def test_lock_reexec_works_when_started_as_bash_build_sh(self):
+        # The helper re-runs build.sh under the lock.  Started as "bash build.sh", $0 is the
+        # bare name, which is not on PATH, so the re-exec must use the script's own path.
+        lock = self.root/'Tools/firmware_workspace/build_lock.sh'
+        lock.write_text('#!/bin/sh\nif [ "$1" = --check ]; then [ -n "$LOCK_HELD" ]; exit; fi\n'
+                        'LOCK_HELD=1 exec "$@"\n')
+        result = self.invoke('--no-clean', 'rdk-rzv2h')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls(), [[['renesas_rdk-rzv2h_default'], None, '1']])
+
     def test_no_clean_and_nonzero_propagation(self):
         self.process_environment['MAKE_EXIT']='7'
         self.assertEqual(self.invoke('--no-clean','rdk-rzv2h').returncode,7)

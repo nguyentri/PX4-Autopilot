@@ -12,10 +12,10 @@ true on 2026-10-13. Always re-read them from the ELF you load.
 | ELF | Core / J-Link device | Entry | `_SEGGER_RTT` | Console |
 |---|---|---|---|---|
 | `build/renesas_rdk-rzv2h_{default,demo,demosih,dualcr8}/*.elf` | CR8-0 `R9A09G057H44_R8_0` | `0x40800000` | `0x081a8404` (read it from the ELF) | NSH on RTT ch0 |
-| `build/renesas_rdk-rzv2h-io-cr8_1_{default,demo}/*.elf` | CR8-1 `R9A09G057H44_R8_1` | `0x44000000` | `0x081e2404` (read it from the ELF) | NSH on RTT ch0 |
+| `build/renesas_rdk-rzv2h-io-cr8_1_{default,demo}/*.elf` | CR8-1 `R9A09G057H44_R8_1` | `0x42000000` | `0x081e2404` (read it from the ELF) | NSH on RTT ch0 |
 | `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0.elf` | CR8-0 | `0x40800000` | `0x081a0000` | NSH on RTT |
 | `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_0-sci4.elf` | CR8-0 | `0x40800000` | none | NSH on SCI4 `/dev/ttyUSB0` 115200 |
-| `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf` | CR8-1 | `0x44000000` | `0x081e0000` | NSH on RTT |
+| `platforms/nuttx/NuttX/nuttx/nuttx-ipcc-raw-cr8_1.elf` | CR8-1 | `0x42000000` | `0x081e0000` | NSH on RTT |
 
 The bridge aliases default to the NuttX addresses (`0x081A0000` /
 `0x081E0000`). A PX4 CR8-0 image needs its ELF passed, otherwise the bridge

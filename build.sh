@@ -206,7 +206,9 @@ fi
 LOCK_HELPER="Tools/firmware_workspace/build_lock.sh"
 [ -x "$LOCK_HELPER" ] || { echo "Missing shared build lock helper: $LOCK_HELPER" >&2; exit 2; }
 if ! "$LOCK_HELPER" --check; then
-  exec "$LOCK_HELPER" "$0" "${ORIG_ARGS[@]}"
+  # Re-run this script by its absolute path: under "bash build.sh", $0 is a bare name
+  # that is not on PATH.
+  exec "$LOCK_HELPER" "$ROOT_DIR/build.sh" "${ORIG_ARGS[@]}"
 fi
 
 echo "=========================================="

@@ -14,10 +14,10 @@ This fork of PX4 Autopilot provides support for Renesas microcontroller and micr
 - ⏸ **Renesas EVK-RA8P1 PX4 CM85** — Basic Test (BSP, Shell, SPI, and PWM)
 - ⏸ **Renesas EVK-RA8P1 IO CM33** — Build Only
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 (Default)** — Build-Clean reference drone: RDK sensor extension (ICM-45686, BMM150, BMP390, M10, TFmini), RTT0 console, volatile `/fs/params`; four outputs as PWM (default) or DShot600/300/150 via `PWM_MAIN_TIM0..3=-3/-4/-5`; DShot motor-stop TX was bounded on target in the retired `dshot` image ([evidence](./docs/renesas/evidence/px4-hardware-tests-cr8-0-261021.md)); merged image not target-proven
-- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Demo / DemoSIH** — Bench demo (PWM, ICM-45686, BMP280, TFmini, QGC) and its SIH variant
+- ⏸ **Renesas RDK-RZV2H PX4 CR8_0 Demo / DemoSIH** — Single-core bench drone (PWM, ICM-45686, BMM150, BMP280, ADS1115, TFmini, M10 GPS, SBUS RC, QGC) and its SIH variant
 - ⏸ **Renesas RDK-RZV2H PX4 CR8_0 DualCR8** — Build-Clean exact-BOM sensor profile with a supervised remote-output producer; hardware identity unconfigured, no admitted actuator pair
 - ⏸ **Renesas RDK-RZV2H IO CR8_1 (Default)** — Build-Clean ABI-v3 output supervisor candidate for `dualcr8`; physical resources remain unclaimed until a selected hardware contract is admitted
-- ⏸ **Renesas RDK-RZV2H IO CR8_1 Demo** — IPC heartbeat demo peer
+- ⏸ **Renesas RDK-RZV2H IO CR8_1 Demo** — IPC heartbeat peer for DemoSIH
 - ⏸ **Renesas RDK-RZV2H IO CM33** — Build Only (raw IPC / IPCC build-clean with secure SRAM `0x08002800` vectors, non-secure MHU `0x50480000`; target boot/IPC proof pending)
 
 ### Build Targets
@@ -74,9 +74,12 @@ It links both `pwm_out` and `dshot`; `PWM_MAIN_TIM0..3` selects which one starts
 The `drone`, `dshot`, `simple`, `sih` and core-only targets and the CR8-1 PX4IO relay
 were retired on 2026-11-18; their validation docs and evidence remain as history.
 
-The `demo` target is a CR8-0 bench image: four 400 Hz PWM outputs, one polled
-ICM-45686 on SPI0/P93, BMP280 on SCI7, TFmini on SCI4 and QGroundControl on
-SCI5. See the [demo bench validation guide](./docs/renesas/validation/demo-bench-validation.md).
+The `demo` target is a single-core CR8-0 bench drone (CR8-1 unused): four
+400 Hz PWM outputs, one polled ICM-45686 on SPI0/P93, BMM150 and BMP280 on
+SCI7, ADS1115 on SCI0, TFmini on SCI4, M10 GPS on SCI9, SBUS RC on SCI6 and
+QGroundControl on SCI5. It takes the reference drone's PWM, RC and tuning
+defaults. `demosih` is its SIH variant and pairs with the CR8-1 heartbeat
+peer. See the [demo bench validation guide](./docs/renesas/validation/demo-bench-validation.md).
 
 The `dualcr8` target is build-clean for the exact-BOM sensor bring-up in the
 [dual-CR8 demo plan](./plans/261021-0230-rzv2h-dualcr8-sensor-demo/plan.md).
@@ -134,8 +137,10 @@ and it adds the CR8-1 partner (`./flash_dual.sh --list` shows the pairs):
 ./flash_dual.sh dualcr8 rdk-rzv2h-io-cr8_1_demo           # explicit CR8-1 target
 ```
 
-RZ/V2H CR8 images are volatile RAM loads started at `__start` (no SoC reset);
-the RZ/V2H CM33 target is refused because connecting to it resets the SoC.
+RZ/V2H CR8 images are volatile RAM loads started at `__start` (no SoC reset).
+Each image must pass the ELF load-address allowlist first, so a stale image
+linked into another core's or the boot firmware's memory is refused. The RZ/V2H
+CM33 target is refused because connecting to it resets the SoC.
 
 NuttX-only builds (driver bring-up, NSH test configs) use a separate script:
 

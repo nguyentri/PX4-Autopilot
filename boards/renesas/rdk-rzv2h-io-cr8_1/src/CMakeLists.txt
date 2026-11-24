@@ -59,7 +59,7 @@ if(PX4_BOARD_LABEL STREQUAL "default")
 	px4_add_module(
 		MODULE drivers__rzv2h_io
 		MAIN rzv2h_io
-		SRCS ${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_1/io-supervisor.cpp
+		SRCS ${CMAKE_CURRENT_LIST_DIR}/../rzv2h_io/io-supervisor.cpp
 		DEPENDS rzv2h_demo arch_io_pins
 	)
 elseif(PX4_BOARD_LABEL STREQUAL "demo")

@@ -66,7 +66,9 @@ validation scope.
 
 Both cores link the **private view at local `0x0`** (TCM is core-private); uniqueness is only in the
 AXI/SRAM/DDR/flash aliases. Verified by build + `readelf` on `renesas_rdk-rzv2h_default` and
-`renesas_rdk-rzv2h-io-cr8_1_default` this session.
+`renesas_rdk-rzv2h-io-cr8_1_default` in the 2026-07-12 slice. That check predates the CR8-1 DDR move:
+the CR8-1 DDR rows show the 2026-11-24 layout, which was checked only by building all seven profiles
+and reading their ELF load addresses, not on the board.
 
 | Region | CR8-0 (local/CR8 view) | CR8-1 (local/CR8 view) | Size | Status |
 |---|---|---|---|---|
@@ -76,18 +78,29 @@ AXI/SRAM/DDR/flash aliases. Verified by build + `readelf` on `renesas_rdk-rzv2h_
 | ITCM AXI alias (loader) | `0x1204_0000` | `0x1208_0000` | 128 K | OK |
 | SRAM cache | `0x0818_0000` | `0x081C_0000` | 128 K | OK |
 | SRAM uncache (+wait word) | `0x081A_0000` (`…081BFFFC`) | `0x081E_0000` (`…081FFFFC`) | 128 K | OK |
-| DDR cache (kernel text/data) | `0x4080_0000` | `0x4400_0000` | 8 M | OK (CR8-1 build-clean at the new base) |
-| DDR uncache | `0x4100_0000` | `0x4480_0000` | 8 M | OK (CR8-1 build-clean at the new base) |
+| DDR cache (kernel text/data) | `0x4080_0000` | `0x4200_0000` | 8 M | CR8-0 OK; CR8-1 build-clean (moved 2026-11-24, ELF DDR check only, not run on target) |
+| DDR uncache | `0x4100_0000` | `0x4280_0000` | 8 M (CR8-1: 4 M) | CR8-0 OK; CR8-1 build-clean (moved 2026-11-24, ELF DDR check only, not run on target) |
 | xSPI image (flash / srec VMA) | `0x2020_0000` / `0x6020_0000` | `0x2130_0000` / `0x6130_0000` | image | OK |
 
 DTCM enable (both cores, `arm_head.S`): `mcr p15,0,r0,c9,c1,0` with `r0 = 0x00020021` (base `0x00020000`,
 size `0b01000`=128 KB, enable) — byte-identical to FSP CR8 `startup.asm`; DTCM 128 KB confirmed by HWM §2.2.
 
-CR8-1 private DDR sits above the shared OpenAMP/IPC window (MPU regions 6/7 at `0x4400_0000`/`0x4480_0000`).
-`0x4180_0000`–`0x42EF_FFFF` stays reserved for CR8-0, so the CA55-loaded reference CR8-0 layout
-(uncache `0x4180_0000`, boot blobs at `0x4170_0000`) fits beside a running CR8-1. Linux RAM starts at
-`0x4800_0000`; boot firmware and U-Boot do not use `0x4000_0000`–`0x47FF_FFFF`. Linker ASSERTs in both CR8
-scripts reject overlap with CR8-0, the shared window and Linux RAM.
+CR8-1 private DDR sits below the shared OpenAMP/IPC window (MPU region 6: 8 MiB write-back at
+`0x4200_0000`; region 7: 4 MiB non-cacheable at `0x4280_0000`). `0x42C0_0000`–`0x42EF_FFFF` is an unused
+guard. `0x4180_0000`–`0x41FF_FFFF` stays reserved for CR8-0, so the CA55-loaded reference CR8-0 layout
+(cache 15 MiB from `0x4080_0000`, boot blobs at `0x4170_0000`, uncache `0x4180_0000`) fits beside a
+running CR8-1.
+
+Boot firmware owns `0x43F0_0000`–`0x47FF_FFFF`: TF-A BL31 stays resident at `0x4400_0000` and OP-TEE uses
+`0x4410_0000`–`0x47DF_FFFF`. With `TRUSTED_BOARD_BOOT=0` the TZC leaves this window open, so a CR8 write
+there corrupts it silently and the damage shows at the next secure call (PSCI, OP-TEE). This is a
+source-level finding, not yet checked on the board; see
+[the boot firmware research](../../plans/reports/research-261123-2323-rzv2h-boot-firmware-ddr-and-cr8-1-uboot-load.md).
+Linux RAM starts at `0x4800_0000`. Linker ASSERTs in both NuttX CR8 board scripts
+(`boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_{0,1}.ld`, which every RZ/V build links through
+`platforms/nuttx/CMakeLists.txt`) reject overlap with CR8-0, the shared window and the boot firmware
+window. The RZ/V PX4 boards carry no linker script of their own. MPU region 9 (16 MiB from `0x4300_0000`) still spans
+`0x43F0_0000`–`0x43FF_FFFF`; it only sets memory attributes, and no CR8 section links there.
 
 ICU INTR8SEL partition (single shared bank, per FSP): CR8-0 slots `0..84`, CR8-1 slots `85..126`.
 

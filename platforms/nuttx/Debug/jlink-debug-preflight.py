@@ -41,7 +41,7 @@ PROBE_PROCS = {"JLinkExe", "JLinkGDBServer", "JLinkGDBServerCLExe", "JLinkRTTCli
 PORTS = {19021: "RTT telnet (JLinkExe bridge or GDB server)", 50000: "GDB (rzv2h loaders, one-shot)",
          2331: "GDB (J-Link default, upload_jlink_gdb.sh)", 2341: "GDB (ad-hoc)"}
 # Link-time entry ranges of the RZ/V2H images in this tree.
-CORES = ((0x40800000, 0x41000000, "cr8_0"), (0x44000000, 0x44800000, "cr8_1"),
+CORES = ((0x40800000, 0x41000000, "cr8_0"), (0x42000000, 0x42800000, "cr8_1"),
          (0x08000000, 0x08100000, "cm33"))
 
 

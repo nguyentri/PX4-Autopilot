@@ -376,7 +376,7 @@ def check_binary(directory, profile, core, view, symbols):
     require(words[19:21] == (0x1234fedc, 0x562f5a52) and not any(words[21:]), 'native header signature/padding')
     destination_regions = [([0x12040000 if profile['core']=='CR8-0' else 0x12080000, 0x1fe00]),
                            ([0x08180000 if profile['core']=='CR8-0' else 0x081c0000, 0x20000]),
-                           ([0x40800000 if profile['core']=='CR8-0' else 0x44000000, 0x800000])]
+                           ([0x40800000 if profile['core']=='CR8-0' else 0x42000000, 0x800000])]
     require(words[0] == (0x20200080 if profile['core']=='CR8-0' else 0x21300080),
             'native flash source base')
     for i, part in enumerate(('itcm', 'sram', 'sdram')):
@@ -588,8 +588,7 @@ def check_pair(archive, contract, state_hash):
         view = elf_view((directory/(name+'.elf')).read_bytes())
         private.append([(s['address'],s['address']+s['size']) for s in view['sections'].values()
                         if s['flags']&2 and s['size'] and
-                        (0x08000000 <= s['address'] < 0x42f00000 or
-                         0x44000000 <= s['address'] < 0x48000000)])
+                        0x08000000 <= s['address'] < 0x42f00000])
         raw = (directory/'sources'/contract['abi_sources'][3]).read_text()
         channels = (directory/'sources'/contract['abi_sources'][4]).read_text()
         require(re.search(r'#define RZV_IPC_RING_ABI_VERSION\s+2u\b',raw) and

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Hardware check of the PX4 demo heartbeat pair: CR8-0 renesas_rdk-rzv2h_demo
+# Hardware check of the PX4 demosih heartbeat pair: CR8-0 renesas_rdk-rzv2h_demosih
 # (raw IPC initiator) and CR8-1 renesas_rdk-rzv2h-io-cr8_1_demo (responder)
 # exchanging rzv2h_heartbeat frames over /dev/ipcc1.
 #
@@ -9,7 +9,7 @@
 # That leaves the probe free to hold CR8-1 halted while CR8-0 is queried.
 #
 # Evidence chain (all must hold for exit 0):
-#   1. CR8-0  `ver all` reports Build variant: demo; `mavlink status` on /dev/ttyS5
+#   1. CR8-0  `ver all` reports Build variant: demosih; `mavlink status` on /dev/ttyS5
 #   2. CR8-0  rzv2h_heartbeat: role initiator, peer alive, age_ms < 500,
 #             tx sent and rx valid rising across two samples
 #   3. CR8-1  rzv2h_heartbeat: role responder, peer alive, counters rising; `free` answers
@@ -25,7 +25,8 @@
 # Usage:
 #   JLINK_SERIAL=<probe-sn> rzv2h-px4-demo-heartbeat-check.sh [--load] [cr8_0-elf] [cr8_1-elf]
 #
-# Env: JLINK_SERIAL (required), MAV_PORT (/dev/ttyUSB0), MAV_BAUD (57600),
+# Env: JLINK_SERIAL (required), MAV_PORT (/dev/ttyUSB0), MAV_BAUD (115200,
+#      demosih SER_TEL1_BAUD),
 #      RTT_PORT (19021), HOLD_S (15), LOG_DIR (logs/px4-demo-heartbeat-<ts>;
 #      new or empty).
 #
@@ -44,14 +45,14 @@ RTT_EXEC="${HERE}/../nsh_console_exec.py"
 MAV_EXEC="${HERE}/../rzv2h-mavlink-shell-exec.py"
 
 MAV_PORT="${MAV_PORT:-/dev/ttyUSB0}"
-MAV_BAUD="${MAV_BAUD:-57600}"
+MAV_BAUD="${MAV_BAUD:-115200}"
 RTT_PORT="${RTT_PORT:-19021}"
 RUN_DIR="${LOG_DIR:-${HERE}/logs/px4-demo-heartbeat-$(date +%Y%m%d-%H%M%S)}"
 
 LOAD=0
 if [ "${1:-}" = "--load" ]; then LOAD=1; shift; fi
 case "${1:-}" in -*) echo "usage: $0 [--load] [cr8_0-elf] [cr8_1-elf]" >&2; exit 2 ;; esac
-CR8_0_ELF="${1:-${ROOT}/build/renesas_rdk-rzv2h_demo/renesas_rdk-rzv2h_demo.elf}"
+CR8_0_ELF="${1:-${ROOT}/build/renesas_rdk-rzv2h_demosih/renesas_rdk-rzv2h_demosih.elf}"
 CR8_1_ELF="${2:-${ROOT}/build/renesas_rdk-rzv2h-io-cr8_1_demo/renesas_rdk-rzv2h-io-cr8_1_demo.elf}"
 
 RESULTS=""
@@ -137,7 +138,7 @@ fi
 mkdir -p "${RUN_DIR}"
 
 cat <<EOF
-== RZ/V2H PX4 demo heartbeat check ==
+== RZ/V2H PX4 demosih heartbeat check ==
   CR8-0  ${CR8_0_ELF}  MAVLink shell ${MAV_PORT} @${MAV_BAUD}
   CR8-1  ${CR8_1_ELF}  NSH over RTT 127.0.0.1:${RTT_PORT}
   MUTATING: hold CR8-1 halted ${HOLD_S} s$( [ "${LOAD}" -eq 1 ] && echo "; RAM load both cores first" )
@@ -160,8 +161,8 @@ fi
 # --- 2. CR8-0 over SCI5 (exit 4 when the shell does not answer) ---------------
 echo "-- [2] CR8-0 MAVLink shell: identity + heartbeat"
 mav cr8_0-ident 'ver all' 'mavlink status' || die 4 "CR8-0 MAVLink shell not answering (see ${RUN_DIR}/cr8_0-ident.out)"
-R=1; has 'Build variant: demo' "${RUN_DIR}/cr8_0-ident.out" && has '/dev/ttyS5' "${RUN_DIR}/cr8_0-ident.out" && R=0
-record "CR8-0 demo image, MAVLink on /dev/ttyS5" "${R}"
+R=1; has 'Build variant: demosih' "${RUN_DIR}/cr8_0-ident.out" && has '/dev/ttyS5' "${RUN_DIR}/cr8_0-ident.out" && R=0
+record "CR8-0 demosih image, MAVLink on /dev/ttyS5" "${R}"
 
 mav cr8_0-hb-a 'rzv2h_heartbeat status' || die 4 "CR8-0 MAVLink shell not answering"
 sleep 2
@@ -226,7 +227,7 @@ echo
 echo "== verdict (logs: ${RUN_DIR}) =="
 printf '%s' "${RESULTS}"
 if [ "${FAILED}" -eq 0 ]; then
-	echo "== PASS: PX4 demo CR8-0 <-> CR8-1 heartbeat proven, including loss and recovery =="
+	echo "== PASS: PX4 demosih CR8-0 <-> CR8-1 heartbeat proven, including loss and recovery =="
 	exit 0
 fi
 echo "== FAIL =="

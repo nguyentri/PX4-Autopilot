@@ -193,7 +193,7 @@ add_custom_target(rzv2h_source_contract_tests ALL
 # Only the dualcr8 remote-output producer consumes /dev/ipcc1 for outputs;
 # independent CR8-0 images must not carry a dormant link consumer.
 if(CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
-	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../px4io_cr8_0 px4io_cr8_0)
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../rzv2h_outputs rzv2h_outputs)
 endif()
 
 # The reference drone artifact audit inherits every generic payload artifact
@@ -225,8 +225,12 @@ if(PX4_BOARD_LABEL STREQUAL "demo")
 	# module is left out with CONFIG_RZV_IPC_RAW. The ADS1115 on SCI0 is
 	# temporarily started as in demosih, so its telemetry module is linked.
 	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../adc_telemetry adc_telemetry)
+	# This runs early in the build, before the ROMFS and the embedded metadata
+	# exist, so it checks sources only. The cases that read the build tree run
+	# after the build (the profile's focused tests and the px4-artifacts group).
 	add_custom_target(rzv2h_demo_startup_test
 		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/test/rzv2h-demo-startup-test.py
+			--source-only
 		WORKING_DIRECTORY ${PX4_SOURCE_DIR}
 		COMMENT "Running demo sensor telemetry and QGC startup regressions"
 		VERBATIM

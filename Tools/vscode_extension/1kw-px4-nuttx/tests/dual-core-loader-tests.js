@@ -557,7 +557,7 @@ async function runDualCoreTests() {
     const demoSelection = { ...selection, id: 'rzv-px4-demo', group: 'rzv-px4-demo', build: { family: 'px4', mode: 'incremental' } };
     await store.setSelection(demoSelection); beforeBuildSelection = store.getSelection();
     await controller.buildCore('cr8_0');
-    assert.equal(buildCalls.at(-1).building.build.target, 'renesas_rdk-rzv2h_demo');
+    assert.equal(buildCalls.at(-1).building.build.target, 'renesas_rdk-rzv2h_demosih');
     await controller.buildCore('cr8_1');
     assert.equal(buildCalls.at(-1).building.build.target, 'renesas_rdk-rzv2h-io-cr8_1_demo');
     assert.equal(buildCalls.at(-1).building.build.family, 'px4');

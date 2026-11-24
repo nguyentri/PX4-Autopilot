@@ -511,7 +511,7 @@ def verify_native(profile, directory, source_state_path, manifest):
         if config.get('CONFIG_ARCH_CORTEXM33') != 'y' or not entry & 1 or not 0x08002800 <= (entry & ~1) < 0x080f8000:
             raise ValueError('CM33 architecture/Thumb/entry range mismatch')
     else:
-        expected_start = 0x40800000 if core == 'cr8_0' else 0x44000000
+        expected_start = 0x40800000 if core == 'cr8_0' else 0x42000000
         if config.get('CONFIG_ARCH_CORTEXR8') != 'y' or entry != expected_start or symbols.get(core.upper()) != 1:
             raise ValueError('CR8 architecture/private linker identity mismatch')
     if profile['entrypoint'] not in symbols:
@@ -529,8 +529,8 @@ def verify_native(profile, directory, source_state_path, manifest):
         low = 0x081a0000 if core == 'cr8_0' else 0x081e0000
         uncached = low <= rtt < low + 0x20000
         private_cached = low - 0x20000 <= rtt < low or \
-            ((0x40800000 if core == 'cr8_0' else 0x44000000) <= rtt <
-             (0x41800000 if core == 'cr8_0' else 0x45000000))
+            ((0x40800000 if core == 'cr8_0' else 0x42000000) <= rtt <
+             (0x41800000 if core == 'cr8_0' else 0x42c00000))
         if not uncached and (profile['console'].startswith('rtt') or not private_cached):
             raise ValueError('primary RTT console outside core-private noncache SRAM')
     hwtest_contract = profile.get('hwtest_contract')

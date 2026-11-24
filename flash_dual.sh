@@ -6,9 +6,11 @@
 # Companion of ./flash.sh for dual-core profiles. Name the CR8-0 target and
 # its CR8-1 partner is taken from DEFAULT_PAIRS below, or name both targets.
 # The load itself is `./flash.sh <cr8_0-target> <cr8_1-target>`: it stops any
-# RTT console holding the probe, then rzv2h-ipc-demo-load-both-auto.sh loads
-# CR8-0 first and CR8-1 last and verifies that both cores run. Both images are
-# volatile RAM loads (no SoC reset; a reset would wipe them).
+# RTT console holding the probe, checks both images against the PT_LOAD address
+# allowlist (a rejected image is refused before the probe is touched), then
+# rzv2h-ipc-demo-load-both-auto.sh loads CR8-0 first and CR8-1 last and
+# verifies that both cores run. Both images are volatile RAM loads (no SoC
+# reset; a reset would wipe them).
 #
 # Loading a pair is mechanical only; it does not qualify an actuator pair.
 #
@@ -22,10 +24,11 @@ FLASH="${ROOT}/flash.sh"
 VERBOSE_ARG=()
 
 # CR8-0 target and the CR8-1 image it is paired with when only the CR8-0
-# target is named. demo and demosih run the heartbeat initiator and pair with
-# the heartbeat responder; dualcr8 pairs with the PWM supervisor candidate.
+# target is named. demosih runs the heartbeat initiator and pairs with the
+# heartbeat responder; dualcr8 pairs with the PWM supervisor candidate. The
+# demo drone is single-core (no raw IPC), so it has no partner: load it with
+# ./flash.sh renesas_rdk-rzv2h_demo.
 DEFAULT_PAIRS=(
-	"renesas_rdk-rzv2h_demo renesas_rdk-rzv2h-io-cr8_1_demo"
 	"renesas_rdk-rzv2h_demosih renesas_rdk-rzv2h-io-cr8_1_demo"
 	"renesas_rdk-rzv2h_dualcr8 renesas_rdk-rzv2h-io-cr8_1_default"
 )

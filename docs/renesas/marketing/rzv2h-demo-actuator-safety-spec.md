@@ -22,8 +22,8 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 | [output-worker.hpp](../../../src/apps/output-worker.hpp) | product-owned | CR8-1 sole physical output owner | Independent output worker thread (`OutputWorker`), execution cycle, HAL submission, clamp on lease expiry |
 | [output-status.hpp](../../../src/apps/output-status.hpp) | product-owned | CR8-1 sole physical output owner | Supervised status reporting (`OutputStatusStore`, `supervised_status`) merging control lease and worker state |
 | [output-configuration.hpp](../../../src/apps/output-configuration.hpp) | product-owned | CR8-1 sole physical output owner | Channel rates, pulse constraints, and output profile definitions |
-| [io-supervisor.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/io-supervisor.cpp) | product-owned | CR8-1 sole physical output owner | CR8-1 output supervisor integrating worker and lease manager |
-| [output-lease.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/output-lease.cpp) | legacy/reference | CR8-1 sole physical output owner | Legacy bridge lease state and expiry authority |
+| [io-supervisor.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/io-supervisor.cpp) | product-owned | CR8-1 sole physical output owner | CR8-1 output supervisor integrating worker and lease manager |
+| [output-lease.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/output-lease.cpp) | legacy/reference | CR8-1 sole physical output owner | Legacy bridge lease state and expiry authority |
 | `px4io_cr8.cpp` (removed 2026-11-18; git history) | retired reference | CR8-1 sole physical output owner | Legacy backend worker/relay reference |
 | [timer_config.cpp](../../../boards/renesas/rdk-rzv2h/src/timer_config.cpp) | legacy/reference | CR8-1 sole physical output owner | Four-channel mapping migration evidence |
 | [pwm_servo.c](../../../platforms/nuttx/src/px4/renesas/rzv/io_pins/pwm_servo.c) | product-owned | CR8-1 sole physical output owner | Selected backend physical submission/disable HAL |
@@ -205,7 +205,7 @@ Review each verification-row boundary against the actual selected profile and so
 | Claim / requirement | Evidence location | Confidence | Status / gap |
 |---|---|---|---|
 | Approved module requirements | [Engineering design](./rzv2h-dualcr8-demo-design.md) | verified | Target design authority only |
-| Current software boundary | [io-supervisor.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/io-supervisor.cpp) | verified | PWM candidate with unconfigured hardware; see [software receipt](../evidence/dualcr8-software-validation-261021.md), no admitted pair |
+| Current software boundary | [io-supervisor.cpp](../../../boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/io-supervisor.cpp) | verified | PWM candidate with unconfigured hardware; see [software receipt](../evidence/dualcr8-software-validation-261021.md), no admitted pair |
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 

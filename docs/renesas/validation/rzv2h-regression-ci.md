@@ -12,8 +12,13 @@ and ordinary Linux process/socket tools. The CI-tool snapshot fixtures also
 require `rsync`. Install the Python requirements from
 [pinned sample requirements](../../../Tools/requirements-rzv2h-samples.txt); the sample
 host group specifically needs `empy>=3.3,<4` and `pyros-genmsg`. Kconfig coverage
-in the broader host group also needs `kconfiglib`. SCI layout/FSP authority is
-a separate `reference-host` check; portable host snapshots do not copy `refs/`.
+in the broader host group also needs `kconfiglib`. Every check that reads the
+local-only `refs/` tree (SCI layout/FSP authority, the GbEther CMSIS register
+comparison, the MHU pair table against FSP and the SVD generator) is a separate
+`reference-host` check: portable host snapshots, including the sealed PX4
+builder's, do not copy `refs/`, and a skipped `port-host` test counts as a
+failure there. `port-host` checks must therefore be self-contained, and must not
+depend on which board the shared NuttX tree was last configured for.
 
 Firmware builds additionally require `rsync`, GNU Make, `unzip`, `curl`, the
 NuttX build dependencies and the ARM cross-toolchain on `PATH`. The pipeline
@@ -35,7 +40,7 @@ python3 Tools/rzv2h-regression.py list --json
 | `port-host` | Broader portable PX4/NuttX source and native C/C++ checks; includes sample checks |
 | `debug-host` | Fake local J-Link/GDB process and socket fixtures; no probe connection |
 | `policy-host` | Formatter adapter/source-preservation fixtures; does not qualify all legacy source |
-| `reference-host` | Local ignored CMSIS authority for all three cores and ten SCI layouts, including CSDIV/SYSC layout parity; missing files fail admission |
+| `reference-host` | Local ignored `refs/` authority: CMSIS for all three cores and ten SCI layouts (including CSDIV/SYSC layout parity), GbEther CMSIS registers, the FSP MHU pair table and the SVD generator; missing files fail admission |
 | `sci-mode-host` | Focused manual-derived SCI SPI/I2C timing, transfer, interrupt and cleanup regressions; no board access |
 | `vendor-host` | Native RTT buffer tests; requires the downloaded SEGGER source in the checkout |
 | `native-sample-artifacts` | All discovered native ELF/config/linker receipts and rehashed semantic negative controls |
@@ -224,7 +229,7 @@ standalone NuttX ELF for a complete PX4 build.
 
 ## Build and check the PX4 matrix without hardware
 
-The [PX4 policy](../../../Tools/rzv2h-px4-profiles.json) classifies all nine
+The [PX4 policy](../../../Tools/rzv2h-px4-profiles.json) classifies all seven
 RZ/V2H profiles exposed by the root `build.sh`. RA8 targets are outside this gate.
 Use a new or empty job directory:
 

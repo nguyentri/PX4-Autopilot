@@ -56,6 +56,10 @@ if(CONFIG_MODULES_MC_RATE_CONTROL)
 	if(CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS)
 		px4_add_romfs_files(22001_rzv2h_lab_pivot)
 	endif()
+	if(CONFIG_BOARD_RDK_RZV2H_REFERENCE_AIRFRAME)
+		# Sources 4014_s500 below, then restores the reference values.
+		px4_add_romfs_files(4210_rzv2h_rdk_s500)
+	endif()
 	px4_add_romfs_files(
 		# [4000, 4999] Quadrotor x
 		4001_quad_x

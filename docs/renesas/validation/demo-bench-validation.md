@@ -25,8 +25,16 @@ management IC takes SCI0. No battery source is configured (`BAT1_SOURCE`
 -1). Parameters live in RAM and are lost on reboot. First flights are
 tethered or props-off. Not in scope: DShot, CR8-1 outputs.
 
-`COM_RC_IN_MODE` keeps the PX4 default (RC and MAVLink stick input).
-`SYS_AUTOSTART` remains 4014.
+The demo takes the reference drone's PWM limits (1150–1940 µs, disarmed and
+failsafe 800 µs), flight modes, RC calibration and channel map, and S500
+tuning, as `default` does; it does not take the reference's sensor
+calibrations (`CAL_*`). `COM_RC_IN_MODE` is 2 (RC and MAVLink joystick, with
+fallback) and `IMU_GYRO_FFT_EN` is 1. Since 2026-11-24 `SYS_AUTOSTART` is
+4210, as on `default`: airframe `4210_rzv2h_rdk_s500` runs the stock S500
+chain and then restores the reference values it replaces (rate gains, rotor
+positions, RTL altitudes, `NAV_ACC_RAD`, `GPS_UBX_DYNMODEL`,
+`EKF2_RNG_FOG`). `IMU_GYRO_RATEMAX` is the port's 800 Hz: the reference caps
+its FIFO read at 200 Hz for a 1 MHz SPI, while SPI0 here runs at 20 MHz.
 
 The IMU, barometer, TFmini and PWM driver start automatically. The demo's
 `rc.board_extras` hook runs after the generated serial startup and requests
@@ -113,9 +121,11 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
    `Accel #0`/`BARO #0` TIMEOUT, several validator failsafe events, a few
    `vehicle_imu` gaps, about 35 ADS1115 comms errors); a detached window must
    add no more than one attach does, and bus error counters must stay at 0.
-4. CR8-0 ↔ CR8-1 heartbeat (historical; disabled since 2026-11-23, steps kept
-   for re-enabling): with the pair loaded by `./flash_dual.sh demo`, in
-   QGC's MAVLink Inspector, `DEBUG_VECT` `CR80-CR81` shows `z` 1, `x` below 500
+4. CR8-0 ↔ CR8-1 heartbeat: not in this image (single-core since
+   2026-11-23). The heartbeat runs on the `demosih` pair; see the
+   [IPC HIL guide](rzv2h-ipc-hil-test-guide.md#px4-demosih-heartbeat-pair-rzv2h_heartbeat).
+   The steps below apply there: with the pair loaded by
+   `./flash_dual.sh demosih` and QGC at 115200 baud, in QGC's MAVLink Inspector, `DEBUG_VECT` `CR80-CR81` shows `z` 1, `x` below 500
    and `y` rising about 10 per second. In Analyze Tools → MAVLink Console,
    `rzv2h_heartbeat status` gives the full view (`peer: alive`, `tx`/`rx`
    counts rising, `timeouts` and `bad_hdr` steady). CR8-1 has no MAVLink link;
@@ -130,10 +140,10 @@ platforms/nuttx/Debug/nuttx-rtt-bridge.sh start cr8_0 build/renesas_rdk-rzv2h_de
    same commands on CR8-1's RTT console reach CR8-0, which prints
    `CR8-1 says: ...` and sends it to QGC as a notification. A CR8-1 ping
    takes about 110 ms, because CR8-0 answers in its next 100 ms beat slot.
-5. PWM: capture all four channels. Expected disarmed output is 400 Hz at 1000 µs
+5. PWM: capture all four channels. Expected disarmed output is 400 Hz at 800 µs
    (`PWM_MAIN_DIS`). Drive one channel with `actuator_test set -m 1 -v 0.5 -t 2`
    or the QGC Actuators tab (`COM_MOT_TEST_EN`, default 1) and capture the pulse width change
-   (1100–1900 µs range).
+   (1150–1940 µs range).
 
 For QGC actuator testing, keep the vehicle disarmed and remove propellers
 (prefer a logic analyzer with ESCs disconnected for initial checks). Open
@@ -179,6 +189,11 @@ bsondump /fs/params
 ```
 
 Check that `param save` succeeds and the BSON saved/decoded lengths match.
+`SYS_AUTOSTART` must read 4210. Another value can only come from a save
+earlier in the same boot, because a reset clears `/fs`. Reload the image (a
+J-Link RAM load does not survive a reset) and repeat the check. Once
+parameters persist across resets, run `param set SYS_AUTOSTART 4210` and
+`param save` once before the reset instead.
 These commands save the current values without resetting calibration.
 This verifies the current RAM-backed store, not power-cycle persistence.
 

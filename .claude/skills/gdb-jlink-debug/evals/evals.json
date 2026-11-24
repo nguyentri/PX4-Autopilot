@@ -276,7 +276,7 @@
     },
     {
       "id": "case-13",
-      "prompt": "I ran jlink-gdb-oneshot.py cr8_0 with -x rzv2h-px4-cr8_0-bridge-health.gdb and it exited 6 after printing half the values. Is the board broken?",
+      "prompt": "I ran jlink-gdb-oneshot.py cr8_0 with -x rzv2h-px4-demo-heartbeat-health.gdb and it exited 6 after printing half the values. Is the board broken?",
       "expected_output": "Explains exit 6: the core was attached and detached normally, but gdb reported an error (unknown symbol/member or unreadable memory) so the -x file stopped at that line; the board is not implicated. Fix the expression against the loaded ELF (ptype on the host ELF) and rerun; no reload or reset.",
       "files": [],
       "assertions": [

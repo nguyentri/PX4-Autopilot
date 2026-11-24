@@ -14,11 +14,10 @@ namespace rzv2h
 namespace demo
 {
 
-// Called only by a transport task. read() is nonblocking (O_NONBLOCK) and
-// write() never waits for the peer: a full ring returns EAGAIN, as the
-// reference rpmsg_trysend() does. write() can still block briefly on the
-// driver lock and RECOVER waits for the peer handshake, so neither may run in
-// the mixer or output worker.
+// Called only by a transport task. read() is nonblocking (O_NONBLOCK). A raw
+// write() returns EAGAIN on a full ring; otherwise it waits up to the driver's
+// TX ack timeout for the peer to take the frame. RECOVER waits for the peer
+// handshake. Neither may run in the mixer or output worker.
 class RawLink
 {
 public:

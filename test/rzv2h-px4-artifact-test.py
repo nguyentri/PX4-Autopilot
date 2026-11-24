@@ -131,7 +131,7 @@ class RealArchives(unittest.TestCase):
     def test_complete_positive_and_relocated_read_only_archive(self):
         before = CHECK.inventory(ARCHIVE)
         result = CHECK.verify(ARCHIVE)
-        self.assertTrue(result['full_matrix']); self.assertEqual(len(result['results']),9)
+        self.assertTrue(result['full_matrix']); self.assertEqual(len(result['results']),len(CHECK.policy()['profiles']))
         self.assertEqual(CHECK.inventory(ARCHIVE),before)
         with tempfile.TemporaryDirectory(prefix='rzv2h-px4-relocated-') as temp:
             copy = Path(temp)/'archive'; shutil.copytree(ARCHIVE,copy)

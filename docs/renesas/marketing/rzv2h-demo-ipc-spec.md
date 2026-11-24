@@ -20,8 +20,8 @@ Revision 1.0 records the approved target design. “Verified” in requirement e
 |---|---|---|---|
 | [protocol.hpp](../../../src/apps/protocol.hpp) / [protocol.cpp](../../../src/apps/protocol.cpp) | product-owned | Single writer per direction; CR8-0 recovery initiator | Canonical application codec implementation (`WireHeader`, wire codec, CRC32, little-endian framing, static assertions) |
 | [raw-link.hpp](../../../src/apps/raw-link.hpp) | product-owned | Single writer per direction; CR8-0 recovery initiator | POSIX `/dev/ipcc1` wrapper (`RawLink`); nonblocking reads, potentially blocking write/RECOVER in transport tasks |
-| [protocol.h](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h) | product-owned | Single writer per direction; CR8-0 recovery initiator | CR8-0 board protocol header including `src/apps/protocol.hpp` |
-| [protocol.h](../../../boards/renesas/rdk-rzv2h-io-cr8_1/px4io_cr8_1/protocol.h) | peer/host | Single writer per direction; CR8-0 recovery initiator | CR8-1 board protocol header including `src/apps/protocol.hpp` |
+| [protocol.h](../../../boards/renesas/rdk-rzv2h/rzv2h_outputs/protocol.h) | product-owned | Single writer per direction; CR8-0 recovery initiator | CR8-0 board protocol header including `src/apps/protocol.hpp` |
+| [protocol.h](../../../boards/renesas/rdk-rzv2h-io-cr8_1/rzv2h_io/protocol.h) | peer/host | Single writer per direction; CR8-0 recovery initiator | CR8-1 board protocol header including `src/apps/protocol.hpp` |
 | [protocol.h](../../../boards/renesas/rdk-rzv2h-io-cm33/px4io_m33/protocol.h) | legacy/reference | Single writer per direction; CR8-0 recovery initiator | Legacy mirror only; no demo runtime |
 | [rzv_ipc_channels.h](../../../platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/rzv_ipc_channels.h) | product-owned | Single writer per direction; CR8-0 recovery initiator | Raw transport shared-memory/channel authority |
 
@@ -184,7 +184,7 @@ Review each verification-row boundary against the actual selected profile and so
 | Claim / requirement | Evidence location | Confidence | Status / gap |
 |---|---|---|---|
 | Approved module requirements | [Engineering design](./rzv2h-dualcr8-demo-design.md) | verified | Target design authority only |
-| Current migration and implementation boundaries | [protocol.h](../../../boards/renesas/rdk-rzv2h/px4io_cr8_0/protocol.h) | verified | Source location exists; no integrated new-pair result |
+| Current migration and implementation boundaries | [protocol.h](../../../boards/renesas/rdk-rzv2h/rzv2h_outputs/protocol.h) | verified | Source location exists; no integrated new-pair result |
 | Related source/test evidence | [Subsystem evidence](../../../plans/reports/research-261021-0230-product-subsystems.md) | verified | Historical source review; rerun affected tests during implementation |
 | Full module acceptance | [Verification matrix](#verification-matrix) | unknown | Required test/physical results pending |
 

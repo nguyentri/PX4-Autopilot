@@ -360,7 +360,7 @@ def archive_profile(work,directory,profile,contract,state_hash,timeout,repos,fro
 def reports(output,results,error=None):
     atomic_json(output/'build-results.json',{'schema_version':1,'results':results,
         'status':'BUILD-CHECKED' if all(r['status']=='BUILD-CHECKED' for r in results) and not error else 'FAIL',
-        'reason':error,'full_matrix':len(results)==9,'on_target':'NOT-RUN','target_actions':[]})
+        'reason':error,'full_matrix':len(results)==len(CHECK.policy()['profiles']),'on_target':'NOT-RUN','target_actions':[]})
     suite = ET.Element('testsuite',name='rzv2h-px4-build',tests=str(len(results)))
     for row in results:
         case = ET.SubElement(suite,'testcase',name=row['target'],time=str(row.get('seconds',0)))
