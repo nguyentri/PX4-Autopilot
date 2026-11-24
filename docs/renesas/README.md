@@ -5,6 +5,9 @@ same owners below; [AGENTS.md](../../AGENTS.md) adds workspace and hardware
 operation rules. Select a board/profile before using a pin assignment or
 validation result.
 
+The separate R-Car V4H Cortex-R52 (Sparrow Hawk) NuttX port has its own
+[guide](rcar-v4h/README.md).
+
 ## Start here
 
 | Need | Owner |

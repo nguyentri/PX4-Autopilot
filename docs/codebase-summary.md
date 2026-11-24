@@ -18,6 +18,10 @@ The NuttX submodule owns the RZ/V2H architecture and lower-half drivers:
 - `platforms/nuttx/NuttX/apps/` — NuttX applications used by the selected
   configurations.
 
+The separate R-Car V4H Cortex-R52 NuttX port (`arch/arm/src/armv8-r/`,
+`arch/arm/src/rcar/`, `boards/arm/rcar/sparrow_hawk/`) is described in
+[docs/renesas/rcar-v4h/](./renesas/rcar-v4h/README.md).
+
 Use the [NuttX port status](./renesas/port-status-nuttx.md) for per-driver
 ownership and evidence. The source tree and each configuration's `defconfig`
 remain authoritative for enabled symbols and implementation details.
