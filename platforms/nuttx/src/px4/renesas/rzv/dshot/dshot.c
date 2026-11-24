@@ -171,11 +171,10 @@ static void gpt_force_safe_low(const dshot_channel_t *channel)
 	gpt_putreg32(channel, RZV_GPT_GTSTP_OFFSET, mask);
 	gpt_putreg32(channel, RZV_GPT_GTINTAD_OFFSET, 0);
 
-	/* Stop drives the selected output low before disabling it. Leave WP open
-	 * until DMAC is disabled; an in-flight compare write must not be blocked. */
-
-	gtior &= channel->channel_b ? ~GPT_GTIOR_OBE : ~GPT_GTIOR_OAE;
-	gpt_putreg32(channel, RZV_GPT_GTIOR_OFFSET, gtior);
+	/* With OxHLD/OxDFLT clear the stop drives the output low. Keep the output
+	 * enabled: a disabled GTIOC pad is high impedance, and a floating ESC input
+	 * can read high between frames or after DShot stops. Leave WP open until
+	 * DMAC is disabled; an in-flight compare write must not be blocked. */
 }
 
 static void gpt_setup_channel(const dshot_channel_t *channel)
@@ -187,7 +186,11 @@ static void gpt_setup_channel(const dshot_channel_t *channel)
 	gpt_putreg32(channel, RZV_GPT_GTPSR_OFFSET, GPT_GTPSR_CSTOP);
 	gpt_putreg32(channel, RZV_GPT_GTCSR_OFFSET, GPT_GTCSR_CCLR);
 	gpt_putreg32(channel, RZV_GPT_GTSSR_OFFSET, GPT_GTSSR_CSTRT);
-	gpt_putreg32(channel, RZV_GPT_GTSTP_OFFSET, mask);
+
+	/* Take over from the PWM setup (output enabled, low, counter running) by
+	 * stopping low, so the pad stays driven through the handover. */
+
+	gpt_force_safe_low(channel);
 	gpt_putreg32(channel, RZV_GPT_GTCLR_OFFSET, mask);
 	gpt_putreg32(channel, RZV_GPT_GTUPSR_OFFSET, 0);
 	gpt_putreg32(channel, RZV_GPT_GTDNSR_OFFSET, 0);
@@ -199,14 +202,14 @@ static void gpt_setup_channel(const dshot_channel_t *channel)
 	gtior = gpt_getreg32(channel, RZV_GPT_GTIOR_OFFSET);
 
 	if (channel->channel_b) {
-		gtior &= ~(GPT_GTIOR_GTIOB_MASK | GPT_GTIOR_OBE |
-			   GPT_GTIOR_OBHLD | GPT_GTIOR_OBDFLT);
-		gtior |= GPT_GTIOR_GTIOB_CYCLE_END_LOW_CMP_TOGGLE;
+		gtior &= ~(GPT_GTIOR_GTIOB_MASK | GPT_GTIOR_OBHLD |
+			   GPT_GTIOR_OBDFLT);
+		gtior |= GPT_GTIOR_GTIOB_CYCLE_END_LOW_CMP_TOGGLE | GPT_GTIOR_OBE;
 
 	} else {
-		gtior &= ~(GPT_GTIOR_GTIOA_MASK | GPT_GTIOR_OAE |
-			   GPT_GTIOR_OAHLD | GPT_GTIOR_OADFLT);
-		gtior |= GPT_GTIOR_GTIOA_CYCLE_END_LOW_CMP_TOGGLE;
+		gtior &= ~(GPT_GTIOR_GTIOA_MASK | GPT_GTIOR_OAHLD |
+			   GPT_GTIOR_OADFLT);
+		gtior |= GPT_GTIOR_GTIOA_CYCLE_END_LOW_CMP_TOGGLE | GPT_GTIOR_OAE;
 	}
 
 	gpt_putreg32(channel, RZV_GPT_GTIOR_OFFSET, gtior);
@@ -225,8 +228,6 @@ static void gpt_setup_channel(const dshot_channel_t *channel)
 
 static void gpt_prime_frame(const dshot_channel_t *channel)
 {
-	uint32_t gtior;
-
 	gpt_putreg32(channel, RZV_GPT_GTWP_OFFSET, GPT_GTWP_UNLOCK);
 	gpt_putreg32(channel, RZV_GPT_GTSTP_OFFSET,
 		     RZV_GPT_LOGICAL_UNIT_BIT(channel->gpt_channel));
@@ -239,12 +240,9 @@ static void gpt_prime_frame(const dshot_channel_t *channel)
 	gpt_putreg32(channel, RZV_GPT_GTINTAD_OFFSET,
 		     channel->channel_b ? GPT_GTINTAD_GTINTB : GPT_GTINTAD_GTINTA);
 
-	/* Restore output while stopped and low. DMAC updates the active compare
-	 * directly, so WP must remain unlocked until the transfer is disabled. */
-
-	gtior = gpt_getreg32(channel, RZV_GPT_GTIOR_OFFSET);
-	gtior |= channel->channel_b ? GPT_GTIOR_OBE : GPT_GTIOR_OAE;
-	gpt_putreg32(channel, RZV_GPT_GTIOR_OFFSET, gtior);
+	/* The output stays enabled and low while stopped. DMAC updates the active
+	 * compare directly, so WP must remain unlocked until the transfer is
+	 * disabled. */
 }
 
 static void gpt_start(const dshot_channel_t *channel)

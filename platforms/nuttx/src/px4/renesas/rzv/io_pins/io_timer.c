@@ -451,6 +451,12 @@ int io_timer_allocate_channel(unsigned channel, io_timer_channel_mode_t mode)
 		channel_allocations[IOTimerChanMode_NotUsed] &= ~bit;
 		channel_allocations[mode] |= bit;
 		ret = 0;
+
+		/* DShot reprograms the whole GPT. Forget the PWM setup so a later
+		 * PWM owner runs the full channel init again instead of using it. */
+		if (mode == IOTimerChanMode_Dshot) {
+			gpt_state[channel].initialized = false;
+		}
 	}
 	px4_leave_critical_section(flags);
 	return ret;

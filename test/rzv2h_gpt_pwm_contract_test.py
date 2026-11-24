@@ -655,6 +655,16 @@ class PX4DirectPathContracts(unittest.TestCase):
             "gpt_lock(base)")]
         self.assertEqual(order, sorted(order))
 
+    def test_pwm_after_dshot_runs_the_full_channel_init_again(self) -> None:
+        # DShot reprograms GTCR/GTPR/GTIOR; a later PWM owner must not reuse
+        # the stale "initialized" flag and run on the DShot configuration.
+        alloc = function_body(self.io_timer, "io_timer_allocate_channel")
+        dshot = alloc.split("mode == IOTimerChanMode_Dshot", 1)[1]
+        self.assertIn("gpt_state[channel].initialized = false", dshot)
+        init = function_body(self.io_timer, "io_timer_channel_init")
+        self.assertIn("if (!gpt_state[channel].initialized)", init)
+        self.assertIn("rzv2h_gpt_init_channel(channel)", init)
+
     def test_disabled_channel_keeps_zero_duty_on_compare_writes(self) -> None:
         ccr = function_body(self.io_timer, "io_timer_set_ccr")
         self.assertIn("gpt_state[channel].enabled ? ticks : 0", ccr)

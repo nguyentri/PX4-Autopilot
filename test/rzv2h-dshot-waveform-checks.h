@@ -13,6 +13,19 @@ static void assert_low(void)
           "output not low after cleanup");
   }
 }
+/* A stopped GPT with its output disabled leaves the pad high impedance, and a
+ * floating ESC input can read high. Every DShot output must stay enabled and
+ * low whenever no frame is on the wire. */
+static void assert_driven_low(unsigned mask)
+{
+  for (unsigned i=0; i<4; i++) {
+    if (!(mask & (1u<<i))) continue;
+    struct host_gpt *gpt=&model_gpt[io_timers[i].timer_id];
+    unsigned output=timer_io_channels[i].timer_channel-1;
+    CHECK(!gpt->running && output_enabled(gpt, output) && !gpt->level[output],
+          "DShot output released (pad floats) instead of driven low");
+  }
+}
 static void clear_waveforms(void)
 {
   for (unsigned ch=0; ch<16; ch++)
@@ -68,6 +81,7 @@ static void verify_frame(unsigned frequency, unsigned mask)
   CHECK(blocked_dma_writes == 0, "DMA compare writes blocked");
   CHECK(illegal_running_writes == 0, "GPT direction/duty changed while running");
   assert_low();
+  assert_driven_low(mask);
   up_udelay(20);
   for (unsigned i=0; i<4; i++)
     if (mask & (1u<<i))
@@ -79,6 +93,7 @@ static void initialize(unsigned frequency, unsigned mask)
   CHECK(up_dshot_init(mask,frequency,false) == (int)mask, "DShot initialization failed");
   CHECK(allocated == mask, "timer allocation mask incorrect");
   assert_low();
+  assert_driven_low(mask);
   CHECK(up_dshot_arm(true) == 0, "DShot arm failed");
 }
 #endif

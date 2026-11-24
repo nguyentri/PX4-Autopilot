@@ -95,6 +95,7 @@ int main(int argc, char **argv)
         CHECK(!model_dma[i].configured, "stop error leaked DMA ownership");
     }
     assert_low();
+    assert_driven_low(15);
     fail_disable=fail_stop=-1;
     initialize(300000,15);
     errors=0;
@@ -111,6 +112,7 @@ int main(int argc, char **argv)
     CHECK(up_dshot_arm(false) == 0, "disarm failed");
     send_frame();
     assert_low();
+    assert_driven_low(mask);
     for (unsigned i=0;i<4;i++)
       CHECK(model_dma[i].starts == 0, "disarmed trigger started DMA");
     return 0;
@@ -154,6 +156,7 @@ int main(int argc, char **argv)
       !strcmp(scenario,"start-failure") || !strcmp(scenario,"disable-failure")) {
     CHECK(errors > 0, "DMA fault did not report frame failure");
     assert_low();
+    assert_driven_low(mask);
     CHECK(illegal_running_writes == 0, "fault cleanup changed running GPT duty");
     for (unsigned i=0;i<4;i++) {
       if ((int)i != fail_disable)
@@ -182,6 +185,7 @@ int main(int argc, char **argv)
     for (unsigned i=0; i<3; i++) {
       CHECK(up_dshot_arm(false) == 0, "disarm failed");
       assert_low();
+      assert_driven_low(mask);
       CHECK(up_dshot_arm(true) == 0, "rearm failed");
       clear_waveforms();
       send_frame();

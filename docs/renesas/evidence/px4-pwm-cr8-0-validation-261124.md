@@ -45,6 +45,8 @@ The first three are in commit `33603a2d847`.
   report, not a stored capture.
 - From SoC reset until early board init the pads are in their hardware reset
   state; only an external pull-down holds an ESC input low in that window.
-- After DShot stops, `gpt_force_safe_low()` still releases OAE, so a pad used
-  by DShot floats until the next PWM start or reset. Only analog PWM was run.
+- Only analog PWM was run. The DShot driver released OAE after every frame,
+  while disarmed and after stop, so its pads floated between frames; it now
+  keeps the output enabled and driven low (host model regression), with no
+  DShot waveform captured on target yet.
 - ESC response, failsafe timing and reset behavior under load were not tested.
