@@ -206,15 +206,16 @@ __EXPORT void board_peripheral_reset(int ms)
 
 __EXPORT void board_on_reset(int status)
 {
-	/* Disconnect every motor signal before early initialization or reset.
-	 * rzv_unconfiggpio() enters high-impedance mode before clearing the pinmux,
-	 * so an active GPT/DShot peripheral cannot drive an ESC through reset.
+	/* Take every motor pad away from the GPT/DShot peripheral and drive it
+	 * low as a GPIO, both at early boot (status -1) and before a reset. A
+	 * high-impedance pad floats and can read high at the ESC; the GPT takes
+	 * the pad back only once it already drives the line low.
 	 */
 #ifndef CONFIG_BOARD_RDK_RZV2H_REMOTE_OUTPUTS
-	(void)px4_arch_unconfiggpio(BOARD_PWM_CH0_GPIO);
-	(void)px4_arch_unconfiggpio(BOARD_PWM_CH1_GPIO);
-	(void)px4_arch_unconfiggpio(BOARD_PWM_CH2_GPIO);
-	(void)px4_arch_unconfiggpio(BOARD_PWM_CH3_GPIO);
+	(void)px4_arch_configgpio(BOARD_PWM_GPIO_DRIVEN_LOW(BOARD_PWM_CH0_GPIO));
+	(void)px4_arch_configgpio(BOARD_PWM_GPIO_DRIVEN_LOW(BOARD_PWM_CH1_GPIO));
+	(void)px4_arch_configgpio(BOARD_PWM_GPIO_DRIVEN_LOW(BOARD_PWM_CH2_GPIO));
+	(void)px4_arch_configgpio(BOARD_PWM_GPIO_DRIVEN_LOW(BOARD_PWM_CH3_GPIO));
 #endif
 
 	if (status >= 0) {

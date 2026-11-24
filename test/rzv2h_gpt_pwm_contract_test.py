@@ -753,16 +753,33 @@ class BoardResetSafetyContracts(unittest.TestCase):
         self.assertIn("board_on_reset(status)", body)
         self.assertLess(body.index("board_on_reset(status)"), body.index("up_systemreset()"))
 
-    def test_reset_hook_disconnects_every_motor_output(self) -> None:
+    def test_reset_hook_drives_every_motor_pad_low(self) -> None:
+        # Unconfiguring left the pads high impedance; an ESC input then floats.
         self.assertIn("#define BOARD_HAS_ON_RESET", self.board_config)
+        macro = self.board_config.split("#define BOARD_PWM_GPIO_DRIVEN_LOW(gpio)", 1)[1]
+        macro = macro.split("\n\n", 1)[0]
+        for token in ("GPIO_PORT_MASK | GPIO_PIN_MASK", "RZV_GPIO_OUTPUT",
+                      "RZV_GPIO_INITIAL_LOW"):
+            self.assertIn(token, macro)
         body = function_body(self.board_init, "board_on_reset")
+        self.assertNotIn("px4_arch_unconfiggpio", body)
 
         for channel in range(4):
             with self.subTest(channel=channel):
                 self.assertIn(
-                    f"px4_arch_unconfiggpio(BOARD_PWM_CH{channel}_GPIO)",
+                    "px4_arch_configgpio(BOARD_PWM_GPIO_DRIVEN_LOW("
+                    f"BOARD_PWM_CH{channel}_GPIO))",
                     body,
                 )
+
+    def test_gpt_drives_low_before_it_takes_the_motor_pads(self) -> None:
+        timer_config = read("boards/renesas/rdk-rzv2h/src/timer_config.cpp")
+        body = function_body(timer_config, "rdk_rzv2h_timer_initialize")
+        self.assertLess(body.index("io_timer_init()"),
+                        body.index("configure_pwm_gpio(kPwmGpios[channel]"))
+        restore = function_body(timer_config, "unconfigure_pwm_gpios")
+        self.assertNotIn("px4_arch_unconfiggpio", restore)
+        self.assertIn("BOARD_PWM_GPIO_DRIVEN_LOW", restore)
 
     def test_all_px4_profiles_enable_boardctl_reset(self) -> None:
         for profile in ("nsh", "demo", "dualcr8"):

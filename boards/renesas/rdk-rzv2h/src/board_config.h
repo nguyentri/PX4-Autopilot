@@ -277,6 +277,14 @@
 #  define BOARD_PWM_CH3_GPIO            (GPIO_GTIOC10B_P5_3_M11 | RZV_GPIO_PERIPH) /* ESC4: GPT10B on P53 (GPIO06) */
 #endif
 
+/* The same motor pad as a GPIO output driven low. Used while no GPT owns the
+ * pad (early boot, reset, a failed timer bring-up) so an ESC input never
+ * floats: a floating line can read high and look like a pulse.
+ */
+#define BOARD_PWM_GPIO_DRIVEN_LOW(gpio) \
+	(((gpio) & (GPIO_PORT_MASK | GPIO_PIN_MASK)) | RZV_GPIO_OUTPUT | \
+	 RZV_GPIO_DRVSTR_NORMAL | RZV_GPIO_INITIAL_LOW)
+
 /* DShot Motor Assignment (channel index mapping) */
 #define BOARD_DSHOT_MOTOR_ASSIGNMENT    {0, 1, 2, 3}
 

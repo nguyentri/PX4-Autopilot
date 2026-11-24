@@ -99,11 +99,12 @@ constexpr uint32_t kPwmGpios[MAX_TIMER_IO_CHANNELS] = {
 	static_cast<uint32_t>(BOARD_PWM_CH3_GPIO),
 };
 
+/* Hand pads back to the board's driven-low GPIO state, never high impedance. */
 void unconfigure_pwm_gpios(unsigned configured_count)
 {
 	while (configured_count > 0) {
 		configured_count--;
-		(void)px4_arch_unconfiggpio(kPwmGpios[configured_count]);
+		(void)px4_arch_configgpio(BOARD_PWM_GPIO_DRIVEN_LOW(kPwmGpios[configured_count]));
 	}
 }
 
@@ -248,26 +249,24 @@ extern "C" {
 	 */
 	int rdk_rzv2h_timer_initialize(void)
 	{
-		unsigned configured_count = 0;
-
-		for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
-			int ret = configure_pwm_gpio(kPwmGpios[channel], channel);
-
-			if (ret != 0) {
-				unconfigure_pwm_gpios(configured_count);
-				return ret;
-			}
-
-			configured_count++;
-		}
-
-		/* Initialize IO timer subsystem */
+		/* Start the GPTs first: io_timer_init() leaves every output driven low
+		 * at 0 % duty. Only then move the pads (held low as GPIOs since early
+		 * boot) to the GPT, so the ESC lines never float or pulse.
+		 */
 		int ret = io_timer_init();
 
 		if (ret != 0) {
 			syslog(LOG_ERR, "rdk_rzv2h_timer_initialize: io_timer_init() failed: %d\n", ret);
-			unconfigure_pwm_gpios(configured_count);
 			return ret;
+		}
+
+		for (unsigned channel = 0; channel < MAX_TIMER_IO_CHANNELS; channel++) {
+			ret = configure_pwm_gpio(kPwmGpios[channel], channel);
+
+			if (ret != 0) {
+				unconfigure_pwm_gpios(channel);
+				return ret;
+			}
 		}
 
 		return 0;
