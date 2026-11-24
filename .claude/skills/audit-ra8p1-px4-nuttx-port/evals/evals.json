@@ -1,0 +1,119 @@
+{
+  "skill_name": "audit-ra8p1-px4-nuttx-port",
+  "evals": [
+    {
+      "id": "cm85-gpt-hrt-trace",
+      "split": "train",
+      "prompt": "Audit the EVK-RA8P1 CM85 HRT and GPT PWM path from the NuttX ra_gpt lower-half through the PX4 evk-ra8p1 board.",
+      "expected_output": "A CM85-only trace naming Cortex-M85 / Armv8.1-M that checks the ra8 Kconfig core choice, RA8P1_GROUP header routing, the r_gpt FSP sample and core0 device header, GPT channel ownership across HRT/PWM/DShot and the CM33 IO board, and the fpb-ra8e1 blast radius of shared ra8 code, with static, build and hardware evidence separated.",
+      "files": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/Kconfig",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/ra_gpt.c",
+        "platforms/nuttx/src/px4/renesas/ra8/hrt",
+        "boards/renesas/evk-ra8p1/src/timer_config.cpp",
+        "refs/ra8p1/ek_ra8p1/gpt"
+      ],
+      "assertions": [
+        {
+          "id": "cm85-profile",
+          "text": "Names CM85 as Cortex-M85 (Armv8.1-M) and does not apply CM33 cache or TCM assumptions."
+        },
+        {
+          "id": "gpt-ownership",
+          "text": "Checks GPT channel ownership across HRT, PWM, DShot and the CM33 IO timer config before claiming no conflict."
+        },
+        {
+          "id": "ra8e1-blast-radius",
+          "text": "States the impact of any shared ra8 arch or HAL change on fpb-ra8e1."
+        },
+        {
+          "id": "cm85-evidence",
+          "text": "Does not promote a clean build or static FSP parity to on-target functionality."
+        }
+      ]
+    },
+    {
+      "id": "cm33-io-core-ipc",
+      "split": "train",
+      "prompt": "Re-audit the evk-ra8p1-io-cm33 PX4 board: core selection, linker memory windows and the px4io_ipc path to the CM85.",
+      "expected_output": "A CM33-only trace that resolves the effective RA_CPU_CORE_CM33 choice from Kconfig and the defconfig text, flags non-standard '=n' or RA_CPU_CORE-only selection, checks IPC shared-memory bases across NuttX ra_ipc, board scripts and PX4 linkers, and takes registers and core config from the CM33 header R7KA8P1KF_core1.h.",
+      "files": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/Kconfig",
+        "boards/renesas/evk-ra8p1-io-cm33/nuttx-config/nsh/defconfig",
+        "boards/renesas/evk-ra8p1-io-cm33/nuttx-config/scripts/script.ld",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/ra_ipc.c",
+        "refs/ra8p1/R7KA8P1KF_core1.h",
+        "refs/ra8p1/evk_ra8p1_dual_core"
+      ],
+      "assertions": [
+        {
+          "id": "cm33-profile",
+          "text": "Names CM33 as Cortex-M33 (Armv8-M) and keeps CM85 Helium, DPFPU and TCM assumptions out of the trace."
+        },
+        {
+          "id": "cm33-core-choice",
+          "text": "Determines the effective core from the Kconfig choice rather than RA_CPU_CORE or ARCH_CORTEXM33 text alone."
+        },
+        {
+          "id": "cm33-reference-gap",
+          "text": "Uses R7KA8P1KF_core1.h for CM33 registers and core config (no I/D cache, no PMU), never transfers CM85 core-private facts, and uses the dual-core FSP sample as the IPC reference."
+        },
+        {
+          "id": "ipc-base-agreement",
+          "text": "Compares IPC shared-memory addresses across NuttX, board scripts and PX4 linker scripts with path:line evidence."
+        }
+      ]
+    },
+    {
+      "id": "spi-failure-pending-patch",
+      "split": "train",
+      "prompt": "SPI_B transfers on the EVK-RA8P1 CM85 return garbage and I have a pending patch to ra_spi.c. Audit the SPI port and the patch.",
+      "expected_output": "A bounded SPI audit that routes root-cause work to ak:debug and the pending diff to ak:code-review --pending, traces ra_spi.c against the r_spi_b sample and ra_spi_b.h, checks PX4 chip-select tables, and reports without editing, building or flashing unless authorized.",
+      "files": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/ra_spi.c",
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/hardware/ra8p1/ra_spi_b.h",
+        "boards/renesas/evk-ra8p1/src/spi.cpp",
+        "platforms/nuttx/src/px4/renesas/ra8/spi"
+      ],
+      "assertions": [
+        {
+          "id": "spi-routing",
+          "text": "Uses a debugging workflow for the failure and a pending-change review for the patch instead of guessing a fix."
+        },
+        {
+          "id": "spi-cs-trace",
+          "text": "Traces chip-select ownership through board spi.cpp, board_config.h and manifest.xml."
+        },
+        {
+          "id": "spi-authorization",
+          "text": "Does not edit, build, flash or attach a debugger without explicit authorization for this RA8P1 board."
+        }
+      ]
+    },
+    {
+      "id": "iic-macro-alias-pins",
+      "split": "holdout",
+      "prompt": "Audit the RA8P1 IIC hardware header macros and base addresses, and check the IIC pins in evk-ra8p1 board.h.",
+      "expected_output": "A register-macro audit that proves channel stride, index domain and reserved gaps from R7KA8P1KF_core0.h, checks the secure/non-secure base alias under CONFIG_RA_TZ_NONSECURE_BUILD, locates an IIC FSP sample with the carrier search, and treats EK-RA8P1 pin_data as the evk-ra8p1 board pin authority, reporting any board.h disagreement as a finding.",
+      "files": [
+        "platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8/hardware/ra8p1/ra_iic.h",
+        "platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/include/board.h",
+        "refs/ra8p1/R7KA8P1KF_core0.h"
+      ],
+      "assertions": [
+        {
+          "id": "macro-proof",
+          "text": "Records first offset, stride, width and reserved entries from the device header before accepting or proposing a parameterized macro."
+        },
+        {
+          "id": "base-alias",
+          "text": "Checks that the 0x4/0x5 base alias matches the image TrustZone state and that derived addresses use one alias."
+        },
+        {
+          "id": "ek-pin-authority",
+          "text": "Compares IIC pins in evk-ra8p1 board.h with the EK-RA8P1 FSP pin_data.c as the board pin authority and reports any disagreement with both anchors."
+        }
+      ]
+    }
+  ]
+}

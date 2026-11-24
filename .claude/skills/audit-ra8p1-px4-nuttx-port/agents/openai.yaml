@@ -1,0 +1,4 @@
+interface:
+  display_name: "RA8P1 PX4-NuttX Port Audit"
+  short_description: "Audit one RA8P1 PX4/NuttX core path"
+  default_prompt: "Use $audit-ra8p1-px4-nuttx-port to audit one subsystem on CM85 or CM33. Check the RA8 NuttX Kconfig core choice, Make.defs, selected board config, RA8P1 device header and the FSP sample carrying the module before findings."

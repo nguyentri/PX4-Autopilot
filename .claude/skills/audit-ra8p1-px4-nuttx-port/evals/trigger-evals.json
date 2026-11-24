@@ -1,0 +1,11 @@
+[
+  {"query": "Audit the EVK-RA8P1 CM85 NuttX serial driver against the FSP sci_b_uart sample.", "should_trigger": true},
+  {"query": "Re-audit the RA8P1 CM33 IO board defconfig and Kconfig core selection.", "should_trigger": true},
+  {"query": "Check the ra8p1 hardware headers for wrong register offsets and channel macros.", "should_trigger": true},
+  {"query": "Review the PX4 evk-ra8p1 board timer_config and HRT for GPT conflicts with the CM33 core.", "should_trigger": true},
+  {"query": "Audit the RA8P1 dual-core IPC path between CM85 and CM33 in our PX4 NuttX port.", "should_trigger": true},
+  {"query": "Audit the RDK-RZ/V2H CR8_0 GTM HRT driver in NuttX.", "should_trigger": false},
+  {"query": "Write a generic firmware audit checklist for an STM32 bootloader.", "should_trigger": false},
+  {"query": "Review this React pull request for accessibility issues.", "should_trigger": false},
+  {"query": "Draft a module specification for the RH850 CAN driver.", "should_trigger": false}
+]
