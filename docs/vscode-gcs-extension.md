@@ -1,10 +1,10 @@
-# 1KW-Px4-GCS Extension Guide
+# Px4-GCS Extension Guide
 
-`Tools/vscode_extension/1kw-px4-gcs/` is a small MAVLink ground station for
+`Tools/vscode_extension/px4-gcs/` is a small MAVLink ground station for
 PX4 that runs inside VS Code. It covers what happens once the firmware is
 running: connect, watch, edit parameters, use the NSH console and send
 guarded commands. Build, load and debug stay in the sibling extension
-`1KW-Px4-Nuttx` ([guide](vscode-extension.md)). Both extensions install side
+`Px4-DB` ([guide](vscode-extension.md)). Both extensions install side
 by side and do not share any command, view or setting id.
 
 The extension is not QGroundControl. It has no mission planner, no map tiles,
@@ -19,9 +19,9 @@ no joystick, no video and no firmware upload.
 | Workspace trust | Connecting starts a Python sidecar, so the workspace must be trusted. |
 | Serial on WSL | Forward the FTDI cable with usbipd-win; the device then appears as `/dev/ttyUSB0`. |
 
-Build: `./Tools/vscode_extension/1kw-px4-gcs/build.sh` runs `npm ci` (pinned
+Build: `./Tools/vscode_extension/px4-gcs/build.sh` runs `npm ci` (pinned
 versions), both typechecks, the esbuild bundles, `vsce package` and every
-test suite. Output: `Tools/vscode_extension/1kw-px4-gcs/1kw-px4-gcs-<version>.vsix`.
+test suite. Output: `Tools/vscode_extension/px4-gcs/px4-gcs-<version>.vsix`.
 Install it with `code --install-extension <file>.vsix`. The VSIX carries the
 bundled host and webview code, the Python sidecar (`python/px4_gcs_bridge/`),
 the protocol schema and the media. It carries no sources, tests or bytecode.

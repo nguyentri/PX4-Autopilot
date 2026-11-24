@@ -137,7 +137,7 @@ software timeouts do not run while the core is stopped.
 
 The generated candidate debug profile is emitted to `.vscode/launch.generated.json`
 after a target build, preserving any existing `.vscode/launch.json` file.
-The native PX4/NuttX Firmware Workspace extension (`Tools/vscode_extension/1kw-px4-nuttx/`) and
+The native PX4/NuttX Firmware Workspace extension (`Tools/vscode_extension/px4-db/`) and
 the shared backend (`Tools/firmware-workspace.py debug-config`) generate
 in-memory Cortex-Debug configurations dynamically. The RZ/V2H configuration uses
 `request: "attach"` and `monitor halt`; it does not include reset or load
@@ -204,9 +204,9 @@ Both scripts share `platforms/nuttx/Debug/jlink-flash-ra8.sh` for RA8 flashing.
 Two local VSIX packages, built from the repository root:
 
 ```bash
-./Tools/vscode_extension/1kw-px4-nuttx/build.sh   # build, load, debug: 1kw-px4-nuttx-<version>.vsix
-./Tools/vscode_extension/1kw-px4-gcs/build.sh     # MAVLink GCS: 1kw-px4-gcs-<version>.vsix
-code --install-extension Tools/vscode_extension/1kw-px4-gcs/1kw-px4-gcs-<version>.vsix
+./Tools/vscode_extension/px4-db/build.sh   # build, load, debug: px4-db-<version>.vsix
+./Tools/vscode_extension/px4-gcs/build.sh     # MAVLink GCS: px4-gcs-<version>.vsix
+code --install-extension Tools/vscode_extension/px4-gcs/px4-gcs-<version>.vsix
 ```
 
 Each script runs `npm ci`, typechecks, bundles, packages and runs its tests. The GCS

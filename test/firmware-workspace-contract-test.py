@@ -35,7 +35,7 @@ class TestFirmwareWorkspaceContracts(unittest.TestCase):
         self.assertTrue(HAS_JSONSCHEMA, "jsonschema module must be installed")
 
     def test_01_all_schemas_are_valid_draft7(self):
-        """Verify all schemas under Tools/vscode_extension/1kw-px4-nuttx/schemas are valid Draft 7."""
+        """Verify all schemas under Tools/vscode_extension/px4-db/schemas are valid Draft 7."""
         schema_files = list(SCHEMAS_DIR.glob("*.schema.json"))
         self.assertGreaterEqual(len(schema_files), 4)
         for sf in schema_files:
