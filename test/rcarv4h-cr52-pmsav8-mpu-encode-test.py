@@ -42,7 +42,8 @@ def memorymap_defines():
     header = (RCAR / 'hardware/rcar_memorymap.h').read_text()
     lines = []
     for name in ('RCAR_DEVICE_BASE', 'RCAR_DEVICE_SIZE', 'RCAR_GIC_BASE',
-                 'RCAR_GIC_SIZE'):
+                 'RCAR_GIC_SIZE', 'RCAR_IPC_SHM_BASE', 'RCAR_IPC_SHM_SIZE',
+                 'RCAR_ICCOM_CTA_BASE', 'RCAR_ICCOM_CTA_SIZE'):
         match = re.search(rf'^#define {name}\s+(0x[0-9a-fA-F]+)', header, re.M)
         if match is None:
             raise AssertionError(f'{name} missing from rcar_memorymap.h')
@@ -50,28 +51,34 @@ def memorymap_defines():
     return '\n'.join(lines)
 
 
-def expected(start, size):
+def expected(start, size, iccom):
     # Independent of mpu.h: base | SH | AP | XN and limit | AttrIndx | EN.
     ram = (start, (start + size - 1) & ~0x3f | (2 << 1) | 1)
     device = (0xe6000000 | 1, 0xefffffc0 | (1 << 1) | 1)
     gic = (0xf0000000 | 1, 0xf01fffc0 | (1 << 1) | 1)
-    return [ram, device, gic]
+    # OpenAMP window and ICCOM CTA: Normal NC (3), outer shareable, XN.
+    shm = (0x40a00000 | (2 << 3) | 1, 0x40afffc0 | (3 << 1) | 1)
+    cta = (0x47fc7000 | (2 << 3) | 1, 0x47fcefc0 | (3 << 1) | 1)
+    return [ram, device, gic, shm] + ([cta] if iccom else [])
 
 
 class MpuEncodeTest(unittest.TestCase):
     def test_images(self):
         table = table_source()
         defines = memorymap_defines()
-        for config, (start, size) in IMAGES.items():
-            with self.subTest(config=config):
+        cases = [(c, w, False) for c, w in IMAGES.items()]
+        cases.append(('nsh', IMAGES['nsh'], True))  # CR52-0 with ICCOM
+        for config, (start, size), iccom in cases:
+            with self.subTest(config=config, iccom=iccom):
                 self.assertEqual(defconfig_value(config, 'RAM_START'), start)
                 self.assertEqual(defconfig_value(config, 'RAM_SIZE'), size)
-                regions = expected(start, size)
+                regions = expected(start, size, iccom)
                 with tempfile.TemporaryDirectory() as tmp:
                     path = Path(tmp)
                     (path / 'rcarv4h-mpu-table.h').write_text(
                         f'#define IMAGE_NAME "{config}"\n'
-                        f'#define CONFIG_RAM_START {start:#x}u\n'
+                        + ('#define CONFIG_RCAR_ICCOM 1\n' if iccom else '')
+                        + f'#define CONFIG_RAM_START {start:#x}u\n'
                         f'#define CONFIG_RAM_SIZE {size:#x}u\n'
                         f'#define EXPECT_WINDOW_LAST {start + size - 1:#x}u\n'
                         f'{defines}\n{table}\n'

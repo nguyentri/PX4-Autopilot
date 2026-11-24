@@ -2,7 +2,10 @@
 """Check the R-Car V4H CR52 image windows: both linker scripts, both
 defconfigs and the PT_LOAD allowlist manifest must name the same windows,
 256 KiB aligned, disjoint, inside the CR52 DRAM area, with the CR52-2
-window left free."""
+window left free.  Every other defconfig of a core must use that core's
+window, and no allowlisted PT_LOAD range may reach the OpenAMP shared
+window or the ICCOM CTA (the build-time window check then rejects any
+segment placed there)."""
 from pathlib import Path
 import json
 import re
@@ -22,7 +25,27 @@ IMAGES = {
     1: ('sparrow_hawk_cr52_1.ld', 'nsh-cr52_1', 'R8A779G3_CR52_1'),
 }
 
+# Further configs per core; each must link into the core's window
+EXTRA_CONFIGS = {
+    0: ('gpio', 'i2c', 'spi-loopback', 'openamp', 'iccom'),
+    1: ('openamp-cr52_1',),
+}
+
+MEMORYMAP = (ROOT / 'platforms/nuttx/NuttX/nuttx/arch/arm/src/rcar'
+             / 'hardware/rcar_memorymap.h')
+
 SIZE_SUFFIX = {'': 1, 'K': 1024, 'M': 1024 * 1024}
+
+
+def memorymap_region(prefix):
+    text = MEMORYMAP.read_text()
+    values = []
+    for suffix in ('BASE', 'SIZE'):
+        match = re.search(rf'^#define {prefix}_{suffix}\s+(0x[0-9a-fA-F]+)', text, re.M)
+        if match is None:
+            raise AssertionError(f'{prefix}_{suffix} missing')
+        values.append(int(match.group(1), 16))
+    return values[0], values[0] + values[1]
 
 
 def ld_window(script):
@@ -73,6 +96,24 @@ class WindowTest(unittest.TestCase):
                 self.assertEqual(defconfig_window(config), window)
                 # No target proof yet: the manifest stays inspection-only.
                 self.assertEqual(status, 'proposed')
+
+    def test_extra_configs_use_core_window(self):
+        for core, configs in EXTRA_CONFIGS.items():
+            window = manifest_window(IMAGES[core][2])[1]
+            for config in configs:
+                with self.subTest(config=config):
+                    self.assertEqual(defconfig_window(config), window)
+
+    def test_shared_regions_outside_allowlist(self):
+        data = json.loads(MANIFEST.read_text())
+        shared = {name: memorymap_region(name)
+                  for name in ('RCAR_IPC_SHM', 'RCAR_ICCOM_CTA')}
+        for device, entry in data['devices'].items():
+            for rng in entry['ranges']:
+                span = (int(rng['start'], 0), int(rng['end'], 0))
+                for name, region in shared.items():
+                    with self.subTest(device=device, region=name):
+                        self.assertFalse(overlaps(span, region))
 
     def test_layout(self):
         windows = [manifest_window(device)[1] for _, _, device in IMAGES.values()]
