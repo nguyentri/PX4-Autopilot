@@ -1,0 +1,51 @@
+# Px4-DB
+
+> VS Code extension and workspace tooling for PX4 Autopilot and NuttX RTOS development on Renesas RZ/V2H, RA8P1, and RA8E1 hardware.
+
+Repository backend: `Tools/firmware-workspace.py`.
+Extension workspace: `Tools/vscode_extension/px4-db/`.
+Detailed documentation: [Full Technical Reference](llms-full.txt) | [VS Code Extension Guide](../../docs/vscode-extension.md).
+Contracts: JSON Schema Draft-07 in `schemas/`. Do not invent target catalogs or loader recipes.
+
+## CLI Quick Reference
+
+```bash
+# Discovery & Prerequisites
+python3 Tools/firmware-workspace.py catalog --json
+python3 Tools/firmware-workspace.py doctor --json
+python3 Tools/firmware-workspace.py doctor --serial <jlink-serial> --json
+
+# Build Execution (Shared Flock)
+python3 Tools/firmware-workspace.py build --selection .vscode/active-selection.json --json
+python3 Tools/firmware-workspace.py build --selection .vscode/active-selection.json --clean --json
+
+# Guarded RAM Loading (Exit 3 requires explicit --recover)
+python3 Tools/firmware-workspace.py load --selection .vscode/active-selection.json --receipt <receipt.json> --serial <jlink-serial> --json
+python3 Tools/firmware-workspace.py load --selection .vscode/active-selection.json --receipt <receipt.json> --serial <jlink-serial> --recover --json
+
+# Dual-Core Image Import & Preparation
+python3 Tools/firmware-workspace.py import-images --input <request.firmware-import.json> --json
+
+# In-Memory Cortex-Debug Attach Config
+python3 Tools/firmware-workspace.py debug-config --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <jlink-serial> --json
+
+# Managed RTT Console (SCI4 uses the separate UART supervisor)
+python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --core cr8_0 --serial <jlink-serial> --action start --json
+python3 Tools/firmware-workspace.py console --selection .vscode/active-selection.json --receipt <receipt.json> --serial <jlink-serial> --action stop --json
+```
+
+## Contracts & Schemas
+
+- **Selection** (`schemas/firmware-selection.schema.json`): `schemaVersion`, `id`, `board`, `core`, `build.{family,target|config,mode}`; multicore uses `group`.
+- **Receipt** (`schemas/artifact-receipt.schema.json`): `receiptId` is a nonempty string (builders use a run ID; imports use `import-<requestId>`), `timestamp`, `family`, `board`, `core`, `selectionId`, `artifacts[{path,sha256,size,core,entryPoint,rttAddress}]`, `status` (`provisional`, `committed`, `failed`, `cancelled`); multicore binds `groupDefinitionSha256`.
+- **Import** (`schemas/firmware-import.schema.json`): `schemaVersion: 1`, UUID `requestId`, embedded `selection`, core-keyed sources (file, folder, receipt).
+- **Result** (`schemas/operation-result.schema.json`): `protocolVersion`, `operationId`, `status` (`ok`, `failed`, `blocked`, `cancelled`), `childExitCode`, `diagnostics[]`, `receiptPath`.
+- **Exit Codes**: `0` success, `1` execution failure, `2` invalid input/admission, `3` blocked/recovery required, `4` UART busy, `130` cancelled.
+
+## Key Safety Boundaries
+
+1. **Volatile RAM Loading Only**: Gated against unverified flash persistence. CR8-0 loads at `0x081A0000`, CR8-1 at `0x081E0000`.
+2. **Prevent CM33 Reset**: Direct J-Link connection to RZ/V2H CM33 core causes SoC cold reset; direct attach is gated.
+3. **Exit Code 3 Protocol**: Never blind-retry after an exit code 3 or target reset marker; run diagnostic triage and recover via `--recover`.
+4. **Probe Reservation**: Managed operations acquire `probe-session` leases (`FIRMWARE_PROBE_LEASE`) preventing concurrent probe collisions.
+5. **Restricted Mode**: In untrusted workspaces, the extension renders static guidance and schemas without executing backend commands.

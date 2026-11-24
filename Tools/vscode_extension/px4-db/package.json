@@ -1,0 +1,983 @@
+{
+  "name": "px4-db",
+  "displayName": "Px4-DB",
+  "description": "Unified workspace integration, profiles, guarded loading and Cortex-Debug for PX4 and NuttX on Renesas hardware",
+  "version": "0.1.0",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#16163F",
+    "theme": "dark"
+  },
+  "publisher": "px4-nuttx",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PX4/PX4-Autopilot"
+  },
+  "keywords": [
+    "px4",
+    "nuttx",
+    "renesas",
+    "rzv2h",
+    "ra8p1",
+    "ra8e1",
+    "cortex-r8",
+    "cortex-m85",
+    "cortex-debug",
+    "drone",
+    "embedded"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Themes",
+    "Programming Languages",
+    "Debuggers",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:build.sh",
+    "workspaceContains:platforms/nuttx/CMakeLists.txt",
+    "onView:px4-nuttx.selection"
+  ],
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Static profile viewing and schema validation are available in Restricted Mode. Executing builds, loading, and debugging require workspace trust."
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "px4-nuttx-workspace",
+          "title": "Px4-DB",
+          "icon": "media/activity-icon.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "px4-nuttx-rtt",
+          "title": "RTT Monitor",
+          "icon": "$(terminal)"
+        }
+      ]
+    },
+    "views": {
+      "px4-nuttx-workspace": [
+        {
+          "id": "px4-nuttx.selection",
+          "name": "Selection & Profiles",
+          "when": "!px4Nuttx.savedSetupActive"
+        },
+        {
+          "id": "px4-nuttx.readiness",
+          "name": "Readiness & Doctor"
+        },
+        {
+          "id": "px4-nuttx.artifacts",
+          "name": "Artifacts & Receipts"
+        },
+        {
+          "id": "px4-nuttx.operations",
+          "name": "Actions & Target Control",
+          "when": "!px4Nuttx.savedSetupActive"
+        },
+        {
+          "id": "px4-nuttx.dualCoreLoader",
+          "name": "Firmware Setup"
+        }
+      ],
+      "px4-nuttx-rtt": [
+        {
+          "type": "webview",
+          "id": "px4-nuttx.rttMonitor",
+          "name": "RTT Monitor",
+          "when": "px4Nuttx.workspaceReady"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "px4Nuttx.checkDoctor",
+        "title": "Check Prerequisites (Doctor)",
+        "category": "PX4/NuttX",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "px4Nuttx.selectProfile",
+        "title": "Select Firmware Target / Profile",
+        "category": "PX4/NuttX",
+        "icon": "$(target)"
+      },
+      {
+        "command": "px4Nuttx.selectProbe",
+        "title": "Select J-Link Debug Probe",
+        "category": "PX4/NuttX",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "px4Nuttx.build",
+        "title": "Build Active Target",
+        "category": "PX4/NuttX",
+        "icon": "$(play)"
+      },
+      {
+        "command": "px4Nuttx.cleanRebuild",
+        "title": "Clean Rebuild Active Target",
+        "category": "PX4/NuttX",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "px4Nuttx.load",
+        "title": "Guarded Target Load (RAM)",
+        "category": "PX4/NuttX",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "px4Nuttx.attach",
+        "title": "Attach Cortex-Debug (No Reset)",
+        "category": "PX4/NuttX",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "px4Nuttx.loadAndDebug",
+        "title": "Load and Attach Cortex-Debug",
+        "category": "PX4/NuttX",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "px4Nuttx.recoverLoad",
+        "title": "Recover Target Load",
+        "category": "PX4/NuttX",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "px4Nuttx.selectCore",
+        "title": "Select Group Core",
+        "category": "PX4/NuttX",
+        "icon": "$(chip)"
+      },
+      {
+        "command": "px4Nuttx.refresh",
+        "title": "Refresh Workspace & Profiles",
+        "category": "PX4/NuttX",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "px4Nuttx.dual.browse",
+        "title": "Browse ELF",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(file-binary)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.folder",
+        "title": "Choose Build Folder",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(folder)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.useBuild",
+        "title": "Use Build Receipt",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(tag)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.buildBoth",
+        "title": "Build Both",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(play)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.validate",
+        "title": "Validate Images",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(checklist)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.refresh",
+        "title": "Refresh Images",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(refresh)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.resume",
+        "title": "Resume Preparation",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(debug-continue)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.keepCaptured",
+        "title": "Keep Captured",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(check)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.importUpdated",
+        "title": "Import Updated",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(sync)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.loadBoth",
+        "title": "Load Both to RAM",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(cloud-upload)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.recoverBoth",
+        "title": "Recover Both",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(warning)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.debugR80",
+        "title": "Debug R8-0",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(debug-alt)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.dual.debugR81",
+        "title": "Debug R8-1",
+        "category": "PX4/NuttX Dual-Core",
+        "icon": "$(debug-alt)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "px4Nuttx.setup.select",
+        "title": "Select Saved Setup",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(layers)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.saveAs",
+        "title": "Save Setup As",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(save-as)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.rename",
+        "title": "Rename Setup",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(edit)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.probe",
+        "title": "Select Debug Probe",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(plug)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.mode",
+        "title": "Select Build Mode",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(settings-gear)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.browse",
+        "title": "Choose Image File",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(file-binary)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.folder",
+        "title": "Choose Image from Folder",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(folder)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.useBuild",
+        "title": "Choose Build Receipt",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(tag)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.buildBoth",
+        "title": "Build All",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(play)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.buildCore",
+        "title": "Build Core",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(play)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.buildAndLoad",
+        "title": "Build & Load",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(rocket)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.buildLoadTrace",
+        "title": "Build, Load & Trace",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-console)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.validate",
+        "title": "Check Images",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(checklist)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.refresh",
+        "title": "Refresh Images",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(refresh)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.resume",
+        "title": "Resume Preparation",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-continue)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.keepCaptured",
+        "title": "Keep Captured Image",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(check)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.importUpdated",
+        "title": "Import Updated Image",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(sync)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.loadBoth",
+        "title": "Load Both to RAM",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(cloud-upload)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.recoverBoth",
+        "title": "Recover Both",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(warning)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.debugR80",
+        "title": "Debug R8-0",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-alt)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.debugR81",
+        "title": "Debug R8-1",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-alt)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.startRtt",
+        "title": "Trace in RTT Monitor",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(terminal)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.stopRtt",
+        "title": "Stop RTT Bridge",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(debug-disconnect)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.setup.stopSessions",
+        "title": "Stop Sessions",
+        "category": "PX4/NuttX Firmware Setup",
+        "icon": "$(stop-circle)",
+        "enablement": "isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady"
+      },
+      {
+        "command": "px4Nuttx.rtt.show",
+        "title": "Show RTT Monitor",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "px4Nuttx.rtt.clear",
+        "title": "Clear Trace",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "px4Nuttx.rtt.copy",
+        "title": "Copy Trace",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "px4Nuttx.rtt.saveLog",
+        "title": "Save Trace Log",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(save)"
+      },
+      {
+        "command": "px4Nuttx.rtt.toggleTimestamps",
+        "title": "Toggle Timestamps",
+        "category": "PX4/NuttX RTT",
+        "icon": "$(clock)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "px4Nuttx.refresh",
+          "when": "view == px4-nuttx.selection",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.selectProfile",
+          "when": "view == px4-nuttx.selection",
+          "group": "navigation@2"
+        },
+        {
+          "command": "px4Nuttx.checkDoctor",
+          "when": "view == px4-nuttx.readiness",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.refresh",
+          "when": "view == px4-nuttx.artifacts",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.cleanRebuild",
+          "when": "view == px4-nuttx.operations",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.setup.buildLoadTrace",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "navigation@0"
+        },
+        {
+          "command": "px4Nuttx.setup.buildAndLoad",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.setup.loadBoth",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "navigation@2"
+        },
+        {
+          "command": "px4Nuttx.setup.stopSessions",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "navigation@3"
+        },
+        {
+          "command": "px4Nuttx.setup.refresh",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "navigation@4"
+        },
+        {
+          "command": "px4Nuttx.setup.select",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@1"
+        },
+        {
+          "command": "px4Nuttx.setup.saveAs",
+          "when": "view == px4-nuttx.dualCoreLoader && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@2"
+        },
+        {
+          "command": "px4Nuttx.rtt.clear",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@1"
+        },
+        {
+          "command": "px4Nuttx.rtt.saveLog",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@2"
+        },
+        {
+          "command": "px4Nuttx.rtt.copy",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@3"
+        },
+        {
+          "command": "px4Nuttx.rtt.toggleTimestamps",
+          "when": "view == px4-nuttx.rttMonitor",
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "px4Nuttx.setup.browse",
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@1"
+        },
+        {
+          "command": "px4Nuttx.setup.folder",
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@2"
+        },
+        {
+          "command": "px4Nuttx.setup.useBuild",
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@3"
+        },
+        {
+          "command": "px4Nuttx.setup.buildCore",
+          "when": "view == px4-nuttx.dualCoreLoader && (viewItem == dualCoreImage || viewItem =~ /^setupCore\\./) && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "setup@4"
+        },
+        {
+          "command": "px4Nuttx.setup.buildCore",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_0 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@1"
+        },
+        {
+          "command": "px4Nuttx.setup.debugR80",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_0 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@2"
+        },
+        {
+          "command": "px4Nuttx.setup.startRtt",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_0 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@3"
+        },
+        {
+          "command": "px4Nuttx.setup.buildCore",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_1 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@1"
+        },
+        {
+          "command": "px4Nuttx.setup.debugR81",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_1 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@2"
+        },
+        {
+          "command": "px4Nuttx.setup.startRtt",
+          "when": "view == px4-nuttx.dualCoreLoader && viewItem == setupCore.r8_1 && isWorkspaceTrusted && px4Nuttx.savedSetupOperationsReady",
+          "group": "inline@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "px4Nuttx.dual.browse",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.folder",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.useBuild",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.buildBoth",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.validate",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.refresh",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.resume",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.keepCaptured",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.importUpdated",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.loadBoth",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.recoverBoth",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.debugR80",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.dual.debugR81",
+          "when": "false"
+        },
+        {
+          "command": "px4Nuttx.setup.saveAs",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.rename",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.probe",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.mode",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.browse",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.folder",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.useBuild",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.buildBoth",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.buildCore",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.buildAndLoad",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.buildLoadTrace",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.validate",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.refresh",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.resume",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.keepCaptured",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.importUpdated",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.loadBoth",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.recoverBoth",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.debugR80",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.debugR81",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.startRtt",
+          "when": "px4Nuttx.savedSetupActive"
+        },
+        {
+          "command": "px4Nuttx.setup.stopRtt",
+          "when": "px4Nuttx.savedSetupActive"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "px4-nuttx.selection",
+        "contents": "No target profile selected.\n[$(target) Select Firmware Profile](command:px4Nuttx.selectProfile)\n[$(pulse) Check Prerequisites](command:px4Nuttx.checkDoctor)"
+      },
+      {
+        "view": "px4-nuttx.readiness",
+        "contents": "Host and probe prerequisites not verified.\n[$(pulse) Run Doctor](command:px4Nuttx.checkDoctor)"
+      },
+      {
+        "view": "px4-nuttx.artifacts",
+        "contents": "No build receipts or ELF binaries staged yet.\n[$(play) Build Firmware](command:px4Nuttx.build)"
+      },
+      {
+        "view": "px4-nuttx.dualCoreLoader",
+        "contents": "Choose a fixed RDK-RZ/V2H CR8 group, save a named setup, and build or choose an exact image for each core. Load writes RAM only.\n[$(layers) Select Setup / Target](command:px4Nuttx.setup.select)\n[$(pulse) Check Prerequisites](command:px4Nuttx.checkDoctor)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "px4Nuttx.build",
+        "key": "ctrl+alt+k b",
+        "mac": "ctrl+alt+k b",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.cleanRebuild",
+        "key": "ctrl+alt+k c",
+        "mac": "ctrl+alt+k c",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.checkDoctor",
+        "key": "ctrl+alt+k d",
+        "mac": "ctrl+alt+k d",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.selectProfile",
+        "key": "ctrl+alt+k p",
+        "mac": "ctrl+alt+k p",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.refresh",
+        "key": "ctrl+alt+k r",
+        "mac": "ctrl+alt+k r",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus"
+      },
+      {
+        "command": "px4Nuttx.load",
+        "key": "ctrl+alt+k l",
+        "mac": "ctrl+alt+k l",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
+      },
+      {
+        "command": "px4Nuttx.attach",
+        "key": "ctrl+alt+k a",
+        "mac": "ctrl+alt+k a",
+        "when": "px4Nuttx.workspaceReady && isWorkspaceTrusted && !inputFocus && !terminalFocus && !px4Nuttx.savedSetupActive"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "px4-nuttx",
+        "required": [
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "type": "string",
+            "description": "Backend operation: build, cleanRebuild, or doctor"
+          },
+          "selection": {
+            "type": "string",
+            "description": "Optional selection JSON path"
+          }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "Px4-DB",
+      "properties": {
+        "px4Nuttx.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Path to Python 3 interpreter (>=3.9) with jsonschema installed."
+        },
+        "px4Nuttx.jlinkSerial": {
+          "type": "string",
+          "default": "",
+          "description": "Selected SEGGER J-Link probe serial number. If empty, detected probe is used."
+        },
+        "px4Nuttx.gdbPath": {
+          "type": "string",
+          "default": "gdb-multiarch",
+          "description": "Path to GDB executable for target debug sessions."
+        },
+        "px4Nuttx.rtt.mode": {
+          "type": "string",
+          "enum": [
+            "dual",
+            "switch"
+          ],
+          "enumDescriptions": [
+            "Trace both CR8 RTT consoles side by side from one J-Link session (no core is halted).",
+            "Trace one CR8 RTT console at a time; the RTT Monitor core switch moves the bridge."
+          ],
+          "default": "dual",
+          "description": "How Start RTT traces a setup whose two CR8 cores both use an RTT console."
+        },
+        "px4Nuttx.rtt.lineEnding": {
+          "type": "string",
+          "enum": [
+            "crlf",
+            "lf",
+            "cr",
+            "none"
+          ],
+          "default": "crlf",
+          "description": "Line ending the RTT Monitor appends to each sent line."
+        },
+        "px4Nuttx.rtt.timestamps": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefix each RTT Monitor line with the host time it arrived."
+        },
+        "px4Nuttx.rtt.scrollback": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 100,
+          "maximum": 100000,
+          "description": "Lines of RTT trace kept per core."
+        }
+      }
+    },
+    "themes": [
+      {
+        "label": "Px4-DB Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/px4-db-dark.json"
+      },
+      {
+        "label": "Px4-DB Light",
+        "uiTheme": "vs",
+        "path": "./themes/px4-db-light.json"
+      }
+    ],
+    "colors": [
+      {
+        "id": "px4db.brandOrange",
+        "description": "Px4-DB brand orange accent color",
+        "defaults": {
+          "dark": "#ED6C00",
+          "light": "#ED6C00",
+          "highContrast": "#ED6C00"
+        }
+      },
+      {
+        "id": "px4db.brandNavy",
+        "description": "Px4-DB primary deep navy color",
+        "defaults": {
+          "dark": "#16163F",
+          "light": "#16163F",
+          "highContrast": "#16163F"
+        }
+      },
+      {
+        "id": "px4db.accentGreen",
+        "description": "Px4-DB accent green success color",
+        "defaults": {
+          "dark": "#61CE70",
+          "light": "#61CE70",
+          "highContrast": "#61CE70"
+        }
+      },
+      {
+        "id": "px4db.accentBlue",
+        "description": "Px4-DB accent sky blue info color",
+        "defaults": {
+          "dark": "#6EC1E4",
+          "light": "#6EC1E4",
+          "highContrast": "#6EC1E4"
+        }
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": [
+          "*firmware-workspace.json",
+          "*firmware-selection.json",
+          "*.selection.json",
+          "active-selection.json",
+          "**/active-selection.json",
+          "firmware-selection-*.json"
+        ],
+        "url": "./schemas/firmware-selection.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*devices.json",
+          "*device-capabilities.json"
+        ],
+        "url": "./schemas/device-capabilities.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*receipt.json",
+          "build/workspace-artifacts/*/*.json"
+        ],
+        "url": "./schemas/artifact-receipt.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*operation-result.json",
+          "build/workspace-artifacts/*/operation-result.json"
+        ],
+        "url": "./schemas/operation-result.schema.json"
+      },
+      {
+        "fileMatch": [
+          "*.firmware-import.json"
+        ],
+        "url": "./schemas/firmware-import.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/rtt-monitor/webview",
+    "test": "node tests/run-tests.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/xterm": "5.5.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.0"
+  }
+}

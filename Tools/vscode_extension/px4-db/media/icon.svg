@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16163F"/>
+      <stop offset="50%" stop-color="#1D1D52"/>
+      <stop offset="100%" stop-color="#0E0E2A"/>
+    </linearGradient>
+    <radialGradient id="center-glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#2A3882" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#16163F" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="3" dy="5" stdDeviation="4" flood-color="#050515" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#bg-grad)" stroke="#ED6C00" stroke-width="6"/>
+  <rect x="20" y="20" width="472" height="472" rx="96" ry="96" fill="url(#center-glow)"/>
+
+  <!-- Tech Circuit Traces -->
+  <g stroke="#2A3882" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M 66 86 L 126 86 L 156 116"/>
+    <path d="M 446 86 L 386 86 L 356 116"/>
+    <path d="M 76 386 L 126 386"/>
+    <path d="M 436 386 L 386 386"/>
+  </g>
+  <circle cx="66" cy="86" r="6" fill="#ED6C00"/>
+  <circle cx="446" cy="86" r="6" fill="#6EC1E4"/>
+  <circle cx="76" cy="386" r="6" fill="#6EC1E4"/>
+  <circle cx="436" cy="386" r="6" fill="#ED6C00"/>
+
+  <!-- DB (DashBoard) Typography -->
+  <g font-family="Ubuntu, Roboto, sans-serif" font-weight="900" font-size="190" text-anchor="middle" filter="url(#shadow)">
+    <text x="190" y="280" fill="#FFFFFF">D</text>
+    <text x="326" y="280" fill="#ED6C00">B</text>
+  </g>
+
+  <!-- Subtitle Pill -->
+  <g transform="translate(256, 375)">
+    <rect x="-140" y="-28" width="280" height="56" rx="24" fill="#0D0D23" stroke="#2A3882" stroke-width="3"/>
+    <text x="0" y="9" font-family="Ubuntu, Roboto, sans-serif" font-weight="700" font-size="34" fill="#6EC1E4" text-anchor="middle" letter-spacing="4">PX4 · NUTTX</text>
+  </g>
+</svg>

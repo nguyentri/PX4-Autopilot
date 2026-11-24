@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- Px4-DB Chip Container -->
+  <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke="currentColor" stroke-width="1.4"/>
+  <!-- Pins / Circuit Connectors -->
+  <path d="M2.5 7H0.8 M2.5 12H0.8 M2.5 17H0.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M21.5 7H23.2 M21.5 12H23.2 M21.5 17H23.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M7 2.5V0.8 M12 2.5V0.8 M17 2.5V0.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M7 21.5V23.2 M12 21.5V23.2 M17 21.5V23.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- 'D' Vector -->
+  <path d="M5.5 7.8 V16.2 H7.8 A3.9 4.2 0 0 0 7.8 7.8 Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 'B' Vector in accent orange #ED6C00 -->
+  <path d="M13.5 7.8 V16.2 H16.9 A2.1 2.1 0 0 0 16.9 12 H13.5 M13.5 12 H16.5 A2.1 2.1 0 0 0 16.5 7.8 H13.5" stroke="#ED6C00" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

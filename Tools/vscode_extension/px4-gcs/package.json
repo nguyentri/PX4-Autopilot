@@ -1,0 +1,340 @@
+{
+  "name": "px4-gcs",
+  "displayName": "Px4-GCS",
+  "description": "Minimal MAVLink ground station for PX4 inside VS Code: connect, HUD, parameters, NSH console, guarded control, plots and logs.",
+  "version": "0.1.0",
+  "publisher": "px4-nuttx",
+  "license": "BSD-3-Clause",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#16163F",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PX4/PX4-Autopilot"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "px4",
+    "mavlink",
+    "ground station",
+    "drone"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Connecting to a vehicle starts a Python sidecar and needs workspace trust. The interpreter, UDP bind address, parameter metadata and recording folder come from user settings only.",
+      "restrictedConfigurations": [
+        "px4Gcs.pythonPath",
+        "px4Gcs.udp.host",
+        "px4Gcs.parameters.metadataPath",
+        "px4Gcs.recording.directory"
+      ]
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "px4-gcs",
+          "title": "Px4-GCS",
+          "icon": "media/activity-bar.svg"
+        }
+      ]
+    },
+    "views": {
+      "px4-gcs": [
+        {
+          "id": "px4Gcs.vehicle",
+          "name": "Vehicle"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "px4Gcs.vehicle",
+        "contents": "No vehicle connected.\n[Quick Connect](command:px4Gcs.quickConnect)\n[Connect...](command:px4Gcs.connect)\n[Open Dashboard](command:px4Gcs.openDashboard)\n[Run Doctor](command:px4Gcs.runDoctor)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "px4Gcs.quickConnect",
+        "title": "Quick Connect",
+        "category": "PX4 GCS",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "px4Gcs.connect",
+        "title": "Connect...",
+        "category": "PX4 GCS"
+      },
+      {
+        "command": "px4Gcs.disconnect",
+        "title": "Disconnect",
+        "category": "PX4 GCS",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "px4Gcs.runDoctor",
+        "title": "Run Doctor",
+        "category": "PX4 GCS"
+      },
+      {
+        "command": "px4Gcs.openDashboard",
+        "title": "Open Dashboard",
+        "category": "PX4 GCS",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "px4Gcs.openConsole",
+        "title": "Open NSH Console",
+        "category": "PX4 GCS",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "px4Gcs.arm",
+        "title": "Arm Vehicle",
+        "category": "PX4 GCS",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "px4Gcs.disarm",
+        "title": "Disarm Vehicle",
+        "category": "PX4 GCS",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "px4Gcs.setMode",
+        "title": "Change Flight Mode...",
+        "category": "PX4 GCS"
+      },
+      {
+        "command": "px4Gcs.reboot",
+        "title": "Reboot Vehicle",
+        "category": "PX4 GCS"
+      },
+      {
+        "command": "px4Gcs.refreshParameters",
+        "title": "Refresh Parameters and Metadata",
+        "category": "PX4 GCS",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "px4Gcs.exportParameters",
+        "title": "Export Parameters (.params)...",
+        "category": "PX4 GCS"
+      },
+      {
+        "command": "px4Gcs.importParameters",
+        "title": "Import Parameters (.params)...",
+        "category": "PX4 GCS"
+      },
+      {
+        "command": "px4Gcs.downloadLog",
+        "title": "Download Onboard Log...",
+        "category": "PX4 GCS",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "px4Gcs.startRecording",
+        "title": "Start Recording (.tlog)",
+        "category": "PX4 GCS",
+        "icon": "$(record)"
+      },
+      {
+        "command": "px4Gcs.stopRecording",
+        "title": "Stop Recording",
+        "category": "PX4 GCS",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "px4Gcs.openSessionReport",
+        "title": "Open Session Report",
+        "category": "PX4 GCS",
+        "icon": "$(report)"
+      },
+      {
+        "command": "px4Gcs.revealSessions",
+        "title": "Reveal Sessions Folder",
+        "category": "PX4 GCS"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "px4Gcs.openDashboard",
+          "when": "view == px4Gcs.vehicle",
+          "group": "navigation"
+        },
+        {
+          "command": "px4Gcs.quickConnect",
+          "when": "view == px4Gcs.vehicle && !px4Gcs.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "px4Gcs.disconnect",
+          "when": "view == px4Gcs.vehicle && px4Gcs.connected",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "px4Gcs.disconnect",
+          "when": "view == px4Gcs.vehicle && viewItem == px4Gcs.link.active",
+          "group": "inline"
+        },
+        {
+          "command": "px4Gcs.startRecording",
+          "when": "view == px4Gcs.vehicle && viewItem == px4Gcs.recording.off",
+          "group": "inline"
+        },
+        {
+          "command": "px4Gcs.stopRecording",
+          "when": "view == px4Gcs.vehicle && viewItem == px4Gcs.recording.on",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "px4Gcs.disconnect",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.arm",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.disarm",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.setMode",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.reboot",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.exportParameters",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.importParameters",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.downloadLog",
+          "when": "px4Gcs.connected"
+        },
+        {
+          "command": "px4Gcs.startRecording",
+          "when": "px4Gcs.connected"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Px4-GCS",
+      "properties": {
+        "px4Gcs.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "scope": "machine",
+          "description": "Python interpreter that runs the MAVLink sidecar (needs pymavlink and pyserial). On Windows this is usually `python`."
+        },
+        "px4Gcs.transport": {
+          "type": "string",
+          "enum": [
+            "serial",
+            "udp"
+          ],
+          "default": "serial",
+          "scope": "window",
+          "description": "Link to the vehicle."
+        },
+        "px4Gcs.serial.port": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Serial device. Empty means auto-detect."
+        },
+        "px4Gcs.serial.baud": {
+          "type": "number",
+          "default": 57600,
+          "scope": "window",
+          "description": "First baud rate the listen-only probe tries."
+        },
+        "px4Gcs.serial.baudCandidates": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "default": [
+            57600,
+            115200
+          ],
+          "scope": "window",
+          "description": "Baud rates the listen-only probe tries, in order."
+        },
+        "px4Gcs.udp.host": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "scope": "machine",
+          "description": "UDP bind address. A non-loopback address lets any host that reaches it send MAVLink to this station."
+        },
+        "px4Gcs.udp.port": {
+          "type": "number",
+          "default": 14550,
+          "scope": "window",
+          "description": "UDP bind port."
+        },
+        "px4Gcs.control.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "When false the extension is telemetry-only: no arm, mode, reboot, parameter write or console input."
+        },
+        "px4Gcs.parameters.metadataPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "PX4 parameters.json for descriptions and ranges. Empty means discover build/*/parameters.json."
+        },
+        "px4Gcs.recording.directory": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Folder for .tlog recordings and session reports. Empty means the extension's global storage."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/webview",
+    "test": "node tests/run-tests.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@types/vscode": "1.85.0",
+    "@vscode/vsce": "3.9.2",
+    "@xterm/addon-fit": "0.10.0",
+    "@xterm/xterm": "5.5.0",
+    "ajv": "8.17.1",
+    "esbuild": "0.24.2",
+    "typescript": "5.9.3",
+    "uplot": "1.6.31"
+  }
+}
