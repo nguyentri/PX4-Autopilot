@@ -53,8 +53,9 @@ and whether `pymavlink` and `pyserial` import.
 - Binding UDP to a non-loopback address asks first, because any host that
   reaches it can then send MAVLink to the station.
 
-RDK images: SCI5 (TEL1) carries MAVLink at **57600** on `demo` and **115200**
-on `demosih`. The default candidates `[57600, 115200]` cover both.
+RDK CR8-0 images (`default`, `demo`, `demosih`) carry MAVLink on SCI5 (TEL1) at
+**115200**. The default candidates `[115200, 57600]` also cover a SiK radio
+left at 57600.
 
 ## Dashboard tabs
 
@@ -201,8 +202,8 @@ points.
 | `px4Gcs.pythonPath` | machine | `python3` | Interpreter for the sidecar |
 | `px4Gcs.transport` | window | `serial` | `serial` or `udp` |
 | `px4Gcs.serial.port` | window | empty | Empty: auto-detect |
-| `px4Gcs.serial.baud` | window | `57600` | First baud the probe tries |
-| `px4Gcs.serial.baudCandidates` | window | `[57600, 115200]` | Probe order |
+| `px4Gcs.serial.baud` | window | `115200` | First baud the probe tries |
+| `px4Gcs.serial.baudCandidates` | window | `[115200, 57600]` | Probe order |
 | `px4Gcs.udp.host` | machine | `127.0.0.1` | Bind address; non-loopback asks first |
 | `px4Gcs.udp.port` | window | `14550` | Bind port |
 | `px4Gcs.control.enabled` | window | `true` | `false`: telemetry only, no console input |

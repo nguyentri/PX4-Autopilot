@@ -271,7 +271,7 @@
         },
         "px4Gcs.serial.baud": {
           "type": "number",
-          "default": 57600,
+          "default": 115200,
           "scope": "window",
           "description": "First baud rate the listen-only probe tries."
         },
@@ -281,8 +281,8 @@
             "type": "number"
           },
           "default": [
-            57600,
-            115200
+            115200,
+            57600
           ],
           "scope": "window",
           "description": "Baud rates the listen-only probe tries, in order."

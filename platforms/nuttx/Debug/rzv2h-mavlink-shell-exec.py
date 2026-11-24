@@ -7,10 +7,10 @@ counterpart of Tools/mavlink_shell.py, with the output framing of
 nsh_console_exec.py:
 
   rzv2h-mavlink-shell-exec.py 'ver all' 'rzv2h_heartbeat status'
-  rzv2h-mavlink-shell-exec.py --port /dev/ttyUSB0 --baud 57600 --log run.log 'mavlink status'
+  rzv2h-mavlink-shell-exec.py --port /dev/ttyUSB0 --baud 115200 --log run.log 'mavlink status'
 
 Each command is followed by `echo <marker>`; its output ends at the line that
-is exactly the marker. A command whose marker never arrives (the 57600 link
+is exactly the marker. A command whose marker never arrives (the telemetry link
 drops bytes while telemetry streams) is retried once, never more.
 Output is printed as `### <command>` blocks, ANSI sequences stripped.
 
@@ -34,7 +34,7 @@ def recv_match(conn, **kw):
 
     pymavlink's add_message() raises TypeError when a message type was first
     cached without an instance value and later arrives with one; garbled frames
-    on the lossy 57600 link trigger it. The failing message is never the
+    on a lossy telemetry link trigger it. The failing message is never the
     SERIAL_CONTROL or HEARTBEAT being waited for, so treat it as no message.
     """
     try:
@@ -142,7 +142,7 @@ def clean(text, marker):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--port', default='/dev/ttyUSB0', help='MAVLink serial device (default /dev/ttyUSB0)')
-    ap.add_argument('--baud', type=int, default=57600, help='baud rate (default 57600)')
+    ap.add_argument('--baud', type=int, default=115200, help='baud rate (default 115200)')
     ap.add_argument('--timeout', type=float, default=8.0, help='seconds per command attempt (default 8)')
     ap.add_argument('--heartbeat-timeout', type=float, default=10.0, help='seconds to wait for a vehicle heartbeat')
     ap.add_argument('--marker', default='MAVSH_DONE', help='marker prefix echoed after each command')

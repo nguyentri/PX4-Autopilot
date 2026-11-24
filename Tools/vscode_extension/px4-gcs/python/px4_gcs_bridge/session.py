@@ -86,7 +86,7 @@ class Session:
         device = args.get("device")
         if not isinstance(device, str) or not device:
             raise BridgeError("BAD_ARGUMENT", "serial connect needs a device")
-        bauds = args.get("baudCandidates") or [57600, 115200]
+        bauds = args.get("baudCandidates") or [115200, 57600]
         session_id = args.get("sessionId") or str(uuid.uuid4())
         self.lease = SerialLease(device, session_id)
         self.lease.acquire()

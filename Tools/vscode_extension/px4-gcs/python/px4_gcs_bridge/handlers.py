@@ -66,7 +66,7 @@ class Handlers:
             checked["port"] = _port(arg(args, "port", int, 14550))
         else:
             checked["device"] = arg(args, "device", str, required=True)
-            bauds = arg(args, "baudCandidates", list, [57600, 115200])
+            bauds = arg(args, "baudCandidates", list, [115200, 57600])
             if not bauds or len(bauds) > 8 or not all(isinstance(b, int) and not isinstance(b, bool)
                                                       and 1200 <= b <= 4_000_000 for b in bauds):
                 raise BridgeError("BAD_ARGUMENT", "baudCandidates must list 1-8 baud rates")

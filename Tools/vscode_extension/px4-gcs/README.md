@@ -51,8 +51,8 @@ repository.
 | `px4Gcs.pythonPath` | `python3` | User or machine settings only |
 | `px4Gcs.transport` | `serial` | `serial` or `udp` |
 | `px4Gcs.serial.port` | empty | Empty means auto-detect |
-| `px4Gcs.serial.baud` | `57600` | First baud the listen-only probe tries |
-| `px4Gcs.serial.baudCandidates` | `[57600, 115200]` | Probe order |
+| `px4Gcs.serial.baud` | `115200` | First baud the listen-only probe tries |
+| `px4Gcs.serial.baudCandidates` | `[115200, 57600]` | Probe order |
 | `px4Gcs.udp.host` | `127.0.0.1` | Bind address; user or machine settings only |
 | `px4Gcs.udp.port` | `14550` | |
 | `px4Gcs.control.enabled` | `true` | `false` makes the station telemetry-only |
