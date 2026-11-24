@@ -1,0 +1,1029 @@
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/pass1'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/syscall'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/audio'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/wireless'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libxx'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/video'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/audio'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/bin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/pass1'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libdsp'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/net'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/wireless'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libxx'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/crypto'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/openamp'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/video'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/syscall'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/net'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libdsp'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/bin'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/kbin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/openamp'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/crypto'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/pass1'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/nxfonts'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libxx'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/bin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/bin'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/pass1'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/nxfonts'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/kbin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libxx'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/syscall'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/bin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/kbin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/kbin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/zoneinfo'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/audio'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/syscall'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/video'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/wireless'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/zoneinfo'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libdsp'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/video'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/net'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/audio'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/crypto'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils'
+make[3]: Nothing to be done for 'clean'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/openamp'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/wireless'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/kbin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/net'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libdsp'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/import'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/crypto'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/openamp'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/nxfonts'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/import'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/nxfonts'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/kbin'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/modbus'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/nxfonts'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx/nxfonts'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libnx'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/modbus'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/import'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/bin'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/kbin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/import'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/kbin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[2]: Nothing to be done for 'clean'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/modbus'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/zoneinfo'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/bin'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/zoneinfo'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/modbus'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/kbin'
+make[3]: Nothing to be done for 'clean'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/bin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/kbin'
+make[3]: Nothing to be done for 'clean'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform/bin'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm/kbin'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/kbin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/zoneinfo'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform/bin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc/zoneinfo'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx'
+make[1]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Nothing to be done for 'clean_context'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools/pic32'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools/pic32'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools/cxd56'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools/cxd56'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+  Copy files
+  Select CONFIG_HOST_LINUX=y
+  Refreshing...
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Nothing to be done for 'clean_context'.
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics/nxglib'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/graphics'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx'
+CP: arch/dummy/Kconfig to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/dummy/dummy_kconfig
+CP: boards/dummy/Kconfig to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/dummy/dummy_kconfig
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+LN: platform/board to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform/dummy
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+LN: include/arch to arch/arm/include
+LN: include/arch/board to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/include
+LN: drivers/platform to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers/dummy
+LN: include/arch/chip to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/include/ra8
+/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools/link.sh /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/include/ra8 include/arch/chip
+LN: arch/arm/src/chip to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src/ra8
+LN: arch/arm/src/board to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src
+touch .dirlinks
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/audioutils'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/boot'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/canutils'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/crypto'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples'
+make[4]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot
+make[4]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples/mcuboot'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/examples'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/fsutils'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/games'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/gpsutils'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/graphics'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/industry'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/interpreters'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/math'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/mlearning'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/netutils'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/testing'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless'
+make[4]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth
+make[4]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/bluetooth'
+make[4]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154
+make[4]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless/ieee802154'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/wireless'
+mkkconfig in /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx'
+#
+# configuration written to .config
+#
+Effective core: CM85 (RA_CPU_CORE_CM85 default)
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+Create version.h
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/tools'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[1]: Nothing to be done for 'context'.
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[1]: Nothing to be done for 'context'.
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Nothing to be done for 'context'.
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[3]: Nothing to be done for 'context'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[3]: Nothing to be done for 'context'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[3]: Nothing to be done for 'context'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+LN: platform/board to /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform/dummy
+make[3]: Nothing to be done for 'context'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[3]: Nothing to be done for 'register'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[3]: Nothing to be done for 'register'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[3]: Nothing to be done for 'register'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+Register: nsh
+Register: sh
+make[3]: Nothing to be done for 'register'.
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+100 15402    0 15402    0     0   9999      0 --:--:--  0:00:01 --:--:--  9999100 47543    0 47543    0     0  27476      0 --:--:--  0:00:01 --:--:--  165k
+segger/RTT.zip: OK
+Archive:  segger/RTT.zip
+ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b
+   creating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/
+   creating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Config/
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Config/SEGGER_RTT_Conf.h  
+   creating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Examples/
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Examples/Main_RTT_InputEchoApp.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Examples/Main_RTT_MenuApp.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Examples/Main_RTT_PrintfTest.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Examples/Main_RTT_SpeedTestApp.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/LICENSE.md  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/README.md  
+   creating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/RTT/
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/RTT/SEGGER_RTT.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/RTT/SEGGER_RTT.h  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/RTT/SEGGER_RTT_ASM_ARMv7M.S  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/RTT/SEGGER_RTT_printf.c  
+   creating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Syscalls/
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Syscalls/SEGGER_RTT_Syscalls_GCC.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Syscalls/SEGGER_RTT_Syscalls_IAR.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Syscalls/SEGGER_RTT_Syscalls_KEIL.c  
+  inflating: segger/RTT-ff57c3d516ea59b0a2d4d5cafb33a48572b09c0b/Syscalls/SEGGER_RTT_Syscalls_SES.c  
+patching file segger/RTT/RTT/SEGGER_RTT.h
+segger/RTT/RTT/SEGGER_RTT.c: OK
+segger/RTT/RTT/SEGGER_RTT.h: OK
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards/arm/ra8/evk-ra8p1/src'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[2]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/sched'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/libs/libc'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+CC:  clock/clock_initialize.c
+CC:  dummy.c
+CC:  mm_heap/mm_initialize.c
+CC:  clock/clock_settime.c
+CC:  drivers_initialize.c
+rm -f /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/libapps.a
+make /home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/libapps.a
+CC:  boardctl.c
+make[2]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps'
+CC:  loop/losetup.c
+CC:  assert/lib_assert.c
+AR (create): libboards.a   dummy.o boardctl.o 
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/boards'
+CC:  mm_heap/mm_sem.c
+CC:  mm_heap/mm_addfreechunk.c
+CC:  clock/clock_gettime.c
+AS:  common/gnu/vfork.S
+CC:  fs_initialize.c
+CC:  builtin/lib_builtin_getname.c
+AS:  common/gnu/arm_testset.S
+AS:  armv8-m/arm_exception.S
+CC:  mm_heap/mm_size2ndx.c
+CC:  chip/ra_mstp.c
+CC:  misc/dev_null.c
+CC:  builtin/lib_builtin_isavail.c
+CC:  clock/clock_getres.c
+CC:  inode/fs_files.c
+CC:  chip/ra_start.c
+CC:  misc/ramdisk.c
+CC:  builtin/lib_builtin_forindex.c
+CC:  mm_heap/mm_malloc_size.c
+CC:  clock/clock_abstime2ticks.c
+CC:  ctype/lib_isalnum.c
+CC:  clock/clock_systime_ticks.c
+CC:  mm_heap/mm_shrinkchunk.c
+CC:  ctype/lib_isalpha.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+CC:  ctype/lib_isascii.c
+CC:  clock/clock_systime_timespec.c
+CC:  misc/mkrd.c
+CC:  chip/ra_clock.c
+CC:  mm_heap/mm_brkaddr.c
+CC:  clock/clock.c
+CC:  ctype/lib_isblank.c
+CC:  inode/fs_foreachinode.c
+CC:  environ/env_getenvironptr.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+CC:  ctype/lib_iscntrl.c
+CC:  mm_heap/mm_calloc.c
+CC:  pipes/pipe.c
+CC:  inode/fs_inode.c
+CC:  ctype/lib_isdigit.c
+CC:  mm_heap/mm_extend.c
+CC:  pipes/fifo.c
+CC:  environ/env_dup.c
+CC:  ctype/lib_isgraph.c
+CC:  mm_heap/mm_free.c
+CC:  pipes/pipe_common.c
+CC:  inode/fs_inodeaddref.c
+CC:  ctype/lib_islower.c
+CC:  builtin_list.c
+CC:  environ/env_release.c
+CC:  ctype/lib_isprint.c
+CC:  serial/serial.c
+CC:  mm_heap/mm_mallinfo.c
+CC:  inode/fs_inodebasename.c
+CC:  exec_builtin.c
+CC:  ctype/lib_ispunct.c
+CC:  environ/env_findvar.c
+CC:  mm_heap/mm_malloc.c
+CC:  ctype/lib_isspace.c
+CC:  inode/fs_inodefind.c
+CC:  environ/env_removevar.c
+CC:  ctype/lib_isupper.c
+CC:  chip/ra_irq.c
+CC:  nsh_init.c
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+CC:  mm_heap/mm_foreach.c
+CC:  environ/env_clearenv.c
+CC:  ctype/lib_isxdigit.c
+CC:  inode/fs_inodefree.c
+CC:  mm_heap/mm_memalign.c
+CC:  nsh_parse.c
+make[1]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+CC:  ctype/lib_tolower.c
+CC:  environ/env_getenv.c
+CC:  chip/ra_icu.c
+CC:  ctype/lib_toupper.c
+CC:  inode/fs_inodegetpath.c
+CC:  serial/serial_io.c
+CC:  mm_heap/mm_realloc.c
+CC:  environ/env_putenv.c
+CC:  dirent/lib_readdirr.c
+CC:  inode/fs_inoderelease.c
+CC:  syslog/vsyslog.c
+CC:  environ/env_setenv.c
+CC:  dirent/lib_telldir.c
+CC:  mm_heap/mm_zalloc.c
+CC:  dirent/lib_alphasort.c
+CC:  inode/fs_inoderemove.c
+CC:  binfmt_globals.c
+CC:  syslog/syslog_stream.c
+CC:  dirent/lib_scandir.c
+CC:  mm_heap/mm_heapmember.c
+CC:  binfmt_initialize.c
+CC:  inode/fs_inodereserve.c
+CC:  environ/env_unsetenv.c
+CC:  chip/ra_gpio.c
+CC:  mm_heap/mm_memdump.c
+CC:  syslog/syslog_channel.c
+CC:  dirent/lib_ftw.c
+CC:  binfmt_register.c
+CC:  environ/env_foreach.c
+CC:  syslog/syslog_putc.c
+CC:  dirent/lib_nftw.c
+CC:  inode/fs_inodesearch.c
+CC:  umm_heap/umm_globals.c
+CC:  syslog/syslog_write.c
+CC:  binfmt_unregister.c
+CC:  group/group_create.c
+CC:  umm_heap/umm_initialize.c
+CC:  binfmt_loadmodule.c
+CC:  syslog/syslog_force.c
+CC:  group/group_join.c
+CC:  umm_heap/umm_addregion.c
+CC:  vfs/fs_chstat.c
+CC:  dirent/lib_opendir.c
+CC:  binfmt_unloadmodule.c
+CC:  nsh_console.c
+CC:  chip/ra_lowputc.c
+CC:  syslog/syslog_flush.c
+CC:  group/group_leave.c
+CC:  umm_heap/umm_malloc_size.c
+CC:  binfmt_execmodule.c
+CC:  umm_heap/umm_brkaddr.c
+CC:  syslog/syslog_initialize.c
+CC:  vfs/fs_close.c
+CC:  group/group_find.c
+CC:  binfmt_exec.c
+CC:  syslog/syslog_device.c
+CC:  vfs/fs_dup.c
+CC:  group/group_setupstreams.c
+CC:  umm_heap/umm_calloc.c
+CC:  dirent/lib_closedir.c
+CC:  binfmt_copyargv.c
+CC:  nsh_script.c
+CC:  chip/ra_memmng.c
+CC:  vfs/fs_dup2.c
+CC:  group/group_setupidlefiles.c
+CC:  umm_heap/umm_extend.c
+CC:  dirent/lib_readdir.c
+CC:  binfmt_dumpmodule.c
+CC:  umm_heap/umm_free.c
+CC:  group/group_setuptaskfiles.c
+CC:  dirent/lib_rewinddir.c
+CC:  timers/timer.c
+CC:  binfmt_coredump.c
+CC:  vfs/fs_fcntl.c
+CC:  nsh_system.c
+CC:  chip/ra_timerisr.c
+CC:  dirent/lib_seekdir.c
+CC:  umm_heap/umm_mallinfo.c
+CC:  builtin.c
+CC:  group/group_foreachchild.c
+CC:  dirent/lib_dirfd.c
+CC:  nsh_command.c
+CC:  errno/lib_errno.c
+CC:  umm_heap/umm_malloc.c
+CC:  group/group_killchildren.c
+CC:  chip/ra_serial.c
+AR (create): libbinfmt.a   binfmt_globals.o binfmt_initialize.o binfmt_register.o binfmt_unregister.o binfmt_loadmodule.o binfmt_unloadmodule.o binfmt_execmodule.o binfmt_exec.o binfmt_copyargv.o binfmt_dumpmodule.o binfmt_coredump.o builtin.o
+CC:  vfs/fs_epoll.c
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/binfmt'
+CC:  fixedmath/lib_fixedmath.c
+CC:  segger/RTT/RTT/SEGGER_RTT.c
+CC:  vfs/fs_fchstat.c
+CC:  group/group_signal.c
+CC:  fixedmath/lib_b16sin.c
+CC:  umm_heap/umm_memalign.c
+CC:  nsh_fscmds.c
+CC:  fixedmath/lib_b16cos.c
+CC:  init/nx_start.c
+CC:  umm_heap/umm_realloc.c
+CC:  fixedmath/lib_b16atan2.c
+CC:  vfs/fs_fstat.c
+CC:  chip/ra_agt.c
+CC:  umm_heap/umm_zalloc.c
+CC:  umm_heap/umm_heapmember.c
+CC:  fixedmath/lib_ubsqrt.c
+CC:  init/nx_bringup.c
+CC:  vfs/fs_fstatfs.c
+CC:  grp/lib_getgrgid.c
+AR (create): libmm.a    bin/mm_initialize.o  bin/mm_sem.o  bin/mm_addfreechunk.o  bin/mm_size2ndx.o  bin/mm_malloc_size.o  bin/mm_shrinkchunk.o  bin/mm_brkaddr.o  bin/mm_calloc.o  bin/mm_extend.o  bin/mm_free.o  bin/mm_mallinfo.o  bin/mm_malloc.o  bin/mm_foreach.o  bin/mm_memalign.o  bin/mm_realloc.o  bin/mm_zalloc.o  bin/mm_heapmember.o  bin/mm_memdump.o  bin/umm_globals.o  bin/umm_initialize.o  bin/umm_addregion.o  bin/umm_malloc_size.o  bin/umm_brkaddr.o  bin/umm_calloc.o  bin/umm_extend.o  bin/umm_free.o  bin/umm_mallinfo.o  bin/umm_malloc.o  bin/umm_memalign.o  bin/umm_realloc.o  bin/umm_zalloc.o  bin/umm_heapmember.o
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/mm'
+CC:  chip/ra_idle.c
+CC:  vfs/fs_ioctl.c
+CC:  grp/lib_getgrgidr.c
+CC:  grp/lib_getgrnam.c
+CC:  irq/irq_initialize.c
+CC:  nsh_ddcmd.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+CC:  common/arm_allocateheap.c
+CC:  irq/irq_attach.c
+CC:  grp/lib_getgrnamr.c
+CC:  vfs/fs_lseek.c
+CC:  segger/syslog_rtt.c
+CC:  grp/lib_initgroups.c
+CC:  common/arm_assert.c
+CC:  irq/irq_dispatch.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+AR (create): libdrivers.a   drivers_initialize.o losetup.o dev_null.o ramdisk.o mkrd.o pipe.o fifo.o pipe_common.o serial.o serial_io.o vsyslog.o syslog_stream.o syslog_channel.o syslog_putc.o syslog_write.o syslog_force.o syslog_flush.o syslog_initialize.o syslog_device.o timer.o segger/RTT/RTT/SEGGER_RTT.o segger/syslog_rtt.o
+CC:  grp/lib_getgrbuf.c
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/drivers'
+CC:  grp/lib_getgrbufr.c
+CC:  vfs/fs_mkdir.c
+CC:  nsh_proccmds.c
+CC:  irq/irq_unexpectedisr.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+CC:  inttypes/lib_imaxabs.c
+CC:  common/arm_blocktask.c
+CC:  mqueue/mq_send.c
+CC:  vfs/fs_open.c
+CC:  inttypes/lib_strtoimax.c
+CC:  common/arm_createstack.c
+CC:  board/dummy.c
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+CC:  mqueue/mq_timedsend.c
+CC:  inttypes/lib_strtoumax.c
+CC:  vfs/fs_poll.c
+IN: boards/libboards.a -> staging/libboards.a
+CC:  nsh_mmcmds.c
+CC:  common/arm_exit.c
+CC:  common/arm_fullcontextrestore.c
+CC:  libgen/lib_basename.c
+CC:  mqueue/mq_sndinternal.c
+CC:  nsh_timcmds.c
+CC:  vfs/fs_pread.c
+CC:  common/arm_initialize.c
+IN: mm/libmm.a -> staging/libmm.a
+CC:  libgen/lib_dirname.c
+CC:  nsh_envcmds.c
+CC:  readline.c
+CC:  nsh_main.c
+CC:  vfs/fs_pwrite.c
+CC:  readline_fd.c
+CC:  common/arm_lowputs.c
+CC:  machine/arm/aeabi_memclr.c
+CC:  vfs/fs_read.c
+IN: binfmt/libbinfmt.a -> staging/libbinfmt.a
+CC:  mqueue/mq_receive.c
+CC:  machine/arm/aeabi_memclr4.c
+IN: drivers/libdrivers.a -> staging/libdrivers.a
+CC:  common/arm_modifyreg16.c
+CC:  readline_common.c
+CC:  machine/arm/aeabi_memclr8.c
+CC:  sh_main.c
+CC:  nsh_syscmds.c
+CC:  machine/arm/aeabi_memcpy.c
+CC:  vfs/fs_rename.c
+CC:  common/arm_modifyreg32.c
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+CC:  common/arm_modifyreg8.c
+CC:  nsh_dbgcmds.c
+CC:  mqueue/mq_timedreceive.c
+CC:  machine/arm/aeabi_memcpy4.c
+CC:  vfs/fs_rmdir.c
+CC:  common/arm_nputs.c
+CC:  mqueue/mq_rcvinternal.c
+CC:  machine/arm/aeabi_memcpy8.c
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+CC:  common/arm_releasepending.c
+CC:  nsh_session.c
+CC:  common/arm_releasestack.c
+CC:  machine/arm/aeabi_memmove.c
+CC:  common/arm_reprioritizertr.c
+CC:  vfs/fs_select.c
+CC:  machine/arm/aeabi_memmove4.c
+CC:  nsh_fsutils.c
+CC:  common/arm_saveusercontext.c
+CC:  machine/arm/aeabi_memmove8.c
+CC:  vfs/fs_sendfile.c
+CC:  vfs/fs_stat.c
+CC:  mqueue/mq_initialize.c
+CC:  machine/arm/aeabi_memset.c
+CC:  nsh_builtin.c
+CC:  nsh_mntcmds.c
+CC:  machine/arm/aeabi_memset4.c
+CC:  common/arm_stackframe.c
+CC:  mqueue/mq_msgfree.c
+CC:  nsh_consolemain.c
+CC:  vfs/fs_statfs.c
+CC:  machine/arm/aeabi_memset8.c
+CC:  common/arm_switchcontext.c
+CC:  common/arm_vfork.c
+CC:  vfs/fs_unlink.c
+CC:  common/arm_unblocktask.c
+CC:  machine/arm/aeabi_atexit.c
+CC:  mqueue/mq_msgqalloc.c
+CC:  nsh_printf.c
+CC:  common/arm_usestack.c
+CC:  misc/lib_mknod.c
+CC:  mqueue/mq_msgqfree.c
+CC:  nsh_test.c
+CC:  vfs/fs_write.c
+CC:  misc/lib_umask.c
+CC:  vfs/fs_dir.c
+CC:  common/arm_mdelay.c
+CC:  common/arm_udelay.c
+CC:  misc/lib_utsname.c
+CC:  mqueue/mq_recover.c
+CC:  vfs/fs_fsync.c
+CC:  common/arm_backtrace_thumb.c
+CC:  misc/lib_getrandom.c
+CC:  armv8-m/arm_busfault.c
+CC:  mqueue/mq_setattr.c
+CC:  misc/lib_xorshift128.c
+CC:  vfs/fs_truncate.c
+CC:  misc/lib_tea_encrypt.c
+CC:  armv8-m/arm_cache.c
+CC:  vfs/fs_symlink.c
+CC:  mqueue/mq_waitirq.c
+CC:  vfs/fs_readlink.c
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+CC:  misc/lib_tea_decrypt.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+CC:  vfs/fs_fdopen.c
+CC:  mqueue/mq_notify.c
+CC:  armv8-m/arm_doirq.c
+CC:  driver/fs_registerdriver.c
+CC:  misc/lib_cxx_initialize.c
+CC:  mqueue/mq_getattr.c
+CC:  armv8-m/arm_hardfault.c
+CC:  armv8-m/arm_initialstate.c
+CC:  misc/lib_impure.c
+CC:  pthread/pthread_create.c
+CC:  driver/fs_unregisterdriver.c
+CC:  armv8-m/arm_itm.c
+CC:  misc/lib_memfd.c
+CC:  pthread/pthread_exit.c
+CC:  driver/fs_registerblockdriver.c
+CC:  armv8-m/arm_memfault.c
+CC:  driver/fs_unregisterblockdriver.c
+CC:  pthread/pthread_join.c
+CC:  pthread/pthread_detach.c
+CC:  armv8-m/arm_perf.c
+CC:  misc/lib_umul32.c
+CC:  driver/fs_findblockdriver.c
+AR (add): libapps.a    builtin_list.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.builtin.o exec_builtin.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.builtin.o       
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/builtin'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+CC:  misc/lib_umul64.c
+CC:  driver/fs_openblockdriver.c
+CC:  armv8-m/arm_sau.c
+CC:  pthread/pthread_getschedparam.c
+CC:  misc/lib_umul32x64.c
+CC:  misc/lib_uadd32x64.c
+CC:  driver/fs_closeblockdriver.c
+CC:  armv8-m/arm_schedulesigaction.c
+CC:  pthread/pthread_setschedparam.c
+CC:  armv8-m/arm_securefault.c
+CC:  pthread/pthread_mutexinit.c
+CC:  misc/lib_uadd64.c
+CC:  armv8-m/arm_secure_irq.c
+CC:  driver/fs_blockpartition.c
+CC:  armv8-m/arm_sigdeliver.c
+CC:  armv8-m/arm_svcall.c
+CC:  pthread/pthread_mutexdestroy.c
+CC:  misc/lib_usub64x32.c
+CC:  armv8-m/arm_systemreset.c
+CC:  misc/lib_usub64.c
+CC:  pthread/pthread_mutextimedlock.c
+CC:  pthread/pthread_mutextrylock.c
+CC:  driver/fs_findmtddriver.c
+CC:  misc/lib_dumpbuffer.c
+AR (add): libapps.a    nsh_init.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_parse.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_console.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_script.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_system.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_command.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_fscmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_ddcmd.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_proccmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_mmcmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_timcmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_envcmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_syscmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_dbgcmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_session.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_fsutils.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_builtin.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_mntcmds.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_consolemain.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_printf.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o nsh_test.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.nshlib.o       
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/nshlib'
+CC:  mmap/fs_munmap.c
+CC:  mmap/fs_mmap.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+CC:  armv8-m/arm_tcbinfo.c
+CC:  pthread/pthread_mutexunlock.c
+CC:  misc/lib_dumpvbuffer.c
+CC:  armv8-m/arm_trigger_irq.c
+CC:  misc/lib_fnmatch.c
+CC:  pthread/pthread_condwait.c
+CC:  pthread/pthread_condsignal.c
+CC:  armv8-m/arm_usagefault.c
+CC:  mmap/fs_mmisc.c
+CC:  armv8-m/arm_vectors.c
+CC:  armv8-m/arm_fpuconfig.c
+CC:  pthread/pthread_condbroadcast.c
+CC:  misc/lib_debug.c
+CC:  mqueue/mq_open.c
+CC:  misc/lib_crc64.c
+CC:  mqueue/mq_close.c
+CC:  misc/lib_crc32.c
+CC:  pthread/pthread_condclockwait.c
+CC:  armv8-m/arm_fpucmp.c
+CC:  misc/lib_crc16.c
+CC:  mqueue/mq_unlink.c
+CC:  pthread/pthread_kill.c
+CC:  mount/fs_mount.c
+CC:  misc/lib_crc8.c
+CC:  mount/fs_umount2.c
+CC:  misc/lib_crc8ccitt.c
+CC:  misc/lib_crc8table.c
+CC:  pthread/pthread_sigmask.c
+CC:  mount/fs_foreachmountpoint.c
+AR (create): libarch.a  vfork.o arm_testset.o arm_exception.o ra_mstp.o ra_start.o ra_clock.o ra_irq.o ra_icu.o ra_gpio.o ra_lowputc.o ra_memmng.o ra_timerisr.o ra_serial.o ra_agt.o ra_idle.o arm_allocateheap.o arm_assert.o arm_blocktask.o arm_createstack.o arm_exit.o arm_fullcontextrestore.o arm_initialize.o arm_lowputs.o arm_modifyreg16.o arm_modifyreg32.o arm_modifyreg8.o arm_nputs.o arm_releasepending.o arm_releasestack.o arm_reprioritizertr.o arm_saveusercontext.o arm_stackframe.o arm_switchcontext.o arm_vfork.o arm_unblocktask.o arm_usestack.o arm_mdelay.o arm_udelay.o arm_backtrace_thumb.o arm_busfault.o arm_cache.o arm_doirq.o arm_hardfault.o arm_initialstate.o arm_itm.o arm_memfault.o arm_perf.o arm_sau.o arm_schedulesigaction.o arm_securefault.o arm_secure_irq.o arm_sigdeliver.o arm_svcall.o arm_systemreset.o arm_tcbinfo.o arm_trigger_irq.o arm_usagefault.o arm_vectors.o arm_fpuconfig.o arm_fpucmp.o
+CC:  misc/lib_glob.c
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src'
+CC:  mount/fs_procfs_mount.c
+AR (add): libapps.a    dummy.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.platform.o       
+CC:  misc/lib_execinfo.c
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/platform'
+CC:  pthread/pthread_initialize.c
+CC:  pthread/pthread_cancel.c
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+CC:  pthread/pthread_completejoin.c
+CC:  pthread/pthread_findjoininfo.c
+IN: arch/arm/src/libarch.a -> staging/libarch.a
+CC:  mount/fs_gettype.c
+CC:  misc/lib_ftok.c
+CC:  pthread/pthread_release.c
+CC:  partition/fs_partition.c
+CC:  misc/lib_err.c
+CC:  procfs/fs_procfs.c
+CC:  procfs/fs_procfsutil.c
+CC:  pthread/pthread_setschedprio.c
+CC:  procfs/fs_procfsproc.c
+CC:  pthread/pthread_mutex.c
+CC:  procfs/fs_procfsuptime.c
+CC:  procfs/fs_procfscpuload.c
+CC:  net/lib_addrconfig.c
+CC:  procfs/fs_procfsmeminfo.c
+CC:  net/lib_base64.c
+CC:  procfs/fs_procfsiobinfo.c
+CC:  procfs/fs_procfsversion.c
+CC:  pthread/pthread_mutexconsistent.c
+CC:  pthread/pthread_mutexinconsistent.c
+CC:  net/lib_htons.c
+AR (add): libapps.a        nsh_main.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.system.nsh.o sh_main.c.home.tringuyen.PX4-Autopilot.platforms.nuttx.NuttX.apps.system.nsh.o   
+make[3]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/nsh'
+make[3]: Entering directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/system/readline'
+CC:  net/lib_htonl.c
+CC:  net/lib_inetaddr.c
+CC:  net/lib_inetaton.c
+CC:  procfs/fs_procfstcbinfo.c
+CC:  sched/sched_getfiles.c
+CC:  net/lib_inetntoa.c
+CC:  net/lib_inetntop.c
+CC:  net/lib_inetpton.c
+AR (create): libfs.a   fs_initialize.o fs_files.o fs_foreachinode.o fs_inode.o fs_inodeaddref.o fs_inodebasename.o fs_inodefind.o fs_inodefree.o fs_inodegetpath.o fs_inoderelease.o fs_inoderemove.o fs_inodereserve.o fs_inodesearch.o fs_chstat.o fs_close.o fs_dup.o fs_dup2.o fs_fcntl.o fs_epoll.o fs_fchstat.o fs_fstat.o fs_fstatfs.o fs_ioctl.o fs_lseek.o fs_mkdir.o fs_open.o fs_poll.o fs_pread.o fs_pwrite.o fs_read.o fs_rename.o fs_rmdir.o fs_select.o fs_sendfile.o fs_stat.o fs_statfs.o fs_unlink.o fs_write.o fs_dir.o fs_fsync.o fs_truncate.o fs_symlink.o fs_readlink.o fs_fdopen.o fs_registerdriver.o fs_unregisterdriver.o fs_registerblockdriver.o fs_unregisterblockdriver.o fs_findblockdriver.o fs_openblockdriver.o fs_closeblockdriver.o fs_blockpartition.o fs_findmtddriver.o fs_mmap.o fs_munmap.o fs_mmisc.o mq_open.o mq_close.o mq_unlink.o fs_mount.o fs_umount2.o fs_foreachmountpoint.o fs_procfs_mount.o fs_gettype.o fs_partition.o fs_procfs.o fs_procfsutil.o fs_procfsproc.o fs_procfsuptime.o fs_procfscpuload.o fs_procfsmeminfo.o fs_procfsiobinfo.o fs_procfsversion.o fs_procfstcbinfo.o
+CC:  sched/sched_addreadytorun.c
+CC:  sched/sched_removereadytorun.c
+CC:  net/lib_etherntoa.c
+CC:  net/lib_etheraton.c
+make[1]: Leaving directory '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/nuttx/fs'
+CC:  sched/sched_addprioritized.c
+CC:  pthread/pthread_keycreate.c
+IN: fs/libfs.a -> staging/libfs.a
+CC:  pthread/pthread_setspecific.c
+CC:  pthread/pthread_getspecific.c
+CC:  pthread/pthread_keydelete.c
+make: *** Deleting file '/home/tringuyen/PX4-Autopilot/platforms/nuttx/NuttX/apps/libapps.a'
+make: *** [tools/LibTargets.mk:59: sched/libsched.a] Terminated
+make[1]: *** Deleting file 'sched_removereadytorun.o'
+make[1]: *** [Makefile:58: sched_addprioritized.o] Terminated
+make[1]: *** [Makefile:132: bin/lib_etheraton.o] Terminated
+make[1]: *** [Makefile:132: bin/pthread_setspecific.o] Terminated
+make[1]: *** [Makefile:132: bin/pthread_getspecific.o] Terminated
+make[1]: *** [Makefile:132: bin/pthread_keycreate.o] Terminated
+make[1]: *** [Makefile:58: sched_removereadytorun.o] Terminated
+make[1]: *** [Makefile:132: bin/pthread_keydelete.o] Terminated
+make[2]: *** wait: No child processes.  Stop.
+make[2]: *** Waiting for unfinished jobs....
+make[2]: *** wait: No child processes.  Stop.
+make[1]: *** [Makefile:36: all] Error 2
