@@ -1,0 +1,24 @@
+{
+  "devices": {
+    "R8A779G3_CR52_0": {
+      "status": "proposed",
+      "ranges": [
+        {
+          "name": "cr52-0-image-window",
+          "start": "0x40100000",
+          "end": "0x40400000"
+        }
+      ]
+    },
+    "R8A779G3_CR52_1": {
+      "status": "proposed",
+      "ranges": [
+        {
+          "name": "cr52-1-image-window",
+          "start": "0x40400000",
+          "end": "0x40700000"
+        }
+      ]
+    }
+  }
+}

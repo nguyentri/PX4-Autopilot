@@ -138,6 +138,8 @@ keys/
 !test/rzv2h-driver-boundary-runtime-test.py
 !test/rzv2h-gtm-status-runtime-test.py
 !test/rzv2h-adc-irq-selector-test.py
+!test/rcarv4h-cr52-elf-window-test.py
+!test/rcarv4h-cr52-pmsav8-mpu-encode-test.py
 !test/rzv2h-audit-remediation-runtime-test.py
 !test/rzv2h-io-serial-adc-runtime-test.py
 !platforms/nuttx/Debug/rzv2h-ipc-elf-allowlist.py
