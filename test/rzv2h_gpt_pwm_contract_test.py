@@ -630,14 +630,62 @@ class PX4DirectPathContracts(unittest.TestCase):
         self.assertIn("RZV_GPT_GTPBR_OFFSET", running)
         self.assertIn("RZV_GPT_GTCLR_OFFSET", body)
 
-    def test_disable_clears_the_counter(self) -> None:
+    def test_enable_and_disable_only_switch_duty_at_cycle_end(self) -> None:
+        # Stopping/clearing the counter or releasing GTIOR on disable cut the
+        # pulse in progress and left the pin floating high.
         body = function_body(self.io_timer, "io_timer_set_enable")
-        self.assertIn("RZV_GPT_GTSTP_OFFSET", body)
-        self.assertIn("RZV_GPT_GTCLR_OFFSET", body)
+        for token in ("RZV_GPT_GTSTP_OFFSET", "RZV_GPT_GTCLR_OFFSET",
+                      "RZV_GPT_GTSTR_OFFSET", "RZV_GPT_GTIOR_OFFSET"):
+            with self.subTest(token=token):
+                self.assertNotIn(token, body)
+        self.assertEqual(body.count("gpt_write_duty_control"), 2)
         self.assertLess(
             body.index("px4_enter_critical_section"),
             body.index("channel_allocations[mode]"),
         )
+
+    def test_init_drives_the_pin_low_and_starts_the_counter(self) -> None:
+        body = function_body(self.io_timer, "rzv2h_gpt_init_channel")
+        self.assertIn("gpt_output_control(channel, true)", body)
+        self.assertNotIn("gpt_output_control(channel, false)", body)
+        order = [body.index(token) for token in (
+            "gpt_write_duty_control(base, channel, 0, period, true)",
+            "gpt_output_control(channel, true)",
+            "RZV_GPT_GTSTR_OFFSET",
+            "gpt_lock(base)")]
+        self.assertEqual(order, sorted(order))
+
+    def test_disabled_channel_keeps_zero_duty_on_compare_writes(self) -> None:
+        ccr = function_body(self.io_timer, "io_timer_set_ccr")
+        self.assertIn("gpt_state[channel].enabled ? ticks : 0", ccr)
+        rate = function_body(self.io_timer, "io_timer_set_pwm_rate")
+        stopped = rate.split("} else {", 1)[1]
+        self.assertIn("gpt_write_duty_control(base, channel, 0, period, false)", stopped)
+        self.assertIn("RZV_GPT_GTSTR_OFFSET", stopped)
+
+    def test_init_admits_software_start_stop_and_clear_before_using_them(
+        self,
+    ) -> None:
+        # GTSTR/GTSTP/GTCLR are ignored unless GTSSR.CSTRT, GTPSR.CSTOP and
+        # GTCSR.CCLR admit them; without this the PWM counter never runs.
+        body = function_body(self.io_timer, "rzv2h_gpt_init_channel")
+        order = [body.index(token) for token in (
+            "gpt_unlock(base)",
+            "GPT_GTPSR_CSTOP",
+            "GPT_GTCSR_CCLR",
+            "GPT_GTSSR_CSTRT",
+            "RZV_GPT_GTSTP_OFFSET",
+            "RZV_GPT_GTCLR_OFFSET",
+            "RZV_GPT_GTCR_OFFSET",
+        )]
+        self.assertEqual(order, sorted(order))
+
+    def test_servo_set_keeps_configured_pulse_widths(self) -> None:
+        # Disarmed/failsafe values such as 800 us must reach the timer.
+        body = function_body(self.pwm_servo, "up_pwm_servo_set")
+        self.assertNotIn("PWM_MIN_PULSE_WIDTH", body)
+        self.assertNotIn("PWM_MAX_PULSE_WIDTH", body)
+        self.assertIn("io_timer_set_ccr(channel, value)", body)
 
     def test_direction_latch_and_initialization_rollback_exist(self) -> None:
         latch = function_body(self.io_timer, "gpt_write_duty_control")

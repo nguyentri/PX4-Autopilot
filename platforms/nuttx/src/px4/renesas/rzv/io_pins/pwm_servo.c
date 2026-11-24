@@ -51,8 +51,6 @@
 #define PWM_DEFAULT_RATE      400     /* Hz */
 #define PWM_MIN_RATE          50      /* Hz */
 #define PWM_MAX_RATE          500     /* Hz */
-#define PWM_MIN_PULSE_WIDTH   1000    /* us */
-#define PWM_MAX_PULSE_WIDTH   2000    /* us */
 
 static uint32_t pwm_rate = PWM_DEFAULT_RATE;
 
@@ -224,17 +222,10 @@ int up_pwm_servo_set(unsigned channel, uint16_t value)
 		return -EINVAL;
 	}
 
-	if (value == 0) {
-		return io_timer_set_ccr(channel, 0);
-	}
-
-	/* Clamp value to valid range */
-	if (value < PWM_MIN_PULSE_WIDTH) {
-		value = PWM_MIN_PULSE_WIDTH;
-	} else if (value > PWM_MAX_PULSE_WIDTH) {
-		value = PWM_MAX_PULSE_WIDTH;
-	}
-
+	/* The mixer already bounds the value by the PWM_MAIN_* parameters
+	 * (disarmed/failsafe may be below 1000 us). io_timer_set_ccr() drives 0
+	 * as constant low and caps anything past the period at constant high.
+	 */
 	return io_timer_set_ccr(channel, value);
 }
 

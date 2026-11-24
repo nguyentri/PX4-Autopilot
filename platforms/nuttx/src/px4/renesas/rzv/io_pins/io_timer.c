@@ -285,13 +285,20 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 		return -EINVAL;
 	}
 
-	/* Stop timer before configuration */
-	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
-
-	/* Clear timer counter */
-	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTCLR_OFFSET);
-
 	gpt_unlock(base);
+
+	/* GTSTR/GTSTP/GTCLR act only on channels whose software source is
+	 * admitted in GTSSR/GTPSR/GTCSR; without these the counter never runs
+	 * and an enabled output stays at its initial low level. Other trigger
+	 * sources stay disabled so external events cannot start the channel.
+	 */
+	io_timer_putreg32(GPT_GTPSR_CSTOP, base + RZV_GPT_GTPSR_OFFSET);
+	io_timer_putreg32(GPT_GTCSR_CCLR, base + RZV_GPT_GTCSR_OFFSET);
+	io_timer_putreg32(GPT_GTSSR_CSTRT, base + RZV_GPT_GTSSR_OFFSET);
+
+	/* Stop and clear the counter before configuration */
+	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTP_OFFSET);
+	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTCLR_OFFSET);
 
 	/* Configure GPT control register for PWM mode */
 	io_timer_putreg32(GPT_GTCR_MD_SAW | ((uint32_t)GPT_TPCS_DIV1 << GPT_GTCR_TPCS_SHIFT),
@@ -315,9 +322,14 @@ static int rzv2h_gpt_init_channel(unsigned channel)
 	io_timer_putreg32(GPT_GTBER_FORCE_TRANSFER, base + RZV_GPT_GTBER_OFFSET);
 	gpt_write_duty_control(base, channel, 0, period, true);
 
-	/* Keep timer output disabled until PX4 arms/enables PWM. */
-	io_timer_putreg32(gpt_output_control(channel, false), base + RZV_GPT_GTIOR_OFFSET);
+	/* Drive the pin from here on instead of letting it float: with OADFLT and
+	 * OAHLD clear the stopped output is low, and the running counter at 0 %
+	 * duty keeps it low. Enable/disable then only switch the duty, which the
+	 * GPT applies at cycle end, so no pulse is ever truncated or stretched.
+	 */
+	io_timer_putreg32(gpt_output_control(channel, true), base + RZV_GPT_GTIOR_OFFSET);
 	io_timer_putreg32(0, base + RZV_GPT_GTST_OFFSET);
+	io_timer_putreg32(gpt_channel_mask(timer_id), base + RZV_GPT_GTSTR_OFFSET);
 	gpt_lock(base);
 
 	gpt_state[channel].initialized = true;
@@ -528,11 +540,16 @@ int io_timer_set_pwm_rate(unsigned channel, unsigned rate)
 				  base + RZV_GPT_GTSTP_OFFSET);
 		io_timer_putreg32(period - 1u, base + RZV_GPT_GTPR_OFFSET);
 		io_timer_putreg32(period - 1u, base + RZV_GPT_GTPBR_OFFSET);
+		/* Disabled: the output is at 0 % (low), so stopping, reloading and
+		 * restarting the counter cannot produce a pulse.
+		 */
 		gpt_set_compare(base, channel, ticks, false);
 		gpt_set_compare(base, channel, ticks, true);
-		gpt_write_duty_control(base, channel, ticks, period, false);
+		gpt_write_duty_control(base, channel, 0, period, false);
 		io_timer_putreg32(gpt_channel_mask(timer_id),
 				  base + RZV_GPT_GTCLR_OFFSET);
+		io_timer_putreg32(gpt_channel_mask(timer_id),
+				  base + RZV_GPT_GTSTR_OFFSET);
 	}
 
 	gpt_lock(base);
@@ -579,30 +596,23 @@ int io_timer_set_enable(bool enable, io_timer_channel_mode_t mode, io_timer_chan
 		uint32_t base = get_gpt_base(timer_id);
 		gpt_unlock(base);
 
+		/* The counter runs and the pin stays driven from init. Stopping,
+		 * clearing or releasing the output here would cut the pulse in
+		 * progress and leave the line floating; a duty change takes effect
+		 * at cycle end, so the last pulse completes and the line stays low.
+		 */
 		if (enable) {
 			uint32_t ticks = pulse_width_to_ticks(gpt_state[i].pclk,
 							     gpt_state[i].period,
 							     gpt_state[i].ccr_value);
 			gpt_write_duty_control(base, i, ticks,
 					       gpt_state[i].period, false);
-			io_timer_putreg32(gpt_channel_mask(timer_id),
-					  base + RZV_GPT_GTCLR_OFFSET);
-			io_timer_putreg32(gpt_output_control(i, true),
-					  base + RZV_GPT_GTIOR_OFFSET);
-			io_timer_putreg32(gpt_channel_mask(timer_id),
-					  base + RZV_GPT_GTSTR_OFFSET);
 			gpt_state[i].enabled = true;
 
 		} else {
 			gpt_state[i].ccr_value = 0;
 			gpt_write_duty_control(base, i, 0,
 					       gpt_state[i].period, false);
-			io_timer_putreg32(gpt_channel_mask(timer_id),
-					  base + RZV_GPT_GTSTP_OFFSET);
-			io_timer_putreg32(gpt_channel_mask(timer_id),
-					  base + RZV_GPT_GTCLR_OFFSET);
-			io_timer_putreg32(gpt_output_control(i, false),
-					  base + RZV_GPT_GTIOR_OFFSET);
 			gpt_state[i].enabled = false;
 		}
 
@@ -642,7 +652,12 @@ int io_timer_set_ccr(unsigned channel, uint16_t value)
 					     gpt_state[channel].period, value);
 
 	gpt_unlock(base);
-	gpt_write_duty_control(base, channel, ticks,
+
+	/* The counter also runs while disabled; keep 0 % duty there so a stored
+	 * value never produces pulses before io_timer_set_enable().
+	 */
+	gpt_write_duty_control(base, channel,
+			       gpt_state[channel].enabled ? ticks : 0,
 			       gpt_state[channel].period, false);
 	gpt_set_compare(base, channel, ticks, gpt_state[channel].enabled);
 	if (!gpt_state[channel].enabled) {
