@@ -75,6 +75,21 @@ else()
 		endforeach()
 	endif()
 
+	# RZ/V2H: the CA55 CustomXRCEAgent is reached through an unframed custom
+	# transport on an RPMsg device; one XRCE message must fit the 496-byte
+	# RPMsg payload (512-byte buffer minus the 16-byte RPMsg header).
+	set(microxrceddsclient_custom_transport OFF)
+	set(microxrceddsclient_custom_transport_mtu 512)
+	set(uxrce_dds_client_rpmsg_srcs)
+	if(CONFIG_RZV_RPMSG_UXRCE)
+		set(microxrceddsclient_custom_transport ON)
+		set(microxrceddsclient_custom_transport_mtu 496)
+		set(uxrce_dds_client_rpmsg_srcs
+			rpmsg_transport.cpp
+			rpmsg_transport.h
+		)
+	endif()
+
 	include(ExternalProject)
 
 	ExternalProject_Add(
@@ -94,7 +109,8 @@ else()
 			-DUCLIENT_PROFILE_UDP:BOOL=ON
 			-DUCLIENT_PROFILE_SERIAL:BOOL=ON
 			-DUCLIENT_PROFILE_DISCOVERY:BOOL=OFF
-			-DUCLIENT_PROFILE_CUSTOM_TRANSPORT:BOOL=OFF
+			-DUCLIENT_PROFILE_CUSTOM_TRANSPORT:BOOL=${microxrceddsclient_custom_transport}
+			-DUCLIENT_CUSTOM_TRANSPORT_MTU:STRING=${microxrceddsclient_custom_transport_mtu}
 			-DUCLIENT_PROFILE_MULTITHREAD:BOOL=OFF
 			-DUCLIENT_PROFILE_SHARED_MEMORY:BOOL=OFF
 			-DUCLIENT_PLATFORM_POSIX:BOOL=ON
@@ -159,6 +175,7 @@ else()
 			vehicle_command_srv.h
 			srv_base.cpp
 			srv_base.h
+			${uxrce_dds_client_rpmsg_srcs}
 		DEPENDS
 			git_micro_xrce_dds_client
 			libmicroxrceddsclient_project

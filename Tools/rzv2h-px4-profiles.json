@@ -166,7 +166,8 @@
         "gps",
         "commander",
         "sensors",
-        "ekf2"
+        "ekf2",
+        "uxrce_dds_client"
       ],
       "forbidden_builtins": [
         "mpu9250",
@@ -191,10 +192,11 @@
         "CONFIG_BOARDCTL_RESET": "y",
         "CONFIG_RZV2H_DRONE_SENSOR_EXTENSION": "y",
         "CONFIG_RDK_RZV2H_VOLATILE_PARAMFS": "y",
-        "CONFIG_NSH_ARCHROMFS": "y"
+        "CONFIG_NSH_ARCHROMFS": "y",
+        "CONFIG_RZV_OPENAMP": "y",
+        "CONFIG_RZV_RPMSG_UXRCE": "y"
       },
       "forbidden_config": [
-        "CONFIG_RZV_OPENAMP",
         "CONFIG_RDK_RZV2H_XSPI_PARAMFS",
         "CONFIG_RZV_IPC_RAW",
         "CONFIG_RZV_IPC_IPCC"
@@ -244,7 +246,8 @@
         "commander",
         "sensors",
         "ekf2",
-        "rzv2h_adc_telemetry"
+        "rzv2h_adc_telemetry",
+        "uxrce_dds_client"
       ],
       "forbidden_builtins": [
         "mpu9250",
@@ -272,10 +275,11 @@
         "CONFIG_BOARDCTL_RESET": "y",
         "CONFIG_RDK_RZV2H_VOLATILE_PARAMFS": "y",
         "CONFIG_NSH_ARCHROMFS": "y",
-        "CONFIG_RZV2H_SPI0_SINGLE_IMU": "y"
+        "CONFIG_RZV2H_SPI0_SINGLE_IMU": "y",
+        "CONFIG_RZV_OPENAMP": "y",
+        "CONFIG_RZV_RPMSG_UXRCE": "y"
       },
       "forbidden_config": [
-        "CONFIG_RZV_OPENAMP",
         "CONFIG_RDK_RZV2H_XSPI_PARAMFS",
         "CONFIG_RZV_IPC_IPCC",
         "CONFIG_RZV_IPC_RAW",
@@ -650,12 +654,12 @@
     "boards/renesas/rdk-rzv2h-io-cr8_1/default.px4board": "32d4a5d9b4deabca15c4d85c31f7324f228ee91b7d106eb7f8783212687e624f",
     "boards/renesas/rdk-rzv2h-io-cr8_1/firmware.prototype": "352d2c28ab8b651cec25127ec5be7bc8ce101daa86e84a6f09fb01b982129af1",
     "boards/renesas/rdk-rzv2h-io-cr8_1/nuttx-config/nsh/defconfig": "0bab7991dfc1930cdd9bed4fd3f52b88641ed0c5bec4e544bcc45813d05a4864",
-    "boards/renesas/rdk-rzv2h/default.px4board": "290e8cc9dcdadb7ab2a5b55e2fd0924c3b2b3e0476dfbbd9affa05af5d999b1a",
-    "boards/renesas/rdk-rzv2h/dualcr8.px4board": "e990b8f1055c4708296717785370940a12bf2c2a800ba72113c2f6f7eb78a627",
+    "boards/renesas/rdk-rzv2h/default.px4board": "a3fb31b21c4fdcaf510f3dbc1a949a927bca515d2d4708c27aa1668f4a9b1103",
+    "boards/renesas/rdk-rzv2h/dualcr8.px4board": "aa69af4e65611a3d93d91724d0f9f77c7cd45fd1395fac1a32c40ea5cf959cbe",
     "boards/renesas/rdk-rzv2h/firmware.prototype": "acb9715393520dcf44788277aaf1ca4a3676299e6f4fbed7ed5a4279c06358c3",
-    "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "3986605d3bf647ff25674f426d625af43510018984c1f886005f1735b2ce1549",
-    "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig": "5c2751cea6dc204d8d14fc08af5b6432a90ff08963ff452dc96b8cb06153853f",
-    "platforms/nuttx/CMakeLists.txt": "8932c8be3a383d4c89417ac678b2c62ddfca301486fec00985865686286c278e",
+    "boards/renesas/rdk-rzv2h/nuttx-config/dualcr8/defconfig": "296ff0b80f5c9d24689186a8d51762e23d90518d47372e8d2f38fc414ecfbde0",
+    "boards/renesas/rdk-rzv2h/nuttx-config/nsh/defconfig": "5567fdba28dd1c1072577176675ced54eec8eb10280ac8037ce5062aaa50a861",
+    "platforms/nuttx/CMakeLists.txt": "8c700691aae4d0d44b6fe45ea1dfefd1907e148f0929e1a5c773eb2e4b24dcc9",
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cm33.ld": "ea5b9b920e34d6463523b2c1b34d591a2a924761a404c00bf07da9c609db66e3",
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_0.ld": "d98818303f19da794bb088a5a459a220041ee633c50180d0d0f7b23a22fed321",
     "platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/scripts/rdk-rzv2h_cr8_1.ld": "e1cab79cb97f64103cffdc5ca14dd00248c32da662ffe8c184f0f087950314e8",
@@ -676,13 +680,13 @@
     "platforms/nuttx/Debug/rzv2h-all-sample-configs.json": "a7283b54d39526d625b6796ad459c6b666f2a6ae7d699e5fffbe4a6fdaa29e27",
     "platforms/nuttx/Debug/rzv2h-sample-profiles.json": "e92cc38e625dfe2931de13ac0f7e0b639fd4b92e25745235626fe6d1167ce6b8",
     "platforms/nuttx/Debug/rzv2h-driver-coverage.json": "4bbac7bdb14198c2e391d500efdd7a1659683b54c1aa71b5062a96e0c9bb294b",
-    "boards/renesas/rdk-rzv2h/demo.px4board": "30806598077af802ab199f5b9449e82d0ffb3b41c3fadc218a038b1f766c1aba",
-    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "5ad267bf201e92fb7628408b86d86908de97a26dde880b00dcea9779355ad6c6",
+    "boards/renesas/rdk-rzv2h/demo.px4board": "44e59b11fb0ecec31de7973e1558cb4ae27e8f8fa90d68bc1cb5aeab1e2cb720",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demo/defconfig": "9c22c58a2b21943a16f22669cc6555e7332632be14266f1d5e3feb84af535607",
     "boards/renesas/rdk-rzv2h/init/demo/rc.board_sensors": "246e65d76599ee3edffe36da0aef15aac229cbed715d535dc888f194fcc3d43e",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "2f9d38bbb2056d37257b886284f310d4449500d30d15fac2be30f659bf091a17",
-    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "e72bcbea6bcc76591e9c0c17d028b98b4a680acca89ce9dbc9c1a418ec560e1a",
-    "boards/renesas/rdk-rzv2h/demosih.px4board": "c1483af70050a7ed70baf12baa1e8dd52688c9fb6dbdbc83752601603506e146",
-    "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "2e0bb12c5f5e0731a77b4d7ad101405374a978fefe1ae6d956df59c30184333c",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_defaults.cmds": "484b0cf6cbaf810ec3728324cfb5749e930b41a4d354f6d558095c41c7d2ee5b",
+    "boards/renesas/rdk-rzv2h/init/demo/rc.board_extras": "92f805f93a359bec66b0ebb77d3caf60d583fc35cc4cd85706d3524a1c069cbf",
+    "boards/renesas/rdk-rzv2h/demosih.px4board": "57f33c2a82d3e231ac691a6461eb5e1c731f70a0539d3615d3644b5624d1ee73",
+    "boards/renesas/rdk-rzv2h/nuttx-config/demosih/defconfig": "24c0a2b923c9b5091210601c8b2100c8e56ed23cd10c5ed5d470370276b660a7",
     "boards/renesas/rdk-rzv2h/init/demosih/rc.board_defaults.cmds": "22800e0bbe7f5f1ba6941e6c833105ddc0be070b347e5922765afbbd0d6813d0",
     "boards/renesas/rdk-rzv2h/init/demosih/rc.board_extras": "5b11cbc5812eca7110804f44deb801515f4b2a015af2870f7ab72e913a158a74",
     "boards/renesas/rdk-rzv2h-io-cr8_1/demo.px4board": "2246497faf27b76730823fb25f598e8a868a6dfa3d9aa2764c086551eda9437e",
@@ -831,6 +835,8 @@
     "rzv2h-bmp280-sample-test",
     "rzv2h-demo-startup-test",
     "rzv2h-reference-airframe-parity-test",
+    "rzv2h-openamp-ca55-xrce-contract-test",
+    "rzv2h-openamp-vring-takeover-host-test",
     "rzv2h-dual-rtt-bridge-test",
     "rzv2h-icm45686-contract-test",
     "rzv2h-rtt-bridge-port-test",

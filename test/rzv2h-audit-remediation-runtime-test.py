@@ -205,13 +205,16 @@ int main(void) {
             code += extract(circ, signature)
         code += r'''
 #define RZV_OPENAMP_RPMSG_BUFFER_SIZE 4
+#define RZV_OPENAMP_RPMSG_PAYLOAD_SIZE 4
+#define RZV_RPMSG_CHAN_RPC 0
 struct ipcc_lower_s { struct circbuf_s txbuf; };
 static int g_rzv_ipcc_txlock;
 static int nxmutex_lock(int *m) { return 0; }
 static int nxmutex_unlock(int *m) { return 0; }
 static ssize_t result;
 static char sent[4];
-static ssize_t rzv_rpmsg_send(const char *data, size_t size) {
+static ssize_t rzv_rpmsg_send(int chan, const char *data, size_t size) {
+  assert(chan == RZV_RPMSG_CHAN_RPC);
   memcpy(sent, data, size); return result;
 }
 ''' + extract((ARCH / 'rzv_ipc_ipcc.c').read_text(), 'static ssize_t rzv_ipcc_write_notify(') + r'''

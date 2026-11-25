@@ -38,6 +38,8 @@ class ExpandedRuntime(unittest.TestCase):
 #define CONFIG_RZV_IPCC_RXBUFSIZE 8
 #define CONFIG_RZV_IPCC_TXBUFSIZE 8
 #define RZV_OPENAMP_RPMSG_BUFFER_SIZE 4
+#define RZV_OPENAMP_RPMSG_PAYLOAD_SIZE 4
+#define RZV_RPMSG_CHAN_RPC 0
 #define LPWORK 1
 #define MSEC2TICK(ms) (ms)
 #define NXMUTEX_INITIALIZER 0
@@ -61,8 +63,8 @@ static int work_queue(int queue,struct work_s *work,void (*callback)(void *),voi
   assert(queue==LPWORK && work==&g_rzv_ipcc_txwork && arg==NULL && delay==10);
   pending=callback;return 0;
 }
-static ssize_t rzv_rpmsg_send(const char *data,size_t size) {
-  assert(g_rzv_ipcc_txlock==1);++sends;
+static ssize_t rzv_rpmsg_send(int chan,const char *data,size_t size) {
+  assert(chan==RZV_RPMSG_CHAN_RPC && g_rzv_ipcc_txlock==1);++sends;
   if(transient-->0)return -ENOMEM;
   memcpy(received+received_count,data,size);received_count+=size;return size;
 }
@@ -70,7 +72,7 @@ static void ipcc_txfree_notify(struct ipcc_driver_s *p) {
   assert(p==&upper && p->alive && g_rzv_ipcc_lock==1);++notifications;
 }
 static void rzv_ipcc_rxnotify(void *arg) {}
-static int rzv_rpmsg_initialize(void (*notify)(void *),void *arg) {return 0;}
+static int rzv_rpmsg_initialize(int chan,void (*notify)(void *),void *arg) {assert(chan==RZV_RPMSG_CHAN_RPC);return 0;}
 static int ipcc_register(struct ipcc_lower_s *lower,int rx,int tx) {lower->upper=&upper;return 0;}
 static int rzv_ipcc_cleanup(struct ipcc_lower_s *lower) {return 0;}
 static void rzv_ipcc_buffer_notify(struct rzv_ipcc_state_s *p,struct ipcc_driver_s *u) {}

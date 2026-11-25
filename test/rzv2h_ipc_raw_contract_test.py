@@ -386,7 +386,7 @@ class Rzv2hRawIpcContractTest(unittest.TestCase):
         body = source[start:end]
 
         admission = body.index("circbuf_space(rxbuf) < sizeof(tmp)")
-        dequeue = body.index("rzv_rpmsg_receive(tmp, sizeof(tmp))")
+        dequeue = body.index("rzv_rpmsg_receive(RZV_RPMSG_CHAN_RPC, tmp, sizeof(tmp))")
         self.assertLess(admission, dequeue)
 
         blocked = body[admission:dequeue]

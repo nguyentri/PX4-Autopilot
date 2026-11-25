@@ -3175,6 +3175,60 @@
       "note": "Compare the effective default values for every airframe-chain key with the local reference board command list."
     },
     {
+      "id": "rzv2h-openamp-ca55-xrce-contract-test",
+      "path": "test/rzv2h-openamp-ca55-xrce-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-openamp-ca55-xrce-contract-test.py",
+        "SourceContract"
+      ],
+      "note": "Check the CR8-0 OpenAMP resource-table initializers, NOLOAD placement, XRCE MTU, unframed transport and the default/demo enablement of the CA55 XRCE-DDS link."
+    },
+    {
+      "id": "rzv2h-openamp-vring-takeover-host-test",
+      "path": "test/rzv2h-openamp-vring-takeover-host-test.py",
+      "kind": "test",
+      "groups": [
+        "port-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-openamp-vring-takeover-host-test.py"
+      ],
+      "note": "Compile rzv_openamp.c for the host and drive it with a simulated CA55 master: no false takeover in one session, a killed agent's successor is seen and its rings adopted for a fresh CR8-0 device."
+    },
+    {
+      "id": "rzv2h-openamp-ca55-xrce-agent-mirror-test",
+      "path": "test/rzv2h-openamp-ca55-xrce-contract-test.py",
+      "kind": "test",
+      "groups": [
+        "reference-host"
+      ],
+      "target_access": "none",
+      "command": [
+        "{python}",
+        "test/rzv2h-openamp-ca55-xrce-contract-test.py",
+        "AgentReferenceContract"
+      ],
+      "requires": {
+        "paths": [
+          "refs/rzv2h_drone_px4-dev/src/platform/OpenAMP_RPMsg_cfg.h",
+          "refs/rzv2h_drone_px4-dev/src/platform/rsc_table.h",
+          "refs/rzv2h_drone_px4-dev/src/platform/rsc_table.c",
+          "refs/rzv2h_drone_px4-dev/ca55_stack/xrce_dds_agent/OpenAMP_RPMsg_cfg.h",
+          "refs/rzv2h_drone_px4-dev/ca55_stack/xrce_dds_agent/rsc_table.h",
+          "refs/rzv2h_drone_px4-dev/ca55_stack/xrce_dds_agent/custom_agent.cpp"
+        ]
+      },
+      "note": "Compare the resource-table layout, endpoint names and handshake string with the reference firmware and the shipped CA55 CustomXRCEAgent sources."
+    },
+    {
       "id": "rzv2h-dual-rtt-bridge-test",
       "path": "test/rzv2h-dual-rtt-bridge-test.py",
       "kind": "test",

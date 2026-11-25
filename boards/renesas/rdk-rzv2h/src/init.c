@@ -59,6 +59,9 @@ static const char hw_type[] = "RDK-RZV2H";
 #include <arch/board/board.h>
 #ifdef CONFIG_RZV_OPENAMP
 #include "rzv_ipc.h"
+#if defined(CONFIG_RZV_RPMSG_UXRCE)
+#include "rzv_rpmsg_uxrce.h"
+#endif
 #endif
 #endif
 
@@ -157,6 +160,17 @@ static int rdk_rzv2h_openamp_initialize(void)
 	}
 
 	syslog(LOG_INFO, "board_app_initialize: RZ/V2H OpenAMP IPCC ready at /dev/ipcc0\n");
+#endif
+
+#if defined(CONFIG_RZV_RPMSG_UXRCE)
+	/* XRCE-DDS endpoint for the CA55 CustomXRCEAgent (rpmsg-service-1). */
+	ret = rzv_rpmsg_uxrce_register("/dev/uxrce0");
+
+	if (ret < 0) {
+		syslog(LOG_ERR, "board_app_initialize: rzv_rpmsg_uxrce_register() failed: %d\n", ret);
+		return ret;
+	}
+
 #endif
 
 	return OK;

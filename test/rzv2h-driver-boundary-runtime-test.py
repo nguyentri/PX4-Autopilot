@@ -146,15 +146,17 @@ int main(void) {
         source = (ARCH / 'rzv_ipc_ipcc.c').read_text()
         code = PRELUDE + r'''
 #define FAR
+#define RZV_RPMSG_CHAN_RPC 0
 struct ipcc_lower_s { int ops, chan; void *upper; };
 struct rzv_ipcc_state_s { struct ipcc_lower_s lower; bool registered, watcher_attached; };
 static struct rzv_ipcc_state_s g_rzv_ipcc;
 static int g_rzv_ipcc_ops, g_rzv_ipcc_lock, watchers, failure, notifications;
 static void rzv_ipcc_rxnotify(void *arg) { (void)arg; }
-static int rzv_rpmsg_initialize(void (*callback)(void *), void *arg) {
+static int rzv_rpmsg_initialize(int chan, void (*callback)(void *), void *arg) {
+  assert(chan == RZV_RPMSG_CHAN_RPC);
   (void)callback; (void)arg; ++watchers; return 0;
 }
-static void rzv_rpmsg_detach(void) { --watchers; }
+static void rzv_rpmsg_detach(int chan) { assert(chan == RZV_RPMSG_CHAN_RPC); --watchers; }
 static int rzv_ipcc_cleanup(struct ipcc_lower_s *lower);
 static int ipcc_register(struct ipcc_lower_s *lower) {
   if (failure == 2) rzv_ipcc_cleanup(lower);

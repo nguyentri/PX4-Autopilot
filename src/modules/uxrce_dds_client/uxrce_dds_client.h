@@ -50,18 +50,33 @@
 # define UXRCE_DDS_CLIENT_UDP 1
 #endif
 
+#if defined(CONFIG_RZV_RPMSG_UXRCE)
+# define UXRCE_DDS_CLIENT_RPMSG 1
+# include "rpmsg_transport.h"
+#endif
+
 #include "srv_base.h"
 
 #define MAX_NUM_REPLIERS 5
 #define STREAM_HISTORY  4
-#define BUFFER_SIZE (UXR_CONFIG_SERIAL_TRANSPORT_MTU * STREAM_HISTORY) // MTU==512 by default
+
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+// Every XRCE message must fit one unfragmented RPMsg packet, so stream slots
+// and the best-effort buffer are sized from the custom transport MTU.
+# define BUFFER_SIZE (UXR_CONFIG_CUSTOM_TRANSPORT_MTU * STREAM_HISTORY)
+# define BEST_EFFORT_BUFFER_SIZE UXR_CONFIG_CUSTOM_TRANSPORT_MTU
+#else
+# define BUFFER_SIZE (UXR_CONFIG_SERIAL_TRANSPORT_MTU * STREAM_HISTORY) // MTU==512 by default
+# define BEST_EFFORT_BUFFER_SIZE 2048
+#endif
 
 class UxrceddsClient : public ModuleBase<UxrceddsClient>, public ModuleParams
 {
 public:
 	enum class Transport {
 		Serial,
-		Udp
+		Udp,
+		Rpmsg
 	};
 
 	UxrceddsClient(Transport transport, const char *device, int baudrate, const char *host, const char *port,
@@ -140,6 +155,9 @@ private:
 	Transport _transport{};
 
 	uxrSerialTransport *_transport_serial{nullptr};
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+	RpmsgTransport *_transport_rpmsg {nullptr};
+#endif
 	char _device[32] {};
 	int _baudrate{};
 
@@ -171,7 +189,7 @@ private:
 	uxrObjectId _participant_id;
 
 	uint8_t _output_reliable_stream_buffer[BUFFER_SIZE] {};
-	uint8_t _output_data_stream_buffer[2048] {};
+	uint8_t _output_data_stream_buffer[BEST_EFFORT_BUFFER_SIZE] {};
 	uint8_t _input_reliable_stream_buffer[BUFFER_SIZE] {};
 
 	uxrStreamId _reliable_out;

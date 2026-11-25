@@ -5,6 +5,8 @@
 # as in demosih, until a battery management IC replaces it.
 # Single-core: CR8-1 is disabled (no raw IPC, no heartbeat peer, no px4io
 # bridge, no remote outputs). Load only CR8-0.
+# CA55: uxrce_dds_client (inherited from default) talks to the CA55
+# CustomXRCEAgent over OpenAMP/RPMsg on /dev/uxrce0.
 CONFIG_BOARD_INIT_SUBDIR="demo"
 # Embed parameter, event and actuator metadata for QGC on this custom target.
 CONFIG_BOARD_CONSTRAINED_FLASH=n

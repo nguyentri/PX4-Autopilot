@@ -198,8 +198,18 @@ CONFIG_RZV_DMAC=y
 # CONFIG_RZV_IPC_RAW=y, CONFIG_RZV_IPC_TX_TIMEOUT_MS=100,
 # CONFIG_RZV_IPC_RECOVERY_WAIT_MS=100, CONFIG_RZV_IPC_CR8_CR8=y and
 # CONFIG_RZV_IPC_ROLE_INITIATOR=y, then re-enable the ipc_heartbeat module.
-# CONFIG_OPENAMP is not set
-# CONFIG_RZV_OPENAMP is not set
+# CA55 link: OpenAMP/RPMsg to the CA55 CustomXRCEAgent. Boot does not wait
+# for the CA55: a kernel thread starts RPTUN once the agent sets DRIVER_OK,
+# so the image still flies without Linux. Only rpmsg-service-1 is exposed
+# (/dev/uxrce0 for uxrce_dds_client -t rpmsg); /dev/ipcc0 and the raw CR8-CR8
+# IPC stay off (raw IPC and OpenAMP are mutually exclusive on CR8-0).
+CONFIG_OPENAMP=y
+CONFIG_RPTUN=y
+CONFIG_RPTUN_THREAD=y
+CONFIG_RZV_OPENAMP=y
+CONFIG_RZV_RPMSG_UXRCE=y
+CONFIG_RZV_RPMSG_RX_QUEUE_DEPTH=16
+# CONFIG_RZV_IPC_IPCC is not set
 # CONFIG_RZV_IPC_RAW is not set
 
 # Standalone board examples are excluded from the integrated PX4 image.

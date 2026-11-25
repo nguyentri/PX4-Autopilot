@@ -277,7 +277,11 @@ ina228() { echo "CALL ina228 $*"; return 0; }
         self.assertIn('CONFIG_BOARD_SERIAL_EXT2="/dev/ttyS4"', profile)
         self.assertIn("CONFIG_RZV2H_DRONE_SENSOR_EXTENSION=y", config)
         self.assertNotIn("CONFIG_RZV_SPI0_DMA=y", config)
-        self.assertNotIn("CONFIG_RZV_OPENAMP=y", config)
+        # The reference drone reaches the CA55 XRCE-DDS agent over OpenAMP;
+        # raw CR8-CR8 IPC stays off because the two are exclusive on CR8-0.
+        self.assertIn("CONFIG_RZV_OPENAMP=y", config)
+        self.assertIn("CONFIG_RZV_RPMSG_UXRCE=y", config)
+        self.assertNotIn("CONFIG_RZV_IPC_RAW=y", config)
         for name in ("demo", "demosih", "dualcr8"):
             self.assertNotIn("CONFIG_RZV2H_DRONE_SENSOR_EXTENSION=y",
                              (BOARD.parent / "nuttx-config" / name / "defconfig").read_text())

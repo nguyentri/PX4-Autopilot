@@ -27,8 +27,14 @@ class DroneArtifacts(payload.PayloadArtifactContracts):
         self.assertEqual(self.nuttx.get("CONFIG_RZV2H_DRONE_SENSOR_EXTENSION"), "y")
         for flag in ("CONFIG_RZV_SPI0_DMA", "CONFIG_RZV2H_SPI0_HARDWARE_SSL",
                      "CONFIG_RZV2H_ICM20948_TEST", "CONFIG_RZV_IPC_RAW",
-                     "CONFIG_RZV_OPENAMP", "CONFIG_RDK_RZV2H_XSPI_PARAMFS"):
+                     "CONFIG_RZV_IPC_IPCC", "CONFIG_RDK_RZV2H_XSPI_PARAMFS"):
             self.assertNotEqual(self.nuttx.get(flag), "y", flag)
+        # OpenAMP carries only the CA55 XRCE-DDS link (rpmsg-service-1).
+        for flag in ("CONFIG_RZV_OPENAMP", "CONFIG_RZV_RPMSG_UXRCE"):
+            self.assertEqual(self.nuttx.get(flag), "y", flag)
+        self.assertIn("uxrce_dds_client", self.builtins)
+        for symbol in ("rzv_rpmsg_uxrce_register", "rzv_openamp_resource_table_init"):
+            self.assertIn(symbol, self.symbols)
         self.assertEqual(self.nuttx.get("CONFIG_RDK_RZV2H_VOLATILE_PARAMFS"), "y")
 
     def test_selected_sensor_commands_are_linked_and_legacy_commands_absent(self):

@@ -159,6 +159,28 @@ bool UxrceddsClient::init()
 		return false;
 	}
 
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+
+	if (_transport == Transport::Rpmsg) {
+		_transport_rpmsg = new RpmsgTransport(_device);
+
+		if (_transport_rpmsg && _transport_rpmsg->init()) {
+			PX4_INFO("init RPMsg %s", _device);
+
+			// The transport owns its descriptor; _fd stays -1 so deinit()
+			// does not close it a second time.
+			_comm = _transport_rpmsg->comm();
+			return true;
+		}
+
+		PX4_ERR("init RPMsg %s failed", _device);
+		delete _transport_rpmsg;
+		_transport_rpmsg = nullptr;
+		return false;
+	}
+
+#endif // UXRCE_DDS_CLIENT_RPMSG
+
 #if defined(UXRCE_DDS_CLIENT_UDP)
 
 	if (_transport == Transport::Udp) {
@@ -195,6 +217,16 @@ void UxrceddsClient::deinit()
 		delete _transport_serial;
 		_transport_serial = nullptr;
 	}
+
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+
+	if (_transport_rpmsg) {
+		_transport_rpmsg->close();
+		delete _transport_rpmsg;
+		_transport_rpmsg = nullptr;
+	}
+
+#endif // UXRCE_DDS_CLIENT_RPMSG
 
 #if defined(UXRCE_DDS_CLIENT_UDP)
 
@@ -686,6 +718,19 @@ void UxrceddsClient::run()
 			// run session with 0 timeout (non-blocking)
 			uxr_run_session_timeout(&session, 0);
 
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+
+			// Each run reads at most one RPMsg packet, and the driver queue
+			// drops packets once it is full, so drain what is queued now
+			// (bounded by the queue depth so the loop cannot starve).
+			if (_transport_rpmsg) {
+				for (int i = 0; i < CONFIG_RZV_RPMSG_RX_QUEUE_DEPTH && _transport_rpmsg->rx_pending(); i++) {
+					uxr_run_session_timeout(&session, 0);
+				}
+			}
+
+#endif
+
 			// check if there are available replies
 			process_replies();
 
@@ -952,6 +997,15 @@ int UxrceddsClient::print_status()
 		PX4_INFO("Using transport:     serial");
 	}
 
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+
+	if (_transport_rpmsg != nullptr) {
+		PX4_INFO("Using transport:     rpmsg");
+		_transport_rpmsg->print_status();
+	}
+
+#endif
+
 	if (_connected) {
 		PX4_INFO("Payload tx:          %i B/s", _last_payload_tx_rate);
 		PX4_INFO("Payload rx:          %i B/s", _last_payload_rx_rate);
@@ -993,6 +1047,12 @@ UxrceddsClient *UxrceddsClient::instantiate(int argc, char *argv[])
 
 			} else if (!strcmp(myoptarg, "udp")) {
 				transport = Transport::Udp;
+
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+
+			} else if (!strcmp(myoptarg, "rpmsg")) {
+				transport = Transport::Rpmsg;
+#endif
 
 			} else {
 				PX4_ERR("unknown transport: %s", myoptarg);
@@ -1077,6 +1137,14 @@ UxrceddsClient *UxrceddsClient::instantiate(int argc, char *argv[])
 		}
 	}
 
+#if defined(UXRCE_DDS_CLIENT_RPMSG)
+
+	if (transport == Transport::Rpmsg && !device) {
+		device = "/dev/uxrce0";
+	}
+
+#endif
+
 	return new UxrceddsClient(transport, device, baudrate, agent_ip, port, client_namespace);
 }
 
@@ -1098,8 +1166,9 @@ $ uxrce_dds_client start -t udp -h 127.0.0.1 -p 15555
 
 	PRINT_MODULE_USAGE_NAME("uxrce_dds_client", "system");
 	PRINT_MODULE_USAGE_COMMAND("start");
-	PRINT_MODULE_USAGE_PARAM_STRING('t', "udp", "serial|udp", "Transport protocol", true);
-	PRINT_MODULE_USAGE_PARAM_STRING('d', nullptr, "<file:dev>", "serial device", true);
+	PRINT_MODULE_USAGE_PARAM_STRING('t', "udp", "serial|udp|rpmsg", "Transport protocol (rpmsg: RZ/V2H CA55 agent only)",
+					true);
+	PRINT_MODULE_USAGE_PARAM_STRING('d', nullptr, "<file:dev>", "serial or RPMsg device (rpmsg default /dev/uxrce0)", true);
 	PRINT_MODULE_USAGE_PARAM_INT('b', 0, 0, 3000000, "Baudrate (can also be p:<param_name>)", true);
 	PRINT_MODULE_USAGE_PARAM_STRING('h', nullptr, "<IP>", "Agent IP. If not provided, defaults to UXRCE_DDS_AG_IP", true);
 	PRINT_MODULE_USAGE_PARAM_INT('p', -1, 0, 65535, "Agent listening port. If not provided, defaults to UXRCE_DDS_PRT", true);

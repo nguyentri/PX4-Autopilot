@@ -157,7 +157,9 @@ int main(int argc, char **argv) {
         if BUILD_DIR is not None:
             resolved = (BUILD_DIR / "NuttX/nuttx/.config").read_text()
             self.assertNotRegex(resolved, r"(?m)^CONFIG_RZV_IPC_RAW=y$")
-            self.assertNotRegex(resolved, r"(?m)^CONFIG_RZV_OPENAMP=y$")
+            # OpenAMP serves the CA55 XRCE-DDS agent, not the CR8-1 link.
+            self.assertRegex(resolved, r"(?m)^CONFIG_RZV_OPENAMP=y$")
+            self.assertRegex(resolved, r"(?m)^CONFIG_RZV_RPMSG_UXRCE=y$")
 
     def test_stream_requests_are_independent_and_report_failures(self):
         harness = '''
@@ -174,8 +176,12 @@ rzv2h_adc_telemetry() {
     echo "ADC $*"
     [ "$failed_stream" != telemetry ]
 }
+uxrce_dds_client() {
+    echo "UXRCE $*"
+    [ "$failed_stream" != CA55 ]
+}
 '''
-        for failed in ("none", "telemetry", *(name for name, _ in STREAMS)):
+        for failed in ("none", "telemetry", "CA55", *(name for name, _ in STREAMS)):
             with self.subTest(failed=failed):
                 output = self.run_hook("rc.board_extras", harness, [failed])
                 lines = output.splitlines()
@@ -183,6 +189,8 @@ rzv2h_adc_telemetry() {
                 self.assertFalse([line for line in lines if line.startswith("HEARTBEAT ")])
                 # The temporary SCI0 ADS1115 is forwarded as in demosih.
                 self.assertIn("ADC start", lines)
+                # The CA55 XRCE-DDS client starts without waiting for Linux.
+                self.assertIn("UXRCE start -t rpmsg -d /dev/uxrce0", lines)
                 calls = [line for line in lines if line.startswith("CALL ")]
                 self.assertEqual(calls, [
                     f"CALL stream -d /dev/ttyS5 -s {name} -r {rate}"

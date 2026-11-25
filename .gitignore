@@ -328,6 +328,8 @@ Tools/vscode_extension/*/*.tsbuildinfo
 px4-gcs-report-*.html
 
 !test/firmware-workspace-serial-console-test.py
+!test/rzv2h-openamp-ca55-xrce-contract-test.py
+!test/rzv2h-openamp-vring-takeover-host-test.py
 **/*firmware-import.json
 /*.png
 # Share debug instructions and portable templates; keep local agent state private.

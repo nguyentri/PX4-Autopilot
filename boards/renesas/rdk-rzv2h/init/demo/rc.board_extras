@@ -10,6 +10,14 @@
 # 	echo "ERROR [init] Demo CR8-1 heartbeat failed to start"
 # fi
 
+# XRCE-DDS link to the CA55 CustomXRCEAgent over OpenAMP/RPMsg
+# (rpmsg-service-1). The client retries every second until the agent has
+# set DRIVER_OK and sent its handshake, so the CA55 may boot later.
+if ! uxrce_dds_client start -t rpmsg -d /dev/uxrce0
+then
+	echo "ERROR [init] Demo CA55 uxrce_dds_client failed to start"
+fi
+
 # ADS1115 channel voltages for QGC (ADS_A0..ADS_A3 in the MAVLink Inspector).
 if ! rzv2h_adc_telemetry start
 then
