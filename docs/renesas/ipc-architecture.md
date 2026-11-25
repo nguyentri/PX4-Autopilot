@@ -24,9 +24,11 @@ boot, TCM, SRAM, DDR, and shared-memory map.
 
 Two different paths share the RZ/V2H MHU helpers:
 
-1. CA55 ↔ CR8-0 uses the native rptun/OpenAMP/RPMsg implementation and
-   registers `/dev/ipcc0`. This is a separate, optional later profile from the
-   reference CA55 RPMsg/RPC/uXRCE application path.
+1. CA55 ↔ CR8-0 uses the native rptun/OpenAMP/RPMsg implementation. The
+   PX4 `default` and `demo` images expose only `rpmsg-service-1` as
+   `/dev/uxrce0` for the CA55 XRCE-DDS agent (see
+   [CA55 XRCE-DDS link](#ca55-xrce-dds-link)). The NuttX `ipcc` samples also
+   register `/dev/ipcc0` on `rpmsg-service-0`.
 2. Raw CR8/CM33 links use an MHU doorbell plus fixed DDR rings through the
    NuttX IPCC upper half.
 
@@ -145,10 +147,10 @@ on the flight core. These are `#error` guards in `uorb_bridge.cpp`.
 
 | Target/profile | IPC state | Evidence |
 |---|---|---|
-| PX4 default (`renesas_rdk-rzv2h_default`) | disabled | PX4/NuttX configuration |
+| PX4 default (`renesas_rdk-rzv2h_default`) | OpenAMP to the CA55 XRCE-DDS agent (`/dev/uxrce0`); no raw IPC | build-clean; [CA55 XRCE contract](../../test/rzv2h-openamp-ca55-xrce-contract-test.py) |
 | PX4 dual-CR8 CR8-0 (`renesas_rdk-rzv2h_dualcr8`) | Exact-BOM sensor profile and coherent v3 `rzv2h_outputs` producer; no local motor outputs or legacy bridge; no qualified peer | [Candidate source/host/build procedure](validation/dualcr8-sensor-actuator-demo.md); earlier bridge captures remain historical |
 | PX4 CR8-1 `default` (`renesas_rdk-rzv2h-io-cr8_1_default`) | V3 `rzv2h_io` controller, independent output worker and reporter; hardware identity unconfigured, resources unclaimed | Candidate build/host evidence only |
-| PX4 demo (`renesas_rdk-rzv2h_demo`) | disabled: single-core drone since 2026-11-23 | profile `forbidden_config` (`CONFIG_RZV_IPC_RAW`) |
+| PX4 demo (`renesas_rdk-rzv2h_demo`) | OpenAMP to the CA55 XRCE-DDS agent (`/dev/uxrce0`); no raw IPC (single-core drone since 2026-11-23) | profile `forbidden_config` (`CONFIG_RZV_IPC_RAW`); build-clean |
 | PX4 demosih (`renesas_rdk-rzv2h_demosih`) | `rzv2h_heartbeat` raw IPC initiator; CR8-1 `demo` optional | [IPC HIL guide](validation/rzv2h-ipc-hil-test-guide.md#px4-demosih-heartbeat-pair-rzv2h_heartbeat) |
 | NuttX `:nsh` | disabled | defconfig |
 | NuttX `:ipcc` | CA55/OpenAMP smoke profile | build/source only |
@@ -238,6 +240,68 @@ These are profile-selection and physical-qualification boundaries. They do not
 block standalone CR8 software work. Enable a multi-core flight profile only
 after the peer ownership, MPU/cache policy, safety behavior, and target
 evidence below are recorded for that profile.
+
+### CA55 XRCE-DDS link
+
+The CR8-0 `default` and `demo` images talk to the shipped, unmodified
+`CustomXRCEAgent` on the CA55 (`refs/rzv2h_drone_px4-dev/ca55_stack`), as the
+FreeRTOS reference firmware does. The agent is the VIRTIO master.
+
+1. At boot CR8-0 writes the two resource tables at 0x42F00000, byte-identical
+   to the reference `resources_init[]`, and starts a kernel thread. Boot does
+   not wait.
+2. The agent (`CustomXRCEAgent -c 2 -v 1`) maps the tables through UIO, uses
+   table 0 and sets DRIVER_OK. The CR8-0 thread then sets
+   `gfeatures = dfeatures` and starts rptun.
+3. CR8-0 announces `rpmsg-service-1`. The agent binds it and sends
+   `UXRCE_HANDSHAKE_FROM_CA55` (26 bytes with the NUL), which gives the CR8-0
+   endpoint the agent's address. Until then writes to `/dev/uxrce0` fail with
+   `-ENOTCONN`.
+4. `uxrce_dds_client -t rpmsg -d /dev/uxrce0`, started from
+   `rc.board_extras`, drops that handshake packet and opens its XRCE session.
+   One XRCE message is one unframed RPMsg packet of at most 496 bytes.
+
+Operating rules:
+
+- Load and start CR8-0 before the agent. The CR8-0 thread (`rzv_ca55_link`)
+  follows DRIVER_OK for the life of the image, as the reference firmware's
+  watchdog does: when the agent clears it on exit, CR8-0 stops rptun (no more
+  MHU interrupts into the CA55), restores the boot-time tables and waits for
+  the next agent.
+- An agent killed without clearing DRIVER_OK (SIGKILL, crash) is handled on
+  CR8-0 alone; the agent, its systemd unit and the Linux image are unchanged.
+  The dead agent's DRIVER_OK stays set, so CR8-0 watches the TX vring
+  (table 0 vring 0) for a successor. It decides the master was replaced when
+  `avail.idx - used.idx` leaves 0..1024, when `avail.idx` jumps more than
+  1024 + 16 entries past the last check, or when a new post carries an
+  all-zero RPMsg header (the master zeroes buffers only on its first post;
+  every CR8-0 send writes a header with `len > 0`). Sends then fail with
+  `-ENOTCONN`. The thread stops rptun without a name-service DESTROY (the dead
+  master would never return a buffer for it), waits until `avail.idx` holds
+  still for 5 polls (capped at 2 s), and adopts the successor's posts:
+  the ring is rotated so they sit at entries 0..n-1, and both rings get
+  `used = 0`, so a fresh rptun device starts in step with the successor.
+  rptun then restarts without the successor seeing a change. If the successor
+  posted nothing, CR8-0 leaves the rings untouched and stays idle until
+  DRIVER_OK clears.
+- Limits of that recovery: the successor is detected only after its first
+  post; a hung agent that is still alive is not detected; with no successor
+  a dead agent stops CR8-0 TX once its 1024 buffers are used up (sends fail
+  with `-EAGAIN`, PX4 keeps flying). Adoption writes ring indices the master
+  owns, which is safe only while the successor waits for the CR8-0 name
+  service, as the shipped agent does. Boot also clears both table-0 rings, so
+  indices left in DDR by an earlier image do not reach the first agent.
+- The CR8-0 receive queue has no back-pressure. `uxrce_dds_client` drains up
+  to the queue depth per loop pass; when it still falls 16 packets behind,
+  new packets are dropped and counted in `g_rzv_rpmsg_rx_dropped[1]`, shown as
+  "RX dropped (queue)" by `uxrce_dds_client status`. Reliable streams recover
+  by retransmission; best-effort data is lost.
+- A full TX vring fails the write at once (`-EAGAIN`, counted as a TX error);
+  the client does not sleep to retry, and XRCE retransmits reliable data.
+- The reference firmware's `0xA5A5A501` open handshake is not used: the
+  agent does not need it.
+- No board run against the agent exists yet. Session setup, topic flow both
+  ways, agent restart and drops under load are open target items.
 
 ### Current application and CA55 integration gaps
 
