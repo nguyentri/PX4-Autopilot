@@ -296,6 +296,13 @@ class AgentReferenceContract(_OpenampHeader):
         self.assertEqual(order, sorted(order))
         self.assertIn("for (; ; )", text)
         self.assertIn("RPTUNIOC_STOP", ipc)
+        # The rptun node has no read/write ops: any access flag makes
+        # inode_checkflags() fail the open with -EACCES (seen on target).
+        self.assertIn("file_open(&filep, RZV_RPTUN_DEV_PATH, 0);", ipc)
+        rptun = read(NUTTX / "drivers/rptun/rptun.c")
+        ops = re.search(r"g_rptun_devops =\n{(.*?)};", rptun, re.DOTALL)
+        self.assertIsNotNone(ops)
+        self.assertRegex(ops.group(1), r"NULL,\s*/\* write \*/")
         # Boot clears ring indices left in DDR before publishing the table.
         rproc = read(RZV / "rzv_rproc.c")
         self.assertLess(rproc.index("rzv_openamp_vrings_reset();"),
