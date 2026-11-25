@@ -14,10 +14,10 @@ focus here.
 |------|------|
 | NuttX arch drivers (RZ/V) | `platforms/nuttx/NuttX/nuttx/arch/arm/src/rzv/` (submodule) |
 | NuttX board + defconfigs | `platforms/nuttx/NuttX/nuttx/boards/arm/rzv/rdk-rzv2h/{src,configs}/` |
-| NuttX R-Car V4H CR52 (Sparrow Hawk, NSH only) | `platforms/nuttx/NuttX/nuttx/arch/arm/src/{armv8-r,rcar}/`, `boards/arm/rcar/sparrow_hawk/`; guide `docs/renesas/rcar-v4h/README.md` |
+| NuttX R-Car V4H CR52 (Sparrow Hawk) | `platforms/nuttx/NuttX/nuttx/arch/arm/src/{armv8-r,rcar}/`, `boards/arm/rcar/sparrow_hawk/`; guide `docs/renesas/rcar-v4h/README.md` |
 | NuttX apps (submodule) | `platforms/nuttx/NuttX/apps/` |
 | PX4 platform HAL (RZ/V) | `platforms/nuttx/src/px4/renesas/rzv/` (hrt, dshot, io_pins, board_reset, ...) |
-| PX4 boards | `boards/renesas/rdk-rzv2h/` (CR8-0), `rdk-rzv2h-io-cr8_1/`, `rdk-rzv2h-io-cm33/` |
+| PX4 boards | `boards/renesas/rdk-rzv2h/` (CR8-0), `rdk-rzv2h-io-cr8_1/`, `rdk-rzv2h-io-cm33/`; R-Car V4H CR52-0 `boards/renesas/sparrow-hawk/` (HAL `platforms/nuttx/src/px4/renesas/rcar/`) |
 | Shared RZ/V2H demo contracts | `src/apps/` (CMake target `rzv2h_demo`; board-local entry points remain under the PX4 boards) |
 | Debug / RTT / SVD tools | `platforms/nuttx/Debug/` (`rzv2h-ipc/` holds IPC HIL scripts) |
 | VS Code extensions | `Tools/vscode_extension/px4-db/` (build/load/debug) and `Tools/vscode_extension/px4-gcs/` (MAVLink GCS: pymavlink sidecar, HUD, parameters, guarded control, logs; guide `docs/vscode-gcs-extension.md`) |
@@ -40,6 +40,7 @@ and `platforms/nuttx/NuttX/nuttx/README.md` (stock NuttX README).
 | NuttX only (driver bring-up, NSH samples) | `platforms/nuttx/NuttX/build.sh <config>` | `platforms/nuttx/NuttX/nuttx/nuttx` (ELF), `.bin`, `.hex` |
 | NuttX only, RA8P1 `evk-ra8p1` (EK-RA8P1) | `platforms/nuttx/NuttX/build_ra8p1.sh <config>` (same flags/exit codes; `NUTTX_DOWNLOAD_CACHE=<dir>` reseeds `RTT.zip` offline) | same as above |
 | NuttX only, R-Car V4H `sparrow_hawk` (CR52-0/1) | `platforms/nuttx/NuttX/build_rcarv4h.sh <config>` (`--list`; configs `nsh`, `nsh-cr52_1`, `gpio`, `i2c`, `spi-loopback`, `openamp`, `openamp-cr52_1`, `iccom`; runs the per-core ELF window check; IPC guide `docs/renesas/rcar-v4h/ipc.md`) | same as above |
+- R-Car V4H PX4 targets: `renesas_sparrow-hawk_sih` (SIH, MAVLink on HSCIF3) and `renesas_sparrow-hawk_default` (base, no sensors yet). CR52-0 runs alone in `0x40100000`–`0x409FFFFF`, so CR52-1 must not start. Build-clean only; status in `docs/renesas/rcar-v4h/port-status-px4-hal.md`.
 - PX4 targets: `renesas_rdk-rzv2h_{default,demo,demosih,dualcr8}`, `renesas_rdk-rzv2h-io-cr8_1_{default,demo}`, `renesas_rdk-rzv2h-io-cm33_default`. `drone`, `dshot`, `simple`, `sih`, core-only, the CR8-1 PX4IO relay and the CR8-0 `px4io_bridge` were retired 2026-11-18 (docs/evidence stay historical). `io-cm33_default` is kept but deferred: build-only, and no image talks to it since the relay removal (both CR8-1 profiles forbid `CONFIG_RZV_IPC_CR8_1_CM33`).
 - `dualcr8` is the canonical exact-BOM sensor bring-up profile: one polled ICM-45686/P93, BMM150, BMP390, M10 and TFmini. CR8-0 motor outputs are disabled; commander requires first I/O status. No CR8-1 actuator pair is qualified yet. The former separate demo target was merged here; old staging evidence remains historical.
 - CR8-1 `default` is the build-clean v3 supervisor candidate for `dualcr8`; zero hardware identities prevent physical resource claim. Current software evidence and open service/qualification gates: `docs/renesas/evidence/dualcr8-software-validation-261021.md`. Shared demo helpers live directly in `src/apps/` (CMake target `rzv2h_demo`).

@@ -6,7 +6,8 @@ operation rules. Select a board/profile before using a pin assignment or
 validation result.
 
 The separate R-Car V4H Cortex-R52 (Sparrow Hawk) NuttX port has its own
-[guide](rcar-v4h/README.md).
+[guide](rcar-v4h/README.md); its CR52-0 PX4 target status is in
+[rcar-v4h/port-status-px4-hal.md](rcar-v4h/port-status-px4-hal.md).
 
 ## Start here
 

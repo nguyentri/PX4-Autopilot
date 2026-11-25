@@ -2,9 +2,11 @@
 
 NuttX NSH images for the R-Car V4H (R8A779G3) Cortex-R52 cores on the
 Sparrow Hawk board. It runs AMP: each core gets its own image, and U-Boot
-starts them with `rproc`. There is no PX4 target, no SMP and no Linux
-alongside. Nothing in this port has run on a board yet; see
-[port-status-nuttx.md](port-status-nuttx.md).
+starts them with `rproc`. There is no SMP and no Linux alongside. A PX4
+target for CR52-0 also exists (see [PX4 on CR52-0](#px4-on-cr52-0)).
+Nothing in this port has run on a board yet; see
+[port-status-nuttx.md](port-status-nuttx.md) and
+[port-status-px4-hal.md](port-status-px4-hal.md).
 
 ## Code
 
@@ -17,7 +19,7 @@ alongside. Nothing in this port has run on a board yet; see
 | Build script | `platforms/nuttx/NuttX/build_rcarv4h.sh` |
 | Per-core ELF window allowlist | `platforms/nuttx/Debug/rcarv4h-cr52-elf-allowlists.json` |
 | CR52 ↔ CR52 OpenAMP, CA76 ICCOM ([ipc.md](ipc.md)) | `arch/arm/src/rcar/rcar_{openamp,rpmsg,ipc_ipcc,iccom*}.c`, `rcar_ipc_shm.h`, `hardware/rcar_mfis.h` |
-| Host tests | `test/rcarv4h-cr52-elf-window-test.py`, `test/rcarv4h-cr52-pmsav8-mpu-encode-test.py`, `test/rcarv4h-cr52-ipc-shm-layout-test.py`, `test/rcarv4h-cr52-iccom-protocol-test.py`, `test/rcarv4h-cr52-gicv3-sgi-encode-test.py` |
+| Host tests | `test/rcarv4h-cr52-elf-window-test.py`, `test/rcarv4h-cr52-virtual-timer-encode-test.py`, `test/rcarv4h-cr52-pmsav8-mpu-encode-test.py`, `test/rcarv4h-cr52-ipc-shm-layout-test.py`, `test/rcarv4h-cr52-iccom-protocol-test.py`, `test/rcarv4h-cr52-gicv3-sgi-encode-test.py` |
 
 ## Build
 
@@ -60,6 +62,7 @@ regions below, so an access to another core's window faults.
 | CR52-0 | `0x40100000`–`0x403FFFFF` | `RCARV4H_BUILD_CR52_0` |
 | CR52-1 | `0x40400000`–`0x406FFFFF` | `RCARV4H_BUILD_CR52_1` |
 | CR52-2 | `0x40700000`–`0x409FFFFF` (reserved, no image) | — |
+| PX4 on CR52-0 (alone) | `0x40100000`–`0x409FFFFF` (9 MiB) | `RCARV4H_PX4_SINGLE_CORE_WINDOW` |
 | OpenAMP shared window | `0x40A00000`–`0x40AFFFFF`, non-cacheable | `RCAR_OPENAMP` (both cores) |
 | ICCOM CTA, channel 0 | `0x47FC7000`–`0x47FCEFFF`, non-cacheable | `RCAR_ICCOM` (CR52-0) |
 
@@ -114,6 +117,23 @@ Rules that follow from shared hardware:
 - For a first sign of life, set `RCAR_EL2_MARKER` to write one character
   (`RCAR_EL2_MARKER_CHAR`, `!`) at EL2 before anything else runs. Progress
   letters `A`/`B`/`C` follow from `rcar_start.c`.
+
+## PX4 on CR52-0
+
+PX4 runs alone on CR52-0 in the 9 MiB window above, so CR52-1 must not be
+started while it runs (its window lies inside the PX4 window).
+
+```bash
+./build.sh renesas_sparrow-hawk_sih      # SIH: simulated sensors, MAVLink on HSCIF3
+python3 test/rcarv4h-cr52-virtual-timer-encode-test.py
+```
+
+Output: `build/renesas_sparrow-hawk_sih/renesas_sparrow-hawk_sih.{elf,bin}`.
+The build runs the same window check against `R8A779G3_CR52_0_PX4`. Load
+the `.bin` to `0x40100000`, then `rproc load 0 0x40100000 <size>` and
+`rproc start 0` only. NSH is on HSCIF1, MAVLink TELEM1 on HSCIF3 (CN7
+8/10) at 115200. Board notes: `boards/renesas/sparrow-hawk/README.md`;
+plan: [`plans/261124-1657-rcar-v4h-cr52-sparrow-hawk-px4-port/plan.md`](../../../plans/261124-1657-rcar-v4h-cr52-sparrow-hawk-px4-port/plan.md).
 
 ## Consoles and CN7 wiring
 
