@@ -118,6 +118,16 @@ if(CONFIG_ARCH_CHIP_RZV)
 	endif()
 endif()
 
+if(CONFIG_ARCH_CHIP_RCAR)
+	# PX4 runs single-core on CR52-0: the 9 MiB window covers the CR52-1
+	# and CR52-2 windows, so a CR52-1 PX4 image has no window to link into.
+	if(NOT CONFIG_RCARV4H_PX4_SINGLE_CORE_WINDOW)
+		message(FATAL_ERROR "R-Car V4H PX4 images need CONFIG_RCARV4H_PX4_SINGLE_CORE_WINDOW (CR52-0 only)")
+	endif()
+	set(nuttx_linker_script
+		${NUTTX_DIR}/boards/arm/rcar/sparrow_hawk/scripts/sparrow_hawk_cr52_0_px4.ld)
+endif()
+
 list(APPEND nuttx_libs
 	nuttx_boards
 	nuttx_drivers
@@ -304,8 +314,9 @@ else()
 		-Wl,--warn-common
 		-Wl,--gc-sections
 
-		$<$<BOOL:${CONFIG_ARCH_ARMV7R}>:-Wl,--entry=__start>
-		$<$<BOOL:${CONFIG_ARCH_ARMV7R}>:${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o>
+		# Cortex-R: the vector table is a NuttX head object, outside libarch.a
+		$<$<OR:$<BOOL:${CONFIG_ARCH_ARMV7R}>,$<BOOL:${CONFIG_ARCH_ARMV8R}>>:-Wl,--entry=__start>
+		$<$<OR:$<BOOL:${CONFIG_ARCH_ARMV7R}>,$<BOOL:${CONFIG_ARCH_ARMV8R}>>:${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o>
 
 		-Wl,--start-group
 			${nuttx_libs}
@@ -320,6 +331,14 @@ else()
 	endif()
 
 	target_link_libraries(px4 PRIVATE ${module_libraries})
+
+	if(CONFIG_ARCH_CHIP_RCAR)
+		# Every PT_LOAD segment must stay in the 9 MiB CR52-0 window.
+		add_custom_command(TARGET px4 POST_BUILD
+			COMMAND ${PX4_SOURCE_DIR}/platforms/nuttx/Debug/rcarv4h-cr52-px4-window-check.sh $<TARGET_FILE:px4>
+			VERBATIM
+		)
+	endif()
 
 	if(config_romfs_root)
 		add_subdirectory(${PX4_SOURCE_DIR}/ROMFS ${PX4_BINARY_DIR}/ROMFS)
@@ -619,7 +638,10 @@ add_custom_target(debug
 )
 
 include(blackmagic)
-include(jlink)
+if(NOT CONFIG_ARCH_CHIP_RCAR)
+	# R-Car V4H images load through U-Boot rproc; no J-Link targets
+	include(jlink)
+endif()
 include(profile)
 include(stack_check)
 

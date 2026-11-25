@@ -1,0 +1,13 @@
+{
+    "board_id": 90,
+    "magic": "PX4FWv1",
+    "description": "PX4 firmware for Renesas R-Car V4H Sparrow Hawk CR52-0",
+    "image": "",
+    "build_time": 0,
+    "summary": "SPARROW-HAWK CR52-0",
+    "version": "0.1",
+    "image_size": 0,
+    "image_maxsize": 9437184,
+    "git_identity": "",
+    "board_revision": 0
+}

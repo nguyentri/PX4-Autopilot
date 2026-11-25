@@ -2,7 +2,9 @@
 """Check the R-Car V4H CR52 image windows: both linker scripts, both
 defconfigs and the PT_LOAD allowlist manifest must name the same windows,
 256 KiB aligned, disjoint, inside the CR52 DRAM area, with the CR52-2
-window left free.  Every other defconfig of a core must use that core's
+window left free.  The PX4 single-core CR52-0 window (linker script,
+PX4 board defconfig and manifest entry) must agree too; it may cover the
+CR52-1/CR52-2 windows but never the shared regions.  Every other defconfig of a core must use that core's
 window, and no allowlisted PT_LOAD range may reach the OpenAMP shared
 window or the ICCOM CTA (the build-time window check then rejects any
 segment placed there)."""
@@ -30,6 +32,11 @@ EXTRA_CONFIGS = {
     0: ('gpio', 'i2c', 'spi-loopback', 'openamp', 'iccom'),
     1: ('openamp-cr52_1',),
 }
+
+# PX4 single-core CR52-0 image: (linker script, PX4 defconfig, manifest device)
+PX4_IMAGE = ('sparrow_hawk_cr52_0_px4.ld',
+             ROOT / 'boards/renesas/sparrow-hawk/nuttx-config/nsh/defconfig',
+             'R8A779G3_CR52_0_PX4')
 
 MEMORYMAP = (ROOT / 'platforms/nuttx/NuttX/nuttx/arch/arm/src/rcar'
              / 'hardware/rcar_memorymap.h')
@@ -64,7 +71,8 @@ def ld_window(script):
 
 
 def defconfig_window(config):
-    text = (BOARD / 'configs' / config / 'defconfig').read_text()
+    path = config if isinstance(config, Path) else BOARD / 'configs' / config / 'defconfig'
+    text = path.read_text()
     values = {}
     for name in ('RAM_START', 'RAM_SIZE'):
         match = re.search(rf'^CONFIG_{name}=(\S+)$', text, re.M)
@@ -127,10 +135,29 @@ class WindowTest(unittest.TestCase):
 
     def test_manifest_has_no_cr52_2_image(self):
         data = json.loads(MANIFEST.read_text())
-        self.assertEqual(sorted(data['devices']), sorted(d for _, _, d in IMAGES.values()))
+        expected = [d for _, _, d in IMAGES.values()] + [PX4_IMAGE[2]]
+        self.assertEqual(sorted(data['devices']), sorted(expected))
+
+    def test_px4_single_core_window(self):
+        script, defconfig, device = PX4_IMAGE
+        status, window = manifest_window(device)
+        self.assertEqual(status, 'proposed')
+        self.assertEqual(ld_window(script), window)
+        if defconfig.exists():
+            self.assertEqual(defconfig_window(defconfig), window)
+            text = defconfig.read_text()
+            self.assertIn('CONFIG_RCARV4H_PX4_SINGLE_CORE_WINDOW=y', text)
+            self.assertNotIn('CONFIG_RCARV4H_BUILD_CR52_1=y', text)
+        start, end = window
+        self.assertEqual(start, manifest_window(IMAGES[0][2])[1][0])
+        self.assertEqual((start % ALIGN, end % ALIGN), (0, 0))
+        self.assertGreaterEqual(start, CR52_AREA[0])
+        self.assertLessEqual(end, CR52_AREA[1])
+        # vendor 10 MiB window less the 1 MiB OpenAMP window
+        self.assertEqual(end - start, 9 * 1024 * 1024)
 
     def test_vectors_first(self):
-        for script, _, _ in IMAGES.values():
+        for script in [s for s, _, _ in IMAGES.values()] + [PX4_IMAGE[0]]:
             with self.subTest(script=script):
                 text = (BOARD / 'scripts' / script).read_text()
                 self.assertIn('ENTRY(__start)', text)

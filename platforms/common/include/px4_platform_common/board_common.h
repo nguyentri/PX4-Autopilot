@@ -59,7 +59,9 @@
 #if defined(BOARD_I2C_BUS_CLOCK_INIT)
 #  define PX4_I2C_BUS_CLOCK_INIT BOARD_I2C_BUS_CLOCK_INIT
 #else
-#  if (PX4_NUMBER_I2C_BUSES) == 1
+#  if (PX4_NUMBER_I2C_BUSES) == 0
+#    define PX4_I2C_BUS_CLOCK_INIT {} /* No I2C: the I2C code is not built (CONFIG_I2C unset) */
+#  elif (PX4_NUMBER_I2C_BUSES) == 1
 #    define PX4_I2C_BUS_CLOCK_INIT {100000}
 #  elif (PX4_NUMBER_I2C_BUSES) == 2
 #    define PX4_I2C_BUS_CLOCK_INIT {100000, 100000}
@@ -369,6 +371,7 @@ typedef enum PX4_SOC_ARCH_ID_t {
 	PX4_SOC_ARCH_ID_RA8E1          =  0x000A,
     PX4_SOC_ARCH_ID_RA8P1          =  0x000B,
     PX4_SOC_ARCH_ID_RZV2H          =  0x000C,
+	PX4_SOC_ARCH_ID_RCARV4H        =  0x000D,
 
 	PX4_SOC_ARCH_ID_EAGLE          =  0x1001,
 	PX4_SOC_ARCH_ID_QURT           =  0x1002,

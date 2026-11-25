@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Renesas R-Car V4H Sparrow Hawk (CR52-0) board defaults
+#
+# This file is sourced by NuttX NSH, not a POSIX shell.
+#------------------------------------------------------------------------------
+
+# No RGB LED, PX4IO, tone alarm or DShot hardware.
+set RGBLED_PROBE no
+set PX4IO_CHECK no
+set TONE_ALARM_START no
+set DSHOT_START no
+
+# SIH quadrotor; parameters live in TMPFS, so these defaults apply every boot.
+param set-default SYS_AUTOSTART 1100
+param set-default SYS_DM_BACKEND 1
+
+# MAVLink on TELEM1 (HSCIF3, /dev/ttyS1). The HSCIF driver keeps its Kconfig
+# rate of 115200; SER_TEL1_BAUD only documents it.
+param set-default MAV_0_CONFIG 101
+param set-default MAV_0_MODE 0
+param set-default MAV_0_FLOW_CTRL 0
+param set-default MAV_0_RATE 4800
+param set-default SER_TEL1_BAUD 115200
+
+# No RC receiver: QGroundControl joystick or none.
+param set-default COM_RC_IN_MODE 4

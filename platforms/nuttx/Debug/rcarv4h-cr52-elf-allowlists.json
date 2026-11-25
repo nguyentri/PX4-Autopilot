@@ -19,6 +19,16 @@
           "end": "0x40700000"
         }
       ]
+    },
+    "R8A779G3_CR52_0_PX4": {
+      "status": "proposed",
+      "ranges": [
+        {
+          "name": "cr52-0-px4-single-core-window",
+          "start": "0x40100000",
+          "end": "0x40A00000"
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,6 @@
+# Simulation-In-Hardware on CR52-0: SIH flies a simulated quad (airframe 1100)
+# and QGroundControl connects over HSCIF3. simulator_sih selects pwm_out_sim
+# and the baro, GPS and mag simulators.
+CONFIG_MODULES_SIMULATION_SIMULATOR_SIH=y
+CONFIG_MODULES_SIMULATION_BATTERY_SIMULATOR=y
+CONFIG_MODULES_SIMULATION_SENSOR_AGP_SIM=n

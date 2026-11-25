@@ -39,6 +39,8 @@ renesas_rdk-rzv2h_default
 renesas_rdk-rzv2h_demo
 renesas_rdk-rzv2h_demosih
 renesas_rdk-rzv2h_dualcr8
+renesas_sparrow-hawk_default
+renesas_sparrow-hawk_sih
 ```
 
 ## RZ/V2H Porting Status Summary

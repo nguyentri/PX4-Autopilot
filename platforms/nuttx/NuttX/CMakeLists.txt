@@ -175,7 +175,7 @@ function(add_nuttx_dir nuttx_lib nuttx_lib_dir kernel extra target)
 	)
 
 	set(nuttx_lib_byproducts)
-	if(CONFIG_ARCH_ARMV7R AND "${nuttx_lib_dir}" STREQUAL "arch/${CONFIG_ARCH}/src")
+	if((CONFIG_ARCH_ARMV7R OR CONFIG_ARCH_ARMV8R) AND "${nuttx_lib_dir}" STREQUAL "arch/${CONFIG_ARCH}/src")
 		list(APPEND nuttx_lib_byproducts ${NUTTX_DIR}/arch/${CONFIG_ARCH}/src/arm_vectortab.o)
 	endif()
 
